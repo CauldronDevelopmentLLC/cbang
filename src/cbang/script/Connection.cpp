@@ -34,7 +34,6 @@
 
 #include "Server.h"
 
-#include <cbang/socket/SocketDevice.h>
 #include <cbang/log/Logger.h>
 
 #include <boost/iostreams/filtering_stream.hpp>
@@ -52,16 +51,10 @@ bool Connection::isFinished() const {
 
 void Connection::run() {
   try {
-#ifdef _WIN32
-    // NOTE Works around socket write not blocking when buffers are full.
-    socket->setSendBuffer(0);
-#endif
-    socket->setSendTimeout(5);
-    socket->setReceiveTimeout(0.001);
-    socket->setKeepAlive(true);
-    SocketStream stream(*socket, true);
+    Processor::run(*server, *socket);
 
-    Processor::run(*server, stream, stream);
+  } catch (const Socket::EndOfStream &e) {
+    // Normal exit, do nothing
 
   } catch (const Exception &e) {
     LOG_ERROR(e);

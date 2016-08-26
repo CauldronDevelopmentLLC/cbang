@@ -342,7 +342,7 @@ streamsize SocketDefaultImpl::read(char *data, streamsize length,
   if (ret < 0) {
 #ifdef _WIN32
     // NOTE: Windows can return -1 even when there is no error
-    if (!err || err == WSAEWOULDBLOCK) return 0;
+    if (!err || err == WSAEWOULDBLOCK || err == WSAETIMEDOUT) return 0;
 #else
     if (err == ECONNRESET) return -1;
     if (err == EAGAIN || err == EWOULDBLOCK) return 0;

@@ -98,12 +98,14 @@ namespace {
 #else
     int handles[2];
 #endif
+    bool closeHandles[2];
 
     SmartPointer<iostream> stream;
 
 
     explicit Pipe(bool toChild) : toChild(toChild) {
       handles[0] = handles[1] = 0;
+      closeHandles[0] = closeHandles[1] = false;
     }
 
 
@@ -127,6 +129,8 @@ namespace {
 #else
       if (pipe(handles)) THROWS("Failed to create pipe: " << SysError());
 #endif
+
+      closeHandles[0] = closeHandles[1] = true;
     }
 
 
@@ -144,13 +148,13 @@ namespace {
 
     void close() {
       for (unsigned i = 0; i < 2; i++)
-        if (handles[i]) {
+        if (closeHandles[i]) {
 #ifdef _WIN32
           CloseHandle(handles[i]);
 #else
           ::close(handles[i]);
 #endif
-          handles[i] = 0;
+          closeHandles[i] = false;
         }
     }
 
@@ -160,11 +164,11 @@ namespace {
 
       if (toChild) {
         stream = new stream_t(handles[1], BOOST_CLOSE_HANDLE);
-        handles[1] = 0; // Don't close this end later in close()
+        closeHandles[1] = false; // Don't close this end later in close()
 
       } else {
         stream = new stream_t(handles[0], BOOST_CLOSE_HANDLE);
-        handles[0] = 0; // Don't close this end later in close()
+        closeHandles[0] = false; // Don't close this end later in close()
       }
     }
 
@@ -207,6 +211,7 @@ Subprocess::Subprocess() :
 
 
 Subprocess::~Subprocess() {
+  closeHandles();
   zap(p);
 }
 
@@ -274,7 +279,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
   signalGroup = flags & CREATE_PROCESS_GROUP;
 
   // Close any open handles
-  //closeHandles();
+  closeHandles();
 
   try {
     // Create pipes
@@ -532,12 +537,12 @@ int Subprocess::wait(bool nonblocking) {
         ThreadsType::LINUX_THREADS && errno == ECHILD) return 0;
 #endif // _WIN32
 
-    closeHandles();
+    closeProcessHandles();
     running = false;
     throw;
   }
 
-  if (!running) closeHandles();
+  if (!running) closeProcessHandles();
 
   return returnCode;
 }
@@ -643,21 +648,29 @@ string Subprocess::assemble(const vector<string> &args) {
 }
 
 
-void Subprocess::closeHandles() {
+void Subprocess::closeProcessHandles() {
 #ifdef _WIN32
   // Close process & thread handles
   if (p->pi.hProcess) {CloseHandle(p->pi.hProcess); p->pi.hProcess = 0;}
   if (p->pi.hThread) {CloseHandle(p->pi.hThread); p->pi.hThread = 0;}
 #endif
+}
 
+
+void Subprocess::closeStreams() {
   for (unsigned i = 0; i < p->pipes.size(); i++)
     p->pipes[i].closeStream();
-
-  closePipes();
 }
 
 
 void Subprocess::closePipes() {
   for (unsigned i = 0; i < p->pipes.size(); i++)
     p->pipes[i].close();
+}
+
+
+void Subprocess::closeHandles() {
+  closeProcessHandles();
+  closeStreams();
+  closePipes();
 }

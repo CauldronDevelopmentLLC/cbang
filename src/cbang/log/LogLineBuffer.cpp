@@ -30,27 +30,12 @@
 
 \******************************************************************************/
 
-#ifndef CB_DEPRECIATED_CONSTRAINT_H
-#define CB_DEPRECIATED_CONSTRAINT_H
+#include "LogLineBuffer.h"
 
-#include "Constraint.h"
-
-
-namespace cb {
-  class DepreciatedConstraint : public Constraint {
-  public:
-
-    void depreciated() const {THROW("Option depreciated");}
-
-    // From Constraint
-    void validate(bool value) const {depreciated();}
-    void validate(const std::string &value) const {depreciated();}
-    void validate(int64_t value) const {depreciated();}
-    void validate(double value) const {depreciated();}
+using namespace std;
+using namespace cb;
 
 
-    std::string getHelp() const {return "Depreciated";}
-  };
+void LogLineBuffer::line(const char *data, unsigned length) {
+  LOG(logDomain, logLevel, prefix + string(data, length));
 }
-
-#endif // CB_DEPRECIATED_CONSTRAINT_H

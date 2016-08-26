@@ -30,80 +30,98 @@
 
 \******************************************************************************/
 
-#include "SysError.h"
+#include "LineBuffer.h"
 
-#include <cbang/SmartPointer.h>
+#include <cbang/Exception.h>
+#include <cbang/os/SysError.h>
 
-#ifdef _WIN32
-#define WINDOWS_LEAN_AND_MEAN
-#include <windows.h>
-
-#else
-#include <string.h>
+#include <unistd.h>
 #include <errno.h>
-#endif
+#include <string.h>
 
 using namespace std;
 using namespace cb;
 
 
-SysError::SysError(int code) : code(code ? code : get()) {}
+void LineBuffer::write(const char *data, unsigned length) {
+  while (length) {
+    unsigned space = bufferSize - fill;
+    unsigned bytes = space < length ? space : length;
+
+    memcpy(buffer, data, bytes);
+    length -= bytes;
+
+    extractLines();
+  }
+}
 
 
-string SysError::toString() const {
-  if (!code) return "Success";
+void LineBuffer::read(istream &stream) {
+  while (true) {
+    streamsize space = bufferSize - fill;
 
-#ifdef _WIN32
-  LPWSTR buffer = 0;
+    stream.read(buffer + fill, space);
+    streamsize bytes = stream.gcount();
 
-  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                     0, (DWORD)code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                     (LPWSTR)&buffer, 0, 0)) {
-    int len = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, 0, 0, 0, 0);
-    SmartPointer<char>::Array utf8 = new char[len];
-    bool ok =
-      WideCharToMultiByte(CP_UTF8, 0, buffer, -1, utf8.get(), len, 0, 0);
+    if (!bytes) break;
 
-    LocalFree(buffer);
+    fill += bytes;
+    extractLines();
 
-    if (ok) return utf8.get();
+    if (bytes < space) break;
+  }
+}
+
+
+void LineBuffer::read(int fd) {
+  while (true) {
+    unsigned space = bufferSize - fill;
+
+    ssize_t bytes = ::read(fd, buffer + fill, space);
+
+    if (bytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
+      THROWS("Failed to read file descriptor: " << SysError());
+
+    if (bytes <= 0) break;
+
+    fill += bytes;
+    extractLines();
+
+    if (bytes < space) break;
+  }
+}
+
+
+void LineBuffer::flush() {
+  if (fill) {
+    line(buffer, bufferSize);
+    fill = 0;
+  }
+}
+
+
+void LineBuffer::extractLines() {
+  while (true) {
+    const char *end = buffer + fill;
+    bool done = true;
+
+    for (const char *eol = buffer; eol < end; eol++)
+      if (*eol == '\n') {
+        unsigned length = eol - buffer;
+
+        line(buffer, length);
+        length++; // Skip \n
+
+        fill -= length;
+        memmove(buffer, buffer + length, fill);
+
+        done = false;
+        break;
+      }
+
+    if (done) break;
   }
 
-#else // _WIN32
-#if _POSIX_C_SOURCE >= 200112L
-  char buffer[4096];
-
-#ifdef _GNU_SOURCE
-  return strerror_r(code, buffer, 4096);
-
-#else // _GNU_SOURCE
-  if (!strerror_r(code, buffer, 4096)) return buffer;
-#endif // !_GNU_SOURCE
-
-#else // _POSIX_C_SOURCE >= 200112L
-  return strerror(code);
-
-#endif // _POSIX_C_SOURCE < 200112L
-#endif // !_WIN32
-
-  return "Unknown error";
-}
-
-
-void SysError::set(int code) {
-#ifdef _WIN32
-  SetLastError((DWORD)code);
-#else
-  errno = code;
-#endif
-}
-
-
-int SysError::get() {
-#ifdef _WIN32
-  return (int)GetLastError();
-#else
-  return errno;
-#endif
+  // Dump buffer if full
+  if (fill == bufferSize) flush();
 }

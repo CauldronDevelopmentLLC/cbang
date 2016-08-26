@@ -30,51 +30,31 @@
 
 \******************************************************************************/
 
-#ifndef SOCKET_DEVICE_H
-#define SOCKET_DEVICE_H
+#ifndef CB_LOG_LINE_BUFFER_H
+#define CB_LOG_LINE_BUFFER_H
 
-#include "Socket.h"
+#include "Logger.h"
 
-#include <cbang/Exception.h>
-#include <cbang/log/Logger.h>
+#include <cbang/util/LineBuffer.h>
 
-#include <boost/iostreams/categories.hpp>   // bidirectional_device_tag
-#include <boost/iostreams/positioning.hpp>  // stream_offset
-#include <boost/iostreams/stream.hpp>
+#include <string>
 
 
 namespace cb {
-  class SocketDevice {
-    Socket &socket;
+  class LogLineBuffer : public LineBuffer {
+    const std::string prefix;
+    const char *logDomain;
+    unsigned logLevel;
 
   public:
-    typedef char char_type;
-    typedef boost::iostreams::bidirectional_device_tag category;
+    LogLineBuffer(const std::string &prefix = std::string(),
+                  const char *logDomain = CBANG_LOG_DOMAIN,
+                  unsigned logLevel = CBANG_LOG_INFO_LEVEL(1)) :
+      prefix(prefix), logDomain(logDomain), logLevel(logLevel) {}
 
-    SocketDevice(Socket &socket) : socket(socket) {}
-
-
-    std::streamsize read(char *s, std::streamsize n) try {
-      return (std::streamsize)socket.read(s, n);
-
-    } catch (const Socket::EndOfStream &e) {
-      return -1;
-
-    } catch (const Exception &e) {
-      CBANG_LOG_DEBUG(5, "SocketDevice::read(): " << e);
-      throw BOOST_IOSTREAMS_FAILURE(e.getMessage());
-    }
-
-
-    std::streamsize write(const char *s, std::streamsize n) try {
-      return (std::streamsize)socket.write(s, n);
-
-    } catch (const Exception &e) {
-      CBANG_LOG_DEBUG(5, "SocketDevice::write(): " << e);
-      throw BOOST_IOSTREAMS_FAILURE(e.getMessage());
-    }
+    // From LineBuffer
+    void line(const char *data, unsigned length);
   };
-
-  typedef boost::iostreams::stream<SocketDevice> SocketStream;
 }
-#endif // SOCKET_DEVICE_H
+
+#endif // CB_LOG_LINE_BUFFER_H
