@@ -1106,11 +1106,14 @@ namespace cb {
 #endif
     }
 
+
     void clearenv() {
 #ifdef _WIN32
       THROW("clearenv() not supported in Windows");
+#elif __APPLE__
+      THROW("clearenv() not supported in OSX");
 #else
-      clearenv();
+      ::clearenv();
 #endif
     }
 
