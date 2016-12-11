@@ -30,12 +30,9 @@
 
 \******************************************************************************/
 
-#include "Context.h"
+#include "Undefined.h"
 
-using namespace cb;
-using namespace cb::js;
+using namespace cb::JSON;
 
 
-Context::Context(ObjectTemplate &tmpl) :
-  context(v8::Context::New(v8::Isolate::GetCurrent(), 0, tmpl.getTemplate())) {
-}
+Undefined Undefined::undefined;

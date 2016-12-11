@@ -38,12 +38,19 @@
 #include "CRL.h"
 
 #include <openssl/x509_vfy.h>
+#include <openssl/opensslv.h>
 
 using namespace cb;
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define X509_STORE_up_ref(STORE)                            \
+  CRYPTO_add(&(STORE)->references, 1, CRYPTO_LOCK_EVP_PKEY)
+#define X509_EXTENSION_get_data(e) (e)->value
+#endif /* OPENSSL_VERSION_NUMBER < 0x1010000fL */
+
 
 CertificateStore::CertificateStore(const CertificateStore &o) : store(o.store) {
-  CRYPTO_add(&(store->references), 1, CRYPTO_LOCK_EVP_PKEY);
+  X509_STORE_up_ref(store);
 }
 
 
@@ -55,15 +62,13 @@ CertificateStore::CertificateStore(X509_STORE *store) : store(store) {
 }
 
 
-CertificateStore::~CertificateStore() {
-  if (store) X509_STORE_free(store);
-}
+CertificateStore::~CertificateStore() {if (store) X509_STORE_free(store);}
 
 
 CertificateStore &CertificateStore::operator=(const CertificateStore &o) {
   if (store) X509_STORE_free(store);
   store = o.store;
-  CRYPTO_add(&(store->references), 1, CRYPTO_LOCK_EVP_PKEY);
+  X509_STORE_up_ref(store);
   return *this;
 }
 

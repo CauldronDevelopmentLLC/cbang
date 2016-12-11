@@ -30,22 +30,21 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_SCOPE_H
-#define CB_JS_SCOPE_H
+#pragma once
 
 #include "Value.h"
+
+#include <cbang/io/InputSource.h>
 
 
 namespace cb {
   namespace js {
-    class Scope : private v8::EscapableHandleScope {
+    class Scope {
     public:
-      Scope() : v8::EscapableHandleScope(v8::Isolate::GetCurrent()) {}
+      virtual ~Scope() {}
 
-      Value close(Value value)
-      {return v8::EscapableHandleScope::Escape(value.getV8Value());}
+      virtual SmartPointer<Value> getGlobalObject() = 0;
+      virtual SmartPointer<Value> eval(const InputSource &source) = 0;
     };
   }
 }
-
-#endif // CB_JS_SCOPE_H

@@ -33,13 +33,19 @@
 #include "BOStream.h"
 
 #include <openssl/bio.h>
+#include <openssl/opensslv.h>
 
 using namespace cb;
 using namespace std;
 
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define BIO_set_flags(b, val) b->flags |= val
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
+
 BOStream::BOStream(ostream &stream) : stream(stream) {
-  bio->flags |= BIO_FLAGS_WRITE;
+  BIO_set_flags(bio, BIO_FLAGS_WRITE);
 }
 
 

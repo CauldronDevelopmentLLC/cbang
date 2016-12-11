@@ -30,38 +30,6 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_CONTEXT_H
-#define CB_JS_CONTEXT_H
-
-#include "ObjectTemplate.h"
-
-#include <cbang/SmartPointer.h>
-
-#include "V8.h"
-
-
-namespace cb {
-  namespace js {
-    class Context {
-      v8::Handle<v8::Context> context;
-
-    public:
-      Context(const v8::Handle<v8::Context> &context) : context(context) {}
-      Context(ObjectTemplate &tmpl);
-
-      void enter() {context->Enter();}
-      void exit() {context->Exit();}
-
-      Value getGlobal() {return v8::Handle<v8::Value>(context->Global());}
-
-      static Context current()
-      {return v8::Isolate::GetCurrent()->GetCurrentContext();}
-      static Context entered()
-      {return v8::Isolate::GetCurrent()->GetEnteredContext();}
-      static bool inContext()
-      {return v8::Isolate::GetCurrent()->InContext();}
-    };
-  }
-}
-
-#endif // CB_JS_CONTEXT_H
+#define CBANG_ENUM_IMPL
+#include "CPUFeature80000001.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

@@ -56,6 +56,7 @@ def configure_deps(conf, local = True, with_openssl = True):
         conf.CBRequireFunc('clock_gettime')
 
     if with_openssl: conf.CBConfig('openssl', False, version = '1.0.0')
+    conf.CBConfig('chakra', False)
     conf.CBConfig('v8', False)
 
     if env['PLATFORM'] == 'win32' or int(env.get('cross_mingw', 0)):
@@ -114,7 +115,7 @@ def generate(env):
         ('debug_level', 'Set log debug level', 1))
 
     env.CBLoadTools('''sqlite3 boost openssl pthreads valgrind osx zlib bzip2
-        XML v8 event re2'''.split(), GetHome() + '/..')
+        XML chakra v8 event re2'''.split(), GetHome() + '/..')
 
 
 def exists(env):

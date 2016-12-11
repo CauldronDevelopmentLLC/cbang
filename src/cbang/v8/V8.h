@@ -30,42 +30,14 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_SCRIPT_H
-#define CB_JS_SCRIPT_H
+#pragma once
 
-#include "Context.h"
-#include "Value.h"
+// Override v8stdint.h
+#include <cbang/StdTypes.h>
+#include <stddef.h>
+#include <stdio.h>
+#define V8STDINT_H_
 
-#include <cbang/SmartPointer.h>
+#define V8_ENABLE_CHECKS
 
-#include <cbang/io/InputSource.h>
-
-#include "V8.h"
-
-#include <string>
-
-
-namespace cb {
-  namespace js {
-    class Script {
-      Context &context;
-      v8::Handle<v8::Script> script;
-
-    public:
-      Script(Context &context, const std::string &s,
-             const std::string &filename = std::string());
-      Script(Context &context, const InputSource &source);
-      ~Script();
-
-      Value eval();
-
-      static void translateException(const v8::TryCatch &tryCatch,
-                                     bool useStack);
-
-    protected:
-      void load(const std::string &s, const std::string &filename);
-    };
-  }
-}
-
-#endif // CB_JS_SCRIPT_H
+#include <v8.h>

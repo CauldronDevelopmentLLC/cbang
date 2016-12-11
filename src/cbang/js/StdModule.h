@@ -30,16 +30,30 @@
 
 \******************************************************************************/
 
-#include "ContextScope.h"
+#ifndef CB_JS_STD_MODULE_H
+#define CB_JS_STD_MODULE_H
 
-using namespace cb::js;
+#include "NativeModule.h"
 
 
-ContextScope::ContextScope(Context &context) : context(context) {
-  context.enter();
+namespace cb {
+  namespace js {
+    class Javascript;
+
+    class StdModule : public NativeModule {
+      Javascript &js;
+
+    public:
+      StdModule(Javascript &js) : NativeModule("std"), js(js) {}
+
+      // From NativeModule
+      void define(Sink &exports);
+
+      // Callbacks
+      SmartPointer<Value> require(Callback &cb, Value &args);
+      void print(const Value &args, Sink &sink);
+    };
+  }
 }
 
-
-ContextScope::~ContextScope() {
-  context.exit();
-}
+#endif // CB_JS_STD_MODULE_H

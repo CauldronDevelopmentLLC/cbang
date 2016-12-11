@@ -30,59 +30,28 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_OBJECT_TEMPLATE_H
-#define CB_JS_OBJECT_TEMPLATE_H
+#ifndef CB_JS_IMPL_H
+#define CB_JS_IMPL_H
 
-#include "Value.h"
-#include "Callback.h"
-#include "FunctionCallback.h"
-#include "MethodCallback.h"
-#include "VoidMethodCallback.h"
+#include "Module.h"
+#include "Factory.h"
+#include "Scope.h"
 
-#include <cbang/SmartPointer.h>
-
-#include "V8.h"
-
-#include <string>
-#include <vector>
+#include <cbang/io/InputSource.h>
 
 
 namespace cb {
   namespace js {
-    class ObjectTemplate {
-      v8::Handle<v8::ObjectTemplate> tmpl;
-      std::vector<SmartPointer<Callback> > callbacks;
-
+    class Impl {
     public:
-      ObjectTemplate();
+      virtual ~Impl() {}
 
-      Value create() const;
-
-      void set(const std::string &name, const Value &value);
-      void set(const std::string &name, const ObjectTemplate &tmpl);
-      void set(const std::string &name, const Callback &callback);
-      void set(const Signature &sig, FunctionCallback::func_t func);
-
-      template <class T>
-      void set(const Signature &sig, T *object,
-               typename MethodCallback<T>::member_t member) {
-        SmartPointer<Callback> cb = new MethodCallback<T>(sig, object, member);
-        callbacks.push_back(cb);
-        set(sig.getName(), *cb);
-      }
-
-      template <class T>
-      void set(const Signature &sig, T *object,
-               typename VoidMethodCallback<T>::member_t member) {
-        SmartPointer<Callback> cb =
-          new VoidMethodCallback<T>(sig, object, member);
-        callbacks.push_back(cb);
-        set(sig.getName(), *cb);
-      }
-
-      v8::Handle<v8::ObjectTemplate> getTemplate() const {return tmpl;}
+      virtual SmartPointer<Factory> getFactory() = 0;
+      virtual SmartPointer<Scope> enterScope() = 0;
+      virtual SmartPointer<Scope> newScope() = 0;
+      virtual void interrupt() = 0;
     };
   }
 }
 
-#endif // CB_JS_OBJECT_TEMPLATE_H
+#endif // CB_JS_IMPL_H

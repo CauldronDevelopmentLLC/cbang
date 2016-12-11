@@ -35,15 +35,29 @@
 #include "Certificate.h"
 
 #include <openssl/x509_vfy.h>
+#include <openssl/opensslv.h>
 
 using namespace cb;
 
 
-CertificateChain::CertificateChain(const CertificateChain &o) {
-  chain = sk_X509_dup(o.chain);
-  for (int i = 0; i < sk_X509_num(chain); i++)
-    CRYPTO_add(&(sk_X509_value(chain, i)->references), 1, CRYPTO_LOCK_EVP_PKEY);
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define X509_up_ref(c) CRYPTO_add(&(c)->references, 1, CRYPTO_LOCK_EVP_PKEY)
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
+#if OPENSSL_VERSION_NUMBER < 0x1000200fL
+X509_CHAIN *X509_chain_up_ref(X509_CHAIN *chain) {
+  X509_CHAIN *copy = sk_X509_dup(chain);
+
+  for (int i = 0; i < sk_X509_num(copy); i++)
+    X509_up_ref(sk_X509_value(copy, i));
+
+  return copy;
 }
+#endif // OPENSSL_VERSION_NUMBER < 0x1000200fL
+
+
+CertificateChain::CertificateChain(const CertificateChain &o) :
+  chain(X509_chain_up_ref(o.chain)) {}
 
 
 CertificateChain::CertificateChain(X509_CHAIN *chain) : chain(chain) {
@@ -59,15 +73,13 @@ CertificateChain::~CertificateChain() {
 CertificateChain &CertificateChain::operator=(const CertificateChain &o) {
   sk_X509_pop_free(chain, X509_free);
 
-  chain = sk_X509_dup(o.chain);
-  for (int i = 0; i < sk_X509_num(chain); i++)
-    CRYPTO_add(&(sk_X509_value(chain, i)->references), 1, CRYPTO_LOCK_EVP_PKEY);
+  chain = X509_chain_up_ref(o.chain);
 
   return *this;
 }
 
 
 void CertificateChain::add(Certificate &cert) {
-  CRYPTO_add(&(cert.getX509()->references), 1, CRYPTO_LOCK_EVP_PKEY);
+  X509_up_ref(cert.getX509());
   sk_X509_push(chain, cert.getX509());
 }

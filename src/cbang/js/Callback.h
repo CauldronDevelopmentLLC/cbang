@@ -33,35 +33,32 @@
 #ifndef CB_JS_CALLBACK_H
 #define CB_JS_CALLBACK_H
 
-#include "Value.h"
-#include "Arguments.h"
 #include "Signature.h"
-
-#include "V8.h"
+#include "Value.h"
 
 
 namespace cb {
   namespace js {
+    class Sink;
+    class Factory;
+
     class Callback {
+    protected:
       Signature sig;
-      v8::Handle<v8::Value> data;
-      v8::Handle<v8::FunctionTemplate> function;
+      SmartPointer<Factory> factory;
 
     public:
-      Callback(const Signature &sig);
+      Callback(const Signature &sig, const SmartPointer<Factory> &factory) :
+        sig(sig), factory(factory) {}
       virtual ~Callback() {}
 
-      const Signature getSignature() const {return sig;}
+      const std::string &getName() const {return sig.getName();}
+      const Signature &getSignature() const {return sig;}
+      const SmartPointer<Factory> &getFactory() const {return factory;}
 
-      virtual Value operator()(const Arguments &args) = 0;
-
-      v8::Handle<v8::FunctionTemplate> getTemplate() const {return function;}
-
-    protected:
-      static void raise(const v8::FunctionCallbackInfo<v8::Value> &info,
-                        const std::string &msg);
-      static void callback(const v8::FunctionCallbackInfo<v8::Value> &info);
-   };
+      virtual SmartPointer<Value> call(Callback &cb, Value &args) = 0;
+      SmartPointer<Value> call(Value &args);
+    };
   }
 }
 

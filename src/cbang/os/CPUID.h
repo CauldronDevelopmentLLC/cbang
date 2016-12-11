@@ -37,6 +37,7 @@
 
 #include <cbang/enum/CPUFeature.h>
 #include <cbang/enum/CPUExtendedFeature.h>
+#include <cbang/enum/CPUFeature80000001.h>
 
 #include <string>
 
@@ -65,8 +66,10 @@ namespace cb {
     uint32_t getCPUSignature();
     uint64_t getCPUFeatures();
     uint64_t getCPUExtendedFeatures();
+    uint64_t getCPUFeatures80000001();
     bool cpuHasFeature(CPUFeature feature);
     bool cpuHasExtendedFeature(CPUExtendedFeature feature);
+    bool cpuHasFeature80000001(CPUFeature80000001 feature);
     unsigned getCPUFamily();
     unsigned getCPUModel();
     unsigned getCPUStepping();

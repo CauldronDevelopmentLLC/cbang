@@ -30,17 +30,31 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_V8_H
-#define CB_JS_V8_H
+#ifndef CB_JSON_UNDEFINED_H
+#define CB_JSON_UNDEFINED_H
 
-// Override v8stdint.h
-#include <cbang/StdTypes.h>
-#include <stddef.h>
-#include <stdio.h>
-#define V8STDINT_H_
+#include "Value.h"
 
-#define V8_ENABLE_CHECKS
 
-#include <v8.h>
+namespace cb {
+  namespace JSON {
+    class Undefined : public Value {
+      static Undefined undefined;
 
-#endif // CB_JS_V8_H
+      Undefined() {}
+      ~Undefined() {}
+
+    public:
+      inline static Undefined &instance() {return undefined;}
+      inline static ValuePtr instancePtr() {return ValuePtr::Phony(&undefined);}
+
+      // From Value
+      ValueType getType() const {return JSON_UNDEFINED;}
+      ValuePtr copy(bool deep = false) const {return instancePtr();}
+      bool canWrite(Sink &sink) const {return false;}
+      void write(Sink &sink) const {}
+    };
+  }
+}
+
+#endif // CB_JSON_UNDEFINED_H

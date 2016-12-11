@@ -69,11 +69,12 @@ for lib in 'zlib bzip2 sqlite3 expat boost libevent re2'.split():
 subdirs = [
     '', 'script', 'xml', 'util', 'debug', 'config', 'pyon', 'os', 'http',
     'macro', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
-    'socket', 'tar', 'io', 'geom', 'parse', 'task', 'json',
-    'jsapi', 'db', 'auth']
+    'socket', 'tar', 'io', 'geom', 'parse', 'task', 'json', 'jsapi', 'db',
+    'auth', 'js']
 
 if env.CBConfigEnabled('openssl'): subdirs.append('openssl')
-if env.CBConfigEnabled('v8'): subdirs.append('js')
+if env.CBConfigEnabled('chakra'): subdirs.append('chakra')
+if env.CBConfigEnabled('v8'): subdirs.append('v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
 if env.CBConfigEnabled('libevent') or lib not in disable_local:
     subdirs.append('event')
@@ -90,7 +91,7 @@ conf.Finish()
 
 # Build in 'build'
 import re
-VariantDir('build', 'src')
+VariantDir('build', 'src', duplicate = False)
 src = map(lambda path: re.sub(r'^src/', 'build/', str(path)), src)
 
 

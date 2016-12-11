@@ -30,46 +30,20 @@
 
 \******************************************************************************/
 
-#include "ObjectTemplate.h"
+#ifndef CB_CHAKRA_VALUE_REF_H
+#define CB_CHAKRA_VALUE_REF_H
 
-using namespace std;
-using namespace cb::js;
-
-
-ObjectTemplate::ObjectTemplate() :
-  tmpl(v8::ObjectTemplate::New(v8::Isolate::GetCurrent())) {}
+#include "Value.h"
 
 
-Value ObjectTemplate::create() const {
-  return v8::Handle<v8::Value>(tmpl->NewInstance());
+namespace cb {
+  namespace chakra {
+    class ValueRef : public Value {
+    public:
+      ValueRef(const Value &value);
+      ~ValueRef();
+    };
+  }
 }
 
-
-void ObjectTemplate::set(const string &name, const Value &value) {
-  tmpl->Set(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name.c_str(),
-                                    v8::String::kInternalizedString,
-                                    name.length()), value.getV8Value());
-}
-
-
-void ObjectTemplate::set(const string &name, const ObjectTemplate &tmpl) {
-  this->tmpl->Set(v8::String::NewFromUtf8
-                  (v8::Isolate::GetCurrent(), name.c_str(),
-                   v8::String::kInternalizedString, name.length()),
-                  tmpl.getTemplate());
-}
-
-
-void ObjectTemplate::set(const string &name, const Callback &callback) {
-  tmpl->Set(v8::String::NewFromUtf8
-            (v8::Isolate::GetCurrent(), name.c_str(),
-             v8::String::kInternalizedString, name.length()),
-            callback.getTemplate());
-}
-
-
-void ObjectTemplate::set(const Signature &sig, FunctionCallback::func_t func) {
-  SmartPointer<Callback> cb = new FunctionCallback(sig, func);
-  callbacks.push_back(cb);
-  set(sig.getName(), *cb);
-}
+#endif // CB_CHAKRA_VALUE_REF_H

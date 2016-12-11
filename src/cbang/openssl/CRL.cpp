@@ -45,11 +45,17 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/opensslv.h>
 
 #include <sstream>
 
 using namespace cb;
 using namespace std;
+
+
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define X509_EXTENSION_get_data(e) e->value
+#endif /* OPENSSL_VERSION_NUMBER < 0x1010000fL */
 
 
 CRL::CRL(X509_CRL *crl) : crl(crl) {
@@ -140,7 +146,7 @@ string CRL::getExtension(const string &name) {
   BOStream bio(stream);
 
   if (!X509V3_EXT_print(bio.getBIO(), ext, 0, 0))
-    M_ASN1_OCTET_STRING_print(bio.getBIO(), ext->value);
+    ASN1_STRING_print(bio.getBIO(), X509_EXTENSION_get_data(ext));
 
   return stream.str();
 }

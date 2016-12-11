@@ -30,22 +30,59 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_CONTEXT_SCOPE_H
-#define CB_JS_CONTEXT_SCOPE_H
+#include "Value.h"
 
-#include "Context.h"
+#include <cbang/json/Writer.h>
+
+using namespace cb::js;
+using namespace cb;
+using namespace std;
 
 
-namespace cb {
-  namespace js {
-    class ContextScope {
-      Context &context;
+void Value::copyProperties(const Value &value) {
+  SmartPointer<Value> props = value.getOwnPropertyNames();
+  unsigned length = props->length();
 
-    public:
-      ContextScope(Context &context);
-      ~ContextScope();
-    };
+  for (unsigned i = 0; i < length; i++) {
+    string key = props->getString(i);
+    set(key, value.get(key));
   }
 }
 
-#endif // CB_JS_CONTEXT_SCOPE_H
+
+void Value::write(JSON::Sink &sink) const {
+  if (isObject()) {
+    sink.beginDict();
+
+    SmartPointer<Value> props = getOwnPropertyNames();
+    for (unsigned i = 0; i < props->length(); i++) {
+      string key = props->get(i)->toString();
+      sink.beginInsert(key);
+      get(key)->write(sink);
+    }
+
+    sink.endDict();
+
+  } else if (isArray()) {
+    sink.beginList();
+
+    for (unsigned i = 0; i < length(); i++) {
+      sink.beginAppend();
+      get(i)->write(sink);
+    }
+
+    sink.endList();
+
+  } else if (isNull()) sink.writeNull();
+  else if (isNumber()) sink.write(toNumber());
+  else if (isBoolean()) sink.writeBoolean(toBoolean());
+  else if (isString()) sink.write(toString());
+  else if (isFunction()) sink.write("<function>");
+  else if (isUndefined()) sink.write("<undefined>");
+}
+
+
+void Value::write(ostream &stream) const {
+  JSON::Writer writer(stream, 2);
+  write(writer);
+}

@@ -30,44 +30,46 @@
 
 \******************************************************************************/
 
-#include "Script.h"
-#include "ContextScope.h"
+#include "Context.h"
 
-#include <cbang/log/Logger.h>
-
+using namespace cb::gv8;
 using namespace std;
-using namespace cb;
-using namespace cb::js;
 
 
-Script::Script(Context &context, const string &s, const string &filename) :
-  context(context) {
-  load(s, filename);
-}
+Context::Context() : context(v8::Context::New(0, v8::ObjectTemplate::New())) {}
 
 
-Script::Script(Context &context, const InputSource &source) : context(context) {
-  load(source.toString(), source.getName());
-}
+Value Context::eval(const InputSource &src) {
+  v8::HandleScope handleScope;
+  Context::Scope ctxScope(*this);
 
+  // Get script origin
+  v8::Local<v8::String> origin;
+  string filename = src.getName();
+  if (!filename.empty())
+    origin = v8::String::New(filename.c_str(), filename.length());
 
-Script::~Script() {}
+  // Get script source
+  string s = src.toString();
+  v8::Local<v8::String> source = v8::String::New(s.c_str(), s.length());
 
-
-Value Script::eval() {
-  v8::EscapableHandleScope handleScope(v8::Isolate::GetCurrent());
-  ContextScope contextScope(context);
-
+  // Compile
   v8::TryCatch tryCatch;
+  v8::Handle<v8::Script> script = v8::Script::Compile(source, origin);
+  if (tryCatch.HasCaught()) translateException(tryCatch, false);
+
+  // Execute
   v8::Handle<v8::Value> ret = script->Run();
   if (tryCatch.HasCaught()) translateException(tryCatch, true);
 
-  return handleScope.Escape(ret);
+  // Return result
+  return handleScope.Close(ret);
 }
 
 
-void Script::translateException(const v8::TryCatch &tryCatch, bool useStack) {
-  v8::HandleScope handleScope(v8::Isolate::GetCurrent());
+void Context::translateException(const v8::TryCatch &tryCatch,
+                                 bool useStack) {
+  v8::HandleScope handleScope;
 
   if (useStack && !tryCatch.StackTrace().IsEmpty())
     throw Exception(Value(tryCatch.StackTrace()).toString());
@@ -84,21 +86,4 @@ void Script::translateException(const v8::TryCatch &tryCatch, bool useStack) {
   int col = message->GetStartColumn();
 
   throw Exception(msg, FileLocation(filename, line, col));
-}
-
-
-void Script::load(const string &s, const string &filename) {
-  v8::EscapableHandleScope handleScope(v8::Isolate::GetCurrent());
-  v8::Local<v8::String> source = Value::makeString(s);
-  v8::Local<v8::String> origin;
-
-  if (!filename.empty()) origin = Value::makeString(filename);
-
-  ContextScope contextScope(context);
-
-  v8::TryCatch tryCatch;
-  script = v8::Script::Compile(source, origin);
-  if (tryCatch.HasCaught()) translateException(tryCatch, false);
-
-  script = handleScope.Escape(script);
 }

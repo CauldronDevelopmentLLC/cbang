@@ -38,12 +38,18 @@
 #include "Socket.h"
 
 #include <openssl/bio.h>
+#include <openssl/opensslv.h>
 
 using namespace cb;
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define BIO_set_flags(b, val) b->flags |= val
+#define BIO_clear_flags(b, val) b->flags &= ~(val)
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
 
 BIOSocketImpl::BIOSocketImpl(Socket &socket) : socket(socket), ret(0) {
-  bio->flags |= BIO_FLAGS_WRITE | BIO_FLAGS_READ;
+  BIO_set_flags(bio, BIO_FLAGS_WRITE | BIO_FLAGS_READ);
 }
 
 
@@ -54,14 +60,15 @@ int BIOSocketImpl::read(char *buf, int length) {
       exception = 0;
       ret = socket.read(buf, length);
 
-      if (!ret && !socket.getBlocking()) bio->flags |= BIO_FLAGS_SHOULD_RETRY;
-      else bio->flags &= ~BIO_FLAGS_SHOULD_RETRY;
+      if (!ret && !socket.getBlocking())
+        BIO_set_flags(bio, BIO_FLAGS_SHOULD_RETRY);
+      else BIO_clear_flags(bio, BIO_FLAGS_SHOULD_RETRY);
 
       return ret ? ret : -1;
 
+    } catch (const Socket::EndOfStream &) {
     } catch (const Exception &e) {
       exception = new Exception(e);
-      return -1;
     }
   } CBANG_CATCH_ERROR;
 
@@ -76,8 +83,9 @@ int BIOSocketImpl::write(const char *buf, int length) {
       exception = 0;
       ret = socket.write(buf, length);
 
-      if (!ret && !socket.getBlocking()) bio->flags |= BIO_FLAGS_SHOULD_RETRY;
-      else bio->flags &= ~BIO_FLAGS_SHOULD_RETRY;
+      if (!ret && !socket.getBlocking())
+        BIO_set_flags(bio, BIO_FLAGS_SHOULD_RETRY);
+      else BIO_clear_flags(bio, BIO_FLAGS_SHOULD_RETRY);
 
       return ret ? ret : -1;
 

@@ -53,6 +53,7 @@ namespace cb {
     public:
       NullSink() : canWrite(true) {}
 
+      unsigned getDepth() const;
       bool inList() const;
       bool inDict() const;
       void end();
@@ -65,6 +66,7 @@ namespace cb {
       void writeBoolean(bool value);
       void write(double value);
       void write(const std::string &value);
+      using Sink::write;
       void beginList(bool simple = false);
       void beginAppend();
       void endList();

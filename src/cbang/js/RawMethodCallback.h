@@ -30,44 +30,32 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_ISOLATE_H
-#define CB_JS_ISOLATE_H
+#pragma once
 
-#include <cbang/SmartPointer.h>
+#include "Callback.h"
 
-
-namespace v8 {class Isolate;}
 
 namespace cb {
   namespace js {
-    class Isolate {
-      v8::Isolate *isolate;
-      bool interrupted;
+    template <class T>
+    class RawMethodCallback : public Callback {
+    public:
+      typedef SmartPointer<Value> (T::*member_t)(Callback &cb, Value &args);
+
+    protected:
+      T *object;
+      member_t member;
 
     public:
-      class Scope {
-        class Private;
-        Private *pri;
+      RawMethodCallback(const Signature &sig,
+                        const SmartPointer<Factory> &factory, T *object,
+                        member_t member) :
+        Callback(sig, factory), object(object), member(member) {}
 
-      public:
-        Scope(Isolate &iso);
-        ~Scope();
-      };
-
-      Isolate();
-      ~Isolate();
-
-      v8::Isolate *getIsolate() {return isolate;}
-      bool wasInterrupted() const {return interrupted;}
-      void interrupt();
-
-      typedef SmartPointer<Scope> ScopePtr;
-      ScopePtr getScope() {return new Scope(*this);}
-
-      static Isolate *current();
-      static bool shouldQuit();
+      // From Callback
+      SmartPointer<Value> call(Callback &cb, Value &args) {
+        return (*object.*member)(cb, args);
+      }
     };
   }
 }
-
-#endif // CB_JS_ISOLATE_H

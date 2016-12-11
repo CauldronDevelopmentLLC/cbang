@@ -46,6 +46,7 @@
 #endif
 
 #include <iostream>
+#include <string.h>
 
 // This avoids a conflict with OCSP_RESPONSE in wincrypt.h
 #ifdef OCSP_RESPONSE
@@ -62,6 +63,7 @@
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <openssl/opensslv.h>
 
 
 using namespace std;
@@ -346,7 +348,9 @@ void cb::SSL::deinit() {
   CRYPTO_set_id_callback(0);
   CRYPTO_set_locking_callback(0);
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   ERR_remove_state(0);
+#endif
   ERR_free_strings();
   EVP_cleanup();
   CRYPTO_cleanup_all_ex_data();

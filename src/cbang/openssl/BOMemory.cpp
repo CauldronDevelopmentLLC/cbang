@@ -35,13 +35,19 @@
 #include <string.h>
 
 #include <openssl/bio.h>
+#include <openssl/opensslv.h>
 
 using namespace cb;
 
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define BIO_set_flags(b, val) b->flags |= val
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
+
 BOMemory::BOMemory(char *data, uint64_t length) :
   data(data), length(length), writePos(0) {
-  bio->flags |= BIO_FLAGS_WRITE;
+  BIO_set_flags(bio, BIO_FLAGS_WRITE);
 }
 
 

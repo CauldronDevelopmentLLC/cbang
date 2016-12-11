@@ -30,42 +30,44 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_JS_JAVASCRIPT_H
-#define CBANG_JS_JAVASCRIPT_H
+#ifndef CB_CHAKRA_JAVASCRIPT_H
+#define CB_CHAKRA_JAVASCRIPT_H
 
-#include "Isolate.h"
-#include "Arguments.h"
-#include "Callback.h"
-#include "Context.h"
-#include "ContextScope.h"
-#include "ObjectTemplate.h"
-#include "FunctionCallback.h"
-#include "MethodCallback.h"
-#include "Scope.h"
-#include "Script.h"
-#include "Value.h"
+#include "PathResolver.h"
+#include "ConsoleModule.h"
+#include "StdModule.h"
+#include "Impl.h"
 
-#include <cbang/SmartPointer.h>
+#include <cbang/io/InputSource.h>
 
 
 namespace cb {
   namespace js {
-    class Javascript {
-      static Javascript *singleton;
+    class Javascript : public PathResolver {
+      SmartPointer<Impl> impl;
 
-      SmartPointer<v8::Platform> platform;
-      SmartPointer<Isolate> isolate;
-      SmartPointer<Isolate::Scope> scope;
+      StdModule stdMod;
+      ConsoleModule consoleMod;
 
-      Javascript();
-      ~Javascript();
+      typedef std::map<std::string, SmartPointer<Module> > modules_t;
+      modules_t modules;
+
+      SmartPointer<Value> nativeProps;
+
     public:
+      Javascript(const std::string &implName = std::string());
 
-      static void init(int *argc = 0, char *argv[] = 0);
-      static void deinit();
-      static void terminate();
+      SmartPointer<js::Factory> getFactory();
+      void define(NativeModule &mod);
+      void import(const std::string &module,
+                  const std::string &as = std::string());
+      SmartPointer<js::Value> eval(const InputSource &source);
+      void interrupt();
+
+      // Callbacks
+      SmartPointer<Value> require(Callback &cb, Value &args);
     };
   }
 }
 
-#endif // CBANG_JS_JAVASCRIPT_H
+#endif // CB_CHAKRA_JAVASCRIPT_H

@@ -43,6 +43,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+#include <openssl/opensslv.h>
 
 #include <sstream>
 
@@ -50,8 +51,16 @@ using namespace cb;
 using namespace std;
 
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#define X509_up_ref(CERT) \
+  CRYPTO_add(&(CERT)->references, 1, CRYPTO_LOCK_EVP_PKEY)
+#define X509_EXTENSION_get_data(e) (e)->value
+#define ASN1_STRING_get0_data(e) M_ASN1_STRING_data(e)
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
+
 Certificate::Certificate(const Certificate &o) : cert(o.cert) {
-  CRYPTO_add(&(cert->references), 1, CRYPTO_LOCK_EVP_PKEY);
+  X509_up_ref(cert);
 }
 
 
@@ -79,7 +88,7 @@ Certificate::~Certificate() {
 Certificate &Certificate::operator=(const Certificate &o) {
   if (cert) X509_free(cert);
   cert = o.cert;
-  CRYPTO_add(&(cert->references), 1, CRYPTO_LOCK_EVP_PKEY);
+  X509_up_ref(cert);
   return *this;
 }
 
@@ -191,7 +200,7 @@ string Certificate::getNameEntry(const string &name) const {
     int nid = OBJ_obj2nid(obj);
 
     if (OBJ_nid2sn(nid) == name)
-      return (char *)M_ASN1_STRING_data(X509_NAME_ENTRY_get_data(entry));
+      return (char *)ASN1_STRING_get0_data(X509_NAME_ENTRY_get_data(entry));
   }
 
   THROWS("Name entry '" << name << "' not found");
@@ -212,7 +221,7 @@ string Certificate::getExtension(const string &name) {
   BOStream bio(stream);
 
   if (!X509V3_EXT_print(bio.getBIO(), ext, 0, 0))
-    M_ASN1_OCTET_STRING_print(bio.getBIO(), ext->value);
+    ASN1_STRING_print(bio.getBIO(), X509_EXTENSION_get_data(ext));
 
   return stream.str();
 }
@@ -240,11 +249,6 @@ void Certificate::addExtensionAlias(const string &alias, const string &name) {
   if (!X509V3_EXT_add_alias(SSL::findObject(alias), SSL::findObject(name)))
     THROWS("Failed to alias extension '" << alias << "' to '" << name
            << "': " << SSL::getErrorStr());
-}
-
-
-bool Certificate::hasAuthorityKeyIdentifer() const {
-  return cert->akid;
 }
 
 

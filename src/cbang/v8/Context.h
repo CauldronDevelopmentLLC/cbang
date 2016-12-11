@@ -30,29 +30,51 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_FUNCTION_CALLBACK_H
-#define CB_JS_FUNCTION_CALLBACK_H
+#pragma once
 
-#include "Callback.h"
+#include "Value.h"
+
+#include <cbang/js/Scope.h>
+
+#include <cbang/io/InputSource.h>
 
 
 namespace cb {
-  namespace js {
-    class FunctionCallback : public Callback {
-    public:
-      typedef Value (*func_t)(const Arguments &args);
-
-    protected:
-      func_t func;
+  namespace gv8 {
+    class Context {
+      v8::Handle<v8::Context> context;
 
     public:
-      FunctionCallback(const Signature &sig, func_t func) :
-        Callback(sig), func(func) {}
+      class Scope : public js::Scope {
+        SmartPointer<Context> ctx;
 
-      // From Callback
-      Value operator()(const Arguments &args) {return func(args);}
+      public:
+        Scope(Context &ctx) :
+        ctx(SmartPointer<Context>::Phony(&ctx)) {ctx.enter();}
+        Scope(const SmartPointer<Context> &ctx) : ctx(ctx) {ctx->enter();}
+        ~Scope() {ctx->exit();}
+
+        // From js::Scope
+        SmartPointer<js::Value> getGlobalObject() {
+          return new Value(ctx->getGlobal());
+        }
+
+        SmartPointer<js::Value> eval(const InputSource &source) {
+          return new Value(ctx->eval(source));
+        }
+      };
+
+      Context();
+
+      Value getGlobal() {return v8::Handle<v8::Value>(context->Global());}
+
+      void enter() {context->Enter();}
+      void exit() {context->Exit();}
+
+      Value eval(const InputSource &source);
+
+      static void translateException(const v8::TryCatch &tryCatch,
+                                     bool useStack);
     };
   }
 }
-
-#endif // CB_JS_FUNCTION_CALLBACK_H

@@ -30,56 +30,34 @@
 
 \******************************************************************************/
 
-#include "Isolate.h"
+#pragma once
 
-#include "V8.h"
+#include "Value.h"
 
-using namespace cb::js;
+#include <cbang/js/Factory.h>
 
 
 namespace cb {
-  namespace js {
-    class Isolate::Scope::Private {
-      v8::Locker locker;
-      v8::Isolate::Scope isolateScope;
-      v8::HandleScope handleScope;
+  namespace gv8 {
+    class Factory : public js::Factory {
+      Value trueValue;
+      Value falseValue;
+      Value undefinedValue;
+      Value nullValue;
 
     public:
-      Private(v8::Isolate *isolate) :
-        locker(isolate), isolateScope(isolate), handleScope(isolate) {}
+      Factory();
+
+      // From js::Factory
+      SmartPointer<js::Value> create(const std::string &value);
+      SmartPointer<js::Value> create(double value);
+      SmartPointer<js::Value> create(int32_t value);
+      SmartPointer<js::Value> create(const js::Function &func);
+      SmartPointer<js::Value> createArray(unsigned size);
+      SmartPointer<js::Value> createObject();
+      SmartPointer<js::Value> createBoolean(bool value);
+      SmartPointer<js::Value> createUndefined();
+      SmartPointer<js::Value> createNull();
     };
   }
-}
-
-
-Isolate::Scope::Scope(Isolate &iso) : pri(new Private(iso.getIsolate())) {}
-Isolate::Scope::~Scope() {delete pri;}
-
-
-Isolate::Isolate() : interrupted(false) {
-  v8::Isolate::CreateParams params;
-  params.array_buffer_allocator =
-    v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-  isolate = v8::Isolate::New(params);
-  isolate->SetData(0, this);
-}
-
-
-Isolate::~Isolate() {isolate->Dispose();}
-
-
-void Isolate::interrupt() {
-  interrupted = true;
-  v8::V8::TerminateExecution(isolate);
-}
-
-
-Isolate *Isolate::current() {
-  return (Isolate *)v8::Isolate::GetCurrent()->GetData(0);
-}
-
-
-bool Isolate::shouldQuit() {
-  Isolate *iso = current();
-  return iso && iso->wasInterrupted();
 }

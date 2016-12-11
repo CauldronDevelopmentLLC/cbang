@@ -30,34 +30,57 @@
 
 \******************************************************************************/
 
-#ifndef CB_JS_VOID_METHOD_CALLBACK_H
-#define CB_JS_VOID_METHOD_CALLBACK_H
+#ifndef CB_CHAKRA_CONTEXT_H
+#define CB_CHAKRA_CONTEXT_H
 
-#include "Callback.h"
+#include "Value.h"
+
+#include <cbang/js/Scope.h>
+
+#include <ChakraCore.h>
 
 
 namespace cb {
-  namespace js {
-    template <class T>
-    class VoidMethodCallback : public Callback {
-    public:
-      typedef void (T::*member_t)(const Arguments &args);
+  namespace chakra {
+    class JSImpl;
 
-    protected:
-      T *object;
-      member_t member;
+    class Context {
+      JSImpl &impl;
+
+      JsContextRef context;
 
     public:
-      VoidMethodCallback(const Signature &sig, T *object, member_t member) :
-        Callback(sig), object(object), member(member) {}
+      class Scope : public js::Scope {
+        SmartPointer<Context> ctx;
 
-      // From Callback
-      Value operator()(const Arguments &args) {
-        (*object.*member)(args);
-        return Value(); // Undefined
-      }
+      public:
+        Scope(Context &ctx) :
+        ctx(SmartPointer<Context>::Phony(&ctx)) {ctx.enter();}
+        Scope(const SmartPointer<Context> &ctx) : ctx(ctx) {ctx->enter();}
+        ~Scope() {ctx->leave();}
+
+        // From js::Scope
+        SmartPointer<js::Value> getGlobalObject() {
+          return new Value(Value::getGlobal());
+        }
+
+        SmartPointer<js::Value> eval(const InputSource &source) {
+          return new Value(ctx->eval(source));
+        }
+      };
+
+      Context(JSImpl &impl);
+
+      static Context &current();
+      JSImpl &getImpl() {return impl;}
+
+      void enter();
+      void leave();
+
+      Value eval(const std::string &path, const std::string &code);
+      Value eval(const InputSource &source);
     };
   }
 }
 
-#endif // CB_JS_VOID_METHOD_CALLBACK_H
+#endif // CB_CHAKRA_CONTEXT_H

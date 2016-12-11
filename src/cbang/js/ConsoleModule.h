@@ -33,19 +33,23 @@
 #ifndef CB_JS_CONSOLE_MODULE_H
 #define CB_JS_CONSOLE_MODULE_H
 
-#include "Module.h"
+#include "NativeModule.h"
 
 
 namespace cb {
   namespace js {
-    class ConsoleModule : public Module {
+    class ConsoleModule : public NativeModule {
     public:
-      ConsoleModule();
+      ConsoleModule() : NativeModule("console") {}
 
-      virtual void log(const Arguments &args);
-      virtual void debug(const Arguments &args);
-      virtual void warn(const Arguments &args);
-      virtual void error(const Arguments &args);
+      // From NativeModule
+      void define(Sink &exports);
+
+      // Callbacks
+      void log(const Value &args, Sink &sink);
+      void debug(const Value &args, Sink &sink);
+      void warn(const Value &args, Sink &sink);
+      void error(const Value &args, Sink &sink);
     };
   }
 }
