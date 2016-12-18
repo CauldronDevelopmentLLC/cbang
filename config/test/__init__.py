@@ -6,8 +6,7 @@ def run_tests(env):
     import subprocess
     import sys
 
-    subprocess.call(shlex.split(env.get('TEST_COMMAND')))
-    sys.exit(0)
+    sys.exit(subprocess.call(shlex.split(env.get('TEST_COMMAND'))))
 
 
 def generate(env):
@@ -20,7 +19,7 @@ def generate(env):
 
     env.CBAddVariables(('TEST_COMMAND', '`test` target command line', cmd))
 
-    if 'test' in COMMAND_LINE_TARGETS: env.CBAddConfigFinishCB(run_tests)
+    if 'test' in COMMAND_LINE_TARGETS: env.CBAddConfigureCB(run_tests)
 
 
 def exists(): return 1
