@@ -82,7 +82,7 @@ def _GetPackageType(env):
 
         if os.path.exists('/usr/bin/dpkg'): return 'deb'
         if os.path.exists('/usr/bin/rpmbuild'): return 'rpm'
-
+        if os.path.exists('/usr/bin/pacman'): return 'pkg'
         raise Exception, 'Unsupported POSIX distribution ' + dist
 
     raise Exception, 'Unsupported package platform %s' % env['PLATFORM']
