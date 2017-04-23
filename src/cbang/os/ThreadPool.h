@@ -41,6 +41,7 @@
 
 
 namespace cb {
+  /// Multiple work threads execute a single run() function.
   class ThreadPool {
     typedef std::vector<SmartPointer<Thread> > pool_t;
     pool_t pool;
@@ -49,22 +50,25 @@ namespace cb {
     ThreadPool(unsigned size);
     virtual ~ThreadPool() {}
 
-    void start();
-    void stop();
-    void join();
-    void wait();
+    virtual void start();
+    virtual void stop();
+    virtual void join();
+    virtual void wait();
 
     void getStates(std::vector<Thread::state_t> &states) const;
     void getIDs(std::vector<unsigned> &ids) const;
     void getExitStatuses(std::vector<int> &statuses) const;
 
-    void cancel();
-    void kill(int signal);
+    virtual void cancel();
+    virtual void kill(int signal);
 
   protected:
     /**
      * This function should be overriden by sub classes and will be called
-     * by the running thread.
+     * concurrently by threads running in the pool.
+     *
+     * cb::Thread::current().shouldShutdown() should called by any long-running
+     * process to check for requested shutdown.
      */
     virtual void run() = 0;
 
