@@ -48,27 +48,6 @@ namespace cb {class SSLContext {};}
 using namespace std;
 using namespace cb::Event;
 
-namespace {
-  class MarkRequestSecure : public HTTPHandler {
-    WebServer &server;
-
-  public:
-    MarkRequestSecure(WebServer &server) : server(server) {}
-
-
-    // From HTTPHandler
-    Request *createRequest(evhttp_request *req) {
-      return server.createRequest(req);
-    }
-
-
-    bool operator()(Request &req) {
-      req.setSecure(true);
-      return server(req);
-    }
-  };
-}
-
 
 WebServer::WebServer(cb::Options &options, const Base &base,
                      const cb::SmartPointer<HTTPHandlerFactory> &factory) :
@@ -144,7 +123,7 @@ void WebServer::init() {
       else LOG_WARNING("Certificate Relocation List not found " << crlFile);
     }
 
-    https->setGeneralCallback(new MarkRequestSecure(*this));
+    https->setGeneralCallback(SmartPointer<HTTPHandler>::Phony(this));
   }
 #endif // HAVE_OPENSSL
 

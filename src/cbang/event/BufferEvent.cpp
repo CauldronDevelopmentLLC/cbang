@@ -95,6 +95,16 @@ BufferEvent::~BufferEvent() {
 }
 
 
+bool BufferEvent::hasSSL() const {return bufferevent_openssl_get_ssl(bev);}
+
+
+cb::SSL BufferEvent::getSSL() const {
+  struct ssl_st *ssl = bufferevent_openssl_get_ssl(bev);
+  if (!ssl) THROW("BufferEvent does not have SSL");
+  return cb::SSL(ssl);
+}
+
+
 void BufferEvent::logSSLErrors() {
   string errors = getSSLErrors();
   if (!errors.empty()) LOG_ERROR("SSL errors: " << errors);

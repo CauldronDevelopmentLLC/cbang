@@ -128,6 +128,13 @@ Connection::~Connection() {
 }
 
 
+BufferEvent Connection::getBufferEvent() const {
+  bufferevent *bev = evhttp_connection_get_bufferevent(con);
+  if (!bev) THROW("Connection does not have BufferEvent");
+  return BufferEvent(bev, false);
+}
+
+
 IPAddress Connection::getPeer() const {
   IPAddress peer;
 

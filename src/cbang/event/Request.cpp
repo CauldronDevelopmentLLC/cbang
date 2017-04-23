@@ -33,10 +33,12 @@
 #include "Request.h"
 #include "Buffer.h"
 #include "BufferDevice.h"
+#include "BufferEvent.h"
 #include "Headers.h"
 #include "Connection.h"
 
 #include <cbang/Exception.h>
+#include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 #include <cbang/http/Cookie.h>
 #include <cbang/json/JSON.h>
@@ -52,7 +54,7 @@ using namespace std;
 
 Request::Request(evhttp_request *req, bool deallocate) :
   req(req), deallocate(deallocate), id(0), user("anonymous"), incoming(false),
-  secure(false), finalized(false) {
+  finalized(false) {
   if (!req) THROW("Event request cannot be null");
 
   // Parse URI
@@ -75,8 +77,7 @@ Request::Request(evhttp_request *req, bool deallocate) :
 
 Request::Request(evhttp_request *req, const URI &uri, bool deallocate) :
   req(req), deallocate(deallocate), originalURI(uri), uri(uri),
-  clientIP(uri.getHost(), uri.getPort()), incoming(false), secure(false),
-  finalized(false) {
+  clientIP(uri.getHost(), uri.getPort()), incoming(false), finalized(false) {
   if (!req) THROW("Event request cannot be null");
 }
 
@@ -86,9 +87,27 @@ Request::~Request() {
 }
 
 
+bool Request::hasConnection() const {return evhttp_request_get_connection(req);}
+
+
+Connection Request::getConnection() const {
+  evhttp_connection *con = evhttp_request_get_connection(req);
+  if (!con) THROW("Request does not have Connection");
+  return Connection(con, false);
+}
+
+
 string Request::getLogPrefix() const {
   return String::printf("#%lld:", getID());
 }
+
+
+bool Request::isSecure() const {
+  return hasConnection() && getConnection().getBufferEvent().hasSSL();
+}
+
+
+SSL Request::getSSL() const {return getConnection().getBufferEvent().getSSL();}
 
 
 void Request::resetOutput() {

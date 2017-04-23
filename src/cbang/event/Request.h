@@ -53,10 +53,12 @@ struct evhttp_request;
 namespace cb {
   class URI;
   class IPAddress;
+  class SSL;
 
   namespace Event {
     class Buffer;
     class Headers;
+    class Connection;
 
     class Request : public RequestMethod, public HTTPStatus {
     protected:
@@ -69,7 +71,6 @@ namespace cb {
       IPAddress clientIP;
       std::string user;
       bool incoming;
-      bool secure;
       bool finalized;
 
       JSON::Dict args;
@@ -89,6 +90,9 @@ namespace cb {
       evhttp_request *getRequest() const {return req;}
       evhttp_request *adopt() {deallocate = false; return req;}
 
+      bool hasConnection() const;
+      Connection getConnection() const;
+
       uint64_t getID() const {return id;}
       void setID(uint64_t id) {this->id = id;}
       virtual std::string getLogPrefix() const;
@@ -98,8 +102,9 @@ namespace cb {
 
       void setIncoming(bool incoming) {this->incoming = incoming;}
       bool isIncoming() const {return incoming;}
-      bool isSecure() const {return secure;}
-      void setSecure(bool secure) {this->secure = secure;}
+
+      bool isSecure() const;
+      SSL getSSL() const;
 
       virtual void resetOutput();
 

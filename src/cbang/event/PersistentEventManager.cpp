@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,42 +30,33 @@
 
 \******************************************************************************/
 
-#ifndef CB_EVENT_BUFFER_EVENT_H
-#define CB_EVENT_BUFFER_EVENT_H
+#include "PersistentEventManager.h"
 
-#include <cbang/SmartPointer.h>
-
-#include <string>
-
-struct bufferevent;
+using namespace std;
+using namespace cb;
+using namespace cb::Event;
 
 
-namespace cb {
-  class SSLContext;
-  class SSL;
+SmartPointer<Event::Event>
+PersistentEventManager::addEvent(double t,
+                                 const SmartPointer<EventCallback> &cb) {
+  SmartPointer<Event> e = base.newPersistentEvent(cb);
 
-  namespace Event {
-    class Base;
+  e->add(t);
+  e->activate();
+  events.push_back(e);
 
-    class BufferEvent {
-      bufferevent *bev;
-      bool deallocate;
-
-    public:
-      BufferEvent(bufferevent *bev, bool deallocate);
-      BufferEvent(Base &base, const SmartPointer<SSLContext> &sslCtx = 0,
-                  const std::string &host = std::string());
-      ~BufferEvent();
-
-      bufferevent *getBufferEvent() const {return bev;}
-      bufferevent *adopt() {deallocate = false; return bev;}
-
-      bool hasSSL() const;
-      SSL getSSL() const;
-      void logSSLErrors();
-      std::string getSSLErrors();
-    };
-  }
+  return e;
 }
 
-#endif // CB_EVENT_BUFFER_EVENT_H
+
+SmartPointer<Event::Event>
+PersistentEventManager::addSignal(int signal,
+                                  const SmartPointer<EventCallback> &cb) {
+  SmartPointer<Event> e = base.newPersistentSignal(signal, cb);
+
+  e->add();
+  events.push_back(e);
+
+  return e;
+}

@@ -65,6 +65,8 @@ namespace cb {
       evhttp_connection *getConnection() const {return con;}
       evhttp_connection *adopt() {deallocate = false; return con;}
 
+      BufferEvent getBufferEvent() const;
+
       cb::IPAddress getPeer() const;
 
       void setMaxBodySize(unsigned size);
