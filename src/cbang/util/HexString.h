@@ -52,13 +52,8 @@ namespace cb {
     }
 
 
-    Array<uint8_t, SIZE> parse() const {
-      return parse(*this);
-    }
-
-    operator Array<uint8_t, SIZE> () const {
-      return parse(*this);
-    }
+    Array<uint8_t, SIZE> parse() const {return parse(*this);}
+    operator Array<uint8_t, SIZE> () const {return parse(*this);}
 
 
     inline static Array<uint8_t, SIZE> parse(const std::string &s) {
