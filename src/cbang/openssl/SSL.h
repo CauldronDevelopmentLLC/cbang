@@ -51,6 +51,7 @@ namespace cb {
     _SSL *ssl;
     bool renegotiateLimited;
     int handshakes;
+    bool deallocate;
 
     static bool initialized;
     static Mutex *locks;
@@ -62,6 +63,7 @@ namespace cb {
     } state;
 
   public:
+    SSL(_SSL *ssl, bool deallocate = false);
     SSL(SSL_CTX *ctx, BIO *bio = 0);
     ~SSL();
 

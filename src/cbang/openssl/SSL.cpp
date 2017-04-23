@@ -74,18 +74,25 @@ bool cb::SSL::initialized = false;
 Mutex *cb::SSL::locks = 0;
 
 
+cb::SSL::SSL(_SSL *ssl, bool deallocate) :
+  ssl(ssl), renegotiateLimited(false), handshakes(0), deallocate(deallocate),
+  state(PROCEED) {
+  init();
+}
+
+
 cb::SSL::SSL(SSL_CTX *ctx, BIO *bio) :
-  ssl(0), renegotiateLimited(false), handshakes(0), state(PROCEED) {
+  ssl(0), renegotiateLimited(false), handshakes(0), deallocate(true),
+  state(PROCEED) {
   init();
   ssl = SSL_new(ctx);
   if (!ssl) THROW("Failed to create new SSL");
   if (bio) setBIO(bio);
-  SSL_set_app_data(ssl, (char *)this);
 }
 
 
 cb::SSL::~SSL() {
-  if (ssl) {
+  if (ssl && deallocate) {
     SSL_free(ssl);
     ssl = 0;
   }
@@ -370,11 +377,17 @@ namespace {
   }
 }
 
+
 void cb::SSL::limitRenegotiation() {
   handshakes = 0;
 
   if (renegotiateLimited) return;
   renegotiateLimited = true;
+
+  void *ptr = SSL_get_app_data(ssl);
+  if (!ptr) SSL_set_app_data(ssl, (char *)this);
+  else if (ptr != this)
+    THROW("SSL app data already set.  Cannot renegotiate limit.");
 
   SSL_set_info_callback(ssl, ssl_info_callback);
 }
