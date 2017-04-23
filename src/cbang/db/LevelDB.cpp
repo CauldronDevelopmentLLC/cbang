@@ -209,9 +209,6 @@ LevelDB::LevelDB(const SmartPointer<Comparator> &comparator) {
 }
 
 
-LevelDB::LevelDB(const string &name) : LevelDBNS(name) {}
-
-
 LevelDB::LevelDB(const string &name,
                  const SmartPointer<Comparator> &comparator) :
   LevelDBNS(name) {

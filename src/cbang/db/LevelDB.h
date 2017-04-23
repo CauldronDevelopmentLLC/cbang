@@ -121,8 +121,10 @@ namespace cb {
       std::string key() const;
       std::string value() const;
 
-      void operator++() {next();}
+      Iterator &operator++() {next(); return *this;}
       void operator++(int) {next();}
+      Iterator &operator--() {prev(); return *this;}
+      void operator--(int) {prev();}
       bool operator==(const Iterator &it) const;
       bool operator!=(const Iterator &it) const {return !(*this == it);}
     };
@@ -149,13 +151,15 @@ namespace cb {
 
 
     LevelDB(const SmartPointer<Comparator> &comparator = 0);
-    LevelDB(const std::string &name);
     LevelDB(const std::string &name,
-            const SmartPointer<Comparator> &comparator);
+            const SmartPointer<Comparator> &comparator = 0);
 
     ~LevelDB();
 
     leveldb::DB &getDB() {return *db;}
+    const SmartPointer<leveldb::Comparator> &getComparator() const {
+      return comparator;
+    }
 
     LevelDB ns(const std::string &name);
 
