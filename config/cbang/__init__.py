@@ -23,7 +23,8 @@ def configure_deps(conf, local = True, with_openssl = True):
             env.CBDefine('HAVE_LEVELDB')
 
     if conf.CBCheckCHeader('mysql/mysql.h') and \
-            conf.CBCheckLib('mysqlclient') and \
+            (conf.CBCheckLib('mariadbclient') or
+             conf.CBCheckLib('mysqlclient')) and \
             conf.CBCheckFunc('mysql_real_connect_start'):
         env.CBDefine('HAVE_MARIADB')
         env.cb_enabled.add('mariadb')
