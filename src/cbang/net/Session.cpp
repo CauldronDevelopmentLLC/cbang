@@ -37,6 +37,12 @@
 using namespace cb;
 
 
+void Session::matchIP(const IPAddress &ip) const {
+  if (ip.getIP() != getIP().getIP())
+    THROWS("Session IP changed from " << getIP() << " to " << ip);
+}
+
+
 void Session::read(const JSON::Value &value) {
   creationTime = value.has("created") ?
     (uint64_t)Time::parse(value.getString("created")) : 0;

@@ -56,11 +56,11 @@ namespace cb {
     SessionManager(Options &options);
 
     const std::string &getSessionCookie() const {return sessionCookie;}
+    std::string generateID(const IPAddress &ip);
 
     virtual bool hasSession(const std::string &sid) const;
     virtual SmartPointer<Session> lookupSession(const std::string &sid) const;
-    virtual SmartPointer<Session> openSession(const std::string &user,
-                                              const IPAddress &ip);
+    virtual SmartPointer<Session> openSession(const IPAddress &ip);
     virtual void closeSession(const std::string &sid);
 
     virtual void cleanup();

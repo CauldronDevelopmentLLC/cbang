@@ -66,6 +66,22 @@ SessionManager::SessionManager(Options &options) :
 }
 
 
+string SessionManager::generateID(const IPAddress &ip) {
+#ifdef HAVE_OPENSSL
+  Digest digest("sha256");
+
+  digest.update(ip.toString());
+  digest.updateWith(Time::now());
+  digest.updateWith(Random::instance().rand<uint64_t>());
+
+  return digest.toHexString();
+#else
+
+  return SSTR("0x" << hex << Random::instance().rand<uint64_t>());
+#endif
+}
+
+
 bool SessionManager::hasSession(const string &sid) const {
   return sessions.find(sid) != sessions.end();
 }
@@ -81,23 +97,9 @@ SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
 }
 
 
-SmartPointer<Session> SessionManager::openSession(const string &user,
-                                                  const IPAddress &ip) {
+SmartPointer<Session> SessionManager::openSession(const IPAddress &ip) {
   // Generate new session ID
-  string sid;
-
-#ifdef HAVE_OPENSSL
-  Digest digest("sha256");
-
-  digest.update(ip.toString());
-  digest.updateWith(Time::now());
-  digest.updateWith(Random::instance().rand<uint64_t>());
-
-  sid = digest.toHexString();
-#else
-
-  sid = SSTR("0x" << hex << Random::instance().rand<uint64_t>());
-#endif
+  string sid = generateID(ip);
 
   // Create new session
   SmartPointer<Session> session = new Session(sid, ip);
@@ -132,9 +134,10 @@ void SessionManager::cleanup() {
 void SessionManager::read(const JSON::Value &value) {
   for (unsigned i = 0; i < value.size(); i++) {
     SmartPointer<Session> session = new Session(*value.get(i));
+    session->setID(value.keyAt(i));
 
     pair<sessions_t::iterator, bool> result =
-      sessions.insert(sessions_t::value_type(session->getID(), session));
+      sessions.insert(sessions_t::value_type(value.keyAt(i), session));
 
     if (!result.second) result.first->second = session;
   }
@@ -142,12 +145,12 @@ void SessionManager::read(const JSON::Value &value) {
 
 
 void SessionManager::write(JSON::Sink &sink) const {
-  sink.beginList();
+  sink.beginDict();
 
   for (iterator it = begin(); it != end(); it++) {
-    sink.beginAppend();
+    sink.beginInsert(it->first);
     it->second->write(sink);
   }
 
-  sink.endList();
+  sink.endDict();
 }

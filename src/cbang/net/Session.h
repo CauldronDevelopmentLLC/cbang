@@ -72,6 +72,8 @@ namespace cb {
     const IPAddress &getIP() const {return ip;}
     void setIP(const IPAddress &ip) {this->ip = ip;}
 
+    void matchIP(const IPAddress &ip) const;
+
     // From JSON::Serializable
     void read(const JSON::Value &value);
     void write(JSON::Sink &sink) const;
