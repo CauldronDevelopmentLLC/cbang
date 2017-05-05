@@ -49,7 +49,9 @@ cb::SmartPointer<Value> Serializable::toJSON() const {
 
 void Serializable::read(istream &stream) {
   Reader reader(stream);
-  read(*reader.parse());
+  ValuePtr value = reader.parse();
+  if (value.isNull()) THROW("Failed to parse JSON from stream");
+  read(*value);
 }
 
 
