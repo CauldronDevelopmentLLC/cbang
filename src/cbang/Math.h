@@ -61,6 +61,9 @@ namespace cb {
     inline static bool isinf(double x) {return std::isinf(x);}
     inline static bool isinf(float x) {return std::isinf(x);}
 #endif
+
+    inline static bool isfinite(double x) {return !(isnan(x) || isinf(x));}
+    inline static bool isfinite(float x) {return !(isnan(x) || isinf(x));}
   }
 }
 
