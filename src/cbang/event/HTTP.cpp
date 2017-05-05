@@ -37,6 +37,7 @@
 #include "HTTPStatus.h"
 #include "Headers.h"
 #include "Buffer.h"
+#include "BufferEvent.h"
 
 #include <cbang/Exception.h>
 #include <cbang/net/IPAddress.h>
@@ -141,9 +142,7 @@ HTTP::~HTTP() {
 }
 
 
-void HTTP::setMaxBodySize(unsigned size) {
-  evhttp_set_max_body_size(http, size);
-}
+void HTTP::setMaxBodySize(unsigned size) {evhttp_set_max_body_size(http, size);}
 
 
 void HTTP::setMaxHeadersSize(unsigned size) {
@@ -151,9 +150,7 @@ void HTTP::setMaxHeadersSize(unsigned size) {
 }
 
 
-void HTTP::setTimeout(int timeout) {
-  evhttp_set_timeout(http, timeout);
-}
+void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
 
 
 void HTTP::setCallback(const string &path,
@@ -195,12 +192,11 @@ bufferevent *HTTP::bevCB(event_base *base) {
 #endif
     bev = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
 
-  if (0 <= priority) {
-    bufferevent *ubev = bufferevent_get_underlying(bev);
-
-    if (bufferevent_priority_set(ubev ? ubev : bev, priority))
-      THROWS("Unable to set buffer event priority to " << priority);
-  }
+  if (0 <= priority) BufferEvent(bev, false).setPriority(priority);
 
   return bev;
+}
+
+
+void HTTP::requestCB(evhttp_request *req) {
 }

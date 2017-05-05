@@ -130,6 +130,10 @@ namespace cb {
         addHandler(methods, pattern, new JSONRecastHandler<T>(member));
       }
 
+      virtual bool dispatch(Request &req) {return operator()(req);}
+      virtual bool dispatch(Request &req, const JSON::ValuePtr &msg,
+                            JSON::Sink &sink);
+
       // From HTTPHandler
       bool operator()(Request &req);
     };

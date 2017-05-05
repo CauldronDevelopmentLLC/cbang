@@ -60,10 +60,16 @@ namespace cb {
       bufferevent *getBufferEvent() const {return bev;}
       bufferevent *adopt() {deallocate = false; return bev;}
 
+      void setPriority(int priority);
+
       bool hasSSL() const;
       SSL getSSL() const;
       void logSSLErrors();
       std::string getSSLErrors();
+
+      bool isWrapper() const;
+      BufferEvent getUnderlying() const;
+      int getFD() const;
     };
   }
 }

@@ -61,6 +61,7 @@ namespace cb {
       virtual ~Event();
 
       event *getEvent() const {return e;}
+      double getTimeout() const;
 
       const std::string &getLogPrefix() const {return logPrefix;}
       void setLogPrefix(const std::string &prefix) {logPrefix = prefix;}

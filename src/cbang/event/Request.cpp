@@ -83,7 +83,7 @@ Request::Request(evhttp_request *req, const URI &uri, bool deallocate) :
 
 
 Request::~Request() {
-  if (req && deallocate) evhttp_request_free(req);
+  if (req && deallocate) evhttp_cancel_request(req); // Also frees
 }
 
 
@@ -99,6 +99,17 @@ Connection Request::getConnection() const {
 
 string Request::getLogPrefix() const {
   return String::printf("#%lld:", getID());
+}
+
+
+const string &Request::getUser() const {
+  return session.isNull() ? user : session->getUser();
+}
+
+
+void Request::setUser(const string &user) {
+  this->user = user;
+  if (!session.isNull()) session->setUser(user);
 }
 
 
@@ -478,6 +489,12 @@ void Request::reply(const cb::Event::Buffer &buf) {
 
 void Request::reply(const char *data, unsigned length) {
   reply(HTTP_OK, data, length);
+}
+
+
+void Request::reply(int code, const string &s) {
+  send(s);
+  reply(code);
 }
 
 

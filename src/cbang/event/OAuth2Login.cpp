@@ -87,37 +87,38 @@ bool OAuth2Login::requestToken(Request &req, cb::OAuth2 &auth,
 }
 
 
-bool OAuth2Login::verifyToken(Request &req) {
-  try {
-    if (!auth) THROW("Auth is null");
+void OAuth2Login::verifyToken(Request *req, int err) {
+  if (req)
+    try {
+      if (!auth) THROW("Auth is null");
 
-    // Verify
-    string accessToken = auth->verifyToken(req.getInput());
+      // Verify
+      string accessToken = auth->verifyToken(req->getInput());
 
-    // Get profile
-    pending = client.callMember(auth->getProfileURL(accessToken), HTTP_GET,
-                                this, &OAuth2Login::processProfile);
-    pending->outSet("User-Agent", "cbang.org");
-    pending->send();
+      // Get profile
+      pending = client.callMember(auth->getProfileURL(accessToken), HTTP_GET,
+                                  this, &OAuth2Login::processProfile);
+      pending->outSet("User-Agent", "cbang.org");
+      pending->send();
 
-    return true;
-  } CATCH_ERROR;
+      return;
+    } CATCH_ERROR;
 
   processProfile(0); // Notify incase of error
-
-  return true;
+  pending.release();
 }
 
 
-bool OAuth2Login::processProfile(Request &req) {
+void OAuth2Login::processProfile(Request *req, int err) {
   SmartPointer<JSON::Value> profile;
 
-  try {
-    if (!auth) THROW("Auth is null");
-    profile = req.getInputJSON();
-    if (profile.isNull()) THROW("Did not receive profile");
-    profile = auth->processProfile(profile);
-  } CATCH_ERROR;
+  if (req)
+    try {
+      if (!auth) THROW("Auth is null");
+      profile = req->getInputJSON();
+      if (profile.isNull()) THROW("Did not receive profile");
+      profile = auth->processProfile(profile);
+    } CATCH_ERROR;
 
   processProfile(profile);
 
@@ -125,6 +126,4 @@ bool OAuth2Login::processProfile(Request &req) {
   auth = 0;
   pending.release();
   state.clear();
-
-  return true;
 }

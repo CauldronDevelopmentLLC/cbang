@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,41 +30,26 @@
 
 \******************************************************************************/
 
-#ifndef CB_EVENT_PENDING_REQUEST_H
-#define CB_EVENT_PENDING_REQUEST_H
+#pragma once
 
-#include "Request.h"
-#include "Connection.h"
-#include "HTTPResponseHandler.h"
-
-#include <cbang/SmartPointer.h>
+#include <cbang/util/MemberFunctor.h>
 
 
 namespace cb {
-  class URI;
-
   namespace Event {
-    class Client;
-    class HTTPHandler;
+    class Request;
 
-    class PendingRequest : public Connection, public Request {
-      unsigned method;
-      SmartPointer<HTTPResponseHandler> cb;
-      int err;
-
+    class HTTPResponseHandler {
     public:
-      PendingRequest(Client &client, const URI &uri, unsigned method,
-                     const SmartPointer<HTTPResponseHandler> &cb);
+      virtual ~HTTPResponseHandler() {}
 
-      RequestMethod getMethod() const {return (RequestMethod::enum_t)method;}
-
-      using Request::send;
-      void send();
-
-      void callback(evhttp_request *req);
-      void error(int code);
+      virtual void operator()(Request *req, int err) = 0;
     };
+
+    CBANG_FUNCTOR2(HTTPResponseHandlerFunctor, HTTPResponseHandler, void, \
+                   operator(), Request *, int);
+    CBANG_MEMBER_FUNCTOR2(HTTPResponseHandlerMemberFunctor,             \
+                          HTTPResponseHandler, void, operator(), Request *, \
+                          int);
   }
 }
-
-#endif // CB_EVENT_PENDING_REQUEST_H

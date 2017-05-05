@@ -52,8 +52,7 @@ namespace cb {
       virtual Request *createRequest(evhttp_request *req);
       virtual void endRequestEvent(Request *req) {}
 
-      virtual bool operator()(Request &req) = 0;
-      virtual void error(int err) {}
+      virtual bool operator()(Request &req) {return false;}
     };
 
     CBANG_FUNCTOR1(HTTPHandlerFunctor, HTTPHandler, bool, operator(), \

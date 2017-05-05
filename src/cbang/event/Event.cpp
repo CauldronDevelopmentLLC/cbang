@@ -41,7 +41,10 @@
 #include <event2/event.h>
 #include <event2/event_struct.h>
 
+#include <limits>
+
 using namespace cb::Event;
+using namespace std;
 
 
 namespace {
@@ -77,6 +80,16 @@ Event::~Event() {
 
 bool Event::isPending(unsigned events) const {
   return event_pending(e, events, 0);
+}
+
+
+double Event::getTimeout() const {
+  struct timeval tv;
+
+  if (event_pending(e, EV_TIMEOUT, &tv))
+    return Timer::toDouble(tv) - Timer::now();
+
+  return numeric_limits<double>::infinity();
 }
 
 

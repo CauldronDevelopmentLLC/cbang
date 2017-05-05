@@ -46,6 +46,21 @@ struct evdns_base;
 
 namespace cb {
   namespace Event {
+    typedef enum {
+      DNS_ERR_NONE = 0,
+      DNS_ERR_FORMAT = 1,
+      DNS_ERR_SERVERFAILED = 2,
+      DNS_ERR_NOTEXIST = 3,
+      DNS_ERR_NOTIMPL = 4,
+      DNS_ERR_REFUSED = 5,
+      DNS_ERR_TRUNCATED = 65,
+      DNS_ERR_UNKNOWN = 66,
+      DNS_ERR_TIMEOUT = 67,
+      DNS_ERR_SHUTDOWN = 68,
+      DNS_ERR_CANCEL = 69,
+      DNS_ERR_NODATA = 70,
+    } dns_error_t;
+
     class Base;
     class DNSRequest;
 
@@ -68,6 +83,20 @@ namespace cb {
                          bool search = true);
       DNSRequest reverse(uint32_t ip, const SmartPointer<DNSCallback> &cb,
                          bool search = true);
+
+      template <class T>
+      DNSRequest resolve(const std::string &name, T *obj,
+                         typename DNSMemberFunctor<T>::member_t member,
+                         bool search = true) {
+        return resolve(name, new DNSMemberFunctor<T>(obj, member), search);
+      }
+
+      template <class T>
+      DNSRequest reverse(uint32_t ip, T *obj,
+                         typename DNSMemberFunctor<T>::member_t member,
+                         bool search = true) {
+        return reverse(ip, new DNSMemberFunctor<T>(obj, member), search);
+      }
 
       static const char *getErrorStr(int error);
     };

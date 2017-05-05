@@ -67,8 +67,8 @@ namespace cb {
                         const std::string &state);
       bool requestToken(Request &req, cb::OAuth2 &auth,
                         const std::string &state);
-      bool verifyToken(Request &req);
-      bool processProfile(Request &req);
+      void verifyToken(Request *req, int err);
+      void processProfile(Request *req, int err);
     };
   }
 }

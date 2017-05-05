@@ -34,7 +34,10 @@
 #include "Base.h"
 
 #include <cbang/Exception.h>
+#include <cbang/net/Swab.h>
 #include <cbang/util/DefaultCatch.h>
+#include <cbang/log/Logger.h>
+#include <cbang/debug/Debugger.h>
 
 #include <event2/dns.h>
 
@@ -49,19 +52,25 @@ namespace {
     vector<IPAddress> addrs;
     DNSCallback &cb = *(DNSCallback *)arg;
 
+    LOG_DEBUG(5, "DNS: " << hex << arg << dec << " "
+              << DNSBase::getErrorStr(error) << " " << (int)type << " "
+              << count << " " << ttl << "\n" << Debugger::getStackTrace());
+
     try {
       if (error == DNS_ERR_NONE) {
         if (type == DNS_IPv4_A) {
           uint32_t *ips = (uint32_t *)addresses;
 
           for (int i = 0; i < count; i++) {
-            addrs.push_back(IPAddress(ips[i]));
+            addrs.push_back(IPAddress(hton32(ips[i])));
             addrs.back().setHost(cb.getSource().getHost());
           }
 
         } else if (type == DNS_PTR) {
-          addrs.push_back(IPAddress((const char *)addresses));
-          addrs.back().setIP(cb.getSource().getIP());
+          if (count) {
+            addrs.push_back(IPAddress(*(const char **)addresses));
+            addrs.back().setIP(cb.getSource().getIP());
+          }
 
         } else {
           LOG_ERROR("Unsupported DNS response type " << type);
@@ -73,23 +82,24 @@ namespace {
 
     } CATCH_ERROR;
 
+    cb.getRequest().cancel();
+    SmartPointer<DNSCallback> cbPtr = cb.self;
     cb.self.release();
   }
 }
 
 
-DNSBase::DNSBase(cb::Event::Base &base, bool initialize, bool failRequestsOnExit) :
-  dns(evdns_base_new(base.getBase(),
-                     (initialize ? EVDNS_BASE_INITIALIZE_NAMESERVERS : 0) |
-                     EVDNS_BASE_DISABLE_WHEN_INACTIVE)),
+DNSBase::DNSBase(cb::Event::Base &base, bool initialize,
+                 bool failRequestsOnExit) :
+  dns(evdns_base_new
+      (base.getBase(), (initialize ? EVDNS_BASE_INITIALIZE_NAMESERVERS : 0) |
+       EVDNS_BASE_DISABLE_WHEN_INACTIVE)),
   failRequestsOnExit(failRequestsOnExit) {
   if (!dns) THROW("Failed to create DNSBase");
 }
 
 
-DNSBase::~DNSBase() {
-  if (dns) evdns_base_free(dns, failRequestsOnExit);
-}
+DNSBase::~DNSBase() {if (dns) evdns_base_free(dns, failRequestsOnExit);}
 
 
 void DNSBase::addNameserver(const IPAddress &ns) {
@@ -101,13 +111,15 @@ DNSRequest DNSBase::resolve(const string &name,
                             const SmartPointer<DNSCallback> &cb, bool search) {
   cb->setSource(IPAddress(name));
 
-  evdns_request *req =
-    evdns_base_resolve_ipv4
+  evdns_request *req = evdns_base_resolve_ipv4
     (dns, name.c_str(), (search ? 0 : DNS_QUERY_NO_SEARCH), dns_cb, cb.get());
 
   if (!req) THROW("DNS lookup failed");
 
+  cb->setRequest(DNSRequest(dns, req));
   cb->self = cb;
+
+  LOG_DEBUG(5, "DNS: " << hex << cb.get() << " resolving '" << name << "'");
 
   return DNSRequest(dns, req);
 }
@@ -117,15 +129,17 @@ DNSRequest DNSBase::reverse(uint32_t ip, const SmartPointer<DNSCallback> &cb,
                             bool search) {
   cb->setSource(IPAddress(ip));
 
-  struct in_addr addr = {ip};
+  struct in_addr addr = {hton32(ip)};
 
-  evdns_request *req =
-    evdns_base_resolve_reverse
+  evdns_request *req = evdns_base_resolve_reverse
     (dns, &addr, (search ? 0 : DNS_QUERY_NO_SEARCH), dns_cb, cb.get());
 
   if (!req) THROW("DNS reverse lookup failed");
 
+  cb->setRequest(DNSRequest(dns, req));
   cb->self = cb;
+
+  LOG_DEBUG(5, "DNS: " << hex << cb.get() << " reversing " << IPAddress(ip));
 
   return DNSRequest(dns, req);
 }

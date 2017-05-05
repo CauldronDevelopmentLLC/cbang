@@ -46,16 +46,24 @@ using namespace cb::Event;
 bool ACLHandler::operator()(Request &req) {
   string path = req.getURI().getPath();
   string user = req.getUser();
-  bool allowed = aclSet.allow(path, user);
+  string group;
+  bool allow;
 
-  if (allowed)
-    LOG_DEBUG(5, "Access to '" << path << "' by user '" << user << "'@"
-              << req.getClientIP().getHost() << " allowed");
-  else
-    LOG_INFO(2, "Access to '" << path << "' by user '" << user << "'@"
-             << req.getClientIP().getHost() << " denied");
+  if (user.empty())
+    allow = aclSet.allowGroup(path, group = "unauthenticated");
 
-  if (!allowed) THROWX("Access denied", HTTP_UNAUTHORIZED);
+  else {
+    allow = aclSet.allow(path, user);
+    if (!allow) allow = aclSet.allowGroup(path, group = "authenticated");
+    if (!allow) allow = aclSet.allowGroup(path, group = "unauthenticated");
+  }
+
+  LOG_INFO(allow ? 5 : 3, "allow(" << path << ", "
+           << (user.empty() ? "@" + group : user) << ", "
+           << req.getClientIP().getHost() << ") = "
+           << (allow ? "true" : "false"));
+
+  if (!allow) THROWX("Access denied", HTTP_UNAUTHORIZED);
 
   return false;
 }

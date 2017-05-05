@@ -33,9 +33,13 @@
 #ifndef CB_EVENT_CLIENT_H
 #define CB_EVENT_CLIENT_H
 
-#include "HTTPHandler.h"
+#include "HTTPResponseHandler.h"
 
 #include <cbang/SmartPointer.h>
+
+#if __cplusplus > 199711L
+#include <functional>
+#endif
 
 
 namespace cb {
@@ -45,13 +49,13 @@ namespace cb {
   namespace Event {
     class Base;
     class DNSBase;
-    class HTTPHandler;
     class PendingRequest;
 
     class Client {
       Base &base;
       DNSBase &dns;
       SmartPointer<SSLContext> sslCtx;
+      int priority;
 
     public:
       Client(Base &base, DNSBase &dns);
@@ -62,33 +66,48 @@ namespace cb {
       DNSBase &getDNS() {return dns;}
       const cb::SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
 
+      int getPriority() const {return priority;}
+      void setPriority(int priority) {this->priority = priority;}
+
       SmartPointer<PendingRequest>
       call(const URI &uri, unsigned method, const char *data,
-           unsigned length, const cb::SmartPointer<HTTPHandler> &cb);
+           unsigned length, const cb::SmartPointer<HTTPResponseHandler> &cb);
 
       SmartPointer<PendingRequest>
       call(const URI &uri, unsigned method, const std:: string &data,
-           const cb::SmartPointer<HTTPHandler> &cb);
+           const cb::SmartPointer<HTTPResponseHandler> &cb);
 
       SmartPointer<PendingRequest>
       call(const URI &uri, unsigned method,
-           const cb::SmartPointer<HTTPHandler> &cb);
+           const cb::SmartPointer<HTTPResponseHandler> &cb);
 
       template<class T>
-      SmartPointer<PendingRequest>
-      callMember(const URI &uri, unsigned method, T *obj,
-                 typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        return call(uri, method, new HTTPHandlerMemberFunctor<T>(obj, member));
+      SmartPointer<PendingRequest> callMember
+      (const URI &uri, unsigned method, T *obj,
+       typename HTTPResponseHandlerMemberFunctor<T>::member_t member) {
+        return call(uri, method,
+                    new HTTPResponseHandlerMemberFunctor<T>(obj, member));
       }
 
       template<class T>
-      SmartPointer<PendingRequest>
-      callMember(const URI &uri, unsigned method, const char *data,
-                 unsigned length, T *obj,
-                 typename HTTPHandlerMemberFunctor<T>::member_t member) {
+      SmartPointer<PendingRequest> callMember
+      (const URI &uri, unsigned method, const char *data, unsigned length,
+       T *obj, typename HTTPResponseHandlerMemberFunctor<T>::member_t member) {
         return call(uri, method, data, length,
-                    new HTTPHandlerMemberFunctor<T>(obj, member));
+                    new HTTPResponseHandlerMemberFunctor<T>(obj, member));
       }
+
+      template<class T>
+      SmartPointer<PendingRequest> callMember
+      (const URI &uri, unsigned method, const std::string &data,
+       T *obj, typename HTTPResponseHandlerMemberFunctor<T>::member_t member) {
+        return call(uri, method, data,
+                    new HTTPResponseHandlerMemberFunctor<T>(obj, member));
+      }
+
+#if __cplusplus > 199711L
+
+#endif
     };
   }
 }

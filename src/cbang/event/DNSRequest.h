@@ -44,9 +44,10 @@ namespace cb {
       evdns_request *req;
 
     public:
-      DNSRequest(evdns_base *dns, evdns_request *req) : dns(dns), req(req) {}
+      DNSRequest(evdns_base *dns = 0, evdns_request *req = 0) :
+        dns(dns), req(req) {}
 
-      void cancel();
+      void cancel() const;
     };
   }
 }

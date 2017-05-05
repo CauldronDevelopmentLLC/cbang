@@ -32,6 +32,7 @@
 
 #include "Client.h"
 #include "Buffer.h"
+#include "BufferEvent.h"
 #include "PendingRequest.h"
 
 #ifdef HAVE_OPENSSL
@@ -45,12 +46,12 @@ using namespace cb;
 using namespace cb::Event;
 
 
-Client::Client(Base &base, DNSBase &dns) : base(base), dns(dns) {}
+Client::Client(Base &base, DNSBase &dns) : base(base), dns(dns), priority(-1) {}
 
 
 Client::Client(Base &base, DNSBase &dns,
                const SmartPointer<SSLContext> &sslCtx) :
-  base(base), dns(dns), sslCtx(sslCtx) {}
+  base(base), dns(dns), sslCtx(sslCtx), priority(-1) {}
 
 
 Client::~Client() {}
@@ -58,25 +59,23 @@ Client::~Client() {}
 
 SmartPointer<PendingRequest>
 Client::call(const URI &uri, unsigned method, const char *data, unsigned length,
-             const SmartPointer<HTTPHandler> &cb) {
+             const SmartPointer<HTTPResponseHandler> &cb) {
   SmartPointer<PendingRequest> req = new PendingRequest(*this, uri, method, cb);
   if (data) req->getOutputBuffer().add(data, length);
+  if (0 <= priority) req->getBufferEvent().setPriority(priority);
   return req;
 }
 
 
 SmartPointer<PendingRequest>
 Client::call(const URI &uri, unsigned method, const string &data,
-             const SmartPointer<HTTPHandler> &cb) {
-#ifdef _WIN32
-  return call(uri, method, data.c_str(), data.length(), cb);
-#else
-  return call(uri, method, data.data(), data.length(), cb);
-#endif
+             const SmartPointer<HTTPResponseHandler> &cb) {
+  return call(uri, method, CPP_TO_C_STR(data), data.length(), cb);
 }
 
 
-SmartPointer<PendingRequest> Client::call(const URI &uri, unsigned method,
-                                          const SmartPointer<HTTPHandler> &cb) {
+SmartPointer<PendingRequest>
+Client::call(const URI &uri, unsigned method,
+             const SmartPointer<HTTPResponseHandler> &cb) {
   return call(uri, method, 0, 0, cb);
 }

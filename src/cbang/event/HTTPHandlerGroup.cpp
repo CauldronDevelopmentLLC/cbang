@@ -89,6 +89,16 @@ HTTPHandlerGroup::addGroup(unsigned methods, const string &search,
 }
 
 
+bool HTTPHandlerGroup::dispatch(Request &req, const JSON::ValuePtr &msg,
+                                JSON::Sink &sink) {
+  for (unsigned i = 0; i < handlers.size(); i++) {
+    JSONHandler *handler = dynamic_cast<JSONHandler *>(handlers[i].get());
+    if (handler && (*handler)(req)) return true;
+  }
+
+  return false;
+}
+
 
 bool HTTPHandlerGroup::operator()(Request &req) {
   for (unsigned i = 0; i < handlers.size(); i++)

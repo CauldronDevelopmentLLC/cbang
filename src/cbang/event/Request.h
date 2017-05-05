@@ -41,6 +41,7 @@
 #include <cbang/util/Version.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/net/URI.h>
+#include <cbang/net/Session.h>
 #include <cbang/json/JSON.h>
 
 #include <string>
@@ -69,6 +70,7 @@ namespace cb {
       URI originalURI;
       URI uri;
       IPAddress clientIP;
+      SmartPointer<Session> session;
       std::string user;
       bool incoming;
       bool finalized;
@@ -97,8 +99,12 @@ namespace cb {
       void setID(uint64_t id) {this->id = id;}
       virtual std::string getLogPrefix() const;
 
-      const std::string &getUser() const {return user;}
-      void setUser(const std::string &user) {this->user = user;}
+      const SmartPointer<Session> &getSession() const {return session;}
+      void setSession(const SmartPointer<Session> &session)
+      {this->session = session;}
+
+      const std::string &getUser() const;
+      void setUser(const std::string &user);
 
       void setIncoming(bool incoming) {this->incoming = incoming;}
       bool isIncoming() const {return incoming;}
@@ -200,6 +206,7 @@ namespace cb {
       virtual void reply(const char *data, unsigned length);
       virtual void reply(int code, const Buffer &buf);
       virtual void reply(int code, const char *data, unsigned length);
+      virtual void reply(int code, const std::string &s);
 
       virtual void startChunked(int code);
       virtual void sendChunk(const Buffer &buf);

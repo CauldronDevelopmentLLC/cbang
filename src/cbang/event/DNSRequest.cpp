@@ -37,6 +37,6 @@
 using namespace cb::Event;
 
 
-void DNSRequest::cancel() {
-  evdns_cancel_request(dns, req);
+void DNSRequest::cancel() const {
+  if (dns && req) evdns_cancel_request(dns, req);
 }

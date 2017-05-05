@@ -43,6 +43,7 @@
 
 #include <event2/http.h>
 
+using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
@@ -60,17 +61,17 @@ namespace {
 
 
 PendingRequest::PendingRequest(Client &client, const URI &uri, unsigned method,
-                               const SmartPointer<HTTPHandler> &cb) :
+                               const SmartPointer<HTTPResponseHandler> &cb) :
   Connection(client.getBase(), client.getDNS(), uri, client.getSSLContext()),
-  Request(evhttp_request_new(request_cb, this), uri, true), uri(uri),
-  method(method), cb(cb) {
+  Request(evhttp_request_new(request_cb, this), uri, true), method(method),
+  cb(cb), err(0) {
   evhttp_request_set_error_cb(req, error_cb);
 }
 
 
 void PendingRequest::send() {
   // Set output headers
-  if (!outHas("Host")) outSet("Host", uri.getHost());
+  if (!outHas("Host")) outSet("Host", getURI().getHost());
   if (!outHas("Connection")) outSet("Connection", "close");
 
   // Set Content-Length
@@ -84,12 +85,14 @@ void PendingRequest::send() {
   default: break;
   }
 
-  // Do it
-  makeRequest(*this, method, uri);
-
   LOG_INFO(1, "> " << getMethod() << " " << getURI());
   LOG_DEBUG(5, getOutputHeaders() << '\n');
   LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
+
+  // Do it
+  err = 0;
+  makeRequest(*this, method, getURI());
+  if (err) THROWS("Failed to send to " << getURI());
 }
 
 
@@ -102,17 +105,18 @@ void PendingRequest::callback(evhttp_request *_req) {
               << '\n');
     LOG_DEBUG(6, req.getInputBuffer().hexdump() << '\n');
 
-    (*cb)(req);
+    (*cb)(&req, err);
   } CATCH_ERROR;
 }
 
 
 void PendingRequest::error(int code) {
+  string sslErrors = getSSLErrors();
+
   LOG_ERROR("Request failed: " << getErrorStr(code)
             << ", System error: " << SysError()
-            << ", SSL errors: " << getSSLErrors());
+            << (sslErrors.empty() ? string() :
+                ", SSL errors: " + sslErrors));
 
-  LOG_DEBUG(5, Debugger::getStackTrace());
-
-  try {cb->error(code);} CATCH_ERROR;
+  err = code;
 }

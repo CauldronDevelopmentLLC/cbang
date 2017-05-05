@@ -33,6 +33,8 @@
 #ifndef CB_EVENT_DNSCALLBACK_H
 #define CB_EVENT_DNSCALLBACK_H
 
+#include "DNSRequest.h"
+
 #include <cbang/SmartPointer.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/util/MemberFunctor.h>
@@ -44,6 +46,7 @@ namespace cb {
   namespace Event {
     class DNSCallback {
       IPAddress source;
+      DNSRequest req;
 
     public:
       SmartPointer<DNSCallback> self;
@@ -52,6 +55,9 @@ namespace cb {
 
       void setSource(const IPAddress &source) {this->source = source;}
       const IPAddress &getSource() const {return source;}
+
+      const DNSRequest &getRequest() const {return req;}
+      void setRequest(const DNSRequest &req) {this->req = req;}
 
       virtual void operator()(int error, std::vector<IPAddress> &addrs,
                               int ttl) = 0;
