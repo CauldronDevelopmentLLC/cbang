@@ -87,7 +87,7 @@ namespace cb {
     explicit String(uint128_t x);
 
     /// Convert a double value to a string.
-    explicit String(double x);
+    explicit String(double x, int precision = 6);
 
     /// Convert a boolean value to a string.
     explicit String(bool x);
