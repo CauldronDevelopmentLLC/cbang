@@ -72,7 +72,6 @@ bool JSONHandler::operator()(Request &req) {
         msg->insert(it->first, it->second);
     }
 
-
     // Dispatch JSON call
     if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << uri.getPath() << "()");
     else LOG_DEBUG(5, "JSON Call: " << uri.getPath() << '(' << *msg << ')');
