@@ -84,7 +84,7 @@ String::String(uint64_t x)  : string(printf("%llu", (long long unsigned)x)) {}
 String::String(uint128_t x) : string(SSTR(x)) {}
 
 
-String::String(double x, int precision) : string(printf("%.*f", x, precision)) {
+String::String(double x, int precision) : string(printf("%.*f", precision, x)) {
   int chop = 0;
   char point = use_facet<numpunct<char> >(cout.getloc()).decimal_point();
 
