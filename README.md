@@ -71,6 +71,7 @@ For licensing information please see the files LICENSE and COPYING.
   - boost      http://www.boost.org/
   - openssl    http://www.openssl.org/ (optional)
   - ChakraCore https://github.com/Microsoft/ChakraCore/ (optional)
+  - V8         https://developers.google.com/v8/ (optional)
   - mariadb    https://mariadb.org/ (optional)
 
 ## Debug mode only
@@ -177,11 +178,17 @@ we require a fork of ChakraCore which includes some fixes.
 You can find windows binaries of ChakraCore here:
 https://github.com/CauldronDevelopmentLLC/ChakraCore/releases/tag/v2.0.0.1
 
+### Building V8
+
+V8 is the Javascript engine used by the Chrome browser.  It is fast and
+Open-Source.
+
+
+
 ### Building ChakraCore
 
 ChakraCore is the Javascript engine used by the Microsoft Edge browser.  It
-is fast and Open-Source.  It has a simpiler API than Google's v8 which is
-why we've switched to it.  Unfortunately there currently aren't any readily
+is fast and Open-Source.  Unfortunately there currently aren't any readily
 available Debian packages for ChakraCore so you will have to build it from
 source.
 
