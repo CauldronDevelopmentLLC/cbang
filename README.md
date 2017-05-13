@@ -155,19 +155,6 @@ either need to upgrade your package or build openssl from source like this:
 
 Then try building C!.
 
-## Problems with Boost Library
-
-There are many different versions of boost and some systems have broken
-packages.  If you run into these problems you can try C! built-in boost
-build system like this:
-
-    wget http://sourceforge.net/projects/boost/files/boost/1.55.0/boost_1_55_0.tar.bz2
-    tar xjvf boost_1_55_0.tar.bz2
-    export BOOST_SOURCE=$PWD/boost_1_55_0
-
-Then rebuild C! as above.  Other versions of boost greater or equal to 1.40
-may also work.
-
 ## ChakraCore
 
 You can either download a prebuilt ChakraCore or build it yourself.  Currently
@@ -177,13 +164,6 @@ we require a fork of ChakraCore which includes some fixes.
 
 You can find windows binaries of ChakraCore here:
 https://github.com/CauldronDevelopmentLLC/ChakraCore/releases/tag/v2.0.0.1
-
-### Building V8
-
-V8 is the Javascript engine used by the Chrome browser.  It is fast and
-Open-Source.
-
-
 
 ### Building ChakraCore
 
