@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CB_CHAKRA_VALUE_H
-#define CB_CHAKRA_VALUE_H
+#pragma once
 
 #include <cbang/Exception.h>
 #include <cbang/js/Value.h>
@@ -128,6 +127,3 @@ namespace cb {
       THROWS(#CMD << " failed with 0x" << std::hex << err           \
              << ' ' << Value::errorToString(err));                  \
   } while (0)
-
-
-#endif // CB_CHAKRA_VALUE_H

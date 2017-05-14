@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_VECTOR_DEVICE_H
-#define CBANG_VECTOR_DEVICE_H
+#pragma once
 
 #include <boost/iostreams/categories.hpp>   // bidirectional_device_tag
 #include <boost/iostreams/positioning.hpp>  // stream_offset
@@ -76,5 +75,3 @@ namespace cb {
       boost::iostreams::stream<VectorDevice<T> >(v) {}
   };
 }
-
-#endif // CBANG_VECTOR_DEVICE_H

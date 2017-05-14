@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef SWAB_H
-#define SWAB_H
+#pragma once
 
 #include <cbang/StdTypes.h>
 
@@ -81,5 +80,3 @@ inline uint128_t swap128(uint128_t x) {return uint128_t(x.lo, x.hi);}
 #define htol64(x) swap64(x)
 #define htol128(x) swap128(x)
 #endif
-
-#endif // SWAB_H

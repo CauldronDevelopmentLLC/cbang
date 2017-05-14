@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_FPPACKET_FIELD_H
-#define CBANG_FPPACKET_FIELD_H
+#pragma once
 
 #include "PacketField.h"
 
@@ -98,5 +97,3 @@ namespace cb {
   typedef FPPacketField<int64_t,  1000, double> PFS64F3;
   typedef FPPacketField<uint64_t, 1000, double> PFU64F3;
 }
-
-#endif // CBANG_FPPACKET_FIELD_H

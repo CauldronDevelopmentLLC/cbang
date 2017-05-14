@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,13 +30,10 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_PACKED_H
-#define CBANG_PACKED_H
+#pragma once
 
 #if defined(_WIN32)
 #define PACK(DECL) __pragma(pack(push, 1)) DECL __pragma(pack(pop))
 #else
 #define PACK(DECL) DECL __attribute__((packed))
 #endif
-
-#endif // CBANG_PACKED_H

@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_XML_HANDLER_CONTEXT_H
-#define CBANG_XML_HANDLER_CONTEXT_H
+#pragma once
 
 #include <string>
 #include <map>
@@ -49,5 +48,3 @@ namespace cb {
     XMLHandlerFactory *get(const std::string &name);
   };
 }
-
-#endif // CBANG_XML_HANDLER_CONTEXT_H

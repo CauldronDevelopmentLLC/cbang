@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_BASE64_ENCODER_H
-#define CBANG_BASE64_ENCODER_H
+#pragma once
 
 #include <boost/iostreams/char_traits.hpp> // EOF, WOULD_BLOCK
 #include <boost/iostreams/concepts.hpp>
@@ -192,5 +191,3 @@ namespace cb {
     }
   };
 }
-
-#endif // CBANG_BASE64_ENCODER_H

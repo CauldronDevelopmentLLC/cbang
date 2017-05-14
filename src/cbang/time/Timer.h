@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_TIMER_H
-#define CBANG_TIMER_H
+#pragma once
 
 #ifdef _WIN32
 #if _MSC_VER < 1900
@@ -111,5 +110,3 @@ namespace cb {
     static double toDouble(struct timeval &t);
   };
 }
-
-#endif // CBANG_TIMER_H

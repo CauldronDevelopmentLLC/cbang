@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_EXCEPTION_H
-#define CBANG_EXCEPTION_H
+#pragma once
 
 #include "FileLocation.h"
 #include "SmartPointer.h"
@@ -249,5 +248,3 @@ namespace cb {
 #define ASSERTS(cond, msg)         CBANG_ASSERTS(cond, msg)
 #define ASSERTXS(cond, msg, code)  CBANG_ASSERTXS(cond, msg, code)
 #endif // USING_CBANG
-
-#endif // CBANG_EXCEPTION_H

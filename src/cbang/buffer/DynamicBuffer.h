@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CB_DYNAMIC_BUFFER_H
-#define CB_DYNAMIC_BUFFER_H
+#pragma once
 
 #include "MemoryBuffer.h"
 #include "BufferDevice.h"
@@ -77,5 +76,3 @@ namespace cb {
 
   typedef boost::iostreams::stream<DynamicBuffer> DynamicBufferStream;
 }
-
-#endif // CB_DYNAMIC_BUFFER_H

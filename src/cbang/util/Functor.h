@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2015, Cauldron Development LLC
-                 Copyright (c) 2003-2015, Stanford University
+              Copyright (c) 2003-2017, Cauldron Development LLC
+                 Copyright (c) 2003-2017, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_FUNCTOR_H
-#define CBANG_FUNCTOR_H
+#pragma once
 
 
 #define CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, CONST, ARGS, PARAMS)  \
@@ -113,6 +112,3 @@
                              ARG3, ARG4, ARG5)                          \
   CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const,                    \
              CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5)
-
-
-#endif // CBANG_FUNCTOR_H
