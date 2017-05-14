@@ -58,7 +58,7 @@ namespace cb {
 
     void add(const SmartPointer<AsyncWorker> &worker) {
       SmartLock lock(this);
-      queue.push(worker);
+      ready.push(worker);
       Condition::signal();
     }
 
@@ -72,7 +72,8 @@ namespace cb {
       SmartLock lock(this);
 
       while (!done.empty()) {
-        SmartPointer<AsyncWorker> worker = done.pop();
+        SmartPointer<AsyncWorker> worker = done.front();
+        done.pop();
 
         try {
           SmartUnlock unlock(this);
@@ -94,8 +95,9 @@ namespace cb {
       Thread &thread = Thread::current();
 
       while (!thread.shouldShutdown()) {
-        while (!queue.empty() && !thread.shouldShutdown()) {
-          SmartPointer<AsyncWorker> worker = ready.pop();
+        while (!ready.empty() && !thread.shouldShutdown()) {
+          SmartPointer<AsyncWorker> worker = ready.front();
+          ready.pop();
 
           try {
             SmartUnlock unlock(this);

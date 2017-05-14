@@ -35,6 +35,9 @@
 #include "LevelDB.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/async/AsyncScheduler.h>
+
+#include <functional>
 
 
 namespace cb {
@@ -42,7 +45,8 @@ namespace cb {
     SmartPointer<AsyncScheduler> scheduler;
 
   public:
-    AsyncLevelDB(LevelDB &db, const SmartPointer<AsyncScheduler> &scheduler) :
+    AsyncLevelDB(const LevelDB &db,
+                 const SmartPointer<AsyncScheduler> &scheduler) :
       LevelDB(db), scheduler(scheduler) {}
 
     AsyncLevelDB(const SmartPointer<AsyncScheduler> &scheduler,
@@ -67,11 +71,11 @@ namespace cb {
 
 
     void close(std::function<void ()> cb) {
-      scheduler->add([this] () {LevelDB::close()}, cb);
+      scheduler->add([this] () {LevelDB::close();}, cb);
     }
 
 
-    bool has(const std::string &key, std::function<void (bool)> cb,
+    void has(const std::string &key, std::function<void (bool)> cb,
              int options = 0) const {
       bool result = false;
 
@@ -80,9 +84,9 @@ namespace cb {
     }
 
 
-    std::string get(const std::string &key,
-                    std::function<void (const std::string &)> cb,
-                    int options = 0) const {
+    void get(const std::string &key,
+             std::function<void (const std::string &)> cb,
+             int options = 0) const {
       std::string result;
 
       scheduler->add([&] () {result = LevelDB::get(key, options);},
@@ -90,10 +94,9 @@ namespace cb {
     }
 
 
-    std::string get(const std::string &key,
-                    const std::string &defaultValue,
-                    std::function<void (const std::string &)> cb,
-                    int options = 0) const {
+    void get(const std::string &key, const std::string &defaultValue,
+             std::function<void (const std::string &)> cb,
+             int options = 0) const {
       std::string result;
 
       scheduler->add([&] () {
@@ -107,7 +110,7 @@ namespace cb {
                  const std::string &seek = std::string(),
                  bool reverse = false, int options = 0,
                  int batchSize = 1000) const {
-      LevelDB::Iterator it;
+      LevelDB::Iterator it = iterator(options);
       bool first = true;
 
       typedef std::vector<std::pair<std::string, std::string> > results_t;
@@ -115,8 +118,6 @@ namespace cb {
 
       auto batch = [&] () {
         if (first) {
-          it = LevelDB::iterator(options);
-
           if (seek.empty()) {
             if (reverse) it.last();
             else it.first();
@@ -129,7 +130,7 @@ namespace cb {
           results.push_back(results_t::value_type(it.key(), it.value()));
       };
 
-      auto process = [&] () {
+      std::function<void ()> process = [&] () {
         for (unsigned i = 0; i < results.size(); i++)
           if (!cb(results[i].first, results[i].second)) return;
         results.clear();
