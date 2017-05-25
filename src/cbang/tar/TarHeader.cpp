@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <time.h>
 #include <string.h>
+#include <inttypes.h>
 
 using namespace std;
 using namespace cb;
@@ -203,8 +204,13 @@ void TarHeader::write(ostream &stream) {
 }
 
 
+void TarHeader::writeNumber(uint32_t n, char *buf, uint32_t length) {
+  sprintf(buf, "%0*" PRIo32, length - 1, n);
+}
+
+
 void TarHeader::writeNumber(uint64_t n, char *buf, uint32_t length) {
-  sprintf(buf, "%0*llo", length - 1, (unsigned long long)n);
+  sprintf(buf, "%0*" PRIo64, length - 1, n);
 }
 
 
