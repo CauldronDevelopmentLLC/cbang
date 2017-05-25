@@ -40,6 +40,15 @@
 #include <string.h>
 #include <inttypes.h>
 
+#ifndef PRIo32
+#define PRIo32 "lo"
+#endif
+
+#ifndef PRIo64
+#define PRIo64 "llo"
+#endif
+
+
 using namespace std;
 using namespace cb;
 
