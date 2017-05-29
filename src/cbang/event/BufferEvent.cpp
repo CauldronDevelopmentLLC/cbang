@@ -103,19 +103,29 @@ void BufferEvent::setPriority(int priority) {
 }
 
 
-bool BufferEvent::hasSSL() const {return bufferevent_openssl_get_ssl(bev);}
+bool BufferEvent::hasSSL() const {
+#ifdef HAVE_OPENSSL
+  return bufferevent_openssl_get_ssl(bev);
+#else
+  return false;
+#endif
+}
 
 
+#ifdef HAVE_OPENSSL
 cb::SSL BufferEvent::getSSL() const {
   struct ssl_st *ssl = bufferevent_openssl_get_ssl(bev);
   if (!ssl) THROW("BufferEvent does not have SSL");
   return cb::SSL(ssl);
 }
+#endif
 
 
 void BufferEvent::logSSLErrors() {
+#ifdef HAVE_OPENSSL
   string errors = getSSLErrors();
   if (!errors.empty()) LOG_ERROR("SSL errors: " << errors);
+#endif
 }
 
 

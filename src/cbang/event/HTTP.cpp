@@ -53,6 +53,9 @@
 #include <event2/bufferevent_ssl.h>
 
 #include <openssl/ssl.h>
+
+#else
+namespace cb {class SSLContext {};}
 #endif
 
 using namespace std;
