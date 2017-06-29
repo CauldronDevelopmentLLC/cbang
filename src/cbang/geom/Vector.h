@@ -126,7 +126,7 @@ namespace cb {
     }
 
 
-    unsigned getSize() const {return DIM;}
+    static unsigned getSize() {return DIM;}
 
 
     T &operator[](unsigned i) {return data[i];}
