@@ -45,7 +45,7 @@ namespace cb {
     unsigned width;
 
     static const char *encodeTable;
-    static const char decodeTable[256];
+    static const signed char decodeTable[256];
 
   public:
     Base64(char pad = '=', char a = '+', char b = '/', unsigned width = 76) :
