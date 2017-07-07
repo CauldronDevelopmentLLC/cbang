@@ -30,46 +30,21 @@
 
 \******************************************************************************/
 
-#include "JSONHandler.h"
-#include "Request.h"
-#include "Buffer.h"
-#include "BufferDevice.h"
-#include "Headers.h"
+#include "EventDBCallbackHandler.h"
 
-#include <cbang/String.h>
-#include <cbang/json/JSON.h>
-#include <cbang/log/Logger.h>
+#include <cbang/Exception.h>
 
-using namespace cb::Event;
-using namespace std;
+using namespace cb::MariaDB;
 
 
-bool JSONHandler::operator()(Request &req) {
-  try {
-    // Setup JSON output
-    SmartPointer<JSON::Writer> writer = req.getJSONWriter();
-
-    // Parse JSON message
-    JSON::ValuePtr msg = req.getJSONMessage();
-
-    // Log JSON call
-    const string &path = req.getURI().getPath();
-    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path << "()");
-    else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
-
-    // Dispatch JSON call
-    (*this)(req, msg, *writer);
-
-    // Make sure JSON stream is complete
-    writer->close();
-
-    // Send reply
-    req.reply();
-
-  } catch (const Exception &e) {
-    LOG_ERROR(e);
-    req.sendJSONError(e.getCode(), e.getMessage());
+void EventDBCallbackHandler::operator()(state_t state) {
+  switch (state) {
+  case EVENTDB_ERROR: error(); break;
+  case EVENTDB_BEGIN_RESULT: beginResult(); break;
+  case EVENTDB_ROW: row(); break;
+  case EVENTDB_END_RESULT: endResult(); break;
+  case EVENTDB_RETRY: retry(); break;
+  case EVENTDB_DONE: done(); break;
+  default: THROWS("Unexpected DB state " << state);
   }
-
-  return true;
 }

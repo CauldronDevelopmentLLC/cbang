@@ -337,9 +337,7 @@ bool DB::storeResultNB() {
 }
 
 
-bool DB::haveResult() const {
-  return res;
-}
+bool DB::haveResult() const {return res;}
 
 
 bool DB::nextResult() {
@@ -453,9 +451,7 @@ bool DB::fetchRowNB() {
 }
 
 
-bool DB::haveRow() const {
-  return res && res->current_row;
-}
+bool DB::haveRow() const {return res && res->current_row;}
 
 
 void DB::seekRow(uint64_t row) {
@@ -535,9 +531,7 @@ void DB::writeField(JSON::Sink &sink, unsigned i) const {
 }
 
 
-bool DB::getNull(unsigned i) const {
-  return !res->current_row[i];
-}
+bool DB::getNull(unsigned i) const {return !res->current_row[i];}
 
 
 string DB::getString(unsigned i) const {
@@ -546,9 +540,7 @@ string DB::getString(unsigned i) const {
 }
 
 
-bool DB::getBoolean(unsigned i) const {
-  return String::parseBool(getString(i));
-}
+bool DB::getBoolean(unsigned i) const {return String::parseBool(getString(i));}
 
 
 double DB::getDouble(unsigned i) const {
@@ -667,29 +659,11 @@ string DB::rowToString() const {
 }
 
 
-string DB::getInfo() const {
-  return mysql_info(db);
-}
-
-
-const char *DB::getSQLState() const {
-  return mysql_sqlstate(db);
-}
-
-
-bool DB::hasError() const {
-  return mysql_errno(db);
-}
-
-
-string DB::getError() const {
-  return mysql_error(db);
-}
-
-
-unsigned DB::getErrorNumber() const {
-  return mysql_errno(db);
-}
+string DB::getInfo() const {return mysql_info(db);}
+const char *DB::getSQLState() const {return mysql_sqlstate(db);}
+bool DB::hasError() const {return mysql_errno(db);}
+string DB::getError() const {return mysql_error(db);}
+unsigned DB::getErrorNumber() const {return mysql_errno(db);}
 
 
 void DB::raiseError(const string &msg, bool withDBError) const {
@@ -698,9 +672,7 @@ void DB::raiseError(const string &msg, bool withDBError) const {
 }
 
 
-unsigned DB::getWarningCount() const {
-  return mysql_warning_count(db);
-}
+unsigned DB::getWarningCount() const {return mysql_warning_count(db);}
 
 
 void DB::assertConnected() const {
@@ -759,29 +731,11 @@ bool DB::continueNB(unsigned ready) {
 }
 
 
-bool DB::waitRead() const {
-  return status & MYSQL_WAIT_READ;
-}
-
-
-bool DB::waitWrite() const {
-  return status & MYSQL_WAIT_WRITE;
-}
-
-
-bool DB::waitExcept() const {
-  return status & MYSQL_WAIT_EXCEPT;
-}
-
-
-bool DB::waitTimeout() const {
-  return status & MYSQL_WAIT_TIMEOUT;
-}
-
-
-int DB::getSocket() const {
-  return mysql_get_socket(db);
-}
+bool DB::waitRead() const {return status & MYSQL_WAIT_READ;}
+bool DB::waitWrite() const {return status & MYSQL_WAIT_WRITE;}
+bool DB::waitExcept() const {return status & MYSQL_WAIT_EXCEPT;}
+bool DB::waitTimeout() const {return status & MYSQL_WAIT_TIMEOUT;}
+int DB::getSocket() const {return mysql_get_socket(db);}
 
 
 double DB::getTimeout() const {
@@ -799,6 +753,22 @@ string DB::escape(const string &s) const {
 }
 
 
+string DB::toHex(const string &s) {
+  SmartPointer<char>::Array to = new char[s.length() * 2 + 1];
+
+  unsigned len = mysql_hex_string(to.get(), CPP_TO_C_STR(s), s.length());
+
+  return string(to.get(), len);
+}
+
+
+string DB::formatBool(bool value) {return value ? "true" : "false";}
+string DB::format(double value) {return String(value);}
+string DB::format(int32_t value) {return String(value);}
+string DB::format(uint32_t value) {return String(value);}
+string DB::format(const string &value) const {return "'" + escape(value) + "'";}
+
+
 namespace {
   string::const_iterator parseSubstitution(string &result, const DB &db,
                                            const JSON::Dict &dict,
@@ -811,14 +781,13 @@ namespace {
 
     if (it == end || ++it == end) return start;
 
-    if (!dict.has(name)) result.append("null");
+    if (!dict.has(name)) result.append(db.formatNull());
     else switch (*it) {
-      case 'b': result.append(dict.getBoolean(name) ? "true" : "false"); break;
-      case 'f': result.append(String(dict.getNumber(name))); break;
-      case 'i': result.append(String(dict.getS32(name))); break;
-      case 's': result.append("'" + db.escape(dict.getString(name)) + "'");
-        break;
-      case 'u': result.append(String(dict.getU32(name))); break;
+      case 'b': result.append(db.formatBool(dict.getBoolean(name))); break;
+      case 'f': result.append(db.format(dict.getNumber(name))); break;
+      case 'i': result.append(db.format(dict.getS32(name))); break;
+      case 'u': result.append(db.format(dict.getU32(name))); break;
+      case 's': result.append(db.format(dict.getString(name))); break;
       default: return start;
       }
 
@@ -853,28 +822,13 @@ string DB::format(const string &s, const JSON::Dict &dict) const {
 }
 
 
-string DB::toHex(const string &s) {
-  SmartPointer<char>::Array to = new char[s.length() * 2 + 1];
-
-  unsigned len = mysql_hex_string(to.get(), CPP_TO_C_STR(s), s.length());
-
-  return string(to.get(), len);
-}
-
-
 void DB::libraryInit(int argc, char *argv[], char *groups[]) {
   if (mysql_library_init(argc, argv, groups)) THROW("Failed to init MariaDB");
 }
 
 
-void DB::libraryEnd() {
-  mysql_library_end();
-}
-
-
-const char *DB::getClientInfo() {
-  return mysql_get_client_info();
-}
+void DB::libraryEnd() {mysql_library_end();}
+const char *DB::getClientInfo() {return mysql_get_client_info();}
 
 
 void DB::threadInit() {
@@ -882,14 +836,8 @@ void DB::threadInit() {
 }
 
 
-void DB::threadEnd() {
-  mysql_thread_end();
-}
-
-
-bool DB::threadSafe() {
-  return mysql_thread_safe();
-}
+void DB::threadEnd() {mysql_thread_end();}
+bool DB::threadSafe() {return mysql_thread_safe();}
 
 
 bool DB::closeContinue(unsigned ready) {

@@ -33,6 +33,7 @@
 #pragma once
 
 #include <cbang/util/MemberFunctor.h>
+#include <cbang/util/Function.h>
 
 namespace cb {
   namespace MariaDB {
@@ -56,5 +57,7 @@ namespace cb {
                    EventDBCallback::state_t);
     CBANG_MEMBER_FUNCTOR1(EventDBMemberFunctor, EventDBCallback, void,  \
                           operator(), EventDBCallback::state_t);
+    CBANG_FUNCTION1(EventDBFunction, EventDBCallback, void, operator(), \
+                    EventDBCallback::state_t);
   }
 }

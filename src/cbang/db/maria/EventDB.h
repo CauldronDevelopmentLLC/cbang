@@ -101,6 +101,13 @@ namespace cb {
       }
 
 
+#if 199711L < __cplusplus
+      void query(typename EventDBFunction::func_t cb, const std::string &s,
+                 const SmartPointer<JSON::Value> &dict = 0) {
+        query(new EventDBFunction(cb), s, dict);
+      }
+#endif // 199711L < __cplusplus
+
       // From DB
       using DB::connect;
       using DB::query;

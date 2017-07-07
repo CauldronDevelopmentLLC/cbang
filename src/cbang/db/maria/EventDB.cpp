@@ -88,7 +88,6 @@ namespace {
     EventDB &db;
     SmartPointer<EventDBCallback> cb;
     string query;
-    const SmartPointer<JSON::Value> dict;
     unsigned retry;
 
     typedef enum {
@@ -105,9 +104,8 @@ namespace {
 
   public:
     QueryCallback(EventDB &db, const SmartPointer<EventDBCallback> &cb,
-                  const string &query, const SmartPointer<JSON::Value> &dict,
-                  unsigned retry = 5) :
-      db(db), cb(cb), query(query), dict(dict), retry(retry),
+                  const string &query, unsigned retry = 5) :
+      db(db), cb(cb), query(query), retry(retry),
       state(STATE_START) {}
 
 
@@ -129,7 +127,6 @@ namespace {
       switch (state) {
       case STATE_START:
         state = STATE_QUERY;
-        if (!dict.isNull()) query = db.format(query, dict->getDict());
         LOG_DEBUG(5, "SQL: " << query);
         if (!db.queryNB(query)) return false;
 
@@ -253,6 +250,7 @@ void EventDB::connect(const SmartPointer<EventDBCallback> &cb,
 
 void EventDB::query(const SmartPointer<EventDBCallback> &cb, const string &s,
                     const SmartPointer<JSON::Value> &dict) {
-  SmartPointer<QueryCallback> queryCB = new QueryCallback(*this, cb, s, dict);
+  string query = dict.isNull() ? s : format(s, dict->getDict());
+  SmartPointer<QueryCallback> queryCB = new QueryCallback(*this, cb, query);
   if (isPending() || !queryCB->next()) newEvent(queryCB);
 }

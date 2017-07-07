@@ -239,6 +239,12 @@ namespace cb {
       // Formatting
       std::string escape(const std::string &s) const;
       static std::string toHex(const std::string &s);
+      static std::string formatNull() {return "null";}
+      static std::string formatBool(bool value);
+      static std::string format(double value);
+      static std::string format(int32_t value);
+      static std::string format(uint32_t value);
+      std::string format(const std::string &value) const;
       std::string format(const std::string &s, const JSON::Dict &dict) const;
 
       // Library

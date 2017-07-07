@@ -30,46 +30,36 @@
 
 \******************************************************************************/
 
-#include "JSONHandler.h"
-#include "Request.h"
-#include "Buffer.h"
-#include "BufferDevice.h"
-#include "Headers.h"
+#include "JSONResponse.h"
 
-#include <cbang/String.h>
-#include <cbang/json/JSON.h>
 #include <cbang/log/Logger.h>
 
-using namespace cb::Event;
+#include <mysql/mysqld_error.h>
+
+using namespace cb::MariaDB;
+using namespace cb;
 using namespace std;
 
 
-bool JSONHandler::operator()(Request &req) {
-  try {
-    // Setup JSON output
-    SmartPointer<JSON::Writer> writer = req.getJSONWriter();
+void JSONResponse::error() {
+  string message = db.getError();
+  int error = HTTP::StatusCode::HTTP_INTERNAL_SERVER_ERROR;
 
-    // Parse JSON message
-    JSON::ValuePtr msg = req.getJSONMessage();
-
-    // Log JSON call
-    const string &path = req.getURI().getPath();
-    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path << "()");
-    else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
-
-    // Dispatch JSON call
-    (*this)(req, msg, *writer);
-
-    // Make sure JSON stream is complete
-    writer->close();
-
-    // Send reply
-    req.reply();
-
-  } catch (const Exception &e) {
-    LOG_ERROR(e);
-    req.sendJSONError(e.getCode(), e.getMessage());
+  switch (db.getErrorNumber()) {
+  case ER_SIGNAL_NOT_FOUND: error = HTTP::StatusCode::HTTP_NOT_FOUND; break;
+  case ER_SIGNAL_EXCEPTION: error = HTTP::StatusCode::HTTP_BAD_REQUEST; break;
+  default: break;
   }
 
-  return true;
+  LOG_ERROR("DB:" << error << ": " << message);
+  req.sendJSONError(error, message);
 }
+
+
+void JSONResponse::done() {
+  writer.release();
+  req.reply();
+}
+
+
+void JSONResponse::retry() {writer = req.getJSONWriter();}

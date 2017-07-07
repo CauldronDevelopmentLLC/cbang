@@ -120,6 +120,8 @@ namespace CBANG_STRUCT_NAMESPACE {
     static unsigned getMemberCount() {return (unsigned)INDEX_COUNT;}
     static unsigned getRawMemberCount() {return (unsigned)INDEX_COUNT;}
     static const char *getMemberName(unsigned index);
+    static bool hasMember(const std::string &name);
+    static bool hasMemberCI(const std::string &name);
 
     std::string toString(unsigned index) const;
     void parse(unsigned index, const std::string &value);

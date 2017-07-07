@@ -30,46 +30,21 @@
 
 \******************************************************************************/
 
-#include "JSONHandler.h"
-#include "Request.h"
-#include "Buffer.h"
-#include "BufferDevice.h"
-#include "Headers.h"
+#pragma once
 
-#include <cbang/String.h>
-#include <cbang/json/JSON.h>
-#include <cbang/log/Logger.h>
-
-using namespace cb::Event;
-using namespace std;
+#include "JSONResponse.h"
 
 
-bool JSONHandler::operator()(Request &req) {
-  try {
-    // Setup JSON output
-    SmartPointer<JSON::Writer> writer = req.getJSONWriter();
+namespace cb {
+  namespace MariaDB {
+    class JSONListResponse : public JSONResponse {
+    public:
+      JSONListResponse(Event::Request &req, EventDB &db);
 
-    // Parse JSON message
-    JSON::ValuePtr msg = req.getJSONMessage();
-
-    // Log JSON call
-    const string &path = req.getURI().getPath();
-    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path << "()");
-    else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
-
-    // Dispatch JSON call
-    (*this)(req, msg, *writer);
-
-    // Make sure JSON stream is complete
-    writer->close();
-
-    // Send reply
-    req.reply();
-
-  } catch (const Exception &e) {
-    LOG_ERROR(e);
-    req.sendJSONError(e.getCode(), e.getMessage());
+      // From EventDBCallbackHandler
+      void retry();
+      void row();
+      void done();
+    };
   }
-
-  return true;
 }

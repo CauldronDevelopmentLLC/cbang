@@ -30,13 +30,13 @@
 
 \******************************************************************************/
 
+#include <cbang/String.h>
 #include <cbang/SStream.h>
 #include <cbang/Exception.h>
 
-#include <cbang/xml/XMLWriter.h>
-
 using namespace std;
 using namespace cb;
+
 
 namespace CBANG_STRUCT_NAMESPACE {
   CBANG_STRUCT_CLASS::CBANG_STRUCT_CLASS() :
@@ -60,6 +60,26 @@ namespace CBANG_STRUCT_NAMESPACE {
     default: THROWS("Invalid member index " << index << " to structure "
                     CBANG_STRING(CBANG_STRUCT_NAME));
     }
+  }
+
+
+  bool CBANG_STRUCT_CLASS::hasMember(const string &name) {
+#define CBANG_ITEM(NAME, MNAME, TYPE, INIT, PRINT, PARSE) \
+    if (name == #MNAME) return true;
+#include CBANG_STRUCT_DEF
+#undef CBANG_ITEM
+    return false;
+  }
+
+
+  bool CBANG_STRUCT_CLASS::hasMemberCI(const string &name) {
+    string lName = String::toLower(name);
+
+#define CBANG_ITEM(NAME, MNAME, TYPE, INIT, PRINT, PARSE) \
+    if (lName == String::toLower(#MNAME)) return true;
+#include CBANG_STRUCT_DEF
+#undef CBANG_ITEM
+    return false;
   }
 
 

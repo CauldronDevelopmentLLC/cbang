@@ -411,8 +411,29 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
 }
 
 
+SmartPointer<JSON::Value> Request::getJSONMessage() const {
+  Headers hdrs = getInputHeaders();
+
+  if (hdrs.hasContentType() &&
+      String::startsWith(hdrs.getContentType(), "application/json"))
+    return getInputJSON();
+
+  SmartPointer<JSON::Value> msg;
+  const URI &uri = getURI();
+
+  if (!uri.empty()) {
+    msg = new JSON::Dict;
+
+    for (URI::const_iterator it = uri.begin(); it != uri.end(); it++)
+      msg->insert(it->first, it->second);
+  }
+
+  return msg;
+}
+
+
 SmartPointer<JSON::Writer>
-Request::getJSONWriter(unsigned indent, bool compact) const {
+Request::getJSONWriter(unsigned indent, bool compact) {
   class JSONBufferWriter : public JSON::Writer {
     SmartPointer<ostream> streamPtr;
 
@@ -422,7 +443,15 @@ Request::getJSONWriter(unsigned indent, bool compact) const {
       JSON::Writer(*streamPtr, indent, compact), streamPtr(streamPtr) {}
   };
 
+  resetOutput();
+  setContentType("application/json");
+
   return new JSONBufferWriter(getOutputStream(), indent, compact);
+}
+
+
+SmartPointer<JSON::Writer> Request::getJSONWriter() {
+  return getJSONWriter(0, !getURI().has("pretty"));
 }
 
 
@@ -447,6 +476,19 @@ void Request::sendError(int code, const string &message) {
   setContentType("text/plain");
   send(message);
   sendError(code);
+}
+
+
+void Request::sendJSONError(int code, const string &message) {
+  SmartPointer<JSON::Writer> writer = getJSONWriter();
+
+  writer->beginList();
+  writer->append("error");
+  writer->append(message);
+  writer->endList();
+  writer->close();
+
+  reply(code ? code : HTTP_INTERNAL_SERVER_ERROR);
 }
 
 

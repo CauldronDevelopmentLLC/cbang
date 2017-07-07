@@ -30,46 +30,33 @@
 
 \******************************************************************************/
 
-#include "JSONHandler.h"
-#include "Request.h"
-#include "Buffer.h"
-#include "BufferDevice.h"
-#include "Headers.h"
+#include "JSONListResponse.h"
 
-#include <cbang/String.h>
-#include <cbang/json/JSON.h>
-#include <cbang/log/Logger.h>
-
-using namespace cb::Event;
-using namespace std;
+using namespace cb;
+using namespace cb::MariaDB;
 
 
-bool JSONHandler::operator()(Request &req) {
-  try {
-    // Setup JSON output
-    SmartPointer<JSON::Writer> writer = req.getJSONWriter();
+JSONListResponse::JSONListResponse(Event::Request &req, EventDB &db) :
+  JSONResponse(req, db) {
+  writer->beginList();
+}
 
-    // Parse JSON message
-    JSON::ValuePtr msg = req.getJSONMessage();
 
-    // Log JSON call
-    const string &path = req.getURI().getPath();
-    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path << "()");
-    else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
+void JSONListResponse::retry() {
+  JSONResponse::retry();
+  writer->beginList();
+}
 
-    // Dispatch JSON call
-    (*this)(req, msg, *writer);
 
-    // Make sure JSON stream is complete
-    writer->close();
+void JSONListResponse::row() {
+  writer->beginAppend();
 
-    // Send reply
-    req.reply();
+  if (db.getFieldCount() == 1) db.writeField(*writer, 0);
+  else db.writeRowDict(*writer);
+}
 
-  } catch (const Exception &e) {
-    LOG_ERROR(e);
-    req.sendJSONError(e.getCode(), e.getMessage());
-  }
 
-  return true;
+void JSONListResponse::done() {
+  writer->endList();
+  JSONResponse::done();
 }

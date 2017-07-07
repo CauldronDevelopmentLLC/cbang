@@ -185,14 +185,17 @@ namespace cb {
       virtual Buffer getOutputBuffer() const;
 
       virtual SmartPointer<JSON::Value> getInputJSON() const;
+      virtual SmartPointer<JSON::Value> getJSONMessage() const;
       virtual SmartPointer<JSON::Writer>
-      getJSONWriter(unsigned indent = 0, bool compact = false) const;
+      getJSONWriter(unsigned indent, bool compact);
+      virtual SmartPointer<JSON::Writer> getJSONWriter();
 
       virtual SmartPointer<std::istream> getInputStream() const;
       virtual SmartPointer<std::ostream> getOutputStream() const;
 
       virtual void sendError(int code);
       virtual void sendError(int code, const std::string &message);
+      virtual void sendJSONError(int code, const std::string &message);
 
       virtual void send(const Buffer &buf);
       virtual void send(const char *data, unsigned length);
