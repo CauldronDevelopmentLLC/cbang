@@ -217,12 +217,12 @@ void TarHeader::write(ostream &stream) {
 }
 
 
-void TarHeader::writeNumber(uint32_t n, char *buf, uint32_t length) {
+void TarHeader::writeNumber(uint32_t n, char *buf, unsigned length) {
   sprintf(buf, "%0*" PRIo32, length - 1, n);
 }
 
 
-void TarHeader::writeNumber(uint64_t n, char *buf, uint32_t length) {
+void TarHeader::writeNumber(uint64_t n, char *buf, unsigned length) {
   sprintf(buf, "%0*" PRIo64, length - 1, n);
 }
 
@@ -232,14 +232,14 @@ bool TarHeader::isEOF() const {
 }
 
 
-void TarHeader::writeString(const string &s, char *buf, uint32_t length) {
+void TarHeader::writeString(const string &s, char *buf, unsigned length) {
   strncpy(buf, s.c_str(), length);
   for (unsigned i = s.length(); i < length; i++)
     buf[i] = 0;
 }
 
 
-uint64_t TarHeader::readNumber(const char *buf, uint32_t length) {
+uint64_t TarHeader::readNumber(const char *buf, unsigned length) {
   uint64_t value = 0;
 
   for (unsigned i = 0; i < length; i++) {

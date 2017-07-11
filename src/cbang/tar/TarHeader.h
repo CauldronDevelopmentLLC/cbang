@@ -90,10 +90,10 @@ namespace cb {
 
     bool isEOF() const;
 
-    static void writeNumber(uint32_t n, char *buf, uint32_t length);
-    static void writeNumber(uint64_t n, char *buf, uint32_t length);
-    static void writeString(const std::string &s, char *buf, uint32_t length);
-    static uint64_t readNumber(const char *buf, uint32_t length);
+    static void writeNumber(uint32_t n, char *buf, unsigned length);
+    static void writeNumber(uint64_t n, char *buf, unsigned length);
+    static void writeString(const std::string &s, char *buf, unsigned length);
+    static uint64_t readNumber(const char *buf, unsigned length);
 
   protected:
     unsigned computeChecksum();
