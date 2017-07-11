@@ -46,7 +46,7 @@
 
 #ifndef PRIo64
 #if defined(_M_X64) || (defined(__x86_64__) && !defined(__ILP32__)) ||  \
-  defined(__aarch64__)
+  defined(__aarch64__) || defined(__ppc64__) || defined(__PPC64__)
 #define PRIo64 "lo"
 #else
 #define PRIo64 "llo"
