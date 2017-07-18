@@ -90,3 +90,10 @@ string InputSource::toString() const {
   SystemUtilities::cp(getStream(), str);
   return str.str();
 }
+
+
+string InputSource::getLine(unsigned maxLength) const {
+  char line[maxLength];
+  getStream().getline(line, maxLength);
+  return string(line);
+}
