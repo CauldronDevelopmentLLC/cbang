@@ -37,7 +37,7 @@ using namespace cb;
 using namespace cb::Event;
 
 
-SmartPointer<Event::Event>
+SmartPointer<cb::Event::Event>
 PersistentEventManager::addEvent(double t,
                                  const SmartPointer<EventCallback> &cb) {
   SmartPointer<Event> e = base.newPersistentEvent(cb);
@@ -50,7 +50,7 @@ PersistentEventManager::addEvent(double t,
 }
 
 
-SmartPointer<Event::Event>
+SmartPointer<cb::Event::Event>
 PersistentEventManager::addSignal(int signal,
                                   const SmartPointer<EventCallback> &cb) {
   SmartPointer<Event> e = base.newPersistentSignal(signal, cb);
