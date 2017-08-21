@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_TAR_T
-#define CBANG_TAR_T
+#pragma once
 
 #include "TarHeader.h"
 
@@ -69,5 +68,3 @@ namespace cb {
     void skipFile(std::istream &src);
   };
 }
-
-#endif // CBANG_TAR_T

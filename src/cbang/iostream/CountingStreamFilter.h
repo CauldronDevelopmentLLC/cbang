@@ -66,5 +66,3 @@ namespace cb {
     template<typename Sink> bool flush(Sink &snk) {return true;}
   };
 }
-
-#endif // CBANG_Counting_STREAM_FILTER_H

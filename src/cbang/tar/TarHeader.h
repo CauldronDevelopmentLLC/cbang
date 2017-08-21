@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_TAR_HEADER_T
-#define CBANG_TAR_HEADER_T
+#pragma once
 
 #include <cbang/StdTypes.h>
 #include <string>
@@ -99,5 +98,3 @@ namespace cb {
     unsigned computeChecksum();
   };
 }
-
-#endif // CBANG_TAR_HEADER_T

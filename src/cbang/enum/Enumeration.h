@@ -30,8 +30,7 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_ENUMERATION_H
-#define CBANG_ENUMERATION_H
+#pragma once
 
 /***
  * This template is used in combination with 'MakeEnumeration.def' and
@@ -161,5 +160,3 @@ namespace cb {
     return stream << e.toString();
   }
 }
-
-#endif // CBANG_ENUMERATION_H
