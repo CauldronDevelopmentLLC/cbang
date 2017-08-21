@@ -33,23 +33,13 @@
 #pragma once
 
 #ifdef _WIN32
-#if _MSC_VER < 1900
-struct timeval {
-  long tv_sec;
-  long tv_usec;
-};
-
-#else
-struct timeval;
-#endif
-
 #undef max
 #undef min
-
-#else // _WIN32
-#include <time.h>
-#include <sys/time.h>
 #endif // _WIN32
+
+
+struct timeval;
+struct timespec;
 
 
 namespace cb {
