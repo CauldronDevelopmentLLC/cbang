@@ -93,7 +93,7 @@ string InputSource::toString() const {
 
 
 string InputSource::getLine(unsigned maxLength) const {
-  char line[maxLength];
-  getStream().getline(line, maxLength);
-  return string(line);
+  SmartPointer<char>::Array line = new char[maxLength];
+  getStream().getline(line.get(), maxLength);
+  return string(line.get());
 }
