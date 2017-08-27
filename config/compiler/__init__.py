@@ -69,6 +69,7 @@ def configure(conf, cstd = 'c99'):
     distcc = int(env.get('distcc'))
     ccache = int(env.get('ccache'))
     ccflags = env.get('ccflags')
+    cxxflags = env.get('cxxflags')
     linkflags = env.get('linkflags')
     cxxstd = env.get('cxxstd')
     platform = env.get('platform')
@@ -453,6 +454,7 @@ def configure(conf, cstd = 'c99'):
 
     # User flags (Must be last)
     if ccflags: env.Append(CCFLAGS = ccflags.split())
+    if cxxflags: env.Append(CXXFLAGS = cxxflags.split())
     if linkflags: env.Append(LINKFLAGS = linkflags.split())
 
 
@@ -567,6 +569,7 @@ def generate(env):
         EnumVariable('platform', 'Override default platform', '',
                    allowed_values = ('', 'win32', 'posix', 'darwin')),
         ('ccflags', 'Set extra C and C++ compiler flags', None),
+        ('cxxflags', 'Set extra C++ compiler flags', None),
         ('linkflags', 'Set extra linker flags', None),
         EnumVariable('cxxstd', 'Set C++ language standard', 'gnu++98',
                    allowed_values = ('gnu++98', 'c++98', 'c++0x', 'gnu++0x',
