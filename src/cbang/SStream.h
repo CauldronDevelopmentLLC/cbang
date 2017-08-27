@@ -34,7 +34,7 @@
 
 #include <sstream>
 
-#define CBANG_SSTR(x) (static_cast<std::ostringstream &>                \
+#define CBANG_SSTR(x) (static_cast<const std::ostringstream &>          \
                        ((std::ostringstream() << std::flush << x))).str()
 
 #ifdef USING_CBANG
