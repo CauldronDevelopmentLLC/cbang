@@ -34,8 +34,7 @@
 
 #include <sstream>
 
-// NOTE: Using pointer to work around bug in GCC 4.1-4.2
-#define CBANG_SSTR(x) (dynamic_cast<std::ostringstream &>               \
+#define CBANG_SSTR(x) (static_cast<std::ostringstream &>                \
                        ((std::ostringstream() << std::flush << x))).str()
 
 #ifdef USING_CBANG
