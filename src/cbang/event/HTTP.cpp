@@ -199,7 +199,3 @@ bufferevent *HTTP::bevCB(event_base *base) {
 
   return bev;
 }
-
-
-void HTTP::requestCB(evhttp_request *req) {
-}

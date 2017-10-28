@@ -86,7 +86,6 @@ namespace cb {
       int bind(const IPAddress &addr);
 
       bufferevent *bevCB(event_base *base);
-      void requestCB(evhttp_request *req);
     };
   }
 }

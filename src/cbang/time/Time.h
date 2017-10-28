@@ -39,7 +39,7 @@
 namespace cb {
   /**
    * Used for printing and parsing times.  Should be 64-bit everywhere and
-   * there for safe past year 2038.
+   * therefore safe past year 2038.
    *
    * E.g.  cout << Time(Time::now() + Time::SEC_PER_HOUR, "%H:%M:%S") << endl;
    */
