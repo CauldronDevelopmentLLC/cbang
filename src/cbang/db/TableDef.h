@@ -71,7 +71,6 @@ namespace cb {
       {this->constraints = constraints;}
 
       void add(const ColumnDef &column);
-      void add(const char *columns[][3]);
 
       unsigned getIndex(const std::string &column) const;
 

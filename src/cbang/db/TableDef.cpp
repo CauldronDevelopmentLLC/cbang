@@ -59,12 +59,6 @@ void TableDef::add(const ColumnDef &column) {
 }
 
 
-void TableDef::add(const char *columns[][3]) {
-  for (unsigned i = 0; columns[i][0] && columns[i][1] && columns[i][2]; i++)
-    add(ColumnDef(columns[i][0], columns[i][1], columns[i][2]));
-}
-
-
 unsigned TableDef::getIndex(const std::string &column) const {
   columnMap_t::const_iterator it = columnMap.find(column);
   if (it == columnMap.end())

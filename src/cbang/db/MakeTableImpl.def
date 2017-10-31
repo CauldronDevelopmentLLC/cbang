@@ -61,15 +61,10 @@ namespace DB_TABLE_NAMESPACE {
       DB::TableDef(CBANG_STRING(DB_TABLE_NAME),
                    CBANG_STRING(DB_TABLE_CONSTRAINTS)) {
 
-      static const char *columns[][3] = {
 #define CBANG_ITEM(NAME, TYPE, CONSTRAINTS, FROM_CAST, TO_CAST) \
-        {#NAME, #TYPE, #CONSTRAINTS},
+      add(ColumnDef(#NAME, #TYPE, #CONSTRAINTS));
 #include DB_TABLE_DEF
 #undef CBANG_ITEM
-        {0, 0, 0}
-      };
-
-      add(columns);
     }
 
 
