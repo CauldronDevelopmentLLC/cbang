@@ -64,6 +64,8 @@ def configure(conf, cstd = 'c99'):
     strict = int(env.get('strict'))
     threaded = int(env.get('threaded'))
     profile = int(env.get('profile'))
+    tcmalloc = int(env.get('tcmalloc'))
+    gperf = int(env.get('gperf'))
     depends = int(env.get('depends'))
     compiler = env.get('compiler')
     distcc = int(env.get('distcc'))
@@ -250,9 +252,25 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['-pg'])
 
 
+    # tcmalloc & gperf
+    if tcmalloc and compiler_mode == 'gnu':
+        env.AppendUnique(CCFLAGS =
+                         ['-fno-builtin-malloc', '-fno-builtin-calloc',
+                          '-fno-builtin-realloc', '-fno-builtin-free'])
+
+    if tcmalloc and gperf:
+        env.AppendUnique(prefer_dynamic = ['tcmalloc_and_profiler'])
+        conf.CBRequireLib('tcmalloc_and_profiler')
+    elif tcmalloc:
+        env.AppendUnique(prefer_dynamic = ['tcmalloc'])
+        conf.CBRequireLib('tcmalloc')
+    elif gperf:
+        env.AppendUnique(prefer_dynamic = ['profiler'])
+        conf.CBRequireLib('profiler')
+
+
     # Debug flags
-    if compiler_mode == 'msvc':
-        env['PDB'] = '${TARGET}.pdb'
+    if compiler_mode == 'msvc': env['PDB'] = '${TARGET}.pdb'
 
     if debug:
         if compiler_mode == 'msvc':
@@ -262,7 +280,7 @@ def configure(conf, cstd = 'c99'):
 
         elif compiler_mode == 'gnu':
             if compiler == 'gnu':
-                env.AppendUnique(CCFLAGS = ['-ggdb', '-Wall'])
+                env.AppendUnique(CCFLAGS = ['-g', '-Wall'])
                 if conf.CheckRDynamic():
                     env.AppendUnique(LINKFLAGS = ['-rdynamic']) # for backtrace
             elif compiler == 'intel':
@@ -563,6 +581,8 @@ def generate(env):
         BoolVariable('strict', 'Enable or disable strict options', 1),
         BoolVariable('threaded', 'Enable or disable thread support', 1),
         BoolVariable('profile', 'Enable or disable profiler', 0),
+        BoolVariable('tcmalloc', 'Enable or disable tcmalloc', 0),
+        BoolVariable('gperf', 'Enable or disable gperf', 0),
         BoolVariable('depends', 'Enable or disable dependency files', 0),
         BoolVariable('distcc', 'Enable or disable distributed builds', 0),
         BoolVariable('ccache', 'Enable or disable cached builds', 0),
