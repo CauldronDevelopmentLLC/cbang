@@ -140,9 +140,7 @@ HTTP::HTTP(const Base &base, const cb::SmartPointer<cb::SSLContext> &sslCtx) :
 }
 
 
-HTTP::~HTTP() {
-  if (http) evhttp_free(http);
-}
+HTTP::~HTTP() {if (http) evhttp_free(http);}
 
 
 void HTTP::setMaxBodySize(unsigned size) {evhttp_set_max_body_size(http, size);}
