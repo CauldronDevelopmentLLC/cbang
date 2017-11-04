@@ -49,7 +49,8 @@ namespace cb {
     ID(uint64_t id) : id(id) {}
 
     std::ostream &print(std::ostream &stream) const;
-    const std::string toString() const;
+    std::string toString() const;
+    operator std::string () const {return toString();}
   };
 
   inline std::ostream &operator<<(std::ostream &stream, const ID &id) {

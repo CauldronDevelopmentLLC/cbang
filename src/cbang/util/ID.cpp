@@ -50,7 +50,7 @@ ostream &ID::print(ostream &stream) const {
 }
 
 
-const string ID::toString() const {
+string ID::toString() const {
   ostringstream str;
   str << *this;
   return str.str();

@@ -40,6 +40,7 @@
 
 #include <ostream>
 #include <vector>
+#include <iomanip>
 
 
 namespace cb {
@@ -96,10 +97,24 @@ namespace cb {
 
     operator std::string () const {return toString();}
 
+
     std::string toString(bool trimRev = true) const {
       std::string s = String(getMajor()) + "." + String(getMinor());
       if (!trimRev || getRevision()) s += "." + String(getRevision());
       return s;
+    }
+
+
+    std::string toHexString() const {
+      return CBANG_SSTR("0x" << std::hex << std::setfill('0')
+                        << (unsigned)getMajor()
+                        << std::setw(2) << (unsigned)getMinor()
+                        << std::setw(2) << (unsigned)getRevision());
+    }
+
+
+    uint32_t toU32() const {
+      return (uint32_t)getMajor() << 16 | getMinor() << 8 | getRevision();
     }
 
 
