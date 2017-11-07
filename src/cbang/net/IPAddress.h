@@ -63,6 +63,7 @@ namespace cb {
     uint16_t getPort() const {return port;}
 
     std::string toString() const;
+    std::string getIPString() const {return IPAddress(ip).toString();}
     operator std::string () const {return toString();}
     operator uint32_t () const {return getIP();}
 
