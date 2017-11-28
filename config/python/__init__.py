@@ -37,7 +37,7 @@ def configure(conf):
 
     dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 
-    print "Trying local python-config.py"
+    print("Trying local python-config.py")
     cmd = "python%s '%s'/python-config.py" % (python_version, dir)
 
     return try_config(conf, cmd)
