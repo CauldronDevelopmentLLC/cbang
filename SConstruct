@@ -49,6 +49,7 @@ if not env.GetOption('clean'):
     conf.CBConfig('compiler')
     conf.CBConfig('cbang-deps', with_openssl = env['with_openssl'])
     env.CBDefine('USING_CBANG') # Using CBANG macro namespace
+    if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
 
 # Local includes
 env.Append(CPPPATH = ['#/include', '#/src', '#/src/boost'])
