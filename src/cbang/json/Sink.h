@@ -49,6 +49,14 @@ namespace cb {
       virtual void writeNull() = 0;
       virtual void writeBoolean(bool value) = 0;
       virtual void write(double value) = 0;
+      virtual void write(int8_t value) {write((double)value);}
+      virtual void write(uint8_t value) {write((double)value);}
+      virtual void write(int16_t value) {write((double)value);}
+      virtual void write(uint16_t value) {write((double)value);}
+      virtual void write(int32_t value) {write((double)value);}
+      virtual void write(uint32_t value) {write((double)value);}
+      virtual void write(int64_t value) {write((double)value);}
+      virtual void write(uint64_t value) {write((double)value);}
       virtual void write(const std::string &value) = 0;
       void write(const Value &value);
 
