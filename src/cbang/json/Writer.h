@@ -41,10 +41,10 @@ namespace cb {
   namespace JSON {
     class Writer : public NullSink {
       /***
-       * The differences between JSON (Javascript Object Notation) and
-       * JSON (Python Object Notation) are small.  They are as follows:
+       * The differences between JSON (Javascript Object Notation) mode and
+       * Python mode are as follows:
        *
-       *                       |  JSON                |  JSON
+       *                       |  JSON                |  Python
        *-----------------------------------------------------------------
        * Boolean Literals      |  'true' & 'false'    |  'True' & 'False'
        * Empty set literal     |  'null'              |  'None'
