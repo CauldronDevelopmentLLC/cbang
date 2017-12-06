@@ -68,24 +68,10 @@ void NullSink::reset() {
 }
 
 
-void NullSink::writeNull() {
-  assertCanWrite();
-}
-
-
-void NullSink::writeBoolean(bool value) {
-  assertCanWrite();
-}
-
-
-void NullSink::write(double value) {
-  assertCanWrite();
-}
-
-
-void NullSink::write(const std::string &value) {
-  assertCanWrite();
-}
+void NullSink::writeNull() {assertCanWrite();}
+void NullSink::writeBoolean(bool value) {assertCanWrite();}
+void NullSink::write(double value) {assertCanWrite();}
+void NullSink::write(const std::string &value) {assertCanWrite();}
 
 
 void NullSink::beginList(bool simple) {

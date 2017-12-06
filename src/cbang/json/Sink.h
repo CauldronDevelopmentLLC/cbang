@@ -74,8 +74,8 @@ namespace cb {
       // List functions
       void appendNull() {beginAppend(); writeNull();}
       void appendBoolean(bool value) {beginAppend(); writeBoolean(value);}
-      void append(double value) {beginAppend(); write(value);}
-      void append(const std::string &value) {beginAppend(); write(value);}
+      template <typename T>
+      void append(const T &value) {beginAppend(); write(value);}
       void appendList(bool simple = false) {beginAppend(); beginList(simple);}
       void appendDict(bool simple = false) {beginAppend(); beginDict(simple);}
       void append(const Value &value);
@@ -84,9 +84,7 @@ namespace cb {
       void insertNull(const std::string &key) {beginInsert(key); writeNull();}
       void insertBoolean(const std::string &key, bool value)
       {beginInsert(key); writeBoolean(value);}
-      void insert(const std::string &key, double value)
-      {beginInsert(key); write(value);}
-      virtual void insert(const std::string &key, const std::string &value)
+      template <typename T> void insert(const std::string &key, const T &value)
       {beginInsert(key); write(value);}
       virtual void insertList(const std::string &key, bool simple = false)
       {beginInsert(key); beginList(simple);}
