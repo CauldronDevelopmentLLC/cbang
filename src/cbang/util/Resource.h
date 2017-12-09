@@ -54,7 +54,8 @@ namespace cb {
     {CBANG_THROWS(__func__ << "() not supported by resource");}
     virtual unsigned getLength() const
     {CBANG_THROWS(__func__ << "() not supported by resource");}
-
+    virtual std::string toString() const
+    {CBANG_THROWS(__func__ << "() not supported by resource");}
     virtual const Resource *find(const std::string &path) const
     {CBANG_THROWS(__func__ << "() not supported by resource");}
 
@@ -72,6 +73,7 @@ namespace cb {
 
     const char *getData() const {return data;}
     unsigned getLength() const {return length;}
+    std::string toString() const {return std::string(data, length);}
   };
 
 
