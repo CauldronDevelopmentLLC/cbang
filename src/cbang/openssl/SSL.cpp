@@ -104,6 +104,12 @@ void cb::SSL::setBIO(BIO *bio) {
 }
 
 
+void cb::SSL::setCipherList(const string &list) {
+  if (!SSL_set_cipher_list(ssl, list.c_str()))
+    THROWS("Failed to set cipher list to: " << list);
+}
+
+
 string cb::SSL::getFullSSLErrorStr(int ret) const {
   string s = getSSLErrorStr(SSL_get_error(ssl, ret));
   if (peekError()) s += ", " + getErrorStr();

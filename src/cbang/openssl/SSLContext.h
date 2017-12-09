@@ -58,6 +58,8 @@ namespace cb {
 
     SmartPointer<SSL> createSSL(BIO *bio);
 
+    void setCipherList(const std::string &list);
+
     void setVerifyNone();
     void setVerifyPeer(bool verifyClientOnce = true,
                        bool failIfNoPeerCert = false, unsigned depth = 1);

@@ -95,6 +95,12 @@ SmartPointer<cb::SSL> SSLContext::createSSL(BIO *bio) {
 }
 
 
+void SSLContext::setCipherList(const string &list) {
+  if (!SSL_CTX_set_cipher_list(ctx, list.c_str()))
+    THROWS("Failed to set cipher list to: " << list);
+}
+
+
 void SSLContext::setVerifyNone() {
   SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);
 }

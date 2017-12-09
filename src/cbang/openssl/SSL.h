@@ -69,6 +69,8 @@ namespace cb {
     _SSL *getSSL() const {return ssl;}
     void setBIO(BIO *bio);
 
+    void setCipherList(const std::string &list);
+
     std::string getFullSSLErrorStr(int ret = 0) const;
     bool hasPeerCertificate() const;
     void verifyPeerCertificate() const;
