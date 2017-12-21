@@ -48,6 +48,7 @@ CertificateContext::CertificateContext(const Certificate *issuer,
                                        const CSR *request, const CRL *crl,
                                        int flags) {
   ctx = (X509V3_CTX *)malloc(sizeof(X509V3_CTX));
+  if (!ctx) THROW("Failed to allocate memory");
   X509V3_set_ctx(ctx, issuer ? issuer->getX509() : 0,
                  subject ? subject->getX509() : 0,
                  request ? request->getX509_REQ() : 0,

@@ -47,6 +47,7 @@ using namespace std;
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
 static BIO_METHOD *BIO_meth_new(int type, const char *name) {
   BIO_METHOD *method = (BIO_METHOD *)calloc(1, sizeof(BIO_METHOD));
+  if (!method) THROW("Failed to allocate memory");
 
   if (method) {
     method->type = type;

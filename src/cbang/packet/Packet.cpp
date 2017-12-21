@@ -65,12 +65,14 @@ Packet::Packet(char *data, unsigned size, bool deallocate) :
 
 Packet::Packet(const string &s) :
   data((char *)malloc(s.length())), size(s.length()), deallocate(true) {
+  if (!data) THROW("Failed to allocate memory");
   memcpy(data, s.c_str(), size);
 }
 
 
 Packet::Packet(const Packet &o) : data(0), size(o.size), deallocate(true) {
   data = (char *)malloc(size);
+  if (!data) THROW("Failed to allocate memory");
   memcpy(data, o.data, size);
 }
 
@@ -80,6 +82,7 @@ Packet::Packet(Packet &o, bool steal) :
   if (steal) this->steal(o);
   else {
     data = (char *)malloc(size);
+    if (!data) THROW("Failed to allocate memory");
     memcpy(data, o.data, size);
   }
 }
@@ -88,6 +91,7 @@ Packet::Packet(Packet &o, bool steal) :
 Packet::Packet(const DB::Blob &blob) :
   data((char *)malloc(blob.getLength())), size(blob.getLength()),
   deallocate(true) {
+  if (!data) THROW("Failed to allocate memory");
   memcpy(data, blob.getData(), size);
 }
 
@@ -103,6 +107,7 @@ Packet::~Packet() {
 Packet &Packet::operator=(const Packet &o) {
   if (data && deallocate) free(data);
   data = (char *)malloc(o.size);
+  if (!data) THROW("Failed to allocate memory");
   size = o.size;
   memcpy(data, o.data, size);
   deallocate = true;

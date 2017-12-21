@@ -49,6 +49,7 @@ MemoryBuffer::MemoryBuffer(unsigned capacity, char *buffer, bool deallocate) :
 
   if (!buffer && capacity) {
     this->buffer = (char *)malloc(capacity);
+    if (this->buffer) THROW("Failed to allocate memory");
     this->deallocate = true;
   }
 }
@@ -135,7 +136,7 @@ unsigned MemoryBuffer::increase(unsigned size) {
     if (newCapacity < size) newCapacity = size;
 
     char *newBuffer = (char *)realloc(buffer, newCapacity);
-    if (!newBuffer) THROW("Allocation failed");
+    if (!newBuffer) THROW("Failed to reallocate memory");
 
     capacity = newCapacity;
     buffer = newBuffer;
