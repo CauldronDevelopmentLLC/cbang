@@ -60,4 +60,5 @@ ContentTypes::ContentTypes(Inaccessible) {
   insert(value_type("bz2",  "application/x-bzip2"));
   insert(value_type("gz",   "application/x-gzip"));
   insert(value_type("crt",  "application/x-x509-ca-cert"));
+  insert(value_type("pdf",  "application/pdf"));
 }
