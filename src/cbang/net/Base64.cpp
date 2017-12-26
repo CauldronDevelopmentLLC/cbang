@@ -73,7 +73,7 @@ string Base64::encode(const char *_s, unsigned length) const {
   const uint8_t *s = (uint8_t *)_s;
   const uint8_t *end = s + length;
   string result;
-  unsigned size = length / 3 * 4 + 4;
+  unsigned size = length / 3 * 4 + 4; // Not exact
   if (width) size += (size / width) * 2;
   result.reserve(size);
 
