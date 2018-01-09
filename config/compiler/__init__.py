@@ -10,28 +10,6 @@ import SCons.Builder
 import SCons.Tool
 
 
-class decider_hack:
-    def __init__(self, env):
-        self.env = env
-        self.decider = env.decide_source
-
-    def __call__(self, dep, target, prev_ni):
-        try:
-            csig = dep.csig
-        except AttributeError:
-            csig = MD5signature(dep.get_contents())
-            major, minor = SCons.__version__.split('.')[:2]
-            if major < 2 or (major == 2 and minor < 4): dep.csig = csig
-            dep.get_ninfo().csig = csig
-
-        #print dependency, csig, '?=', prev_ni.csig
-        if prev_ni is None: return True
-        try:
-            return csig != prev_ni.csig
-        except AttributeError:
-            return True
-
-
 def CheckRDynamic(context):
     context.Message('Checking for -rdynamic...')
     env = context.env
@@ -47,9 +25,6 @@ def CheckRDynamic(context):
 def configure(conf, cstd = 'c99'):
     env = conf.env
     if env.GetOption('clean'): return
-
-    # Decider hack.  Works around some SCons bugs.
-    env.Decider(decider_hack(env))
 
     # Get options
     cc = env.get('cc', '').strip()
