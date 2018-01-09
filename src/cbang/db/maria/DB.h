@@ -151,6 +151,7 @@ namespace cb {
       bool queryNB(const std::string &s);
 
       // Result set
+      void flushResults();
       void useResult();
       void storeResult();
       bool storeResultNB();

@@ -292,6 +292,16 @@ bool DB::queryNB(const string &s) {
 }
 
 
+void DB::flushResults() {
+  while (true) {
+    storeResult();
+    if (haveResult()) freeResult();
+    if (!moreResults()) break;
+    nextResult();
+  }
+}
+
+
 void DB::useResult() {
   assertConnected();
   assertNotPending();
@@ -312,7 +322,7 @@ void DB::storeResult() {
   res = mysql_store_result(db);
 
   if (res) stored = true;
-  else if (hasError()) RAISE_DB_ERROR("Failed to store result");
+  else if (mysql_field_count(db)) RAISE_DB_ERROR("Failed to store result");
 }
 
 

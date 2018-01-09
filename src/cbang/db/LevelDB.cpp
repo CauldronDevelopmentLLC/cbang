@@ -217,7 +217,10 @@ LevelDB::LevelDB(const string &name,
 }
 
 
-LevelDB::~LevelDB() {}
+LevelDB::~LevelDB() {
+  db.release(); // Release DB before comparator
+  comparator.release();
+}
 
 
 LevelDB LevelDB::ns(const string &name) {
