@@ -84,10 +84,10 @@ namespace cb {
 
       virtual bool getBoolean() const {CBANG_THROW("Value is not a Boolean");}
       virtual double getNumber() const {CBANG_THROW("Value is not a Number");}
-      int32_t getS32() const;
-      uint32_t getU32() const;
-      int64_t getS64() const;
-      uint64_t getU64() const;
+      virtual int32_t getS32() const {CBANG_THROW("Value is not a Number");}
+      virtual uint32_t getU32() const {CBANG_THROW("Value is not a Number");}
+      virtual int64_t getS64() const {CBANG_THROW("Value is not a Number");}
+      virtual uint64_t getU64() const {CBANG_THROW("Value is not a Number");}
       virtual std::string &getString() {CBANG_THROW("Value is not a String");}
       virtual const std::string &getString() const
       {CBANG_THROW("Value is not a String");}
@@ -99,14 +99,17 @@ namespace cb {
       virtual void setBoolean(bool value)
       {CBANG_THROW("Value is not a Boolean");}
       virtual void set(double value) {CBANG_THROW("Value is not a Number");}
-      void set(int8_t value) {set((double)value);}
-      void set(uint8_t value) {set((double)value);}
-      void set(int16_t value) {set((double)value);}
-      void set(uint16_t value) {set((double)value);}
-      void set(int32_t value) {set((double)value);}
-      void set(uint32_t value) {set((double)value);}
-      void set(int64_t value) {set((double)value);}
-      void set(uint64_t value) {set((double)value);}
+      virtual void set(float value) {set((double)value);}
+      virtual void set(int8_t value) {set((int16_t)value);}
+      virtual void set(uint8_t value) {set((uint16_t)value);}
+      virtual void set(int16_t value) {set((int32_t)value);}
+      virtual void set(uint16_t value) {set((uint32_t)value);}
+      virtual void set(int32_t value) {set((int64_t)value);}
+      virtual void set(uint32_t value) {set((uint64_t)value);}
+      virtual void set(long long int value) {set((int64_t)value);}
+      virtual void set(long long unsigned value) {set((uint64_t)value);}
+      virtual void set(int64_t value) {set((double)value);}
+      virtual void set(uint64_t value) {set((double)value);}
       virtual void set(const std::string &value) {CBANG_THROW("Not a String");}
 
       virtual unsigned size() const {CBANG_THROW("Not a List or Dict");}
@@ -119,14 +122,16 @@ namespace cb {
       void appendBoolean(bool value);
       void append(double value);
       void append(float value) {append((double)value);}
-      void append(int8_t value) {append((double)value);}
-      void append(uint8_t value) {append((double)value);}
-      void append(int16_t value) {append((double)value);}
-      void append(uint16_t value) {append((double)value);}
-      void append(int32_t value) {append((double)value);}
-      void append(uint32_t value) {append((double)value);}
-      void append(int64_t value) {append(String(value));}
-      void append(uint64_t value) {append(String(value));}
+      void append(int8_t value) {append((int16_t)value);}
+      void append(uint8_t value) {append((uint16_t)value);}
+      void append(int16_t value) {append((int32_t)value);}
+      void append(uint16_t value) {append((uint32_t)value);}
+      void append(int32_t value) {append((int64_t)value);}
+      void append(uint32_t value) {append((uint64_t)value);}
+      void append(long long int value) {append((int64_t)value);}
+      void append(long long unsigned value) {append((uint64_t)value);}
+      void append(int64_t value);
+      void append(uint64_t value);
       void append(const std::string &value);
       virtual void append(const ValuePtr &value) {CBANG_THROW("Not a List");}
 
@@ -152,14 +157,17 @@ namespace cb {
       void setNull(unsigned i);
       void setBoolean(unsigned i, bool value);
       void set(unsigned i, double value);
-      void set(unsigned i, int8_t value) {set(i, (double)value);}
-      void set(unsigned i, uint8_t value) {set(i, (double)value);}
-      void set(unsigned i, int16_t value) {set(i, (double)value);}
-      void set(unsigned i, uint16_t value) {set(i, (double)value);}
-      void set(unsigned i, int32_t value) {set(i, (double)value);}
-      void set(unsigned i, uint32_t value) {set(i, (double)value);}
-      void set(unsigned i, int64_t value) {set(i, (double)value);}
-      void set(unsigned i, uint64_t value) {set(i, (double)value);}
+      void set(unsigned i, float value) {set(i, (double)value);}
+      void set(unsigned i, int8_t value) {set(i, (int16_t)value);}
+      void set(unsigned i, uint8_t value) {set(i, (uint16_t)value);}
+      void set(unsigned i, int16_t value) {set(i, (int32_t)value);}
+      void set(unsigned i, uint16_t value) {set(i, (uint32_t)value);}
+      void set(unsigned i, int32_t value) {set(i, (int64_t)value);}
+      void set(unsigned i, uint32_t value) {set(i, (uint64_t)value);}
+      void set(unsigned i, long long int value) {set(i, (int64_t)value);}
+      void set(unsigned i, long long unsigned value) {set(i, (uint64_t)value);}
+      void set(unsigned i, int64_t value);
+      void set(unsigned i, uint64_t value);
       void set(unsigned i, const std::string &value);
 
       // Dict functions
@@ -201,21 +209,23 @@ namespace cb {
       void insert(const std::string &key, float value)
       {insert(key, (double)value);}
       void insert(const std::string &key, uint8_t value)
-      {insert(key, (double)value);}
+      {insert(key, (uint16_t)value);}
       void insert(const std::string &key, int8_t value)
-      {insert(key, (double)value);}
+      {insert(key, (int16_t)value);}
       void insert(const std::string &key, uint16_t value)
-      {insert(key, (double)value);}
+      {insert(key, (uint32_t)value);}
       void insert(const std::string &key, int16_t value)
-      {insert(key, (double)value);}
+      {insert(key, (int32_t)value);}
       void insert(const std::string &key, uint32_t value)
-      {insert(key, (double)value);}
+      {insert(key, (uint64_t)value);}
       void insert(const std::string &key, int32_t value)
-      {insert(key, (double)value);}
-      void insert(const std::string &key, uint64_t value)
-      {insert(key, String(value));}
-      void insert(const std::string &key, int64_t value)
-      {insert(key, String(value));}
+      {insert(key, (int64_t)value);}
+      void insert(const std::string &key, long long unsigned value)
+      {insert(key, (uint64_t)value);}
+      void insert(const std::string &key, long long int value)
+      {insert(key, (int64_t)value);}
+      void insert(const std::string &key, uint64_t value);
+      void insert(const std::string &key, int64_t value);
       void insert(const std::string &key, const std::string &value);
       virtual void insert(const std::string &key, const ValuePtr &value)
       {CBANG_THROW("Not a Dict");}

@@ -32,46 +32,63 @@
 
 #pragma once
 
-#include "Sink.h"
 #include "Value.h"
 
-#include <vector>
+#include <limits>
 
 
 namespace cb {
   namespace JSON {
-    class Builder : public Sink {
-      std::vector<ValuePtr> stack;
-      bool appendNext;
-      std::string nextKey;
+    class U64 : public Value {
+      uint64_t value;
 
     public:
-      Builder(const ValuePtr &root = 0);
+      U64(uint64_t value) : value(value) {}
 
-      ValuePtr getRoot() const;
-      void clear() {stack.clear();}
+      void setValue(uint64_t value) {this->value = value;}
+      uint64_t getValue() const {return value;}
 
-      // From Sink
-      void writeNull();
-      void writeBoolean(bool value);
-      void write(double value);
-      void write(uint64_t value);
-      void write(int64_t value);
-      void write(const std::string &value);
-      using Sink::write;
-      void beginList(bool simple = false);
-      void beginAppend();
-      void endList();
-      void beginDict(bool simple = false);
-      bool has(const std::string &key) const;
-      void beginInsert(const std::string &key);
-      void endDict();
+      operator uint64_t () const {return value;}
 
-    protected:
-      void add(const ValuePtr &value);
-      void assertNotPending();
-      bool shouldAppend();
-      bool shouldInsert() {return !nextKey.empty();}
+      // From Value
+      ValueType getType() const {return JSON_NUMBER;}
+      ValuePtr copy(bool deep = false) const {return new U64(value);}
+
+      double getNumber() const {return getValue();}
+
+
+      int32_t getS32() const {
+        if ((uint64_t)std::numeric_limits<int32_t>::max() < value)
+          CBANG_THROW("Value is not a 32-bit signed integer");
+
+        return (int32_t)value;
+      }
+
+
+      uint32_t getU32() const {
+        if (std::numeric_limits<uint32_t>::max() < value)
+          CBANG_THROW("Value is not a 32-bit unsigned integer");
+
+        return (uint32_t)value;
+      }
+
+
+      int64_t getS64() const {
+        if ((uint64_t)std::numeric_limits<int64_t>::max() < value)
+          CBANG_THROW("Value is not a 64-bit signed integer");
+
+        return (uint32_t)value;
+      }
+
+
+      uint64_t getU64() const {return getValue();}
+
+
+      void set(double value)   {setValue((uint64_t)value);}
+      void set(int64_t value)  {setValue((uint64_t)value);}
+      void set(uint64_t value) {setValue(value);}
+
+      void write(Sink &sink) const {sink.write(value);}
     };
   }
 }

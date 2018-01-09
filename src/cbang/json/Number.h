@@ -34,26 +34,66 @@
 
 #include "Value.h"
 
+#include <limits>
+
 
 namespace cb {
   namespace JSON {
     class Number : public Value {
-      double x;
+      double value;
 
     public:
-      Number(double x = 0) : x(x) {}
+      Number(double value = 0) : value(value) {}
 
-      void setValue(double x) {this->x = x;}
-      double getValue() const {return x;}
+      void setValue(double value) {this->value = value;}
+      double getValue() const {return value;}
 
-      operator double () const {return x;}
+      operator double () const {return value;}
 
       // From Value
       ValueType getType() const {return JSON_NUMBER;}
-      ValuePtr copy(bool deep = false) const {return new Number(x);}
+      ValuePtr copy(bool deep = false) const {return new Number(value);}
       double getNumber() const {return getValue();}
-      void set(double value) {x = value;}
-      void write(Sink &sink) const {sink.write(x);}
+
+
+      int32_t getS32() const {
+        if (value < std::numeric_limits<int32_t>::min() ||
+            std::numeric_limits<int32_t>::max() < value)
+          CBANG_THROW("Value is not a 32-bit signed integer");
+
+        return (int32_t)value;
+      }
+
+
+      uint32_t getU32() const {
+        if (value < std::numeric_limits<uint32_t>::min() ||
+            std::numeric_limits<uint32_t>::max() < value)
+          CBANG_THROW("Value is not a 32-bit unsigned integer");
+
+        return (uint32_t)value;
+      }
+
+
+      int64_t getS64() const {
+        if (value < std::numeric_limits<int64_t>::min() ||
+            std::numeric_limits<int64_t>::max() < value)
+          CBANG_THROW("Value is not a 64-bit signed integer");
+
+        return value;
+      }
+
+
+      uint64_t getU64() const {
+        if (value < std::numeric_limits<uint64_t>::min() ||
+            std::numeric_limits<uint64_t>::max() < value)
+          CBANG_THROW("Value is not a 64-bit unsigned integer");
+
+        return value;
+      }
+
+
+      void set(double value) {this->value = value;}
+      void write(Sink &sink) const {sink.write(value);}
     };
   }
 }

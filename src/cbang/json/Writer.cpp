@@ -32,9 +32,14 @@
 
 #include "Writer.h"
 
+#include "Integer.h"
+
 #include <cbang/String.h>
+#include <cbang/SStream.h>
 
 #include <cctype>
+#include <iomanip>
+#include <sstream>
 
 using namespace std;
 using namespace cb::JSON;
@@ -69,6 +74,18 @@ void Writer::writeBoolean(bool value) {
 
 
 void Writer::write(double value) {
+  NullSink::write(value);
+  stream << cb::String(value);
+}
+
+
+void Writer::write(uint64_t value) {
+  NullSink::write(value);
+  stream << cb::String(value);
+}
+
+
+void Writer::write(int64_t value) {
   NullSink::write(value);
   stream << cb::String(value);
 }

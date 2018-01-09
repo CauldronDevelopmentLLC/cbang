@@ -46,6 +46,8 @@
 #include <cctype>
 #include <sstream>
 
+#include <errno.h>
+
 using namespace std;
 using namespace cb;
 using namespace cb::JSON;
@@ -64,7 +66,8 @@ void Reader::parse(Sink &sink) {
     case '-': case '.':
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-      return sink.write(parseNumber());
+      parseNumber(sink);
+      return;
 
     case '"':
       return sink.write(parseString());
@@ -185,14 +188,17 @@ bool Reader::parseBoolean() {
 }
 
 
-double Reader::parseNumber() {
+void Reader::parseNumber(Sink &sink) {
   string value;
+  bool negative = false;
+  bool decimal = false;
 
   while (good()) {
     char c = next();
 
     switch (c) {
-    case 'e': case 'E': case '-': case '.':
+    case '-': negative = true;
+    case 'e': case 'E': case '.': if (c != '-') decimal = true;
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
       value += c;
@@ -203,7 +209,20 @@ double Reader::parseNumber() {
     break;
   }
 
-  return cb::String::parseDouble(value);
+  if (!decimal) {
+    errno = 0;
+
+    if (negative) {
+      long long int v = strtoll(value.c_str(), 0, 0);
+      if (!errno) {sink.write(v); return;}
+
+    } else {
+      long long unsigned v = strtoull(value.c_str(), 0, 0);
+      if (!errno) {sink.write(v); return;}
+    }
+  }
+
+  sink.write(cb::String::parseDouble(value));
 }
 
 

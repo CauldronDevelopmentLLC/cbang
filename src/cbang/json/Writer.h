@@ -86,6 +86,8 @@ namespace cb {
       void writeNull();
       void writeBoolean(bool value);
       void write(double value);
+      void write(uint64_t value);
+      void write(int64_t value);
       void write(const std::string &value);
       void beginList(bool simple = false);
       void beginAppend();

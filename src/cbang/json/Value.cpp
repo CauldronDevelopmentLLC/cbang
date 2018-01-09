@@ -35,6 +35,8 @@
 #include "Undefined.h"
 #include "Null.h"
 #include "Number.h"
+#include "U64.h"
+#include "S64.h"
 #include "Boolean.h"
 #include "String.h"
 
@@ -49,68 +51,16 @@ void Value::appendUndefined() {append(Undefined::instancePtr());}
 void Value::appendNull() {append(Null::instancePtr());}
 void Value::appendBoolean(bool value) {append(new Boolean(value));}
 void Value::append(double value) {append(new Number(value));}
+void Value::append(int64_t value) {append(new S64(value));}
+void Value::append(uint64_t value) {append(new U64(value));}
 void Value::append(const std::string &value) {append(new String(value));}
-
-
-int32_t Value::getS32() const {
-  double value = getNumber();
-
-  if (value < numeric_limits<int32_t>::min() ||
-      numeric_limits<int32_t>::max() < value)
-    CBANG_THROW("Value is not a 32-bit signed integer");
-
-  return (int32_t)value;
-}
-
-
-uint32_t Value::getU32() const {
-  double value = getNumber();
-
-  if (value < numeric_limits<uint32_t>::min() ||
-      numeric_limits<uint32_t>::max() < value)
-    CBANG_THROW("Value is not a 32-bit unsigned integer");
-
-  return (uint32_t)value;
-}
-
-
-int64_t Value::getS64() const {
-  if (isString()) return cb::String::parseS64(getString());
-  else {
-    double value = getNumber();
-
-    if (value < numeric_limits<int64_t>::min() ||
-        numeric_limits<int64_t>::max() < value)
-      CBANG_THROW("Value is not a 64-bit signed integer");
-
-    return value;
-  }
-}
-
-
-uint64_t Value::getU64() const {
-  if (isString()) return cb::String::parseU64(getString());
-  else {
-    double value = getNumber();
-
-    if (value < numeric_limits<uint64_t>::min() ||
-        numeric_limits<uint64_t>::max() < value)
-      CBANG_THROW("Value is not a 64-bit unsigned integer");
-
-    return value;
-  }
-}
-
-
 void Value::setUndefined(unsigned i) {set(i, Undefined::instancePtr());}
 void Value::setNull(unsigned i) {set(i, Null::instancePtr());}
 void Value::setBoolean(unsigned i, bool value) {set(i, new Boolean(value));}
 void Value::set(unsigned i, double value) {set(i, new Number(value));}
-
-
-void Value::set(unsigned i, const string &value) {
-  set(i, new String(value));
-}
+void Value::set(unsigned i, int64_t value) {set(i, new S64(value));}
+void Value::set(unsigned i, uint64_t value) {set(i, new U64(value));}
+void Value::set(unsigned i, const string &value) {set(i, new String(value));}
 
 
 void Value::insertUndefined(const string &key) {
@@ -128,6 +78,16 @@ void Value::insertBoolean(const string &key, bool value) {
 
 void Value::insert(const string &key, double value) {
   insert(key, new Number(value));
+}
+
+
+void Value::insert(const string &key, uint64_t value) {
+  insert(key, new U64(value));
+}
+
+
+void Value::insert(const string &key, int64_t value) {
+  insert(key, new S64(value));
 }
 
 

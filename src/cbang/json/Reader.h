@@ -70,7 +70,7 @@ namespace cb {
       const std::string parseKeyword();
       void parseNull();
       bool parseBoolean();
-      double parseNumber();
+      void parseNumber(Sink &sink);
       const std::string parseString();
       void parseList(Sink &sink);
       void parseDict(Sink &sink);
