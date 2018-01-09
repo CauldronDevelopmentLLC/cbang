@@ -59,16 +59,16 @@ namespace cb {
       int32_t getS32() const {
         if (value < std::numeric_limits<int32_t>::min() ||
             std::numeric_limits<int32_t>::max() < value)
-          CBANG_THROW("Value is not a 32-bit signed integer");
+          CBANG_THROWS("Value " << value << " is not a 32-bit signed integer");
 
         return (int32_t)value;
       }
 
 
       uint32_t getU32() const {
-        if (value < std::numeric_limits<uint32_t>::min() ||
-            std::numeric_limits<uint32_t>::max() < value)
-          CBANG_THROW("Value is not a 32-bit unsigned integer");
+        if (value < 0 || std::numeric_limits<uint32_t>::max() < value)
+          CBANG_THROWS("Value " << value
+                       << " is not a 32-bit unsigned integer");
 
         return (uint32_t)value;
       }
@@ -77,16 +77,16 @@ namespace cb {
       int64_t getS64() const {
         if (value < std::numeric_limits<int64_t>::min() ||
             std::numeric_limits<int64_t>::max() < value)
-          CBANG_THROW("Value is not a 64-bit signed integer");
+          CBANG_THROWS("Value " << value << " is not a 64-bit signed integer");
 
         return value;
       }
 
 
       uint64_t getU64() const {
-        if (value < std::numeric_limits<uint64_t>::min() ||
-            std::numeric_limits<uint64_t>::max() < value)
-          CBANG_THROW("Value is not a 64-bit unsigned integer");
+        if (value < 0 || std::numeric_limits<uint64_t>::max() < value)
+          CBANG_THROWS("Value " << value
+                       << " is not a 64-bit unsigned integer");
 
         return value;
       }

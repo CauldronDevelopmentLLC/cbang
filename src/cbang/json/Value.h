@@ -255,41 +255,25 @@ namespace cb {
       {return get(key)->getDict();}
 
       // Dict accessors with defaults
-      bool getBoolean(const std::string &key, bool defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getBoolean();
+#define CBANG_JSON_GET_DEFAULT(NAME, TYPE)                              \
+      TYPE get##NAME(const std::string &key,                            \
+                     const TYPE &defaultValue) const {                  \
+        try {                                                           \
+          int index = indexOf(key);                                     \
+          return index == -1 ? defaultValue : get(index)->get##NAME();  \
+        } catch (const Exception &e) {}                                 \
+        return defaultValue;                                            \
       }
 
-      double getNumber(const std::string &key, double defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getNumber();
-      }
+      CBANG_JSON_GET_DEFAULT(Boolean, bool);
+      CBANG_JSON_GET_DEFAULT(Number, double);
+      CBANG_JSON_GET_DEFAULT(S32, int32_t);
+      CBANG_JSON_GET_DEFAULT(U32, uint32_t);
+      CBANG_JSON_GET_DEFAULT(S64, int64_t);
+      CBANG_JSON_GET_DEFAULT(U64, uint64_t);
+      CBANG_JSON_GET_DEFAULT(String, std::string);
 
-      int32_t getS32(const std::string &key, int32_t defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getS32();
-      }
-
-      uint32_t getU32(const std::string &key, uint32_t defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getU32();
-      }
-
-      int64_t getS64(const std::string &key, int64_t defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getS64();
-      }
-
-      uint64_t getU64(const std::string &key, uint64_t defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getU64();
-      }
-
-      const std::string &getString(const std::string &key,
-                                   const std::string &defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->getString();
-      }
+#undef CBANG_JSON_GET_DEFAULT
 
       // Operators
       const Value &operator[](unsigned i) const {return *get(i);}

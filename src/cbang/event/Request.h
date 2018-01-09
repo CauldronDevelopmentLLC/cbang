@@ -123,8 +123,8 @@ namespace cb {
       {return args.getString(i);}
       virtual const std::string &getArg(const std::string &key) const
       {return args.getString(key);}
-      virtual const std::string &getArg(const std::string &key,
-                                        const std::string &defaultVal) const
+      virtual std::string getArg(const std::string &key,
+                                 const std::string &defaultVal) const
       {return args.getString(key, defaultVal);}
       virtual JSON::Dict &parseJSONArgs();
       virtual JSON::Dict &parseQueryArgs();
