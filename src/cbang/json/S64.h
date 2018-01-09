@@ -54,7 +54,7 @@ namespace cb {
       ValueType getType() const {return JSON_NUMBER;}
       ValuePtr copy(bool deep = false) const {return new S64(value);}
 
-      double getNumber() const {return getValue();}
+      double getNumber() const {return value;}
 
 
       int32_t getS32() const {
@@ -75,7 +75,7 @@ namespace cb {
       }
 
 
-      int64_t getS64() const {return getValue();}
+      int64_t getS64() const {return value;}
 
 
       uint64_t getU64() const {
@@ -85,9 +85,9 @@ namespace cb {
       }
 
 
-      void set(double value)   {setValue((int64_t)value);}
-      void set(int64_t value)  {setValue(value);}
-      void set(uint64_t value) {setValue((int64_t)value);}
+      void set(double value)   {this->value = (int64_t)value;}
+      void set(int64_t value)  {this->value = value;}
+      void set(uint64_t value) {this->value = (int64_t)value;}
 
       void write(Sink &sink) const {sink.write(value);}
     };

@@ -209,24 +209,35 @@ void Reader::parseNumber(Sink &sink) {
     break;
   }
 
-  if (!decimal) {
-    errno = 0;
+  const char *start = value.c_str();
+  char *end;
+  errno = 0;
 
-    if (negative) {
-      long long int v = strtoll(value.c_str(), 0, 0);
-      if (!errno) {sink.write(v); return;}
+  if (!decimal && negative) {
+    long long int v = strtoll(start, &end, 0);
 
-    } else {
-      long long unsigned v = strtoull(value.c_str(), 0, 0);
-      if (!errno) {sink.write(v); return;}
+    if (!errno && (size_t)(end - start) == value.length()) {
+      sink.write(v);
+      return;
+    }
+
+  } else if (!decimal) {
+    long long unsigned v = strtoull(start, &end, 0);
+
+    if (!errno && (size_t)(end - start) == value.length()) {
+      sink.write(v);
+      return;
     }
   }
 
-  sink.write(cb::String::parseDouble(value));
+  double v = strtod(start, &end);
+  if (errno || (size_t)(end - start) != value.length())
+    THROWS("Invalid JSON number '" << value << "'");
+  sink.write(v);
 }
 
 
-const string Reader::parseString() {
+string Reader::parseString() {
   match("\"");
 
   string s;
@@ -279,6 +290,4 @@ void Reader::error(const string &msg) const {
 }
 
 
-string Reader::unescape(const string &s) {
-  return cb::String::unescapeC(s);
-}
+string Reader::unescape(const string &s) {return cb::String::unescapeC(s);}

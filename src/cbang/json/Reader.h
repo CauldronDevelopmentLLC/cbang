@@ -71,7 +71,7 @@ namespace cb {
       void parseNull();
       bool parseBoolean();
       void parseNumber(Sink &sink);
-      const std::string parseString();
+      std::string parseString();
       void parseList(Sink &sink);
       void parseDict(Sink &sink);
 

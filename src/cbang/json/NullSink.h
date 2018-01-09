@@ -61,11 +61,10 @@ namespace cb {
       virtual void reset();
 
       // From Sink
-      void writeNull();
-      void writeBoolean(bool value);
-      void write(double value);
-      void write(const std::string &value);
-      using Sink::write;
+      void writeNull() {assertCanWrite();}
+      void writeBoolean(bool value) {assertCanWrite();}
+      void write(double value) {assertCanWrite();}
+      void write(const std::string &value) {assertCanWrite();}
       void beginList(bool simple = false);
       void beginAppend();
       void endList();
