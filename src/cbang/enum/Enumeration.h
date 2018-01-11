@@ -2,8 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
+              Copyright (c) 2003-2018, Cauldron Development LLC
+                 Copyright (c) 2003-2018, Stanford University
                              All rights reserved.
 
         The C! library is free software: you can redistribute it and/or
@@ -108,6 +108,7 @@
 #include <string>
 #include <ostream>
 
+
 namespace cb {
   class EnumerationBase {
   protected:
@@ -128,6 +129,8 @@ namespace cb {
 
     Enumeration() : EnumerationBase(0) {}
     Enumeration(enum_t value) : EnumerationBase((unsigned)value) {}
+    Enumeration(const std::string &s) :
+      EnumerationBase((unsigned)T::parse(s)) {}
 
     operator enum_t() const {return (enum_t)value;}
 
