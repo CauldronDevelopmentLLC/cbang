@@ -41,6 +41,7 @@
 #include "Builder.h"
 
 #include <cbang/String.h>
+#include <cbang/io/StringInputSource.h>
 
 #include <vector>
 #include <cctype>
@@ -102,6 +103,11 @@ ValuePtr Reader::parse() {
 
 SmartPointer<Value> Reader::parse(const InputSource &src) {
   return Reader(src).parse();
+}
+
+
+SmartPointer<Value> Reader::parseString(const string &s) {
+  return parse(StringInputSource(s));
 }
 
 

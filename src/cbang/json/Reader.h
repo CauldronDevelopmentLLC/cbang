@@ -56,6 +56,7 @@ namespace cb {
       void parse(Sink &sink);
       SmartPointer<Value> parse();
       static SmartPointer<Value> parse(const InputSource &src);
+      static SmartPointer<Value> parseString(const std::string &s);
 
       unsigned getLine() const {return line;}
       unsigned getColumn() const {return column;}
