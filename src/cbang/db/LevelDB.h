@@ -70,8 +70,8 @@ namespace cb {
 
 
   class LevelDB : public LevelDBNS {
+    SmartPointer<leveldb::Comparator> comparator; // Deallocate after db
     SmartPointer<leveldb::DB> db;
-    SmartPointer<leveldb::Comparator> comparator;
 
   public:
     typedef enum {
@@ -131,7 +131,7 @@ namespace cb {
 
     class Batch : public LevelDBNS {
       SmartPointer<leveldb::DB> db;
-      SmartPointer<leveldb::WriteBatch> batch;
+      SmartPointer<leveldb::WriteBatch> batch; // Deallocate before db
 
     public:
       Batch(const SmartPointer<leveldb::DB> &db,
@@ -152,8 +152,9 @@ namespace cb {
     LevelDB(const SmartPointer<Comparator> &comparator = 0);
     LevelDB(const std::string &name,
             const SmartPointer<Comparator> &comparator = 0);
-
-    ~LevelDB();
+    LevelDB(const std::string &name,
+            const SmartPointer<leveldb::Comparator> &comparator,
+            const SmartPointer<leveldb::DB> &db);
 
     leveldb::DB &getDB() {return *db;}
     const SmartPointer<leveldb::Comparator> &getComparator() const {

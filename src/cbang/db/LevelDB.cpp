@@ -158,9 +158,7 @@ LevelDB::Batch LevelDB::Batch::ns(const std::string &name) {
 }
 
 
-void LevelDB::Batch::clear() {
-  batch->Clear();
-}
+void LevelDB::Batch::clear() {batch->Clear();}
 
 
 void LevelDB::Batch::set(const string &key, const string &value) {
@@ -203,31 +201,24 @@ namespace {
 }
 
 
-LevelDB::LevelDB(const SmartPointer<Comparator> &comparator) {
-  if (!comparator.isNull())
-    this->comparator = new LevelDBComparator(comparator);
-}
+LevelDB::LevelDB(const SmartPointer<Comparator> &comparator) :
+  comparator(comparator.isNull() ? 0 : new LevelDBComparator(comparator)) {}
 
 
 LevelDB::LevelDB(const string &name,
                  const SmartPointer<Comparator> &comparator) :
-  LevelDBNS(name) {
-  if (!comparator.isNull())
-    this->comparator = new LevelDBComparator(comparator);
-}
+  LevelDBNS(name),
+  comparator(comparator.isNull() ? 0 : new LevelDBComparator(comparator)) {}
 
 
-LevelDB::~LevelDB() {
-  db.release(); // Release DB before comparator
-  comparator.release();
-}
+LevelDB::LevelDB(const string &name,
+                 const SmartPointer<leveldb::Comparator> &comparator,
+                 const SmartPointer<leveldb::DB> &db) :
+  LevelDBNS(name), comparator(comparator), db(db) {}
 
 
 LevelDB LevelDB::ns(const string &name) {
-  LevelDB db(getNS() + name);
-  db.db = this->db;
-  db.comparator = comparator;
-  return db;
+  return LevelDB(getNS() + name, comparator, db);
 }
 
 
@@ -244,9 +235,7 @@ void LevelDB::open(const string &path, int options) {
 }
 
 
-void LevelDB::close() {
-  db.release();
-}
+void LevelDB::close() {db.release();}
 
 
 bool LevelDB::has(const string &key, int options) const {
