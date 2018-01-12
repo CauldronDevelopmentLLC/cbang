@@ -49,7 +49,7 @@ MemoryBuffer::MemoryBuffer(unsigned capacity, char *buffer, bool deallocate) :
 
   if (!buffer && capacity) {
     this->buffer = (char *)malloc(capacity);
-    if (this->buffer) THROW("Failed to allocate memory");
+    if (!this->buffer) THROW("Failed to allocate memory");
     this->deallocate = true;
   }
 }

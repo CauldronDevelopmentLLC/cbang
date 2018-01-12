@@ -56,9 +56,7 @@ SocketSSLImpl::SocketSSLImpl(Socket *parent,
 SocketSSLImpl::~SocketSSLImpl() {}
 
 
-Socket *SocketSSLImpl::createSocket() {
-  return new Socket(sslCtx);
-}
+Socket *SocketSSLImpl::createSocket() {return new Socket(sslCtx);}
 
 
 SmartPointer<Socket> SocketSSLImpl::accept(IPAddress *ip) {
@@ -66,11 +64,10 @@ SmartPointer<Socket> SocketSSLImpl::accept(IPAddress *ip) {
   if (socket.isNull()) return 0;
 
   SocketSSLImpl *impl = dynamic_cast<SocketSSLImpl *>(socket->getImpl());
-  if (impl) {
-    SmartToggle toggle(impl->inSSL);
-    impl->ssl->accept();
+  if (!impl) THROW("Expected SSL socket implementation");
 
-  } else THROW("Expected SSL socket implementation");
+  SmartToggle toggle(impl->inSSL);
+  impl->ssl->accept();
 
   return socket;
 }

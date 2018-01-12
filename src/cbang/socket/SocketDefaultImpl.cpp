@@ -254,6 +254,8 @@ SmartPointer<Socket> SocketDefaultImpl::accept(IPAddress *ip) {
     aSock->capture(inAddr, true);
     aSock->setBlocking(blocking);
 
+    LOG_DEBUG(5, "accept() new connection");
+
     return a;
   }
 

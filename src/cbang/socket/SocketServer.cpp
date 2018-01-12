@@ -138,7 +138,7 @@ void SocketServer::service() {
                      << IPAddress(clientIP.getIP()));
           }
         }
-      } CBANG_CATCH_DEBUG(5);
+      } CATCH_DEBUG(3);
     }
   }
 
