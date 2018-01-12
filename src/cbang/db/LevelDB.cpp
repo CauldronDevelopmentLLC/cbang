@@ -276,7 +276,7 @@ void LevelDB::erase(const string &key, int options) {
 
 
 void LevelDB::eraseAll(int options) {
-  for (Iterator it = begin(); it.valid(); it++)
+  for (Iterator it = first(options); it.valid(); it++)
     erase(it.key(), options);
 }
 
@@ -286,17 +286,16 @@ LevelDB::Iterator LevelDB::iterator(int options) const {
 }
 
 
-LevelDB::Iterator LevelDB::begin(int options) const {
+LevelDB::Iterator LevelDB::first(int options) const {
   Iterator it = iterator(options);
   it.first();
   return it;
 }
 
 
-LevelDB::Iterator LevelDB::end(int options) const {
+LevelDB::Iterator LevelDB::last(int options) const {
   Iterator it = iterator(options);
   it.last();
-  it.next();
   return it;
 }
 

@@ -175,8 +175,8 @@ namespace cb {
     void eraseAll(int options = 0);
 
     Iterator iterator(int options = 0) const;
-    Iterator begin(int options = 0) const;
-    Iterator end(int options = 0) const;
+    Iterator first(int options = 0) const;
+    Iterator last(int options = 0) const;
     Batch batch();
 
     std::string getProperty(const std::string &name);

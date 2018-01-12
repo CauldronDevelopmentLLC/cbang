@@ -250,7 +250,7 @@ void SessionManager::load(LevelDB db) {
   // Load sessions
   LevelDB nsDB = db.ns("session:");
 
-  for (LevelDB::Iterator it = nsDB.begin(); it.valid(); it++) {
+  for (LevelDB::Iterator it = nsDB.first(); it.valid(); it++) {
     SmartPointer<Session> session = factory->createSession(it.key());
     session->parse(it.value());
     sessions.insert(sessions_t::value_type(session->getID(), session));
