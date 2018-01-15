@@ -106,8 +106,6 @@ namespace cb {
       virtual void set(uint16_t value) {set((uint32_t)value);}
       virtual void set(int32_t value) {set((int64_t)value);}
       virtual void set(uint32_t value) {set((uint64_t)value);}
-      virtual void set(long long int value) {set((int64_t)value);}
-      virtual void set(long long unsigned value) {set((uint64_t)value);}
       virtual void set(int64_t value) {set((double)value);}
       virtual void set(uint64_t value) {set((double)value);}
       virtual void set(const std::string &value) {CBANG_THROW("Not a String");}
@@ -128,8 +126,6 @@ namespace cb {
       void append(uint16_t value) {append((uint32_t)value);}
       void append(int32_t value) {append((int64_t)value);}
       void append(uint32_t value) {append((uint64_t)value);}
-      void append(long long int value) {append((int64_t)value);}
-      void append(long long unsigned value) {append((uint64_t)value);}
       void append(int64_t value);
       void append(uint64_t value);
       void append(const std::string &value);
@@ -164,8 +160,6 @@ namespace cb {
       void set(unsigned i, uint16_t value) {set(i, (uint32_t)value);}
       void set(unsigned i, int32_t value) {set(i, (int64_t)value);}
       void set(unsigned i, uint32_t value) {set(i, (uint64_t)value);}
-      void set(unsigned i, long long int value) {set(i, (int64_t)value);}
-      void set(unsigned i, long long unsigned value) {set(i, (uint64_t)value);}
       void set(unsigned i, int64_t value);
       void set(unsigned i, uint64_t value);
       void set(unsigned i, const std::string &value);
@@ -219,10 +213,6 @@ namespace cb {
       void insert(const std::string &key, uint32_t value)
       {insert(key, (uint64_t)value);}
       void insert(const std::string &key, int32_t value)
-      {insert(key, (int64_t)value);}
-      void insert(const std::string &key, long long unsigned value)
-      {insert(key, (uint64_t)value);}
-      void insert(const std::string &key, long long int value)
       {insert(key, (int64_t)value);}
       void insert(const std::string &key, uint64_t value);
       void insert(const std::string &key, int64_t value);

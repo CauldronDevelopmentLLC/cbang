@@ -57,8 +57,6 @@ namespace cb {
       virtual void write(uint32_t value) {write((uint64_t)value);}
       virtual void write(int64_t value) {write((double)value);}
       virtual void write(uint64_t value) {write((double)value);}
-      virtual void write(long long int value) {write((int64_t)value);}
-      virtual void write(long long unsigned value) {write((uint64_t)value);}
       virtual void write(const std::string &value) = 0;
       void write(const Value &value);
 

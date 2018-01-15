@@ -223,7 +223,7 @@ void Reader::parseNumber(Sink &sink) {
     long long int v = strtoll(start, &end, 0);
 
     if (!errno && (size_t)(end - start) == value.length()) {
-      sink.write(v);
+      sink.write((int64_t)v);
       return;
     }
 
@@ -231,7 +231,7 @@ void Reader::parseNumber(Sink &sink) {
     long long unsigned v = strtoull(start, &end, 0);
 
     if (!errno && (size_t)(end - start) == value.length()) {
-      sink.write(v);
+      sink.write((uint64_t)v);
       return;
     }
   }
