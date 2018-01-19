@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "BufferEvent.h"
+#include "Buffer.h"
 #include "Base.h"
 
 #include <cbang/Exception.h>
@@ -154,3 +155,13 @@ BufferEvent BufferEvent::getUnderlying() const {
 
 
 int BufferEvent::getFD() const {return (int)bufferevent_getfd(bev);}
+
+
+Event::Buffer BufferEvent::getInput() const {
+  return Buffer(bufferevent_get_input(bev), false);
+}
+
+
+Event::Buffer BufferEvent::getOutput() const {
+  return Buffer(bufferevent_get_output(bev), false);
+}

@@ -45,6 +45,7 @@ namespace cb {
 
   namespace Event {
     class Base;
+    class Buffer;
 
     class BufferEvent {
       bufferevent *bev;
@@ -69,6 +70,9 @@ namespace cb {
       bool isWrapper() const;
       BufferEvent getUnderlying() const;
       int getFD() const;
+
+      Buffer getInput() const;
+      Buffer getOutput() const;
     };
   }
 }

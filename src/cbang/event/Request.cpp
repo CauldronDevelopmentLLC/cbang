@@ -465,6 +465,18 @@ SmartPointer<ostream> Request::getOutputStream() const {
 }
 
 
+unsigned Request::getInputLength() const {
+  return getInputBuffer().getLength();
+}
+
+
+unsigned Request::getOutputLength() const {
+  // Getting the actual output buffer length is a little more complicated
+  if (!hasConnection()) return 0;
+  return getConnection().getBufferEvent().getOutput().getLength();
+}
+
+
 void Request::sendError(int code) {
   finalize();
   evhttp_send_error(req, code ? code : HTTP_INTERNAL_SERVER_ERROR, 0);
