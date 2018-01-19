@@ -35,6 +35,7 @@
 #include "HTTPHandler.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/Base.h>
 
 #include <vector>
 
@@ -55,7 +56,7 @@ namespace cb {
       SmartPointer<SSLContext> sslCtx;
       int priority;
 
-      std::vector<SmartPointer<HTTPHandler> > requestCallbacks;
+      std::vector<SmartPointer<Base> > requestCallbacks;
 
     public:
       HTTP(const Base &base);
@@ -86,6 +87,8 @@ namespace cb {
       int bind(const IPAddress &addr);
 
       bufferevent *bevCB(event_base *base);
+
+      void request(HTTPHandler &handler, evhttp_request *req);
     };
   }
 }

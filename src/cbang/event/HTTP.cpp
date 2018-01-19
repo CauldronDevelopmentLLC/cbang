@@ -63,58 +63,32 @@ using namespace cb::Event;
 
 
 namespace {
-  bufferevent *bev_cb(event_base *base, void *arg) {
-    try {
-      return ((HTTP *)arg)->bevCB(base);
-    } CATCH_ERROR;
+  class HTTPHandlerIntercept : public Base {
+    HTTP &http;
+    cb::SmartPointer<HTTPHandler> handler;
 
+  public:
+    HTTPHandlerIntercept(HTTP &http,
+                         const cb::SmartPointer<HTTPHandler> &handler) :
+      http(http), handler(handler) {}
+
+    void request(evhttp_request *req) {http.request(*handler, req);}
+  };
+
+
+  bufferevent *bev_cb(event_base *base, void *arg) {
+    try {return ((HTTP *)arg)->bevCB(base);} CATCH_ERROR;
     return 0;
   }
 
 
   void complete_cb(evhttp_request *_req, void *cb) {
-    try {
-      delete (Request *)cb;
-    } CATCH_ERROR;
+    try {delete (Request *)cb;} CATCH_ERROR;
   }
 
 
-  void request_cb(evhttp_request *_req, void *cb) {
-    HTTPHandler *handler = (HTTPHandler *)cb;
-    Request *req = 0;
-
-    try {
-      // Allocate request
-      req = handler->createRequest(_req);
-
-      // Set deallocator
-      evhttp_request_set_on_complete_cb(_req, complete_cb, req);
-
-      // Set to incoming
-      req->setIncoming(true);
-
-      // Dispatch request
-      try {
-        if (!(*handler)(*req))
-          req->sendError(HTTPStatus::HTTP_NOT_FOUND);
-
-      } catch (cb::Exception &e) {
-        req->sendError(e.getCode(), e.getMessage());
-        if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
-        LOG_DEBUG(3, e);
-
-      } catch (std::exception &e) {
-        req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
-        LOG_ERROR(e.what());
-
-      } catch (...) {
-        req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
-        LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
-                  .getDescription());
-      }
-    } CATCH_ERROR;
-
-    try {handler->endRequestEvent(req);} CATCH_ERROR;
+  void request_cb(evhttp_request *req, void *cb) {
+    try {((HTTPHandlerIntercept *)cb)->request(req);} CATCH_ERROR;
   }
 }
 
@@ -156,17 +130,23 @@ void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
 
 void HTTP::setCallback(const string &path,
                        const cb::SmartPointer<HTTPHandler> &cb) {
-  int ret = evhttp_set_cb(http, path.c_str(), request_cb, cb.get());
+  cb::SmartPointer<HTTPHandlerIntercept> intercept =
+    new HTTPHandlerIntercept(*this, cb);
+
+  int ret = evhttp_set_cb(http, path.c_str(), request_cb, intercept.get());
   if (ret)
     THROWS("Failed to set callback on path '" << path << '"'
            << (ret == -1 ? ", Already exists" : ""));
-  requestCallbacks.push_back(cb);
+  requestCallbacks.push_back(intercept);
 }
 
 
 void HTTP::setGeneralCallback(const cb::SmartPointer<HTTPHandler> &cb) {
-  evhttp_set_gencb(http, request_cb, cb.get());
-  requestCallbacks.push_back(cb);
+  cb::SmartPointer<HTTPHandlerIntercept> intercept =
+    new HTTPHandlerIntercept(*this, cb);
+
+  evhttp_set_gencb(http, request_cb, intercept.get());
+  requestCallbacks.push_back(intercept);
 }
 
 
@@ -196,4 +176,42 @@ bufferevent *HTTP::bevCB(event_base *base) {
   if (0 <= priority) BufferEvent(bev, false).setPriority(priority);
 
   return bev;
+}
+
+
+void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
+  // NOTE, Request deallocates itself when complete
+  Request *req = 0;
+
+  try {
+    // Allocate request
+    req = handler.createRequest(_req);
+
+    // Set deallocator
+    evhttp_request_set_on_complete_cb(_req, complete_cb, req);
+
+    // Set to incoming
+    req->setIncoming(true);
+
+    // Dispatch request
+    try {
+      if (!handler(*req)) req->sendError(HTTPStatus::HTTP_NOT_FOUND);
+
+    } catch (cb::Exception &e) {
+      req->sendError(e.getCode(), e.getMessage());
+      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
+      LOG_DEBUG(3, e);
+
+    } catch (std::exception &e) {
+      req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
+      LOG_ERROR(e.what());
+
+    } catch (...) {
+      req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
+      LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
+                .getDescription());
+    }
+  } CATCH_ERROR;
+
+  if (req) handler.endRequestEvent(req);
 }

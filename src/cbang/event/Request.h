@@ -193,9 +193,6 @@ namespace cb {
       virtual SmartPointer<std::istream> getInputStream() const;
       virtual SmartPointer<std::ostream> getOutputStream() const;
 
-      virtual unsigned getInputLength() const;
-      virtual unsigned getOutputLength() const;
-
       virtual void sendError(int code);
       virtual void sendError(int code, const std::string &message);
       virtual void sendJSONError(int code, const std::string &message);
