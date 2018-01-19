@@ -84,9 +84,7 @@ Buffer::~Buffer() {
 }
 
 
-unsigned Buffer::getLength() const {
-  return evbuffer_get_length(evb);
-}
+unsigned Buffer::getLength() const {return evbuffer_get_length(evb);}
 
 
 const char *Buffer::toCString() const {
@@ -94,9 +92,7 @@ const char *Buffer::toCString() const {
 }
 
 
-string Buffer::toString() const {
-  return string(toCString(), getLength());
-}
+string Buffer::toString() const {return string(toCString(), getLength());}
 
 
 string Buffer::hexdump() const {
@@ -104,9 +100,7 @@ string Buffer::hexdump() const {
 }
 
 
-void Buffer::clear() {
-  drain(getLength());
-}
+void Buffer::clear() {drain(getLength());}
 
 
 void Buffer::expand(unsigned length) {
@@ -141,9 +135,7 @@ unsigned Buffer::copy(ostream &stream, unsigned length) {
 }
 
 
-unsigned Buffer::copy(ostream &stream) {
-  return copy(stream, getLength());
-}
+unsigned Buffer::copy(ostream &stream) {return copy(stream, getLength());}
 
 
 void Buffer::drain(unsigned length) {
@@ -173,9 +165,7 @@ unsigned Buffer::remove(ostream &stream, unsigned length) {
 }
 
 
-unsigned Buffer::remove(ostream &stream) {
-  return remove(stream, getLength());
-}
+unsigned Buffer::remove(ostream &stream) {return remove(stream, getLength());}
 
 
 void Buffer::add(const Buffer &buf) {
@@ -194,14 +184,8 @@ void Buffer::add(const char *data, unsigned length) {
 }
 
 
-void Buffer::add(const char *s) {
-  add(s, strlen(s));
-}
-
-
-void Buffer::add(const string &s) {
-  add(CBANG_CPP_TO_C_STR(s), s.length());
-}
+void Buffer::add(const char *s) {add(s, strlen(s));}
+void Buffer::add(const string &s) {add(CBANG_CPP_TO_C_STR(s), s.length());}
 
 
 void Buffer::addFile(const string &path) {
@@ -227,9 +211,7 @@ void Buffer::prepend(const char *data, unsigned length) {
 }
 
 
-void Buffer::prepend(const char *s) {
-  prepend(s, strlen(s));
-}
+void Buffer::prepend(const char *s) {prepend(s, strlen(s));}
 
 
 void Buffer::prepend(const string &s) {

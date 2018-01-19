@@ -91,9 +91,7 @@ BufferEvent::BufferEvent(cb::Event::Base &base,
 }
 
 
-BufferEvent::~BufferEvent() {
-  if (bev && deallocate) bufferevent_free(bev);
-}
+BufferEvent::~BufferEvent() {if (bev && deallocate) bufferevent_free(bev);}
 
 
 void BufferEvent::setPriority(int priority) {

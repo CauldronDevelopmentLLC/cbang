@@ -123,9 +123,7 @@ Connection::Connection(cb::Event::Base &base, DNSBase &dns, const URI &uri,
 }
 
 
-Connection::~Connection() {
-  if (con && deallocate) evhttp_connection_free(con);
-}
+Connection::~Connection() {if (con && deallocate) evhttp_connection_free(con);}
 
 
 BufferEvent Connection::getBufferEvent() const {

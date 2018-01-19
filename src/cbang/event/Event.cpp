@@ -93,14 +93,8 @@ double Event::getTimeout() const {
 }
 
 
-unsigned Event::getEvents() const {
-  return event_get_events(e);
-}
-
-
-int Event::getFD() const {
-  return event_get_fd(e);
-}
+unsigned Event::getEvents() const {return event_get_events(e);}
+int Event::getFD() const {return event_get_fd(e);}
 
 
 void Event::setPriority(int priority) {
@@ -133,9 +127,7 @@ void Event::add(double t) {
 }
 
 
-void Event::add() {
-  event_add(e, 0);
-}
+void Event::add() {event_add(e, 0);}
 
 
 void Event::readd() {
@@ -144,14 +136,8 @@ void Event::readd() {
 }
 
 
-void Event::del() {
-  event_del(e);
-}
-
-
-void Event::activate(int flags) {
-  event_active(e, flags, 0);
-}
+void Event::del() {event_del(e);}
+void Event::activate(int flags) {event_active(e, flags, 0);}
 
 
 void Event::call(int fd, short flags) {
@@ -169,9 +155,7 @@ void Event::call(int fd, short flags) {
 }
 
 
-void Event::enableDebugMode() {
-  event_enable_debug_mode();
-}
+void Event::enableDebugMode() {event_enable_debug_mode();}
 
 
 namespace {
@@ -213,6 +197,4 @@ void Event::enableLogging(int level) {
 }
 
 
-void Event::enableDebugLogging() {
-  event_enable_debug_logging(EVENT_DBG_ALL);
-}
+void Event::enableDebugLogging() {event_enable_debug_logging(EVENT_DBG_ALL);}

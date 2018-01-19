@@ -157,14 +157,8 @@ void WebServer::setEventPriority(int priority) {
 }
 
 
-void WebServer::allow(const IPAddress &addr) {
-  ipFilter.allow(addr);
-}
-
-
-void WebServer::deny(const IPAddress &addr) {
-  ipFilter.deny(addr);
-}
+void WebServer::allow(const IPAddress &addr) {ipFilter.allow(addr);}
+void WebServer::deny(const IPAddress &addr) {ipFilter.deny(addr);}
 
 
 void WebServer::addListenPort(const cb::IPAddress &addr) {

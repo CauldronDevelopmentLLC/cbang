@@ -255,9 +255,7 @@ void Request::inSet(const string &name, const string &value) {
 }
 
 
-void Request::inRemove(const string &name) {
-  getInputHeaders().remove(name);
-}
+void Request::inRemove(const string &name) {getInputHeaders().remove(name);}
 
 
 bool Request::outHas(const string &name) const {
@@ -383,14 +381,8 @@ void Request::setCache(uint32_t age) {
 }
 
 
-string Request::getInput() const {
-  return getInputBuffer().toString();
-}
-
-
-string Request::getOutput() const {
-  return getOutputBuffer().toString();
-}
+string Request::getInput() const {return getInputBuffer().toString();}
+string Request::getOutput() const {return getOutputBuffer().toString();}
 
 
 Event::Buffer Request::getInputBuffer() const {
@@ -504,9 +496,7 @@ void Request::sendJSONError(int code, const string &message) {
 }
 
 
-void Request::send(const cb::Event::Buffer &buf) {
-  getOutputBuffer().add(buf);
-}
+void Request::send(const cb::Event::Buffer &buf) {getOutputBuffer().add(buf);}
 
 
 void Request::send(const char *data, unsigned length) {
@@ -514,14 +504,8 @@ void Request::send(const char *data, unsigned length) {
 }
 
 
-void Request::send(const char *s) {
-  getOutputBuffer().add(s);
-}
-
-
-void Request::send(const std::string &s) {
-  getOutputBuffer().add(s);
-}
+void Request::send(const char *s) {getOutputBuffer().add(s);}
+void Request::send(const std::string &s) {getOutputBuffer().add(s);}
 
 
 void Request::sendFile(const std::string &path) {
@@ -536,9 +520,7 @@ void Request::reply(int code) {
 }
 
 
-void Request::reply(const cb::Event::Buffer &buf) {
-  reply(HTTP_OK, buf);
-}
+void Request::reply(const cb::Event::Buffer &buf) {reply(HTTP_OK, buf);}
 
 
 void Request::reply(const char *data, unsigned length) {
@@ -546,10 +528,7 @@ void Request::reply(const char *data, unsigned length) {
 }
 
 
-void Request::reply(int code, const string &s) {
-  send(s);
-  reply(code);
-}
+void Request::reply(int code, const string &s) {send(s); reply(code);}
 
 
 void Request::reply(int code, const cb::Event::Buffer &buf) {

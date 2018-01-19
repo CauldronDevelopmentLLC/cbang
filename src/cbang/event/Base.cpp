@@ -47,9 +47,7 @@ Base::Base() : base(event_base_new()) {
 }
 
 
-Base::~Base() {
-  if (base) event_base_free(base);
-}
+Base::~Base() {if (base) event_base_free(base);}
 
 
 void Base::initPriority(int num) {
@@ -90,9 +88,7 @@ void Base::dispatch() {
 }
 
 
-void Base::loop() {
-  if (event_base_loop(base, 0)) THROW("Loop failed");
-}
+void Base::loop() {if (event_base_loop(base, 0)) THROW("Loop failed");}
 
 
 void Base::loopOnce() {
