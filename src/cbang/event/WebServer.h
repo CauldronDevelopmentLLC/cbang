@@ -94,6 +94,7 @@ namespace cb {
       const IPAddress &getListenPort(unsigned i) const {return ports.at(i);}
 
       void setEventPriority(int priority);
+      void setMaxConnections(unsigned x);
 
       void allow(const IPAddress &addr);
       void deny(const IPAddress &addr);

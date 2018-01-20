@@ -157,6 +157,12 @@ void WebServer::setEventPriority(int priority) {
 }
 
 
+void WebServer::setMaxConnections(unsigned x) {
+  http->setMaxConnections(x);
+  if (!https.isNull()) http->setMaxConnections(x);
+}
+
+
 void WebServer::allow(const IPAddress &addr) {ipFilter.allow(addr);}
 void WebServer::deny(const IPAddress &addr) {ipFilter.deny(addr);}
 

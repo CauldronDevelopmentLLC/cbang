@@ -63,16 +63,29 @@ using namespace cb::Event;
 
 
 namespace {
-  class HTTPHandlerIntercept : public Base {
+  class RequestIntercept : public Base {
     HTTP &http;
     cb::SmartPointer<HTTPHandler> handler;
 
   public:
-    HTTPHandlerIntercept(HTTP &http,
-                         const cb::SmartPointer<HTTPHandler> &handler) :
+    RequestIntercept(HTTP &http, const cb::SmartPointer<HTTPHandler> &handler) :
       http(http), handler(handler) {}
 
     void request(evhttp_request *req) {http.request(*handler, req);}
+  };
+
+
+  class CompleteIntercept {
+    HTTP &http;
+    Request *req;
+
+  public:
+    CompleteIntercept(HTTP &http, Request *req) : http(http), req(req) {}
+
+    ~CompleteIntercept() {
+      try {http.complete(*req);} CATCH_ERROR;
+      delete req;
+    }
   };
 
 
@@ -83,17 +96,18 @@ namespace {
 
 
   void complete_cb(evhttp_request *_req, void *cb) {
-    try {delete (Request *)cb;} CATCH_ERROR;
+    try {delete (CompleteIntercept *)cb;} CATCH_ERROR;
   }
 
 
   void request_cb(evhttp_request *req, void *cb) {
-    try {((HTTPHandlerIntercept *)cb)->request(req);} CATCH_ERROR;
+    try {((RequestIntercept *)cb)->request(req);} CATCH_ERROR;
   }
 }
 
 
-HTTP::HTTP(const Base &base) : http(evhttp_new(base.getBase())), priority(-1) {
+HTTP::HTTP(const Base &base) :
+  http(evhttp_new(base.getBase())), priority(-1), maxConnections(0) {
   if (!http) THROW("Failed to create event HTTP");
 
   evhttp_set_bevcb(http, bev_cb, this);
@@ -102,7 +116,8 @@ HTTP::HTTP(const Base &base) : http(evhttp_new(base.getBase())), priority(-1) {
 
 
 HTTP::HTTP(const Base &base, const cb::SmartPointer<cb::SSLContext> &sslCtx) :
-  http(evhttp_new(base.getBase())), sslCtx(sslCtx), priority(-1) {
+  http(evhttp_new(base.getBase())), sslCtx(sslCtx), priority(-1),
+  maxConnections(0) {
   if (!http) THROW("Failed to create event HTTP");
 
   evhttp_set_bevcb(http, bev_cb, this);
@@ -130,8 +145,8 @@ void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
 
 void HTTP::setCallback(const string &path,
                        const cb::SmartPointer<HTTPHandler> &cb) {
-  cb::SmartPointer<HTTPHandlerIntercept> intercept =
-    new HTTPHandlerIntercept(*this, cb);
+  cb::SmartPointer<RequestIntercept> intercept =
+    new RequestIntercept(*this, cb);
 
   int ret = evhttp_set_cb(http, path.c_str(), request_cb, intercept.get());
   if (ret)
@@ -142,8 +157,8 @@ void HTTP::setCallback(const string &path,
 
 
 void HTTP::setGeneralCallback(const cb::SmartPointer<HTTPHandler> &cb) {
-  cb::SmartPointer<HTTPHandlerIntercept> intercept =
-    new HTTPHandlerIntercept(*this, cb);
+  cb::SmartPointer<RequestIntercept> intercept =
+    new RequestIntercept(*this, cb);
 
   evhttp_set_gencb(http, request_cb, intercept.get());
   requestCallbacks.push_back(intercept);
@@ -180,7 +195,15 @@ bufferevent *HTTP::bevCB(event_base *base) {
 
 
 void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
-  // NOTE, Request deallocates itself when complete
+  if (maxConnections && connections == maxConnections) {
+    evhttp_send_error(_req, HTTPStatus::HTTP_SERVICE_UNAVAILABLE,
+                      "Service Unavailable");
+    LOG_DEBUG(4, "Max connections exceeded, HTTP request rejected");
+    return;
+  }
+  connections++;
+
+  // NOTE, Request gets deallocated in complete_cb() above
   Request *req = 0;
 
   try {
@@ -188,7 +211,8 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
     req = handler.createRequest(_req);
 
     // Set deallocator
-    evhttp_request_set_on_complete_cb(_req, complete_cb, req);
+    evhttp_request_set_on_complete_cb(_req, complete_cb,
+                                      new CompleteIntercept(*this, req));
 
     // Set to incoming
     req->setIncoming(true);
@@ -214,4 +238,10 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
   } CATCH_ERROR;
 
   if (req) handler.endRequestEvent(req);
+}
+
+
+void HTTP::complete(const Request &req) {
+  if (!connections) THROW("Connection count underflow");
+  connections--;
 }
