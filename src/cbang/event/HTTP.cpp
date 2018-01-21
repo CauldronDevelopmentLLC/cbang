@@ -201,7 +201,6 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
     LOG_DEBUG(4, "Max connections exceeded, HTTP request rejected");
     return;
   }
-  connections++;
 
   // NOTE, Request gets deallocated in complete_cb() above
   Request *req = 0;
@@ -209,10 +208,16 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
   try {
     // Allocate request
     req = handler.createRequest(_req);
+    if (!req) THROW("Failed to create Event::Request");
 
     // Set deallocator
     evhttp_request_set_on_complete_cb(_req, complete_cb,
                                       new CompleteIntercept(*this, req));
+
+    // Count connection
+    connections++;
+    LOG_DEBUG(5, "Event::HTTP: New connection, count=" << connections
+              << " URI=" << req->getURI());
 
     // Set to incoming
     req->setIncoming(true);
@@ -244,4 +249,6 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
 void HTTP::complete(const Request &req) {
   if (!connections) THROW("Connection count underflow");
   connections--;
+  LOG_DEBUG(5, "Event::HTTP: Connection complete, count=" << connections
+            << " URI=" << req.getURI());
 }
