@@ -160,8 +160,8 @@ void URI::setQuery(const char *query) {
   try {
     parseQuery(s);
   } catch (const Exception &e) {
-    THROWS("Failed to parse URI query '" << query << "' at char "
-           << (s - query) << ": " << e.getMessage());
+    THROWS("Failed to parse URI query '" << String::escapeC(query)
+           << "' at char " << (s - query) << ": " << e.getMessage());
   }
 }
 
@@ -212,8 +212,8 @@ void URI::read(const char *uri) {
     if (consume(s, '?')) parseQuery(s);
 
   } catch (const Exception &e) {
-    THROWS("Failed to parse URI '" << uri << "' at char " << (s - uri) << ": "
-           << e.getMessage());
+    THROWS("Failed to parse URI '" << String::escapeC(uri) << "' at char "
+           << (s - uri) << ": " << e.getMessage());
   }
 }
 
