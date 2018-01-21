@@ -131,7 +131,7 @@ unsigned URI::getPort() const {
   if (scheme == "ldap") return 389;
   if (scheme == "https") return 443;
 
-  THROWS("Unknown scheme '" << scheme << "' and port not set");
+  THROWS("Unknown scheme '" << String::escapeC(scheme) << "' and port not set");
 }
 
 
