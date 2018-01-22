@@ -32,19 +32,34 @@
 
 #pragma once
 
-#include "Null.h"
-#include "Boolean.h"
-#include "Number.h"
-#include "U64.h"
-#include "S64.h"
-#include "String.h"
-#include "List.h"
-#include "Dict.h"
-#include "Reader.h"
-#include "Writer.h"
-#include "Builder.h"
-#include "NullSink.h"
-#include "Format.h"
-#include "BufferWriter.h"
-#include "Integer.h"
-#include "Factory.h"
+#include <cbang/SmartPointer.h>
+#include <cbang/StdTypes.h>
+
+
+namespace cb {
+  namespace JSON {
+    class Value;
+
+    typedef cb::SmartPointer<Value> ValuePtr;
+
+    class Factory {
+    public:
+      static ValuePtr createDict();
+      static ValuePtr createList();
+      static ValuePtr createUndefined();
+      static ValuePtr createNull();
+      static ValuePtr createBoolean(bool value);
+      static ValuePtr create(double value);
+      static ValuePtr create(float value);
+      static ValuePtr create(int8_t value);
+      static ValuePtr create(uint8_t value);
+      static ValuePtr create(int16_t value);
+      static ValuePtr create(uint16_t value);
+      static ValuePtr create(int32_t value);
+      static ValuePtr create(uint32_t value);
+      static ValuePtr create(int64_t value);
+      static ValuePtr create(uint64_t value);
+      static ValuePtr create(const std::string &value);
+    };
+  }
+}

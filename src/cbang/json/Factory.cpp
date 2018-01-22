@@ -30,21 +30,35 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Factory.h"
 
+#include "Dict.h"
+#include "List.h"
+#include "Undefined.h"
 #include "Null.h"
-#include "Boolean.h"
 #include "Number.h"
 #include "U64.h"
 #include "S64.h"
+#include "Boolean.h"
 #include "String.h"
-#include "List.h"
-#include "Dict.h"
-#include "Reader.h"
-#include "Writer.h"
-#include "Builder.h"
-#include "NullSink.h"
-#include "Format.h"
-#include "BufferWriter.h"
-#include "Integer.h"
-#include "Factory.h"
+
+using namespace std;
+using namespace cb::JSON;
+
+
+ValuePtr Factory::createDict() {return new Dict;}
+ValuePtr Factory::createList() {return new List;}
+ValuePtr Factory::createUndefined() {return Undefined::instancePtr();}
+ValuePtr Factory::createNull() {return Null::instancePtr();}
+ValuePtr Factory::createBoolean(bool value) {return new Boolean(value);}
+ValuePtr Factory::create(double value) {return new Number(value);}
+ValuePtr Factory::create(float value) {return create((double)value);}
+ValuePtr Factory::create(int8_t value) {return create((int64_t)value);}
+ValuePtr Factory::create(uint8_t value) {return create((uint64_t)value);}
+ValuePtr Factory::create(int16_t value) {return create((int64_t)value);}
+ValuePtr Factory::create(uint16_t value) {return create((uint64_t)value);}
+ValuePtr Factory::create(int32_t value) {return create((int64_t)value);}
+ValuePtr Factory::create(uint32_t value) {return create((uint64_t)value);}
+ValuePtr Factory::create(int64_t value) {return new S64(value);}
+ValuePtr Factory::create(uint64_t value) {return new U64(value);}
+ValuePtr Factory::create(const string &value) {return new String(value);}

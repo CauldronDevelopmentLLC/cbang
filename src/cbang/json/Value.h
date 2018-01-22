@@ -33,13 +33,11 @@
 #pragma once
 
 #include "ValueType.h"
+#include "Factory.h"
 #include "Writer.h"
 
-#include <cbang/SmartPointer.h>
-#include <cbang/Exception.h>
-#include <cbang/StdTypes.h>
-
 #include <ostream>
+
 
 namespace cb {
   namespace JSON {
@@ -49,9 +47,7 @@ namespace cb {
     class Value;
     class Sink;
 
-    typedef SmartPointer<Value> ValuePtr;
-
-    class Value : public ValueType::Enum {
+    class Value : public Factory, public ValueType::Enum {
     public:
       virtual ~Value() {}
 

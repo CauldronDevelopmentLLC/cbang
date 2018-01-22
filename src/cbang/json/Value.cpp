@@ -32,14 +32,6 @@
 
 #include "Value.h"
 
-#include "Undefined.h"
-#include "Null.h"
-#include "Number.h"
-#include "U64.h"
-#include "S64.h"
-#include "Boolean.h"
-#include "String.h"
-
 #include <sstream>
 #include <limits>
 
@@ -47,52 +39,49 @@ using namespace std;
 using namespace cb::JSON;
 
 
-void Value::appendUndefined() {append(Undefined::instancePtr());}
-void Value::appendNull() {append(Null::instancePtr());}
-void Value::appendBoolean(bool value) {append(new Boolean(value));}
-void Value::append(double value) {append(new Number(value));}
-void Value::append(int64_t value) {append(new S64(value));}
-void Value::append(uint64_t value) {append(new U64(value));}
-void Value::append(const std::string &value) {append(new String(value));}
-void Value::setUndefined(unsigned i) {set(i, Undefined::instancePtr());}
-void Value::setNull(unsigned i) {set(i, Null::instancePtr());}
-void Value::setBoolean(unsigned i, bool value) {set(i, new Boolean(value));}
-void Value::set(unsigned i, double value) {set(i, new Number(value));}
-void Value::set(unsigned i, int64_t value) {set(i, new S64(value));}
-void Value::set(unsigned i, uint64_t value) {set(i, new U64(value));}
-void Value::set(unsigned i, const string &value) {set(i, new String(value));}
+void Value::appendUndefined() {append(createUndefined());}
+void Value::appendNull() {append(createNull());}
+void Value::appendBoolean(bool value) {append(createBoolean(value));}
+void Value::append(double value) {append(create(value));}
+void Value::append(int64_t value) {append(create(value));}
+void Value::append(uint64_t value) {append(create(value));}
+void Value::append(const string &value) {append(create(value));}
+
+void Value::setUndefined(unsigned i) {set(i, createUndefined());}
+void Value::setNull(unsigned i) {set(i, createNull());}
+void Value::setBoolean(unsigned i, bool value) {set(i, createBoolean(value));}
+void Value::set(unsigned i, double value) {set(i, create(value));}
+void Value::set(unsigned i, int64_t value) {set(i, create(value));}
+void Value::set(unsigned i, uint64_t value) {set(i, create(value));}
+void Value::set(unsigned i, const string &value) {set(i, create(value));}
 
 
-void Value::insertUndefined(const string &key) {
-  insert(key, Undefined::instancePtr());
-}
-
-
-void Value::insertNull(const string &key) {insert(key, Null::instancePtr());}
+void Value::insertUndefined(const string &key) {insert(key, createUndefined());}
+void Value::insertNull(const string &key) {insert(key, createNull());}
 
 
 void Value::insertBoolean(const string &key, bool value) {
-  insert(key, new Boolean(value));
+  insert(key, createBoolean(value));
 }
 
 
 void Value::insert(const string &key, double value) {
-  insert(key, new Number(value));
+  insert(key, create(value));
 }
 
 
 void Value::insert(const string &key, uint64_t value) {
-  insert(key, new U64(value));
+  insert(key, create(value));
 }
 
 
 void Value::insert(const string &key, int64_t value) {
-  insert(key, new S64(value));
+  insert(key, create(value));
 }
 
 
 void Value::insert(const string &key, const string &value) {
-  insert(key, new String(value));
+  insert(key, create(value));
 }
 
 

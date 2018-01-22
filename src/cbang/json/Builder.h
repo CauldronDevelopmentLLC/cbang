@@ -34,13 +34,14 @@
 
 #include "Sink.h"
 #include "Value.h"
+#include "Factory.h"
 
 #include <vector>
 
 
 namespace cb {
   namespace JSON {
-    class Builder : public Sink {
+    class Builder : public Factory, public Sink {
       std::vector<ValuePtr> stack;
       bool appendNext;
       std::string nextKey;

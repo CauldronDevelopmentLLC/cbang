@@ -44,13 +44,15 @@ Builder::Builder(const ValuePtr &root) : appendNext(false) {
 
 
 ValuePtr Builder::getRoot() const {return stack.empty() ? 0 : stack.front();}
-void Builder::writeNull() {add(Null::instancePtr());}
-void Builder::writeBoolean(bool value) {add(new Boolean(value));}
-void Builder::write(double value) {add(new Number(value));}
-void Builder::write(uint64_t value) {add(new U64(value));}
-void Builder::write(int64_t value) {add(new S64(value));}
-void Builder::write(const string &value) {add(new String(value));}
-void Builder::beginList(bool simple) {add(new List);}
+
+void Builder::writeNull() {add(createNull());}
+void Builder::writeBoolean(bool value) {add(createBoolean(value));}
+void Builder::write(double value) {add(create(value));}
+void Builder::write(uint64_t value) {add(create(value));}
+void Builder::write(int64_t value) {add(create(value));}
+void Builder::write(const string &value) {add(create(value));}
+
+void Builder::beginList(bool simple) {add(createList());}
 
 
 void Builder::beginAppend() {
@@ -67,9 +69,7 @@ void Builder::endList() {
 }
 
 
-void Builder::beginDict(bool simple) {
-  add(new Dict);
-}
+void Builder::beginDict(bool simple) {add(createDict());}
 
 
 bool Builder::has(const string &key) const {
