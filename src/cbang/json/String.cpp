@@ -30,41 +30,24 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "String.h"
 
-#include "Value.h"
+#include <limits>
 
-#include <cbang/String.h>
+using namespace std;
+using namespace cb::JSON;
 
-#include <string>
 
-namespace cb {
-  namespace JSON {
-    class String : public Value {
-      std::string s;
+double String::getNumber() const {
+  string l = cb::String::toLower(s);
 
-    public:
-      String(const std::string &s = std::string()) : s(s) {}
+  if (l == "nan") return std::numeric_limits<double>::quiet_NaN();
 
-      void setValue(const std::string &s) {this->s = s;}
-      std::string &getValue() {return s;}
-      const std::string &getValue() const {return s;}
+  if (l == "-infinity" || l == "-inf")
+    return -numeric_limits<double>::infinity();
 
-      operator const std::string &() const {return s;}
+  if (l == "infinity" || l == "inf")
+    return numeric_limits<double>::infinity();
 
-      // From Value
-      ValueType getType() const {return JSON_STRING;}
-      ValuePtr copy(bool deep = false) const {return new String(s);}
-      bool getBoolean() const {return cb::String::parseBool(getString());}
-      double getNumber() const;
-      int32_t getS32() const {return cb::String::parseS32(getString());}
-      uint32_t getU32() const {return cb::String::parseU32(getString());}
-      int64_t getS64() const {return cb::String::parseS64(getString());}
-      uint64_t getU64() const {return cb::String::parseU64(getString());}
-      std::string &getString() {return getValue();}
-      const std::string &getString() const {return getValue();}
-      void set(const std::string &value) {s = value;}
-      void write(Sink &sink) const {sink.write(s);}
-    };
-  }
+  return cb::String::parseDouble(s);
 }

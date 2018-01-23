@@ -36,10 +36,12 @@
 
 #include <cbang/String.h>
 #include <cbang/SStream.h>
+#include <cbang/Math.h>
 
 #include <cctype>
 #include <iomanip>
 #include <sstream>
+
 
 using namespace std;
 using namespace cb::JSON;
@@ -75,7 +77,12 @@ void Writer::writeBoolean(bool value) {
 
 void Writer::write(double value) {
   NullSink::write(value);
-  stream << cb::String(value);
+
+  // These values are parsed correctly by both Python and Javascript
+  if (isinf(value) == 1)       stream << "\"Infinity\"";
+  else if (isinf(value) == -1) stream << "\"-Infinity\"";
+  else if (isnan(value))       stream << "\"NaN\"";
+  else stream << cb::String(value);
 }
 
 
