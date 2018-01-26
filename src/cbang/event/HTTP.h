@@ -36,6 +36,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Base.h>
+#include <cbang/net/IPAddress.h>
 
 #include <vector>
 
@@ -56,6 +57,7 @@ namespace cb {
       SmartPointer<SSLContext> sslCtx;
       int priority;
 
+      cb::IPAddress boundAddr;
       std::vector<SmartPointer<Base> > requestCallbacks;
 
     public:
@@ -87,10 +89,10 @@ namespace cb {
       }
 
       int bind(const IPAddress &addr);
+      const cb::IPAddress &getBoundAddress() const {return boundAddr;}
 
       bufferevent *bevCB(event_base *base);
-
-      void request(HTTPHandler &handler, evhttp_request *req);
+      void requestCB(HTTPHandler &handler, evhttp_request *req);
     };
   }
 }

@@ -40,7 +40,6 @@
 #include "BufferEvent.h"
 
 #include <cbang/Exception.h>
-#include <cbang/net/IPAddress.h>
 #include <cbang/log/Logger.h>
 #include <cbang/util/DefaultCatch.h>
 
@@ -71,7 +70,7 @@ namespace {
     RequestIntercept(HTTP &http, const cb::SmartPointer<HTTPHandler> &handler) :
       http(http), handler(handler) {}
 
-    void request(evhttp_request *req) {http.request(*handler, req);}
+    void request(evhttp_request *req) {http.requestCB(*handler, req);}
   };
 
 
@@ -157,6 +156,7 @@ int HTTP::bind(const cb::IPAddress &addr) {
                                    addr.getPort());
 
   if (!handle) THROWS("Unable to bind HTTP server to " << addr);
+  boundAddr = addr;
 
   return (int)evhttp_bound_socket_get_fd(handle);
 }
@@ -180,8 +180,9 @@ bufferevent *HTTP::bevCB(event_base *base) {
 }
 
 
-void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
-  LOG_DEBUG(5, "New request, connection count = " << getConnectionCount());
+void HTTP::requestCB(HTTPHandler &handler, evhttp_request *_req) {
+  LOG_DEBUG(5, "New request on " << boundAddr << ", connection count = "
+            << getConnectionCount());
 
   // NOTE, Request gets deallocated in request_free_cb() above
   Request *req = 0;
