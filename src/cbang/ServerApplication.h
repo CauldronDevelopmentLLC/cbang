@@ -43,6 +43,7 @@ namespace cb {
     enum {
       FEATURE_SERVER = Application::FEATURE_LAST,
       FEATURE_LIFELINE,
+      FEATURE_CHECK_OPEN_FILE_LIMIT,
       FEATURE_LAST,
     };
 

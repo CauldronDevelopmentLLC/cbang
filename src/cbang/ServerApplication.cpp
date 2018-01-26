@@ -42,8 +42,13 @@
 #include <cbang/time/Timer.h>
 #include <cbang/util/DefaultCatch.h>
 
-#include <signal.h>
 #include <sstream>
+
+#include <signal.h>
+
+#ifndef _WIN32
+#include <sys/resource.h>
+#endif
 
 using namespace cb;
 using namespace cb;
@@ -125,6 +130,27 @@ int ServerApplication::init(int argc, char *argv[]) {
   }
 
 #ifndef _WIN32
+  if (hasFeature(FEATURE_CHECK_OPEN_FILE_LIMIT)) {
+    // Check maximum number of open files
+    struct rlimit rlim;
+    unsigned noFilesRec = 10000;
+    if (getrlimit(RLIMIT_NOFILE, &rlim) == 0 &&
+        rlim.rlim_cur != RLIM_INFINITY) {
+      // Set to maximum
+      if (rlim.rlim_cur != rlim.rlim_max) {
+        rlim.rlim_cur = rlim.rlim_max;
+        setrlimit(RLIMIT_NOFILE, &rlim);
+        getrlimit(RLIMIT_NOFILE, &rlim);
+      }
+
+      if (rlim.rlim_cur != RLIM_INFINITY && rlim.rlim_cur < noFilesRec)
+        LOG_WARNING("Open file limit of " << rlim.rlim_cur
+                    << " is less than recommended value of " << noFilesRec
+                    << ", you can increase this value in "
+                    "'/etc/security/limits.conf'");
+    }
+  }
+
   try {
     if (options["run-as"].hasValue()) {
       LOG_INFO(1, "Switching to user " << options["run-as"]);
