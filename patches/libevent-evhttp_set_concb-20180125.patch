@@ -1,0 +1,76 @@
+diff --git a/src/libevent/include/event2/http.h b/src/libevent/include/event2/http.h
+index 4284d5f..07b21c6 100644
+--- a/src/libevent/include/event2/http.h
++++ b/src/libevent/include/event2/http.h
+@@ -297,6 +297,21 @@ EVENT2_EXPORT_SYMBOL
+ void evhttp_set_bevcb(struct evhttp *http,
+     struct bufferevent *(*cb)(struct event_base *, void *), void *arg);
+ 
++/**
++   Set a callback for new connections to a given evhttp object.
++
++   You can use this to reject connections by returning 0.  Return 1 to approve
++   the connection.
++
++   @param http the evhttp server object on which to set the callback
++   @param cb the callback to invoke for incoming connections
++   @param arg an context argument for the callback
++ */
++EVENT2_EXPORT_SYMBOL
++void evhttp_set_concb(struct evhttp *http,
++    int (*cb)(struct evhttp *, evutil_socket_t, const char *, int, void *),
++    void *arg);
++
+ /**
+    Adds a virtual host to the http server.
+ 
+diff --git a/src/libevent/src/http-internal.h b/src/libevent/src/http-internal.h
+index a83160c..815c8db 100644
+--- a/src/libevent/src/http-internal.h
++++ b/src/libevent/src/http-internal.h
+@@ -172,6 +172,8 @@ struct evhttp {
+ 	void *gencbarg;
+ 	struct bufferevent* (*bevcb)(struct event_base *, void *);
+ 	void *bevcbarg;
++	int (*concb)(struct evhttp *, evutil_socket_t, const char *, int, void *);
++	void *concbarg;
+ 
+ 	struct event_base *base;
+ };
+diff --git a/src/libevent/src/http.c b/src/libevent/src/http.c
+index bca194b..da5da04 100644
+--- a/src/libevent/src/http.c
++++ b/src/libevent/src/http.c
+@@ -3756,6 +3756,15 @@ evhttp_set_bevcb(struct evhttp *http,
+ 	http->bevcbarg = cbarg;
+ }
+ 
++void
++evhttp_set_concb(struct evhttp *http,
++    int (*cb)(struct evhttp *, evutil_socket_t, const char *, int, void *),
++	void *cbarg)
++{
++	http->concb = cb;
++	http->concbarg = cbarg;
++}
++
+ /*
+  * Request related functions
+  */
+@@ -4020,6 +4029,16 @@ evhttp_get_request_connection(
+ 	event_debug(("%s: new request from %s:%s on "EV_SOCK_FMT"\n",
+ 		__func__, hostname, portname, EV_SOCK_ARG(fd)));
+ 
++	/* allow user to reject connection */
++	if (http->concb != NULL) {
++		if (!(*http->concb)(
++			http, fd, hostname, atoi(portname), http->concbarg)) {
++			mm_free(hostname);
++			mm_free(portname);
++			return (NULL);
++		}
++	}
++
+ 	/* we need a connection object to put the http request on */
+ 	if (http->bevcb != NULL) {
+ 		bev = (*http->bevcb)(http->base, http->bevcbarg);

@@ -1,0 +1,108 @@
+diff --git a/src/libevent/include/event2/http.h b/src/libevent/include/event2/http.h
+index 4284d5f..7ca70fe 100644
+--- a/src/libevent/include/event2/http.h
++++ b/src/libevent/include/event2/http.h
+@@ -221,6 +221,24 @@ void evhttp_set_max_headers_size(struct evhttp* http, ev_ssize_t max_headers_siz
+ EVENT2_EXPORT_SYMBOL
+ void evhttp_set_max_body_size(struct evhttp* http, ev_ssize_t max_body_size);
+ 
++/**
++ * Set the maximum number of simultaneous connections for this server.
++ * A value of zero or less disables the limit.
++ *
++ * @param http the http server on which to set the max connection limit
++ * @param max_connections the maximum number of simultaneous connections or 0
++ */
++EVENT2_EXPORT_SYMBOL
++void evhttp_set_max_connections(struct evhttp* http, int max_connections);
++
++/**
++ * Get the current number of connections.
++ *
++ * @return The current number of connections for this server.
++ */
++EVENT2_EXPORT_SYMBOL
++int evhttp_get_connection_count(struct evhttp* http);
++
+ /**
+   Set the value to use for the Content-Type header when none was provided. If
+   the content type string is NULL, the Content-Type header will not be
+diff --git a/src/libevent/src/http-internal.h b/src/libevent/src/http-internal.h
+index a83160c..071c79b 100644
+--- a/src/libevent/src/http-internal.h
++++ b/src/libevent/src/http-internal.h
+@@ -148,6 +148,8 @@ struct evhttp {
+ 
+ 	/* All live connections on this host. */
+ 	struct evconq connections;
++	int connection_max;
++	int connection_cnt;
+ 
+ 	TAILQ_HEAD(vhostsq, evhttp) virtualhosts;
+ 
+diff --git a/src/libevent/src/http.c b/src/libevent/src/http.c
+index bca194b..2604562 100644
+--- a/src/libevent/src/http.c
++++ b/src/libevent/src/http.c
+@@ -1163,6 +1163,7 @@ evhttp_connection_free(struct evhttp_connection *evcon)
+ 	if (evcon->http_server != NULL) {
+ 		struct evhttp *http = evcon->http_server;
+ 		TAILQ_REMOVE(&http->connections, evcon, next);
++		http->connection_cnt--;
+ 	}
+ 
+ 	if (event_initialized(&evcon->retry_ev)) {
+@@ -3679,6 +3680,21 @@ evhttp_set_max_body_size(struct evhttp* http, ev_ssize_t max_body_size)
+ 		http->default_max_body_size = max_body_size;
+ }
+ 
++void
++evhttp_set_max_connections(struct evhttp* http, int max_connections)
++{
++	if (max_connections < 0)
++		http->connection_max = 0;
++	else
++		http->connection_max = max_connections;
++}
++
++int
++evhttp_get_connection_count(struct evhttp* http)
++{
++	return http->connection_cnt;
++}
++
+ void
+ evhttp_set_default_content_type(struct evhttp *http,
+ 	const char *content_type) {
+@@ -4103,8 +4119,30 @@ evhttp_get_request(struct evhttp *http, evutil_socket_t fd,
+ 	 */
+ 	evcon->http_server = http;
+ 	TAILQ_INSERT_TAIL(&http->connections, evcon, next);
++	http->connection_cnt++;
++
++	/* send "service unavailable" if we've reached the connection limit */
++	if (http->connection_max && http->connection_max < http->connection_cnt) {
++		struct evhttp_request *req;
++
++		if ((req = evhttp_request_new(evhttp_handle_request, http)) == NULL) {
++			evhttp_connection_free(evcon);
++			return;
++		}
++
++		req->evcon = evcon;	/* the request owns the connection */
++		req->flags |= EVHTTP_REQ_OWN_CONNECTION;
++		req->kind = EVHTTP_REQUEST;
++		/* note, req->remote_host not needed since we don't read */
++
++		TAILQ_INSERT_TAIL(&evcon->requests, req, next);
++
++		/* send error to client */
++		evcon->state = EVCON_WRITING;
++		bufferevent_enable(evcon->bufev, EV_READ); /* enable close events */
++		evhttp_send_error(req, HTTP_SERVUNAVAIL, NULL);
+ 
+-	if (evhttp_associate_new_request_with_connection(evcon) == -1)
++	} else if (evhttp_associate_new_request_with_connection(evcon) == -1)
+ 		evhttp_connection_free(evcon);
+ }
+ 
