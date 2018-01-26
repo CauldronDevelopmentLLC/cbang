@@ -56,9 +56,6 @@ namespace cb {
       SmartPointer<SSLContext> sslCtx;
       int priority;
 
-      unsigned maxConnections;
-      unsigned connections;
-
       std::vector<SmartPointer<Base> > requestCallbacks;
 
     public:
@@ -70,7 +67,7 @@ namespace cb {
       void setMaxHeadersSize(unsigned size);
       void setTimeout(int timeout);
       void setEventPriority(int priority) {this->priority = priority;}
-      void setMaxConnections(unsigned x) {maxConnections = x;}
+      void setMaxConnections(int x);
 
       void setCallback(const std::string &path,
                        const SmartPointer<HTTPHandler> &cb);
@@ -93,7 +90,6 @@ namespace cb {
       bufferevent *bevCB(event_base *base);
 
       void request(HTTPHandler &handler, evhttp_request *req);
-      void complete(const Request &req);
     };
   }
 }

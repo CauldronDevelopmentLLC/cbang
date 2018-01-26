@@ -75,28 +75,14 @@ namespace {
   };
 
 
-  class CompleteIntercept {
-    HTTP &http;
-    Request *req;
-
-  public:
-    CompleteIntercept(HTTP &http, Request *req) : http(http), req(req) {}
-
-    ~CompleteIntercept() {
-      try {http.complete(*req);} CATCH_ERROR;
-      delete req;
-    }
-  };
-
-
   bufferevent *bev_cb(event_base *base, void *arg) {
     try {return ((HTTP *)arg)->bevCB(base);} CATCH_ERROR;
     return 0;
   }
 
 
-  void complete_cb(evhttp_request *_req, void *cb) {
-    try {delete (CompleteIntercept *)cb;} CATCH_ERROR;
+  void request_free_cb(evhttp_request *_req, void *arg) {
+    try {delete (Request *)arg;} CATCH_ERROR;
   }
 
 
@@ -106,8 +92,7 @@ namespace {
 }
 
 
-HTTP::HTTP(const Base &base) :
-  http(evhttp_new(base.getBase())), priority(-1), maxConnections(0) {
+HTTP::HTTP(const Base &base) : http(evhttp_new(base.getBase())), priority(-1) {
   if (!http) THROW("Failed to create event HTTP");
 
   evhttp_set_bevcb(http, bev_cb, this);
@@ -116,8 +101,7 @@ HTTP::HTTP(const Base &base) :
 
 
 HTTP::HTTP(const Base &base, const cb::SmartPointer<cb::SSLContext> &sslCtx) :
-  http(evhttp_new(base.getBase())), sslCtx(sslCtx), priority(-1),
-  maxConnections(0) {
+  http(evhttp_new(base.getBase())), sslCtx(sslCtx), priority(-1) {
   if (!http) THROW("Failed to create event HTTP");
 
   evhttp_set_bevcb(http, bev_cb, this);
@@ -141,6 +125,7 @@ void HTTP::setMaxHeadersSize(unsigned size) {
 
 
 void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
+void HTTP::setMaxConnections(int x) {evhttp_set_max_connections(http, x);}
 
 
 void HTTP::setCallback(const string &path,
@@ -195,14 +180,7 @@ bufferevent *HTTP::bevCB(event_base *base) {
 
 
 void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
-  if (maxConnections && connections == maxConnections) {
-    evhttp_send_error(_req, HTTPStatus::HTTP_SERVICE_UNAVAILABLE,
-                      "Service Unavailable");
-    LOG_DEBUG(4, "Max connections exceeded, HTTP request rejected");
-    return;
-  }
-
-  // NOTE, Request gets deallocated in complete_cb() above
+  // NOTE, Request gets deallocated in request_free_cb() above
   Request *req = 0;
 
   try {
@@ -211,13 +189,7 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
     if (!req) THROW("Failed to create Event::Request");
 
     // Set deallocator
-    evhttp_request_set_on_complete_cb(_req, complete_cb,
-                                      new CompleteIntercept(*this, req));
-
-    // Count connection
-    connections++;
-    LOG_DEBUG(5, "Event::HTTP: New connection, count=" << connections
-              << " URI=" << req->getURI());
+    evhttp_request_set_on_free_cb(_req, request_free_cb, req);
 
     // Set to incoming
     req->setIncoming(true);
@@ -243,12 +215,4 @@ void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
   } CATCH_ERROR;
 
   if (req) handler.endRequestEvent(req);
-}
-
-
-void HTTP::complete(const Request &req) {
-  if (!connections) THROW("Connection count underflow");
-  connections--;
-  LOG_DEBUG(5, "Event::HTTP: Connection complete, count=" << connections
-            << " URI=" << req.getURI());
 }
