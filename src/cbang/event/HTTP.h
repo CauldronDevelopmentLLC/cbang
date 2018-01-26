@@ -68,6 +68,7 @@ namespace cb {
       void setTimeout(int timeout);
       void setEventPriority(int priority) {this->priority = priority;}
       void setMaxConnections(int x);
+      int getConnectionCount() const;
 
       void setCallback(const std::string &path,
                        const SmartPointer<HTTPHandler> &cb);

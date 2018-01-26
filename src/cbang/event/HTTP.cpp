@@ -126,6 +126,7 @@ void HTTP::setMaxHeadersSize(unsigned size) {
 
 void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
 void HTTP::setMaxConnections(int x) {evhttp_set_max_connections(http, x);}
+int HTTP::getConnectionCount() const {return evhttp_get_connection_count(http);}
 
 
 void HTTP::setCallback(const string &path,
@@ -180,6 +181,8 @@ bufferevent *HTTP::bevCB(event_base *base) {
 
 
 void HTTP::request(HTTPHandler &handler, evhttp_request *_req) {
+  LOG_DEBUG(5, "New request, connection count = " << getConnectionCount());
+
   // NOTE, Request gets deallocated in request_free_cb() above
   Request *req = 0;
 
