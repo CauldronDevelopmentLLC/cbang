@@ -107,7 +107,7 @@ namespace cb {
 
 
     SmartPointer<std::iostream> logFile;
-    std::ostream *screenStream;
+    SmartPointer<std::ostream> screenStream;
 
     mutable unsigned idWidth;
 
@@ -136,7 +136,8 @@ namespace cb {
     void startLogFile(const std::string &filename);
     bool getLogFileStarted() const {return !logFile.isNull();}
 
-    void setScreenStream(std::ostream &stream) {screenStream = &stream;}
+    void setScreenStream(std::ostream &stream);
+    void setScreenStream(const SmartPointer<std::ostream> &stream);
 
     /**
      * Set the logging verbosity level.

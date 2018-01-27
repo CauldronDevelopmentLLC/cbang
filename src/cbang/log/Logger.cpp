@@ -75,8 +75,9 @@ Logger::Logger(Inaccessible) :
   logNoInfoHeader(false), logColor(true), logToScreen(true), logTrunc(false),
   logRedirect(false), logRotate(true), logRotateMax(0), logRotateDir("logs"),
   threadIDStorage(new ThreadLocalStorage<unsigned long>),
-  threadPrefixStorage(new ThreadLocalStorage<string>), screenStream(&cout),
-  idWidth(1), lastDate(Time::now()) {
+  threadPrefixStorage(new ThreadLocalStorage<string>),
+  screenStream(SmartPointer<ostream>::Phony(&cout)), idWidth(1),
+  lastDate(Time::now()) {
 
 #ifdef _WIN32
   logCRLF = true;
@@ -169,6 +170,16 @@ int Logger::domainLevelsAction(Option &option) {
 }
 
 
+void Logger::setScreenStream(ostream &stream) {
+  setScreenStream(SmartPointer<ostream>::Phony(&stream));
+}
+
+
+void Logger::setScreenStream(const SmartPointer<std::ostream> &stream) {
+  screenStream = stream;
+}
+
+
 void Logger::startLogFile(const string &filename) {
   // Rotate log
   if (logRotate) SystemUtilities::rotate(filename, logRotateDir, logRotateMax);
@@ -234,9 +245,7 @@ unsigned Logger::getHeaderWidth() const {
 }
 
 
-void Logger::setThreadID(unsigned long id) {
-  threadIDStorage->set(id);
-}
+void Logger::setThreadID(unsigned long id) {threadIDStorage->set(id);}
 
 
 unsigned long Logger::getThreadID() const {
@@ -403,31 +412,29 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
                                        const std::string &_prefix) {
   string domain = simplifyDomain(_domain);
 
-  if (enabled(domain, level)) {
-    // Log date periodically
-    uint64_t now = Time::now();
-    if (logDatePeriodically && lastDate + logDatePeriodically <= now) {
-      write(String::bar(Time(now, "Date: %Y-%m-%d").toString()) +
-            (logCRLF ? "\r\n" : "\n"));
-      lastDate = now;
-    }
+  if (!enabled(domain, level)) return new NullStream<>;
 
-    string prefix = startColor(level) + getHeader(domain, level) + _prefix;
-    string suffix = endColor(level);
+  // Log date periodically
+  if (logDatePeriodically && lastDate + logDatePeriodically <= Time::now()) {
+    lastDate = Time::now();
+    write(String::bar(Time(lastDate, "Date: %Y-%m-%d").toString()) +
+          (logCRLF ? "\r\n" : "\n"));
+  }
 
-    string trailer;
+  string prefix = startColor(level) + getHeader(domain, level) + _prefix;
+  string suffix = endColor(level);
+  string trailer;
+
 #ifdef HAVE_DEBUGGER
-    if (domainTraces.find(domain) != domainTraces.end()) {
-      StackTrace trace;
-      Debugger::instance().getStackTrace(trace);
-      for (int i = 0; i < 3; i++) trace.pop_front();
-      trailer = SSTR(trace);
-    }
+  if (domainTraces.find(domain) != domainTraces.end()) {
+    StackTrace trace;
+    Debugger::instance().getStackTrace(trace);
+    for (int i = 0; i < 3; i++) trace.pop_front();
+    trailer = SSTR(trace);
+  }
 #endif
 
-    return new cb::LogStream(prefix, suffix, trailer);
-
-  } else return new NullStream<>;
+  return new cb::LogStream(prefix, suffix, trailer);
 }
 
 
@@ -438,9 +445,7 @@ streamsize Logger::write(const char *s, streamsize n) {
 }
 
 
-void Logger::write(const string &s) {
-  write(s.c_str(), s.length());
-}
+void Logger::write(const string &s) {write(s.c_str(), s.length());}
 
 
 bool Logger::flush() {
