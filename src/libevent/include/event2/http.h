@@ -232,6 +232,25 @@ EVENT2_EXPORT_SYMBOL
 void evhttp_set_max_connections(struct evhttp* http, int max_connections);
 
 /**
+ * Set the maximum time in seconds for a connection to live on this server.
+ * A value of zero or less disables the limit.
+ *
+ * An event will fire on this server approximately every 60 seconds where it
+ * will check for and remove any expired connections.  This can be used to
+ * mitigate Slowloris DOS attacks which attempt to keep server connections open
+ * by slowly reading or writing data, avoiding normal connection timeouts and
+ * keeping the connection open for as long as possible.  During a Slowloris
+ * attack the server will slowly run out of file descriptors or hit it's max
+ * connection limit.  The TTL (Time to Live) limit drops any connections that
+ * have been open for too long.
+ *
+ * @param http the http server on which to set the max connection limit
+ * @param max_ttl the maximum time to live or 0 for no limit.
+ */
+EVENT2_EXPORT_SYMBOL
+void evhttp_set_max_connection_ttl(struct evhttp* http, int max_ttl);
+
+/**
  * Get the current number of connections.
  *
  * @return The current number of connections for this server.

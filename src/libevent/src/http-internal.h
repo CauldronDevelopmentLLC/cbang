@@ -76,6 +76,7 @@ struct evhttp_connection {
 #define EVHTTP_CON_CLOSEDETECT  0x0004  /* detecting if persistent close */
 #define EVHTTP_CON_AUTOFREE 0x0008  /* set when we want to auto free the connection */
 
+	struct timeval start_time;	/* time this connection was created */
 	struct timeval timeout;		/* timeout for events */
 	int retry_cnt;			/* retry count */
 	int retry_max;			/* maximum number of retries */
@@ -150,6 +151,8 @@ struct evhttp {
 	struct evconq connections;
 	int connection_max;
 	int connection_cnt;
+	int connection_max_ttl; /* Maximum connection time in seconds */
+	struct event expire_event;
 
 	TAILQ_HEAD(vhostsq, evhttp) virtualhosts;
 

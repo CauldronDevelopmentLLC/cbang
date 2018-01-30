@@ -185,6 +185,8 @@ static int evhttp_add_header_internal(struct evkeyvalq *headers,
     const char *key, const char *value);
 static const char *evhttp_response_phrase_internal(int code);
 static void evhttp_get_request(struct evhttp *, evutil_socket_t, struct sockaddr *, ev_socklen_t);
+static void evhttp_drop_expired_connections(struct evhttp *http);
+static void evhttp_drop_expired_connections_cb(evutil_socket_t, short, void *);
 static void evhttp_write_buffer(struct evhttp_connection *,
     void (*)(struct evhttp_connection *, void *), void *);
 static void evhttp_make_header(struct evhttp_connection *, struct evhttp_request *);
@@ -2270,6 +2272,7 @@ evhttp_connection_base_bufferevent_new(struct event_base *base, struct evdns_bas
 	evcon->max_headers_size = EV_SIZE_MAX;
 	evcon->max_body_size = EV_SIZE_MAX;
 
+	evutil_gettimeofday(&evcon->start_time, NULL);
 	evutil_timerclear(&evcon->timeout);
 	evcon->retry_cnt = evcon->retry_max = 0;
 
@@ -3500,6 +3503,9 @@ evhttp_new(struct event_base *base)
 		return (NULL);
 	http->base = base;
 
+	event_assign(&http->expire_event, base, -1, EV_PERSIST,
+		     evhttp_drop_expired_connections_cb, http);
+
 	return (http);
 }
 
@@ -3531,6 +3537,9 @@ evhttp_free(struct evhttp* http)
 	struct evhttp_bound_socket *bound;
 	struct evhttp* vhost;
 	struct evhttp_server_alias *alias;
+
+	/* Stop expire event if set */
+	event_del(&http->expire_event);
 
 	/* Remove the accepting part */
 	while ((bound = TAILQ_FIRST(&http->sockets)) != NULL) {
@@ -3687,6 +3696,25 @@ evhttp_set_max_connections(struct evhttp* http, int max_connections)
 		http->connection_max = 0;
 	else
 		http->connection_max = max_connections;
+}
+
+void
+evhttp_set_max_connection_ttl(struct evhttp* http, int max_ttl)
+{
+	if (max_ttl <= 0) {
+		http->connection_max_ttl = 0;
+
+		if (event_pending(&http->expire_event, EV_TIMEOUT, 0))
+			event_del(&http->expire_event);
+
+	} else {
+		http->connection_max_ttl = max_ttl;
+
+		if (!event_pending(&http->expire_event, EV_TIMEOUT, 0)) {
+			struct timeval timeout = {60, 0}; /* check once per minute */
+			event_add(&http->expire_event, &timeout);
+		}
+	}
 }
 
 int
@@ -4156,6 +4184,40 @@ evhttp_get_request(struct evhttp *http, evutil_socket_t fd,
 		evhttp_connection_free(evcon);
 }
 
+static void
+evhttp_drop_expired_connections(struct evhttp *http)
+{
+	struct timeval now;
+	struct evconq expired;
+	struct evhttp_connection *evcon;
+	int count = 0;
+
+	if (http->connection_max_ttl <= 0) return;
+
+	evutil_gettimeofday(&now, NULL);
+	TAILQ_INIT(&expired);
+
+	/* Find expired connections */
+	TAILQ_FOREACH(evcon, &http->connections, next) {
+		if (http->connection_max_ttl < now.tv_sec - evcon->start_time.tv_sec)
+			TAILQ_INSERT_TAIL(&expired, evcon, next);
+	}
+
+	/* Close and free expired connections */
+	while ((evcon = TAILQ_FIRST(&expired)) != NULL) {
+		TAILQ_REMOVE(&expired, evcon, next);
+		evhttp_connection_free(evcon);
+		count++;
+	}
+
+	if (count) event_debug(("Dropped %d expired connections\n", count));
+}
+
+static void
+evhttp_drop_expired_connections_cb(evutil_socket_t fd, short events, void *arg)
+{
+	evhttp_drop_expired_connections(arg);
+}
 
 /*
  * Network helper functions that we do not want to export to the rest of
