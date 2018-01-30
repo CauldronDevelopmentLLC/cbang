@@ -1,0 +1,159 @@
+diff --git a/src/libevent/include/event2/http.h b/src/libevent/include/event2/http.h
+index 5ad8b36..bee5927 100644
+--- a/src/libevent/include/event2/http.h
++++ b/src/libevent/include/event2/http.h
+@@ -231,6 +231,25 @@ void evhttp_set_max_body_size(struct evhttp* http, ev_ssize_t max_body_size);
+ EVENT2_EXPORT_SYMBOL
+ void evhttp_set_max_connections(struct evhttp* http, int max_connections);
+ 
++/**
++ * Set the maximum time in seconds for a connection to live on this server.
++ * A value of zero or less disables the limit.
++ *
++ * An event will fire on this server approximately every 60 seconds where it
++ * will check for and remove any expired connections.  This can be used to
++ * mitigate Slowloris DOS attacks which attempt to keep server connections open
++ * by slowly reading or writing data, avoiding normal connection timeouts and
++ * keeping the connection open for as long as possible.  During a Slowloris
++ * attack the server will slowly run out of file descriptors or hit it's max
++ * connection limit.  The TTL (Time to Live) limit drops any connections that
++ * have been open for too long.
++ *
++ * @param http the http server on which to set the max connection limit
++ * @param max_ttl the maximum time to live or 0 for no limit.
++ */
++EVENT2_EXPORT_SYMBOL
++void evhttp_set_max_connection_ttl(struct evhttp* http, int max_ttl);
++
+ /**
+  * Get the current number of connections.
+  *
+diff --git a/src/libevent/src/http-internal.h b/src/libevent/src/http-internal.h
+index 071c79b..21b9bfe 100644
+--- a/src/libevent/src/http-internal.h
++++ b/src/libevent/src/http-internal.h
+@@ -76,6 +76,7 @@ struct evhttp_connection {
+ #define EVHTTP_CON_CLOSEDETECT  0x0004  /* detecting if persistent close */
+ #define EVHTTP_CON_AUTOFREE 0x0008  /* set when we want to auto free the connection */
+ 
++	struct timeval start_time;	/* time this connection was created */
+ 	struct timeval timeout;		/* timeout for events */
+ 	int retry_cnt;			/* retry count */
+ 	int retry_max;			/* maximum number of retries */
+@@ -150,6 +151,8 @@ struct evhttp {
+ 	struct evconq connections;
+ 	int connection_max;
+ 	int connection_cnt;
++	int connection_max_ttl; /* Maximum connection time in seconds */
++	struct event expire_event;
+ 
+ 	TAILQ_HEAD(vhostsq, evhttp) virtualhosts;
+ 
+diff --git a/src/libevent/src/http.c b/src/libevent/src/http.c
+index 1cc8ba9..ad0f567 100644
+--- a/src/libevent/src/http.c
++++ b/src/libevent/src/http.c
+@@ -185,6 +185,8 @@ static int evhttp_add_header_internal(struct evkeyvalq *headers,
+     const char *key, const char *value);
+ static const char *evhttp_response_phrase_internal(int code);
+ static void evhttp_get_request(struct evhttp *, evutil_socket_t, struct sockaddr *, ev_socklen_t);
++static void evhttp_drop_expired_connections(struct evhttp *http);
++static void evhttp_drop_expired_connections_cb(evutil_socket_t, short, void *);
+ static void evhttp_write_buffer(struct evhttp_connection *,
+     void (*)(struct evhttp_connection *, void *), void *);
+ static void evhttp_make_header(struct evhttp_connection *, struct evhttp_request *);
+@@ -2270,6 +2272,7 @@ evhttp_connection_base_bufferevent_new(struct event_base *base, struct evdns_bas
+ 	evcon->max_headers_size = EV_SIZE_MAX;
+ 	evcon->max_body_size = EV_SIZE_MAX;
+ 
++	evutil_gettimeofday(&evcon->start_time, NULL);
+ 	evutil_timerclear(&evcon->timeout);
+ 	evcon->retry_cnt = evcon->retry_max = 0;
+ 
+@@ -3500,6 +3503,9 @@ evhttp_new(struct event_base *base)
+ 		return (NULL);
+ 	http->base = base;
+ 
++	event_assign(&http->expire_event, base, -1, EV_PERSIST,
++		     evhttp_drop_expired_connections_cb, http);
++
+ 	return (http);
+ }
+ 
+@@ -3532,6 +3538,9 @@ evhttp_free(struct evhttp* http)
+ 	struct evhttp* vhost;
+ 	struct evhttp_server_alias *alias;
+ 
++	/* Stop expire event if set */
++	event_del(&http->expire_event);
++
+ 	/* Remove the accepting part */
+ 	while ((bound = TAILQ_FIRST(&http->sockets)) != NULL) {
+ 		TAILQ_REMOVE(&http->sockets, bound, next);
+@@ -3689,6 +3698,25 @@ evhttp_set_max_connections(struct evhttp* http, int max_connections)
+ 		http->connection_max = max_connections;
+ }
+ 
++void
++evhttp_set_max_connection_ttl(struct evhttp* http, int max_ttl)
++{
++	if (max_ttl <= 0) {
++		http->connection_max_ttl = 0;
++
++		if (event_pending(&http->expire_event, EV_TIMEOUT, 0))
++			event_del(&http->expire_event);
++
++	} else {
++		http->connection_max_ttl = max_ttl;
++
++		if (!event_pending(&http->expire_event, EV_TIMEOUT, 0)) {
++			struct timeval timeout = {60, 0}; /* check once per minute */
++			event_add(&http->expire_event, &timeout);
++		}
++	}
++}
++
+ int
+ evhttp_get_connection_count(struct evhttp* http)
+ {
+@@ -4156,6 +4184,40 @@ evhttp_get_request(struct evhttp *http, evutil_socket_t fd,
+ 		evhttp_connection_free(evcon);
+ }
+ 
++static void
++evhttp_drop_expired_connections(struct evhttp *http)
++{
++	struct timeval now;
++	struct evconq expired;
++	struct evhttp_connection *evcon;
++	int count = 0;
++
++	if (http->connection_max_ttl <= 0) return;
++
++	evutil_gettimeofday(&now, NULL);
++	TAILQ_INIT(&expired);
++
++	/* Find expired connections */
++	TAILQ_FOREACH(evcon, &http->connections, next) {
++		if (http->connection_max_ttl < now.tv_sec - evcon->start_time.tv_sec)
++			TAILQ_INSERT_TAIL(&expired, evcon, next);
++	}
++
++	/* Close and free expired connections */
++	while ((evcon = TAILQ_FIRST(&expired)) != NULL) {
++		TAILQ_REMOVE(&expired, evcon, next);
++		evhttp_connection_free(evcon);
++		count++;
++	}
++
++	if (count) event_debug(("Dropped %d expired connections\n", count));
++}
++
++static void
++evhttp_drop_expired_connections_cb(evutil_socket_t fd, short events, void *arg)
++{
++	evhttp_drop_expired_connections(arg);
++}
+ 
+ /*
+  * Network helper functions that we do not want to export to the rest of

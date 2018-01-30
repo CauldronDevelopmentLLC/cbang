@@ -124,8 +124,13 @@ void HTTP::setMaxHeadersSize(unsigned size) {
 
 
 void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
-void HTTP::setMaxConnections(int x) {evhttp_set_max_connections(http, x);}
+void HTTP::setMaxConnections(unsigned x) {evhttp_set_max_connections(http, x);}
 int HTTP::getConnectionCount() const {return evhttp_get_connection_count(http);}
+
+
+void HTTP::setMaxConnectionTTL(unsigned x) {
+  evhttp_set_max_connection_ttl(http, x);
+}
 
 
 void HTTP::setCallback(const string &path,

@@ -69,8 +69,9 @@ namespace cb {
       void setMaxHeadersSize(unsigned size);
       void setTimeout(int timeout);
       void setEventPriority(int priority) {this->priority = priority;}
-      void setMaxConnections(int x);
+      void setMaxConnections(unsigned x);
       int getConnectionCount() const;
+      void setMaxConnectionTTL(unsigned x);
 
       void setCallback(const std::string &path,
                        const SmartPointer<HTTPHandler> &cb);

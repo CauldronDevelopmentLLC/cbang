@@ -163,6 +163,12 @@ void WebServer::setMaxConnections(unsigned x) {
 }
 
 
+void WebServer::setMaxConnectionTTL(unsigned x) {
+  http->setMaxConnectionTTL(x);
+  if (!https.isNull()) http->setMaxConnectionTTL(x);
+}
+
+
 void WebServer::allow(const IPAddress &addr) {ipFilter.allow(addr);}
 void WebServer::deny(const IPAddress &addr) {ipFilter.deny(addr);}
 
