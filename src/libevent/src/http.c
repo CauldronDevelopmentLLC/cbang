@@ -4190,6 +4190,7 @@ evhttp_drop_expired_connections(struct evhttp *http)
 	struct timeval now;
 	struct evconq expired;
 	struct evhttp_connection *evcon;
+	struct evhttp_connection *next;
 	int count = 0;
 
 	if (http->connection_max_ttl <= 0) return;
@@ -4197,17 +4198,16 @@ evhttp_drop_expired_connections(struct evhttp *http)
 	evutil_gettimeofday(&now, NULL);
 	TAILQ_INIT(&expired);
 
-	/* Find expired connections */
-	TAILQ_FOREACH(evcon, &http->connections, next) {
-		if (http->connection_max_ttl < now.tv_sec - evcon->start_time.tv_sec)
-			TAILQ_INSERT_TAIL(&expired, evcon, next);
-	}
-
-	/* Close and free expired connections */
-	while ((evcon = TAILQ_FIRST(&expired)) != NULL) {
-		TAILQ_REMOVE(&expired, evcon, next);
-		evhttp_connection_free(evcon);
-		count++;
+	/* Find, close, remove and free expired connections */
+	evcon = TAILQ_FIRST(&http->connections);
+	while (evcon) {
+		next = TAILQ_NEXT(evcon, next);
+		if (http->connection_max_ttl < now.tv_sec - evcon->start_time.tv_sec) {
+			TAILQ_REMOVE(&http->connections, evcon, next);
+			evhttp_connection_free(evcon);
+			count++;
+		}
+		evcon = next;
 	}
 
 	if (count) event_debug(("Dropped %d expired connections\n", count));
