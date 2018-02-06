@@ -44,8 +44,7 @@ namespace cb {
   class Resource;
 
   class InputSource : public Named {
-    cb::SmartPointer<std::istream> streamPtr;
-    std::istream &stream;
+    cb::SmartPointer<std::istream> stream;
     mutable std::streamsize length;
 
   public:
@@ -55,13 +54,14 @@ namespace cb {
     InputSource(const std::string &filename);
     InputSource(std::istream &stream, const std::string &name = std::string(),
                 std::streamsize length = -1);
+    InputSource(const SmartPointer<std::istream> &stream,
+                const std::string &name = std::string(),
+                std::streamsize length = -1);
     InputSource(const Resource &resource);
-    virtual ~InputSource() {} // Compiler needs this
 
-    virtual std::istream &getStream() const {return stream;}
-    virtual std::streamsize getLength() const;
-    virtual std::string toString() const;
-
+    std::istream &getStream() const {return *stream;}
+    std::streamsize getLength() const;
+    std::string toString() const;
     std::string getLine(unsigned maxLength = 4096) const;
   };
 }

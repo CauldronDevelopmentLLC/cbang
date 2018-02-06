@@ -34,16 +34,14 @@
 
 #include "InputSource.h"
 
-#include <cbang/buffer/MemoryBuffer.h>
+#include <sstream>
 
 
 namespace cb {
-  class BufferInputSource : public InputSource, public MemoryBuffer {
+  class StringStreamInputSource : public InputSource {
   public:
-    BufferInputSource(const std::string &data = std::string(),
-                      const std::string &name = "<buffer>") :
-      InputSource(*this, name), MemoryBuffer(data.length()) {
-      write(CBANG_CPP_TO_C_STR(data), data.length());
-    }
+    StringStreamInputSource(const std::string &data = std::string(),
+                            const std::string &name = "<buffer>") :
+      InputSource(new std::istringstream(data), name, data.length()) {}
   };
 }

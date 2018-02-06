@@ -46,37 +46,39 @@ using namespace cb;
 
 
 InputSource::InputSource(Buffer &buffer, const string &name) :
-  Named(name), streamPtr(new BufferStream(buffer)), stream(*streamPtr),
-  length(buffer.getFill()) {}
+  Named(name), stream(new BufferStream(buffer)), length(buffer.getFill()) {}
 
 
 InputSource::InputSource(const char *array, streamsize length,
                          const string &name) :
-  Named(name), streamPtr(new ArrayStream<const char>(array, length)),
-  stream(*streamPtr), length(length) {}
+  Named(name), stream(new ArrayStream<const char>(array, length)),
+  length(length) {}
 
 
 InputSource::InputSource(const string &filename) :
-  Named(filename), streamPtr(SystemUtilities::iopen(filename)),
-  stream(*streamPtr), length(-1) {}
+  Named(filename), stream(SystemUtilities::iopen(filename)), length(-1) {}
 
 
 InputSource::InputSource(istream &stream, const string &name,
                          streamsize length) :
+  Named(name), stream(SmartPointer<istream>::Phony(&stream)), length(length) {}
+
+
+InputSource::InputSource(const SmartPointer<istream> &stream,
+                         const string &name, streamsize length) :
   Named(name), stream(stream), length(length) {}
 
 
 InputSource::InputSource(const Resource &resource) :
   Named(resource.getName()),
-  streamPtr(new ArrayStream<const char>(resource.getData(),
-                                        resource.getLength())),
-  stream(*streamPtr) {}
+  stream(new ArrayStream<const char>(resource.getData(), resource.getLength()))
+{}
 
 
 streamsize InputSource::getLength() const {
   if (length == -1) {
     boost::iostreams::stream<FileDevice> *boostStream =
-      dynamic_cast<boost::iostreams::stream<FileDevice> *>(&stream);
+      dynamic_cast<boost::iostreams::stream<FileDevice> *>(stream.get());
 
     if (boostStream) return length = (*boostStream)->size();
   }
