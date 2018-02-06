@@ -33,8 +33,6 @@
 #include "StdModule.h"
 #include "Javascript.h"
 
-#include <iostream>
-
 using namespace cb::js;
 using namespace cb;
 using namespace std;
@@ -53,7 +51,7 @@ SmartPointer<Value> StdModule::require(Callback &cb, Value &args) {
 
 void StdModule::print(const Value &args, Sink &sink) {
   for (unsigned i = 0; i < args.length(); i++) {
-    if (i) cout << ' ';
-    cout << args.get(i)->toString();
+    if (i) *stream << ' ';
+    *stream << args.get(i)->toString();
   }
 }

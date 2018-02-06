@@ -54,7 +54,9 @@ namespace cb {
       SmartPointer<Value> nativeProps;
 
     public:
-      Javascript(const std::string &implName = std::string());
+      Javascript(const std::string &implName = std::string(),
+                 const cb::SmartPointer<std::ostream> &stream =
+                 cb::SmartPointer<std::ostream>::Phony(&std::cout));
 
       SmartPointer<js::Factory> getFactory();
       void define(NativeModule &mod);

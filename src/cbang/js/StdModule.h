@@ -34,6 +34,8 @@
 
 #include "NativeModule.h"
 
+#include <ostream>
+
 
 namespace cb {
   namespace js {
@@ -41,9 +43,12 @@ namespace cb {
 
     class StdModule : public NativeModule {
       Javascript &js;
+      cb::SmartPointer<std::ostream> stream;
 
     public:
-      StdModule(Javascript &js) : NativeModule("std"), js(js) {}
+      StdModule(Javascript &js,
+                const cb::SmartPointer<std::ostream> &stream) :
+        NativeModule("std"), js(js) {}
 
       // From NativeModule
       void define(Sink &exports);

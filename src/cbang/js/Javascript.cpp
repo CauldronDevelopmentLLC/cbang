@@ -50,7 +50,9 @@ using namespace cb;
 using namespace std;
 
 
-Javascript::Javascript(const string &implName) : impl(0), stdMod(*this) {
+Javascript::Javascript(const string &implName,
+                       const SmartPointer<ostream> &stream) :
+  impl(0), stdMod(*this, stream) {
 #ifdef HAVE_V8
   if (implName == "v8" || (impl.isNull() && implName.empty()))
     impl = new gv8::JSImpl(*this);
