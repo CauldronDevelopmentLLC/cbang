@@ -76,12 +76,9 @@ InputSource::InputSource(const Resource &resource) :
 
 
 streamsize InputSource::getLength() const {
-  if (length == -1) {
-    boost::iostreams::stream<FileDevice> *boostStream =
-      dynamic_cast<boost::iostreams::stream<FileDevice> *>(stream.get());
-
-    if (boostStream) return length = (*boostStream)->size();
-  }
+  if (length == -1 &&
+      stream.isInstance<boost::iostreams::stream<FileDevice> >())
+    return (*stream.cast<boost::iostreams::stream<FileDevice> >())->size();
 
   return length;
 }
