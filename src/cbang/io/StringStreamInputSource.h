@@ -41,7 +41,7 @@ namespace cb {
   class StringStreamInputSource : public InputSource {
   public:
     StringStreamInputSource(const std::string &data = std::string(),
-                            const std::string &name = "<buffer>") :
+                            const std::string &name = "<memory>") :
       InputSource(new std::istringstream(data), name, data.length()) {}
   };
 }
