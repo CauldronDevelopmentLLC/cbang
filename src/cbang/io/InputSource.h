@@ -45,7 +45,7 @@ namespace cb {
 
   class InputSource : public Named {
     cb::SmartPointer<std::istream> stream;
-    mutable std::streamsize length;
+    std::streamsize length;
 
   public:
     InputSource(Buffer &buffer, const std::string &name = "<buffer>");
