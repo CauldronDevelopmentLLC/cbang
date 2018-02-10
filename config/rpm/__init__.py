@@ -30,8 +30,8 @@ def write_spec_script(f, env, name, var):
 
 
 def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
-                  dperms = 0755):
-    if perms is None: perms = 0644
+                  dperms = 0o755):
+    if perms is None: perms = 0o644
 
     if key in env:
         target = build_dir + path
@@ -98,8 +98,8 @@ def build_function(target, source, env):
 
         for files in [
             ['documents', '/usr/share/doc/' + name, '%doc', None],
-            ['programs', '/usr/bin', '%attr(0775 root root)', 0755],
-            ['scripts', '/usr/bin', '%attr(0775 root root)', 0755],
+            ['programs', '/usr/bin', '%attr(0775 root root)', 0o755],
+            ['scripts', '/usr/bin', '%attr(0775 root root)', 0o755],
             ['desktop_menu', '/usr/share/applications', None, None],
             ['init_d', '/etc/init.d', '%config %attr(0775 root root)', None],
             ['config', '/etc/' + name, '%config', None],

@@ -12,7 +12,7 @@ def build_function(target, source, env):
     target = str(target[0])
 
     # Create package build dir
-    if target[-4:] != '.zip': raise Exception, 'Expected .zip in package name'
+    if target[-4:] != '.zip': raise Exception('Expected .zip in package name')
     build_dir = target[:-4] # Remove .zip
     if os.path.exists(build_dir): shutil.rmtree(build_dir)
 
@@ -20,7 +20,7 @@ def build_function(target, source, env):
     contents_dir = os.path.join(build_dir, 'Contents')
     packages_dir = os.path.join(contents_dir, 'Packages')
     resources_dir = os.path.join(contents_dir, 'Resources')
-    for d in (contents_dir, packages_dir, resources_dir): os.makedirs(d, 0775)
+    for d in (contents_dir, packages_dir, resources_dir): os.makedirs(d, 0o775)
 
     # Load package info
     pkg_info = []
@@ -30,7 +30,7 @@ def build_function(target, source, env):
         if os.path.exists(infofile):
             import plistlib
             pkg_info.append(plistlib.readPlist(infofile))
-        else: raise Exception, 'Missing %s' % infofile
+        else: raise Exception('Missing %s' % infofile)
 
     # Create distribution.dist
     from xml.etree.ElementTree import ElementTree, Element, SubElement

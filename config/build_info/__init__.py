@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import textwrap
 import re
 from platform import release
@@ -45,8 +47,7 @@ def svn_get_info():
                 branch = line[5:].strip()
                 branch = re.sub(r'https?://[\w\.]+/(svn/)?', '', branch)
 
-    except Exception, e:
-        print e
+    except Exception as e: print(e)
 
     return revision, branch
 
@@ -60,8 +61,7 @@ def git_get_info():
         out, err = p.communicate()
         revision = out.strip()
 
-    except Exception, e:
-        print e
+    except Exception as e: print(e)
 
     try:
         p = subprocess.Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
@@ -69,8 +69,7 @@ def git_get_info():
         out, err = p.communicate()
         branch = out.strip()
 
-    except Exception, e:
-        print e
+    except Exception as e: print(e)
 
     return revision, branch
 

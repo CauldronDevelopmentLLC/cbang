@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os, platform, shutil, subprocess
 
 import zipfile
@@ -68,7 +70,7 @@ def _GetPackageType(env):
         pkg_type = env.get('pkg_type', None)
         if pkg_type is None or pkg_type in ('single', 'app'): return 'pkg'
         elif pkg_type == 'dist': return 'mpkg'
-        else: raise Exception, 'Invalid pkg package type "%s"' % pkg_type
+        else: raise Exception('Invalid pkg package type "%s"' % pkg_type)
 
     elif env['PLATFORM'] == 'posix':
         dist = platform.dist()[0].lower()
@@ -77,15 +79,15 @@ def _GetPackageType(env):
         if dist in ['centos', 'redhat', 'fedora']: return 'rpm'
 
         # Try to guess
-        print 'WARNING: Unrecognized POSIX distribution ' + dist + \
-            ', trying to determine package type from filesystem'
+        print('WARNING: Unrecognized POSIX distribution ' + dist +
+              ', trying to determine package type from filesystem')
 
         if os.path.exists('/usr/bin/dpkg'): return 'deb'
         if os.path.exists('/usr/bin/rpmbuild'): return 'rpm'
 
-        raise Exception, 'Unsupported POSIX distribution ' + dist
+        raise Exception('Unsupported POSIX distribution ' + dist)
 
-    raise Exception, 'Unsupported package platform %s' % env['PLATFORM']
+    raise Exception('Unsupported package platform %s' % env['PLATFORM'])
 
 
 def GetPackageType(env):
@@ -201,11 +203,11 @@ def ResolvePackageFileMap(env, sources, target):
     return resolve_file_map(sources, target, ignores)
 
 
-def CopyToPackage(env, sources, target, perms = 0644, dperms = 0755):
+def CopyToPackage(env, sources, target, perms = 0o644, dperms = 0o755):
     ignores = ignore_patterns(*env.get('PACKAGE_EXCLUDES'))
 
     for src, dst, mode in resolve_file_map(sources, target, ignores):
-        print 'installing "%s" to "%s"' % (src, dst)
+        print('installing "%s" to "%s"' % (src, dst))
 
         if mode is not None: perms = mode
         dst_dir = os.path.dirname(dst)
@@ -217,12 +219,12 @@ def CopyToPackage(env, sources, target, perms = 0644, dperms = 0755):
             os.chmod(dst, perms)
 
 
-def InstallFiles(env, key, target, perms = 0644, dperms = 0755):
+def InstallFiles(env, key, target, perms = 0o644, dperms = 0o755):
     if key in env: env.CopyToPackage(env.get(key), target, perms, dperms)
 
 
 def RunCommand(env, cmd):
-    print '@', cmd
+    print('@', cmd)
     CommandAction(cmd).execute(None, [], env)
 
 
@@ -267,7 +269,7 @@ def Packager(env, name, **kwargs):
         env.Replace(**kwargs)
         mpkg_name = env.GetPackageName(name, type = 'pkg')
         pkg = env.Pkg(mpkg_name, [], **kwargs)
-        Depends(pkg, app)
+        env.Depends(pkg, app)
 
         return (app, pkg)
 

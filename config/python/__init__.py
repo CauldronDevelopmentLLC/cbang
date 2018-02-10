@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from SCons.Script import *
 import inspect
 import traceback

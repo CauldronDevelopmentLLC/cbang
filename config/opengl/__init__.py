@@ -9,7 +9,7 @@ def configure(conf):
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         if not (conf.CheckOSXFramework('OpenGL') and
                 conf.CheckCHeader('OpenGL/gl.h')):
-            raise Exception, 'Need OpenGL'
+            raise Exception('Need OpenGL')
 
     else:
         if env['PLATFORM'] == 'win32' or int(env.get('cross_mingw', 0)):

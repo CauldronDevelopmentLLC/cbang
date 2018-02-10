@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 '''Builds an OSX single application package'''
 
 import os
@@ -8,9 +10,9 @@ from SCons.Action import CommandAction
 
 
 def RunCommandOrRaise(env, cmd):
-    print '@', cmd
+    print('@', cmd)
     ret = CommandAction(cmd).execute(None, [], env)
-    if ret: raise Exception, 'command failed, return code %s' % str(ret)
+    if ret: raise Exception('command failed, return code %s' % str(ret))
 
 
 def InstallApps(env, key, target):
@@ -33,12 +35,12 @@ def build_function(target, source, env):
 
     # Make root dir
     root_dir = os.path.join(build_dir, 'root')
-    os.makedirs(root_dir, 0775)
+    os.makedirs(root_dir, 0o775)
 
     # Apps
     if 'pkg_apps' in env:
         d = os.path.join(root_dir, 'Applications')
-        os.makedirs(d, 0775)
+        os.makedirs(d, 0o775)
         InstallApps(env, 'pkg_apps', d)
 
     # Other files
@@ -79,9 +81,9 @@ def build_function(target, source, env):
         cmd += ['--distribution', dist]
         cmd += ['--package-path', build_dir]
     else:
-        print "WARNING: No distribution specified. Attempting to build " \
-          "using --root. Package will not have Resources and will put " \
-          "wrong package id in receipts."
+        print("WARNING: No distribution specified. Attempting to build "
+              "using --root. Package will not have Resources and will put "
+              "wrong package id in receipts.")
         cmd += ['--root', root_dir, env.get('pkg_install_to', '/'),
                 '--id', env.get('pkg_id'),
                 '--version', env.get('version')]

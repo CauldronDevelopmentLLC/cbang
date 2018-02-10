@@ -45,12 +45,12 @@ def configure(conf, version = None):
 
         if version is not None:
             if not conf.OpenSSLVersion(version):
-                raise Exception, 'Insufficient OpenSSL version'
+                raise Exception('Insufficient OpenSSL version')
 
         env.CBDefine('HAVE_OPENSSL')
         return True
 
-    else: raise Exception, 'Need openssl'
+    else: raise Exception('Need openssl')
 
     return True
 

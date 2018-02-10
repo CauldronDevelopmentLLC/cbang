@@ -56,9 +56,9 @@ env.Append(CPPPATH = ['#/include', '#/src', '#/src/boost'])
 
 # Build third-party libs
 force_local = env.get('force_local', '')
-if isinstance(force_local, str): force_local = force_local.split()
+if hasattr(force_local, 'split'): force_local = force_local.split()
 disable_local = env.get('disable_local', '')
-if isinstance(disable_local, str): disable_local = disable_local.split()
+if hasattr(disable_local, 'split'): disable_local = disable_local.split()
 Export('env conf')
 for lib in 'zlib bzip2 sqlite3 expat boost libevent re2'.split():
     if lib in disable_local: continue

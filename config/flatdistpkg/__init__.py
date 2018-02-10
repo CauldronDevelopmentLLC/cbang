@@ -1,4 +1,5 @@
 # flatdistpkg.py
+from __future__ import print_function
 
 import os, platform, shutil, subprocess
 import config
@@ -41,9 +42,9 @@ build_dir_distribution_xml = \
 
 
 def RunCommandOrRaise(env, cmd):
-    print '@', cmd
+    print('@', cmd)
     ret = CommandAction(cmd).execute(None, [], env)
-    if ret: raise Exception, 'command failed, return code %s' % str(ret)
+    if ret: raise Exception('command failed, return code %s' % str(ret))
 
 
 def clean_old_build(env):
@@ -80,7 +81,7 @@ def create_dirs(env):
     dirs = build_dirs #+ env.get('build_dirs',[])
     for d in dirs:
         if not os.path.isdir(d):
-            os.makedirs(d, 0755)
+            os.makedirs(d, 0o755)
     #env.Dir(build_dir)
     # above fails with
     # scons: *** [fah-installer_7.2.12_intel.pkg.zip] TypeError :
@@ -110,13 +111,13 @@ def remove_cruft_from_directory(d, env):
         for name in cruft_files:
             if name in files:
                 path = os.path.join(root, name)
-                print 'WOULD BE deleting ' + path
+                print('WOULD BE deleting ' + path)
                 #os.remove(path)
         for name in cruft_dirs:
             if name in dirs:
                 dirs.remove(name)
                 path = os.path.join(root, name)
-                print 'WOULD BE deleting directory ' + path
+                print('WOULD BE deleting directory ' + path)
                 #shutil.rmtree(path)
 
 
@@ -128,10 +129,10 @@ def rename_prepostflight_scripts(scripts_dir):
     post1 = os.path.join(scripts_dir, 'postflight')
     post2 = os.path.join(scripts_dir, 'postinstall')
     if os.path.isfile(pre1) and not os.path.exists(pre2):
-        print 'renaming %s to %s' % (pre1, pre2)
+        print('renaming %s to %s' % (pre1, pre2))
         os.rename(pre1, pre2)
     if os.path.isfile(post1) and not os.path.exists(post2):
-        print 'renaming %s to %s' % (post1, post2)
+        print('renaming %s to %s' % (post1, post2))
         os.rename(post1, post2)
 
 
@@ -151,13 +152,13 @@ def build_component_pkg(info, env):
     pkg_nopayload = info.get('pkg_nopayload', False)
 
     if not name:
-        raise Exception, 'component has no name'
+        raise Exception('component has no name')
     if not home:
-        raise Exception, 'component %s has no home' % name
+        raise Exception('component %s has no home' % name)
     if not pkg_id:
-        raise Exception, 'component %s has no pkg_id' % name
+        raise Exception('component %s has no pkg_id' % name)
     if not version:
-        raise Exception, 'no version for component %s' % name
+        raise Exception('no version for component %s' % name)
 
     stage = os.path.join(build_dir_stage, name)
     stage_resources = os.path.join(stage, 'Resources')
@@ -194,12 +195,12 @@ def build_component_pkg(info, env):
         pass
 
     if not os.path.isdir(root) and not pkg_nopayload:
-        raise Exception, '%s component root does not exist! %s' % (name,root)
+        raise Exception('%s component root does not exist! %s' % (name, root))
 
     # try to copy scripts to our stage and use that to avoid most cruft
     # also allows renaming scripts before pkgbuild
     if scripts and os.path.isdir(scripts):
-        env.CopyToPackage(scripts, stage, perms=0755)
+        env.CopyToPackage(scripts, stage, perms = 0o755)
 
     # copy resources to our stage for future distpkg use
     if resources and os.path.isdir(resources):
@@ -251,7 +252,7 @@ def build_component_pkgs(env):
 
     if not components:
         # in future, maybe handle as implicit pkg+distpkg if pkg_type dist
-        raise Exception, 'no components specified'
+        raise Exception('no components specified')
 
     # validate and fill-in any missing info
     for info in components:
@@ -259,7 +260,7 @@ def build_component_pkgs(env):
         home = info.get('home')
         if not home:
             name = info.get('name') # might be None at this point
-            raise Exception, 'home not provided for component ' + name
+            raise Exception('home not provided for component ' + name)
         # name and pkg_id are also required, but may be in json
 
         # try to load pkg info json, if exists
@@ -268,7 +269,7 @@ def build_component_pkgs(env):
         if not info.get('params_json_loaded'):
             jsonfile = os.path.join(home, filename_package_info_json)
             if os.path.isfile(jsonfile):
-                print 'loading info from %s' % jsonfile
+                print('loading info from %s' % jsonfile)
                 info2 = json.load(jsonfile)
                 # merge
                 # trust what we were passed over what json says
@@ -308,8 +309,8 @@ def build_component_pkgs(env):
     for info in components:
         try:
             build_component_pkg(info, env)
-        except Exception, e:
-            print 'unable to build component ' + info.get('name')
+        except Exception as e:
+            print('unable to build component ' + info.get('name'))
             raise e
 
     # replace distpkg_components with modified/created info list
@@ -359,16 +360,16 @@ def unlock_keychain(env, keychain=None, password=None):
         try:
             sanitized_cmd = cmd[:3] + ['xxxxxx']
             if keychain: sanitized_cmd += [keychain]
-            print '@', sanitized_cmd
+            print('@', sanitized_cmd)
             # returns 0 if keychain already unlocked, even if pass is wrong
             ret = CommandAction(cmd).execute(None, [], env)
-            if ret: raise Exception, \
-                'unlock-keychain failed, return code %s' % str(ret)
-        except Exception, e:
-            print 'unable to unlock keychain "%s"' % name
+            if ret: raise Exception(
+                'unlock-keychain failed, return code %s' % str(ret))
+        except Exception as e:
+            print('unable to unlock keychain "%s"' % name)
             raise e
     else:
-        print 'skipping unlock "%s"' % name + '; no password given'
+        print('skipping unlock "%s"' % name + '; no password given')
 
 
 def sign_flat_package(target, source, env):
@@ -376,11 +377,11 @@ def sign_flat_package(target, source, env):
     sign = env.get('sign_id_installer', None)
     keychain = env.get('sign_keychain', None)
     if not sign:
-        raise Exception, 'unable to sign; no sign_id_installer provided'
+        raise Exception('unable to sign; no sign_id_installer provided')
     # FIXME should do more than this
     x, ext = os.path.splitext(source)
     if not (os.path.isfile(source) and ext in ('.pkg', '.mpkg')):
-        raise Exception, 'unable to sign; not a flat package: ' + source
+        raise Exception('unable to sign; not a flat package: ' + source)
     cmd = ['productsign', '--sign', sign]
     if keychain:
         cmd += ['--keychain', keychain]
@@ -392,7 +393,8 @@ def sign_or_copy_product_pkg(target, source, env):
     if env.get('sign_id_installer'):
         sign_flat_package(target, source, env)
         return
-    print 'NOT signing package; no sign_id_installer provided; copying instead...'
+    print('NOT signing package; no sign_id_installer provided; copying '
+          'instead...')
     shutil.copy2(source, target)
 
 
@@ -412,9 +414,9 @@ def sign_application(target, env):
     if sign:
         cmd += ['--sign', sign]
     else:
-        raise Exception, 'unable to codesign %s; no sign_id_app given' % target
+        raise Exception('unable to codesign %s; no sign_id_app given' % target)
     if not os.path.isdir(target) or not target.endswith('.app'):
-        raise Exception, 'unable to codesign %s; not an app' % target
+        raise Exception('unable to codesign %s; not an app' % target)
     cmd += [target]
     RunCommandOrRaise(env, cmd)
 
@@ -430,13 +432,13 @@ def sign_executable(target, env):
         if not prefix.endswith('.'): prefix += '.'
         cmd += ['--prefix', prefix]
     else:
-        raise Exception, 'unable to codesign %s; no sign_prefix given' % target
+        raise Exception('unable to codesign %s; no sign_prefix given' % target)
     if sign:
         cmd += ['--sign', sign]
     else:
-        raise Exception, 'unable to codesign %s; no sign_id_app given' % target
+        raise Exception('unable to codesign %s; no sign_id_app given' % target)
     if not (os.path.isfile(target) and os.access(target, os.X_OK)):
-        raise Exception, 'unable to codesign %s; not an executable' % target
+        raise Exception('unable to codesign %s; not an executable' % target)
     # FIXME should not try to sign executable scripts
     cmd += [target]
     RunCommandOrRaise(env, cmd)
@@ -450,10 +452,10 @@ def build_or_copy_distribution_template(env):
 
     if os.path.exists(target): return
 
-    print 'WARNING: did not generate distribution.xml; ' \
-        + 'using pre-built template %s' % source
+    print('WARNING: did not generate distribution.xml; '
+          'using pre-built template %s' % source)
     if not os.path.isfile(source):
-        raise Exception, 'pre-built template does not exist %s' % source
+        raise Exception('pre-built template does not exist %s' % source)
     #Execute(Copy(target, source))
     # sometimes after a 'scons --clean', above fails with
     # scons: *** [fah-installer_7.2.12_intel.pkg.zip] TypeError :
@@ -465,14 +467,14 @@ def build_distribution_template(env, target=None):
     if not target:
         target = build_dir_distribution_xml
 
-    print 'generating ' + target
+    print('generating ' + target)
 
     distpkg_target = env.get('distpkg_target', '10.5')
     distpkg_arch = env.get('distpkg_arch')
     if not distpkg_arch:
         distpkg_arch = env.get('package_arch')
     if distpkg_arch in (None, '', 'intel'):
-        print 'using distpkg_arch i386 instead of "%s"' % distpkg_arch
+        print('using distpkg_arch i386 instead of "%s"' % distpkg_arch)
         distpkg_arch = 'i386'
 
     # generate new tree
@@ -670,14 +672,14 @@ def patch_expanded_pkg_distribution(target, source, env):
         tree = etree.parse(fpath)
     # make changes
     if tree:
-        print 'patching ' + fpath
+        print('patching ' + fpath)
         root = tree.getroot()
         if root.tag != 'installer-script':
-            print 'changing root tag from %s to installer-script' % root.tag
+            print('changing root tag from %s to installer-script' % root.tag)
             root.tag = 'installer-script'
         minSpecVersion = root.get('minSpecVersion')
         if minSpecVersion != '1':
-            print 'changing minSpecVersion from %s to 1' % minSpecVersion
+            print('changing minSpecVersion from %s to 1' % minSpecVersion)
             root.set('minSpecVersion', '1')
         # overwrite back to fpath
         f = None
@@ -689,12 +691,12 @@ def patch_expanded_pkg_distribution(target, source, env):
         # FIXME detect any failures somehow
         return
     # failed to load xml
-    print 'WARNING: unable to load and patch %s' % fpath
-    print 'WARNING: pkg may require OSX 10.6.6 or later'
+    print('WARNING: unable to load and patch %s' % fpath)
+    print('WARNING: pkg may require OSX 10.6.6 or later')
 
 
 def create_localizable_strings(env):
-    print 'generating Localizable.strings'
+    print('generating Localizable.strings')
     # English only for now
     components = env.get('distpkg_components', [])
     if components is None: components = []
@@ -719,12 +721,12 @@ def create_localizable_strings(env):
         line = '"%s" = "%s";' % (key, value)
         lines.append(line)
         if not value:
-            print 'no description found for component ' + comp['name']
+            print('no description found for component ' + comp['name'])
     # save it (overwrites if exists)
     d = build_dir_resources + '/en.lproj'
-    if not os.path.isdir(d): os.makedirs(d, 0755)
+    if not os.path.isdir(d): os.makedirs(d, 0o755)
     fname = d + '/Localizable.strings'
-    print 'writing ' + fname
+    print('writing ' + fname)
     env.WriteStringToFile(fname, lines)
 
 
@@ -735,10 +737,10 @@ def flat_dist_pkg_build(target, source, env):
     # tolerate .mpkg, because installer seems semi-ok with it
     # TODO allow no .zip, and no ZipDir()
     target_pkg, ext = os.path.splitext(target_zip)
-    if ext != '.zip': raise Exception, 'Expected .zip in package name'
+    if ext != '.zip': raise Exception('Expected .zip in package name')
     target_base, ext = os.path.splitext(target_pkg)
     if not ext in ('.pkg', '.mpkg'):
-        raise Exception, 'Expected .pkg or .mpkg in package name'
+        raise Exception('Expected .pkg or .mpkg in package name')
 
     # .mpkg causes errors in log, and does not work on 10.5,
     # so use .pkg for flat package, even if final target is .mpkg.zip
@@ -747,9 +749,9 @@ def flat_dist_pkg_build(target, source, env):
     # flat packages require OS X 10.5+
     distpkg_target = env.get('distpkg_target', '10.5')
     if distpkg_target.split('.') < '10.5'.split('.'):
-        raise Exception, \
-            'incompatible configuration: flat package and osx pre-10.5 (%s)' \
-            % distpkg_target
+        raise Exception(
+            'incompatible configuration: flat package and osx pre-10.5 (%s)'
+            % distpkg_target)
 
     clean_old_build(env)
     create_dirs(env)
@@ -761,7 +763,7 @@ def flat_dist_pkg_build(target, source, env):
     # TODO: more validation here ...
 
     name = env.get('package_name')
-    print 'Building "%s" flat, target %s' % (name, distpkg_target)
+    print('Building "%s" flat, target %s' % (name, distpkg_target))
 
     # copy our own dist Resources
     if env.get('distpkg_resources'):
@@ -777,7 +779,7 @@ def flat_dist_pkg_build(target, source, env):
     # I think build_component_pkgs always raises on any failure
     components = env.get('distpkg_components')
     if components is None or not len(components):
-        raise Exception, 'No distpkg_components. Cannot continue.'
+        raise Exception('No distpkg_components. Cannot continue.')
 
     # create Localizable.strings with dist title, component descriptions
     # this must be done AFTER components are built
@@ -814,11 +816,11 @@ def flat_dist_pkg_build(target, source, env):
     if not desc:
         desc = env.get('summary', '').strip()
     # note: desc may be '', write anyway
-    print 'writing ' + filename_package_desc_txt
+    print('writing ' + filename_package_desc_txt)
     env.WriteStringToFile(filename_package_desc_txt, desc)
 
     # write package.txt
-    print 'writing ' + filename_package_build_txt
+    print('writing ' + filename_package_build_txt)
     env.WriteStringToFile(filename_package_build_txt, target_zip)
 
 

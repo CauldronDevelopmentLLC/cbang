@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import tarfile
 import re
@@ -6,6 +8,7 @@ import time
 import textwrap
 import stat
 import shutil
+
 from SCons.Script import *
 
 col = 0
@@ -89,7 +92,7 @@ def write_resource(ctx, output, data_dir, path, children = None,
 
     else:
         out_path = '%s/data%d.cpp' % (data_dir, id)
-        print 'Writing resource: %s to %s' % (path, out_path)
+        print('Writing resource: %s to %s' % (path, out_path))
 
         typeStr = 'File'
         f = open(path, 'rb')
@@ -216,7 +219,7 @@ def modify_targets(target, source, env):
     name = str(target[0])
     data_dir = os.path.splitext(name)[0] + ".data"
     target += get_targets(exclude, str(source[0]), data_dir, [0])
-    print map(str, target)
+    print(map(str, target))
     Depends(target, FindFile('cbang/util/Resource.h', env['CPPPATH']))
     return target, source
 

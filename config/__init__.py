@@ -1,6 +1,7 @@
+from __future__ import print_function
+
 import os
 import sys
-import urllib2
 import traceback
 from SCons.Script import *
 import inspect
@@ -11,10 +12,8 @@ import re
 def CBCheckEnv(ctx, name, require = False):
     ctx.did_show_result = 1
 
-    if os.environ.has_key(name):
-        return os.environ[name]
-
-    elif require: raise Exception, "Missing environment variable: " + name
+    if name in os.environ: return os.environ[name]
+    elif require: raise Exception("Missing environment variable: " + name)
 
 
 def CBRequireEnv(ctx, name):
@@ -37,7 +36,7 @@ def CBCheckEnvPath(ctx, name):
 def CBCheckPathWithSuffix(ctx, base, suffixes):
     ctx.did_show_result = 1
     if suffixes is None: return []
-    if isinstance(suffixes, basestring): suffixes = [suffixes]
+    if not type(suffixes) in (list, tuple): suffixes = [suffixes]
     existing = []
     for suffix in suffixes:
         if os.path.isdir(base + suffix): existing.append(base + suffix)
@@ -108,7 +107,7 @@ def CBCheckLib(ctx, lib, unique = False, append = False, **kwargs):
 def CBRequireLib(ctx, lib, **kwargs):
     ctx.did_show_result = 1
     if not ctx.sconf.CBCheckLib(lib, **kwargs):
-        raise Exception, 'Need library ' + lib
+        raise Exception('Need library ' + lib)
 
 
 def CBCheckHeader(ctx, hdr, **kwargs):
@@ -119,7 +118,7 @@ def CBCheckHeader(ctx, hdr, **kwargs):
 def CBRequireHeader(ctx, hdr, **kwargs):
     ctx.did_show_result = 1
     if not ctx.sconf.CheckHeader(hdr, **kwargs):
-        raise Exception, 'Need header ' + hdr
+        raise Exception('Need header ' + hdr)
 
 
 def CBCheckCHeader(ctx, hdr, **kwargs):
@@ -130,7 +129,7 @@ def CBCheckCHeader(ctx, hdr, **kwargs):
 def CBRequireCHeader(ctx, hdr, **kwargs):
     ctx.did_show_result = 1
     if not ctx.sconf.CheckCHeader(hdr, **kwargs):
-        raise Exception, 'Need C header ' + hdr
+        raise Exception('Need C header ' + hdr)
 
 
 def CBCheckCXXHeader(ctx, hdr, **kwargs):
@@ -141,7 +140,7 @@ def CBCheckCXXHeader(ctx, hdr, **kwargs):
 def CBRequireCXXHeader(ctx, hdr, **kwargs):
     ctx.did_show_result = 1
     if not ctx.sconf.CheckCXXHeader(hdr, **kwargs):
-        raise Exception, 'Need C++ header ' + hdr
+        raise Exception('Need C++ header ' + hdr)
 
 
 def CBCheckFunc(ctx, func, **kwargs):
@@ -152,7 +151,7 @@ def CBCheckFunc(ctx, func, **kwargs):
 def CBRequireFunc(ctx, func, **kwargs):
     ctx.did_show_result = 1
     if not ctx.sconf.CheckFunc(func, **kwargs):
-        raise Exception, 'Need Function ' + func
+        raise Exception('Need Function ' + func)
 
 
 def CBConfig(ctx, name, required = True, **kwargs):
@@ -170,7 +169,7 @@ def CBConfig(ctx, name, required = True, **kwargs):
             # Commit changes
             if ret: env.Replace(**conf.env.Dictionary())
 
-        except Exception, e:
+        except Exception as e:
             if required: raise
             ctx.Message(str(e))
 
@@ -178,12 +177,12 @@ def CBConfig(ctx, name, required = True, **kwargs):
             conf.env = env # Put back master env
 
         if ret: env.cb_enabled.add(name)
-        elif required: raise Exception, 'Failed to configure ' + name
+        elif required: raise Exception('Failed to configure ' + name)
 
         return ret
 
     elif required:
-        raise Exception, 'Config method not defined for tool ' + name
+        raise Exception('Config method not defined for tool ' + name)
 
     return False
 
@@ -201,7 +200,7 @@ def CBTryLoadTool(env, name, path):
         env.cb_paths.pop()
         return True
 
-    except Exception, e:
+    except Exception as e:
         traceback.print_exc()
         env.cb_loaded.remove(name)
         env.cb_paths.pop()
@@ -211,7 +210,7 @@ def CBTryLoadTool(env, name, path):
 def CBLoadTool(env, name, paths = []):
     if name in env.cb_loaded: return True
 
-    if isinstance(paths, basestring): paths = paths.split()
+    if hasattr(paths, 'split'): paths = paths.split()
     else: paths = list(paths)
     paths += env.cb_paths
 
@@ -234,17 +233,17 @@ def CBLoadTool(env, name, paths = []):
     if home is None:
         msg += '\nHave you set ' + home_env_var + '?'
 
-    print msg
-    raise Exception, 'Failed to load tool ' + name
+    print(msg)
+    raise Exception('Failed to load tool ' + name)
 
 
 def CBLoadTools(env, tools, paths = []):
-    if isinstance(tools, basestring): tools = tools.split()
+    if hasattr(tools, 'split'): tools = tools.split()
     for name in tools: env.CBLoadTool(name, paths)
 
 
 def CBDefine(env, defs):
-    if isinstance(defs, basestring): defs = [defs]
+    if not type(defs) in (list, tuple): defs = [defs]
     env.AppendUnique(CPPDEFINES = defs)
 
 
@@ -316,11 +315,11 @@ def CBConfigure(env):
     # Load config files
     configs = []
 
-    if os.environ.has_key('SCONS_OPTIONS'):
+    if 'SCONS_OPTIONS' in os.environ:
         options = os.environ['SCONS_OPTIONS']
         if not os.path.exists(options):
-            print 'options file "%s" set in SCONS_OPTIONS does not exist' % \
-                options
+            print('options file "%s" set in SCONS_OPTIONS does not exist' %
+                  options)
             Exit(1)
 
         configs.append(options)
@@ -346,6 +345,11 @@ def CBConfigure(env):
 
 
 def CBDownload(env, target, url):
+    try:
+        import urllib # Python 3+
+    except ImportError:
+        import urllib2 as urllib
+
     sys.stdout.write('Downloading ' + url + '.')
     sys.stdout.flush()
 
@@ -357,13 +361,13 @@ def CBDownload(env, target, url):
         if ftp_proxy: handlers['ftp'] = ftp_proxy
         if http_proxy: handlers['http'] = http_proxy
 
-        opener = urllib2.build_opener(urllib2.ProxyHandler(handlers))
-        urllib2.install_opener(opener)
+        opener = urllib.build_opener(urllib.ProxyHandler(handlers))
+        urllib.install_opener(opener)
 
     f = None
     stream = None
     try:
-        stream = urllib2.urlopen(url)
+        stream = urllib.urlopen(url)
         f = open(target, 'wb', 0) # Unbuffered
         while stream and f:
             data = stream.read(1024 * 1024)
@@ -389,7 +393,7 @@ def CBAddConfigureCB(env, cb):
 
 
 def CBBuildSetRegex(env, pats):
-    if isinstance(pats, basestring): pats = pats.split()
+    if hasattr(pats, 'split'): pats = pats.split()
     return re.compile('^(' + ')|('.join(pats) + ')$')
 
 

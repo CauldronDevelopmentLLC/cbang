@@ -1,6 +1,9 @@
+from __future__ import print_function
+
 import copy
 import re
 import os
+import sys
 from platform import machine, architecture
 from SCons.Script import *
 from subprocess import *
@@ -8,6 +11,7 @@ from SCons.Util import MD5signature
 import SCons.Action
 import SCons.Builder
 import SCons.Tool
+
 
 
 def CheckRDynamic(context):
@@ -164,14 +168,14 @@ def configure(conf, cstd = 'c99'):
     env.__setitem__('compiler', compiler)
     env.__setitem__('compiler_mode', compiler_mode)
 
-    print '  Compiler:', env['CC'], '(%s)' % compiler
-    print '  Platform:', env['PLATFORM']
-    print '      Mode:', compiler_mode
-    print '      Arch:', env['TARGET_ARCH']
+    print('  Compiler:', env['CC'], '(%s)' % compiler)
+    print('  Platform:', env['PLATFORM'])
+    print('      Mode:', compiler_mode)
+    print('      Arch:', env['TARGET_ARCH'])
 
 
     # SCONS_JOBS environment variable
-    if num_jobs < 1 and os.environ.has_key('SCONS_JOBS'):
+    if num_jobs < 1 and 'SCONS_JOBS' in os.environ:
         num_jobs = int(os.environ.get('SCONS_JOBS', num_jobs))
 
     # Default num jobs
@@ -180,7 +184,7 @@ def configure(conf, cstd = 'c99'):
         num_jobs = multiprocessing.cpu_count()
 
     SetOption('num_jobs', num_jobs)
-    print '      Jobs:', GetOption('num_jobs')
+    print('      Jobs:', GetOption('num_jobs'))
 
 
     # distcc
@@ -483,7 +487,7 @@ def FindLibPath(env, lib):
 
 def build_pattern(env, name):
     pats = env.get(name)
-    if isinstance(pats, basestring): pats = pats.split()
+    if hasattr(pats, 'split'): pats = pats.split()
     pats += env[name.upper()]
 
     return env.CBBuildSetRegex(pats)
@@ -512,7 +516,7 @@ def prefer_static_libs(env):
                 continue
 
         if require_static.match(name):
-            raise Exception, 'Failed to find static library for "%s"' % name
+            raise Exception('Failed to find static library for "%s"' % name)
 
         libs.append(lib)
 

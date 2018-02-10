@@ -5,16 +5,17 @@ from SCons.Script import *
 def configure(conf):
     env = conf.env
 
-    conf.CBCheckHome('freetype2', inc_suffix=['/include', '/include/freetype2'])
+    conf.CBCheckHome('freetype2',
+                     inc_suffix=['/include', '/include/freetype2'])
 
-    if not os.environ.has_key('FREETYPE2_INCLUDE'):
+    if not 'FREETYPE2_INCLUDE' in os.environ:
         try:
             env.ParseConfig('freetype-config --cflags')
         except OSError: pass
 
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         if not conf.CheckOSXFramework('CoreServices'):
-            raise Exception, 'Need CoreServices framework'
+            raise Exception('Need CoreServices framework')
 
     conf.CBRequireCHeader('ft2build.h')
     conf.CBRequireLib('freetype')
