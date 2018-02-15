@@ -127,7 +127,10 @@ namespace cb {
         if (!writeBytes || writeLengthBytes) {
           if (!writeLengthBytes) {
             std::string l = String((uint64_t)n);
-            writeLengthBytes = l.length() < 31 ? l.length() : 31;
+            // Note, a uint64_t can be at most 19 decimal digits
+            writeLengthBytes = l.length();
+            if (31 < writeLengthBytes)
+              throw BOOST_IOSTREAMS_FAILURE("Write chunk length too long");
             memcpy(writeLength, l.c_str(), writeLengthBytes);
             writeLength[writeLengthBytes] = 0;
             writeBytes = n;
