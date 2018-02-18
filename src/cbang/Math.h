@@ -49,8 +49,8 @@ namespace cb {
     inline static bool isnan(float x) {return _isnan(x);}
 
     // Or isinf
-    inline static bool isinf(double x) {return !_finite(x);}
-    inline static bool isinf(float x) {return !_finite(x);}
+    inline static bool isinf(double x) {return !_finite(x) && !_isnan(x);}
+    inline static bool isinf(float x) {return !_finite(x) && !_isnan(x);}
 
 #else
     inline static double round(double x) {return ::round(x);}
