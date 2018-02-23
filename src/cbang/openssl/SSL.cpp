@@ -180,8 +180,9 @@ void cb::SSL::accept() {
   // We can ignore WANT_READ etc. here because the Socket layer already
   // retries reads and writes up to the specified timeout.
   if (ret != 1) {
-    LOG_DEBUG(5, "SSL accept failed: " << getFullSSLErrorStr(ret));
-    THROWS("SSL accept failed: " << getFullSSLErrorStr(ret));
+    string err = getFullSSLErrorStr(ret);
+    LOG_DEBUG(5, "SSL accept failed: " << err);
+    THROWS("SSL accept failed: " << err);
   }
 }
 
