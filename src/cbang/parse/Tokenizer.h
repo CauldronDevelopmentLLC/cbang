@@ -43,16 +43,21 @@ namespace cb {
   template <class ENUM_T>
   class Tokenizer : public ENUM_T {
   protected:
-    Scanner &scanner;
+    SmartPointer<Scanner> scanner;
 
     typedef Token<ENUM_T> Token_T;
     Token_T current;
 
   public:
-    Tokenizer(cb::Scanner &scanner) : scanner(scanner) {}
+    Tokenizer(cb::Scanner &scanner) :
+      scanner(SmartPointer<Scanner>::Phony(scanner)) {}
 
-    const Scanner &getScanner() const {return scanner;}
-    Scanner &getScanner() {return scanner;}
+    Tokenizer(const SmartPointer<cb::Scanner> &scanner) : scanner(scanner) {}
+
+    virtual ~Tokenizer() {}
+
+    const Scanner &getScanner() const {return *scanner;}
+    Scanner &getScanner() {return *scanner;}
     const LocationRange &getLocation() const {return peek().getLocation();}
 
     bool isType(ENUM_T type) const {return peek().getType() == type;}
@@ -60,7 +65,7 @@ namespace cb {
     const std::string &getValue() const {return peek().getValue();}
 
     bool hasMore() {
-      if (current.getType() == Token_T::eof() && scanner.hasMore()) advance();
+      if (current.getType() == Token_T::eof() && scanner->hasMore()) advance();
       return current.getType() != Token_T::eof();
     }
 
