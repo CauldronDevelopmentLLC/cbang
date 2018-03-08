@@ -34,6 +34,8 @@
 
 #include <math.h>
 #include <cmath>
+#include <limits>
+
 
 namespace cb {
   namespace Math {
@@ -63,6 +65,16 @@ namespace cb {
 
     inline static bool isfinite(double x) {return !(isnan(x) || isinf(x));}
     inline static bool isfinite(float x) {return !(isnan(x) || isinf(x));}
+
+
+    inline static double nextUp(double x) {
+      return nextafter(x, std::numeric_limits<double>::infinity());
+    }
+
+
+    inline static double nextDown(double x) {
+      return nextafter(x, -std::numeric_limits<double>::infinity());
+    }
   }
 }
 
