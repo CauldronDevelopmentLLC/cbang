@@ -34,6 +34,7 @@
 
 #include "FileLocation.h"
 #include "SmartPointer.h"
+#include "Throw.h"
 
 #include <cbang/debug/StackTrace.h>
 
@@ -41,6 +42,7 @@
 #include <string>
 #include <iostream>
 #include <exception>
+
 
 namespace cb {
   // Forward Declarations
@@ -179,72 +181,3 @@ namespace cb {
     return e.print(stream);
   }
 }
-
-// Convenience macros
-
-// Exception class
-#ifndef CBANG_EXCEPTION
-#define CBANG_EXCEPTION cb::Exception
-#endif
-
-#define CBANG_EXCEPTION_SUBCLASS(name) (name)cb::Exception
-#define CBANG_DEFINE_EXCEPTION_SUBCLASS(name)                       \
-  struct name : public cb::Exception {                              \
-    name(const cb::Exception &e) : cb::Exception(e) {}              \
-  }
-
-
-// Throws
-#define CBANG_THROW(msg) throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION)
-#define CBANG_THROWC(msg, cause) \
-  throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION, (cause))
-#define CBANG_THROWX(msg, code) \
-  throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION, code)
-#define CBANG_THROWCX(msg, cause, code) \
-  throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION, (cause), code)
-
-// Stream to string versions
-#include "SStream.h"
-
-#define CBANG_THROWS(msg) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION)
-#define CBANG_THROWCS(msg, cause) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION, (cause))
-#define CBANG_THROWXS(msg, code) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION, code)
-#define CBANG_THROWCXS(msg, cause, code) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION, (cause), code)
-
-// Asserts
-#ifdef DEBUG
-#define CBANG_ASSERT(cond, msg) do {if (!(cond)) CBANG_THROW(msg);} while (0)
-#define CBANG_ASSERTS(cond, msg) do {if (!(cond)) CBANG_THROWS(msg);} while (0)
-#define CBANG_ASSERTXS(cond, msg, code) \
-  do {if (!(cond)) CBANG_THROWXS(msg, code);} while (0)
-
-#else // DEBUG
-#define CBANG_ASSERT(cond, msg)
-#define CBANG_ASSERTS(cond, msg)
-#define CBANG_ASSERTXS(cond, msg, code)
-#endif // DEBUG
-
-
-#ifdef USING_CBANG
-#define EXCEPTION                       CBANG_EXCEPTION
-#define EXCEPTION_SUBCLASS(name)        CBANG_EXCEPTION_SUBCLASS(name)
-#define DEFINE_EXCEPTION_SUBCLASS(name) CBANG_DEFINE_EXCEPTION_SUBCLASS(name)
-
-#define THROW(msg)                 CBANG_THROW(msg)
-#define THROWC(msg, cause)         CBANG_THROWC(msg, cause)
-#define THROWX(msg, code)          CBANG_THROWX(msg, code)
-#define THROWCX(msg, cause, code)  CBANG_THROWCX(msg, cause, code)
-
-#define THROWS(msg)                CBANG_THROWS(msg)
-#define THROWCS(msg, cause)        CBANG_THROWCS(msg, cause)
-#define THROWXS(msg, code)         CBANG_THROWXS(msg, code)
-#define THROWCXS(msg, cause, code) CBANG_THROWCXS(msg, cause, code)
-
-#define ASSERT(cond, msg)          CBANG_ASSERT(cond, msg)
-#define ASSERTS(cond, msg)         CBANG_ASSERTS(cond, msg)
-#define ASSERTXS(cond, msg, code)  CBANG_ASSERTXS(cond, msg, code)
-#endif // USING_CBANG
