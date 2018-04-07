@@ -79,6 +79,7 @@ namespace cb {
 
       virtual void init();
       virtual bool allow(Request &req) const;
+      virtual void shutdown();
 
       // From HTTPHandler
       bool operator()(Request &req);

@@ -136,6 +136,12 @@ bool WebServer::allow(Request &req) const {
 }
 
 
+void WebServer::shutdown() {
+  http.release();
+  https.release();
+}
+
+
 bool WebServer::operator()(Request &req) {
   req.setID(nextID++);
 
