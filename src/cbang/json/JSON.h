@@ -48,3 +48,4 @@
 #include "BufferWriter.h"
 #include "Integer.h"
 #include "Factory.h"
+#include "Serializable.h"
