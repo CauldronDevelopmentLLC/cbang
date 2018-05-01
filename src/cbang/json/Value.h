@@ -264,6 +264,12 @@ namespace cb {
 
 #undef CBANG_JSON_GET_DEFAULT
 
+      const ValuePtr &get(const std::string &key,
+                          const ValuePtr &defaultValue) const {
+        int index = indexOf(key);
+        return index == -1 ? defaultValue : get(index);
+      }
+
       std::string getAsString(const std::string &key,
                               const std::string &defaultValue) const {
         int index = indexOf(key);
