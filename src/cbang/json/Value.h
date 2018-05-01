@@ -137,6 +137,7 @@ namespace cb {
       std::string &getString(unsigned i) {return get(i)->getString();}
       const std::string &getString(unsigned i) const
       {return get(i)->getString();}
+      std::string getAsString(unsigned i) const {return get(i)->asString();}
       List &getList(unsigned i) {return get(i)->getList();}
       const List &getList(unsigned i) const {return get(i)->getList();}
       Dict &getDict(unsigned i) {return get(i)->getDict();}
@@ -233,6 +234,8 @@ namespace cb {
       {return get(key)->getString();}
       const std::string &getString(const std::string &key) const
       {return get(key)->getString();}
+      std::string getAsString(const std::string &key) const
+      {return get(key)->asString();}
       List &getList(const std::string &key) {return get(key)->getList();}
       const List &getList(const std::string &key) const
       {return get(key)->getList();}
@@ -261,12 +264,19 @@ namespace cb {
 
 #undef CBANG_JSON_GET_DEFAULT
 
+      std::string getAsString(const std::string &key,
+                              const std::string &defaultValue) const {
+        int index = indexOf(key);
+        return index == -1 ? defaultValue : get(index)->asString();
+      }
+
       // Operators
       const Value &operator[](unsigned i) const {return *get(i);}
       const Value &operator[](const std::string &key) const {return *get(key);}
 
       virtual void write(Sink &sink) const = 0;
       std::string toString(unsigned indent = 0, bool compact = false) const;
+      std::string asString() const;
     };
 
     static inline

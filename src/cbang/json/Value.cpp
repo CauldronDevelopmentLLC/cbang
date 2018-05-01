@@ -92,3 +92,6 @@ string Value::toString(unsigned indent, bool compact) const {
   str << flush;
   return str.str();
 }
+
+
+string Value::asString() const {return isString() ? getString() : toString();}
