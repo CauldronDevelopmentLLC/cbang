@@ -45,7 +45,7 @@ CPUID &CPUID::cpuID(uint32_t _eax, uint32_t _ebx, uint32_t _ecx,
   for (int i = 0; i < 4; i++) regs[i] = 0;
 
 #ifdef _WIN32
-#if 1500 < _MSC_VER && (defined(__i386__) || defined(__x86_64__))
+#if 1500 < _MSC_VER && (defined(_M_IX86) || defined(_M_AMD64))
   // Note that 64-bit MSVC compiler does not support __asm()
   int cpuInfo[4];
   __cpuidex(cpuInfo, (int)_eax, (int)_ecx);
