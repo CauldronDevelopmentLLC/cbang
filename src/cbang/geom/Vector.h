@@ -470,7 +470,7 @@ namespace cb {
     }
 
     void write(JSON::Sink &sink) const {
-      sink.beginList();
+      sink.beginList(true);
       for (unsigned i = 0; i < DIM; i++) sink.append(data[i]);
       sink.endList();
     }
