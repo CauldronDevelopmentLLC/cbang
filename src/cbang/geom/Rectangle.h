@@ -67,6 +67,9 @@ namespace cb {
     const Vector<DIM, T> &getMin() const {return rmin;}
     const Vector<DIM, T> &getMax() const {return rmax;}
 
+    void setMin(const Vector<DIM, T> &rmin) {this->rmin = rmin;}
+    void setMax(const Vector<DIM, T> &rmax) {this->rmax = rmax;}
+
     T getWidth() const {return rmax[0] - rmin[0];}
     T getLength() const {
       if (DIM < 2)
@@ -291,6 +294,13 @@ namespace cb {
     Vector<DIM, T> &operator[](unsigned i) {
       if (1 < i) CBANG_THROWS("Invalid Rectangle index " << i);
       return i ? rmax : rmin;
+    }
+
+    // Assign
+    Rectangle<DIM, T> &operator=(const Rectangle<DIM, T> &r) {
+      rmin = r.rmin;
+      rmax = r.rmax;
+      return *this;
     }
 
     // Compare
