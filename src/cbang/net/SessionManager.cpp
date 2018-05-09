@@ -52,10 +52,9 @@ SessionManager::SessionManager(Options &options) :
 
   options.pushCategory("Session Management");
 
-  options.addTarget("session-timeout", sessionTimeout, "The max maximum "
-                    "amount of time in seconds since the last time a session "
-                    "was used before it timesout.  Zero for no session "
-                    "timeout.");
+  options.addTarget("session-timeout", sessionTimeout, "The maximum time in "
+                    "seconds, from the most recent usage, before a session "
+                    "timesout.  Zero for no session timeout.");
   options.addTarget("session-lifetime", sessionLifetime, "The maximum "
                     "session lifetime in seconds.  Zero for unlimited "
                     "session lifetime.");
