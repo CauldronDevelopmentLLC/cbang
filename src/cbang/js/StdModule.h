@@ -48,7 +48,7 @@ namespace cb {
     public:
       StdModule(Javascript &js,
                 const cb::SmartPointer<std::ostream> &stream) :
-        NativeModule("std"), js(js) {}
+        NativeModule("std"), js(js), stream(stream) {}
 
       // From NativeModule
       void define(Sink &exports);
