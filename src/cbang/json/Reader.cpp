@@ -199,20 +199,27 @@ void Reader::parseNumber(Sink &sink) {
   bool negative = false;
   bool decimal = false;
 
-  while (good()) {
-    char c = next();
+  // NOTE, we use next() to skip leading whitespace but no whitespace is allowed
+  // with in the number itself so stream.get() is called directly.
+  if (next() == '-') {
+    value += get();
+    negative = true;
+  }
 
-    switch (c) {
-    case '-': negative = true;
-    case 'e': case 'E': case '.': if (c != '-') decimal = true;
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-      value += c;
-      advance();
-      continue;
-    }
+  if (stream.peek() == '0') value += stream.get();
+  else while (isdigit(stream.peek())) value += stream.get();
 
-    break;
+  if (stream.peek() == '.') {
+    decimal = true;
+    value += stream.get();
+    while (isdigit(stream.peek())) value += stream.get();
+  }
+
+  if (stream.peek() == 'e' || stream.peek() == 'E') {
+    decimal = true;
+    value += stream.get();
+    if (stream.peek() == '+' || stream.peek() == '-') value += stream.get();
+    while (isdigit(stream.peek())) value += stream.get();
   }
 
   const char *start = value.c_str();
