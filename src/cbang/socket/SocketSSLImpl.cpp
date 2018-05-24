@@ -76,6 +76,7 @@ SmartPointer<Socket> SocketSSLImpl::accept(IPAddress *ip) {
 void SocketSSLImpl::connect(const IPAddress &ip) {
   SocketDefaultImpl::connect(ip);
   SmartToggle toggle(inSSL);
+  if (ip.hasHost()) ssl->setTLSExtHostname(ip.getHost());
   ssl->connect();
 }
 

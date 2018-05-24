@@ -99,9 +99,7 @@ bool IPAddress::hasHost() const {
 }
 
 
-void IPAddress::lookupHost() {
-  host = hostFromIP(*this);
-}
+void IPAddress::lookupHost() {host = hostFromIP(*this);}
 
 
 uint32_t IPAddress::getIP() const {

@@ -153,9 +153,7 @@ void Transaction::download(ostream &out, streamsize length,
 string Transaction::getString(const URI &uri,
                               SmartPointer<TransferCallback> callback) {
   ostringstream str;
-  IPAddress ip(uri.getHost(), uri.getPort());
 
-  connect(ip);
   get(uri);
   download(str, receiveHeader(), callback);
 
@@ -171,11 +169,11 @@ void Transaction::open() {
 
 void Transaction::connect(const IPAddress &ip) {
   address = ip;
-  if (!address.getPort()) address.setPort(80);
+  if (!address.getPort()) address.setPort(isSecure() ? 443 : 80);
 
   ProxyManager &proxyMan = ProxyManager::instance();
   if (proxyMan.enabled()) Socket::connect(proxyMan.getAddress());
-  else Socket::connect(ip);
+  else Socket::connect(address);
 
   ProxyManager::instance().connect(*this);
 }

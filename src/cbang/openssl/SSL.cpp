@@ -144,6 +144,12 @@ SmartPointer<Certificate> cb::SSL::getPeerCertificate() const {
 }
 
 
+void cb::SSL::setTLSExtHostname(const string &hostname) {
+  if (!SSL_set_tlsext_host_name(ssl, hostname.c_str()))
+    THROWS("Failed to set TLS host name extension to '" << hostname << "'");
+}
+
+
 void cb::SSL::connect() {
   LOG_DEBUG(5, "cb::SSL::connect()");
   int ret = SSL_connect(ssl);
