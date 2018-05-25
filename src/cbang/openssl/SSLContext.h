@@ -77,6 +77,9 @@ namespace cb {
     void addTrustedCA(const InputSource &source);
     void addTrustedCA(BIO *bio);
 
+    void loadVerifyLocationsFile(const std::string &path);
+    void loadVerifyLocationsPath(const std::string &path);
+
     void addCRL(const CRL &crl);
     void addCRLStr(const std::string &data);
     void addCRL(const InputSource &source);

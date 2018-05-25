@@ -183,6 +183,18 @@ void SSLContext::addTrustedCA(BIO *bio) {
 }
 
 
+void SSLContext::loadVerifyLocationsFile(const string &path) {
+  if (!SSL_CTX_load_verify_locations(ctx, path.c_str(), 0))
+    THROWS("Failed to load verify locations file '" << path << "'");
+}
+
+
+void SSLContext::loadVerifyLocationsPath(const string &path) {
+  if (!SSL_CTX_load_verify_locations(ctx, 0, path.c_str()))
+    THROWS("Failed to load verify locations path '" << path << "'");
+}
+
+
 void SSLContext::addCRL(const CRL &crl) {
   X509_STORE *store = getStore();
 
