@@ -98,7 +98,11 @@ void PendingRequest::send() {
 
 void PendingRequest::callback(evhttp_request *_req) {
   try {
-    if (!_req) return;
+    if (!_req) {
+      (*cb)(0, err);
+      return;
+    }
+
     Request req(_req);
 
     LOG_DEBUG(5, req.getResponseLine() << '\n' << req.getInputHeaders()
