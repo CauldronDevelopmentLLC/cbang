@@ -117,10 +117,7 @@ void Writer::beginAppend() {
   NullSink::beginAppend();
 
   if (first) first = false;
-  else {
-    stream << ',';
-    if (isCompact()) stream << ' ';
-  }
+  else stream << ',';
 
   if (!isCompact()) {
     stream << '\n';
@@ -157,10 +154,7 @@ void Writer::beginDict(bool simple) {
 void Writer::beginInsert(const string &key) {
   NullSink::beginInsert(key);
   if (first) first = false;
-  else {
-    stream << ',';
-    if (isCompact()) stream << ' ';
-  }
+  else stream << ',';
 
   if (!isCompact()) {
     stream << '\n';
