@@ -82,52 +82,74 @@ namespace cb {
       template <class T>
       void addMember
       (T *obj, typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        addHandler(new HTTPHandlerMemberFunctor<T>(obj, member));
+        addHandler(createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember
       (unsigned methods, const std::string &pattern,
        T *obj, typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        addHandler(methods, pattern,
-                   new HTTPHandlerMemberFunctor<T>(obj, member));
+        addHandler(methods, pattern, createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember
       (T *obj, typename JSONHandlerMemberFunctor<T>::member_t member) {
-        addHandler(new JSONHandlerMemberFunctor<T>(obj, member));
+        addHandler(createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember
       (unsigned methods, const std::string &pattern,
        T *obj, typename JSONHandlerMemberFunctor<T>::member_t member) {
-        addHandler(methods, pattern,
-                   new JSONHandlerMemberFunctor<T>(obj, member));
+        addHandler(methods, pattern, createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember(typename HTTPRecastHandler<T>::member_t member) {
-        addHandler(new HTTPRecastHandler<T>(member));
+        addHandler(createHandler<T>(member));
       }
 
       template <class T>
       void addMember(unsigned methods, const std::string &pattern,
                      typename HTTPRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, new HTTPRecastHandler<T>(member));
+        addHandler(methods, pattern, createHandler<T>(member));
       }
 
       template <class T>
       void addMember(typename JSONRecastHandler<T>::member_t member) {
-        addHandler(new JSONRecastHandler<T>(member));
+        addHandler(createHandler<T>(member));
       }
 
       template <class T>
       void addMember(unsigned methods, const std::string &pattern,
                      typename JSONRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, new JSONRecastHandler<T>(member));
+        addHandler(methods, pattern, createHandler<T>(member));
       }
+
+
+      template <class T> SmartPointer<HTTPHandler>
+      createHandler(T *obj,
+                    typename HTTPHandlerMemberFunctor<T>::member_t member) {
+        return new HTTPHandlerMemberFunctor<T>(obj, member);
+      }
+
+      template <class T> SmartPointer<HTTPHandler>
+      createHandler(T *obj,
+                    typename JSONHandlerMemberFunctor<T>::member_t member) {
+        return new JSONHandlerMemberFunctor<T>(obj, member);
+      }
+
+      template <class T> SmartPointer<HTTPHandler>
+      createHandler(typename HTTPRecastHandler<T>::member_t member) {
+        return new HTTPRecastHandler<T>(member);
+      }
+
+      template <class T> SmartPointer<HTTPHandler>
+      createHandler(typename JSONRecastHandler<T>::member_t member) {
+        return new JSONRecastHandler<T>(member);
+      }
+
 
       virtual bool dispatch(Request &req) {return operator()(req);}
       virtual bool dispatch(Request &req, const JSON::ValuePtr &msg,
