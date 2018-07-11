@@ -33,6 +33,9 @@
 #pragma once
 
 #include "HTTPHandler.h"
+#include "JSONHandler.h"
+#include "HTTPRecastHandler.h"
+#include "JSONRecastHandler.h"
 
 #include <cbang/SmartPointer.h>
 
@@ -44,7 +47,10 @@ namespace cb {
 
   namespace Event {
     class HTTPHandlerFactory {
+      bool autoIndex;
+
     public:
+      HTTPHandlerFactory(bool autoIndex = true) : autoIndex(autoIndex) {}
       virtual ~HTTPHandlerFactory() {}
 
       virtual SmartPointer<HTTPHandler>
@@ -53,6 +59,28 @@ namespace cb {
                     const SmartPointer<HTTPHandler> &child);
       virtual SmartPointer<HTTPHandler> createHandler(const Resource &res);
       virtual SmartPointer<HTTPHandler> createHandler(const std::string &path);
+
+      template <class T> SmartPointer<HTTPHandler> static
+      createHandler(T *obj,
+                    typename HTTPHandlerMemberFunctor<T>::member_t member) {
+        return new HTTPHandlerMemberFunctor<T>(obj, member);
+      }
+
+      template <class T> SmartPointer<HTTPHandler> static
+      createHandler(T *obj,
+                    typename JSONHandlerMemberFunctor<T>::member_t member) {
+        return new JSONHandlerMemberFunctor<T>(obj, member);
+      }
+
+      template <class T> SmartPointer<HTTPHandler> static
+      createHandler(typename HTTPRecastHandler<T>::member_t member) {
+        return new HTTPRecastHandler<T>(member);
+      }
+
+      template <class T> SmartPointer<HTTPHandler> static
+      createHandler(typename JSONRecastHandler<T>::member_t member) {
+        return new JSONRecastHandler<T>(member);
+      }
     };
   }
 }

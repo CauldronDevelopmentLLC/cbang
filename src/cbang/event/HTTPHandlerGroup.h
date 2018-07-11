@@ -32,16 +32,9 @@
 
 #pragma once
 
-#include "HTTPHandler.h"
 #include "HTTPHandlerFactory.h"
-#include "JSONHandler.h"
-#include "HTTPRecastHandler.h"
-#include "JSONRecastHandler.h"
-
-#include <cbang/SmartPointer.h>
 
 #include <vector>
-#include <string>
 
 
 namespace cb {
@@ -82,72 +75,49 @@ namespace cb {
       template <class T>
       void addMember
       (T *obj, typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        addHandler(createHandler<T>(obj, member));
+        addHandler(factory->createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember
       (unsigned methods, const std::string &pattern,
        T *obj, typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        addHandler(methods, pattern, createHandler<T>(obj, member));
+        addHandler(methods, pattern, factory->createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember
       (T *obj, typename JSONHandlerMemberFunctor<T>::member_t member) {
-        addHandler(createHandler<T>(obj, member));
+        addHandler(factory->createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember
       (unsigned methods, const std::string &pattern,
        T *obj, typename JSONHandlerMemberFunctor<T>::member_t member) {
-        addHandler(methods, pattern, createHandler<T>(obj, member));
+        addHandler(methods, pattern, factory->createHandler<T>(obj, member));
       }
 
       template <class T>
       void addMember(typename HTTPRecastHandler<T>::member_t member) {
-        addHandler(createHandler<T>(member));
+        addHandler(factory->createHandler<T>(member));
       }
 
       template <class T>
       void addMember(unsigned methods, const std::string &pattern,
                      typename HTTPRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, createHandler<T>(member));
+        addHandler(methods, pattern, factory->createHandler<T>(member));
       }
 
       template <class T>
       void addMember(typename JSONRecastHandler<T>::member_t member) {
-        addHandler(createHandler<T>(member));
+        addHandler(factory->createHandler<T>(member));
       }
 
       template <class T>
       void addMember(unsigned methods, const std::string &pattern,
                      typename JSONRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, createHandler<T>(member));
-      }
-
-
-      template <class T> SmartPointer<HTTPHandler>
-      createHandler(T *obj,
-                    typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        return new HTTPHandlerMemberFunctor<T>(obj, member);
-      }
-
-      template <class T> SmartPointer<HTTPHandler>
-      createHandler(T *obj,
-                    typename JSONHandlerMemberFunctor<T>::member_t member) {
-        return new JSONHandlerMemberFunctor<T>(obj, member);
-      }
-
-      template <class T> SmartPointer<HTTPHandler>
-      createHandler(typename HTTPRecastHandler<T>::member_t member) {
-        return new HTTPRecastHandler<T>(member);
-      }
-
-      template <class T> SmartPointer<HTTPHandler>
-      createHandler(typename JSONRecastHandler<T>::member_t member) {
-        return new JSONRecastHandler<T>(member);
+        addHandler(methods, pattern, factory->createHandler<T>(member));
       }
 
 

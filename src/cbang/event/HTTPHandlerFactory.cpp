@@ -32,7 +32,7 @@
 
 #include "HTTPHandlerFactory.h"
 
-#include "HTTPMatcher.h"
+#include "HTTPRE2Matcher.h"
 #include "ResourceHTTPHandler.h"
 #include "FileHandler.h"
 #include "IndexHTMLHandler.h"
@@ -46,17 +46,19 @@ SmartPointer<HTTPHandler>
 HTTPHandlerFactory::createMatcher(unsigned methods, const string &search,
                                   const string &replace,
                                   const SmartPointer<HTTPHandler> &child) {
-  return new HTTPMatcher(methods, search, replace, child);
+  return new HTTPRE2Matcher(methods, search, replace, child);
 }
 
 
 SmartPointer<HTTPHandler>
 HTTPHandlerFactory::createHandler(const Resource &res) {
-  return new IndexHTMLHandler(new ResourceHTTPHandler(res));
+  SmartPointer<HTTPHandler> handler = new ResourceHTTPHandler(res);
+  return autoIndex ? new IndexHTMLHandler(handler) : handler;
 }
 
 
 SmartPointer<HTTPHandler>
 HTTPHandlerFactory::createHandler(const string &path) {
-  return new IndexHTMLHandler(new FileHandler(path));
+  SmartPointer<HTTPHandler> handler = new FileHandler(path);
+  return autoIndex ? new IndexHTMLHandler(handler) : handler;
 }
