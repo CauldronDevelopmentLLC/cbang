@@ -41,18 +41,19 @@
 
 using namespace std;
 using namespace cb;
+using namespace cb::Event;
 
 
 HTTPRE2Matcher::HTTPRE2Matcher(unsigned methods, const string &search,
                                const string &replace,
-                               const SmartPointer<Event::HTTPHandler> &child) :
+                               const SmartPointer<HTTPHandler> &child) :
   methods(methods), matchAll(search.empty()), regex(search), replace(replace),
   child(child) {
   if (regex.error_code()) THROWS("Failed to compile RE2: " << regex.error());
 }
 
 
-bool HTTPRE2Matcher::operator()(Event::Request &req) {
+bool HTTPRE2Matcher::operator()(Request &req) {
   if (!(methods & req.getMethod())) return false;
   if (matchAll) return (*child)(req);
 
@@ -83,7 +84,7 @@ bool HTTPRE2Matcher::operator()(Event::Request &req) {
     else req.insertArg(results[i]);
 
   // Replace path
-  Event::RestoreURIPath restoreURIPath(uri);
+  RestoreURIPath restoreURIPath(uri);
   if (!replace.empty() && RE2::Replace(&path, regex, replace))
     uri.setPath(path);
 

@@ -38,19 +38,21 @@
 
 
 namespace cb {
-  class HTTPRE2Matcher : public cb::Event::HTTPHandler {
-    unsigned methods;
-    bool matchAll;
-    RE2 regex;
-    std::string replace;
-    cb::SmartPointer<cb::Event::HTTPHandler> child;
+  namespace Event {
+    class HTTPRE2Matcher : public HTTPHandler {
+      unsigned methods;
+      bool matchAll;
+      RE2 regex;
+      std::string replace;
+      cb::SmartPointer<HTTPHandler> child;
 
-  public:
-    HTTPRE2Matcher(unsigned methods, const std::string &search,
-                   const std::string &replace,
-                   const cb::SmartPointer<cb::Event::HTTPHandler> &child);
+    public:
+      HTTPRE2Matcher(unsigned methods, const std::string &search,
+                     const std::string &replace,
+                     const cb::SmartPointer<HTTPHandler> &child);
 
-    // From cb::Event::HTTPHandler
-    bool operator()(cb::Event::Request &req);
-  };
+      // From cb::Event::HTTPHandler
+      bool operator()(cb::Event::Request &req);
+    };
+  }
 }
