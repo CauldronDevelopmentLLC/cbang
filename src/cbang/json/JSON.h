@@ -41,6 +41,7 @@
 #include "List.h"
 #include "Dict.h"
 #include "Reader.h"
+#include "YAMLReader.h"
 #include "Writer.h"
 #include "Builder.h"
 #include "NullSink.h"

@@ -117,9 +117,12 @@ void Writer::beginAppend() {
   NullSink::beginAppend();
 
   if (first) first = false;
-  else stream << ',';
+  else {
+    stream << ',';
+    if (simple && !compact) stream << ' ';
+  }
 
-  if (!isCompact()) {
+  if (!compact && !simple) {
     stream << '\n';
     indent();
   }
@@ -130,7 +133,7 @@ void Writer::endList() {
   NullSink::endList();
   level--;
 
-  if (!isCompact() && !first) {
+  if (!(compact || simple) && !first) {
     stream << '\n';
     indent();
   }
@@ -154,9 +157,12 @@ void Writer::beginDict(bool simple) {
 void Writer::beginInsert(const string &key) {
   NullSink::beginInsert(key);
   if (first) first = false;
-  else stream << ',';
+  else {
+    stream << ',';
+    if (simple && !compact) stream << ' ';
+  }
 
-  if (!isCompact()) {
+  if (!simple && !compact) {
     stream << '\n';
     indent();
   }
@@ -173,7 +179,7 @@ void Writer::endDict() {
   NullSink::endDict();
   level--;
 
-  if (!isCompact() && !first) {
+  if (!(simple || compact) && !first) {
     stream << '\n';
     indent();
   }

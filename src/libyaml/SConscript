@@ -1,0 +1,22 @@
+Import('*')
+
+env = env.Clone()
+
+env.CBDefine('HAVE_CONFIG_H')
+env.Append(CFLAGS = ['-Wno-unused-value', '-Wno-int-to-pointer-cast',
+                     '-Wno-implicit-function-declaration'])
+
+if not env.GetOption('clean'):
+    env.Append(CPPPATH = ['#/src/libyaml/src'])
+
+# Build lib
+src = Glob('src/*.c')
+lib = env.Library('#/lib/yaml', src)
+
+# Install headers
+hdrs = 'src/yaml.h'.split()
+hdrs = env.Install(dir = '#/include/', source = hdrs)
+Depends(lib, hdrs)
+
+# Return
+Return('lib')

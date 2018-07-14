@@ -100,7 +100,6 @@ namespace cb {
 
     protected:
       void indent() const {stream << std::string(level * 2, ' ');}
-      bool isCompact() const {return compact || simple;}
     };
   }
 }

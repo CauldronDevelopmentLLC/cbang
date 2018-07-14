@@ -60,7 +60,7 @@ if hasattr(force_local, 'split'): force_local = force_local.split()
 disable_local = env.get('disable_local', '')
 if hasattr(disable_local, 'split'): disable_local = disable_local.split()
 Export('env conf')
-for lib in 'zlib bzip2 sqlite3 expat boost libevent re2'.split():
+for lib in 'zlib bzip2 sqlite3 expat boost libevent re2 libyaml'.split():
     if lib in disable_local: continue
     if not env.CBConfigEnabled(lib) or lib in force_local:
         Default(SConscript('src/%s/SConscript' % lib,
