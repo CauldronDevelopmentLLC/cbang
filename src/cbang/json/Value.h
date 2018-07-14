@@ -80,6 +80,10 @@ namespace cb {
 
       virtual bool getBoolean() const {CBANG_THROW("Value is not a Boolean");}
       virtual double getNumber() const {CBANG_THROW("Value is not a Number");}
+      virtual int8_t getS8() const {CBANG_THROW("Value is not a Number");}
+      virtual uint8_t getU8() const {CBANG_THROW("Value is not a Number");}
+      virtual int16_t getS16() const {CBANG_THROW("Value is not a Number");}
+      virtual uint16_t getU16() const {CBANG_THROW("Value is not a Number");}
       virtual int32_t getS32() const {CBANG_THROW("Value is not a Number");}
       virtual uint32_t getU32() const {CBANG_THROW("Value is not a Number");}
       virtual int64_t getS64() const {CBANG_THROW("Value is not a Number");}
@@ -130,6 +134,10 @@ namespace cb {
       // List accessors
       bool getBoolean(unsigned i) const {return get(i)->getBoolean();}
       double getNumber(unsigned i) const {return get(i)->getNumber();}
+      int8_t getS8(unsigned i) const {return get(i)->getS8();}
+      uint8_t getU8(unsigned i) const {return get(i)->getU8();}
+      int16_t getS16(unsigned i) const {return get(i)->getS16();}
+      uint16_t getU16(unsigned i) const {return get(i)->getU16();}
       int32_t getS32(unsigned i) const {return get(i)->getS32();}
       uint32_t getU32(unsigned i) const {return get(i)->getU32();}
       int64_t getS64(unsigned i) const {return get(i)->getS64();}
@@ -222,6 +230,14 @@ namespace cb {
       {return get(key)->getBoolean();}
       double getNumber(const std::string &key) const
       {return get(key)->getNumber();}
+      int8_t getS8(const std::string &key) const
+      {return get(key)->getS8();}
+      uint8_t getU8(const std::string &key) const
+      {return get(key)->getU8();}
+      int16_t getS16(const std::string &key) const
+      {return get(key)->getS16();}
+      uint16_t getU16(const std::string &key) const
+      {return get(key)->getU16();}
       int32_t getS32(const std::string &key) const
       {return get(key)->getS32();}
       uint32_t getU32(const std::string &key) const
@@ -256,6 +272,10 @@ namespace cb {
 
       CBANG_JSON_GET_DEFAULT(Boolean, bool);
       CBANG_JSON_GET_DEFAULT(Number, double);
+      CBANG_JSON_GET_DEFAULT(S8, int8_t);
+      CBANG_JSON_GET_DEFAULT(U8, uint8_t);
+      CBANG_JSON_GET_DEFAULT(S16, int16_t);
+      CBANG_JSON_GET_DEFAULT(U16, uint16_t);
       CBANG_JSON_GET_DEFAULT(S32, int32_t);
       CBANG_JSON_GET_DEFAULT(U32, uint32_t);
       CBANG_JSON_GET_DEFAULT(S64, int64_t);

@@ -56,6 +56,41 @@ namespace cb {
       double getNumber() const {return getValue();}
 
 
+      int8_t getS8() const {
+        if (value < std::numeric_limits<int8_t>::min() ||
+            std::numeric_limits<int8_t>::max() < value)
+          CBANG_THROWS("Value " << value << " is not a 8-bit signed integer");
+
+        return (int8_t)value;
+      }
+
+
+      uint8_t getU8() const {
+        if (value < 0 || std::numeric_limits<uint8_t>::max() < value)
+          CBANG_THROWS("Value " << value << " is not a 8-bit unsigned integer");
+
+        return (uint8_t)value;
+      }
+
+
+      int16_t getS16() const {
+        if (value < std::numeric_limits<int16_t>::min() ||
+            std::numeric_limits<int16_t>::max() < value)
+          CBANG_THROWS("Value " << value << " is not a 16-bit signed integer");
+
+        return (int16_t)value;
+      }
+
+
+      uint16_t getU16() const {
+        if (value < 0 || std::numeric_limits<uint16_t>::max() < value)
+          CBANG_THROWS("Value " << value
+                       << " is not a 16-bit unsigned integer");
+
+        return (uint16_t)value;
+      }
+
+
       int32_t getS32() const {
         if (value < std::numeric_limits<int32_t>::min() ||
             std::numeric_limits<int32_t>::max() < value)
