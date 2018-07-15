@@ -39,6 +39,8 @@ using namespace std;
 using namespace cb::JSON;
 
 
+void Value::appendDict() {append(createDict());}
+void Value::appendList() {append(createList());}
 void Value::appendUndefined() {append(createUndefined());}
 void Value::appendNull() {append(createNull());}
 void Value::appendBoolean(bool value) {append(createBoolean(value));}
@@ -47,6 +49,8 @@ void Value::append(int64_t value) {append(create(value));}
 void Value::append(uint64_t value) {append(create(value));}
 void Value::append(const string &value) {append(create(value));}
 
+void Value::setDict(unsigned i) {set(i, createDict());}
+void Value::setList(unsigned i) {set(i, createList());}
 void Value::setUndefined(unsigned i) {set(i, createUndefined());}
 void Value::setNull(unsigned i) {set(i, createNull());}
 void Value::setBoolean(unsigned i, bool value) {set(i, createBoolean(value));}
@@ -55,7 +59,8 @@ void Value::set(unsigned i, int64_t value) {set(i, create(value));}
 void Value::set(unsigned i, uint64_t value) {set(i, create(value));}
 void Value::set(unsigned i, const string &value) {set(i, create(value));}
 
-
+void Value::insertDict(const string &key) {insert(key, createDict());}
+void Value::insertList(const string &key) {insert(key, createList());}
 void Value::insertUndefined(const string &key) {insert(key, createUndefined());}
 void Value::insertNull(const string &key) {insert(key, createNull());}
 

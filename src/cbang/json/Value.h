@@ -115,6 +115,8 @@ namespace cb {
       // List functions
       virtual const ValuePtr &get(unsigned i) const
       {CBANG_THROW("Not a List or Dict");}
+      void appendDict();
+      void appendList();
       void appendUndefined();
       void appendNull();
       void appendBoolean(bool value);
@@ -154,6 +156,8 @@ namespace cb {
       // List setters
       virtual void set(unsigned i, const ValuePtr &value)
       {CBANG_THROW("Not a List");}
+      void setDict(unsigned i);
+      void setList(unsigned i);
       void setUndefined(unsigned i);
       void setNull(unsigned i);
       void setBoolean(unsigned i, bool value);
@@ -201,6 +205,11 @@ namespace cb {
       }
       virtual const ValuePtr &get(const std::string &key) const
       {CBANG_THROW("Not a Dict");}
+
+      virtual void insert(const std::string &key, const ValuePtr &value)
+      {CBANG_THROW("Not a Dict");}
+      void insertDict(const std::string &key);
+      void insertList(const std::string &key);
       void insertUndefined(const std::string &key);
       void insertNull(const std::string &key);
       void insertBoolean(const std::string &key, bool value);
@@ -222,8 +231,6 @@ namespace cb {
       void insert(const std::string &key, uint64_t value);
       void insert(const std::string &key, int64_t value);
       void insert(const std::string &key, const std::string &value);
-      virtual void insert(const std::string &key, const ValuePtr &value)
-      {CBANG_THROW("Not a Dict");}
 
       // Dict accessors
       bool getBoolean(const std::string &key) const
