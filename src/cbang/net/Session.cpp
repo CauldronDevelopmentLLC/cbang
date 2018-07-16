@@ -34,7 +34,16 @@
 
 #include <cbang/json/JSON.h>
 
+using namespace std;
 using namespace cb;
+
+
+Session::Session(const string &id, const IPAddress &ip) {
+  setID(id);
+  setCreationTime(Time::now());
+  setLastUsed(Time::now());
+  setIP(ip.getIP());
+}
 
 
 void Session::matchIP(const IPAddress &ip) const {
@@ -43,21 +52,27 @@ void Session::matchIP(const IPAddress &ip) const {
 }
 
 
-void Session::read(const JSON::Value &value) {
-  creationTime = value.has("created") ?
-    (uint64_t)Time::parse(value.getString("created")) : 0;
-  lastUsed = value.has("last_used") ?
-    (uint64_t)Time::parse(value.getString("last_used")) : 0;
-  user = value.getString("user", "");
-  ip = value.has("ip") ? IPAddress(value.getString("ip")) : IPAddress();
+bool Session::hasGroup(const string &group) const {
+  return groups.find(group) != groups.end();
 }
 
 
-void Session::write(JSON::Sink &sink) const {
-  sink.beginDict();
-  sink.insert("created", Time(creationTime).toString());
-  sink.insert("last_used", Time(lastUsed).toString());
-  sink.insert("user", user);
-  sink.insert("ip", ip.toString());
-  sink.endDict();
+void Session::addGroup(const string &group) {
+  if (hasGroup(group)) return;
+  if (!hasList("groups")) insertList("groups");
+  get("groups")->append(group);
+  groups.insert(group);
+}
+
+
+void Session::read(const JSON::Value &value) {
+  for (unsigned i = 0; i < value.size(); i++)
+    insert(value.keyAt(i), value.get(i));
+
+  groups.clear();
+  if (hasList("groups")) {
+    JSON::ValuePtr list = get("groups");
+    for (unsigned i = 0; i < list->size(); i++)
+      groups.insert(list->getString(i));
+  }
 }

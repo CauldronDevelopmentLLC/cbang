@@ -35,47 +35,48 @@
 #include <cbang/StdTypes.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/json/Serializable.h>
+#include <cbang/json/Dict.h>
 #include <cbang/time/Time.h>
 
 #include <string>
+#include <set>
 
 
 namespace cb {
-  class Session : public JSON::Serializable {
-    std::string id;
-    uint64_t creationTime;
-    uint64_t lastUsed;
-
-    std::string user;
-    IPAddress ip;
+  class Session : public JSON::Dict, public JSON::Serializable {
+    typedef std::set<std::string> groups_t;
+    groups_t groups;
 
   public:
     Session(const JSON::Value &value) {read(value);}
-    Session(const std::string &id, const IPAddress &ip) :
-      id(id), creationTime(Time::now()), lastUsed(Time::now()),
-      ip(ip.getIP()) {}
+    Session(const std::string &id, const IPAddress &ip);
 
-    const std::string &getID() const {return id;}
-    void setID(const std::string &id) {this->id = id;}
+    const std::string &getID() const {return getString("id");}
+    void setID(const std::string &id) {insert("id", id);}
 
-    void touch() {lastUsed = Time::now();}
-    uint64_t getCreationTime() const {return creationTime;}
+    uint64_t getCreationTime() const {return getU64("created");}
     void setCreationTime(uint64_t creationTime)
-    {this->creationTime = creationTime;}
+    {insert("created", creationTime);}
 
-    uint64_t getLastUsed() const {return lastUsed;}
-    void setLastUsed(uint64_t lastUsed) {this->lastUsed = lastUsed;}
+    void touch() {setLastUsed(Time::now());}
+    uint64_t getLastUsed() const {return getU64("last_used");}
+    void setLastUsed(uint64_t lastUsed) {insert("last_used", lastUsed);}
 
-    void setUser(const std::string &user) {this->user = user;}
-    const std::string &getUser() const {return user;}
+    void setUser(const std::string &user) {insert("user", user);}
+    const std::string &getUser() const {return getString("user");}
 
-    const IPAddress &getIP() const {return ip;}
-    void setIP(const IPAddress &ip) {this->ip = ip;}
-
+    IPAddress getIP() const {return getString("ip");}
+    void setIP(const IPAddress &ip) {insert("ip", ip.toString());}
     void matchIP(const IPAddress &ip) const;
+
+    typedef groups_t::const_iterator group_iterator;
+    group_iterator groupsBegin() const {return groups.begin();}
+    group_iterator groupsEnd() const {return groups.end();}
+    bool hasGroup(const std::string &group) const;
+    void addGroup(const std::string &group);
 
     // From JSON::Serializable
     void read(const JSON::Value &value);
-    void write(JSON::Sink &sink) const;
+    void write(JSON::Sink &sink) const {JSON::Dict::write(sink);}
   };
 }

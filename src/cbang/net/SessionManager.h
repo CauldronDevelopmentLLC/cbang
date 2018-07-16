@@ -48,16 +48,18 @@ namespace cb {
     typedef std::map<std::string, SmartPointer<Session> > sessions_t;
     sessions_t sessions;
 
-    uint64_t sessionLifetime;
-    uint64_t sessionTimeout;
-    std::string sessionCookie;
+    uint64_t lifetime;
+    uint64_t timeout;
+    std::string cookie;
 
   public:
     SessionManager(Options &options);
 
-    const std::string &getSessionCookie() const {return sessionCookie;}
+    const std::string &getSessionCookie() const {return cookie;}
+
     std::string generateID(const IPAddress &ip);
 
+    virtual bool isExpired(const Session &session) const;
     virtual bool hasSession(const std::string &sid) const;
     virtual SmartPointer<Session> lookupSession(const std::string &sid) const;
     virtual SmartPointer<Session> openSession(const IPAddress &ip);

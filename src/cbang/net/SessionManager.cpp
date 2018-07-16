@@ -47,19 +47,16 @@ using namespace std;
 
 
 SessionManager::SessionManager(Options &options) :
-  sessionLifetime(Time::SEC_PER_DAY), sessionTimeout(Time::SEC_PER_HOUR),
-  sessionCookie("sid") {
+  lifetime(Time::SEC_PER_DAY), timeout(Time::SEC_PER_HOUR), cookie("sid") {
 
   options.pushCategory("Session Management");
 
-  options.addTarget("session-timeout", sessionTimeout, "The maximum time in "
-                    "seconds, from the most recent usage, before a session "
-                    "timesout.  Zero for no session timeout.");
-  options.addTarget("session-lifetime", sessionLifetime, "The maximum "
-                    "session lifetime in seconds.  Zero for unlimited "
-                    "session lifetime.");
-  options.addTarget("session-cookie", sessionCookie, "The name of the "
-                    "session cookie.");
+  options.addTarget("session-timeout", timeout, "The maximum time in seconds, "
+                    "from the most recent usage, before a session timesout.  "
+                    "Zero for no timeout.");
+  options.addTarget("session-lifetime", lifetime, "The maximum session "
+                    "lifetime in seconds.  Zero for unlimited lifetime.");
+  options.addTarget("session-cookie", cookie, "The session cookie name.");
 
   options.popCategory();
 }
@@ -81,14 +78,23 @@ string SessionManager::generateID(const IPAddress &ip) {
 }
 
 
+bool SessionManager::isExpired(const Session &session) const {
+  uint64_t now = Time::now();
+  return (timeout && session.getLastUsed() + timeout < now) ||
+    (lifetime && session.getCreationTime() + lifetime < now);
+}
+
+
 bool SessionManager::hasSession(const string &sid) const {
-  return sessions.find(sid) != sessions.end();
+  sessions_t::const_iterator it = sessions.find(sid);
+  return it != sessions.end() && !isExpired(*it->second);
 }
 
 
 SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
   iterator it = sessions.find(sid);
-  if (it == end()) THROWS("Session ID '" << sid << "' does not exist");
+  if (it == end() || isExpired(*it->second))
+    THROWS("Session ID '" << sid << "' does not exist");
 
   it->second->touch(); // Update timestamp
 
@@ -104,9 +110,7 @@ SmartPointer<Session> SessionManager::openSession(const IPAddress &ip) {
   SmartPointer<Session> session = new Session(sid, ip);
 
   // Insert
-  sessions.insert(sessions_t::value_type(sid, session));
-
-  return session;
+  return sessions.insert(sessions_t::value_type(sid, session)).first->second;
 }
 
 
@@ -114,19 +118,10 @@ void SessionManager::closeSession(const string &sid) {sessions.erase(sid);}
 
 
 void SessionManager::cleanup() {
-  uint64_t now = Time::now();
-
   // Remove expired Sessions
-  vector<sessions_t::iterator> remove;
-
-  for (sessions_t::iterator it = sessions.begin(); it != sessions.end(); it++)
-    if ((sessionTimeout && it->second->getLastUsed() + sessionTimeout < now) ||
-        (sessionLifetime &&
-         it->second->getCreationTime() + sessionLifetime < now))
-      remove.push_back(it);
-
-  for (unsigned i = 0; i < remove.size(); i++)
-    sessions.erase(remove[i]);
+  for (sessions_t::iterator it = sessions.begin(); it != sessions.end();)
+    if (isExpired(*it->second)) sessions.erase(it++);
+    else it++;
 }
 
 
