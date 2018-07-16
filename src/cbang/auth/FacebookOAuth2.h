@@ -41,6 +41,7 @@ namespace cb {
     FacebookOAuth2(Options &options);
 
     // From OAuth2
+    const char *getProvider() const {return "facebook";}
     SmartPointer<JSON::Value>
     processProfile(const SmartPointer<JSON::Value> &profile) const;
   };

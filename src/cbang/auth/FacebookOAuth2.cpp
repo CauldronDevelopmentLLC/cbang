@@ -41,24 +41,18 @@ using namespace cb;
 using namespace std;
 
 
-FacebookOAuth2::FacebookOAuth2(Options &options) : OAuth2("facebook") {
-  authURL = "https://graph.facebook.com/oauth/authorize";
-  tokenURL = "https://graph.facebook.com/oauth/access_token";
-  profileURL =
-    "https://graph.facebook.com/me?fields=id,name,email,picture,verified";
-  scope = "email";
-
-  options.pushCategory("Facebook OAuth2 Login");
-  OAuth2::addOptions(options);
-  options.popCategory();
-}
+FacebookOAuth2::FacebookOAuth2(Options &options) :
+  OAuth2(options, "facebook", "https://graph.facebook.com/oauth/authorize",
+         "https://graph.facebook.com/oauth/access_token",
+         "https://graph.facebook.com/me?fields=id,name,email,picture,verified",
+         "email") {}
 
 
 SmartPointer<JSON::Value>
 FacebookOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   SmartPointer<JSON::Value> p = new JSON::Dict;
 
-  p->insert("provider", provider);
+  p->insert("provider", getProvider());
   p->insert("id", profile->getString("id"));
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));

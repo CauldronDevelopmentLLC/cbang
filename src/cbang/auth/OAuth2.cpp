@@ -46,7 +46,26 @@ using namespace std;
 using namespace cb;
 
 
-OAuth2::OAuth2(const string &provider) : provider(provider) {}
+OAuth2::OAuth2(Options &options, const string &provider,
+               const string &authURL, const string &tokenURL,
+               const string &profileURL, const string &scope) :
+  provider(provider), authURL(authURL), tokenURL(tokenURL),
+  profileURL(profileURL), scope(scope) {
+
+  options.pushCategory(String::capitalize(provider) + " OAuth2 Login");
+  options.addTarget(provider + "-auth-url", this->authURL, "OAuth2 auth URL");
+  options.addTarget(provider + "-token-url", this->tokenURL,
+                    "OAuth2 token URL");
+  options.addTarget(provider + "-scope", this->scope, "OAuth2 API scope");
+  options.addTarget(provider + "-redirect-base", redirectBase,
+                    "OAuth2 redirect base URL");
+  options.addTarget(provider + "-client-id", clientID, "OAuth2 API client ID");
+  options.addTarget(provider + "-client-secret", clientSecret,
+                    "OAuth2 API client secret")->setObscured();
+  options.popCategory();
+}
+
+
 OAuth2::~OAuth2() {} // Hide destructor
 
 
@@ -120,18 +139,6 @@ string OAuth2::verifyToken(const string &data) const {
 
 string OAuth2::verifyToken(const SmartPointer<JSON::Value> &json) const {
   return json->getString("access_token");
-}
-
-
-void OAuth2::addOptions(Options &options) {
-  options.addTarget(provider + "-auth-url", authURL, "OAuth2 auth URL");
-  options.addTarget(provider + "-token-url", tokenURL, "OAuth2 token URL");
-  options.addTarget(provider + "-redirect-base", redirectBase,
-                    "OAuth2 redirect base URL");
-  options.addTarget(provider + "-client-id", clientID, "OAuth2 API client ID");
-  options.addTarget(provider + "-client-secret", clientSecret,
-                    "OAuth2 API client secret")->setObscured();
-  options.addTarget(provider + "-scope", scope, "OAuth2 API scope");
 }
 
 

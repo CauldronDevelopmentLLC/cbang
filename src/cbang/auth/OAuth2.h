@@ -33,6 +33,7 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
+#include <cbang/json/Value.h>
 
 #include <string>
 
@@ -43,22 +44,20 @@ namespace cb {
   namespace JSON {class Value;}
 
   class OAuth2 {
-  protected:
     std::string provider;
-
     std::string authURL;
     std::string tokenURL;
     std::string profileURL;
+    std::string scope;
     std::string redirectBase;
     std::string clientID;
     std::string clientSecret;
-    std::string scope;
 
   public:
-    OAuth2(const std::string &prefix);
+    OAuth2(Options &options, const std::string &provider,
+           const std::string &authURL = "", const std::string &tokenURL = "",
+           const std::string &profileURL = "", const std::string &scope = "");
     virtual ~OAuth2();
-
-    const std::string &getProvider() const {return provider;}
 
     virtual URI getRedirectURL(const std::string &path,
                                const std::string &state) const;
@@ -73,7 +72,6 @@ namespace cb {
     processProfile(const SmartPointer<JSON::Value> &profile) const = 0;
 
   protected:
-    void addOptions(Options &options);
     void validateOption(const std::string &option,
                         const std::string &name) const;
   };

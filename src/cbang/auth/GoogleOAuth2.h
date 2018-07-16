@@ -45,6 +45,7 @@ namespace cb {
     void setMaxAuthAge(const std::string &x) {maxAuthAge = x;}
 
     // From OAuth2
+    const char *getProvider() const {return "google";}
     SmartPointer<JSON::Value>
     processProfile(const SmartPointer<JSON::Value> &profile) const;
     URI getRedirectURL(const std::string &path, const std::string &state) const;

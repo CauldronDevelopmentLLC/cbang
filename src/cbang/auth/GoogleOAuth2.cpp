@@ -41,16 +41,10 @@ using namespace std;
 
 
 GoogleOAuth2::GoogleOAuth2(Options &options, const string &maxAuthAge) :
-  OAuth2("google"), maxAuthAge(maxAuthAge) {
-  authURL = "https://accounts.google.com/o/oauth2/auth";
-  tokenURL = "https://accounts.google.com/o/oauth2/token";
-  profileURL = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
-  scope = "openid email profile";
-
-  options.pushCategory("Google OAuth2 Login");
-  OAuth2::addOptions(options);
-  options.popCategory();
-}
+  OAuth2(options, "google", "https://accounts.google.com/o/oauth2/auth",
+         "https://accounts.google.com/o/oauth2/token",
+         "https://www.googleapis.com/plus/v1/people/me/openIdConnect",
+         "openid email profile"), maxAuthAge(maxAuthAge) {}
 
 
 URI GoogleOAuth2::getRedirectURL(const string &path,
@@ -65,7 +59,7 @@ SmartPointer<JSON::Value>
 GoogleOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   SmartPointer<JSON::Value> p = new JSON::Dict;
 
-  p->insert("provider", provider);
+  p->insert("provider", getProvider());
   p->insert("id", profile->getString("sub"));
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));

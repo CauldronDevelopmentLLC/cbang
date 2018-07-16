@@ -41,23 +41,17 @@ using namespace cb;
 using namespace std;
 
 
-GitHubOAuth2::GitHubOAuth2(Options &options) : OAuth2("github") {
-  authURL = "https://github.com/login/oauth/authorize";
-  tokenURL = "https://github.com/login/oauth/access_token";
-  profileURL = "https://api.github.com/user";
-  scope = "user:email";
-
-  options.pushCategory("GitHub OAuth2 Login");
-  OAuth2::addOptions(options);
-  options.popCategory();
-}
+GitHubOAuth2::GitHubOAuth2(Options &options) :
+  OAuth2(options, "github", "https://github.com/login/oauth/authorize",
+         "https://github.com/login/oauth/access_token",
+         "https://api.github.com/user", "user:email") {}
 
 
 SmartPointer<JSON::Value>
 GitHubOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   SmartPointer<JSON::Value> p = new JSON::Dict;
 
-  p->insert("provider", provider);
+  p->insert("provider", getProvider());
   p->insert("id", String(profile->getNumber("id")));
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));
