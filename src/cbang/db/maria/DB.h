@@ -228,6 +228,7 @@ namespace cb {
 
       // Non-blocking API
       bool isNonBlocking() const {return nonBlocking;}
+      bool isConnected() const {return connected;}
       bool isPending() const {return status;}
       bool continueNB(unsigned ready);
       bool waitRead() const;

@@ -51,9 +51,9 @@ namespace {
   unsigned event_flags_to_db_ready(unsigned flags) {
     unsigned ready = 0;
 
-    if (flags & Event::EventFlag::EVENT_READ) ready |= DB::READY_READ;
-    if (flags & Event::EventFlag::EVENT_WRITE) ready |= DB::READY_WRITE;
-    if (flags & Event::EventFlag::EVENT_CLOSED) ready |= DB::READY_EXCEPT;
+    if (flags & Event::EventFlag::EVENT_READ)    ready |= DB::READY_READ;
+    if (flags & Event::EventFlag::EVENT_WRITE)   ready |= DB::READY_WRITE;
+    if (flags & Event::EventFlag::EVENT_CLOSED)  ready |= DB::READY_EXCEPT;
     if (flags & Event::EventFlag::EVENT_TIMEOUT) ready |= DB::READY_TIMEOUT;
 
     return ready;
@@ -206,9 +206,9 @@ EventDB::EventDB(Event::Base &base, st_mysql *db) : DB(db), base(base) {}
 
 unsigned EventDB::getEventFlags() const {
   return
-    (waitRead() ? Event::Base::EVENT_READ : 0) |
-    (waitWrite() ? Event::Base::EVENT_WRITE : 0) |
-    (waitExcept() ? Event::Base::EVENT_CLOSED : 0) |
+    (waitRead()    ? Event::Base::EVENT_READ    : 0) |
+    (waitWrite()   ? Event::Base::EVENT_WRITE   : 0) |
+    (waitExcept()  ? Event::Base::EVENT_CLOSED  : 0) |
     (waitTimeout() ? Event::Base::EVENT_TIMEOUT : 0);
 }
 
@@ -249,7 +249,7 @@ void EventDB::connect(const SmartPointer<EventDBCallback> &cb,
 
 
 void EventDB::query(const SmartPointer<EventDBCallback> &cb, const string &s,
-                    const SmartPointer<JSON::Value> &dict) {
+                    const SmartPointer<const JSON::Value> &dict) {
   string query = dict.isNull() ? s : format(s, dict->getDict());
   SmartPointer<QueryCallback> queryCB = new QueryCallback(*this, cb, query);
   if (isPending() || !queryCB->next()) newEvent(queryCB);

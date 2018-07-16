@@ -203,7 +203,7 @@ bool DB::connectNB(const string &host, const string &user,
 
 
 void DB::close() {
-  assertConnected();
+  if (!connected) return;
 
   if (db) {
     mysql_close(db);

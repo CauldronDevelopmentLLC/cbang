@@ -68,7 +68,7 @@ namespace cb {
                    const std::string &socketName = std::string(),
                    flags_t flags = FLAG_NONE);
       void query(const SmartPointer<EventDBCallback> &cb, const std::string &s,
-                 const SmartPointer<JSON::Value> &dict = 0);
+                 const SmartPointer<const JSON::Value> &dict = 0);
 
 
       template <class T>
@@ -96,14 +96,14 @@ namespace cb {
       template <class T>
       void query(T *obj, typename EventDBMemberFunctor<T>::member_t member,
                  const std::string &s,
-                 const SmartPointer<JSON::Value> &dict = 0) {
+                 const SmartPointer<const JSON::Value> &dict = 0) {
         query(new EventDBMemberFunctor<T>(obj, member), s, dict);
       }
 
 
 #if 199711L < __cplusplus
       void query(typename EventDBFunction::func_t cb, const std::string &s,
-                 const SmartPointer<JSON::Value> &dict = 0) {
+                 const SmartPointer<const JSON::Value> &dict = 0) {
         query(new EventDBFunction(cb), s, dict);
       }
 #endif // 199711L < __cplusplus
