@@ -66,6 +66,27 @@ SmartPointer<Option> OptionMap::add(const string &name, const char shortName,
 }
 
 
+void OptionMap::set(const string &name, const string &value, bool setDefault) {
+  if (!autoAdd && !has(name)) {
+    LOG_WARNING("Unrecognized option '" << name << "'");
+    return;
+  }
+
+  Option &option = *localize(name);
+  if (fileTracker.hasFile()) option.setFilename(&fileTracker.getCurrentFile());
+
+  if (setDefault) option.setDefault(value);
+  else if (!allowReset && option.isPlural()) option.append(value);
+  else {
+    if (!allowReset && option.isSet())
+      LOG_WARNING("Option '" << name << "' already set to '" << option
+                  << "' reseting to '" << value << "'.");
+
+    option.set(value);
+  }
+}
+
+
 bool OptionMap::eval(const Context &ctx) {
   if (!has(ctx.args[0])) return StdLibrary::instance().eval(ctx);
 
@@ -77,74 +98,30 @@ bool OptionMap::eval(const Context &ctx) {
 
 
 void OptionMap::startElement(const string &name, const XMLAttributes &attrs) {
-  // Unknown option
-  if (!autoAdd && !has(name)) {
-    LOG_WARNING("Unrecognized option '" << name << "'");
-    return;
-  }
-
   setDefault = attrs.has("default") && attrs["default"] == "true";
-
-  Option &option = *localize(name);
-  option.setFilename(&fileTracker.getCurrentFile());
 
   XMLAttributes::const_iterator it = attrs.find("v");
   if (it == attrs.end()) it = attrs.find("value");
 
   if (it != attrs.end()) {
-    if (setDefault) option.setDefault(it->second);
-    else if (!allowReset && option.isPlural()) option.append(it->second);
-    else {
-      if (!allowReset && option.isSet())
-        LOG_WARNING("Option '" << name << "' already set to '" << option
-                  << "' reseting to '" << it->second << "'.");
-
-      option.set(it->second);
-    }
-
+    set(name, it->second, setDefault);
     xmlValueSet = true;
-
-  } else xmlValueSet = false;
+  }
 
   xmlValue = "";
 }
 
 
 void OptionMap::endElement(const string &name) {
-  // Unknown option
-  if (!autoAdd && !has(name)) return;
-
-  Option &option = *localize(name);
+  xmlValue = String::trim(xmlValue);
 
   if (xmlValue.empty()) {
-    // Empty option assume boolean
-    if (!xmlValueSet) {
-      if (setDefault) option.setDefault(true);
-      else option.set(true);
-    }
+    // Empty option, assume boolean
+    if (!xmlValueSet) set(name, "true");
 
-  } else {
-    if (setDefault) option.setDefault(xmlValue);
-    if (option.isPlural()) {
-      if (allowReset) option.set(String::trim(xmlValue));
-      else option.append(String::trim(xmlValue));
-
-    } else {
-      if (!allowReset && option.isSet())
-        LOG_WARNING("Option '" << name << "' already set to '" << option
-                    << "' reseting to '" << xmlValue << "'.");
-
-      option.set(xmlValue);
-    }
-  }
+  } else set(name, xmlValue, setDefault);
 }
 
 
-void OptionMap::text(const string &text) {
-  xmlValue.append(text);
-}
-
-
-void OptionMap::cdata(const string &data) {
-  xmlValue.append(data);
-}
+void OptionMap::text(const string &text) {xmlValue.append(text);}
+void OptionMap::cdata(const string &data) {xmlValue.append(data);}

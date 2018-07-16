@@ -39,7 +39,7 @@ using namespace cb;
 
 
 const string &XMLFileTracker::getCurrentFile() {
-  if (stack.empty()) THROW("No file set");
+  if (!hasFile()) THROW("No file set");
   return *stack.back();
 }
 

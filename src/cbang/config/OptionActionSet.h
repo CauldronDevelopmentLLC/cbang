@@ -51,9 +51,7 @@ namespace cb {
       return 0;
     }
 
-    void set(const std::string &value) {
-      ref = T::parse(value);
-    }
+    void set(const std::string &value) {ref = T::parse(value);}
   };
 
   template <>

@@ -508,12 +508,7 @@ void Option::writeValue(JSON::Sink &sink, const string &value,
 
 void Option::write(JSON::Sink &sink, bool config, const string &delims) const {
   if (config) {
-    string value = toString();
-
-    if (isObscured() && !(flags & OBSCURED_FLAG))
-      sink.write(string(value.size(), '*'));
-    else writeValue(sink, value, delims);
-
+    writeValue(sink, toString(), delims);
     return;
   }
 
@@ -523,11 +518,7 @@ void Option::write(JSON::Sink &sink, bool config, const string &delims) const {
 
   if (hasValue()) {
     sink.beginInsert("value");
-    string value = toString();
-
-    if (isObscured() && !(flags & OBSCURED_FLAG))
-      sink.write(string(value.size(), '*'));
-    else writeValue(sink, value, delims);
+    writeValue(sink, toString(), delims);
   }
 
   if (hasDefault()) {
@@ -551,9 +542,7 @@ void Option::write(XMLHandler &handler, uint32_t flags) const {
   XMLAttributes attrs;
 
   string value = toString();
-  if (isObscured() && !(flags & OBSCURED_FLAG))
-    value = string(value.size(), '*');
-
+  if (isObscured() && !(flags & OBSCURED_FLAG)) value = string(5, '*');
   if (!isPlural()) attrs["v"] = value;
 
   handler.startElement(name, attrs);

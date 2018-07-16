@@ -32,21 +32,19 @@
 
 #pragma once
 
+#include "OptionMap.h"
+#include "OptionCategory.h"
+
+#include <cbang/json/Serializable.h>
+
 #include <string>
 #include <vector>
 #include <map>
 
-#include "OptionMap.h"
-#include "OptionCategory.h"
 
 namespace cb {
-  namespace JSON {
-    class Dict;
-    class Sink;
-  }
-
   /// A container class for a set of configuration options
-  class Options : public OptionMap {
+  class Options : public OptionMap, public JSON::Serializable {
     typedef std::map<const std::string, SmartPointer<Option> > map_t;
     map_t map;
 
@@ -78,7 +76,7 @@ namespace cb {
     virtual void insert(JSON::Sink &sink, bool config = false,
                         const std::string &delims =
                         Option::DEFAULT_DELIMS) const;
-    virtual void write(JSON::Sink &sink, bool config = false,
+    virtual void write(JSON::Sink &sink, bool config,
                        const std::string &delims =
                        Option::DEFAULT_DELIMS) const;
     virtual void write(XMLHandler &handler, uint32_t flags = 0) const;
@@ -88,8 +86,8 @@ namespace cb {
                            const std::string &prefix = std::string()) const;
     virtual const char *getHelpStyle() const;
     virtual void printHelpPage(XMLHandler &handler) const;
-    virtual SmartPointer<JSON::Dict> getDict(bool defaults = false,
-                                             bool all = false) const;
+    virtual SmartPointer<JSON::Value> getDict(bool defaults = false,
+                                              bool all = false) const;
 
     virtual const SmartPointer<OptionCategory> &
     getCategory(const std::string &name);
@@ -104,6 +102,10 @@ namespace cb {
     virtual bool has(const std::string &key) const;
     virtual const SmartPointer<Option> &get(const std::string &key) const;
     virtual void alias(const std::string &name, const std::string &alias);
+
+    // From JSON::Serializable
+    void read(const JSON::Value &value);
+    void write(JSON::Sink &sink) const {write(sink, false);}
 
     static std::string cleanKey(const std::string &key);
   };

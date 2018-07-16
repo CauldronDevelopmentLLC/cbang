@@ -46,6 +46,7 @@ namespace cb {
     stack_t stack;
 
   public:
+    bool hasFile() const {return !stack.empty();}
     const std::string &getCurrentFile();
 
     // From XMLHandler

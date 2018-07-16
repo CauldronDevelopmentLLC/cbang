@@ -39,6 +39,7 @@
 
 #include <cbang/json/Dict.h>
 #include <cbang/json/Sink.h>
+#include <cbang/json/Builder.h>
 
 #include <cbang/log/Logger.h>
 
@@ -171,8 +172,10 @@ void Options::printHelp(ostream &stream, bool cmdLine) const {
 }
 
 
-SmartPointer<JSON::Dict> Options::getDict(bool defaults, bool all) const {
-  SmartPointer<JSON::Dict> dict = new JSON::Dict;
+SmartPointer<JSON::Value> Options::getDict(bool defaults, bool all) const {
+  JSON::Builder sink;
+
+  sink.beginDict();
 
   for (const_iterator it = begin(); it != end(); it++) {
     Option &option = *it->second;
@@ -180,11 +183,14 @@ SmartPointer<JSON::Dict> Options::getDict(bool defaults, bool all) const {
     if (!all && !option.isSet() && (!defaults || !option.hasValue()))
       continue;
 
-    if (option.hasValue()) dict->insert(option.getName(), option.toString());
-    else dict->insertNull(option.getName());
+    sink.beginInsert(option.getName());
+    if (option.hasValue()) option.write(sink, true);
+    else sink.writeNull();
   }
 
-  return dict;
+  sink.endDict();
+
+  return sink.getRoot();
 }
 
 
@@ -297,6 +303,30 @@ void Options::printHelpPage(XMLHandler &handler) const {
 
   handler.endElement("body");
   handler.endElement("html");
+}
+
+
+void Options::read(const JSON::Value &options) {
+  for (unsigned i = 0; i < options.size(); i++) {
+    string name = options.keyAt(i);
+
+    if (!has(name)) {
+      LOG_WARNING("Unrecognized option '" << name << "'");
+      continue;
+    }
+
+    JSON::ValuePtr value = options.get(i);
+
+    if (value->isList()) {
+      string s;
+      for (unsigned j = 0; j < value->size(); j++) {
+        if (j) s += " ";
+        s += value->get(j)->asString();
+      }
+      set(name, s);
+
+    } else set(name, value->asString());
+  }
 }
 
 

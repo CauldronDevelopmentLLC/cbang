@@ -106,6 +106,8 @@ namespace cb {
     }
 
     Option &operator[](const std::string &key) const {return *get(key);}
+    void set(const std::string &name, const std::string &value,
+             bool setDefault = false);
 
     // Virtual interface
     virtual void add(const std::string &name, SmartPointer<Option> option) = 0;
