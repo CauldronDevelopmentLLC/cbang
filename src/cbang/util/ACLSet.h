@@ -32,10 +32,11 @@
 
 #pragma once
 
+#include <cbang/json/Serializable.h>
+
 #include <map>
 #include <set>
 #include <string>
-#include <iostream>
 
 
 namespace cb {
@@ -44,7 +45,7 @@ namespace cb {
     class Value;
   }
 
-  class ACLSet {
+  class ACLSet : public JSON::Serializable {
     mutable bool dirty;
     typedef std::map<std::string, bool> cache_users_t;
     typedef std::map<std::string, cache_users_t> cache_t;
@@ -122,12 +123,11 @@ namespace cb {
     void aclAddGroup(const std::string &path, const std::string &group);
     void aclDelGroup(const std::string &path, const std::string &group);
 
-    // IO
+    // From JSON::Serializable
+    void read(const JSON::Value &value);
     void write(JSON::Sink &sink) const;
-    void set(const JSON::Value &json);
-
-    void write(std::ostream &stream) const;
-    void read(std::istream &stream);
+    using cb::Serializable::read;
+    using cb::Serializable::write;
 
   protected:
     bool flushDirtyCache() const;
