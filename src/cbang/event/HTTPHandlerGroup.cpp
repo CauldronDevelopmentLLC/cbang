@@ -31,9 +31,6 @@
 \******************************************************************************/
 
 #include "HTTPHandlerGroup.h"
-#include "HTTPMatcher.h"
-#include "ResourceHTTPHandler.h"
-#include "FileHandler.h"
 
 using namespace cb::Event;
 using namespace cb;

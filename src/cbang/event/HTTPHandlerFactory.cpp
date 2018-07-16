@@ -32,7 +32,8 @@
 
 #include "HTTPHandlerFactory.h"
 
-#include "HTTPRE2Matcher.h"
+#include "HTTPMethodMatcher.h"
+#include "HTTPRE2PatternMatcher.h"
 #include "ResourceHTTPHandler.h"
 #include "FileHandler.h"
 #include "IndexHTMLHandler.h"
@@ -46,7 +47,15 @@ SmartPointer<HTTPHandler>
 HTTPHandlerFactory::createMatcher(unsigned methods, const string &search,
                                   const string &replace,
                                   const SmartPointer<HTTPHandler> &child) {
-  return new HTTPRE2Matcher(methods, search, replace, child);
+  SmartPointer<HTTPHandler> handler = child;
+
+  if (!search.empty())
+    handler = new HTTPRE2PatternMatcher(search, replace, handler);
+
+  if (methods != (unsigned)RequestMethod::HTTP_ANY)
+    handler = new HTTPMethodMatcher(methods, handler);
+
+  return handler;
 }
 
 
