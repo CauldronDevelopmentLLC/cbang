@@ -37,9 +37,7 @@ using namespace std;
 using namespace cb::JSON;
 
 
-void Sink::write(const Value &value) {
-  value.write(*this);
-}
+void Sink::write(const Value &value) {value.write(*this);}
 
 
 void Sink::append(const Value &value) {
