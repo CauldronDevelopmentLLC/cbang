@@ -206,6 +206,17 @@ namespace cb {
     integers_t toIntegers(const std::string &delims = DEFAULT_DELIMS) const;
     doubles_t toDoubles(const std::string &delims = DEFAULT_DELIMS) const;
 
+    bool toBoolean(bool defaultValue) const;
+    const std::string &toString(const std::string &defaultValue) const;
+    int64_t toInteger(int64_t defaultValue) const;
+    double toDouble(double defaultValue) const;
+    strings_t toStrings(const strings_t &defaultValue,
+                        const std::string &delims = DEFAULT_DELIMS) const;
+    integers_t toIntegers(const integers_t &defaultValue,
+                          const std::string &delims = DEFAULT_DELIMS) const;
+    doubles_t toDoubles(const doubles_t &defaultValue,
+                        const std::string &delims = DEFAULT_DELIMS) const;
+
     static bool parseBoolean(const std::string &value);
     static int64_t parseInteger(const std::string &value);
     static double parseDouble(const std::string &value);

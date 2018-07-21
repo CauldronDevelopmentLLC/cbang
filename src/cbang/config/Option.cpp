@@ -292,6 +292,44 @@ Option::doubles_t Option::toDoubles(const string &delims) const {
 }
 
 
+bool Option::toBoolean(bool defaultValue) const {
+  return hasValue() ? toBoolean() : defaultValue;
+}
+
+
+const string &Option::toString(const string &defaultValue) const {
+  return hasValue() ? toString() : defaultValue;
+}
+
+
+int64_t Option::toInteger(int64_t defaultValue) const {
+  return hasValue() ? toInteger() : defaultValue;
+}
+
+
+double Option::toDouble(double defaultValue) const {
+  return hasValue() ? toDouble() : defaultValue;
+}
+
+
+Option::strings_t Option::toStrings(const strings_t &defaultValue,
+                                    const string &delims) const {
+  return hasValue() ? toStrings(delims) : defaultValue;
+}
+
+
+Option::integers_t Option::toIntegers(const integers_t &defaultValue,
+                                      const string &delims) const {
+  return hasValue() ? toIntegers(delims) : defaultValue;
+}
+
+
+Option::doubles_t Option::toDoubles(const doubles_t &defaultValue,
+                                    const string &delims) const {
+  return hasValue() ? toDoubles(delims) : defaultValue;
+}
+
+
 bool Option::parseBoolean(const string &value) {
   return String::parseBool(value);
 }
