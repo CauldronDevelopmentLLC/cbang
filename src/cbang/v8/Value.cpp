@@ -119,6 +119,8 @@ SmartPointer<js::Value> Value::makePersistent() const {
 
 string Value::toString() const {
   if (isUndefined()) return "undefined";
+  if (isFunction()) return SSTR("function " << getName() << "() {...}");
+
   // TODO this is not very efficient
   v8::String::Utf8Value s(value);
   return *s ? string(*s, s.length()) : "(null)";
@@ -169,7 +171,7 @@ unsigned Value::length() const {
 }
 
 
-Value Value::call(Value arg0, vector<Value> args) {
+Value Value::call(Value arg0, const vector<Value> &args) const {
   if (!isFunction()) THROWS("Value is not a function");
 
   SmartPointer<v8::Handle<v8::Value> >::Array argv =
@@ -182,6 +184,16 @@ Value Value::call(Value arg0, vector<Value> args) {
     Call(arg0.getV8Value()->ToObject(), args.size(), argv.get());
 
   return 0;
+}
+
+
+SmartPointer<js::Value>
+Value::call(const vector<SmartPointer<js::Value> > &_args) const {
+  vector<Value> args;
+  for (unsigned i = 0; i < _args.size(); i++)
+    args.push_back(Value(*_args[i]));
+
+  return new Value(call(*this, args));
 }
 
 

@@ -32,6 +32,8 @@
 
 #include "Javascript.h"
 
+#include "Value.h"
+
 #ifdef HAVE_V8
 #include <cbang/v8/JSImpl.h>
 #endif
@@ -138,9 +140,17 @@ SmartPointer<js::Value> Javascript::eval(const InputSource &source) {
 void Javascript::interrupt() {impl->interrupt();}
 
 
-SmartPointer<Value> Javascript::require(Callback &cb, Value &args) {
-  string id = args.getString(0);
+string Javascript::stringify(Value &value) {
+  SmartPointer<Scope> scope = impl->newScope();
+  SmartPointer<Value> f =
+    scope->getGlobalObject()->get("JSON")->get("stringify");
+  vector<SmartPointer<Value> > args;
+  args.push_back(SmartPointer<Value>::Phony(&value));
+  return f->call(args)->toString();
+}
 
+
+SmartPointer<Value> Javascript::require(const string &id) {
   modules_t::iterator it = modules.find(id);
   if (it != modules.end()) return it->second->getExports();
 
@@ -201,4 +211,9 @@ SmartPointer<Value> Javascript::require(Callback &cb, Value &args) {
   module->setExports(exports->makePersistent());
 
   return exports;
+}
+
+
+SmartPointer<Value> Javascript::require(Callback &cb, Value &args) {
+  return require(args.getString(0));
 }

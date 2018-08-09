@@ -53,7 +53,7 @@ namespace {
   void print(ostream &stream, const Value &args) {
     for (unsigned i = 0; i < args.length(); i++) {
       if (i) stream << ' ';
-      stream << args.getString(i); // TODO Call JSON.stringify()
+      stream << args.getString(i);
     }
   }
 }

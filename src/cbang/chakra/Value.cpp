@@ -242,11 +242,19 @@ void Value::set(const string &key, const Value &value, bool strict) {
 }
 
 
-Value Value::call(vector<Value> _args) const {
-  vector<JsValueRef> args(_args.begin(), _args.end());
+SmartPointer<js::Value>
+Value::call(const vector<SmartPointer<js::Value> > &_args) const {
+  vector<JsValueRef> args;
+
+  for (unsigned i = 0; i < _args.size(); i++)  {
+    const Value *v = dynamic_cast<const Value *>(_args[i].get());
+    if (!v) THROW("Not a Chakra Value");
+    args.push_back(*v);
+  }
+
   JsValueRef ref;
   CHAKRA_CHECK(JsCallFunction(this->ref, &args[0], args.size(), &ref));
-  return ref;
+  return new Value(ref);
 }
 
 

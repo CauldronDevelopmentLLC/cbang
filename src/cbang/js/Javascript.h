@@ -65,6 +65,10 @@ namespace cb {
       SmartPointer<js::Value> eval(const InputSource &source);
       void interrupt();
 
+      std::string stringify(Value &value);
+
+      SmartPointer<Value> require(const std::string &id);
+
       // Callbacks
       SmartPointer<Value> require(Callback &cb, Value &args);
     };

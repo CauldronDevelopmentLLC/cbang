@@ -90,7 +90,8 @@ namespace cb {
       void set(int i, const Value &value);
       void append(const Value &value);
       void set(const std::string &key, const Value &value, bool strict = false);
-      Value call(std::vector<Value> args) const;
+      SmartPointer<js::Value>
+      call(const std::vector<SmartPointer<js::Value> > &args) const;
 
       SmartPointer<js::Value> getOwnPropertyNames() const;
 

@@ -52,6 +52,8 @@ SmartPointer<Value> StdModule::require(Callback &cb, Value &args) {
 void StdModule::print(const Value &args, Sink &sink) {
   for (unsigned i = 0; i < args.length(); i++) {
     if (i) *stream << ' ';
-    *stream << args.get(i)->toString();
+    SmartPointer<Value> arg = args.get(i);
+    if (arg->isObject() && !arg->isFunction()) *stream << js.stringify(*arg);
+    else *stream << arg->toString();
   }
 }

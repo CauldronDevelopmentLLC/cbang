@@ -34,6 +34,7 @@
 
 #include <cbang/SmartPointer.h>
 
+#include <vector>
 #include <ostream>
 
 
@@ -87,6 +88,10 @@ namespace cb {
       {return get(key)->toString();}
       SmartPointer<Value> operator[](const std::string &key) const
       {return get(key);}
+
+      // Function accessors
+      virtual SmartPointer<Value>
+      call(const std::vector<SmartPointer<Value> > &args) const = 0;
 
       // Write interface
       virtual void set(int i, const Value &value) = 0;

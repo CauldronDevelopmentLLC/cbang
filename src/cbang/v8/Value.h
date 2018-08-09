@@ -132,7 +132,9 @@ namespace cb {
 
       // Function
       bool isFunction() const {return value->IsFunction();}
-      Value call(Value arg0, std::vector<Value> args);
+      Value call(Value arg0, const std::vector<Value> &args) const;
+      SmartPointer<js::Value>
+      call(const std::vector<SmartPointer<js::Value> > &args) const;
       std::string getName() const;
       void setName(const std::string &name);
       int getScriptLineNumber() const;
