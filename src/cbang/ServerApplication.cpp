@@ -123,7 +123,7 @@ int ServerApplication::init(int argc, char *argv[]) {
     }
 #endif
 
-    if (options["pid"].toBoolean()) {
+    if (options["pid"].toBoolean() || options["pid-file"].isSet()) {
       // Try to acquire an exclusive lock
       new ProcessLock(options["pid-file"], 10); // OK to leak
       LOG_INFO(1, "Acquired exclusive lock on " << options["pid-file"]);
@@ -152,16 +152,18 @@ int ServerApplication::init(int argc, char *argv[]) {
     }
   }
 
-  try {
+  // Set group and user.
+  if (!options["respawn"].toBoolean() || options["child"].toBoolean()) {
     if (options["set-group"].hasValue()) {
       LOG_INFO(1, "Switching to group " << options["set-group"]);
       SystemUtilities::setGroup(options["set-group"]);
     }
+
     if (options["run-as"].hasValue()) {
       LOG_INFO(1, "Switching to user " << options["run-as"]);
       SystemUtilities::setUser(options["run-as"]);
     }
-  } CBANG_CATCH_ERROR;
+  }
 #endif
 
   if (!options["child"].toBoolean() && options["respawn"].toBoolean()) {
