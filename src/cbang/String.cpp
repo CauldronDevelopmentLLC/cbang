@@ -775,20 +775,6 @@ string String::unescapeC(const string &s) {
 }
 
 
-string String::join(const vector<string> &s, const string &delim) {
-  string result;
-
-  // TODO Could probably be done more efficiently
-
-  for (unsigned i = 0; i < s.size(); i++) {
-    if (i) result.append(delim);
-    result.append(s[i]);
-  }
-
-  return result;
-}
-
-
 string String::ellipsis(const string &s, unsigned width) {
   if (s.length() <= width) return s;
   return s.substr(0, width - 3) + "...";

@@ -37,6 +37,7 @@
 #include <string>
 #include <vector>
 #include <istream>
+#include <sstream>
 
 #include <stdarg.h>
 
@@ -154,8 +155,39 @@ namespace cb {
     static void escapeC(std::string &result, int c);
     static std::string escapeC(const std::string &s);
     static std::string unescapeC(const std::string &s);
-    static std::string join(const std::vector<std::string> &s,
-                            const std::string &delim = " ");
+
+
+    template <class I> static
+    void join(std::ostream &stream, I begin, I end,
+              const std::string &delim = " ") {
+      for (I it = begin; it != end; it++) {
+        if (it != begin) stream << delim;
+        stream << *it;
+      }
+    }
+
+
+    template <class I> static
+    std::string join(I begin, I end, const std::string &delim = " ") {
+      std::ostringstream stream;
+      join(stream, begin, end, delim);
+      return stream.str();
+    }
+
+
+    template <class T> static
+    std::string join(const T &s, const std::string &delim = " ") {
+      return join(s.begin(), s.end(), delim);
+    }
+
+
+    template <class T> static
+    void join(std::ostream &stream, const T &s,
+              const std::string &delim = " ") {
+      join(stream, s.begin(), s.end(), delim);
+    }
+
+
     static std::string ellipsis(const std::string &s, unsigned width = 80);
 
     /// Regular expression find
