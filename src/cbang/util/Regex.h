@@ -71,6 +71,8 @@ namespace cb {
 
     Regex(const std::string &pattern, type_t type = TYPE_POSIX);
 
+    std::string toString() const;
+
     bool match(const std::string &s) const;
     bool match(const std::string &s, Match &m) const;
 

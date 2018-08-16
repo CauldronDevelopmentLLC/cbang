@@ -96,6 +96,9 @@ Regex::Regex(const string &pattern, type_t type) :
   pri(new private_t(pattern)), type(type) {}
 
 
+string Regex::toString() const {return pri->re.str();}
+
+
 bool Regex::match(const string &s) const {
   try {
     return boost::regex_match(s, pri->re);
