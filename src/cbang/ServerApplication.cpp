@@ -74,6 +74,7 @@ ServerApplication::ServerApplication(const string &name,
 
   options.pushCategory("Process Control");
 #ifndef _WIN32
+  options.add("set-group", "Run in specified group");
   options.add("run-as", "Run as specified user");
   options.add("fork", "Run in background.")->setDefault(false);
 #endif
@@ -152,6 +153,10 @@ int ServerApplication::init(int argc, char *argv[]) {
   }
 
   try {
+    if (options["set-group"].hasValue()) {
+      LOG_INFO(1, "Switching to group " << options["set-group"]);
+      SystemUtilities::setGroup(options["set-group"]);
+    }
     if (options["run-as"].hasValue()) {
       LOG_INFO(1, "Switching to user " << options["run-as"]);
       SystemUtilities::setUser(options["run-as"]);

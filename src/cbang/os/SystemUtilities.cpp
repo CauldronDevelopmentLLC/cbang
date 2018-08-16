@@ -70,6 +70,7 @@
 #include <sys/times.h>
 #include <sys/wait.h>
 #include <pwd.h>
+#include <grp.h>
 #endif // _WIN32
 
 #ifdef __FreeBSD__
@@ -898,6 +899,31 @@ namespace cb {
       } catch (const Exception &e) {} // Ignore
 
       return false;
+    }
+
+
+    void setGroup(const string &group) {
+#ifdef _WIN32
+      THROW("setGroup() not supported on Windows systems.");
+#else
+      unsigned gid;
+
+      try {
+        gid = String::parseU32(group);
+      } catch (const Exception &e) {
+        gid = 0;
+      }
+
+      if (!gid) {
+        // TODO this call is not reentrable
+        struct group *entry = getgrnam(group.c_str());
+        if (!entry) THROWS("Could not find group '" << group << "'");
+        gid = entry->gr_gid;
+      }
+
+      if (setgid(gid) == -1)
+        THROWS("Failed to set group ID to " << gid << ": " << SysError());
+#endif
     }
 
 
