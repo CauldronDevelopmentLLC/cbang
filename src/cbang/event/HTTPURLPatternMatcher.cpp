@@ -30,65 +30,36 @@
 
 \******************************************************************************/
 
-#include "HTTPRE2PatternMatcher.h"
+#include "HTTPURLPatternMatcher.h"
 
-#include <cbang/Exception.h>
-#include <cbang/event/Request.h>
-#include <cbang/event/RestoreURIPath.h>
+#include <cbang/String.h>
 #include <cbang/log/Logger.h>
 
-#include <vector>
-
 using namespace std;
-using namespace cb;
 using namespace cb::Event;
 
 
-HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
-(const string &search, const string &replace,
- const SmartPointer<HTTPHandler> &child) :
-  regex(search), replace(replace), child(child) {
-  if (regex.error_code()) THROWS("Failed to compile RE2: " << regex.error());
-}
+HTTPURLPatternMatcher::HTTPURLPatternMatcher
+(const string &pattern, const SmartPointer<HTTPHandler> &child) {
+  string rePattern;
 
+  if (!pattern.empty() && pattern[0] == '^') rePattern = pattern;
+  else {
+    vector<string> parts;
+    String::tokenize(pattern, parts, "/");
 
-bool HTTPRE2PatternMatcher::operator()(Request &req) {
-  int n = regex.NumberOfCapturingGroups();
-  vector<RE2::Arg> args(n);
-  vector<RE2::Arg *> argPtrs(n);
-  vector<string> results(n);
+    for (unsigned i = 0; i < parts.size(); i++)
+      if (!parts[i].empty() && parts[i][0] == ':') {
+        string arg = parts[i].substr(1);
+        if (!args.insert(arg).second)
+          THROWS("Duplicate argument '" << arg << "' in URL pattern: "
+                 << pattern);
+        rePattern += "/(?P<" + arg + ">[^/]*)";
 
-  // Connect args
-  for (int i = 0; i < n; i++) {
-    args[i] = &results[i];
-    argPtrs[i] = &args[i];
+      } else rePattern += "/" + parts[i];
   }
 
-  // Attempt match
-  URI &uri = req.getURI();
-  string path = uri.getPath();
-  if (!RE2::FullMatchN(path, regex, argPtrs.data(), n))
-    return false;
+  LOG_DEBUG(5, "HTTPURLPatternMatcher() " << pattern << " -> " << rePattern);
 
-  LOG_DEBUG(5, path << " matched " << regex.pattern());
-
-  if (child.isNull()) return true;
-
-  // Store results
-  const map<int, string> &names = regex.CapturingGroupNames();
-  for (int i = 0; i < n; i++) {
-    if (results[i].empty()) continue;
-
-    if (names.find(i + 1) != names.end())
-      req.insertArg(names.at(i + 1), results[i]);
-    else req.insertArg(results[i]);
-  }
-
-  // Replace path
-  RestoreURIPath restoreURIPath(uri);
-  if (!replace.empty() && RE2::Replace(&path, regex, replace))
-    uri.setPath(path);
-
-  // Call child
-  return (*child)(req);
+  matcher = new HTTPRE2PatternMatcher(rePattern, "", child);
 }

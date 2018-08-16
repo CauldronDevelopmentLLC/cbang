@@ -35,6 +35,7 @@
 #include "Buffer.h"
 
 #include <cbang/os/SystemUtilities.h>
+#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb;
@@ -51,10 +52,12 @@ bool FileHandler::operator()(Request &req) {
 
   if (directory) {
     // Relative to root
-    // TODO protect against .. attacks
+    // Note, libevent protects us against .. attacks
     path = SystemUtilities::joinPath(root, req.getURI().getPath());
 
   } else path = root; // Single file
+
+  LOG_INFO(5, "FileHandler() " << path);
 
   if (!SystemUtilities::isFile(path)) return false;
 

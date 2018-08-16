@@ -94,6 +94,8 @@ namespace cb {
 
       bufferevent *bevCB(event_base *base);
       void requestCB(HTTPHandler &handler, evhttp_request *req);
+
+      static bool dispatch(HTTPHandler &handler, Request &req);
     };
   }
 }

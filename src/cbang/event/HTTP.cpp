@@ -204,24 +204,32 @@ void HTTP::requestCB(HTTPHandler &handler, evhttp_request *_req) {
     req->setIncoming(true);
 
     // Dispatch request
-    try {
-      if (!handler(*req)) req->sendError(HTTPStatus::HTTP_NOT_FOUND);
-
-    } catch (cb::Exception &e) {
-      req->sendError(e.getCode(), e.getMessage());
-      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
-      LOG_DEBUG(3, e);
-
-    } catch (std::exception &e) {
-      req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
-      LOG_ERROR(e.what());
-
-    } catch (...) {
-      req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
-      LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
-                .getDescription());
-    }
+    dispatch(handler, *req);
   } CATCH_ERROR;
 
   if (req) handler.endRequestEvent(req);
+}
+
+
+bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
+  try {
+    if (handler(req)) return true;
+    else req.sendError(HTTPStatus::HTTP_NOT_FOUND);
+
+  } catch (cb::Exception &e) {
+    req.sendError(e.getCode(), e.getMessage());
+    if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
+    LOG_DEBUG(3, e);
+
+  } catch (std::exception &e) {
+    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
+    LOG_ERROR(e.what());
+
+  } catch (...) {
+    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
+    LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
+              .getDescription());
+  }
+
+  return false;
 }

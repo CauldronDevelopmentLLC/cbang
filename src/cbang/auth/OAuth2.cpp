@@ -69,6 +69,12 @@ OAuth2::OAuth2(Options &options, const string &provider,
 OAuth2::~OAuth2() {} // Hide destructor
 
 
+bool OAuth2::isConfigured() const {
+  return !(authURL.empty() || tokenURL.empty() || scope.empty() ||
+           redirectBase.empty() || clientID.empty() || clientSecret.empty());
+}
+
+
 URI OAuth2::getRedirectURL(const string &path, const string &state) const {
   // Check config
   validateOption(clientID, "client-id");

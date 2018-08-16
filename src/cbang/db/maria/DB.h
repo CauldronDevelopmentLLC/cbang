@@ -49,6 +49,7 @@ namespace cb {
   namespace JSON {
     class Sink;
     class Dict;
+    class Value;
   }
 
   namespace MariaDB {
@@ -174,6 +175,9 @@ namespace cb {
       void writeRowList(JSON::Sink &sink, int first = 0, int last = -1) const;
       void writeRowDict(JSON::Sink &sink, int first = 0, int last = -1,
                         bool withNulls = true) const;
+      SmartPointer<JSON::Value> getRowList(int first = 0, int last = -1) const;
+      SmartPointer<JSON::Value> getRowDict(int first = 0, int last = -1,
+                                           bool withNulls = true) const;
 
       // Field
       Field getField(unsigned i) const;

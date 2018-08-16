@@ -34,6 +34,8 @@
 
 #include "HTTPHandler.h"
 
+#include <set>
+
 #include <re2/re2.h>
 
 
@@ -47,10 +49,10 @@ namespace cb {
     public:
       HTTPRE2PatternMatcher(const std::string &search,
                             const std::string &replace,
-                            const cb::SmartPointer<HTTPHandler> &child);
+                            const SmartPointer<HTTPHandler> &child);
 
       // From cb::Event::HTTPHandler
-      bool operator()(cb::Event::Request &req);
+      bool operator()(Request &req);
     };
   }
 }

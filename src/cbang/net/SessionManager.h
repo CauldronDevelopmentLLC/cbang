@@ -64,7 +64,7 @@ namespace cb {
     virtual SmartPointer<Session> lookupSession(const std::string &sid) const;
     virtual SmartPointer<Session> openSession(const IPAddress &ip);
     virtual void closeSession(const std::string &sid);
-
+    virtual void addSession(const SmartPointer<Session> &session);
     virtual void cleanup();
 
     typedef sessions_t::const_iterator iterator;

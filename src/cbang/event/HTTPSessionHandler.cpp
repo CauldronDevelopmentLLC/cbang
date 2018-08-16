@@ -30,65 +30,34 @@
 
 \******************************************************************************/
 
-#include "HTTPRE2PatternMatcher.h"
+#include "HTTPSessionHandler.h"
 
-#include <cbang/Exception.h>
-#include <cbang/event/Request.h>
-#include <cbang/event/RestoreURIPath.h>
+#include "Request.h"
+
+#include <cbang/net/SessionManager.h>
 #include <cbang/log/Logger.h>
 
-#include <vector>
-
 using namespace std;
-using namespace cb;
 using namespace cb::Event;
 
 
-HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
-(const string &search, const string &replace,
- const SmartPointer<HTTPHandler> &child) :
-  regex(search), replace(replace), child(child) {
-  if (regex.error_code()) THROWS("Failed to compile RE2: " << regex.error());
-}
+bool HTTPSessionHandler::operator()(Request &req) {
+  // Check if Session is already loaded
+  if (!req.getSession().isNull()) return false;
 
+  // Get session ID
+  string sid = req.getSessionID(sessionManager->getSessionCookie(), header);
+  if (sid.empty()) return false;
 
-bool HTTPRE2PatternMatcher::operator()(Request &req) {
-  int n = regex.NumberOfCapturingGroups();
-  vector<RE2::Arg> args(n);
-  vector<RE2::Arg *> argPtrs(n);
-  vector<string> results(n);
+  // Get session
+  try {
+    req.setSession(sessionManager->lookupSession(sid));
 
-  // Connect args
-  for (int i = 0; i < n; i++) {
-    args[i] = &results[i];
-    argPtrs[i] = &args[i];
-  }
-
-  // Attempt match
-  URI &uri = req.getURI();
-  string path = uri.getPath();
-  if (!RE2::FullMatchN(path, regex, argPtrs.data(), n))
+  } catch (const Exception &) {
     return false;
-
-  LOG_DEBUG(5, path << " matched " << regex.pattern());
-
-  if (child.isNull()) return true;
-
-  // Store results
-  const map<int, string> &names = regex.CapturingGroupNames();
-  for (int i = 0; i < n; i++) {
-    if (results[i].empty()) continue;
-
-    if (names.find(i + 1) != names.end())
-      req.insertArg(names.at(i + 1), results[i]);
-    else req.insertArg(results[i]);
   }
 
-  // Replace path
-  RestoreURIPath restoreURIPath(uri);
-  if (!replace.empty() && RE2::Replace(&path, regex, replace))
-    uri.setPath(path);
+  LOG_DEBUG(3, "User: " << req.getUser());
 
-  // Call child
-  return (*child)(req);
+  return false;
 }

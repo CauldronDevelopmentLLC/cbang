@@ -101,6 +101,9 @@ namespace cb {
       const SmartPointer<Session> &getSession() const {return session;}
       void setSession(const SmartPointer<Session> &session)
       {this->session = session;}
+      std::string
+      getSessionID(const std::string &cookie = "sid",
+                   const std::string &header = "Authorization") const;
 
       const std::string &getUser() const;
       void setUser(const std::string &user);

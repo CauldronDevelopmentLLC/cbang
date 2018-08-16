@@ -46,6 +46,26 @@ Session::Session(const string &id, const IPAddress &ip) {
 }
 
 
+uint64_t Session::getCreationTime() const {
+  return Time::parse(getString("created"));
+}
+
+
+void Session::setCreationTime(uint64_t creationTime) {
+  insert("created", Time(creationTime).toString());
+}
+
+
+uint64_t Session::getLastUsed() const {
+  return Time::parse(getString("last_used"));
+}
+
+
+void Session::setLastUsed(uint64_t lastUsed) {
+  insert("last_used", Time(lastUsed).toString());
+}
+
+
 void Session::matchIP(const IPAddress &ip) const {
   if (ip.getIP() != getIP().getIP())
     THROWS("Session IP changed from " << getIP() << " to " << ip);

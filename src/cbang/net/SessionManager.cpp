@@ -70,7 +70,7 @@ string SessionManager::generateID(const IPAddress &ip) {
   digest.updateWith(Time::now());
   digest.updateWith(Random::instance().rand<uint64_t>());
 
-  return digest.toHexString();
+  return digest.toBase64();
 #else
 
   return SSTR("0x" << hex << Random::instance().rand<uint64_t>());
@@ -93,8 +93,12 @@ bool SessionManager::hasSession(const string &sid) const {
 
 SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
   iterator it = sessions.find(sid);
-  if (it == end() || isExpired(*it->second))
-    THROWS("Session ID '" << sid << "' does not exist");
+  if (it == end()) THROWS("Session ID '" << sid << "' does not exist");
+  if (isExpired(*it->second))
+    THROWS("Session ID '" << sid << "' has expired, last_used="
+           << Time(it->second->getLastUsed()).toString() << " created="
+           << Time(it->second->getCreationTime()).toString() << " now="
+           << Time().toString());
 
   it->second->touch(); // Update timestamp
 
@@ -103,18 +107,25 @@ SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
 
 
 SmartPointer<Session> SessionManager::openSession(const IPAddress &ip) {
-  // Generate new session ID
-  string sid = generateID(ip);
-
   // Create new session
-  SmartPointer<Session> session = new Session(sid, ip);
+  SmartPointer<Session> session = new Session(generateID(ip), ip);
 
   // Insert
-  return sessions.insert(sessions_t::value_type(sid, session)).first->second;
+  addSession(session);
+
+  return session;
 }
 
 
 void SessionManager::closeSession(const string &sid) {sessions.erase(sid);}
+
+
+void SessionManager::addSession(const SmartPointer<Session> &session) {
+  pair<sessions_t::iterator, bool> result =
+    sessions.insert(sessions_t::value_type(session->getID(), session));
+
+  if (!result.second) result.first->second = session;
+}
 
 
 void SessionManager::cleanup() {
@@ -129,11 +140,7 @@ void SessionManager::read(const JSON::Value &value) {
   for (unsigned i = 0; i < value.size(); i++) {
     SmartPointer<Session> session = new Session(*value.get(i));
     session->setID(value.keyAt(i));
-
-    pair<sessions_t::iterator, bool> result =
-      sessions.insert(sessions_t::value_type(value.keyAt(i), session));
-
-    if (!result.second) result.first->second = session;
+    addSession(session);
   }
 }
 

@@ -192,7 +192,7 @@ namespace {
           if (!next()) db.renewEvent(event);
 
         } else {
-          LOG_ERROR(e);
+          LOG_DEBUG(5, e);
           call(EventDBCallback::EVENTDB_ERROR);
         }
       }

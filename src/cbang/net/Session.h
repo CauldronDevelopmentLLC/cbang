@@ -43,7 +43,7 @@
 
 
 namespace cb {
-  class Session : public JSON::Dict, public JSON::Serializable {
+  class Session : public JSON::Dict {
     typedef std::set<std::string> groups_t;
     groups_t groups;
 
@@ -54,13 +54,12 @@ namespace cb {
     const std::string &getID() const {return getString("id");}
     void setID(const std::string &id) {insert("id", id);}
 
-    uint64_t getCreationTime() const {return getU64("created");}
-    void setCreationTime(uint64_t creationTime)
-    {insert("created", creationTime);}
+    uint64_t getCreationTime() const;
+    void setCreationTime(uint64_t creationTime);
 
     void touch() {setLastUsed(Time::now());}
-    uint64_t getLastUsed() const {return getU64("last_used");}
-    void setLastUsed(uint64_t lastUsed) {insert("last_used", lastUsed);}
+    uint64_t getLastUsed() const;
+    void setLastUsed(uint64_t lastUsed);
 
     void setUser(const std::string &user) {insert("user", user);}
     const std::string &getUser() const {return getString("user");}
@@ -75,7 +74,6 @@ namespace cb {
     bool hasGroup(const std::string &group) const;
     void addGroup(const std::string &group);
 
-    // From JSON::Serializable
     void read(const JSON::Value &value);
     void write(JSON::Sink &sink) const {JSON::Dict::write(sink);}
   };

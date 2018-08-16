@@ -113,7 +113,7 @@ void Value::merge(const Value &value) {
 
       if ((src->isDict() && dst->isDict()) ||
           (src->isList() && dst->isList())) {
-        src->merge(*dst);
+        dst->merge(*src);
         continue;
       }
     }

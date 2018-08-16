@@ -102,6 +102,12 @@ string Request::getLogPrefix() const {
 }
 
 
+string Request::getSessionID(const string &cookie, const string &header) const {
+  string sid = findCookie(cookie);
+  return (sid.empty() && inHas(header)) ? inGet(header) : sid;
+}
+
+
 const string &Request::getUser() const {
   return session.isNull() ? user : session->getUser();
 }
@@ -122,8 +128,8 @@ SSL Request::getSSL() const {return getConnection().getBufferEvent().getSSL();}
 
 
 void Request::resetOutput() {
-  finalized = false;
-  getOutputBuffer().clear();
+  if (finalized) THROW("Cannot reset output after Request has been finalized");
+  getOutputBuffer().reset();
 }
 
 
@@ -582,7 +588,7 @@ const char *Request::getErrorStr(int error) {
 
 
 void Request::finalize() {
-  if (finalized) THROWS("Request already finalized");
+  if (finalized) THROW("Request already finalized");
   finalized = true;
 
   if (!hasContentType()) guessContentType();

@@ -30,65 +30,37 @@
 
 \******************************************************************************/
 
-#include "HTTPRE2PatternMatcher.h"
+#pragma once
 
-#include <cbang/Exception.h>
-#include <cbang/event/Request.h>
-#include <cbang/event/RestoreURIPath.h>
-#include <cbang/log/Logger.h>
+#include "HTTPHandler.h"
 
-#include <vector>
-
-using namespace std;
-using namespace cb;
-using namespace cb::Event;
+#include <set>
+#include <string>
 
 
-HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
-(const string &search, const string &replace,
- const SmartPointer<HTTPHandler> &child) :
-  regex(search), replace(replace), child(child) {
-  if (regex.error_code()) THROWS("Failed to compile RE2: " << regex.error());
-}
+namespace cb {
+  namespace Event {
+    class HTTPAccessHandler : public HTTPHandler {
+      std::set<std::string> userAllowed;
+      std::set<std::string> userDenied;
+      std::set<std::string> groupAllowed;
+      std::set<std::string> groupDenied;
 
+    public:
+      HTTPAccessHandler() {}
 
-bool HTTPRE2PatternMatcher::operator()(Request &req) {
-  int n = regex.NumberOfCapturingGroups();
-  vector<RE2::Arg> args(n);
-  vector<RE2::Arg *> argPtrs(n);
-  vector<string> results(n);
+      void allowUser(const std::string &name) {userAllowed.insert(name);}
+      void denyUser(const std::string &name) {userDenied.insert(name);}
+      void allowGroup(const std::string &name) {groupAllowed.insert(name);}
+      void denyGroup(const std::string &name) {groupDenied.insert(name);}
 
-  // Connect args
-  for (int i = 0; i < n; i++) {
-    args[i] = &results[i];
-    argPtrs[i] = &args[i];
+      bool userAllow(const std::string &name) const;
+      bool userDeny(const std::string &name) const;
+      bool groupAllow(const std::string &name) const;
+      bool groupDeny(const std::string &name) const;
+
+      // From HTTPHandler
+      bool operator()(Request &req);
+    };
   }
-
-  // Attempt match
-  URI &uri = req.getURI();
-  string path = uri.getPath();
-  if (!RE2::FullMatchN(path, regex, argPtrs.data(), n))
-    return false;
-
-  LOG_DEBUG(5, path << " matched " << regex.pattern());
-
-  if (child.isNull()) return true;
-
-  // Store results
-  const map<int, string> &names = regex.CapturingGroupNames();
-  for (int i = 0; i < n; i++) {
-    if (results[i].empty()) continue;
-
-    if (names.find(i + 1) != names.end())
-      req.insertArg(names.at(i + 1), results[i]);
-    else req.insertArg(results[i]);
-  }
-
-  // Replace path
-  RestoreURIPath restoreURIPath(uri);
-  if (!replace.empty() && RE2::Replace(&path, regex, replace))
-    uri.setPath(path);
-
-  // Call child
-  return (*child)(req);
 }

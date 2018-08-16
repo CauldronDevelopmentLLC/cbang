@@ -201,6 +201,9 @@ SmartPointer<Value> Javascript::require(const string &id) {
     global->set("exports", exports);
     global->set("module", obj);
 
+    // Set empty object for cyclic dependencies
+    module->setExports(exports);
+
     // Compile & eval code
     scope->eval(path);
 

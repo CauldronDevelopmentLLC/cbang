@@ -61,6 +61,7 @@ namespace cb {
       std::string toString() const;
       std::string hexdump() const;
 
+      void reset();
       void clear();
       void expand(unsigned length);
       char *pullup(int length = -1);

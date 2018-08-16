@@ -100,6 +100,13 @@ string Buffer::hexdump() const {
 }
 
 
+void Buffer::reset() {
+  if (evb && deallocate) evbuffer_free(evb);
+  evb = evbuffer_new();
+  deallocate = true;
+}
+
+
 void Buffer::clear() {drain(getLength());}
 
 

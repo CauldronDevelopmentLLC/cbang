@@ -35,8 +35,7 @@
 #include <cbang/String.h>
 #include <cbang/Exception.h>
 #include <cbang/time/Time.h>
-#include <cbang/json/Sink.h>
-#include <cbang/json/Dict.h>
+#include <cbang/json/JSON.h>
 #include <cbang/log/Logger.h>
 
 #include <mysql/mysql.h>
@@ -504,6 +503,21 @@ void DB::writeRowDict(JSON::Sink &sink, int first, int count,
   sink.beginDict();
   insertRow(sink, first, count, withNulls);
   sink.endDict();
+}
+
+
+SmartPointer<JSON::Value> DB::getRowList(int first, int last) const {
+  JSON::Builder builder;
+  writeRowList(builder, first, last);
+  return builder.getRoot();
+}
+
+
+SmartPointer<JSON::Value> DB::getRowDict(int first, int last,
+                                         bool withNulls) const {
+  JSON::Builder builder;
+  writeRowDict(builder, first, last, withNulls);
+  return builder.getRoot();
 }
 
 
