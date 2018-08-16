@@ -231,6 +231,7 @@ namespace cb {
       void insert(const std::string &key, uint64_t value);
       void insert(const std::string &key, int64_t value);
       void insert(const std::string &key, const std::string &value);
+      void merge(const Value &value);
 
       // Dict accessors
       bool getBoolean(const std::string &key) const

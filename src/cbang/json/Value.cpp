@@ -90,6 +90,39 @@ void Value::insert(const string &key, const string &value) {
 }
 
 
+void Value::merge(const Value &value) {
+  // Merge lists
+  if (isList() && value.isList()) {
+    for (unsigned i = 0; i < value.size(); i++)
+      append(value.get(i));
+
+    return;
+  }
+
+  if (!isDict() || !value.isDict())
+    THROWS("Cannot merge JSON nodes of type " << getType() << " and "
+           << value.getType());
+
+  // Merge dicts
+  for (unsigned i = 0; i < value.size(); i++) {
+    const string &key = value.keyAt(i);
+    ValuePtr src = value.get(i);
+
+    if (has(key)) {
+      ValuePtr dst = get(key);
+
+      if ((src->isDict() && dst->isDict()) ||
+          (src->isList() && dst->isList())) {
+        src->merge(*dst);
+        continue;
+      }
+    }
+
+    insert(key, src);
+  }
+}
+
+
 string Value::toString(unsigned indent, bool compact) const {
   ostringstream str;
   Writer writer(str, indent, compact);
