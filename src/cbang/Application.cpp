@@ -296,6 +296,7 @@ int Application::init(int argc, char *argv[]) {
   // Parse args
   int ret = cmdLine.parse(argc, argv);
   if (ret == -1) return -1;
+  afterCommandLineParse();
 
   // Load default config
   if (hasFeature(FEATURE_CONFIG_FILE)) {

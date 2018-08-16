@@ -119,6 +119,7 @@ namespace cb {
     double getUptime() const;
 
     virtual int init(int argc, char *argv[]);
+    virtual void afterCommandLineParse() {}
     virtual void initialize() {}
     virtual void run() {}
     virtual void printInfo() const;
