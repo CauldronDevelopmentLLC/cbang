@@ -52,6 +52,8 @@ namespace cb {
 
     static bool _hasFeature(int feature);
 
+    virtual void beforeDroppingPrivileges() {}
+
     // From Application
     int init(int argc, char *argv[]);
     void run() {}

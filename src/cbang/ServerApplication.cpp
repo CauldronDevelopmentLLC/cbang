@@ -153,6 +153,7 @@ int ServerApplication::init(int argc, char *argv[]) {
   }
 
   // Set group and user.
+  beforeDroppingPrivileges();
   if (!options["respawn"].toBoolean() || options["child"].toBoolean()) {
     if (options["set-group"].hasValue()) {
       LOG_INFO(1, "Switching to group " << options["set-group"]);
