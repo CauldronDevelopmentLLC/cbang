@@ -111,6 +111,8 @@ namespace cb {
       void setIncoming(bool incoming) {this->incoming = incoming;}
       bool isIncoming() const {return incoming;}
 
+      bool isFinalized() const {return finalized;}
+
       bool isSecure() const;
       SSL getSSL() const;
 
