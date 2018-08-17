@@ -120,6 +120,7 @@ namespace cb {
     void setDefault(uint32_t defaultValue) {setDefault((int64_t)defaultValue);}
     void setDefault(double defaultValue);
     void setDefault(bool defaultValue);
+    void clearDefault();
     bool hasDefault() const;
     bool isDefault() const;
 

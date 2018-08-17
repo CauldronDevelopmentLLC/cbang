@@ -113,6 +113,12 @@ void Option::setDefault(bool defaultValue) {
 }
 
 
+void Option::clearDefault() {
+  defaultValue.clear();
+  flags &= ~DEFAULT_SET_FLAG;
+}
+
+
 bool Option::hasDefault() const {
   return flags & DEFAULT_SET_FLAG || (!parent.isNull() && parent->hasValue());
 }
