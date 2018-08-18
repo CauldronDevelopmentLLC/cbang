@@ -33,33 +33,27 @@
 #include "HTTPURLPatternMatcher.h"
 
 #include <cbang/String.h>
-#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb::Event;
 
 
 HTTPURLPatternMatcher::HTTPURLPatternMatcher
-(const string &pattern, const SmartPointer<HTTPHandler> &child) {
+(const string &pattern, const SmartPointer<HTTPHandler> &child) :
+  HTTPRE2PatternMatcher(toRE2Pattern(pattern), "", child) {}
+
+
+string HTTPURLPatternMatcher::toRE2Pattern(const string &pattern) {
+  if (!pattern.empty() && pattern[0] == '^') return pattern;
+
+  vector<string> parts;
+  String::tokenize(pattern, parts, "/");
+
   string rePattern;
+  for (unsigned i = 0; i < parts.size(); i++)
+    if (!parts[i].empty() && parts[i][0] == ':')
+      rePattern += "/(?P<" + parts[i].substr(1) + ">[^/]*)";
+    else rePattern += "/" + parts[i];
 
-  if (!pattern.empty() && pattern[0] == '^') rePattern = pattern;
-  else {
-    vector<string> parts;
-    String::tokenize(pattern, parts, "/");
-
-    for (unsigned i = 0; i < parts.size(); i++)
-      if (!parts[i].empty() && parts[i][0] == ':') {
-        string arg = parts[i].substr(1);
-        if (!args.insert(arg).second)
-          THROWS("Duplicate argument '" << arg << "' in URL pattern: "
-                 << pattern);
-        rePattern += "/(?P<" + arg + ">[^/]*)";
-
-      } else rePattern += "/" + parts[i];
-  }
-
-  LOG_DEBUG(5, "HTTPURLPatternMatcher() " << pattern << " -> " << rePattern);
-
-  matcher = new HTTPRE2PatternMatcher(rePattern, "", child);
+  return rePattern;
 }

@@ -45,11 +45,15 @@ namespace cb {
       RE2 regex;
       std::string replace;
       cb::SmartPointer<HTTPHandler> child;
+      std::set<std::string> args;
 
     public:
       HTTPRE2PatternMatcher(const std::string &search,
                             const std::string &replace,
                             const SmartPointer<HTTPHandler> &child);
+
+      const RE2 &getRegex() const {return regex;}
+      const std::set<std::string> &getArgs() const {return args;}
 
       // From cb::Event::HTTPHandler
       bool operator()(Request &req);

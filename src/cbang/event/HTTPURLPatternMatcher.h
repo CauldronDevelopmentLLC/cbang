@@ -39,18 +39,12 @@
 
 namespace cb {
   namespace Event {
-    class HTTPURLPatternMatcher : public HTTPHandler {
-      std::set<std::string> args;
-      SmartPointer<HTTPRE2PatternMatcher> matcher;
-
+    class HTTPURLPatternMatcher : public HTTPRE2PatternMatcher {
     public:
       HTTPURLPatternMatcher(const std::string &pattern,
                             const SmartPointer<HTTPHandler> &child);
 
-      const std::set<std::string> &getArgs() const {return args;}
-
-      // From cb::Event::HTTPHandler
-      bool operator()(Request &req) {return (*matcher)(req);}
+      static std::string toRE2Pattern(const std::string &pattern);
     };
   }
 }
