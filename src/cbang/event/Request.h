@@ -172,6 +172,13 @@ namespace cb {
       virtual void setContentType(const std::string &contentType);
       virtual void guessContentType();
 
+      typedef enum {
+        COMPRESS_NONE, COMPRESS_AUTO, COMPRESS_ZLIB, COMPRESS_GZIP,
+        COMPRESS_BZIP2
+      } compression_t;
+
+      virtual compression_t getRequestedCompression() const;
+
       virtual bool hasCookie(const std::string &name) const;
       virtual std::string findCookie(const std::string &name) const;
       virtual std::string getCookie(const std::string &name) const;
@@ -192,11 +199,14 @@ namespace cb {
       virtual SmartPointer<JSON::Value> getInputJSON() const;
       virtual SmartPointer<JSON::Value> getJSONMessage() const;
       virtual SmartPointer<JSON::Writer>
-      getJSONWriter(unsigned indent, bool compact);
-      virtual SmartPointer<JSON::Writer> getJSONWriter();
+      getJSONWriter(unsigned indent, bool compact,
+                    compression_t compression = COMPRESS_AUTO);
+      virtual SmartPointer<JSON::Writer>
+      getJSONWriter(compression_t compression = COMPRESS_AUTO);
 
       virtual SmartPointer<std::istream> getInputStream() const;
-      virtual SmartPointer<std::ostream> getOutputStream() const;
+      virtual SmartPointer<std::ostream>
+      getOutputStream(compression_t compression = COMPRESS_AUTO);
 
       virtual void sendError(int code);
       virtual void sendError(int code, const std::string &message);

@@ -47,6 +47,12 @@
 #include <event2/http.h>
 #include <event2/http_struct.h>
 
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+namespace io = boost::iostreams;
+
 using namespace cb::Event;
 using namespace cb;
 using namespace std;
@@ -324,6 +330,56 @@ void Request::guessContentType() {
 }
 
 
+Request::compression_t Request::getRequestedCompression() const {
+  if (!inHas("Accept-Encoding")) return COMPRESS_NONE;
+
+  vector<string> accept;
+  String::tokenize(inGet("Accept-Encoding"), accept, ", \t");
+
+  double maxQ = 0;
+  double otherQ = 0;
+  set<string> named;
+  compression_t compression;
+
+  for (unsigned i = 0; i < accept.size(); i++) {
+    double q = 1;
+    string name = String::toLower(accept[i]);
+
+    // Check for quality value
+    size_t pos = name.find_first_of(';');
+    if (pos != string::npos) {
+      string arg = name.substr(pos + 1);
+      name = name.substr(0, pos);
+
+      if (2 < arg.length() && arg[0] == 'q' && arg[1] == '=') {
+        q = String::parseDouble(arg.substr(2));
+        if (name == "*") otherQ = q;
+      }
+    }
+
+    named.insert(name);
+
+    if (maxQ < q) {
+      if (name == "identity")   compression = COMPRESS_NONE;
+      else if (name == "gzip")  compression = COMPRESS_GZIP;
+      else if (name == "zlib")  compression = COMPRESS_ZLIB;
+      else if (name == "bzip2") compression = COMPRESS_BZIP2;
+      else q = 0;
+    }
+
+    if (maxQ < q) maxQ = q;
+  }
+
+  // Currently, the only standard compression format we support is gzip, so
+  // if the user specifies something like "*;q=1" and doesn't give gzip
+  // an explicit quality value then we select gzip compression.
+  if (maxQ < otherQ && named.find("gzip") == named.end())
+    compression = COMPRESS_GZIP;
+
+  return compression;
+}
+
+
 bool Request::hasCookie(const string &name) const {
   if (!inHas("Cookie")) return false;
 
@@ -431,25 +487,33 @@ SmartPointer<JSON::Value> Request::getJSONMessage() const {
 
 
 SmartPointer<JSON::Writer>
-Request::getJSONWriter(unsigned indent, bool compact) {
+Request::getJSONWriter(unsigned indent, bool compact,
+                       compression_t compression) {
   class JSONBufferWriter : public JSON::Writer {
-    SmartPointer<ostream> streamPtr;
+    SmartPointer<ostream> stream;
 
   public:
-    JSONBufferWriter(const SmartPointer<ostream> &streamPtr, unsigned indent,
+    JSONBufferWriter(const SmartPointer<ostream> &stream, unsigned indent,
                      bool compact) :
-      JSON::Writer(*streamPtr, indent, compact), streamPtr(streamPtr) {}
+      JSON::Writer(*stream, indent, compact), stream(stream) {}
+
+
+    void close() {
+      JSON::Writer::close();
+      stream.release();
+    }
   };
+
 
   resetOutput();
   setContentType("application/json");
 
-  return new JSONBufferWriter(getOutputStream(), indent, compact);
+  return new JSONBufferWriter(getOutputStream(compression), indent, compact);
 }
 
 
-SmartPointer<JSON::Writer> Request::getJSONWriter() {
-  return getJSONWriter(0, !getURI().has("pretty"));
+SmartPointer<JSON::Writer> Request::getJSONWriter(compression_t compression) {
+  return getJSONWriter(0, !getURI().has("pretty"), compression);
 }
 
 
@@ -458,8 +522,45 @@ SmartPointer<istream> Request::getInputStream() const {
 }
 
 
-SmartPointer<ostream> Request::getOutputStream() const {
-  return new Event::BufferStream<>(getOutputBuffer());
+namespace {
+  struct FilteringOStreamWithRef : public io::filtering_ostream {
+    SmartPointer<ostream> ref;
+    virtual ~FilteringOStreamWithRef() {reset();}
+  };
+}
+
+
+SmartPointer<ostream>
+Request::getOutputStream(compression_t compression) {
+  // Auto select compression type based on Accept-Encoding
+  if (compression == COMPRESS_AUTO) compression = getRequestedCompression();
+
+  SmartPointer<ostream> target = new Event::BufferStream<>(getOutputBuffer());
+  SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
+
+  switch (compression) {
+  case COMPRESS_ZLIB:
+    out->push(io::zlib_compressor());
+    outSet("Content-Encoding", "zlib");
+    break;
+
+  case COMPRESS_GZIP:
+    out->push(io::gzip_compressor());
+    outSet("Content-Encoding", "gzip");
+    break;
+
+  case COMPRESS_BZIP2:
+    out->push(io::bzip2_compressor());
+    outSet("Content-Encoding", "bzip2");
+    break;
+
+  default: return target;
+  }
+
+  out->ref = target;
+  out->push(*target);
+
+  return out;
 }
 
 
