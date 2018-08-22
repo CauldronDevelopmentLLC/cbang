@@ -203,6 +203,8 @@ namespace cb {
                     compression_t compression = COMPRESS_AUTO);
       virtual SmartPointer<JSON::Writer>
       getJSONWriter(compression_t compression = COMPRESS_AUTO);
+      virtual SmartPointer<JSON::Writer>
+      getJSONPWriter(const std::string &callback);
 
       virtual SmartPointer<std::istream> getInputStream() const;
       virtual SmartPointer<std::ostream>

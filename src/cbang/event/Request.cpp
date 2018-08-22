@@ -517,6 +517,33 @@ SmartPointer<JSON::Writer> Request::getJSONWriter(compression_t compression) {
 }
 
 
+SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
+  class JSONPBufferWriter : public JSON::Writer {
+    SmartPointer<ostream> stream;
+
+  public:
+    JSONPBufferWriter(const SmartPointer<ostream> &stream) :
+      JSON::Writer(*stream, 0, true), stream(stream) {}
+
+
+    void close() {
+      JSON::Writer::close();
+      *stream << ')';
+      stream.release();
+    }
+  };
+
+
+  resetOutput();
+  setContentType("application/javascript");
+
+  SmartPointer<ostream> stream = getOutputStream(COMPRESS_NONE);
+  *stream << callback << '(';
+
+  return new JSONPBufferWriter(stream);
+}
+
+
 SmartPointer<istream> Request::getInputStream() const {
   return new Event::BufferStream<>(getInputBuffer());
 }
