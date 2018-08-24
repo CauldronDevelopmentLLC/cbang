@@ -105,6 +105,11 @@ bool Field::isInteger() const {
   case TYPE_LONGLONG:
   case TYPE_INT24:
   case TYPE_YEAR:
+  case TYPE_UBYTE:
+  case TYPE_UINT16:
+  case TYPE_UINT24:
+  case TYPE_UINT32:
+  case TYPE_UINT64:
     return true;
   default: return false;
   }
@@ -116,6 +121,7 @@ bool Field::isReal() const {
   case TYPE_DECIMAL:
   case TYPE_FLOAT:
   case TYPE_DOUBLE:
+  case TYPE_NEWDECIMAL:
     return true;
   default: return false;
   }

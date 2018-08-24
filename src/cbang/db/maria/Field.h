@@ -69,6 +69,18 @@ namespace cb {
         TYPE_VAR_STRING  = 253,
         TYPE_STRING      = 254,
         TYPE_GEOMETRY    = 255,
+        TYPE_UBYTE       = 501,
+        TYPE_UINT16      = 502,
+        TYPE_UINT24      = 509,
+        TYPE_UINT32      = 503,
+        TYPE_UINT64      = 508,
+        TYPE_BINARY      = 600,
+        TYPE_VARBINARY   = 601,
+        TYPE_TINYTEXT    = 749,
+        TYPE_MEDIUMTEXT  = 750,
+        TYPE_LONGTEXT    = 751,
+        TYPE_TEXT        = 752,
+        TYPE_GUID        = 800
       } type_t;
 
       Field(st_mysql_field *field) : field(field) {}
