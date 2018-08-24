@@ -59,6 +59,7 @@ namespace cb {
         TYPE_NEWDATE,
         TYPE_VARCHAR,
         TYPE_BIT,
+        TYPE_JSON        = 245,
         TYPE_NEWDECIMAL  = 246,
         TYPE_ENUM        = 247,
         TYPE_SET         = 248,
