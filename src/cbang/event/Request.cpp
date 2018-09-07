@@ -109,8 +109,7 @@ string Request::getLogPrefix() const {
 
 
 string Request::getSessionID(const string &cookie, const string &header) const {
-  string sid = findCookie(cookie);
-  return (sid.empty() && inHas(header)) ? inGet(header) : sid;
+  return inHas(header) ? inGet(header) : findCookie(cookie);
 }
 
 
