@@ -37,8 +37,6 @@
 #include "Undefined.h"
 #include "Null.h"
 #include "Number.h"
-#include "U64.h"
-#include "S64.h"
 #include "Boolean.h"
 #include "String.h"
 

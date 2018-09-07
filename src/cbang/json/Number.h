@@ -39,96 +39,94 @@
 
 namespace cb {
   namespace JSON {
-    class Number : public Value {
-      double value;
+    namespace Num {
+      template <typename T>
+      struct Type {
+        enum {
+          SignedInt =
+          (std::numeric_limits<T>::is_integer &&
+           std::numeric_limits<T>::is_signed) ? 1 : 0
+        };
+      };
+
+      template <typename T, typename X, int _T, int _X>
+      struct Imp {
+        static inline bool InRange(X x) {
+          return std::numeric_limits<T>::min() <= x ||
+            x <= std::numeric_limits<T>::max();
+        }
+      };
+
+      template <typename T, typename X>
+      struct Imp<T, X, 1, 0> {
+        static inline bool InRange(X x) {
+          return x <= (X)std::numeric_limits<T>::max();
+        }
+      };
+
+      template <typename T, typename X>
+      struct Imp<T, X, 0, 1> {
+        static inline bool InRange(X x) {
+          return 0 <= x && (T)x <= std::numeric_limits<T>::max();
+        }
+      };
+
+
+      template <typename T, typename X>
+      static inline bool InRange(X x) {
+        return Imp<T, X, Type<T>::SignedInt, Type<X>::SignedInt>::InRange(x);
+      }
+    }
+
+
+    template <typename T>
+    class NumberValue : public Value {
+    protected:
+      T value;
 
     public:
-      Number(double value = 0) : value(value) {}
+      NumberValue(const T &value = 0) : value(value) {}
 
-      void setValue(double value) {this->value = value;}
-      double getValue() const {return value;}
+      void setValue(const T &value) {this->value = value;}
+      const T &getValue() const {return value;}
 
-      operator double () const {return value;}
+      operator const T &() const {return value;}
 
       // From Value
       ValueType getType() const {return JSON_NUMBER;}
-      ValuePtr copy(bool deep = false) const {return new Number(value);}
-      double getNumber() const {return getValue();}
+      ValuePtr copy(bool deep = false) const {return new NumberValue<T>(value);}
+      double getNumber() const {return value;}
 
 
-      int8_t getS8() const {
-        if (value < std::numeric_limits<int8_t>::min() ||
-            std::numeric_limits<int8_t>::max() < value)
-          CBANG_THROWS("Value " << value << " is not a 8-bit signed integer");
-
-        return (int8_t)value;
+#define CBANG_GET_NUM(TYPE, SHORT, LONG)                             \
+      TYPE get##SHORT() const {                                      \
+        if (!Num::InRange<TYPE>(value))                              \
+          CBANG_THROWS("Value " << value << " is not a " #LONG);     \
+                                                                     \
+        return (TYPE)value;                                          \
       }
 
+      CBANG_GET_NUM(int8_t,   S8,   8-bit signed integer);
+      CBANG_GET_NUM(uint8_t,  U8,   8-bit unsigned integer);
+      CBANG_GET_NUM(int16_t,  S16, 16-bit signed integer);
+      CBANG_GET_NUM(uint16_t, U16, 16-bit unsigned integer);
+      CBANG_GET_NUM(int32_t,  S32, 32-bit signed integer);
+      CBANG_GET_NUM(uint32_t, U32, 32-bit unsigned integer);
+      CBANG_GET_NUM(int64_t,  S64, 64-bit signed integer);
+      CBANG_GET_NUM(uint64_t, U64, 64-bit unsigned integer);
 
-      uint8_t getU8() const {
-        if (value < 0 || std::numeric_limits<uint8_t>::max() < value)
-          CBANG_THROWS("Value " << value << " is not a 8-bit unsigned integer");
+#undef CBANG_GET_NUM
 
-        return (uint8_t)value;
-      }
+      void set(double value)   {this->value = (T)value;}
+      void set(int64_t value)  {this->value = (T)value;}
+      void set(uint64_t value) {this->value = (T)value;}
 
-
-      int16_t getS16() const {
-        if (value < std::numeric_limits<int16_t>::min() ||
-            std::numeric_limits<int16_t>::max() < value)
-          CBANG_THROWS("Value " << value << " is not a 16-bit signed integer");
-
-        return (int16_t)value;
-      }
-
-
-      uint16_t getU16() const {
-        if (value < 0 || std::numeric_limits<uint16_t>::max() < value)
-          CBANG_THROWS("Value " << value
-                       << " is not a 16-bit unsigned integer");
-
-        return (uint16_t)value;
-      }
-
-
-      int32_t getS32() const {
-        if (value < std::numeric_limits<int32_t>::min() ||
-            std::numeric_limits<int32_t>::max() < value)
-          CBANG_THROWS("Value " << value << " is not a 32-bit signed integer");
-
-        return (int32_t)value;
-      }
-
-
-      uint32_t getU32() const {
-        if (value < 0 || std::numeric_limits<uint32_t>::max() < value)
-          CBANG_THROWS("Value " << value
-                       << " is not a 32-bit unsigned integer");
-
-        return (uint32_t)value;
-      }
-
-
-      int64_t getS64() const {
-        if (value < std::numeric_limits<int64_t>::min() ||
-            std::numeric_limits<int64_t>::max() < value)
-          CBANG_THROWS("Value " << value << " is not a 64-bit signed integer");
-
-        return value;
-      }
-
-
-      uint64_t getU64() const {
-        if (value < 0 || std::numeric_limits<uint64_t>::max() < value)
-          CBANG_THROWS("Value " << value
-                       << " is not a 64-bit unsigned integer");
-
-        return value;
-      }
-
-
-      void set(double value) {this->value = value;}
       void write(Sink &sink) const {sink.write(value);}
     };
+
+
+    typedef NumberValue<double> Number;
+    typedef NumberValue<uint64_t> U64;
+    typedef NumberValue<int64_t> S64;
   }
 }
