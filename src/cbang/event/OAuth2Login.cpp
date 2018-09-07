@@ -65,11 +65,15 @@ bool OAuth2Login::authRedirect(Request &req, cb::OAuth2 &auth,
 
 
 bool OAuth2Login::requestToken(Request &req, cb::OAuth2 &auth,
-                               const string &state) {
+                               const string &state,
+                               const string &redirect_uri) {
   this->auth = &auth;
   this->state = state;
 
   URI verifyURL = auth.getVerifyURL(req.getURI(), state);
+
+  // Override redirect URI
+  if (!redirect_uri.empty()) verifyURL.set("redirect_uri", redirect_uri);
 
   // Extract query data
   string data = verifyURL.getQuery();

@@ -65,7 +65,8 @@ namespace cb {
       bool authRedirect(Request &req, cb::OAuth2 &auth,
                         const std::string &state);
       bool requestToken(Request &req, cb::OAuth2 &auth,
-                        const std::string &state);
+                        const std::string &state,
+                        const std::string &redirect_uri = std::string());
       void verifyToken(Request *req, int err);
       void processProfile(Request *req, int err);
     };
