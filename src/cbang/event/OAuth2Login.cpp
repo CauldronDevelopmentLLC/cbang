@@ -102,7 +102,9 @@ void OAuth2Login::verifyToken(Request *req, int err) {
       pending->send();
 
       return;
-    } CATCH_ERROR;
+    } catch (const Exception &e) {
+      LOG_ERROR("OAuth2Login verification failed: " << req->getInput());
+    }
 
   processProfile(0); // Notify incase of error
   pending.release();
