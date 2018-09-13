@@ -520,6 +520,13 @@ namespace cb {
     }
 
 
+    void listDirectory(vector<string> &paths, const string &path,
+                       const string &pattern, unsigned maxDepth) {
+      DirectoryWalker walker(path, pattern, maxDepth);
+      while (walker.hasNext()) paths.push_back(walker.next());
+    }
+
+
     uint64_t getFileSize(const string &filename) {
       if (!exists(filename))
         THROWS("Error accessing file '" << filename << "'");

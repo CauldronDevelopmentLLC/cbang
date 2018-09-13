@@ -95,6 +95,9 @@ namespace cb {
     std::string getcwd();
     void chdir(const std::string &path);
     std::string createTempDir(const std::string &parent);
+    void listDirectory(std::vector<std::string> &paths, const std::string &path,
+                       const std::string &pattern = ".*",
+                       unsigned maxDepth = 1);
 
     // File
     uint64_t getFileSize(const std::string &filename);
