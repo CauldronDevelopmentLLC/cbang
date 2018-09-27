@@ -43,7 +43,7 @@ namespace {
   boost::match_flag_type typeToFormatFlags(Regex::type_t type) {
     switch (type) {
     case Regex::TYPE_POSIX: return boost::format_sed;
-    case Regex::TYPE_PERL: return boost::format_perl;
+    case Regex::TYPE_PERL:  return boost::format_perl;
     case Regex::TYPE_BOOST: return boost::format_default;
     default: THROWS("Invalid regex type: " << type);
     }
@@ -53,7 +53,7 @@ namespace {
   boost::match_flag_type typeToMatchFlags(Regex::type_t type) {
     switch (type) {
     case Regex::TYPE_POSIX: return boost::match_posix;
-    case Regex::TYPE_PERL: return boost::match_perl;
+    case Regex::TYPE_PERL:  return boost::match_perl;
     case Regex::TYPE_BOOST: return boost::match_default;
     default: THROWS("Invalid regex type: " << type);
     }
@@ -64,7 +64,10 @@ namespace {
 struct Regex::private_t {
   boost::regex re;
 
-  private_t(const string &pattern) : re(pattern) {}
+  private_t(const string &pattern) try : re(pattern) {
+  } catch (const boost::regex_error &e) {
+    THROWS("Failed to parse regex: " << e.what());
+  }
 };
 
 
@@ -80,7 +83,7 @@ string Regex::Match::format(const std::string &fmt) const {
   try {
     return pri->m.format(fmt, typeToFormatFlags(type));
 
-  } catch (boost::regex_error &e) {
+  } catch (const boost::regex_error &e) {
     THROWS("Format error: " << e.what());
   }
 }
@@ -103,7 +106,7 @@ bool Regex::match(const string &s) const {
   try {
     return boost::regex_match(s, pri->re);
 
-  } catch (boost::regex_error &e) {
+  } catch (const boost::regex_error &e) {
     THROWS("Match error: " << e.what());
   }
 }
@@ -114,7 +117,7 @@ bool Regex::match(const string &s, Match &m) const {
     if (!boost::regex_match(s, m.pri->m, pri->re, typeToMatchFlags(type)))
       return false;
 
-  } catch (boost::regex_error &e) {
+  } catch (const boost::regex_error &e) {
     THROWS("Match error: " << e.what());
   }
 
@@ -129,7 +132,7 @@ bool Regex::search(const string &s) const {
   try {
     return boost::regex_search(s, pri->re);
 
-  } catch (boost::regex_error &e) {
+  } catch (const boost::regex_error &e) {
     THROWS("Search error: " << e.what());
   }
 }
@@ -140,7 +143,7 @@ bool Regex::search(const string &s, Match &m) const {
     if (!boost::regex_search(s, m.pri->m, pri->re, typeToMatchFlags(type)))
       return false;
 
-  } catch (boost::regex_error &e) {
+  } catch (const boost::regex_error &e) {
     THROWS("Search error: " << e.what());
   }
 
