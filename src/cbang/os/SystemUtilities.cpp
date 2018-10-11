@@ -231,9 +231,13 @@ namespace cb {
     string absolute(const string &base, const string &target) {
       if (isAbsolute(target)) return target;
 
+      if (base.empty())
+        return getCanonicalPath(".") + string(1, path_separator) + target;
+
       if (!exists(base) || isDirectory(base))
         return base + string(1, path_separator) + target;
-      else return dirname(base) + string(1, path_separator) + target;
+
+      return dirname(base) + string(1, path_separator) + target;
     }
 
 

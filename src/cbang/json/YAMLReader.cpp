@@ -37,6 +37,7 @@
 #include <cbang/Math.h>
 #include <cbang/io/StringInputSource.h>
 #include <cbang/util/Regex.h>
+#include <cbang/os/SystemUtilities.h>
 #include <cbang/log/Logger.h>
 
 #include <yaml.h>
@@ -200,6 +201,9 @@ void YAMLReader::parse(Sink &sink) {
         else if (tag == YAML_BOOL_TAG)
           sink.writeBoolean(String::parseBool(value));
         else if (tag == YAML_NULL_TAG) sink.writeNull();
+        else if (tag == "!include")
+          YAMLReader(SystemUtilities::absolute(src.getName(), value))
+            .parse(sink);
         else sink.write(value);
 
       } else {
