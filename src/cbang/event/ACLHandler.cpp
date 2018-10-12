@@ -44,7 +44,7 @@ using namespace cb::Event;
 
 
 bool ACLHandler::operator()(Request &req) {
-  string path = req.getURI().getPath();
+  string path = req.getURI().getEscapedPath();
   string user = req.getUser();
   string group;
   bool allow;

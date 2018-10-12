@@ -135,9 +135,18 @@ unsigned URI::getPort() const {
 }
 
 
+string URI::getEscapedPath() const {
+  string path;
+  for (unsigned i = 0; i < pathSegs.size(); i++)
+    path += "/" + encode(pathSegs[i], PATH_SEGMENT_CHARS);
+  return path;
+}
+
+
 string URI::getExtension() const {
-  size_t ptr = path.find_last_of('.');
-  return (ptr == string::npos) ? "" : path.substr(ptr + 1);
+  if (pathSegs.empty()) return "";
+  size_t ptr = pathSegs.back().find_last_of('.');
+  return (ptr == string::npos) ? "" : pathSegs.back().substr(ptr + 1);
 }
 
 
@@ -172,6 +181,7 @@ void URI::clear() {
   host.clear();
   port = 0;
   path.clear();
+  pathSegs.clear();
   user.clear();
   pass.clear();
 }
@@ -180,9 +190,13 @@ void URI::clear() {
 void URI::normalize() {
   // TODO: Resolove '..' and '.'
 
-  vector<string> parts;
-  String::tokenize(path, parts, "/");
-  path = string("/") + String::join(parts, "/");
+  // NOTE, last empty seg denotes a trailing /, do not remove it
+  vector<string>::iterator it;
+  for (it = pathSegs.begin(); it != pathSegs.end();)
+    if (it->empty() && (it + 1) != pathSegs.end()) it = pathSegs.erase(it);
+    else it++;
+
+  path = "/" + String::join(pathSegs, "/");
 }
 
 
@@ -231,7 +245,7 @@ ostream &URI::write(ostream &stream) const {
     if (port) stream << ':' << port;
   }
 
-  stream << encode(path, PATH_SEGMENT_CHARS "/");
+  stream << getEscapedPath();
 
   if (!empty()) stream << '?';
 
@@ -299,17 +313,23 @@ void URI::parseAbsPath(const char *&s) {
   match(s, '/');
 
   do {
-    path.append(1, '/');
     parsePathSegment(s);
   } while (consume(s, '/'));
+
+  // TODO This fails for encoded / i.e. %2f
+  path = "/" + String::join(pathSegs, "/");
 }
 
 
 void URI::parsePathSegment(const char *&s) {
+  string seg;
+
   while (true)
-    if (contains(PATH_SEGMENT_CHARS, *s)) path.append(1, *s++);
-    else if (*s == '%') path.append(1, parseEscape(s));
+    if (contains(PATH_SEGMENT_CHARS, *s)) seg.append(1, *s++);
+    else if (*s == '%') seg.append(1, parseEscape(s));
     else break;
+
+  pathSegs.push_back(seg);
 }
 
 

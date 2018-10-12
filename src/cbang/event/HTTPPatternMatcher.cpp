@@ -41,7 +41,7 @@ using namespace cb::Event;
 bool HTTPPatternMatcher::operator()(Request &req) {
   Regex::Match m;
 
-  if (!search.match(req.getURI().getPath(), m)) return false;
+  if (!search.match(req.getURI().getEscapedPath(), m)) return false;
   if (child.isNull()) return true;
 
   for (unsigned i = 1; i < m.size(); i++)

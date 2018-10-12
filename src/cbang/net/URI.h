@@ -35,6 +35,8 @@
 #include <cbang/util/StringMap.h>
 
 #include <string>
+#include <vector>
+
 
 namespace cb {
   class URI : public StringMap {
@@ -43,6 +45,7 @@ namespace cb {
     std::string host;
     unsigned port;
     std::string path;
+    std::vector<std::string> pathSegs;
     std::string user;
     std::string pass;
 
@@ -57,6 +60,8 @@ namespace cb {
     const std::string &getHost() const {return host;}
     unsigned getPort() const;
     const std::string &getPath() const {return path;}
+    std::string getEscapedPath() const;
+    const std::vector<std::string> &getPathSegments() const {return pathSegs;}
     std::string getExtension() const;
     const std::string &getUser() const {return user;}
     const std::string &getPass() const {return pass;}

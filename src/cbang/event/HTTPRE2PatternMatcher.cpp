@@ -72,7 +72,7 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
 
   // Attempt match
   URI &uri = req.getURI();
-  string path = uri.getPath();
+  string path = uri.getEscapedPath();
   if (!RE2::FullMatchN(path, regex, argPtrs.data(), n))
     return false;
 
