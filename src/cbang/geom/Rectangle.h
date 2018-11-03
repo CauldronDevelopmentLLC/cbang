@@ -372,6 +372,13 @@ namespace cb {
       return false;
     }
 
+    bool isValid() const {
+      if (!isReal()) return false;
+      for (unsigned i = 0; i < DIM; i++)
+        if (rmax[i] < rmin[i]) return false;
+      return true;
+    }
+
     // Cast
     template <typename U>
     operator Rectangle<DIM, U>() const {
