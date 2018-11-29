@@ -123,6 +123,58 @@ void Value::merge(const Value &value) {
 }
 
 
+string::const_iterator
+Value::format(string &result, const string &defaultValue,
+              string::const_iterator start, string::const_iterator end) const {
+  string::const_iterator it = start + 1;
+
+  string name;
+  while (it != end && *it != ')') name.push_back(*it++);
+
+  if (it == end || ++it == end) return start;
+
+  if (!has(name)) result.append(defaultValue);
+  else switch (*it) {
+    case 'b': result.append(String(getBoolean(name))); break;
+    case 'f': result.append(String(getNumber(name))); break;
+    case 'i': result.append(String(getS32(name))); break;
+    case 'u': result.append(String(getU32(name))); break;
+    case 's':
+      result.append("\"" + String::escapeC(getString(name)) + "\"");
+      break;
+    default: return start;
+    }
+
+  return ++it;
+}
+
+
+string Value::format(const string &s, const string &defaultValue) const {
+  string result;
+  result.reserve(s.length());
+
+  bool escape = false;
+
+  for (string::const_iterator it = s.begin(); it != s.end(); it++) {
+    if (escape) {
+      escape  = false;
+      if (*it == '(') {
+        it = format(result, defaultValue, it, s.end());
+        if (it == s.end()) break;
+      }
+
+    } else if (*it == '%') {
+      escape = true;
+      continue;
+    }
+
+    result.push_back(*it);
+  }
+
+  return result;
+}
+
+
 string Value::toString(unsigned indent, bool compact) const {
   ostringstream str;
   Writer writer(str, indent, compact);

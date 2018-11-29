@@ -793,56 +793,9 @@ string DB::format(uint32_t value) {return String(value);}
 string DB::format(const string &value) const {return "'" + escape(value) + "'";}
 
 
-namespace {
-  string::const_iterator parseSubstitution(string &result, const DB &db,
-                                           const JSON::Dict &dict,
-                                           string::const_iterator start,
-                                           string::const_iterator end) {
-    string::const_iterator it = start + 1;
-
-    string name;
-    while (it != end && *it != ')') name.push_back(*it++);
-
-    if (it == end || ++it == end) return start;
-
-    if (!dict.has(name)) result.append(db.formatNull());
-    else switch (*it) {
-      case 'b': result.append(db.formatBool(dict.getBoolean(name))); break;
-      case 'f': result.append(db.format(dict.getNumber(name))); break;
-      case 'i': result.append(db.format(dict.getS32(name))); break;
-      case 'u': result.append(db.format(dict.getU32(name))); break;
-      case 's': result.append(db.format(dict.getString(name))); break;
-      default: return start;
-      }
-
-    return ++it;
-  }
-}
-
-
-string DB::format(const string &s, const JSON::Dict &dict) const {
-  string result;
-  result.reserve(s.length());
-
-  bool escape = false;
-
-  for (string::const_iterator it = s.begin(); it != s.end(); it++) {
-    if (escape) {
-      escape  = false;
-      if (*it == '(') {
-        it = parseSubstitution(result, *this, dict, it, s.end());
-        if (it == s.end()) break;
-      }
-
-    } else if (*it == '%') {
-      escape = true;
-      continue;
-    }
-
-    result.push_back(*it);
-  }
-
-  return result;
+string DB::format(const string &s, const JSON::Dict &dict,
+                  const string &defaultValue) const {
+  return dict.format(s, defaultValue);
 }
 
 

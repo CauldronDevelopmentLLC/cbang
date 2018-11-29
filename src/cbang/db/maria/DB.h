@@ -251,7 +251,8 @@ namespace cb {
       static std::string format(int32_t value);
       static std::string format(uint32_t value);
       std::string format(const std::string &value) const;
-      std::string format(const std::string &s, const JSON::Dict &dict) const;
+      std::string format(const std::string &s, const JSON::Dict &dict,
+                         const std::string &defaultValue = "null") const;
 
       // Library
       static void libraryInit(int argc = 0, char *argv[] = 0,

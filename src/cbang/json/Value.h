@@ -304,6 +304,13 @@ namespace cb {
         return index == -1 ? defaultValue : get(index)->asString();
       }
 
+      std::string::const_iterator
+      format(std::string &result, const std::string &defaultValue,
+             std::string::const_iterator start,
+             std::string::const_iterator end) const;
+      std::string format(const std::string &s,
+                         const std::string &defaultValue = "") const;
+
       // Operators
       const Value &operator[](unsigned i) const {return *get(i);}
       const Value &operator[](const std::string &key) const {return *get(key);}
