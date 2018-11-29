@@ -42,6 +42,7 @@ namespace cb {
   class StackTrace : public std::vector<StackFrame> {
   public:
     std::ostream &print(std::ostream &stream) const;
+    static StackTrace get();
   };
 
   inline std::ostream &operator<<(std::ostream &stream, const StackTrace &t) {

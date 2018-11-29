@@ -31,11 +31,13 @@
 \******************************************************************************/
 
 #include "StackTrace.h"
+#include "Debugger.h"
 
 #include <iostream>
 
 using namespace cb;
 using namespace std;
+
 
 ostream &StackTrace::print(ostream &stream) const {
   unsigned count = 0;
@@ -45,3 +47,6 @@ ostream &StackTrace::print(ostream &stream) const {
 
   return stream;
 }
+
+
+StackTrace StackTrace::get() {return Debugger::getStackTrace();}
