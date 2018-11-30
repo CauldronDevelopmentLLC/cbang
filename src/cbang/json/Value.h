@@ -304,10 +304,11 @@ namespace cb {
         return index == -1 ? defaultValue : get(index)->asString();
       }
 
-      std::string::const_iterator
-      format(std::string &result, const std::string &defaultValue,
-             std::string::const_iterator start,
-             std::string::const_iterator end) const;
+      std::string format(char type) const;
+      std::string format(char type, unsigned index, const std::string &name,
+                         const String::FormatCB &cb) const;
+      std::string format(const std::string &s,
+                         const String::FormatCB &cb) const;
       std::string format(const std::string &s,
                          const std::string &defaultValue = "") const;
 

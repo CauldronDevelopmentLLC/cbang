@@ -831,3 +831,45 @@ string String::transcode(const string &s, const string &search,
 
   return result;
 }
+
+
+string String::format(const FormatCB &cb) {
+  string result;
+  result.reserve(length());
+
+  unsigned index = 0;
+  bool escape = false;
+
+  for (string::const_iterator it = begin(); it != end(); it++) {
+    if (escape) {
+      escape  = false;
+
+      switch (*it) {
+      case '(': {
+        string::const_iterator it2 = it + 1;
+
+        string name;
+        while (it2 != end() && *it2 != ')') name.push_back(*it2++);
+
+        if (it2 != end() && ++it2 != end()) {
+          result.append(cb(*it2, index, name));
+          it = it2;
+          continue;
+        }
+        break;
+      }
+
+      case '%': it++; break;
+      default: result.append(cb(*it++, index, "")); continue;
+      }
+
+    } else if (*it == '%') {
+      escape = true;
+      continue;
+    }
+
+    result.push_back(*it);
+  }
+
+  return result;
+}

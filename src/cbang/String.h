@@ -201,6 +201,31 @@ namespace cb {
     static std::string transcode(const std::string &s,
                                  const std::string &search,
                                  const std::string &replace);
+
+    // Formatting
+    class FormatCB {
+    public:
+      virtual ~FormatCB() {}
+
+      virtual std::string
+      operator()(char type, unsigned index, const std::string &name) const = 0;
+    };
+
+
+    class DefaultFormatCB : public FormatCB {
+      std::string defaultValue;
+
+    public:
+      DefaultFormatCB(const std::string &defaultValue) :
+        defaultValue(defaultValue) {}
+
+      std::string operator()(char type, unsigned index,
+                             const std::string &name) const {
+        return defaultValue;
+      }
+    };
+
+    std::string format(const FormatCB &cb);
   };
 }
 
