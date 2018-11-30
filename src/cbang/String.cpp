@@ -852,7 +852,7 @@ string String::format(const FormatCB &cb) {
         while (it2 != end() && *it2 != ')') name.push_back(*it2++);
 
         if (it2 != end() && ++it2 != end()) {
-          result.append(cb(*it2, index, name));
+          result.append(cb(*it2, index++, name));
           it = it2;
           continue;
         }
@@ -860,7 +860,7 @@ string String::format(const FormatCB &cb) {
       }
 
       case '%': it++; break;
-      default: result.append(cb(*it++, index, "")); continue;
+      default: result.append(cb(*it++, index++, "")); continue;
       }
 
     } else if (*it == '%') {

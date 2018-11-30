@@ -140,7 +140,7 @@ string Value::format(char type) const {
 string Value::format(char type, unsigned index, const string &name,
                      const String::FormatCB &cb) const {
   if (has(name)) return get(name)->format(type);
-  if (index < size()) return get(index)->format(type);
+  if (name.empty() && index < size()) return get(index)->format(type);
   return cb(type, index, name);
 }
 
