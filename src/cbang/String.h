@@ -208,7 +208,7 @@ namespace cb {
       virtual ~FormatCB() {}
 
       virtual std::string
-      operator()(char type, unsigned index, const std::string &name) const = 0;
+      operator()(char type, int index, const std::string &name) const = 0;
     };
 
 
@@ -219,7 +219,7 @@ namespace cb {
       DefaultFormatCB(const std::string &defaultValue) :
         defaultValue(defaultValue) {}
 
-      std::string operator()(char type, unsigned index,
+      std::string operator()(char type, int index,
                              const std::string &name) const {
         return defaultValue;
       }

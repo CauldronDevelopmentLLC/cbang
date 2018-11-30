@@ -305,7 +305,7 @@ namespace cb {
       }
 
       std::string format(char type) const;
-      std::string format(char type, unsigned index, const std::string &name,
+      std::string format(char type, int index, const std::string &name,
                          const String::FormatCB &cb) const;
       std::string format(const std::string &s,
                          const String::FormatCB &cb) const;

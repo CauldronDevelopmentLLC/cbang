@@ -137,10 +137,12 @@ string Value::format(char type) const {
 }
 
 
-string Value::format(char type, unsigned index, const string &name,
+string Value::format(char type, int index, const string &name,
                      const String::FormatCB &cb) const {
-  if (has(name)) return get(name)->format(type);
-  if (name.empty() && index < size()) return get(index)->format(type);
+  if (index < 0) {
+    if (has(name)) return get(name)->format(type);
+  } else if ((unsigned)index < size()) return get(index)->format(type);
+
   return cb(type, index, name);
 }
 
@@ -155,7 +157,7 @@ string Value::format(const string &s, const String::FormatCB &cb) const {
       value(value), cb(cb) {}
 
 
-    string operator()(char type, unsigned index, const string &name) const {
+    string operator()(char type, int index, const string &name) const {
       return value.format(type, index, name, cb);
     }
   };

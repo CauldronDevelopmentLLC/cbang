@@ -837,7 +837,7 @@ string String::format(const FormatCB &cb) {
   string result;
   result.reserve(length());
 
-  unsigned index = 0;
+  int index = 0;
   bool escape = false;
 
   for (string::const_iterator it = begin(); it != end(); it++) {
@@ -852,7 +852,7 @@ string String::format(const FormatCB &cb) {
         while (it2 != end() && *it2 != ')') name.push_back(*it2++);
 
         if (it2 != end() && ++it2 != end()) {
-          result.append(cb(*it2, index++, name));
+          result.append(cb(*it2, -1, name));
           it = it2;
           continue;
         }
