@@ -90,6 +90,8 @@ URI OAuth2::getRedirectURL(const string &path, const string &state) const {
   uri.set("redirect_uri", redirectBase + path);
   uri.set("state", state);
 
+  LOG_DEBUG(5, __func__ << ": " << uri);
+
   return uri;
 }
 
@@ -120,6 +122,8 @@ URI OAuth2::getVerifyURL(const URI &uri, const string &state) const {
   postURI.set("redirect_uri", redirectBase + uri.getPath());
   postURI.set("grant_type", "authorization_code");
 
+  LOG_DEBUG(5, __func__ << ": " << postURI);
+
   return postURI;
 }
 
@@ -144,6 +148,7 @@ string OAuth2::verifyToken(const string &data) const {
 
 
 string OAuth2::verifyToken(const SmartPointer<JSON::Value> &json) const {
+  LOG_DEBUG(5, __func__ << ": " << *json);
   return json->getString("access_token");
 }
 

@@ -39,6 +39,7 @@
 #include <cbang/net/URI.h>
 #include <cbang/json/Value.h>
 #include <cbang/util/DefaultCatch.h>
+#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb::Event;
@@ -125,6 +126,8 @@ void OAuth2Login::processProfile(Request *req, int err) {
       if (profile.isNull()) THROW("Did not receive profile");
       profile = auth->processProfile(profile);
     } CATCH_ERROR;
+
+  LOG_DEBUG(5, __func__ << ": " << *profile);
 
   processProfile(profile);
 
