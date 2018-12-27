@@ -167,7 +167,7 @@ string Value::format(const string &s, const String::FormatCB &cb) const {
 
 
 string Value::format(const string &s, const string &defaultValue) const {
-  return String(s).format(String::DefaultFormatCB(defaultValue));
+  return format(s, String::DefaultFormatCB(defaultValue));
 }
 
 
