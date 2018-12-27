@@ -37,17 +37,12 @@
 
 namespace cb {
   class GoogleOAuth2 : public OAuth2 {
-    std::string maxAuthAge;
-
   public:
-    GoogleOAuth2(Options &options, const std::string &maxAuthAge = "");
-
-    void setMaxAuthAge(const std::string &x) {maxAuthAge = x;}
+    GoogleOAuth2(Options &options);
 
     // From OAuth2
     const char *getProvider() const {return "google";}
     SmartPointer<JSON::Value>
     processProfile(const SmartPointer<JSON::Value> &profile) const;
-    URI getRedirectURL(const std::string &path, const std::string &state) const;
   };
 }

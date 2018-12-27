@@ -42,7 +42,8 @@ using namespace std;
 
 
 FacebookOAuth2::FacebookOAuth2(Options &options) :
-  OAuth2(options, "facebook", "https://graph.facebook.com/oauth/authorize",
+  OAuth2(options, "facebook",
+         "https://graph.facebook.com/oauth/authorize",
          "https://graph.facebook.com/oauth/access_token",
          "https://graph.facebook.com/me?fields=id,name,email,picture,verified",
          "email") {}

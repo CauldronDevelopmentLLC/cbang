@@ -42,7 +42,8 @@ using namespace std;
 
 
 GitHubOAuth2::GitHubOAuth2(Options &options) :
-  OAuth2(options, "github", "https://github.com/login/oauth/authorize",
+  OAuth2(options, "github",
+         "https://github.com/login/oauth/authorize",
          "https://github.com/login/oauth/access_token",
          "https://api.github.com/user", "user:email") {}
 

@@ -40,19 +40,12 @@ using namespace cb;
 using namespace std;
 
 
-GoogleOAuth2::GoogleOAuth2(Options &options, const string &maxAuthAge) :
-  OAuth2(options, "google", "https://accounts.google.com/o/oauth2/auth",
-         "https://accounts.google.com/o/oauth2/token",
-         "https://www.googleapis.com/plus/v1/people/me/openIdConnect",
-         "openid email profile"), maxAuthAge(maxAuthAge) {}
-
-
-URI GoogleOAuth2::getRedirectURL(const string &path,
-                                 const string &state) const {
-  URI url = OAuth2::getRedirectURL(path, state);
-  if (!maxAuthAge.empty()) url.set("max_auth_age", maxAuthAge);
-  return url;
-}
+GoogleOAuth2::GoogleOAuth2(Options &options) :
+  OAuth2(options, "google",
+         "https://accounts.google.com/o/oauth2/v2/auth",
+         "https://www.googleapis.com/oauth2/v4/token",
+         "https://www.googleapis.com/oauth2/v3/userinfo",
+         "openid email profile") {}
 
 
 SmartPointer<JSON::Value>
