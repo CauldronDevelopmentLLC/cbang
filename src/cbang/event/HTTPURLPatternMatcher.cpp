@@ -51,9 +51,23 @@ string HTTPURLPatternMatcher::toRE2Pattern(const string &pattern) {
 
   string rePattern;
   for (unsigned i = 0; i < parts.size(); i++)
-    if (!parts[i].empty() && parts[i][0] == ':')
-      rePattern += "/(?P<" + parts[i].substr(1) + ">[^/]*)";
-    else rePattern += "/" + parts[i];
+    if (!parts[i].empty() && parts[i][0] == ':') {
+      size_t end;
+
+      for (end = 1; end < parts[i].size(); end++) {
+        char c = parts[i][end];
+        if (!isalnum(c) && c != '-' && c != '_') {
+          end = end - 1;
+          break;
+        }
+      }
+
+      string part = parts[i].substr(1, end);
+      string tail = parts[i].substr(end);
+
+      rePattern += "/(?P<" + part + ">[^/]*)" + tail;
+
+    } else rePattern += "/" + parts[i];
 
   return rePattern;
 }
