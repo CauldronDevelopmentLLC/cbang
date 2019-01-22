@@ -80,6 +80,10 @@ def build_function(target, source, env):
         '    Info &info = Info::instance();\n'
         '\n'
         '    info.add(category, "Version", "$PACKAGE_VERSION");\n'
+        '    info.add(category, "Author", "$PACKAGE_AUTHOR");\n'
+        '    info.add(category, "Copyright", "$PACKAGE_COPYRIGHT");\n'
+        '    info.add(category, "Homepage", "$PACKAGE_HOMEPAGE");\n'
+        '    info.add(category, "License", "$PACKAGE_LICENSE");\n'
         '    info.add(category, "Date", __DATE__);\n'
         '    info.add(category, "Time", __TIME__);\n')
 
