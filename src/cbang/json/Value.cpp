@@ -36,6 +36,7 @@
 #include <limits>
 
 using namespace std;
+using namespace cb;
 using namespace cb::JSON;
 
 
