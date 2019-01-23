@@ -320,7 +320,7 @@ if env['PLATFORM'] != 'win32':
 
 
 # Warnings
-if env.get('compiler_mode', '') == 'gcc':
+if env.get('compiler_mode', '') == 'gnu':
     env.Append(CCFLAGS = ["-Wno-parentheses-equality", "-Wno-unused-function"])
 
 # Source

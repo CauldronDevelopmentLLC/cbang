@@ -3,7 +3,8 @@ Import('*')
 env = env.Clone()
 
 env.CBDefine('HAVE_CONFIG_H')
-if env.get('compiler_mode', '') == 'gcc':
+
+if env.get('compiler_mode', '') == 'gnu':
     env.Append(CFLAGS = ['-Wno-unused-value', '-Wno-int-to-pointer-cast',
                          '-Wno-implicit-function-declaration'])
 
