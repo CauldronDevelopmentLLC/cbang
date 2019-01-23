@@ -3,8 +3,9 @@ Import('*')
 env = env.Clone()
 
 env.CBDefine('HAVE_CONFIG_H')
-env.Append(CFLAGS = ['-Wno-unused-value', '-Wno-int-to-pointer-cast',
-                     '-Wno-implicit-function-declaration'])
+if env.get('compiler_mode', '') == 'gcc':
+    env.Append(CFLAGS = ['-Wno-unused-value', '-Wno-int-to-pointer-cast',
+                         '-Wno-implicit-function-declaration'])
 
 if not env.GetOption('clean'):
     env.Append(CPPPATH = ['#/src/libyaml/src'])
