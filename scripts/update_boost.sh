@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-VERSION=1.63.0
+VERSION=1.69.0
 NAME=boost_$(echo $VERSION | tr . _)
 PKG=$NAME.7z
 URL=https://sf.net/projects/boost/files/boost/$VERSION/$PKG
@@ -26,7 +26,8 @@ $BCP --scan --boost=$NAME --unix-lines $(
 ) src/boost
 
 # Remove uneeded files
-for PATH in Jamroot libs/config libs/date_time libs/smart_ptr; do
+for PATH in Jamroot libs/config libs/date_time libs/smart_ptr \
+            "libs/iostreams/src/zstd.*"; do
     /bin/rm -rf src/boost/$PATH
 done
 
