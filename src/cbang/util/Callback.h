@@ -32,10 +32,9 @@
 
 #pragma once
 
+#include "CallbackClasses.h"
+
+
 namespace cb {
-  class Callback {
-  public:
-    virtual ~Callback() {}
-    virtual bool operator()() const = 0;
-  };
+  CBANG_CALLBACK_CLASSES_WITH_BASE(Callback, bool, operator(), const);
 }

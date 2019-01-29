@@ -32,11 +32,13 @@
 
 #pragma once
 
+#include "FunctorBase.h"
+
 
 #define CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, CONST, ARGS, PARAMS)  \
   class CLASS : public BASE {                                           \
   public:                                                               \
-    typedef RETURN (*func_t)(ARGS) CONST;                               \
+    typedef RETURN (*func_t)(ARGS);                                     \
   protected:                                                            \
     func_t func;                                                        \
   public:                                                               \
@@ -45,70 +47,58 @@
   }
 
 
-#define CBANG_ARGS1(ARG1) ARG1 arg1
-#define CBANG_ARGS2(ARG1, ARG2) ARG1 arg1, ARG2 arg2
-#define CBANG_ARGS3(ARG1, ARG2, ARG3) ARG1 arg1, ARG2 arg2, ARG3 arg3
-#define CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4) \
-  ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4
-#define CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5) \
-  ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5
+#define CBANG_PARAMS1() arg1
+#define CBANG_PARAMS2() CBANG_PARAMS1() CBANG_DEFER(CBANG_COMMA)() arg2
+#define CBANG_PARAMS3() CBANG_PARAMS2() CBANG_DEFER(CBANG_COMMA)() arg3
+#define CBANG_PARAMS4() CBANG_PARAMS3() CBANG_DEFER(CBANG_COMMA)() arg4
+#define CBANG_PARAMS5() CBANG_PARAMS4() CBANG_DEFER(CBANG_COMMA)() arg5
+
+#define CBANG_FUNCTOR(CLASS, BASE, RETURN, CALLBACK)  \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, , ,)
+
+#define CBANG_FUNCTOR1(CLASS, BASE, RETURN, CALLBACK, ARG1)   \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                 \
+             CBANG_ARGS1(ARG1), CBANG_PARAMS1())
+
+#define CBANG_FUNCTOR2(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2) \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                     \
+             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())
+
+#define CBANG_FUNCTOR3(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3) \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                           \
+             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())
+
+#define CBANG_FUNCTOR4(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, ARG4) \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                           \
+             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
+
+#define CBANG_FUNCTOR5(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, ARG4, \
+                       ARG5)                                            \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                           \
+             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
 
 
-#define CBANG_PARAMS1 arg1
-#define CBANG_PARAMS2 arg1, arg2
-#define CBANG_PARAMS3 arg1, arg2, arg3
-#define CBANG_PARAMS4 arg1, arg2, arg3, arg4
-#define CBANG_PARAMS5 arg1, arg3, arg3, arg4, arg5
+#define CBANG_CONST_FUNCTOR(CLASS, BASE, RETURN, CALLBACK)    \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const, ,)
 
+#define CBANG_CONST_FUNCTOR1(CLASS, BASE, RETURN, CALLBACK, ARG1) \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                \
+             CBANG_ARGS1(ARG1), CBANG_PARAMS1())
 
-#define CBANG_FUNCTOR(CLASS, PARENT, RETURN, CALLBACK)  \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, , ,)
+#define CBANG_CONST_FUNCTOR2(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2) \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                    \
+             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())
 
-#define CBANG_FUNCTOR1(CLASS, PARENT, RETURN, CALLBACK, ARG1)   \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, ,                 \
-             CBANG_ARGS1(ARG1), CBANG_PARAMS1)
+#define CBANG_CONST_FUNCTOR3(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3) \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                      \
+             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())
 
-#define CBANG_FUNCTOR2(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2) \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, ,                     \
-             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2)
+#define CBANG_CONST_FUNCTOR4(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
+                             ARG4)                                      \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                    \
+             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
 
-#define CBANG_FUNCTOR3(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, ARG3) \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, ,                         \
-             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3)
-
-#define CBANG_FUNCTOR4(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
-                       ARG4)                                            \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, ,                         \
-             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4)
-
-#define CBANG_FUNCTOR5(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2,     \
-                       ARG3, ARG4, ARG5)                                \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, ,                         \
-             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5)
-
-
-#define CBANG_CONST_FUNCTOR(CLASS, PARENT, RETURN, CALLBACK)    \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const, ,)
-
-#define CBANG_CONST_FUNCTOR1(CLASS, PARENT, RETURN, CALLBACK, ARG1) \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const,                \
-             CBANG_ARGS1(ARG1), CBANG_PARAMS1)
-
-#define CBANG_CONST_FUNCTOR2(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2) \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const,                    \
-             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2)
-
-#define CBANG_CONST_FUNCTOR3(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, \
-                             ARG3)                                      \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const,                    \
-             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3)
-
-#define CBANG_CONST_FUNCTOR4(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, \
-                             ARG3, ARG4)                                \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const,                    \
-             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4)
-
-#define CBANG_CONST_FUNCTOR5(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, \
-                             ARG3, ARG4, ARG5)                          \
-  CBANG_FUNC(CLASS, PARENT, RETURN, CALLBACK, const,                    \
-             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5)
+#define CBANG_CONST_FUNCTOR5(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
+                             ARG4, ARG5)                                \
+  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                      \
+             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
