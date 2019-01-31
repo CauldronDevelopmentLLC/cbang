@@ -40,23 +40,28 @@
 namespace cb {
   /// This class is used by SmartPointer to count pointer references
   class RefCounter {
-  public:
-    virtual ~RefCounter() {}
+  protected:
+    virtual ~RefCounter() {} // Prevent deallocation by others
 
-    virtual long getCount() const = 0;
+  public:
+    virtual unsigned getCount() const = 0;
     virtual void incCount() = 0;
     virtual void decCount(const void *ptr) = 0;
+    virtual bool isSelfRef() const {return false;}
+
+    static void raise(const std::string &msg);
   };
 
 
   class RefCounterPhonyImpl : public RefCounter {
     static RefCounterPhonyImpl singleton;
+    RefCounterPhonyImpl() {}
 
   public:
     static RefCounter *create() {return &singleton;}
 
     // From RefCounter
-    long getCount() const {return 1;}
+    unsigned getCount() const {return 1;}
     void incCount() {};
     void decCount(const void *ptr) {}
   };
@@ -65,21 +70,24 @@ namespace cb {
   template<typename T, class Dealloc_T = DeallocNew<T> >
   class RefCounterImpl : public RefCounter {
   protected:
-    long count;
+    unsigned count;
 
   public:
-    RefCounterImpl() : count(1) {}
+    RefCounterImpl(unsigned count = 0) : count(count) {}
     static RefCounter *create() {return new RefCounterImpl;}
 
     // From RefCounter
-    long getCount() const {return count;}
+    unsigned getCount() const {return count;}
     void incCount() {count++;}
 
     void decCount(const void *ptr) {
-      if (!--count) {
-        Dealloc_T::dealloc((T *)ptr);
-        delete this;
-      }
+      if (!count) raise("Already zero!");
+      if (!--count) release(ptr);
+    }
+
+    void release(const void *ptr) {
+      if (!isSelfRef()) delete this; // Only deallocate once
+      if (ptr) Dealloc_T::dealloc((T *)ptr);
     }
   };
 
@@ -88,15 +96,17 @@ namespace cb {
   class ProtectedRefCounterImpl :
     public RefCounterImpl<T, Dealloc_T>, public Mutex {
   protected:
-    using RefCounterImpl<T>::count;
+    typedef RefCounterImpl<T, Dealloc_T> Super_T;
+    using Super_T::count;
 
   public:
+    ProtectedRefCounterImpl(unsigned count = 0) : Super_T(count) {}
     static RefCounter *create() {return new ProtectedRefCounterImpl;}
 
     // From RefCounterImpl
-    long getCount() const {
+    unsigned getCount() const {
       lock();
-      long x = count;
+      unsigned x = count;
       unlock();
       return x;
     }
@@ -106,12 +116,30 @@ namespace cb {
     void decCount(const void *ptr) {
       lock();
 
+      if (!count) {unlock(); Super_T::raise("Already zero!");}
+
       if (!--count) {
-        Dealloc_T::dealloc((T *)ptr);
         unlock();
-        delete this;
+        Super_T::release(ptr);
 
       } else unlock();
     }
+  };
+
+
+  template<typename T, class Super_T>
+  class SelfRefCounterImpl : public Super_T {
+  protected:
+    bool engaged;
+
+  public:
+    SelfRefCounterImpl(unsigned count = 0) : Super_T(count), engaged(false) {}
+
+    bool isSelfRefEngaged() const {return engaged;}
+    void selfRef() {if (!engaged) {engaged = true; Super_T::incCount();}}
+    void selfDeref() {if (engaged) {engaged = false; Super_T::decCount(this);}}
+
+    // From RefCounter
+    bool isSelfRef() const {return true;}
   };
 }

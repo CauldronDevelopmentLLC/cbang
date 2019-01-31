@@ -57,7 +57,7 @@ GitHubOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));
   p->insert("avatar", profile->getString("avatar_url"));
-  p->insertBoolean("verified", true);
+  p->insertBoolean("verified", true); // TODO Has the email been verified?
   p->insert("raw", profile);
 
   return p;

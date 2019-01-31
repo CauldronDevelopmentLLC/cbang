@@ -70,6 +70,7 @@ namespace cb {
     void verify();
 
     std::string toString() const;
+    std::string toDER() const;
 
     std::istream &read(std::istream &stream);
     std::ostream &write(std::ostream &stream) const;

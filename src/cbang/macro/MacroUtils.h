@@ -32,11 +32,14 @@
 
 #pragma once
 
+#include "CPPMagic.h"
+
 #define _CBANG_CONCAT(prefix, name) prefix##name
 #define CBANG_CONCAT(prefix, name) _CBANG_CONCAT(prefix, name)
 
 #define _CBANG_STRING(str) #str
 #define CBANG_STRING(str) _CBANG_STRING(str)
+
 
 namespace cb {
   struct MacroDummy {

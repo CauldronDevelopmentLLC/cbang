@@ -57,37 +57,34 @@ void Base::initPriority(int num) {
 
 SmartPointer<cb::Event::Event>
 Base::newPersistentEvent(const SmartPointer<EventCallback> &cb) {
-  return new Event(*this, -1, EVENT_PERSIST, cb, false);
+  return new Event(*this, -1, EVENT_PERSIST, cb);
 }
 
-cb::Event::Event &Base::newEvent(const SmartPointer<EventCallback> &cb) {
-  return *new Event(*this, -1, 0, cb, true); // Deletes itself when done
+SmartPointer<cb::Event::Event>
+Base::newEvent(const SmartPointer<EventCallback> &cb) {
+  return new Event(*this, -1, 0, cb);
 }
 
 
-cb::Event::Event &Base::newEvent(int fd, unsigned events,
-                                 const SmartPointer<EventCallback> &cb) {
-  return *new Event(*this, fd, events, cb, true); // Deletes itself when done
+SmartPointer<cb::Event::Event>
+Base::newEvent(int fd, unsigned events, const SmartPointer<EventCallback> &cb) {
+  return new Event(*this, fd, events, cb);
 }
 
 
 SmartPointer<cb::Event::Event>
 Base::newPersistentSignal(int signal, const SmartPointer<EventCallback> &cb) {
-  return new Event(*this, signal, EVENT_PERSIST | EV_SIGNAL, cb, false);
+  return new Event(*this, signal, EVENT_PERSIST | EV_SIGNAL, cb);
 }
 
 
-cb::Event::Event &Base::newSignal(int signal,
-                                  const SmartPointer<EventCallback> &cb) {
-  return *new Event(*this, signal, cb, true); // Deletes itself when done
+SmartPointer<cb::Event::Event>
+Base::newSignal(int signal, const SmartPointer<EventCallback> &cb) {
+  return new Event(*this, signal, cb);
 }
 
 
-void Base::dispatch() {
-  if (event_base_dispatch(base)) THROW("Dispatch failed");
-}
-
-
+void Base::dispatch() {if (event_base_dispatch(base)) THROW("Dispatch failed");}
 void Base::loop() {if (event_base_loop(base, 0)) THROW("Loop failed");}
 
 

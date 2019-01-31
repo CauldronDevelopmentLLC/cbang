@@ -35,87 +35,40 @@
 #include "CallbackClasses.h"
 
 
-#define CBANG_FCB0(CLASS, RETURN, METHOD)                               \
-  RETURN METHOD(typename CLASS::func_t func) {                          \
-    return METHOD(new CLASS(func));                                     \
+#define CBANG_CARGS_OP(TYPE, NAME) TYPE NAME,
+#define CBANG_CARGS(...)                                        \
+  CBANG_MAP_WITH_ID(CBANG_CARGS_OP, CBANG_EMPTY, __VA_ARGS__)
+
+#define CBANG_CPARAMS_OP(TYPE, NAME) NAME,
+#define CBANG_CPARAMS(...)                                      \
+  CBANG_MAP_WITH_ID(CBANG_CPARAMS_OP, CBANG_EMPTY, __VA_ARGS__)
+
+
+#define CBANG_FCB(CLASS, RETURN, METHOD, ...)                           \
+  RETURN METHOD(CBANG_CARGS(__VA_ARGS__) typename CLASS::func_t func) { \
+    return METHOD(CBANG_CPARAMS(__VA_ARGS__) new CLASS(func));          \
   }
 
 
-#define CBANG_FCB(CLASS, RETURN, METHOD, ARGS, PARAMS)                  \
-  RETURN METHOD(ARGS, typename CLASS::func_t func) {                    \
-    return METHOD(PARAMS, new CLASS(func));                             \
-  }
-
-
-#define CBANG_MFCB0(CLASS, RETURN, METHOD)                              \
+#define CBANG_MFCB(CLASS, RETURN, METHOD, ...)                          \
   template <typename T>                                                 \
-  RETURN METHOD(T *obj, typename CLASS<T>::member_t member) {           \
-    return METHOD(new CLASS<T>(obj, member));                           \
-  }
-
-
-#define CBANG_MFCB(CLASS, RETURN, METHOD, ARGS, PARAMS)                 \
-  template <typename T>                                                 \
-  RETURN METHOD(ARGS, T *obj, typename CLASS<T>::member_t member) {     \
-    return METHOD(PARAMS, new CLASS<T>(obj, member));                   \
+  RETURN METHOD(CBANG_CARGS(__VA_ARGS__) T *obj,                        \
+                typename CLASS<T>::member_t member) {                   \
+    return METHOD(CBANG_CPARAMS(__VA_ARGS__) new CLASS<T>(obj, member)); \
   }
 
 
 #if 199711L < __cplusplus
-#define CBANG_FUCB0(...) CBANG_FCB0(__VA_ARGS__)
 #define CBANG_FUCB(...) CBANG_FCB(__VA_ARGS__)
 #else
-#define CBANG_FUCB0(...)
 #define CBANG_FUCB(...)
 #endif
 
 
-#define CBANG_CALLBACK_METHODS(CLASS, RETURN, METHOD)                   \
-  CBANG_FCB0(CBANG_CONCAT(CLASS, Functor), RETURN, METHOD)              \
-  CBANG_MFCB0(CBANG_CONCAT(CLASS, MemberFunctor), RETURN, METHOD)       \
-  CBANG_FUCB0(CBANG_CONCAT(CLASS, Function), RETURN, METHOD)
-
-#define CBANG_CALLBACK_METHODS1(CLASS, RETURN, METHOD, ARG1)            \
-  CBANG_FCB(CBANG_CONCAT(CLASS, Functor), RETURN, METHOD,               \
-            CBANG_ARGS1(ARG1), CBANG_PARAMS1())                         \
-  CBANG_MFCB(CBANG_CONCAT(CLASS, MemberFunctor), RETURN, METHOD,        \
-             CBANG_ARGS1(ARG1), CBANG_PARAMS1())                        \
-  CBANG_FUCB(CBANG_CONCAT(CLASS, Function), RETURN, METHOD,             \
-             CBANG_ARGS1(ARG1), CBANG_PARAMS1())
-
-#define CBANG_CALLBACK_METHODS2(CLASS, RETURN, METHOD, ARG1, ARG2)      \
-  CBANG_FCB(CBANG_CONCAT(CLASS, Functor), RETURN, METHOD,               \
-            CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())                   \
-  CBANG_MFCB(CBANG_CONCAT(CLASS, MemberFunctor), RETURN, METHOD,        \
-             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())                  \
-  CBANG_FUCB(CBANG_CONCAT(CLASS, Function), RETURN, METHOD,             \
-             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())
-
-#define CBANG_CALLBACK_METHODS3(CLASS, RETURN, METHOD, ARG1, ARG2, ARG3) \
-  CBANG_FCB(CBANG_CONCAT(CLASS, Functor), RETURN, METHOD,               \
-            CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())             \
-  CBANG_MFCB(CBANG_CONCAT(CLASS, MemberFunctor), RETURN, METHOD,        \
-             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())            \
-  CBANG_FUCB(CBANG_CONCAT(CLASS, Function), RETURN, METHOD,             \
-             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())
-
-#define CBANG_CALLBACK_METHODS4(CLASS, RETURN, METHOD, ARG1, ARG2, ARG3, \
-                                ARG4)                                   \
-  CBANG_FCB(CBANG_CONCAT(CLASS, Functor), RETURN, METHOD,               \
-            CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())       \
-  CBANG_MFCB(CBANG_CONCAT(CLASS, MemberFunctor), RETURN, METHOD,        \
-             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())      \
-  CBANG_FUCB(CBANG_CONCAT(CLASS, Function), RETURN, METHOD,             \
-             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
-
-#define CBANG_CALLBACK_METHODS5(CLASS, RETURN, METHOD, ARG1, ARG2, ARG3, \
-                                ARG4, ARG5)                             \
-  CBANG_FCB(CBANG_CONCAT(CLASS, Functor), RETURN, METHOD,               \
-            CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5()) \
-  CBANG_MFCB(CBANG_CONCAT(CLASS, MemberFunctor), RETURN, METHOD,        \
-             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5()) \
-  CBANG_FUCB(CBANG_CONCAT(CLASS, Function), RETURN, METHOD,             \
-             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
+#define CBANG_CALLBACK_METHODS(CLASS, RETURN, METHOD, ...)              \
+  CBANG_FCB(CBANG_CAT(CLASS, Functor), RETURN, METHOD, __VA_ARGS__)     \
+  CBANG_MFCB(CBANG_CAT(CLASS, MemberFunctor), RETURN, METHOD, __VA_ARGS__) \
+  CBANG_FUCB(CBANG_CAT(CLASS, Function), RETURN, METHOD, __VA_ARGS__)
 
 
 namespace cb {
@@ -125,16 +78,10 @@ namespace cb {
       void foo(const SmartPointer<_0> &) {}
       void foo1(int, const SmartPointer<_0> &) {}
       void foo2(int, int, const SmartPointer<_0> &) {}
-      void foo3(int, int, int, const SmartPointer<_0> &) {}
-      void foo4(int, int, int, int, const SmartPointer<_0> &) {}
-      void foo5(int, int, int, int, int, const SmartPointer<_0> &) {}
 
       CBANG_CALLBACK_METHODS(_0, void, foo);
-      CBANG_CALLBACK_METHODS1(_0, void, foo1, int);
-      CBANG_CALLBACK_METHODS2(_0, void, foo2, int, int);
-      CBANG_CALLBACK_METHODS3(_0, void, foo3, int, int, int);
-      CBANG_CALLBACK_METHODS4(_0, void, foo4, int, int, int, int);
-      CBANG_CALLBACK_METHODS5(_0, void, foo5, int, int, int, int, int);
+      CBANG_CALLBACK_METHODS(_0, void, foo1, int);
+      CBANG_CALLBACK_METHODS(_0, void, foo2, int, int);
     };
   }
 }

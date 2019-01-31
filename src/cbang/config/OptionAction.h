@@ -39,12 +39,7 @@ namespace cb {
   class Option;
 
   /// The non-templated base class of OptionAction.
-  class OptionActionBase {
-  public:
-    virtual ~OptionActionBase() {}
-    virtual int operator()(Option &option) = 0;
-  };
-
+  CBANG_FUNCTOR_BASE(OptionActionBase, int, operator(), , Option &);
 
   class BareOptionActionBase : public OptionActionBase {
   public:
@@ -62,6 +57,6 @@ namespace cb {
    * subsequent options.
    */
   CBANG_MEMBER_FUNCTOR(BareOptionAction, BareOptionActionBase, int, operator());
-  CBANG_MEMBER_FUNCTOR1(OptionAction, OptionActionBase, int, operator(), \
+  CBANG_MEMBER_FUNCTOR(OptionAction, OptionActionBase, int, operator(), \
                         Option &);
 }

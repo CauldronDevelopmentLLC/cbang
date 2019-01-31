@@ -63,9 +63,9 @@ namespace cb {
     };
 
 
-    CBANG_FUNCTOR3(DNSFunctor, DNSCallback, void, operator(), int,
+    CBANG_FUNCTOR(DNSFunctor, DNSCallback, void, operator(), int,
                    std::vector<IPAddress> &, int);
-    CBANG_MEMBER_FUNCTOR3(DNSMemberFunctor, DNSCallback, void, operator(), int,
+    CBANG_MEMBER_FUNCTOR(DNSMemberFunctor, DNSCallback, void, operator(), int,
                           std::vector<IPAddress> &, int);
   }
 }

@@ -35,7 +35,7 @@
 #include "HTTPStatus.h"
 #include "RequestMethod.h"
 
-#include <cbang/util/MemberFunctor.h>
+#include <cbang/util/CallbackClasses.h>
 
 struct evhttp_request;
 
@@ -54,9 +54,6 @@ namespace cb {
       virtual bool operator()(Request &req) {return false;}
     };
 
-    CBANG_FUNCTOR1(HTTPHandlerFunctor, HTTPHandler, bool, operator(), \
-                   Request &);
-    CBANG_MEMBER_FUNCTOR1(HTTPHandlerMemberFunctor, HTTPHandler, bool, \
-                          operator(), Request &);
+    CBANG_CALLBACK_CLASSES(HTTPHandler, bool, operator(), , Request &);
   }
 }

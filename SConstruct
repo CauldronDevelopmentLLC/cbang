@@ -71,7 +71,7 @@ subdirs = [
     '', 'script', 'xml', 'util', 'debug', 'config', 'pyon', 'os', 'http',
     'macro', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
     'socket', 'tar', 'io', 'geom', 'parse', 'task', 'json', 'jsapi', 'db',
-    'auth', 'js', 'async']
+    'auth', 'js', 'async', 'acmev2']
 
 if env.CBConfigEnabled('openssl'): subdirs.append('openssl')
 if env.CBConfigEnabled('chakra'): subdirs.append('chakra')

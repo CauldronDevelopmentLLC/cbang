@@ -34,17 +34,15 @@
 
 #include <cbang/json/Value.h>
 #include <cbang/json/Sink.h>
+#include <cbang/util/CallbackClasses.h>
 
 
 namespace cb {
   namespace HTTP {class WebContext;}
 
   namespace JSAPI {
-    class Handler {
-    public:
-      virtual ~Handler() {}
-      virtual void handle(HTTP::WebContext &ctx, const std::string &cmd,
-                          const JSON::ValuePtr &msg, JSON::Sink &sink) = 0;
-    };
+    CBANG_CALLBACK_CLASSES_WITH_BASE                                    \
+    (Handler, void, handle, , HTTP::WebContext &, const std::string &,  \
+     const JSON::ValuePtr &, JSON::Sink &);
   }
 }

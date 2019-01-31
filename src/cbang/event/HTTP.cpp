@@ -41,7 +41,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 
 #include <event2/http.h>
 #include <event2/bufferevent.h>
@@ -217,18 +217,18 @@ bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
     else req.sendError(HTTPStatus::HTTP_NOT_FOUND);
 
   } catch (cb::Exception &e) {
-    req.sendError(e.getCode(), e.getMessage());
     if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
     LOG_DEBUG(3, e);
+    req.sendError(e.getCode(), e.getMessage());
 
   } catch (std::exception &e) {
-    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
     LOG_ERROR(e.what());
+    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
 
   } catch (...) {
-    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
     LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
               .getDescription());
+    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
   }
 
   return false;

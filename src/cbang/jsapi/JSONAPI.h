@@ -33,7 +33,6 @@
 #pragma once
 
 #include "Handler.h"
-#include "MemberFunctor.h"
 
 #include <cbang/http/WebPageHandler.h>
 #include <cbang/SmartPointer.h>
@@ -66,8 +65,8 @@ namespace cb {
 
       template <class T>
       void add(const std::string &path, T *obj,
-               typename MemberFunctor<T>::member_t member) {
-        add(path, new MemberFunctor<T>(obj, member));
+               typename HandlerMemberFunctor<T>::member_t member) {
+        add(path, new HandlerMemberFunctor<T>(obj, member));
       }
 
       void dispatch(HTTP::WebContext &ctx, const std::string &cmd,

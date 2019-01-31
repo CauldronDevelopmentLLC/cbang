@@ -37,7 +37,7 @@
 
 #include <cbang/log/Logger.h>
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/json/Sink.h>
 #include <cbang/json/Integer.h>
 

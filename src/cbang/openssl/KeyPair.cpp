@@ -42,7 +42,7 @@
 #include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/log/Logger.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 
 #include <openssl/pem.h>
 #include <openssl/evp.h>
@@ -109,6 +109,12 @@ bool KeyPair::isRSA() const {return EVP_PKEY_base_id(key) == EVP_PKEY_RSA;}
 bool KeyPair::isDSA() const {return EVP_PKEY_base_id(key) == EVP_PKEY_DSA;}
 bool KeyPair::isDH() const {return EVP_PKEY_base_id(key) == EVP_PKEY_DH;}
 bool KeyPair::isEC() const {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
+
+
+cb::RSA KeyPair::getRSA() const {
+  if (!isRSA()) THROW("Not and RSA key");
+  return EVP_PKEY_get0_RSA(key);
+}
 
 
 bool KeyPair::hasPublic() const {

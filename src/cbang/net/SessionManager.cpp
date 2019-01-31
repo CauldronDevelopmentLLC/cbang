@@ -46,9 +46,17 @@ using namespace cb;
 using namespace std;
 
 
+SessionManager::SessionManager() :
+  lifetime(Time::SEC_PER_DAY), timeout(Time::SEC_PER_HOUR), cookie("sid") {}
+
+
 SessionManager::SessionManager(Options &options) :
   lifetime(Time::SEC_PER_DAY), timeout(Time::SEC_PER_HOUR), cookie("sid") {
+  addOptions(options);
+}
 
+
+void SessionManager::addOptions(Options &options) {
   options.pushCategory("Session Management");
 
   options.addTarget("session-timeout", timeout, "The maximum time in seconds, "

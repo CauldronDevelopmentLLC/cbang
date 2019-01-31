@@ -61,4 +61,10 @@ namespace cb {
     char encode(int x) const;
     int decode(char x) const;
   };
+
+
+  class URLBase64 : public Base64 {
+  public:
+    URLBase64() : Base64(0, '-', '_', 0) {}
+  };
 }

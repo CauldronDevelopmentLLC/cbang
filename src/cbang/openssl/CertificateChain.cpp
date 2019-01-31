@@ -33,11 +33,14 @@
 #include "CertificateChain.h"
 
 #include "Certificate.h"
+#include "BIStream.h"
 
+#include <openssl/pem.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/opensslv.h>
 
 using namespace cb;
+using namespace std;
 
 
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
@@ -65,21 +68,47 @@ CertificateChain::CertificateChain(X509_CHAIN *chain) : chain(chain) {
 }
 
 
-CertificateChain::~CertificateChain() {
-  sk_X509_pop_free(chain, X509_free);
-}
+CertificateChain::~CertificateChain() {clear();}
 
 
 CertificateChain &CertificateChain::operator=(const CertificateChain &o) {
   sk_X509_pop_free(chain, X509_free);
-
   chain = X509_chain_up_ref(o.chain);
-
   return *this;
 }
 
 
-void CertificateChain::add(Certificate &cert) {
+unsigned CertificateChain::size() const {return sk_X509_num(chain);}
+
+
+Certificate CertificateChain::get(unsigned i) const {
+  if (size() <= i) THROWS("Invalid certificate chain index " << i);
+  return Certificate(sk_X509_value(chain, i));
+}
+
+
+void CertificateChain::add(const Certificate &cert) {
   X509_up_ref(cert.getX509());
   sk_X509_push(chain, cert.getX509());
+}
+
+
+void CertificateChain::clear() {sk_X509_pop_free(chain, X509_free);}
+
+
+void CertificateChain::read(istream &stream) {
+  BIStream bio(stream);
+
+  X509 *cert = 0;
+
+  while (PEM_read_bio_X509(bio.getBIO(), &cert, 0, 0)) {
+    add(Certificate(cert));
+    cert = 0;
+  }
+}
+
+
+void CertificateChain::write(ostream &stream) const {
+  for (unsigned i = 0; i < size(); i++)
+    get(i).write(stream);
 }

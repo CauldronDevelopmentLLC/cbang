@@ -39,6 +39,7 @@
 #include <cbang/StdTypes.h>
 
 #include <cbang/xml/XMLHandler.h>
+#include <cbang/util/CallbackMethods.h>
 
 #include <ostream>
 #include <string>

@@ -33,7 +33,7 @@
 #include "Event.h"
 #include "EventCallback.h"
 
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
 #include <cbang/debug/Debugger.h>
@@ -55,25 +55,23 @@ namespace {
 
 
 Event::Event(Base &base, int fd, unsigned events,
-             const cb::SmartPointer<EventCallback> &cb, bool selfDestruct) :
-  e(event_new(base.getBase(), fd, events, event_cb, this)), cb(cb),
-  selfDestruct(selfDestruct) {
+             const cb::SmartPointer<EventCallback> &cb) :
+  e(event_new(base.getBase(), fd, events, event_cb, this)), cb(cb) {
   LOG_DEBUG(5, "Created new event with fd=" << fd);
   if (!e) THROW("Failed to create event");
 }
 
 
-Event::Event(Base &base, int signal, const cb::SmartPointer<EventCallback> &cb,
-             bool selfDestruct) :
-  e(event_new(base.getBase(), signal, EV_SIGNAL, event_cb, this)), cb(cb),
-  selfDestruct(selfDestruct) {
+Event::Event(Base &base, int signal,
+             const cb::SmartPointer<EventCallback> &cb) :
+  e(event_new(base.getBase(), signal, EV_SIGNAL, event_cb, this)), cb(cb) {
   LOG_DEBUG(5, "Created new event with signal=" << signal);
   if (!e) THROW("Failed to create signal event");
 }
 
 
 Event::~Event() {
-  LOG_DEBUG(5, "~Event()");
+  LOG_DEBUG(6, __func__ << "() " << Debugger::getStackTrace());
   if (e) event_free(e);
 }
 
@@ -103,20 +101,20 @@ void Event::setPriority(int priority) {
 
 
 void Event::assign(Base &base, int fd, unsigned events,
-                   const cb::SmartPointer<EventCallback> &cb) {
-  event_del(e);
+                   const SmartPointer<EventCallback> &cb) {
+  del();
   event_assign(e, base.getBase(), fd, events, event_cb, this);
 }
 
 
 void Event::renew(int fd, unsigned events) {
-  event_del(e);
+  del();
   event_assign(e, event_get_base(e), fd, events, event_cb, this);
 }
 
 
 void Event::renew(int signal) {
-  event_del(e);
+  del();
   event_assign(e, event_get_base(e), signal, EV_SIGNAL, event_cb, this);
 }
 
@@ -124,23 +122,38 @@ void Event::renew(int signal) {
 void Event::add(double t) {
   struct timeval tv = Timer::toTimeVal(t);
   event_add(e, &tv);
+  SmartPointer<Event>::SelfRef::selfRef();
 }
 
 
-void Event::add() {event_add(e, 0);}
+void Event::add() {
+  event_add(e, 0);
+  SmartPointer<Event>::SelfRef::selfRef();
+}
 
 
 void Event::readd() {
   struct timeval tv = e->ev_timeout;
   event_add(e, &tv);
+  SmartPointer<Event>::SelfRef::selfRef();
 }
 
 
-void Event::del() {event_del(e);}
-void Event::activate(int flags) {event_active(e, flags, 0);}
+void Event::del() {
+  event_del(e);
+  SmartPointer<Event>::SelfRef::selfDeref();
+}
+
+
+void Event::activate(int flags) {
+  event_active(e, flags, 0);
+  SmartPointer<Event>::SelfRef::selfRef();
+}
 
 
 void Event::call(int fd, short flags) {
+  SmartPointer<Event> _ = this; // Don't deallocate while in callback
+
   if (!logPrefix.empty()) Logger::instance().setThreadPrefix(logPrefix);
 
   LOG_DEBUG(5, "Event callback fd=" << fd << " flags=" << flags);
@@ -149,9 +162,8 @@ void Event::call(int fd, short flags) {
     (*cb)(*this, fd, flags);
   } CATCH_ERROR;
 
+  if (!isPending()) SmartPointer<Event>::SelfRef::selfDeref();
   if (!logPrefix.empty()) Logger::instance().setThreadPrefix("");
-
-  if (selfDestruct && !isPending()) delete this;
 }
 
 

@@ -53,11 +53,11 @@ namespace cb {
       virtual void operator()(state_t state) = 0;
     };
 
-    CBANG_FUNCTOR1(EventDBFunctor, EventDBCallback, void, operator(),   \
+    CBANG_FUNCTOR(EventDBFunctor, EventDBCallback, void, operator(),   \
                    EventDBCallback::state_t);
-    CBANG_MEMBER_FUNCTOR1(EventDBMemberFunctor, EventDBCallback, void,  \
+    CBANG_MEMBER_FUNCTOR(EventDBMemberFunctor, EventDBCallback, void,  \
                           operator(), EventDBCallback::state_t);
-    CBANG_FUNCTION1(EventDBFunction, EventDBCallback, void, operator(), \
+    CBANG_FUNCTION(EventDBFunction, EventDBCallback, void, operator(), \
                     EventDBCallback::state_t);
   }
 }

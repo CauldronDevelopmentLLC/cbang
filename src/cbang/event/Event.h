@@ -43,20 +43,19 @@ namespace cb {
   namespace Event {
     class EventCallback;
 
-    class Event : public EventFlag {
+    class Event : SmartPointer<Event>::SelfRef, public EventFlag {
+      // Only SmartPointer should access the SelfRef base class.
+      friend class SmartPointer<Event>;
+
       event *e;
       SmartPointer<EventCallback> cb;
-      bool selfDestruct;
       std::string logPrefix;
 
     public:
       Event(Base &base, int fd, unsigned events,
-            const SmartPointer<EventCallback> &cb, bool selfDestruct = false);
-      Event(Base &base, int signal, const SmartPointer<EventCallback> &cb,
-            bool selfDestruct = false);
-      Event(event *e, const SmartPointer<EventCallback> &cb,
-            bool selfDestruct = false) :
-        e(e), cb(cb), selfDestruct(selfDestruct) {}
+            const SmartPointer<EventCallback> &cb);
+      Event(Base &base, int signal, const SmartPointer<EventCallback> &cb);
+      Event(event *e, const SmartPointer<EventCallback> &cb) : e(e), cb(cb) {}
       virtual ~Event();
 
       event *getEvent() const {return e;}

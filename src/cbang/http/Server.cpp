@@ -49,7 +49,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>

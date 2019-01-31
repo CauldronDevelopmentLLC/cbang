@@ -225,8 +225,20 @@ void CSR::verify() {
 
 
 
-string CSR::toString() const {
-  return SSTR(*this);
+string CSR::toString() const {return SSTR(*this);}
+
+
+string CSR::toDER() const {
+  // Get length
+  int len = i2d_X509_REQ(csr, 0);
+
+  if (len < 0) THROWS("Failed to convert CSR to DER: " << SSL::getErrorStr());
+
+  SmartPointer<unsigned char>::Array buffer = new unsigned char[len];
+  unsigned char *ptr = buffer.get();
+  i2d_X509_REQ(csr, &ptr);
+
+  return string((char *)buffer.get(), len);
 }
 
 

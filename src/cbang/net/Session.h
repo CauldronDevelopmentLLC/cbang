@@ -61,8 +61,9 @@ namespace cb {
     uint64_t getLastUsed() const;
     void setLastUsed(uint64_t lastUsed);
 
-    void setUser(const std::string &user) {insert("user", user);}
+    bool hasUser() const {return hasString("user");}
     const std::string &getUser() const {return getString("user");}
+    void setUser(const std::string &user) {insert("user", user);}
 
     IPAddress getIP() const {return getString("ip");}
     void setIP(const IPAddress &ip) {insert("ip", ip.toString());}

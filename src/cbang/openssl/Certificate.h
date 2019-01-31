@@ -34,6 +34,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
+#include <cbang/iostream/Serializable.h>
 
 #include <iostream>
 
@@ -44,7 +45,7 @@ namespace cb {
   class KeyPair;
   class CertificateContext;
 
-  class Certificate {
+  class Certificate : public Serializable {
     X509 *cert;
 
   public:
@@ -57,6 +58,7 @@ namespace cb {
 
     X509 *getX509() const {return cert;}
 
+    bool hasPublicKey() const;
     void getPublicKey(KeyPair &key) const;
     SmartPointer<KeyPair> getPublicKey() const;
     void setPublicKey(const KeyPair &key);
@@ -72,6 +74,7 @@ namespace cb {
 
     void setNotAfter(uint64_t x);
     bool isNotAfterInPast() const;
+    bool expiredIn(unsigned secs) const;
 
     void setIssuer(const Certificate &issuer);
 
@@ -90,20 +93,8 @@ namespace cb {
     void sign(KeyPair &key, const std::string &digest = "sha256");
     void verify();
 
-    std::string toString() const;
-    void set(const std::string &pem);
-
-    std::istream &read(std::istream &stream);
-    std::ostream &write(std::ostream &stream) const;
+    // From Serializable
+    void read(std::istream &stream);
+    void write(std::ostream &stream) const;
   };
-
-
-  inline std::istream &operator>>(std::istream &stream, Certificate &cert) {
-    return cert.read(stream);
-  }
-
-  inline std::ostream &operator<<(std::ostream &stream,
-                                  const Certificate &cert) {
-    return cert.write(stream);
-  }
 }

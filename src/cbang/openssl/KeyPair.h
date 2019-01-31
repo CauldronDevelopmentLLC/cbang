@@ -34,6 +34,7 @@
 
 #include "KeyGenCallback.h"
 #include "PasswordCallback.h"
+#include "RSA.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
@@ -69,6 +70,8 @@ namespace cb {
     bool isDSA() const;
     bool isDH() const;
     bool isEC() const;
+
+    RSA getRSA() const;
 
     bool hasPublic() const;
     bool hasPrivate() const;

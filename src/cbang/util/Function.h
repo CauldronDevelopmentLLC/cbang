@@ -39,84 +39,28 @@
 #include <functional>
 
 
-#define CBANG_FUN(CLASS, BASE, RETURN, CALLBACK, CONST, ARGS, PARAMS)   \
+#define CBANG_FUNCTION_(CLASS, BASE, RETURN, CALLBACK, CONST, ...)       \
   class CLASS : public BASE {                                           \
   public:                                                               \
-    typedef std::function<RETURN (ARGS)> func_t;                        \
+    typedef std::function<RETURN (CBANG_ARGS(__VA_ARGS__))> func_t;     \
   protected:                                                            \
     func_t cb;                                                          \
   public:                                                               \
     CLASS(func_t cb) : cb(cb) {}                                        \
-    RETURN CALLBACK(ARGS) CONST {return cb(PARAMS);}                    \
+    RETURN CALLBACK(CBANG_ARGS(__VA_ARGS__)) CONST {                    \
+      return cb(CBANG_PARAMS(__VA_ARGS__));                             \
+    }                                                                   \
   }
-
-
-#define CBANG_FUNCTION(CLASS, PARENT, RETURN, CALLBACK) \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, , ,)
-
-#define CBANG_FUNCTION1(CLASS, PARENT, RETURN, CALLBACK, ARG1)          \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, , CBANG_ARGS1(ARG1), \
-            CBANG_PARAMS1())
-
-#define CBANG_FUNCTION2(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2)   \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, , CBANG_ARGS2(ARG1, ARG2), \
-            CBANG_PARAMS2())
-
-#define CBANG_FUNCTION3(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, ARG3) \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, , CBANG_ARGS3(ARG1, ARG2, ARG3), \
-            CBANG_PARAMS3())
-
-#define CBANG_FUNCTION4(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
-                        ARG4)                                           \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, ,                          \
-            CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
-
-#define CBANG_FUNCTION5(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
-                        ARG4, ARG5)                                     \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, ,                          \
-            CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
-
-#define CBANG_CONST_FUNCTION(CLASS, PARENT, RETURN, CALLBACK)   \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, const, ,)
-
-#define CBANG_CONST_FUNCTION1(CLASS, PARENT, RETURN, CALLBACK, ARG1)    \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, const, CBANG_ARGS1(ARG1),  \
-            CBANG_PARAMS1())
-
-#define CBANG_CONST_FUNCTION2(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2)   \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, const, CBANG_ARGS2(ARG1, ARG2), \
-            CBANG_PARAMS2())
-
-#define CBANG_CONST_FUNCTION3(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, \
-                              ARG3)                                     \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, const,                     \
-            CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())
-
-#define CBANG_CONST_FUNCTION4(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, \
-                              ARG3, ARG4)                               \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, const,                     \
-            CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
-
-#define CBANG_CONST_FUNCTION5(CLASS, PARENT, RETURN, CALLBACK, ARG1, ARG2, \
-                              ARG3, ARG4, ARG5)                         \
-  CBANG_FUN(CLASS, PARENT, RETURN, CALLBACK, const,                     \
-            CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
 
 #else // 199711L < __cplusplus
 
-#define CBANG_FUN(...)
-#define CBANG_FUNCTION(...)
-#define CBANG_FUNCTION1(...)
-#define CBANG_FUNCTION2(...)
-#define CBANG_FUNCTION3(...)
-#define CBANG_FUNCTION4(...)
-#define CBANG_FUNCTION5(...)
-
-#define CBANG_CONST_FUNCTION(...)
-#define CBANG_CONST_FUNCTION1(...)
-#define CBANG_CONST_FUNCTION2(...)
-#define CBANG_CONST_FUNCTION3(...)
-#define CBANG_CONST_FUNCTION4(...)
-#define CBANG_CONST_FUNCTION5(...)
+#define CBANG_FUNCTION_(...)
 
 #endif // 199711L < __cplusplus
+
+
+#define CBANG_FUNCTION(CLASS, BASE, RETURN, CALLBACK, ...)      \
+  CBANG_FUNCTION_(CLASS, BASE, RETURN, CALLBACK, , __VA_ARGS__)
+
+#define CBANG_CONST_FUNCTION(CLASS, BASE, RETURN, CALLBACK, ...)        \
+  CBANG_FUNCTION_(CLASS, BASE, RETURN, CALLBACK, const, __VA_ARGS__)

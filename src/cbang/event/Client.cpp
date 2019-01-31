@@ -41,12 +41,15 @@
 namespace cb {class SSLContext {};}
 #endif
 
+#include <event2/http.h>
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
-Client::Client(Base &base, DNSBase &dns) : base(base), dns(dns), priority(-1) {}
+Client::Client(Base &base, DNSBase &dns) :
+  base(base), dns(dns), priority(-1) {}
 
 
 Client::Client(Base &base, DNSBase &dns,
@@ -60,9 +63,12 @@ Client::~Client() {}
 SmartPointer<PendingRequest>
 Client::call(const URI &uri, unsigned method, const char *data, unsigned length,
              const SmartPointer<HTTPResponseHandler> &cb) {
-  SmartPointer<PendingRequest> req = new PendingRequest(*this, uri, method, cb);
+  SmartPointer<PendingRequest> req =
+    new PendingRequest(*this, uri, method, cb);
+
   if (data) req->getOutputBuffer().add(data, length);
   if (0 <= priority) req->getBufferEvent().setPriority(priority);
+
   return req;
 }
 

@@ -34,7 +34,7 @@
 
 #include "EventFlag.h"
 
-#include <cbang/util/MemberFunctor.h>
+#include <cbang/util/Function.h>
 
 namespace cb {
   namespace Event {
@@ -48,9 +48,11 @@ namespace cb {
       virtual void operator()(Event &event, int fd, unsigned flags) = 0;
     };
 
-    CBANG_FUNCTOR3(EventFunctor, EventCallback, void, operator(), Event &, \
+    CBANG_FUNCTOR(EventFunctor, EventCallback, void, operator(), Event &, \
                    int, unsigned);
-    CBANG_MEMBER_FUNCTOR3(EventMemberFunctor, EventCallback, void, operator(), \
+    CBANG_MEMBER_FUNCTOR(EventMemberFunctor, EventCallback, void, operator(), \
                           Event &, int, unsigned);
+    CBANG_FUNCTION(EventFunction, EventCallback, void, operator(), Event &, \
+                    int, unsigned);
   }
 }

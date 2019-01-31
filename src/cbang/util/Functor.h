@@ -32,73 +32,55 @@
 
 #pragma once
 
+#include <cbang/macro/CPPMagic.h>
+
 #include "FunctorBase.h"
 
+#include <cbang/Exception.h>
 
-#define CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, CONST, ARGS, PARAMS)  \
+
+#define CBANG_ARGS_OP(TYPE, NAME) TYPE NAME
+#define CBANG_ARGS(...)                                         \
+  CBANG_MAP_WITH_ID(CBANG_ARGS_OP, CBANG_COMMA, __VA_ARGS__)
+
+#define CBANG_PARAMS_OP(TYPE, NAME) NAME
+#define CBANG_PARAMS(...)                                       \
+  CBANG_MAP_WITH_ID(CBANG_PARAMS_OP, CBANG_COMMA, __VA_ARGS__)
+
+
+#define CBANG_FUNCTOR_(CLASS, BASE, RETURN, CALLBACK, CONST, ...)        \
   class CLASS : public BASE {                                           \
   public:                                                               \
-    typedef RETURN (*func_t)(ARGS);                                     \
+    typedef RETURN (*func_t)(CBANG_ARGS(__VA_ARGS__));                  \
   protected:                                                            \
     func_t func;                                                        \
   public:                                                               \
-    CLASS(func_t func) : func(func) {}                                  \
-    RETURN CALLBACK(ARGS) CONST {return (*func)(PARAMS);}               \
+    CLASS(func_t func) : func(func) {                                   \
+      if (!func) CBANG_THROW("Functor cannot be NULL");                 \
+    }                                                                   \
+    RETURN CALLBACK(CBANG_ARGS(__VA_ARGS__)) CONST {                    \
+      return (*func)(CBANG_PARAMS(__VA_ARGS__));                        \
+    }                                                                   \
   }
 
 
-#define CBANG_PARAMS1() arg1
-#define CBANG_PARAMS2() CBANG_PARAMS1() CBANG_DEFER(CBANG_COMMA)() arg2
-#define CBANG_PARAMS3() CBANG_PARAMS2() CBANG_DEFER(CBANG_COMMA)() arg3
-#define CBANG_PARAMS4() CBANG_PARAMS3() CBANG_DEFER(CBANG_COMMA)() arg4
-#define CBANG_PARAMS5() CBANG_PARAMS4() CBANG_DEFER(CBANG_COMMA)() arg5
+#define CBANG_FUNCTOR(CLASS, BASE, RETURN, CALLBACK, ...)        \
+  CBANG_FUNCTOR_(CLASS, BASE, RETURN, CALLBACK, , __VA_ARGS__)
 
-#define CBANG_FUNCTOR(CLASS, BASE, RETURN, CALLBACK)  \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, , ,)
-
-#define CBANG_FUNCTOR1(CLASS, BASE, RETURN, CALLBACK, ARG1)   \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                 \
-             CBANG_ARGS1(ARG1), CBANG_PARAMS1())
-
-#define CBANG_FUNCTOR2(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2) \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                     \
-             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())
-
-#define CBANG_FUNCTOR3(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3) \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                           \
-             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())
-
-#define CBANG_FUNCTOR4(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, ARG4) \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                           \
-             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
-
-#define CBANG_FUNCTOR5(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, ARG4, \
-                       ARG5)                                            \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, ,                           \
-             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
+#define CBANG_CONST_FUNCTOR(CLASS, BASE, RETURN, CALLBACK, ...) \
+  CBANG_FUNCTOR_(CLASS, BASE, RETURN, CALLBACK, const, __VA_ARGS__)
 
 
-#define CBANG_CONST_FUNCTOR(CLASS, BASE, RETURN, CALLBACK)    \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const, ,)
+namespace cb {
+  namespace __cbang_functor_test {
+    namespace base = __cbang_functor_base_test;
 
-#define CBANG_CONST_FUNCTOR1(CLASS, BASE, RETURN, CALLBACK, ARG1) \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                \
-             CBANG_ARGS1(ARG1), CBANG_PARAMS1())
+    CBANG_FUNCTOR(_0, base::_0, void, foo);
+    CBANG_FUNCTOR(_1, base::_1, void, foo, int);
+    CBANG_FUNCTOR(_2, base::_2, void, foo, int, int);
 
-#define CBANG_CONST_FUNCTOR2(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2) \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                    \
-             CBANG_ARGS2(ARG1, ARG2), CBANG_PARAMS2())
-
-#define CBANG_CONST_FUNCTOR3(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3) \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                      \
-             CBANG_ARGS3(ARG1, ARG2, ARG3), CBANG_PARAMS3())
-
-#define CBANG_CONST_FUNCTOR4(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
-                             ARG4)                                      \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                    \
-             CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4), CBANG_PARAMS4())
-
-#define CBANG_CONST_FUNCTOR5(CLASS, BASE, RETURN, CALLBACK, ARG1, ARG2, ARG3, \
-                             ARG4, ARG5)                                \
-  CBANG_FUNC(CLASS, BASE, RETURN, CALLBACK, const,                      \
-             CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5), CBANG_PARAMS5())
+    CBANG_CONST_FUNCTOR(_c0, base::_0, void, foo);
+    CBANG_CONST_FUNCTOR(_c1, base::_1, void, foo, int);
+    CBANG_CONST_FUNCTOR(_c2, base::_2, void, foo, int, int);
+  }
+}

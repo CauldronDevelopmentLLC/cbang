@@ -34,7 +34,7 @@
 
 #include "BIOSocketImpl.h"
 
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 
 #include "Socket.h"
 

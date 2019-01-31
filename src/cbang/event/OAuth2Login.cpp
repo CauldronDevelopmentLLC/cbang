@@ -38,40 +38,46 @@
 #include <cbang/auth/OAuth2.h>
 #include <cbang/net/URI.h>
 #include <cbang/json/Value.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb::Event;
 
 
-OAuth2Login::OAuth2Login(Client &client) : client(client), auth(0) {}
-
-
+OAuth2Login::OAuth2Login(Client &client, const SmartPointer<OAuth2> &oauth2) :
+  client(client), oauth2(oauth2) {}
 OAuth2Login::~OAuth2Login() {}
 
 
-bool OAuth2Login::authorize(Request &req, cb::OAuth2 &auth,
-                            const string &state) {
-  if (req.getURI().has("state")) return requestToken(req, auth, state);
-  return authRedirect(req, auth, state);
+bool OAuth2Login::authorize(Request &req, const string &state) {
+  if (req.getURI().has("state")) return requestToken(req, state);
+  return authRedirect(req, state);
 }
 
 
-bool OAuth2Login::authRedirect(Request &req, cb::OAuth2 &auth,
-                               const string &state) {
-  req.redirect(auth.getRedirectURL(req.getURI().getPath(), state));
+bool OAuth2Login::authRedirect(Request &req, const string &state) {
+  req.redirect(getOAuth2()->getRedirectURL(req.getURI().getPath(), state));
   return true;
 }
 
 
-bool OAuth2Login::requestToken(Request &req, cb::OAuth2 &auth,
-                               const string &state,
+bool OAuth2Login::requestToken(Request &req, const string &state,
                                const string &redirect_uri) {
-  this->auth = &auth;
-  this->state = state;
+  struct Handler : public HTTPResponseHandler {
+    OAuth2Login &login;
+    Request &origReq;
 
-  URI verifyURL = auth.getVerifyURL(req.getURI(), state);
+    Handler(OAuth2Login &login, Request &origReq) :
+      login(login), origReq(origReq) {}
+
+    // From HTTPResponseHandler
+    void operator()(Request *req, int err) {
+      login.verifyToken(origReq, req ? req->getInput() : "");
+    }
+  };
+
+  URI verifyURL = getOAuth2()->getVerifyURL(req.getURI(), state);
 
   // Override redirect URI
   if (!redirect_uri.empty()) verifyURL.set("redirect_uri", redirect_uri);
@@ -81,58 +87,56 @@ bool OAuth2Login::requestToken(Request &req, cb::OAuth2 &auth,
   verifyURL.setQuery("");
 
   // Verify authorization with OAuth2 server
-  pending = client.callMember
-    (verifyURL, HTTP_POST, data.data(), data.length(), this,
-     &OAuth2Login::verifyToken);
-  pending->setContentType("application/x-www-form-urlencoded");
-  pending->outSet("Accept", "application/json");
-  pending->send();
+  SmartPointer<PendingRequest> pr =
+    client.call(verifyURL, HTTP_POST, data, new Handler(*this, req));
+  pr->setContentType("application/x-www-form-urlencoded");
+  pr->outSet("Accept", "application/json");
+  pr->send();
 
   return true;
 }
 
 
-void OAuth2Login::verifyToken(Request *req, int err) {
-  if (req)
-    try {
-      if (!auth) THROW("Auth is null");
+void OAuth2Login::verifyToken(Request &req, const string &response) {
+  struct Handler : public HTTPResponseHandler {
+    OAuth2Login &login;
+    Request &origReq;
 
+    Handler(OAuth2Login &login, Request &origReq) :
+      login(login), origReq(origReq) {}
+
+    // From HTTPResponseHandler
+    void operator()(Request *req, int err) {
+      if (req)
+        try {
+          SmartPointer<JSON::Value> profile =
+            login.getOAuth2()->processProfile(req->getInputJSON());
+
+          LOG_DEBUG(3, "OAuth2 Profile: " << *profile);
+          login.processProfile(origReq, profile);
+          return;
+        } CATCH_ERROR;
+
+      login.processProfile(origReq, 0);
+    }
+  };
+
+  if (!response.empty())
+    try {
       // Verify
-      string accessToken = auth->verifyToken(req->getInput());
+      string accessToken = getOAuth2()->verifyToken(response);
 
       // Get profile
-      pending = client.callMember(auth->getProfileURL(accessToken), HTTP_GET,
-                                  this, &OAuth2Login::processProfile);
-      pending->outSet("User-Agent", "cbang.org");
-      pending->send();
+      SmartPointer<PendingRequest> pr =
+        client.call(getOAuth2()->getProfileURL(accessToken), HTTP_GET,
+                    new Handler(*this, req));
+      pr->outSet("User-Agent", "cbang.org");
+      pr->send();
 
       return;
     } catch (const Exception &e) {
-      LOG_ERROR("OAuth2Login verification failed: " << req->getInput());
+      LOG_ERROR("OAuth2Login verification failed: " << response);
     }
 
-  processProfile(0); // Notify incase of error
-  pending.release();
-}
-
-
-void OAuth2Login::processProfile(Request *req, int err) {
-  SmartPointer<JSON::Value> profile;
-
-  if (req)
-    try {
-      if (!auth) THROW("Auth is null");
-      profile = req->getInputJSON();
-      if (profile.isNull()) THROW("Did not receive profile");
-      profile = auth->processProfile(profile);
-    } CATCH_ERROR;
-
-  LOG_DEBUG(5, __func__ << ": " << *profile);
-
-  processProfile(profile);
-
-  // Cleanup
-  auth = 0;
-  pending.release();
-  state.clear();
+  processProfile(req, 0); // Notify incase of error
 }

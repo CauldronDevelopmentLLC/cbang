@@ -38,7 +38,7 @@
 #include <cbang/String.h>
 
 #include <cbang/log/Logger.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 
 #include <boost/ref.hpp>
 #include <boost/iostreams/combine.hpp>

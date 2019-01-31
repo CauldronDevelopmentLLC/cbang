@@ -32,46 +32,19 @@
 
 #pragma once
 
-#include <cbang/macro/MacroUtils.h>
 
-
-#define CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST, ARGS)           \
+#define CBANG_FUNCTOR_BASE(CLASS, RETURN, CALLBACK, CONST, ...)         \
   class CLASS {                                                         \
   public:                                                               \
     virtual ~CLASS() {}                                                 \
-    virtual RETURN CALLBACK(ARGS) CONST = 0;                            \
+    virtual RETURN CALLBACK(__VA_ARGS__) CONST = 0;                     \
   }
 
 
-#define CBANG_ARGS1(ARG1) ARG1 arg1
-#define CBANG_ARGS2(ARG1, ARG2) \
-  CBANG_ARGS1(ARG1) CBANG_DEFER(CBANG_COMMA)() ARG2 arg2
-#define CBANG_ARGS3(ARG1, ARG2, ARG3)                           \
-  CBANG_ARGS2(ARG1, ARG2) CBANG_DEFER(CBANG_COMMA)() ARG3 arg3
-#define CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4)                     \
-  CBANG_ARGS3(ARG1, ARG2, ARG3) CBANG_DEFER(CBANG_COMMA)() ARG4 arg4
-#define CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5)                       \
-  CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4) CBANG_DEFER(CBANG_COMMA)() ARG5 arg5
-
-
-#define CBANG_FUNCTOR_BASE(CLASS, RETURN, CALLBACK, CONST)      \
-  CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST,)
-
-#define CBANG_FUNCTOR_BASE1(CLASS, RETURN, CALLBACK, CONST, ARG1)       \
-  CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST, CBANG_ARGS1(ARG1))
-
-#define CBANG_FUNCTOR_BASE2(CLASS, RETURN, CALLBACK, CONST, ARG1, ARG2) \
-  CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST, CBANG_ARGS2(ARG1, ARG2))
-
-#define CBANG_FUNCTOR_BASE3(CLASS, RETURN, CALLBACK, CONST, ARG1, ARG2, ARG3) \
-  CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST, CBANG_ARGS3(ARG1, ARG2, ARG3))
-
-#define CBANG_FUNCTOR_BASE4(CLASS, RETURN, CALLBACK, CONST, ARG1, ARG2, ARG3, \
-                            ARG4)                                       \
-  CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST,                       \
-                  CBANG_ARGS4(ARG1, ARG2, ARG3, ARG4))
-
-#define CBANG_FUNCTOR_BASE5(CLASS, RETURN, CALLBACK, CONST, ARG1, ARG2, ARG3, \
-                            ARG4, ARG5)                                 \
-  CBANG_FUNC_BASE(CLASS, RETURN, CALLBACK, CONST,                       \
-                  CBANG_ARGS5(ARG1, ARG2, ARG3, ARG4, ARG5))
+namespace cb {
+  namespace __cbang_functor_base_test {
+    CBANG_FUNCTOR_BASE(_0, void, foo, const);
+    CBANG_FUNCTOR_BASE(_1, void, foo, const, int);
+    CBANG_FUNCTOR_BASE(_2, void, foo, const, int, int);
+  }
+}

@@ -32,24 +32,13 @@
 
 #pragma once
 
-#include <cbang/util/MemberFunctor.h>
+#include <cbang/util/CallbackClasses.h>
 
 
 namespace cb {
   namespace Event {
     class Request;
-
-    class HTTPResponseHandler {
-    public:
-      virtual ~HTTPResponseHandler() {}
-
-      virtual void operator()(Request *req, int err) = 0;
-    };
-
-    CBANG_FUNCTOR2(HTTPResponseHandlerFunctor, HTTPResponseHandler, void, \
-                   operator(), Request *, int);
-    CBANG_MEMBER_FUNCTOR2(HTTPResponseHandlerMemberFunctor,             \
-                          HTTPResponseHandler, void, operator(), Request *, \
-                          int);
+    CBANG_CALLBACK_CLASSES_WITH_BASE                            \
+    (HTTPResponseHandler, void, operator(), , Request *, int);
   }
 }

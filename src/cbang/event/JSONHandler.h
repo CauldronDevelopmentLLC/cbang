@@ -51,7 +51,7 @@ namespace cb {
       bool operator()(Request &req);
     };
 
-    CBANG_MEMBER_FUNCTOR3(JSONHandlerMemberFunctor, JSONHandler, bool,  \
+    CBANG_MEMBER_FUNCTOR(JSONHandlerMemberFunctor, JSONHandler, bool,  \
                           operator(), Request &, const JSON::ValuePtr &, \
                           JSON::Sink &);
   }

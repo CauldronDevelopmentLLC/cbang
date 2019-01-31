@@ -38,7 +38,7 @@
 
 #include <cbang/Exception.h>
 
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
 #include <cbang/debug/Debugger.h>
 
@@ -98,8 +98,6 @@ ThreadLocalStorage<Thread *> Thread::threads;
 Thread::Thread(bool destroy) :
   p(new Thread::private_t), state(THREAD_STOPPED), shutdown(false),
   destroy(destroy), id(getNextID()), exitStatus(0) {
-
-  threads.set(this);
 
 #ifdef HAVE_VALGRIND
   VALGRIND_HG_DISABLE_CHECKING(state, sizeof(state));
@@ -232,13 +230,12 @@ uint64_t Thread::self() {
 }
 
 
-Thread &Thread::current() {
-  return *threads.get();
-}
+Thread &Thread::current() {return *threads.get();}
 
 
 void Thread::starter() {
   state = THREAD_RUNNING;
+  threads.set(this);
 
   try {
     Logger::instance().setThreadID(getID());

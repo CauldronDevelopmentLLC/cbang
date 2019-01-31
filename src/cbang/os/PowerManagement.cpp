@@ -36,7 +36,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/time/Time.h>
 
 #if defined(_WIN32)

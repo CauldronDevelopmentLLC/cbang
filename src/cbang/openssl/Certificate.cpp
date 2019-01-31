@@ -39,6 +39,8 @@
 #include "BOStream.h"
 
 #include <cbang/Exception.h>
+#include <cbang/Math.h>
+#include <cbang/time/Time.h>
 
 #include <openssl/pem.h>
 #include <openssl/x509.h>
@@ -76,7 +78,7 @@ Certificate::Certificate(const string &pem) : cert(0) {
   SSL::init();
   if (!(this->cert = X509_new()))
     THROWS("Failed to create new certificate: " << SSL::getErrorStr());
-  set(pem);
+  parse(pem);
 }
 
 
@@ -91,6 +93,9 @@ Certificate &Certificate::operator=(const Certificate &o) {
   X509_up_ref(cert);
   return *this;
 }
+
+
+bool Certificate::hasPublicKey() const {return X509_get_pubkey(cert);}
 
 
 void Certificate::getPublicKey(KeyPair &key) const {
@@ -162,6 +167,20 @@ void Certificate::setNotAfter(uint64_t x) {
 
 bool Certificate::isNotAfterInPast() const {
   int ret = X509_cmp_current_time(X509_get_notAfter(cert));
+
+  if (!ret)
+    THROWS("Failed to get certificate's not after: " << SSL::getErrorStr());
+
+  return ret < 0;
+}
+
+
+bool Certificate::expiredIn(unsigned secs) const {
+  time_t t;
+  time(&t);
+  t += (time_t)secs;
+
+  int ret = X509_cmp_time(X509_get_notAfter(cert), &t);
 
   if (!ret)
     THROWS("Failed to get certificate's not after: " << SSL::getErrorStr());
@@ -281,32 +300,17 @@ void Certificate::verify() {
 }
 
 
-string Certificate::toString() const {
-  return SSTR(*this);
-}
-
-
-void Certificate::set(const string &pem) {
-  istringstream stream(pem);
-  read(stream);
-}
-
-
-istream &Certificate::read(istream &stream) {
+void Certificate::read(istream &stream) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_X509(bio.getBIO(), &cert, 0, 0))
     THROWS("Failed to read certificate: " << SSL::getErrorStr());
-
-  return stream;
 }
 
 
-ostream &Certificate::write(ostream &stream) const {
+void Certificate::write(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_X509(bio.getBIO(), cert))
     THROWS("Failed to write certificate: " << SSL::getErrorStr());
-
-  return stream;
 }

@@ -35,10 +35,9 @@
 #include "HTTPResponseHandler.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/CallbackMethods.h>
 
-#if __cplusplus > 199711L
-#include <functional>
-#endif
+#include <map>
 
 
 namespace cb {
@@ -69,44 +68,26 @@ namespace cb {
       void setPriority(int priority) {this->priority = priority;}
 
       SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, const char *data,
-           unsigned length, const cb::SmartPointer<HTTPResponseHandler> &cb);
+      call(const URI &uri, unsigned method, const char *data, unsigned length,
+           const cb::SmartPointer<HTTPResponseHandler> &cb);
 
       SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, const std:: string &data,
+      call(const URI &uri, unsigned method, const std::string &data,
            const cb::SmartPointer<HTTPResponseHandler> &cb);
 
       SmartPointer<PendingRequest>
       call(const URI &uri, unsigned method,
            const cb::SmartPointer<HTTPResponseHandler> &cb);
 
-      template<class T>
-      SmartPointer<PendingRequest> callMember
-      (const URI &uri, unsigned method, T *obj,
-       typename HTTPResponseHandlerMemberFunctor<T>::member_t member) {
-        return call(uri, method,
-                    new HTTPResponseHandlerMemberFunctor<T>(obj, member));
-      }
-
-      template<class T>
-      SmartPointer<PendingRequest> callMember
-      (const URI &uri, unsigned method, const char *data, unsigned length,
-       T *obj, typename HTTPResponseHandlerMemberFunctor<T>::member_t member) {
-        return call(uri, method, data, length,
-                    new HTTPResponseHandlerMemberFunctor<T>(obj, member));
-      }
-
-      template<class T>
-      SmartPointer<PendingRequest> callMember
-      (const URI &uri, unsigned method, const std::string &data,
-       T *obj, typename HTTPResponseHandlerMemberFunctor<T>::member_t member) {
-        return call(uri, method, data,
-                    new HTTPResponseHandlerMemberFunctor<T>(obj, member));
-      }
-
-#if __cplusplus > 199711L
-
-#endif
+      CBANG_CALLBACK_METHODS(HTTPResponseHandler,                      \
+                             SmartPointer<PendingRequest>, call,       \
+                             const URI &, unsigned);
+      CBANG_CALLBACK_METHODS(HTTPResponseHandler,                       \
+                             SmartPointer<PendingRequest>, call,        \
+                             const URI &, unsigned, const char *, unsigned);
+      CBANG_CALLBACK_METHODS(HTTPResponseHandler,                       \
+                             SmartPointer<PendingRequest>, call,        \
+                             const URI &, unsigned, const std::string &);
     };
   }
 }

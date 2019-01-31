@@ -47,5 +47,6 @@ namespace cb {
     CBANG_FUNCTOR(BareEventFunctor, BareEventCallback, void, operator());
     CBANG_MEMBER_FUNCTOR(BareEventMemberFunctor, BareEventCallback, void,
                          operator());
+    CBANG_FUNCTION(BareEventFunction, BareEventCallback, void, operator());
   }
 }

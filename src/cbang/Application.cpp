@@ -45,7 +45,7 @@
 #include <cbang/time/Time.h>
 #include <cbang/time/HumanTime.h>
 
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/util/Callback.h>
 
 #include <cbang/config/Option.h>

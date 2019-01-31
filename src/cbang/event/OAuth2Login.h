@@ -33,6 +33,7 @@
 #pragma once
 
 #include "RequestMethod.h"
+#include "HTTPStatus.h"
 
 #include <cbang/SmartPointer.h>
 
@@ -41,34 +42,34 @@
 
 namespace cb {
   class OAuth2;
-  class OAuth2Login;
   namespace JSON {class Value;}
 
   namespace Event {
     class Client;
     class Request;
-    class PendingRequest;
 
-    class OAuth2Login : public RequestMethod {
+    class OAuth2Login : RequestMethod, HTTPStatus {
       Client &client;
-      OAuth2 *auth;
-      SmartPointer<PendingRequest> pending;
-      std::string state;
+      SmartPointer<OAuth2> oauth2;
 
     public:
-      OAuth2Login(Client &client);
+      OAuth2Login(Client &client, const SmartPointer<OAuth2> &oauth2 = 0);
       virtual ~OAuth2Login();
 
-      virtual void processProfile(const SmartPointer<JSON::Value> &profile) = 0;
+      const SmartPointer<OAuth2> &getOAuth2() {return oauth2;}
+      void setOAuth2(const SmartPointer<OAuth2> &oauth2)
+      {this->oauth2 = oauth2;}
 
-      bool authorize(Request &req, cb::OAuth2 &auth, const std::string &state);
-      bool authRedirect(Request &req, cb::OAuth2 &auth,
-                        const std::string &state);
-      bool requestToken(Request &req, cb::OAuth2 &auth,
-                        const std::string &state,
+      virtual void processProfile(Request &req,
+                                  const SmartPointer<JSON::Value> &profile) = 0;
+
+      bool authorize(Request &req, const std::string &state);
+      bool authRedirect(Request &req, const std::string &state);
+      bool requestToken(Request &req, const std::string &state,
                         const std::string &redirect_uri = std::string());
-      void verifyToken(Request *req, int err);
-      void processProfile(Request *req, int err);
+
+    protected:
+      void verifyToken(Request &req, const std::string &response);
     };
   }
 }

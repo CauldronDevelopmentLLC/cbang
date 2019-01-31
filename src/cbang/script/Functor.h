@@ -39,7 +39,7 @@
 
 namespace cb {
   namespace Script {
-    CBANG_FUNCTOR1(FunctorBase, Handler, void, evalCB, const Context &);
+    CBANG_FUNCTOR(FunctorBase, Handler, void, evalCB, const Context &);
 
     class Functor : public Function, public FunctorBase {
     public:

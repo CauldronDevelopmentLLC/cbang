@@ -36,6 +36,7 @@
 #include "BareEventCallback.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/CallbackMethods.h>
 
 struct event_base;
 
@@ -43,7 +44,6 @@ struct event_base;
 namespace cb {
   namespace Event {
     class Event;
-    class EventCallback;
 
     class Base : public EventFlag {
       event_base *base;
@@ -58,73 +58,29 @@ namespace cb {
 
       SmartPointer<Event>
       newPersistentEvent(const SmartPointer<EventCallback> &cb);
-      Event &newEvent(const SmartPointer<EventCallback> &cb);
-      Event &newEvent(int fd, unsigned events,
-                      const SmartPointer<EventCallback> &cb);
+      SmartPointer<Event> newEvent(const SmartPointer<EventCallback> &cb);
+      SmartPointer<Event> newEvent(int fd, unsigned events,
+                                   const SmartPointer<EventCallback> &cb);
       SmartPointer<Event>
       newPersistentSignal(int signal, const SmartPointer<EventCallback> &cb);
-      Event &newSignal(int signal, const SmartPointer<EventCallback> &cb);
+      SmartPointer<Event>
+      newSignal(int signal, const SmartPointer<EventCallback> &cb);
 
-      template <class T> SmartPointer<Event>
-      newPersistentEvent(T *obj,
-                         typename EventMemberFunctor<T>::member_t member) {
-        return newPersistentEvent(new EventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T> SmartPointer<Event>
-      newPersistentEvent(T *obj,
-                         typename BareEventMemberFunctor<T>::member_t member) {
-        return newPersistentEvent(new BareEventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T>
-      Event &newEvent(T *obj, typename EventMemberFunctor<T>::member_t member) {
-        return newEvent(new EventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T>
-      Event &newEvent(T *obj,
-                      typename BareEventMemberFunctor<T>::member_t member) {
-        return newEvent(new BareEventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T>
-      Event &newEvent(int fd, unsigned events, T *obj,
-                      typename EventMemberFunctor<T>::member_t member) {
-        return newEvent(fd, events, new EventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T>
-      Event &newEvent(int fd, unsigned events, T *obj,
-                      typename BareEventMemberFunctor<T>::member_t member) {
-        return newEvent(fd, events, new BareEventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T> SmartPointer<Event>
-      newPersistentSignal(int signal, T *obj,
-                          typename EventMemberFunctor<T>::member_t member) {
-        return newPersistentSignal(signal,
-                                   new EventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T> SmartPointer<Event>
-      newPersistentSignal(int signal, T *obj,
-                          typename BareEventMemberFunctor<T>::member_t member) {
-        return newPersistentSignal(signal,
-                                   new BareEventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T>
-      Event &newSignal(int signal, T *obj,
-                       typename EventMemberFunctor<T>::member_t member) {
-        return newSignal(signal, new EventMemberFunctor<T>(obj, member));
-      }
-
-      template <class T>
-      Event &newSignal(int signal, T *obj,
-                       typename BareEventMemberFunctor<T>::member_t member) {
-        return newSignal(signal, new BareEventMemberFunctor<T>(obj, member));
-      }
+      CBANG_CALLBACK_METHODS(Event, SmartPointer<Event>, newPersistentEvent);
+      CBANG_CALLBACK_METHODS                                    \
+      (BareEvent, SmartPointer<Event>, newPersistentEvent);
+      CBANG_CALLBACK_METHODS(Event, SmartPointer<Event>, newEvent);
+      CBANG_CALLBACK_METHODS(BareEvent, SmartPointer<Event>, newEvent);
+      CBANG_CALLBACK_METHODS                                   \
+      (Event, SmartPointer<Event>, newEvent, int, unsigned);
+      CBANG_CALLBACK_METHODS                                           \
+      (BareEvent, SmartPointer<Event>, newEvent, int, unsigned);
+      CBANG_CALLBACK_METHODS                                   \
+      (Event, SmartPointer<Event>, newPersistentSignal, int);
+      CBANG_CALLBACK_METHODS                                           \
+      (BareEvent, SmartPointer<Event>, newPersistentSignal, int);
+      CBANG_CALLBACK_METHODS(Event, SmartPointer<Event>, newSignal, int);
+      CBANG_CALLBACK_METHODS(BareEvent, SmartPointer<Event>, newSignal, int);
 
       void dispatch();
       void loop();

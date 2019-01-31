@@ -63,7 +63,11 @@ bool ACLHandler::operator()(Request &req) {
            << req.getClientIP().getHost() << ") = "
            << (allow ? "true" : "false"));
 
-  if (!allow) THROWX("Access denied", HTTP_UNAUTHORIZED);
+  if (!allow) {
+    if (!redirectPath.empty()) req.redirect(redirectPath);
+    else req.reply(HTTP_UNAUTHORIZED);
+    return true;
+  }
 
   return false;
 }

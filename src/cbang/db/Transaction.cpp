@@ -34,7 +34,7 @@
 
 #include "Database.h"
 
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/time/Timer.h>
 
 using namespace cb::DB;

@@ -36,7 +36,7 @@
 #include <cbang/event/Event.h>
 #include <cbang/event/EventCallback.h>
 
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
 #include <cbang/json/Value.h>
 
@@ -204,6 +204,9 @@ namespace {
 EventDB::EventDB(Event::Base &base, st_mysql *db) : DB(db), base(base) {}
 
 
+// TODO Error when EventDB deallocated while events are still outstanding.
+
+
 unsigned EventDB::getEventFlags() const {
   return
     (waitRead()    ? Event::Base::EVENT_READ    : 0) |
@@ -215,8 +218,9 @@ unsigned EventDB::getEventFlags() const {
 
 void EventDB::newEvent(const SmartPointer<Event::EventCallback> &cb) const {
   assertPending();
-  Event::Event &e = base.newEvent(getSocket(), getEventFlags(), cb);
-  addEvent(e);
+  SmartPointer<Event::Event> e =
+    base.newEvent(getSocket(), getEventFlags(), cb);
+  addEvent(*e);
 }
 
 

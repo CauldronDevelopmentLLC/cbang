@@ -32,13 +32,17 @@
 
 #pragma once
 
+#include <cbang/iostream/Serializable.h>
+
+#include <iostream>
+
 typedef struct stack_st_X509 X509_CHAIN;
 
 
 namespace cb {
   class Certificate;
 
-  class CertificateChain {
+  class CertificateChain : public Serializable {
     X509_CHAIN *chain;
 
   public:
@@ -50,6 +54,13 @@ namespace cb {
 
     X509_CHAIN *getX509_CHAIN() const {return chain;}
 
-    void add(Certificate &cert);
+    unsigned size() const;
+    Certificate get(unsigned i) const;
+    void add(const Certificate &cert);
+    void clear();
+
+    // From Serializable
+    void read(std::istream &stream);
+    void write(std::ostream &stream) const;
   };
 }

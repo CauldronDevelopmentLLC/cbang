@@ -35,7 +35,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/net/Swab.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
 #include <cbang/debug/Debugger.h>
 

@@ -39,7 +39,7 @@
 
 namespace cb {
   namespace Script {
-    CBANG_MEMBER_FUNCTOR1(MemberFunctorBase, Handler, void, evalCB,  \
+    CBANG_MEMBER_FUNCTOR(MemberFunctorBase, Handler, void, evalCB,      \
                           const Context &);
 
     template <typename T>

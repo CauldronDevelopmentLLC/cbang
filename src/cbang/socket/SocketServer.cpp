@@ -38,7 +38,7 @@
 #include <cbang/Exception.h>
 
 #include <cbang/log/Logger.h>
-#include <cbang/util/DefaultCatch.h>
+#include <cbang/Catch.h>
 #include <cbang/time/Timer.h>
 #include <cbang/openssl/SSLContext.h>
 

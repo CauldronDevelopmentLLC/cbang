@@ -52,12 +52,7 @@ bool HTTPSessionHandler::operator()(Request &req) {
   // Get session
   try {
     req.setSession(sessionManager->lookupSession(sid));
-
-  } catch (const Exception &) {
-    return false;
-  }
-
-  LOG_DEBUG(3, "User: " << req.getUser());
+  } catch (const Exception &) {return false;}
 
   return false;
 }

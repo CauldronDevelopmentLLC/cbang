@@ -59,6 +59,12 @@ namespace cb {
       std::string toString() const {return std::string(data(), size());}
 
       void flush() {stream.flush();}
+
+      template <typename T, typename M>
+      std::string toString(T obj, M member) {
+        (*obj.*member)(*this);
+        return toString();
+      }
     };
   }
 }

@@ -37,4 +37,6 @@ using namespace std;
 using namespace cb;
 
 
-void SmartPointerBase::raise(const string &msg) const {THROW(msg);}
+void SmartPointerBase::raise(const string &msg) {
+  THROW("SmartPointer: " + msg);
+}

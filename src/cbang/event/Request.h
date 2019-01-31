@@ -89,6 +89,7 @@ namespace cb {
       }
 
       evhttp_request *getRequest() const {return req;}
+      void setRequest(evhttp_request *req) {this->req = req;}
       evhttp_request *adopt() {deallocate = false; return req;}
 
       bool hasConnection() const;

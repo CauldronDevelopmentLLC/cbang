@@ -114,7 +114,7 @@ string Request::getSessionID(const string &cookie, const string &header) const {
 
 
 const string &Request::getUser() const {
-  return session.isNull() ? user : session->getUser();
+  return (session.isNull() || !session->hasUser()) ? user : session->getUser();
 }
 
 

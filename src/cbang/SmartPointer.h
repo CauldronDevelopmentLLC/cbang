@@ -48,8 +48,8 @@ namespace cb {
    *
    *   SmartPointer<A> aPtr = new A;
    *
-   * Since aPtr is static when it goes out of scope it will be
-   * destructed.  When this happens the reference counter will be
+   * Since aPtr is on the stack, when it goes out of scope it will be
+   * destructed.  When this happens, the reference counter will be
    * decremented and if it is zero the dynamic instance of A will be
    * destructed.
    *
@@ -62,25 +62,24 @@ namespace cb {
    *
    * Correct deallocation can vary depending on the type of resource
    * being protected by the smart pointer.  The CounterT template
-   * parameter selects the reference counter whos DeallocT template
+   * parameter selects the reference counter and the DeallocT template
    * parameter selects the deallocator.  The default deallocator is
    * used for any data allocated with the 'new' operator.
+   *
    * DeallocArray is necessary for arrays allocated with the 'new []'
    * operator.  DeallocMalloc will correctly deallocate data allocated
-   * with calls to 'malloc', 'calloc', 'realloc', et.al.  Other
-   * deallocators can be created to handle other resources.
+   * with calls to malloc(), calloc(), realloc(), et.al.  Other
+   * deallocators can be created to handle other resources. The managed
+   * resources need not even be memory.
    *
-   * You can also create your own deallocators for other resources.
-   * The managed resources need not even be memory.
-   *
-   * Note that you cannot use non-protected SmartPointers to the
-   * same data in different threads.  Even if you make a new copy of
+   * Note that you cannot access non-protected SmartPointers to the
+   * same data from different threads.  Even if you make a new copy of
    * the SmartPointer.  This is because the copies will still share the
-   * same Counter.  However, non-protected SmartPointers are faster.
+   * same RefCounter.  However, non-protected SmartPointers are faster.
    *
    * Protected SmartPointers are only protected in the sense that
    * multiple threads can safely access different copies of the same
-   * SmartPointer concurrently.  Accessing the same copy of a
+   * SmartPointer concurrently.  Accessing the data pointed to by the
    * SmartPointer from multiple threads safely requires futher
    * synchronization.
    *
@@ -89,7 +88,7 @@ namespace cb {
    */
   class SmartPointerBase {
   public:
-    void raise(const std::string &msg) const;
+    static void raise(const std::string &msg);
   };
 
 
@@ -97,15 +96,19 @@ namespace cb {
             typename CounterT = RefCounterImpl<T, DeallocT> >
   class SmartPointer : public SmartPointerBase {
   protected:
-    /// A pointer to the reference counter
+    /// A pointer to the reference counter.
     RefCounter *refCounter;
 
-    /// The actual pointer
+    /// The actual pointer.
     T *ptr;
 
-    typedef SmartPointer<T, DeallocT, CounterT> SmartPointerT;
-
   public:
+    typedef SmartPointer<T, DeallocT, CounterT> SmartPointerT;
+    typedef T Type;
+    typedef DeallocT Dealloc;
+    typedef CounterT Counter;
+    typedef SelfRefCounterImpl<T, CounterT> SelfRef;
+
     typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl> Phony;
     typedef SmartPointer<T, DeallocMalloc> Malloc;
     typedef SmartPointer<T, DeallocArray<T> > Array;
@@ -113,14 +116,14 @@ namespace cb {
                          ProtectedRefCounterImpl<T, DeallocNew<T> > > Protected;
     typedef SmartPointer<T, DeallocMalloc,
                          ProtectedRefCounterImpl<T, DeallocMalloc> >
-    ProtecteMalloc;
+    ProtectedMalloc;
     typedef SmartPointer<T, DeallocArray<T>,
                          ProtectedRefCounterImpl<T, DeallocArray<T> > >
     ProtectedArray;
 
     /**
      * The copy constructor.  If the smart pointer being copied
-     * is not NULL the object reference count will be incremented.
+     * is not NULL, the object reference count will be incremented.
      *
      * @param smartPtr The pointer to copy.
      */
@@ -131,27 +134,32 @@ namespace cb {
     /**
      * Create a smart pointer from a pointer value.  If ptr is
      * non-NULL the reference count will be set to one.
+     *
      * NOTE: It is an error to create more than one smart pointer
      * through this constructor for a single pointer value because
      * this will cause the object to which it points to be deallocated
      * more than once.  To create a copy of a smart pointer either use
-     * the copy constructor or the smart pointer assignment operator.
+     * the copy constructor or smart pointer assignment.
+     *
+     * If the pointer has SmartPointer<T>::SelfRef as a base class, then
+     * it will become it's own reference counter.
      *
      * @param ptr The pointer to point to.
      * @param refCounter The reference counter.
      */
-    SmartPointer(T *ptr = 0, RefCounter *refCounter = 0) :
-      refCounter(refCounter), ptr(ptr) {
+    SmartPointer(T *_ptr = 0, RefCounter *_refCounter = 0) :
+      refCounter(_refCounter), ptr(_ptr) {
       if (ptr) {
-        if (refCounter) refCounter->incCount();
-        else this->refCounter = CounterT::create();
+        if (!refCounter) refCounterFromPtrBase(ptr);
+        if (!refCounter) refCounter = CounterT::create();
+        refCounter->incCount();
       }
     }
 
     /**
      * Destroy this smart pointer.  If this smart pointer is set to
      * a non-NULL value and there are no other references to the
-     * object to which it points the object will be deleted.
+     * object to which it points the object will be deallocated.
      */
     ~SmartPointer() {release();}
 
@@ -161,7 +169,7 @@ namespace cb {
      *
      * @param smartPtr The pointer to compare with.
      *
-     * @return True if the smart pointers are equal. False otherwise.
+     * @return True if the smart pointers are equal, false otherwise.
      */
     bool operator==(const SmartPointerT &smartPtr) const {
       return ptr == smartPtr.ptr;
@@ -173,7 +181,7 @@ namespace cb {
      *
      * @param smartPtr The pointer to compare with.
      *
-     * @return True if the smart pointers are not equal. False otherwise.
+     * @return True if the smart pointers are not equal, false otherwise.
      */
     bool operator!=(const SmartPointerT &smartPtr) const {
       return ptr != smartPtr.ptr;
@@ -184,7 +192,7 @@ namespace cb {
      *
      * @param smartPtr The pointer to compare with.
      *
-     * @return True if less than @param smartPtr. False otherwise.
+     * @return True if less than @param smartPtr, false otherwise.
      */
     bool operator<(const SmartPointerT &smartPtr) const {
       return ptr < smartPtr.ptr;
@@ -195,12 +203,10 @@ namespace cb {
      *
      * @param ptr The pointer to compare with.
      *
-     * @return True if this smart pointers internal pointer equals ptr.
-     *         False otherwise.
+     * @return True if this smart pointers internal pointer equals ptr,
+     *         false otherwise.
      */
-    bool operator==(const T *ptr) const {
-      return this->ptr == ptr;
-    }
+    bool operator==(const T *ptr) const {return this->ptr == ptr;}
 
     /**
      * Compare this smart pointer to an actual pointer value.
@@ -210,20 +216,16 @@ namespace cb {
      * @return False if this smart pointers internal pointer equals ptr.
      *         True otherwise.
      */
-    bool operator!=(const T *ptr) const {
-      return this->ptr != ptr;
-    }
+    bool operator!=(const T *ptr) const {return this->ptr != ptr;}
 
     /**
      * Compare this smart pointer to an actual pointer value.
      *
      * @param ptr The pointer to compare with.
      *
-     * @return True if less than @param ptr. False otherwise.
+     * @return True if less than @param ptr, false otherwise.
      */
-    bool operator<(const T *ptr) const {
-      return this->ptr < ptr;
-    }
+    bool operator<(const T *ptr) const {return this->ptr < ptr;}
 
     /**
      * Assign this smart pointer to another.  If the passed smart pointer
@@ -251,7 +253,7 @@ namespace cb {
      *
      * @return A reference to the object pointed to by this smart pointer.
      */
-    T *operator->() const {checkPtr(); return get();}
+    T *operator->() const {check(); return ptr;}
 
     /**
      * Dereference this smart pointer.
@@ -259,7 +261,7 @@ namespace cb {
      *
      * @return A reference to the object pointed to by this smart pointer.
      */
-    T &operator*() const {checkPtr(); return *get();}
+    T &operator*() const {check(); return *ptr;}
 
     /**
      * Dereference this smart pointer with an array index.
@@ -268,20 +270,20 @@ namespace cb {
      * @return A reference to an object in the array pointed to by
      * this smart pointer.
      */
-    T &operator[](const long x) const {checkPtr(); return get()[x];}
+    T &operator[](const unsigned x) const {check(); return ptr[x];}
 
     /**
-     * Access this smart pointers internal object pointer
+     * Access this smart pointer's internal object pointer.
      *
-     * @return The value of the internal object pointer
+     * @return The value of the internal object pointer.
      */
     T *get() const {return ptr;}
 
     /**
      * Not operator
-     * @return true if the pointer is zero.
+     * @return true if the pointer is NULL.
      */
-    bool operator!() const {return ptr == 0;}
+    bool operator!() const {return !ptr;}
 
 
     /// Convert to a base type.
@@ -294,7 +296,7 @@ namespace cb {
     template <typename CastT>
     CastT *castPtr() const {
       CastT *ptr = dynamic_cast<CastT *>(this->ptr);
-      if (!ptr && this->ptr) raise("Invalid SmartPointer cast");
+      if (!ptr && this->ptr) raise("Invalid cast");
 
       return ptr;
     }
@@ -325,19 +327,14 @@ namespace cb {
      * counter is more than one a Exception will be thrown.
      * When successful this smart pointer will be NULL.
      *
-     * This function can be useful for moving the pointer to
-     * a base class smart pointer.
-     *
      * @return The value of the internal pointer.
      */
     T *adopt() {
-      if (refCounter && refCounter->getCount() > 1)
-        raise("SmartPointer: Cannot adopt a pointer with multiple references!");
+      if (refCounter && 1 < refCounter->getCount())
+        raise("Can't adopt a pointer with multiple references!");
 
-      if (refCounter) {
-        delete refCounter;
-        refCounter = 0;
-      }
+      if (refCounter) refCounter->decCount(0);
+      refCounter = 0;
 
       T *tmp = ptr;
       ptr = 0;
@@ -353,19 +350,25 @@ namespace cb {
      *
      * @return The reference count.
      */
-    long getRefCount() const {return refCounter ? refCounter->getCount() : 0;}
+    unsigned getRefCount() const {
+      return refCounter ? refCounter->getCount() : 0;
+    }
 
     /**
-     * Check for NULL pointer value;
+     * Check for NULL pointer.
      *
-     * @return True if the internal pointer is NULL. False otherwise.
+     * @return True if the pointer is NULL, false otherwise.
      */
-    bool isNull() const {return get() == 0;}
+    bool isNull() const {return !ptr;}
+
+    /// @return True if the pointer is non-NULL, false otherwise.
+    bool isSet() const {return ptr;}
 
   protected:
-    void checkPtr() const {
-      if (!ptr) raise("SmartPointer: Can't dereference a NULL pointer!");
-    }
+    void check() const {if (!ptr) raise("Can't dereference a NULL pointer!");}
+
+    void refCounterFromPtrBase(SelfRef *ptr) {refCounter = ptr;}
+    void refCounterFromPtrBase(const void *) {}
   };
 }
 

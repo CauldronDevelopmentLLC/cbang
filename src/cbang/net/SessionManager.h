@@ -53,7 +53,10 @@ namespace cb {
     std::string cookie;
 
   public:
+    SessionManager();
     SessionManager(Options &options);
+
+    void addOptions(Options &options);
 
     const std::string &getSessionCookie() const {return cookie;}
 

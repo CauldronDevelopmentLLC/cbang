@@ -40,9 +40,11 @@ namespace cb {
   namespace Event {
     class ACLHandler : public HTTPHandler {
       const ACLSet &aclSet;
+      std::string redirectPath;
 
     public:
-      ACLHandler(const ACLSet &aclSet) : aclSet(aclSet) {}
+      ACLHandler(const ACLSet &aclSet, const std::string &redirectPath = "") :
+        aclSet(aclSet), redirectPath(redirectPath) {}
 
       // From HTTPHandler
       bool operator()(Request &req);
