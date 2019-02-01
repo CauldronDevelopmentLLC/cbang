@@ -27,7 +27,8 @@ $BCP --scan --boost=$NAME --unix-lines $(
 
 # Remove uneeded files
 for PATH in Jamroot libs/config libs/date_time libs/smart_ptr \
-            "libs/iostreams/src/zstd.*"; do
+                    "libs/iostreams/src/lzma.cpp" \
+                    "libs/iostreams/src/zstd.*"; do
     /bin/rm -rf src/boost/$PATH
 done
 
