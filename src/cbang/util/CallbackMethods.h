@@ -45,7 +45,7 @@
 
 
 #define CBANG_FCB(CLASS, RETURN, METHOD, ...)                           \
-  RETURN METHOD(CBANG_CARGS(__VA_ARGS__) typename CLASS::func_t func) { \
+  RETURN METHOD(CBANG_CARGS(__VA_ARGS__) CLASS::func_t func) {          \
     return METHOD(CBANG_CPARAMS(__VA_ARGS__) new CLASS(func));          \
   }
 

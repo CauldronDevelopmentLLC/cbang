@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "DefaultCatch.h"
+#include <cbang/Catch.h>
 
 
 namespace cb {

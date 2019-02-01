@@ -375,6 +375,9 @@ def configure(conf, cstd = 'c99'):
     if cxxstd:
         if compiler_mode == 'gnu':
             env.AppendUnique(CXXFLAGS = ['-std=' + cxxstd])
+        if compiler_mode == 'msvc':
+            if cxxstd in ('c++14', 'c++17', 'c++20'):
+                env.AppendUnique(CXXFLAGS = ['/std:' + cxxstd])
 
 
     # Threads
@@ -575,9 +578,9 @@ def generate(env):
         ('ccflags', 'Set extra C and C++ compiler flags', None),
         ('cxxflags', 'Set extra C++ compiler flags', None),
         ('linkflags', 'Set extra linker flags', None),
-        EnumVariable('cxxstd', 'Set C++ language standard', 'gnu++98',
-                   allowed_values = ('gnu++98', 'c++98', 'c++0x', 'gnu++0x',
-                                     'c++11', 'gnu++11')),
+        EnumVariable('cxxstd', 'Set C++ language standard', 'c++11',
+                   allowed_values = ('c++98', 'c++11', 'c++14', 'c++17',
+                                     'c++20')),
         EnumVariable('compiler', 'Select compiler', 'default',
                    allowed_values = ('default', 'gnu', 'intel', 'mingw', 'msvc',
                                      'linux-mingw', 'aix', 'posix', 'hp', 'sgi',

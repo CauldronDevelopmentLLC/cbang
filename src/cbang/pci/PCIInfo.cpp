@@ -33,8 +33,8 @@
 #include "PCIInfo.h"
 
 #include <cbang/String.h>
+#include <cbang/Catch.h>
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/util/DefaultCatch.h>
 #include <cbang/log/Logger.h>
 
 

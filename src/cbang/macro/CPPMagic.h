@@ -49,7 +49,10 @@
  */
 
 #pragma once
+
+#ifdef __GNUC__
 #pragma GCC system_header // Reduce the number of useless warnings
+#endif
 
 /**
  * Force the pre-processor to expand the macro a large number of times.
