@@ -4,7 +4,7 @@ C!
 =====
 
 The C! or cbang library is a collection of C++ utility libraries
-developed over the course of +10 years and several major C++
+developed over the course of +15 years and several major C++
 application development projects.  It should compile and run on
 Windows, Linux and OSX using a modern C++ compiler.
 
@@ -68,7 +68,6 @@ For licensing information please see the files LICENSE and COPYING.
 ## General
   - A modern C++ compiler: GNU C++, Intel C++, MSVS
   - SCons      http://scons.org/
-  - boost      http://www.boost.org/
   - openssl    http://www.openssl.org/ (optional)
   - ChakraCore https://github.com/Microsoft/ChakraCore/ (optional)
   - V8         https://developers.google.com/v8/ (optional)
@@ -93,9 +92,8 @@ For licensing information please see the files LICENSE and COPYING.
 On Debian based systems the prerequisites can be installed with the following
 command line:
 
-    sudo apt-get install scons build-essential libssl-dev \
-      libboost-iostreams-dev libboost-system-dev libboost-filesystem-dev \
-      libboost-regex-dev binutils-dev libiberty-dev libmariadbclient-dev git
+sudo apt-get install scons build-essential libssl-dev binutils-dev \
+    libiberty-dev libmariadbclient-dev git
 
 Unfortunately, at this time, there is no ChakraCore package for Debian.  See
 the build instructions below.

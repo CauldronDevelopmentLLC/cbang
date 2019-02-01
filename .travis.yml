@@ -1,18 +1,10 @@
 language: cpp
 compiler: gcc
-sudo: required
+dist: xenial
 
 env:
   - DEBUG_BUILD=1
   - DEBUG_BUILD=0
-
-install:
-  - echo deb http://ftp.osuosl.org/pub/mariadb/repo/10.0/ubuntu precise main |
-      sudo tee -a /etc/apt/sources.list
-  - sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 1BB943DB
-  - sudo apt-get update
-  - sudo apt-get install -y -o Dpkg::Options::="--force-confnew"
-      libmariadbclient-dev
 
 script:
   - scons debug=$DEBUG_BUILD -j 4
@@ -21,14 +13,6 @@ addons:
   apt:
     packages:
       - scons
-      - libbz2-dev
-      - zlib1g-dev
-      - libexpat1-dev
       - libssl-dev
-      - libboost-iostreams-dev
-      - libboost-system-dev
-      - libboost-filesystem-dev
-      - libboost-regex-dev
-      - libsqlite3-dev
       - libv8-dev
       - binutils-dev
