@@ -3,7 +3,6 @@ import os
 # Version
 version = '0.0.1'
 libversion = '0'
-major, minor, revision = version.split('.')
 
 # Setup
 env = Environment(ENV = os.environ,
@@ -20,13 +19,12 @@ env.CBAddVariables(
     BoolVariable('with_openssl', 'Build with OpenSSL support', True),
     ('force_local', 'List of 3rd party libs to be built locally', ''),
     ('disable_local', 'List of 3rd party libs not to be built locally', ''))
-env.CBLoadTools('dist packager compiler cbang build_info')
-env.Replace(PACKAGE_VERSION = version)
+env.CBLoadTools('dist packager compiler cbang build_info resources')
 conf = env.CBConfigure()
 
 # Build Info
-env.Replace(PACKAGE_VERSION = version)
 env.Replace(BUILD_INFO_NS = 'cb::BuildInfo')
+env.Replace(RESOURCES_NS = 'cb')
 
 
 # Dist
@@ -71,7 +69,7 @@ subdirs = [
     '', 'script', 'xml', 'util', 'debug', 'config', 'pyon', 'os', 'http',
     'macro', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
     'socket', 'tar', 'io', 'geom', 'parse', 'task', 'json', 'jsapi', 'db',
-    'auth', 'js', 'async', 'acmev2']
+    'auth', 'js', 'async', 'acmev2', 'gpu', 'pci']
 
 if env.CBConfigEnabled('openssl'): subdirs.append('openssl')
 if env.CBConfigEnabled('chakra'): subdirs.append('chakra')
@@ -88,11 +86,15 @@ for dir in subdirs:
 
 conf.Finish()
 
-
 # Build in 'build'
 import re
 VariantDir('build', 'src', duplicate = False)
 src = map(lambda path: re.sub(r'^src/', 'build/', str(path)), src)
+
+
+# Resources
+res = env.Resources('build/resources.cpp', ['#/src/resources'])
+src.append(res)
 
 
 # Build Info

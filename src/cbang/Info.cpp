@@ -105,6 +105,8 @@ ostream &Info::print(ostream &stream, unsigned width, bool wrap) const {
 
     category_t::const_iterator it2;
     for (it2 = cat.begin(); it2 != cat.end(); it2++) {
+      if ((*it2)->second.empty()) continue; // Don't print empty values
+
       stream << setw(maxKeyLength) << (*it2)->first << ": ";
       if (wrap) String::fill(stream, (*it2)->second, maxKeyLength + 2,
                              maxKeyLength + 2);

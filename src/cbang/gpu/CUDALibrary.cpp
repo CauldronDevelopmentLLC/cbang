@@ -1,0 +1,134 @@
+/******************************************************************************\
+
+  This file is part of the C! library.  A.K.A the cbang library.
+
+  Copyright (c) 2003-2018, Cauldron Development LLC
+  Copyright (c) 2003-2017, Stanford University
+  All rights reserved.
+
+  The C! library is free software: you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public License
+  as published by the Free Software Foundation, either version 2.1 of
+  the License, or (at your option) any later version.
+
+  The C! library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public
+  License along with the C! library.  If not, see
+  <http://www.gnu.org/licenses/>.
+
+  In addition, BSD licensing may be granted on a case by case basis
+  by written permission from at least one of the copyright holders.
+  You may request written permission by emailing the authors.
+
+  For information regarding this software email:
+  Joseph Coffland
+  joseph@cauldrondevelopment.com
+
+\******************************************************************************/
+
+#include "CUDALibrary.h"
+
+#include "GPUVendor.h"
+
+#include <cbang/Exception.h>
+#include <cbang/util/DefaultCatch.h>
+
+using namespace std;
+using namespace cb;
+
+#ifdef _WIN32
+static const char *cudaLib = "nvcuda.dll";
+#define STDCALL __stdcall
+
+#elif __APPLE__
+static const char *cudaLib = "libcuda.dylib";
+#define STDCALL
+
+#else
+static const char *cudaLib = "libcuda.so";
+#define STDCALL
+#endif
+
+
+#define DYNAMIC_CALL(name, args) {                                  \
+    name##_t name = (name##_t)getSymbol(#name);                     \
+    if ((err = name args)) THROWS(#name "() returned " << err);     \
+  }
+
+
+CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
+
+#ifdef _WIN32
+#define CUDA_API __stdcall
+#else
+#define CUDA_API
+#endif
+
+  typedef int (CUDA_API *cuInit_t)(unsigned);
+  typedef int (CUDA_API *cuDriverGetVersion_t)(int *);
+  typedef int (CUDA_API *cuDeviceGet_t)(int *, int);
+  typedef int (CUDA_API *cuDeviceGetCount_t)(int *);
+  typedef int (CUDA_API *cuDeviceComputeCapability_t)(int *, int *, int);
+  typedef int (CUDA_API *cuDeviceGetAttribute_t)(int *, int, int);
+
+  const int CU_DEVICE_ATTRIBUTE_PCI_BUS_ID = 33;
+  const int CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 34;
+
+  int err;
+  int version;
+
+  DYNAMIC_CALL(cuInit, (0));
+  DYNAMIC_CALL(cuDriverGetVersion, (&version));
+
+  VersionU16 driverVersion(version / 1000, (version % 1000) / 10);
+
+  int count = 0;
+  DYNAMIC_CALL(cuDeviceGetCount, (&count));
+
+  for (int i = 0; i < count; i++) {
+    ComputeDevice cd;
+
+    // Set indices
+    cd.platformIndex = 0; // Only one platform for CUDA
+    cd.deviceIndex = i;
+    cd.gpu = true; // All CUDA devices are GPUs
+
+    try {
+      int device = 0;
+
+      DYNAMIC_CALL(cuDeviceGet, (&device, i));
+
+      cd.driverVersion = driverVersion;
+
+      int computeMajor = -1;
+      int computeMinor = -1;
+      DYNAMIC_CALL(cuDeviceComputeCapability,
+                   (&computeMajor, &computeMinor, device));
+      cd.computeVersion = VersionU16(computeMajor, computeMinor);
+
+      cd.vendorID = GPUVendor::VENDOR_NVIDIA; // Only vendor for CUDA
+
+      int pciBus = -1;
+      DYNAMIC_CALL(cuDeviceGetAttribute,
+                   (&pciBus, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device));
+      cd.pciBus = pciBus;
+
+      int pciSlot = -1;
+      DYNAMIC_CALL(cuDeviceGetAttribute,
+                   (&pciSlot, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device));
+      cd.pciSlot = pciSlot;
+
+      devices.push_back(cd);
+    } CATCH_ERROR;
+  }
+}
+
+
+const ComputeDevice &CUDALibrary::getDevice(unsigned i) const {
+  if (getDeviceCount() <= i) THROWS("Invalid CUDA device index " << i);
+  return devices.at(i);
+}

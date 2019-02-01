@@ -34,32 +34,26 @@
 
 #include <cbang/Zap.h>
 #include <cbang/Info.h>
+#include <cbang/Catch.h>
 
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SystemInfo.h>
 #include <cbang/os/SignalManager.h>
 
-#include <cbang/log/Logger.h>
-
 #include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
 #include <cbang/time/HumanTime.h>
 
-#include <cbang/Catch.h>
+#include <cbang/util/Resource.h>
 #include <cbang/util/Callback.h>
 
+#include <cbang/log/Logger.h>
 #include <cbang/config/Option.h>
-
 #include <cbang/pyon/Message.h>
-
 #include <cbang/json/Dict.h>
-
 #include <cbang/xml/XMLWriter.h>
-
 #include <cbang/socket/SocketDebugger.h>
-
 #include <cbang/script/MemberFunctor.h>
-
 #include <cbang/enum/EnumerationManager.h>
 
 #include <sstream>
@@ -76,6 +70,8 @@ using namespace cb::Script;
 
 
 namespace cb {
+  extern const DirectoryResource resource0;
+
   namespace BuildInfo {
     void addBuildInfo(const char *category);
   }
@@ -173,8 +169,8 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
   // Info
   if (hasFeature(FEATURE_INFO)) {
     Info &info = Info::instance();
-    BuildInfo::addBuildInfo("Build");
     SystemInfo::instance().add(info);
+    BuildInfo::addBuildInfo("Build - CBang");
 
     // Add to info
     info.add("System", "UTC Offset", String(Time::offset() / 3600));
@@ -224,6 +220,13 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     if (hasFeature(FEATURE_DEBUGGING))
       SocketDebugger::instance().addCommands(*this);
   }
+
+  // Load licenses
+  const Resource *licenses = resource0.find("licenses");
+  if (licenses)
+    for (unsigned i = 0; licenses->getChild(i); i++)
+      cmdLine.addLicenseText(licenses->getChild(i)->getData());
+  else LOG_ERROR("Error loading licenses");
 }
 
 

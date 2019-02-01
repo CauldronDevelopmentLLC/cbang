@@ -358,6 +358,11 @@ def configure(conf, cstd = 'c99'):
     if depends and compiler_mode == 'gnu':
         env.AppendUnique(CCFLAGS = ['-MMD -MF ${TARGET}.d'])
 
+    # No PIE with GCC
+    if compiler_mode == 'gnu':
+        env.AppendUnique(CCFLAGS = '-fno-pie')
+        env.AppendUnique(LINKFLAGS = '-no-pie')
+
 
     # C mode
     if cstd:

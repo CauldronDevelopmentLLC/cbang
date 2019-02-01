@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import textwrap
 import re
+import sys
 from platform import release
 import subprocess
 from SCons.Script import *
@@ -87,18 +88,14 @@ def build_function(target, source, env):
         '    info.add(category, "Date", __DATE__);\n'
         '    info.add(category, "Time", __TIME__);\n')
 
-    repo = 'SVN'
     revision, branch = svn_get_info()
-    if revision is None:
-        repo = 'Git'
-        revision, branch = git_get_info()
+    if revision is None: revision, branch = git_get_info()
 
     if revision is not None:
         contents += (
-            '    info.add(category, "Repository", "%s");\n'
             '    info.add(category, "Revision", "%s");\n'
             '    info.add(category, "Branch", "%s");\n') % (
-            repo, revision, branch)
+            revision, branch)
 
     if env.get('debug', False): mode = 'Debug'
     else: mode = 'Release'

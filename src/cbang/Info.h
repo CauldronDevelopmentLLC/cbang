@@ -87,6 +87,7 @@ namespace cb {
                            const std::string &key) const;
     bool has(const std::string &category, const std::string &key) const;
 
+
     std::ostream &print(std::ostream &stream, unsigned width = 80,
                         bool wrap = true) const;
     void write(XMLWriter &writer) const;
