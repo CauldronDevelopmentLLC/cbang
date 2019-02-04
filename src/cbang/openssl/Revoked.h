@@ -36,8 +36,6 @@
 
 #include <string>
 
-#include <openssl/opensslv.h>
-
 
 typedef struct x509_revoked_st X509_REVOKED;
 

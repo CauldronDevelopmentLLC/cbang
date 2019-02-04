@@ -69,9 +69,9 @@ subdirs = [
     '', 'script', 'xml', 'util', 'debug', 'config', 'pyon', 'os', 'http',
     'struct', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
     'socket', 'tar', 'io', 'geom', 'parse', 'json', 'db',
-    'auth', 'js', 'acmev2', 'gpu', 'pci']
+    'auth', 'js', 'gpu', 'pci']
 
-if env.CBConfigEnabled('openssl'): subdirs.append('openssl')
+if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']
 if env.CBConfigEnabled('chakra'): subdirs.append('js/chakra')
 if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
