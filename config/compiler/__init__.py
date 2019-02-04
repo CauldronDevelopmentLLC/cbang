@@ -13,6 +13,16 @@ import SCons.Builder
 import SCons.Tool
 
 
+def gcc_version_str(env):
+    import shlex
+    cmd = shlex.split(env.get('CC', 'gcc')) + ['-dumpversion']
+    return check_output(cmd).strip().decode('utf8')
+
+
+def gcc_version(env):
+    return tuple(map(int, gcc_version_str(env).split('.')))
+
+
 
 def CheckRDynamic(context):
     context.Message('Checking for -rdynamic...')
@@ -168,10 +178,12 @@ def configure(conf, cstd = 'c99'):
     env.__setitem__('compiler', compiler)
     env.__setitem__('compiler_mode', compiler_mode)
 
-    print('  Compiler:', env['CC'], '(%s)' % compiler)
-    print('  Platform:', env['PLATFORM'])
-    print('      Mode:', compiler_mode)
-    print('      Arch:', env['TARGET_ARCH'])
+    print('   Compiler:', env['CC'], '(%s)' % compiler)
+    print('   Platform:', env['PLATFORM'])
+    print('       Mode:', compiler_mode)
+    print('       Arch:', env['TARGET_ARCH'])
+
+    if compiler == 'gnu': print('GCC Version:', gcc_version_str(env))
 
 
     # SCONS_JOBS environment variable
@@ -184,7 +196,7 @@ def configure(conf, cstd = 'c99'):
         num_jobs = multiprocessing.cpu_count()
 
     SetOption('num_jobs', num_jobs)
-    print('      Jobs:', GetOption('num_jobs'))
+    print('       Jobs:', GetOption('num_jobs'))
 
 
     # distcc
@@ -358,8 +370,8 @@ def configure(conf, cstd = 'c99'):
     if depends and compiler_mode == 'gnu':
         env.AppendUnique(CCFLAGS = ['-MMD -MF ${TARGET}.d'])
 
-    # No PIE with GCC
-    if compiler_mode == 'gnu':
+    # No PIE with GCC 6+
+    if compiler_mode == 'gnu' and (5,) <= gcc_version(env):
         env.AppendUnique(CCFLAGS = '-fno-pie')
         env.AppendUnique(LINKFLAGS = '-no-pie')
 
