@@ -57,7 +57,9 @@ namespace cb {
       std::string scheme;
       std::string realm;
       std::string nonce;
+#ifdef HAVE_OPENSSL // clang complains about unused member
       unsigned nonceCount;
+#endif
       std::string cnonce;
       std::string opaque;
       std::string algorithm;

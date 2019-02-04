@@ -54,7 +54,12 @@ using namespace cb;
 using namespace cb::HTTP;
 
 
-ProxyManager::ProxyManager(Inaccessible) : enable(false), initialized(false) {
+ProxyManager::ProxyManager(Inaccessible) :
+  enable(false), initialized(false)
+#ifdef HAVE_OPENSSL // clang complains about unused member
+  , nonceCount(0)
+#endif
+{
   uint64_t x = Random::instance().rand<uint64_t>();
   cnonce = Base64().encode((char *)&x, sizeof(x));
 }
