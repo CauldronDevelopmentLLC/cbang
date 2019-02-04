@@ -50,7 +50,7 @@ namespace cb {
 
   public:
     Tokenizer(cb::Scanner &scanner) :
-      scanner(SmartPointer<Scanner>::Phony(scanner)) {}
+      scanner(SmartPointer<Scanner>::Phony(&scanner)) {}
 
     Tokenizer(const SmartPointer<cb::Scanner> &scanner) : scanner(scanner) {}
 
