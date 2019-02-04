@@ -67,13 +67,13 @@ for lib in 'zlib bzip2 sqlite3 expat boost libevent re2 libyaml'.split():
 # Source
 subdirs = [
     '', 'script', 'xml', 'util', 'debug', 'config', 'pyon', 'os', 'http',
-    'macro', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
-    'socket', 'tar', 'io', 'geom', 'parse', 'task', 'json', 'jsapi', 'db',
-    'auth', 'js', 'async', 'acmev2', 'gpu', 'pci']
+    'struct', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
+    'socket', 'tar', 'io', 'geom', 'parse', 'json', 'db',
+    'auth', 'js', 'acmev2', 'gpu', 'pci']
 
 if env.CBConfigEnabled('openssl'): subdirs.append('openssl')
-if env.CBConfigEnabled('chakra'): subdirs.append('chakra')
-if env.CBConfigEnabled('v8'): subdirs.append('v8')
+if env.CBConfigEnabled('chakra'): subdirs.append('js/chakra')
+if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
 if not 'libevent' in disable_local: subdirs.append('event')
 

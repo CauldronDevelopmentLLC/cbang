@@ -2,37 +2,36 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
-                             All rights reserved.
+                Copyright (c) 2003-2019, Cauldron Development LLC
+                   Copyright (c) 2003-2017, Stanford University
+                               All rights reserved.
 
-        The C! library is free software: you can redistribute it and/or
+         The C! library is free software: you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public License
-        as published by the Free Software Foundation, either version 2.1 of
-        the License, or (at your option) any later version.
+       as published by the Free Software Foundation, either version 2.1 of
+               the License, or (at your option) any later version.
 
         The C! library is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-        Lesser General Public License for more details.
+                 Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public
-        License along with the C! library.  If not, see
-        <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public
+                 License along with the C! library.  If not, see
+                         <http://www.gnu.org/licenses/>.
 
         In addition, BSD licensing may be granted on a case by case basis
         by written permission from at least one of the copyright holders.
-        You may request written permission by emailing the authors.
+           You may request written permission by emailing the authors.
 
-                For information regarding this software email:
-                               Joseph Coffland
-                        joseph@cauldrondevelopment.com
+                  For information regarding this software email:
+                                 Joseph Coffland
+                          joseph@cauldrondevelopment.com
 
 \******************************************************************************/
 
 #include "Base.h"
 #include "Event.h"
-#include "EventCallback.h"
 
 #include <event2/event.h>
 
@@ -55,32 +54,23 @@ void Base::initPriority(int num) {
     THROW("Failed to init event base priority");
 }
 
-SmartPointer<cb::Event::Event>
-Base::newPersistentEvent(const SmartPointer<EventCallback> &cb) {
-  return new Event(*this, -1, EVENT_PERSIST, cb);
-}
 
 SmartPointer<cb::Event::Event>
-Base::newEvent(const SmartPointer<EventCallback> &cb) {
-  return new Event(*this, -1, 0, cb);
+Base::newEvent(callback_t cb, bool persistent) {
+  return new Event(*this, -1, persistent ? EVENT_PERSIST : 0, cb);
 }
 
 
 SmartPointer<cb::Event::Event>
-Base::newEvent(int fd, unsigned events, const SmartPointer<EventCallback> &cb) {
+Base::newEvent(int fd, unsigned events, callback_t cb) {
   return new Event(*this, fd, events, cb);
 }
 
 
 SmartPointer<cb::Event::Event>
-Base::newPersistentSignal(int signal, const SmartPointer<EventCallback> &cb) {
-  return new Event(*this, signal, EVENT_PERSIST | EV_SIGNAL, cb);
-}
-
-
-SmartPointer<cb::Event::Event>
-Base::newSignal(int signal, const SmartPointer<EventCallback> &cb) {
-  return new Event(*this, signal, cb);
+Base::newSignal(int signal, callback_t cb, bool persistent) {
+  return
+    new Event(*this, signal, (persistent ? EVENT_PERSIST: 0) | EV_SIGNAL, cb);
 }
 
 

@@ -2,37 +2,38 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
-                             All rights reserved.
+                Copyright (c) 2003-2019, Cauldron Development LLC
+                   Copyright (c) 2003-2017, Stanford University
+                               All rights reserved.
 
-        The C! library is free software: you can redistribute it and/or
+         The C! library is free software: you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public License
-        as published by the Free Software Foundation, either version 2.1 of
-        the License, or (at your option) any later version.
+       as published by the Free Software Foundation, either version 2.1 of
+               the License, or (at your option) any later version.
 
         The C! library is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-        Lesser General Public License for more details.
+                 Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public
-        License along with the C! library.  If not, see
-        <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public
+                 License along with the C! library.  If not, see
+                         <http://www.gnu.org/licenses/>.
 
         In addition, BSD licensing may be granted on a case by case basis
         by written permission from at least one of the copyright holders.
-        You may request written permission by emailing the authors.
+           You may request written permission by emailing the authors.
 
-                For information regarding this software email:
-                               Joseph Coffland
-                        joseph@cauldrondevelopment.com
+                  For information regarding this software email:
+                                 Joseph Coffland
+                          joseph@cauldrondevelopment.com
 
 \******************************************************************************/
 
 #pragma once
 
 #include "HTTPHandlerFactory.h"
+#include "HTTPRequestHandler.h"
 
 #include <vector>
 
@@ -41,22 +42,23 @@ namespace cb {
   class Resource;
 
   namespace Event {
-    class HTTPHandlerGroup : public HTTPHandler {
+    class HTTPHandlerGroup : public HTTPRequestHandler {
       SmartPointer<HTTPHandlerFactory> factory;
 
-      typedef std::vector<SmartPointer<HTTPHandler> > handlers_t;
+      typedef std::vector<SmartPointer<HTTPRequestHandler> > handlers_t;
       handlers_t handlers;
 
     public:
       HTTPHandlerGroup(const SmartPointer<HTTPHandlerFactory> &factory =
                        new HTTPHandlerFactory) : factory(factory) {}
+      virtual ~HTTPHandlerGroup() {}
 
-      void addHandler(const SmartPointer<HTTPHandler> &handler);
+      void addHandler(const SmartPointer<HTTPRequestHandler> &handler);
       void addHandler(unsigned methods, const std::string &search,
                       const std::string &replace,
-                      const SmartPointer<HTTPHandler> &handler);
+                      const SmartPointer<HTTPRequestHandler> & handler);
       void addHandler(unsigned methods, const std::string &pattern,
-                      const SmartPointer<HTTPHandler> &handler);
+                      const SmartPointer<HTTPRequestHandler> &handler);
 
       void addHandler(const std::string &search, const std::string &replace,
                       const Resource &res);
@@ -72,60 +74,59 @@ namespace cb {
       addGroup(unsigned methods, const std::string &search,
                const std::string &replace = std::string());
 
+      // Member callbacks
       template <class T>
-      void addMember
-      (T *obj, typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        addHandler(factory->createHandler<T>(obj, member));
+      void addMember(T *obj,
+                     typename HTTPRequestMemberHandler<T>::member_t member) {
+        addHandler(new HTTPRequestMemberHandler<T>(obj, member));
       }
 
       template <class T>
-      void addMember
-      (unsigned methods, const std::string &pattern,
-       T *obj, typename HTTPHandlerMemberFunctor<T>::member_t member) {
-        addHandler(methods, pattern, factory->createHandler<T>(obj, member));
+      void addMember(unsigned methods, const std::string &pattern, T *obj,
+                     typename HTTPRequestMemberHandler<T>::member_t member) {
+        addHandler(methods, pattern,
+                   new HTTPRequestMemberHandler<T>(obj, member));
       }
 
+      // Recast member callbacks
       template <class T>
-      void addMember
-      (T *obj, typename JSONHandlerMemberFunctor<T>::member_t member) {
-        addHandler(factory->createHandler<T>(obj, member));
-      }
-
-      template <class T>
-      void addMember
-      (unsigned methods, const std::string &pattern,
-       T *obj, typename JSONHandlerMemberFunctor<T>::member_t member) {
-        addHandler(methods, pattern, factory->createHandler<T>(obj, member));
-      }
-
-      template <class T>
-      void addMember(typename HTTPRecastHandler<T>::member_t member) {
-        addHandler(factory->createHandler<T>(member));
+      void addMember(typename HTTPRequestRecastHandler<T>::member_t member) {
+        addHandler(new HTTPRequestRecastHandler<T>(member));
       }
 
       template <class T>
       void addMember(unsigned methods, const std::string &pattern,
-                     typename HTTPRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, factory->createHandler<T>(member));
+                     typename HTTPRequestRecastHandler<T>::member_t member) {
+        addHandler(methods, pattern, new HTTPRequestRecastHandler<T>(member));
       }
 
-      template <class T>
-      void addMember(typename JSONRecastHandler<T>::member_t member) {
-        addHandler(factory->createHandler<T>(member));
+      // JSON member callbacks
+      template <class T> void addMember
+      (T *obj, typename HTTPRequestJSONMemberHandler<T>::member_t member) {
+        addHandler(new HTTPRequestJSONMemberHandler<T>(obj, member));
       }
 
-      template <class T>
-      void addMember(unsigned methods, const std::string &pattern,
-                     typename JSONRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, factory->createHandler<T>(member));
+      template <class T> void addMember
+      (unsigned methods, const std::string &pattern,
+       T *obj, typename HTTPRequestJSONMemberHandler<T>::member_t member) {
+        addHandler(methods, pattern,
+                   new HTTPRequestJSONMemberHandler<T>(obj, member));
       }
 
+      // JSON Recast member callbacks
+      template <class T> void addMember
+      (typename HTTPRequestJSONRecastHandler<T>::member_t member) {
+        addHandler(new HTTPRequestJSONRecastHandler<T>(member));
+      }
 
-      virtual bool dispatch(Request &req) {return operator()(req);}
-      virtual bool dispatch(Request &req, const JSON::ValuePtr &msg,
-                            JSON::Sink &sink);
+      template <class T> void addMember
+      (unsigned methods, const std::string &pattern,
+       typename HTTPRequestJSONRecastHandler<T>::member_t member) {
+        addHandler(methods, pattern,
+                   new HTTPRequestJSONRecastHandler<T>(member));
+      }
 
-      // From HTTPHandler
+      // From HTTPRequestHandler
       bool operator()(Request &req);
     };
   }

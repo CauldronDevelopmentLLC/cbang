@@ -2,31 +2,31 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
-                             All rights reserved.
+                Copyright (c) 2003-2019, Cauldron Development LLC
+                   Copyright (c) 2003-2017, Stanford University
+                               All rights reserved.
 
-        The C! library is free software: you can redistribute it and/or
+         The C! library is free software: you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public License
-        as published by the Free Software Foundation, either version 2.1 of
-        the License, or (at your option) any later version.
+       as published by the Free Software Foundation, either version 2.1 of
+               the License, or (at your option) any later version.
 
         The C! library is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-        Lesser General Public License for more details.
+                 Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public
-        License along with the C! library.  If not, see
-        <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public
+                 License along with the C! library.  If not, see
+                         <http://www.gnu.org/licenses/>.
 
         In addition, BSD licensing may be granted on a case by case basis
         by written permission from at least one of the copyright holders.
-        You may request written permission by emailing the authors.
+           You may request written permission by emailing the authors.
 
-                For information regarding this software email:
-                               Joseph Coffland
-                        joseph@cauldrondevelopment.com
+                  For information regarding this software email:
+                                 Joseph Coffland
+                          joseph@cauldrondevelopment.com
 
 \******************************************************************************/
 
@@ -66,7 +66,7 @@ namespace {
 
 
 PendingRequest::PendingRequest(Client &client, const URI &uri, unsigned method,
-                               const SmartPointer<HTTPResponseHandler> &cb) :
+                               callback_t cb) :
   Connection(client.getBase(), client.getDNS(), uri, client.getSSLContext()),
   Request(evhttp_request_new(request_cb, this), uri, true), client(client),
   method(method), cb(cb), err(0) {
@@ -120,7 +120,7 @@ void PendingRequest::callback(evhttp_request *_req) {
 
   try {
     if (!_req) {
-      (*cb)(0, err);
+      cb(0, err);
       SmartPointer<PendingRequest>::SelfRef::selfDeref();
       return;
     }
@@ -131,7 +131,7 @@ void PendingRequest::callback(evhttp_request *_req) {
               << '\n');
     LOG_DEBUG(6, req.getInputBuffer().hexdump() << '\n');
 
-    (*cb)(&req, err);
+    cb(&req, err);
   } CATCH_ERROR;
 
   SmartPointer<PendingRequest>::SelfRef::selfDeref();

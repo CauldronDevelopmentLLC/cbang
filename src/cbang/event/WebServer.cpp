@@ -2,31 +2,31 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
-                             All rights reserved.
+                Copyright (c) 2003-2019, Cauldron Development LLC
+                   Copyright (c) 2003-2017, Stanford University
+                               All rights reserved.
 
-        The C! library is free software: you can redistribute it and/or
+         The C! library is free software: you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public License
-        as published by the Free Software Foundation, either version 2.1 of
-        the License, or (at your option) any later version.
+       as published by the Free Software Foundation, either version 2.1 of
+               the License, or (at your option) any later version.
 
         The C! library is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-        Lesser General Public License for more details.
+                 Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public
-        License along with the C! library.  If not, see
-        <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public
+                 License along with the C! library.  If not, see
+                         <http://www.gnu.org/licenses/>.
 
         In addition, BSD licensing may be granted on a case by case basis
         by written permission from at least one of the copyright holders.
-        You may request written permission by emailing the authors.
+           You may request written permission by emailing the authors.
 
-                For information regarding this software email:
-                               Joseph Coffland
-                        joseph@cauldrondevelopment.com
+                  For information regarding this software email:
+                                 Joseph Coffland
+                          joseph@cauldrondevelopment.com
 
 \******************************************************************************/
 
@@ -50,24 +50,63 @@ using namespace cb::Event;
 
 
 WebServer::WebServer(cb::Options &options, const Base &base,
-                     const cb::SmartPointer<HTTPHandlerFactory> &factory) :
-  HTTPHandlerGroup(factory), options(options), http(new HTTP(base)),
-  initialized(false), logPrefix(false), nextID(1) {
-  initOptions();
-}
-
-
-WebServer::WebServer(cb::Options &options, const Base &base,
                      const cb::SmartPointer<cb::SSLContext> &sslCtx,
                      const cb::SmartPointer<HTTPHandlerFactory> &factory) :
   HTTPHandlerGroup(factory), options(options), sslCtx(sslCtx),
-  http(new HTTP(base)), https(sslCtx.isNull() ? 0 : new HTTP(base, sslCtx)),
   initialized(false), logPrefix(false), nextID(1) {
-  initOptions();
+
+  SmartPointer<HTTPHandler>::Phony handler(this);
+  http = new HTTP(base, handler);
+  if (sslCtx.isSet()) https = new HTTP(base, handler, sslCtx);
+
+  addOptions(options);
 }
 
 
 WebServer::~WebServer() {}
+
+
+void WebServer::addOptions(Options &options) {
+  SmartPointer<Option> opt;
+  options.pushCategory("HTTP Server");
+
+  opt = options.add("http-addresses", "A space separated list of server "
+                    "address and port pairs to listen on in the form "
+                    "<ip | hostname>[:<port>]");
+  opt->setType(Option::STRINGS_TYPE);
+  opt->setDefault("0.0.0.0:80");
+
+  options.add("allow", "Client addresses which are allowed to connect to this "
+              "server.  This option overrides IPs which are denied in the "
+              "deny option.  The pattern 0/0 matches all addresses."
+              )->setDefault("0/0");
+  options.add("deny", "Client address which are not allowed to connect to this "
+              "server.")->setType(Option::STRINGS_TYPE);
+
+  options.add("http-max-body-size", "Maximum size of an HTTP request body.");
+  options.add("http-max-headers-size", "Maximum size of the HTTP request "
+              "headers.");
+  options.add("http-server-timeout", "Maximum time in seconds before an http "
+              "request times out.");
+
+  options.popCategory();
+
+  if (https.isSet()) {
+    options.pushCategory("HTTP Server SSL");
+    opt = options.add("https-addresses", "A space separated list of secure "
+                      "server address and port pairs to listen on in the form "
+                      "<ip | hostname>[:<port>]");
+    opt->setType(Option::STRINGS_TYPE);
+    opt->setDefault("0.0.0.0:443");
+    options.add("crl-file", "Supply a Certificate Revocation List.  Overrides "
+                "any internal CRL");
+    options.add("certificate-file", "The servers certificate file in PEM "
+                "format.")->setDefault("certificate.pem");
+    options.add("private-key-file", "The servers private key file in PEM "
+                "format.")->setDefault("private.pem");
+    options.popCategory();
+  }
+}
 
 
 void WebServer::init() {
@@ -122,12 +161,8 @@ void WebServer::init() {
       if (SystemUtilities::exists(crlFile)) sslCtx->addCRL(crlFile);
       else LOG_WARNING("Certificate Relocation List not found " << crlFile);
     }
-
-    https->setGeneralCallback(SmartPointer<HTTPHandler>::Phony(this));
   }
 #endif // HAVE_OPENSSL
-
-  http->setGeneralCallback(SmartPointer<HTTPHandler>::Phony(this));
 }
 
 
@@ -142,7 +177,12 @@ void WebServer::shutdown() {
 }
 
 
-bool WebServer::operator()(Request &req) {
+Request *WebServer::createRequest(evhttp_request *req) {
+  return new Request(req);
+}
+
+
+bool WebServer::handleRequest(Request &req) {
   req.setID(nextID++);
 
   if (logPrefix) Logger::instance().setThreadPrefix(req.getLogPrefix());
@@ -152,7 +192,7 @@ bool WebServer::operator()(Request &req) {
 }
 
 
-void WebServer::endRequestEvent(Request *req) {
+void WebServer::endRequest(Request *req) {
   if (logPrefix) Logger::instance().setThreadPrefix("");
 }
 
@@ -208,47 +248,4 @@ void WebServer::setMaxHeadersSize(unsigned size) {
 void WebServer::setTimeout(int timeout) {
   http->setTimeout(timeout);
   if (!https.isNull()) https->setTimeout(timeout);
-}
-
-
-void WebServer::initOptions() {
-  SmartPointer<Option> opt;
-  options.pushCategory("HTTP Server");
-
-  opt = options.add("http-addresses", "A space separated list of server "
-                    "address and port pairs to listen on in the form "
-                    "<ip | hostname>[:<port>]");
-  opt->setType(Option::STRINGS_TYPE);
-  opt->setDefault("0.0.0.0:80");
-
-  options.add("allow", "Client addresses which are allowed to connect to this "
-              "server.  This option overrides IPs which are denied in the "
-              "deny option.  The pattern 0/0 matches all addresses."
-              )->setDefault("0/0");
-  options.add("deny", "Client address which are not allowed to connect to this "
-              "server.")->setType(Option::STRINGS_TYPE);
-
-  options.add("http-max-body-size", "Maximum size of an HTTP request body.");
-  options.add("http-max-headers-size", "Maximum size of the HTTP request "
-              "headers.");
-  options.add("http-server-timeout", "Maximum time in seconds before an http "
-              "request times out.");
-
-  options.popCategory();
-
-  if (!https.isNull()) {
-    options.pushCategory("HTTP Server SSL");
-    opt = options.add("https-addresses", "A space separated list of secure "
-                      "server address and port pairs to listen on in the form "
-                      "<ip | hostname>[:<port>]");
-    opt->setType(Option::STRINGS_TYPE);
-    opt->setDefault("0.0.0.0:443");
-    options.add("crl-file", "Supply a Certificate Revocation List.  Overrides "
-                "any internal CRL");
-    options.add("certificate-file", "The servers certificate file in PEM "
-                "format.")->setDefault("certificate.pem");
-    options.add("private-key-file", "The servers private key file in PEM "
-                "format.")->setDefault("private.pem");
-    options.popCategory();
-  }
 }

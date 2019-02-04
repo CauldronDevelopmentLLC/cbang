@@ -2,31 +2,31 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
-                             All rights reserved.
+                Copyright (c) 2003-2019, Cauldron Development LLC
+                   Copyright (c) 2003-2017, Stanford University
+                               All rights reserved.
 
-        The C! library is free software: you can redistribute it and/or
+         The C! library is free software: you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public License
-        as published by the Free Software Foundation, either version 2.1 of
-        the License, or (at your option) any later version.
+       as published by the Free Software Foundation, either version 2.1 of
+               the License, or (at your option) any later version.
 
         The C! library is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-        Lesser General Public License for more details.
+                 Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public
-        License along with the C! library.  If not, see
-        <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public
+                 License along with the C! library.  If not, see
+                         <http://www.gnu.org/licenses/>.
 
         In addition, BSD licensing may be granted on a case by case basis
         by written permission from at least one of the copyright holders.
-        You may request written permission by emailing the authors.
+           You may request written permission by emailing the authors.
 
-                For information regarding this software email:
-                               Joseph Coffland
-                        joseph@cauldrondevelopment.com
+                  For information regarding this software email:
+                                 Joseph Coffland
+                          joseph@cauldrondevelopment.com
 
 \******************************************************************************/
 
@@ -64,18 +64,10 @@ bool OAuth2Login::authRedirect(Request &req, const string &state) {
 
 bool OAuth2Login::requestToken(Request &req, const string &state,
                                const string &redirect_uri) {
-  struct Handler : public HTTPResponseHandler {
-    OAuth2Login &login;
-    Request &origReq;
-
-    Handler(OAuth2Login &login, Request &origReq) :
-      login(login), origReq(origReq) {}
-
-    // From HTTPResponseHandler
-    void operator()(Request *req, int err) {
-      login.verifyToken(origReq, req ? req->getInput() : "");
-    }
-  };
+  auto handler =
+    [this, &req] (Request *_req, int err) {
+      verifyToken(req, _req ? _req->getInput() : "");
+    };
 
   URI verifyURL = getOAuth2()->getVerifyURL(req.getURI(), state);
 
@@ -88,7 +80,7 @@ bool OAuth2Login::requestToken(Request &req, const string &state,
 
   // Verify authorization with OAuth2 server
   SmartPointer<PendingRequest> pr =
-    client.call(verifyURL, HTTP_POST, data, new Handler(*this, req));
+    client.call(verifyURL, HTTP_POST, data, handler);
   pr->setContentType("application/x-www-form-urlencoded");
   pr->outSet("Accept", "application/json");
   pr->send();
@@ -98,28 +90,20 @@ bool OAuth2Login::requestToken(Request &req, const string &state,
 
 
 void OAuth2Login::verifyToken(Request &req, const string &response) {
-  struct Handler : public HTTPResponseHandler {
-    OAuth2Login &login;
-    Request &origReq;
-
-    Handler(OAuth2Login &login, Request &origReq) :
-      login(login), origReq(origReq) {}
-
-    // From HTTPResponseHandler
-    void operator()(Request *req, int err) {
-      if (req)
+  auto handler =
+    [this, &req] (Request *_req, int err) {
+      if (_req)
         try {
           SmartPointer<JSON::Value> profile =
-            login.getOAuth2()->processProfile(req->getInputJSON());
+            getOAuth2()->processProfile(_req->getInputJSON());
 
           LOG_DEBUG(3, "OAuth2 Profile: " << *profile);
-          login.processProfile(origReq, profile);
+          processProfile(req, profile);
           return;
         } CATCH_ERROR;
 
-      login.processProfile(origReq, 0);
-    }
-  };
+      processProfile(req, 0);
+    };
 
   if (!response.empty())
     try {
@@ -128,8 +112,7 @@ void OAuth2Login::verifyToken(Request &req, const string &response) {
 
       // Get profile
       SmartPointer<PendingRequest> pr =
-        client.call(getOAuth2()->getProfileURL(accessToken), HTTP_GET,
-                    new Handler(*this, req));
+        client.call(getOAuth2()->getProfileURL(accessToken), HTTP_GET, handler);
       pr->outSet("User-Agent", "cbang.org");
       pr->send();
 

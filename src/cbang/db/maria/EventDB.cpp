@@ -2,31 +2,31 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-              Copyright (c) 2003-2017, Cauldron Development LLC
-                 Copyright (c) 2003-2017, Stanford University
-                             All rights reserved.
+                Copyright (c) 2003-2019, Cauldron Development LLC
+                   Copyright (c) 2003-2017, Stanford University
+                               All rights reserved.
 
-        The C! library is free software: you can redistribute it and/or
+         The C! library is free software: you can redistribute it and/or
         modify it under the terms of the GNU Lesser General Public License
-        as published by the Free Software Foundation, either version 2.1 of
-        the License, or (at your option) any later version.
+       as published by the Free Software Foundation, either version 2.1 of
+               the License, or (at your option) any later version.
 
         The C! library is distributed in the hope that it will be useful,
-        but WITHOUT ANY WARRANTY; without even the implied warranty of
+          but WITHOUT ANY WARRANTY; without even the implied warranty of
         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-        Lesser General Public License for more details.
+                 Lesser General Public License for more details.
 
-        You should have received a copy of the GNU Lesser General Public
-        License along with the C! library.  If not, see
-        <http://www.gnu.org/licenses/>.
+         You should have received a copy of the GNU Lesser General Public
+                 License along with the C! library.  If not, see
+                         <http://www.gnu.org/licenses/>.
 
         In addition, BSD licensing may be granted on a case by case basis
         by written permission from at least one of the copyright holders.
-        You may request written permission by emailing the authors.
+           You may request written permission by emailing the authors.
 
-                For information regarding this software email:
-                               Joseph Coffland
-                        joseph@cauldrondevelopment.com
+                  For information regarding this software email:
+                                 Joseph Coffland
+                          joseph@cauldrondevelopment.com
 
 \******************************************************************************/
 
@@ -34,7 +34,6 @@
 
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
-#include <cbang/event/EventCallback.h>
 
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
@@ -59,34 +58,9 @@ namespace {
     return ready;
   }
 
-
-  class CallbackAdapter : public Event::EventCallback {
+  class QueryCallback {
     EventDB &db;
-    SmartPointer<EventDBCallback> cb;
-
-  public:
-    CallbackAdapter(EventDB &db, const SmartPointer<EventDBCallback> &cb) :
-      db(db), cb(cb){}
-
-    // From cb::Event::EventCallback
-    void operator()(Event::Event &e, int fd, unsigned flags) {
-      try {
-        if (db.continueNB(event_flags_to_db_ready(flags))) {
-          try {
-            (*cb)(EventDBCallback::EVENTDB_DONE);
-          } CATCH_ERROR;
-        } else db.addEvent(e);
-
-      } catch (const Exception &e) {
-        (*cb)(EventDBCallback::EVENTDB_ERROR);
-      }
-    }
-  };
-
-
-  class QueryCallback : public Event::EventCallback {
-    EventDB &db;
-    SmartPointer<EventDBCallback> cb;
+    EventDB::callback_t cb;
     string query;
     unsigned retry;
 
@@ -103,22 +77,21 @@ namespace {
     state_t state;
 
   public:
-    QueryCallback(EventDB &db, const SmartPointer<EventDBCallback> &cb,
-                  const string &query, unsigned retry = 5) :
+    QueryCallback(EventDB &db, EventDB::callback_t cb, const string &query,
+                  unsigned retry = 5) :
       db(db), cb(cb), query(query), retry(retry),
       state(STATE_START) {}
 
 
-    void call(EventDBCallback::state_t state) {
+    void call(EventDB::state_t state) {
       try {
-        (*cb)(state);
+        cb(state);
         return;
       } CATCH_ERROR;
 
-      if (state != EventDBCallback::EVENTDB_ERROR &&
-          state != EventDBCallback::EVENTDB_DONE)
+      if (state != EventDB::EVENTDB_ERROR && state != EventDB::EVENTDB_DONE)
         try {
-          (*cb)(EventDBCallback::EVENTDB_ERROR);
+          cb(EventDB::EVENTDB_ERROR);
         } CATCH_ERROR;
     }
 
@@ -141,20 +114,20 @@ namespace {
           return next();
         }
 
-        call(EventDBCallback::EVENTDB_BEGIN_RESULT);
+        call(EventDB::EVENTDB_BEGIN_RESULT);
         state = STATE_FETCH;
         if (!db.fetchRowNB()) return false;
 
       case STATE_FETCH:
         while (db.haveRow()) {
-          call(EventDBCallback::EVENTDB_ROW);
+          call(EventDB::EVENTDB_ROW);
           if (!db.fetchRowNB()) return false;
         }
         state = STATE_FREE;
         if (!db.freeResultNB()) return false;
 
       case STATE_FREE:
-        call(EventDBCallback::EVENTDB_END_RESULT);
+        call(EventDB::EVENTDB_END_RESULT);
 
         if (!db.moreResults()) {
           state = STATE_DONE;
@@ -168,7 +141,7 @@ namespace {
 
       case STATE_DONE:
         LOG_DEBUG(6, "EVENTDB_DONE");
-        call(EventDBCallback::EVENTDB_DONE);
+        call(EventDB::EVENTDB_DONE);
         return true;
 
       default: THROW("Invalid state");
@@ -176,7 +149,6 @@ namespace {
     }
 
 
-    // From cb::Event::EventCallback
     void operator()(Event::Event &event, int fd, unsigned flags) {
       try {
         if (db.continueNB(event_flags_to_db_ready(flags))) {
@@ -187,13 +159,13 @@ namespace {
         // Retry deadlocks
         if (db.getErrorNumber() == ER_LOCK_DEADLOCK && --retry) {
           LOG_WARNING("DB deadlock detected, retrying");
-          call(EventDBCallback::EVENTDB_RETRY);
+          call(EventDB::EVENTDB_RETRY);
           state = STATE_START;
           if (!next()) db.renewEvent(event);
 
         } else {
           LOG_DEBUG(5, e);
-          call(EventDBCallback::EVENTDB_ERROR);
+          call(EventDB::EVENTDB_ERROR);
         }
       }
     }
@@ -216,11 +188,9 @@ unsigned EventDB::getEventFlags() const {
 }
 
 
-void EventDB::newEvent(const SmartPointer<Event::EventCallback> &cb) const {
+void EventDB::newEvent(Event::Base::callback_t cb) const {
   assertPending();
-  SmartPointer<Event::Event> e =
-    base.newEvent(getSocket(), getEventFlags(), cb);
-  addEvent(*e);
+  addEvent(*base.newEvent(getSocket(), getEventFlags(), cb));
 }
 
 
@@ -237,24 +207,42 @@ void EventDB::addEvent(Event::Event &e) const {
 }
 
 
-void EventDB::callback(const SmartPointer<EventDBCallback> &cb) {
-  newEvent(new CallbackAdapter(*this, cb));
+void EventDB::callback(callback_t cb) {
+  auto response =
+    [this, cb] (Event::Event &e, int fd, unsigned flags) {
+      try {
+        if (continueNB(event_flags_to_db_ready(flags))) {
+          TRY_CATCH_ERROR(cb(EventDB::EVENTDB_DONE));
+        } else addEvent(e);
+
+      } catch (const Exception &e) {
+        cb(EventDB::EVENTDB_ERROR);
+      }
+    };
+
+  newEvent(response);
 }
 
 
-void EventDB::connect(const SmartPointer<EventDBCallback> &cb,
-                      const string &host, const string &user,
+void EventDB::connect(callback_t cb, const string &host, const string &user,
                       const string &password, const string &dbName,
                       unsigned port, const string &socketName, flags_t flags) {
   if (connectNB(host, user, password, dbName, port, socketName, flags))
-    (*cb)(EventDBCallback::EVENTDB_DONE);
+    cb(EVENTDB_DONE);
   else callback(cb);
 }
 
 
-void EventDB::query(const SmartPointer<EventDBCallback> &cb, const string &s,
+void EventDB::query(callback_t cb, const string &s,
                     const SmartPointer<const JSON::Value> &dict) {
   string query = dict.isNull() ? s : format(s, dict->getDict());
   SmartPointer<QueryCallback> queryCB = new QueryCallback(*this, cb, query);
-  if (isPending() || !queryCB->next()) newEvent(queryCB);
+
+  // By wrapping the event callback in a lambda the SmartPointer is kept alive
+  auto reply =
+    [queryCB] (Event::Event &event, int fd, unsigned flags) {
+      (*queryCB)(event, fd, flags);
+    };
+
+  if (isPending() || !queryCB->next()) newEvent(reply);
 }
