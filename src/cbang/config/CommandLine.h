@@ -81,6 +81,7 @@ namespace cb {
     const std::vector<std::string> &getPositionalArgs() const
     {return positionalArgs;}
 
+    using cb::Serializable::parse;
     int parse(int argc, char *argv[]);
     int parse(const std::vector<std::string> &args);
 

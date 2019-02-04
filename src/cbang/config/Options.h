@@ -106,6 +106,7 @@ namespace cb {
     // From JSON::Serializable
     void read(const JSON::Value &value);
     void write(JSON::Sink &sink) const {write(sink, false);}
+    using JSON::Serializable::write;
 
     static std::string cleanKey(const std::string &key);
   };

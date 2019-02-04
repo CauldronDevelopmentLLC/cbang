@@ -7,6 +7,7 @@ env.CBDefine('HAVE_CONFIG_H')
 if env.get('compiler_mode', '') == 'gnu':
     env.Append(CFLAGS = ['-Wno-unused-value', '-Wno-int-to-pointer-cast',
                          '-Wno-implicit-function-declaration'])
+    env.Append(CPPDEFINES = ['_POSIX_C_SOURCE=200809L']) # For clang
 
 if not env.GetOption('clean'):
     env.Append(CPPPATH = ['#/src/libyaml/src'])

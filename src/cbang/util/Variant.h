@@ -41,6 +41,7 @@
 #include <string>
 #include <ostream>
 #include <typeinfo>
+#include <type_traits>
 
 
 namespace cb {
@@ -210,8 +211,10 @@ namespace cb {
     struct Enum : public Value {
       T value;
       typedef typename T::Enum EnumT; // Enforce Enumeration
+      static_assert(std::is_base_of<EnumerationBase, T>::value,
+                    "Must derive from EnumerationBase");
 
-      Enum(T value) : value(value) {EnumerationBase &x = value; x = x;}
+      Enum(T value) : value(value) {}
 
       // From Value
       type_t getType() const {return ENUM_TYPE;}
