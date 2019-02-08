@@ -55,6 +55,8 @@ namespace cb {
     typedef enum {
       MEM_INFO_TOTAL,
       MEM_INFO_FREE,
+      MEM_INFO_SWAP,
+      MEM_INFO_USABLE,
     } memory_info_t;
 
     SystemInfo(Inaccessible);
@@ -65,6 +67,8 @@ namespace cb {
     uint64_t getMemoryInfo(memory_info_t type) const;
     uint64_t getTotalMemory() const {return getMemoryInfo(MEM_INFO_TOTAL);}
     uint64_t getFreeMemory() const {return getMemoryInfo(MEM_INFO_FREE);}
+    uint64_t getFreeSwapMemory() const {return getMemoryInfo(MEM_INFO_SWAP);}
+    uint64_t getUsableMemory() const {return getMemoryInfo(MEM_INFO_USABLE);}
 
     static uint64_t getFreeDiskSpace(const std::string &path);
 

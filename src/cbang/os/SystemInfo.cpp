@@ -120,11 +120,13 @@ uint64_t SystemInfo::getMemoryInfo(memory_info_t type) const {
   switch (type) {
   case MEM_INFO_TOTAL: return (uint64_t)info.ullTotalPhys;
   case MEM_INFO_FREE: return (uint64_t)info.ullAvailPhys;
+  case MEM_INFO_SWAP: return (uint64_t)info.ullAvailPageFile;
+  case MEM_INFO_USABLE:
+    return (uint64_t)(info.ullAvailPhys + info.ullAvailPageFile);
   }
 
 #elif defined(__APPLE__) || defined(__FreeBSD__)
-  switch (type) {
-  case MEM_INFO_TOTAL: {
+  if (type == MEM_INFO_TOTAL) {
     int64_t memory;
     int mib[2];
     size_t length = 2;
@@ -134,10 +136,8 @@ uint64_t SystemInfo::getMemoryInfo(memory_info_t type) const {
     length = sizeof(int64_t);
 
     if (!sysctl(mib, 2, &memory, &length, 0, 0)) return memory;
-    break;
-  }
 
-  case MEM_INFO_FREE: {
+  } else {
     vm_size_t page;
     vm_statistics_data_t stats;
     mach_msg_type_number_t count = sizeof(stats) / sizeof(natural_t);
@@ -146,17 +146,27 @@ uint64_t SystemInfo::getMemoryInfo(memory_info_t type) const {
     if (host_page_size(port, &page) == KERN_SUCCESS &&
         host_statistics(port, HOST_VM_INFO, (host_info_t)&stats, &count) ==
         KERN_SUCCESS)
-      return (uint64_t)stats.free_count * page;
-    break;
-  }
+      switch (type) {
+      case MEM_INFO_TOTAL: break; // Handled above
+      case MEM_INFO_FREE: return (uint64_t)(stats.free_count * page);
+      case MEM_INFO_SWAP: return 0; // Not sure how to get this on OSX
+      case MEM_INFO_USABLE:
+        // An IBM article says this should be free + inactive + file-backed
+        // pages.  No idea how to get at file-backed pages.
+        return (uint64_t)((stats.free_count + stats.inactive_count) * page);
+      }
   }
 
 #else
   struct sysinfo info;
   if (!sysinfo(&info))
     switch (type) {
-    case MEM_INFO_TOTAL: return (uint64_t)info.totalram * info.mem_unit;
-    case MEM_INFO_FREE: return (uint64_t)info.freeram * info.mem_unit;
+    case MEM_INFO_TOTAL: return (uint64_t)(info.totalram * info.mem_unit);
+    case MEM_INFO_FREE: return (uint64_t)(info.freeram * info.mem_unit);
+    case MEM_INFO_SWAP: return (uint64_t)(info.freeswap * info.mem_unit);
+    case MEM_INFO_USABLE:
+      return (uint64_t)((info.freeram + info.bufferram + info.freeswap) *
+                        info.mem_unit);
     }
 #endif
 
