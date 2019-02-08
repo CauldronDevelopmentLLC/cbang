@@ -46,8 +46,7 @@ using namespace std;
 using namespace cb;
 
 
-void Info::add(const string &category, const string &key, const string &value,
-               bool prepend) {
+Info::category_t &Info::add(const string &category, bool prepend) {
   pair<categories_t::map_iterator, bool> insert =
     categories.insert(categories_t::value_type(category, category_t()));
 
@@ -57,6 +56,14 @@ void Info::add(const string &category, const string &key, const string &value,
     if (prepend) categories.push_front(&*insert.first);
     else categories.push_back(&*insert.first);
   }
+
+  return cat;
+}
+
+
+void Info::add(const string &category, const string &key, const string &value,
+               bool prepend) {
+  category_t &cat = add(category, prepend);
 
   pair<category_t::map_iterator, bool> insert2 =
     cat.insert(category_t::value_type(key, value));

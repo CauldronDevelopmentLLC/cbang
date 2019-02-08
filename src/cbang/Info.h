@@ -81,6 +81,7 @@ namespace cb {
   public:
     Info(Inaccessible) : maxKeyLength(0) {}
 
+    category_t &add(const std::string &category, bool prepend = false);
     void add(const std::string &category, const std::string &key,
              const std::string &value, bool prepend = false);
     const std::string &get(const std::string &category,

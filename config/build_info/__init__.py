@@ -80,13 +80,14 @@ def build_function(target, source, env):
         '  void addBuildInfo(const char *category) {\n'
         '    Info &info = Info::instance();\n'
         '\n'
-        '    info.add(category, "Version", "$PACKAGE_VERSION");\n'
-        '    info.add(category, "Author", "$PACKAGE_AUTHOR");\n'
+        '    info.add(category, "Version",   "$PACKAGE_VERSION");\n'
+        '    info.add(category, "Author",    "$PACKAGE_AUTHOR");\n'
+        '    info.add(category, "Org",       "$PACKAGE_ORG");\n'
         '    info.add(category, "Copyright", "$PACKAGE_COPYRIGHT");\n'
-        '    info.add(category, "Homepage", "$PACKAGE_HOMEPAGE");\n'
-        '    info.add(category, "License", "$PACKAGE_LICENSE");\n'
-        '    info.add(category, "Date", __DATE__);\n'
-        '    info.add(category, "Time", __TIME__);\n')
+        '    info.add(category, "Homepage",  "$PACKAGE_HOMEPAGE");\n'
+        '    info.add(category, "License",   "$PACKAGE_LICENSE");\n'
+        '    info.add(category, "Date",      __DATE__);\n'
+        '    info.add(category, "Time",      __TIME__);\n')
 
     revision, branch = svn_get_info()
     if revision is None: revision, branch = git_get_info()
@@ -94,7 +95,7 @@ def build_function(target, source, env):
     if revision is not None:
         contents += (
             '    info.add(category, "Revision", "%s");\n'
-            '    info.add(category, "Branch", "%s");\n') % (
+            '    info.add(category, "Branch",   "%s");\n') % (
             revision, branch)
 
     if env.get('debug', False): mode = 'Debug'
@@ -102,10 +103,10 @@ def build_function(target, source, env):
 
     contents += (
         '    info.add(category, "Compiler", COMPILER);\n'
-        '    info.add(category, "Options", "%s");\n'
+        '    info.add(category, "Options",  "%s");\n'
         '    info.add(category, "Platform", "%s");\n'
-        '    info.add(category, "Bits", String(COMPILER_BITS));\n'
-        '    info.add(category, "Mode", "%s");\n'
+        '    info.add(category, "Bits",     String(COMPILER_BITS));\n'
+        '    info.add(category, "Mode",     "%s");\n'
         '  }') % (
             escstr(' '.join(env['CXXFLAGS'] + env['CCFLAGS'])),
             sys.platform.lower() + ' ' + release(), mode,

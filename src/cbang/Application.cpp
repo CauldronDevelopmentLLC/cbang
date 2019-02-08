@@ -168,10 +168,10 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
   // Info
   if (hasFeature(FEATURE_INFO)) {
     Info &info = Info::instance();
-    SystemInfo::instance().add(info);
-    BuildInfo::addBuildInfo("Build - CBang");
+    BuildInfo::addBuildInfo("CBang");
 
     // Add to info
+    SystemInfo::instance().add(info);
     info.add("System", "UTC Offset", String(Time::offset() / 3600));
     info.add("System", "PID", String(SystemUtilities::getPID()));
     info.add("System", "CWD", SystemUtilities::getcwd());
@@ -260,7 +260,8 @@ int Application::init(int argc, char *argv[]) {
   initialized = true;
   quit = false;
 
-  if (hasFeature(FEATURE_INFO))
+  if (hasFeature(FEATURE_INFO) && !version.toU32() &&
+      Info::instance().has("Build", "Version"))
     version = Version(Info::instance().get("Build", "Version"));
 
   // Add args to info, obscuring any obscured options
@@ -299,14 +300,9 @@ int Application::init(int argc, char *argv[]) {
   afterCommandLineParse();
 
   // Load default config
-  if (hasFeature(FEATURE_CONFIG_FILE)) {
-    if (!configured) {
-      if (cmdLine["--config"].hasValue() &&
-          SystemUtilities::exists(cmdLine["--config"])) {
-        configAction(cmdLine["--config"]);
-      } else Info::instance().add(name, "Config", "<none>");
-    }
-  }
+  if (hasFeature(FEATURE_CONFIG_FILE) && cmdLine["--config"].hasValue() &&
+      !configured && SystemUtilities::exists(cmdLine["--config"]))
+    configAction(cmdLine["--config"]);
 
   logger.setOptions(options);
   LOG_DEBUG(3, "Initializing " << name);
