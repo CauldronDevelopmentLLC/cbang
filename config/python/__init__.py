@@ -32,14 +32,7 @@ def configure(conf):
 
     python_version = env.get('python_version', '')
 
-    cmd = 'python%s-config' % python_version
-    cmd = cmd + ' --ldflags; ' + cmd + ' --includes'
-
-    if try_config(conf, cmd): return True
-
     dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
-
-    print("Trying local python-config.py")
     cmd = "python%s '%s'/python-config.py" % (python_version, dir)
 
     return try_config(conf, cmd)
