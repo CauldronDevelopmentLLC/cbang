@@ -1,0 +1,8 @@
+Import('*')
+
+# Local includes
+env.Append(CPPPATH = ['#'])
+
+prog = env.Program('bz2test', 'bz2test.cpp');
+
+Return('prog')
