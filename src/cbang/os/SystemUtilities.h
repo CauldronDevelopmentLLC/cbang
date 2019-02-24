@@ -117,7 +117,7 @@ namespace cb {
     SmartPointer<std::ostream>
     oopen(const std::string &filename, std::ios::openmode mode = std::ios::out,
           int perm = 0644);
-    std::string read(const std::string &filename);
+    std::string read(const std::string &filename, uint64_t length = ~0);
     void truncate(const std::string &path, unsigned long length);
     void chmod(const std::string &path, unsigned mode);
     void rotate(const std::string &path, const std::string &dir = std::string(),

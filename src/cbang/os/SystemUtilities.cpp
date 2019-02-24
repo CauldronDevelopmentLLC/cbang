@@ -1048,13 +1048,13 @@ namespace cb {
     }
 
 
-    string read(const string &filename) {
+    string read(const string &filename, uint64_t length) {
       // Open file
       SmartPointer<iostream> stream = open(filename, ios::in);
 
       // Read
       ostringstream str;
-      cp(*stream, str);
+      cp(*stream, str, length);
 
       return str.str();
     }
