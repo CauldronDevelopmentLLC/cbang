@@ -41,9 +41,7 @@ namespace cb {
   namespace JSON {
     class KeywordsFilter : public Filter, public std::set<std::string> {
     public:
-#if 199711L < __cplusplus
       using std::set<std::string>::set;
-#endif
 
       // From Filter
       bool operator()(unsigned index, const std::string &keyword) const

@@ -38,10 +38,7 @@
 #include <cbang/os/Condition.h>
 
 #include <queue>
-
-#if 199711L < __cplusplus
 #include <functional>
-#endif // 199711L < __cplusplus
 
 
 namespace cb {
@@ -99,7 +96,6 @@ namespace cb {
         void complete() {if (complete_cb) (*obj.*complete_cb)();}
       };
 
-#if 199711L < __cplusplus
       template <typename Data>
       struct TaskFunctions : public Task {
         typedef std::function<Data ()> run_cb_t;
@@ -126,7 +122,6 @@ namespace cb {
         void error(const Exception &e) {error_cb(e);}
         void complete() {complete_cb();}
       };
-#endif // 199711L < __cplusplus
 
       struct TaskPtrCompare {
         bool operator()(const SmartPointer<Task> &a,
@@ -159,7 +154,6 @@ namespace cb {
                (priority, obj, run, success, error, complete));
       }
 
-#if 199711L < __cplusplus
       template <typename Data>
       void submit(int priority, typename TaskFunctions<Data>::run_cb_t run,
                   typename TaskFunctions<Data>::success_cb_t success = 0,
@@ -168,7 +162,6 @@ namespace cb {
         submit(new TaskFunctions<Data>
                (priority, run, success, error, complete));
       }
-#endif // 199711L < __cplusplus
 
       // From ThreadPool
       using ThreadPool::start;
