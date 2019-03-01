@@ -36,7 +36,6 @@
 #include "HTTPHandlerGroup.h"
 
 #include <cbang/net/IPAddressFilter.h>
-#include <cbang/openssl/SSLContext.h>
 
 
 namespace cb {
