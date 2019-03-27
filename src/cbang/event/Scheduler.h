@@ -30,41 +30,26 @@
 
 \******************************************************************************/
 
-#include "GPU.h"
+#pragma once
 
-#include "GPUType.h"
-#include "GPUVendor.h"
-
-#include <cbang/String.h>
-#include <cbang/SStream.h>
-#include <cbang/Catch.h>
-#include <cbang/json/JSON.h>
-
-using namespace std;
-using namespace cb;
+#include "Event.h"
 
 
-bool GPU::operator<(const GPU &gpu) const {
-  if (vendorID != gpu.vendorID) return vendorID < gpu.vendorID;
-  return deviceID < gpu.deviceID;
-}
+namespace cb {
+  namespace Event {
+    template <class T>
+    class Scheduler {
+      Base &base;
 
+    public:
+      Scheduler(Base &base) : base(base) {}
+      virtual ~Scheduler() {}
 
-void GPU::read(const JSON::Value &value) {
-  vendorID = value.getU16("vendor");
-  deviceID = value.getU16("device");
-  type = (GPUType::enum_t)value.getU16("type", 0);
-  species = value.getU16("species", 0);
-  description = value.getString("description", "");
-}
-
-
-void GPU::write(JSON::Sink &sink) const {
-  sink.beginDict();
-  sink.insert("vendor", getVendorID());
-  sink.insert("device", getDeviceID());
-  sink.insert("type", type);
-  sink.insert("species", species);
-  sink.insert("description", description);
-  sink.endDict();
+      void schedule(void (T::*member)(), double secs = 0) {
+        T *self = dynamic_cast<T *>(this);
+        if (!self) CBANG_THROW("Invalid use of Event::Scheduler");
+        base.newEvent(self, member)->add(secs);
+      }
+    };
+  }
 }

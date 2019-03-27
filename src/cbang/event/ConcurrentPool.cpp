@@ -32,20 +32,25 @@
 
 #include "ConcurrentPool.h"
 
-#include "Event.h"
-
 #include <cbang/Catch.h>
-#include <cbang/util/SmartLock.h>
-#include <cbang/util/SmartUnlock.h>
 
 using namespace cb::Event;
 using namespace cb;
 using namespace std;
 
 
+bool ConcurrentPool::Task::shouldShutdown() {
+  return Thread::current().shouldShutdown();
+}
+
+
 ConcurrentPool::ConcurrentPool(Base &base, unsigned size) :
   ThreadPool(size), base(base),
-  event(base.newEvent(this, &ConcurrentPool::complete)) {}
+  event(base.newEvent(this, &ConcurrentPool::complete)) {
+  if (!Base::threadsEnabled())
+    THROW("Cannot use Event::ConcurrentPool without threads enabled.  "
+          "Call Event::Base::enableThreads() before creating Event::Base.");
+}
 
 
 ConcurrentPool::~ConcurrentPool() {}
@@ -114,6 +119,8 @@ void ConcurrentPool::complete() {
   while (!completed.empty()) {
     SmartPointer<Task> task = completed.top();
     completed.pop();
+
+    SmartUnlock unlock(this);
 
     try {
       if (task->getFailed()) task->error(task->getException());

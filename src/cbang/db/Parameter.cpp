@@ -57,6 +57,12 @@ void Parameter::bind(const Blob &x) const {
 }
 
 
+void Parameter::bind(bool x) const {
+  int ret = sqlite3_bind_int(stmt, i, x);
+  if (ret) error("Failed to bind Boolean", ret);
+}
+
+
 void Parameter::bind(double x) const {
   int ret = sqlite3_bind_double(stmt, i, x);
   if (ret) error("Failed to bind Double", ret);

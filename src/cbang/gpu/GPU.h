@@ -34,10 +34,7 @@
 
 #include "GPUType.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/json/Serializable.h>
-#include <cbang/pci/PCIDevice.h>
-
 
 namespace cb {
   namespace JSON {
@@ -48,37 +45,36 @@ namespace cb {
 
 
 namespace cb {
-  class GPU : public PCIDevice, public cb::JSON::Serializable {
+  class GPU : public JSON::Serializable {
+    uint16_t vendorID;
+    uint16_t deviceID;
     uint16_t type;
     uint16_t species;
+    std::string description;
 
   public:
-    GPU(uint16_t vendorID = 0, uint16_t deviceID = 0,
-        const std::string &name = "", uint16_t type = 0, uint16_t species = 0) :
-      PCIDevice(vendorID, deviceID, -1, -1, -1, name),
-      type(type), species(species) {}
+    GPU(uint16_t vendorID = 0, uint16_t deviceID = 0, uint16_t type = 0,
+        uint16_t species = 0, const std::string &description = "") :
+      vendorID(vendorID), deviceID(deviceID), type(type), species(species),
+      description(description) {}
+    GPU(const JSON::Value &value) {read(value);}
 
-    std::string getIndexKey() const;
-
-    void setType(GPUType type) {this->type = type;}
+    uint16_t getVendorID() const {return vendorID;}
+    uint16_t getDeviceID() const {return deviceID;}
     GPUType getType() const {return (GPUType::enum_t)type;}
-    void setSpecies(uint16_t species) {this->species = species;}
     uint16_t getSpecies() const {return species;}
+    const std::string &getDescription() const {return description;}
 
-    std::string toString() const;
-    std::string toRowString() const;
+    void setVendorID(uint16_t x) {vendorID = x;}
+    void setDeviceID(uint16_t x) {deviceID = x;}
+    void setType(uint16_t x) {type = x;}
+    void setSpecies(uint16_t x) {species = x;}
+    void setDescription(const std::string &x) {description = x;}
 
-    std::string toJSONString() const;
-    void parseJSON(const std::string &s);
+    bool operator<(const GPU &gpu) const;
 
-    // From cb::JSON::Serializable
-    void read(const cb::JSON::Value &value);
-    void write(cb::JSON::Sink &sink) const;
+    // From JSON::Serializable
+    void read(const JSON::Value &value);
+    void write(JSON::Sink &sink) const;
   };
-
-
-  static inline
-  std::ostream &operator<<(std::ostream &stream, const GPU &gpu) {
-    return stream << gpu.toString();
-  }
 }

@@ -33,9 +33,12 @@
 #pragma once
 
 #include "Base.h"
+#include "Event.h"
 
 #include <cbang/os/ThreadPool.h>
 #include <cbang/os/Condition.h>
+#include <cbang/util/SmartLock.h>
+#include <cbang/util/SmartUnlock.h>
 
 #include <queue>
 #include <functional>
@@ -57,8 +60,9 @@ namespace cb {
         bool getFailed() const {return failed;}
         void setException(const Exception &e) {this->e = e; failed = true;}
         const Exception &getException() const {return e;}
+        bool shouldShutdown();
 
-        virtual void run() {}
+        virtual void run() = 0;
         virtual void success() {}
         virtual void error(const Exception &e) {}
         virtual void complete() {}
@@ -66,35 +70,52 @@ namespace cb {
         bool operator<(const Task &o) const {return priority < o.priority;}
       };
 
-      template <typename T, typename Data>
-      struct TaskCallbacks : public Task {
-        typedef Data (T::*run_cb_t)();
-        typedef void (T::*success_cb_t)(Data &);
-        typedef void (T::*error_cb_t)(const Exception &);
-        typedef void (T::*complete_cb_t)();
 
-        T *obj;
-        run_cb_t run_cb;
-        success_cb_t success_cb;
-        error_cb_t error_cb;
-        complete_cb_t complete_cb;
+      template <typename Data>
+      struct QueuedTask : public Task, public Mutex {
+        std::queue<Data> queue;
+        SmartPointer<Event> event;
 
-        Data data;
+        QueuedTask(Base &base, int priority) :
+          Task(priority),
+          event(base.newEvent(this, &QueuedTask<Data>::dequeue)) {}
 
-        TaskCallbacks(int priority, T *obj, run_cb_t run_cb,
-                      success_cb_t success_cb = 0,
-                      error_cb_t error_cb = 0, complete_cb_t complete_cb = 0) :
-          Task(priority), obj(obj), run_cb(run_cb), success_cb(success_cb),
-          error_cb(error_cb), complete_cb(complete_cb) {
-          if (!obj) CBANG_THROW("Object cannot be NULL");
+
+        virtual void process(Data) = 0;
+
+
+        void dequeue() {
+          SmartLock lock(this);
+
+          while (!queue.empty()) {
+            Data data = queue.front();
+            queue.pop();
+
+            SmartUnlock unlock(this);
+            process(data);
+          }
         }
 
+
+        void enqueue(Data data) {
+          SmartLock lock(this);
+          queue.push(data);
+          event->activate();
+        }
+
+
         // From Task
-        void run() {if (run_cb) data = (*obj.*run_cb)();}
-        void success() {if (success_cb) (*obj.*success_cb)(data);}
-        void error(const Exception &e) {if (error_cb) (*obj.*error_cb)(e);}
-        void complete() {if (complete_cb) (*obj.*complete_cb)();}
+        void success() {
+          // Flush any remaining data from the queue
+          while (!queue.empty()) {
+            process(queue.front());
+            queue.pop();
+          }
+        }
+
+        void complete() {event->del();}
       };
+
 
       template <typename Data>
       struct TaskFunctions : public Task {
@@ -118,10 +139,11 @@ namespace cb {
 
         // From Task
         void run() {data = run_cb();}
-        void success() {success_cb(data);}
-        void error(const Exception &e) {error_cb(e);}
-        void complete() {complete_cb();}
+        void error(const Exception &e) {if (error_cb) error_cb(e);}
+        void success() {if (success_cb) success_cb(data);}
+        void complete() {if (complete_cb) complete_cb();}
       };
+
 
       struct TaskPtrCompare {
         bool operator()(const SmartPointer<Task> &a,
@@ -143,16 +165,6 @@ namespace cb {
       ~ConcurrentPool();
 
       void submit(const SmartPointer<Task> &task);
-
-      template <class T, typename Data>
-      void submit(int priority, T *obj,
-                  typename TaskCallbacks<T, Data>::run_cb_t run,
-                  typename TaskCallbacks<T, Data>::success_cb_t success = 0,
-                  typename TaskCallbacks<T, Data>::error_cb_t error = 0,
-                  typename TaskCallbacks<T, Data>::complete_cb_t complete = 0) {
-        submit(new TaskCallbacks<T, Data>
-               (priority, obj, run, success, error, complete));
-      }
 
       template <typename Data>
       void submit(int priority, typename TaskFunctions<Data>::run_cb_t run,

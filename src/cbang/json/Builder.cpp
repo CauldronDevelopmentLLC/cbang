@@ -43,6 +43,13 @@ Builder::Builder(const ValuePtr &root) : appendNext(false) {
 }
 
 
+ValuePtr Builder::build(function<void (Sink &sink)> cb) {
+  Builder builder;
+  cb(builder);
+  return builder.getRoot();
+}
+
+
 ValuePtr Builder::getRoot() const {return stack.empty() ? 0 : stack.front();}
 
 void Builder::writeNull() {add(createNull());}

@@ -51,6 +51,7 @@ namespace cb {
       const char *getName() const;
 
       void bind(const Blob &x) const;
+      void bind(bool x) const;
       void bind(double x) const;
       void bind(float x) const {bind((double)x);}
       void bind(int64_t x) const;

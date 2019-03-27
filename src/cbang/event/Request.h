@@ -58,10 +58,14 @@ namespace cb {
     class Buffer;
     class Headers;
     class Connection;
+    class PendingRequest;
 
-    class Request : public RequestMethod, public HTTPStatus {
+    class Request :
+      SmartPointer<Request>::SelfRef, public RequestMethod, public HTTPStatus {
+      friend class SelfRefCounter;
+
     protected:
-      evhttp_request *req;
+      SmartPointer<evhttp_request>::Phony req;
       bool deallocate;
 
       uint64_t id;
@@ -87,9 +91,7 @@ namespace cb {
         return *ptr;
       }
 
-      evhttp_request *getRequest() const {return req;}
-      void setRequest(evhttp_request *req) {this->req = req;}
-      evhttp_request *adopt() {deallocate = false; return req;}
+      evhttp_request *getRequest() const {return req.get();}
 
       bool hasConnection() const;
       Connection getConnection() const;
@@ -144,7 +146,7 @@ namespace cb {
       virtual const IPAddress &getClientIP() const {return clientIP;}
       virtual RequestMethod getMethod() const;
       static RequestMethod getMethod(evhttp_request *req);
-      virtual unsigned getResponseCode() const;
+      virtual HTTPStatus getResponseCode() const;
       virtual std::string getResponseMessage() const;
       virtual std::string getResponseLine() const;
 
@@ -177,6 +179,7 @@ namespace cb {
         COMPRESS_BZIP2
       } compression_t;
 
+      virtual void outSetContentEncoding(compression_t compression);
       virtual compression_t getRequestedCompression() const;
 
       virtual bool hasCookie(const std::string &name) const;
@@ -227,18 +230,22 @@ namespace cb {
       virtual void reply(int code, const char *data, unsigned length);
       virtual void reply(int code, const std::string &s);
 
-      virtual void startChunked(int code);
+      virtual void startChunked(int code = HTTP_OK);
       virtual void sendChunk(const Buffer &buf);
       virtual void sendChunk(const char *data, unsigned length);
+      virtual void sendChunk(const std::string &s);
+      virtual SmartPointer<JSON::Writer> getJSONChunkWriter();
       virtual void endChunked();
 
-      virtual void redirect(const URI &uri,
-                            int code = HTTPStatus::HTTP_TEMPORARY_REDIRECT);
+      virtual void redirect(const URI &uri, int code = HTTP_TEMPORARY_REDIRECT);
       virtual void cancel();
 
       static const char *getErrorStr(int error);
 
+      virtual void freed();
+
     protected:
+      virtual void init();
       virtual void finalize();
     };
   }

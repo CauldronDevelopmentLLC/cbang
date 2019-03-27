@@ -56,7 +56,6 @@ void NullSink::end() {
 
 
 void NullSink::close() {
-  assertWriteNotPending();
   if (!stack.empty()) THROWS("Writer closed with open " << stack.back());
 }
 

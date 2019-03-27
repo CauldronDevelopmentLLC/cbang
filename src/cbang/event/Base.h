@@ -46,6 +46,8 @@ namespace cb {
     class Event;
 
     class Base : public EventFlag {
+      static bool _threadsEnabled;
+
       event_base *base;
 
     public:
@@ -57,7 +59,7 @@ namespace cb {
       typedef std::function<void (Event &, int, unsigned)> callback_t;
       typedef std::function<void ()> bare_callback_t;
 
-      Base();
+      Base(bool withThreads = false);
       ~Base();
 
       struct event_base *getBase() const {return base;}
@@ -137,6 +139,9 @@ namespace cb {
       void loopBreak();
       void loopContinue();
       void loopExit();
+
+      static void enableThreads();
+      static bool threadsEnabled() {return _threadsEnabled;}
     };
   }
 }

@@ -47,11 +47,7 @@ namespace cb {
     class Client;
     class HTTPHandler;
 
-    class PendingRequest :
-      SmartPointer<PendingRequest>::SelfRef, public Connection, public Request {
-      // Only SmartPointer should access the SelfRef base class.
-      friend class SmartPointer<PendingRequest>;
-
+    class PendingRequest : public Connection, public Request {
     public:
       typedef std::function<void (Request *, int)> callback_t;
 
@@ -60,6 +56,7 @@ namespace cb {
       unsigned method;
       callback_t cb;
       int err;
+      SmartPointer<Request> selfRef;
 
     public:
       PendingRequest(Client &client, const URI &uri, unsigned method,
@@ -72,9 +69,8 @@ namespace cb {
       using Request::send;
       void send();
 
-      void callback(evhttp_request *req);
+      void callback();
       void error(int code);
-      void freed();
     };
 
     typedef SmartPointer<PendingRequest> PendingRequestPtr;

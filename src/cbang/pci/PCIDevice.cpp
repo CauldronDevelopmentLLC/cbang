@@ -33,15 +33,18 @@
 #include "PCIDevice.h"
 
 #include <cbang/String.h>
+#include <cbang/json/Value.h>
+
 
 using namespace std;
 using namespace cb;
 
 
 PCIDevice::PCIDevice(uint16_t vendorID, uint16_t deviceID, int16_t busID ,
-                     int16_t slotID, int16_t functionID, const string &name) :
+                     int16_t slotID, int16_t functionID,
+                     const string &description) :
   vendor(0), id(deviceID), bus(busID), slot(slotID), function(functionID),
-  name(name) {
+  description(description) {
   setVendorID(vendorID);
 }
 
@@ -62,16 +65,32 @@ string PCIDevice::getDeviceIDStr() const {
 }
 
 
-string PCIDevice::toString() const {
-  if (!getName().empty()) return getName();
-  return getVendorIDStr() + ":" + getDeviceIDStr();
-}
-
-
 bool PCIDevice::operator<(const PCIDevice &d) const {
   if (bus != d.bus) return bus < d.bus;
   if (slot != d.slot) return slot < d.slot;
   if (function != d.function) return function < d.function;
   if (getVendorID() != d.getVendorID()) return getVendorID() < d.getVendorID();
   return id < d.id;
+}
+
+
+void PCIDevice::read(const JSON::Value &value) {
+  setVendorID(value.getU16("vendor"));
+  id = value.getU16("device");
+  bus = value.getS16("bus", -1);
+  slot = value.getS16("slot", -1);
+  function = value.getS16("function", -1);
+  description = value.getString("description", "");
+}
+
+
+void PCIDevice::write(JSON::Sink &sink) const {
+  sink.beginDict();
+  sink.insert("vendor", getVendorID());
+  sink.insert("device", id);
+  if (0 <= bus) sink.insert("bus", bus);
+  if (0 <= slot) sink.insert("slot", slot);
+  if (0 <= function) sink.insert("function", function);
+  if (!description.empty()) sink.insert("description", description);
+  sink.endDict();
 }

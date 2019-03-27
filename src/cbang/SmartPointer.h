@@ -107,7 +107,9 @@ namespace cb {
     typedef T Type;
     typedef DeallocT Dealloc;
     typedef CounterT Counter;
-    typedef SelfRefCounterImpl<T, CounterT> SelfRef;
+    typedef RefCounterImpl<T, DeallocT, SelfRefCounter> SelfRef;
+    typedef ProtectedRefCounterImpl<T, DeallocT, SelfRefCounter>
+    ProtectedSelfRef;
 
     typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl> Phony;
     typedef SmartPointer<T, DeallocMalloc> Malloc;
@@ -150,7 +152,7 @@ namespace cb {
     SmartPointer(T *_ptr = 0, RefCounter *_refCounter = 0) :
       refCounter(_refCounter), ptr(_ptr) {
       if (ptr) {
-        if (!refCounter) refCounterFromPtrBase(ptr);
+        if (!refCounter) refCounter = SelfRefCounter::get(ptr);
         if (!refCounter) refCounter = CounterT::create();
         refCounter->incCount();
       }
@@ -280,6 +282,13 @@ namespace cb {
     T *get() const {return ptr;}
 
     /**
+     * Access this smart pointer's internal object pointer but check for NULL.
+     *
+     * @return The value of the internal object pointer.
+     */
+    T *access() const {check(); return ptr;}
+
+    /**
      * Not operator
      * @return true if the pointer is NULL.
      */
@@ -317,14 +326,18 @@ namespace cb {
      * smart pointer points will be deleted.
      */
     void release() {
-      if (refCounter) refCounter->decCount(ptr);
-      refCounter = 0;
+      T *_ptr = ptr;
+      RefCounter *_refCounter = refCounter;
+
       ptr = 0;
+      refCounter = 0;
+
+      if (_refCounter) _refCounter->decCount(_ptr);
     }
 
     /**
      * Assume responsibility for this pointer.  If the reference
-     * counter is more than one a Exception will be thrown.
+     * count is more than one an Exception will be thrown.
      * When successful this smart pointer will be NULL.
      *
      * @return The value of the internal pointer.
@@ -366,9 +379,6 @@ namespace cb {
 
   protected:
     void check() const {if (!ptr) raise("Can't dereference a NULL pointer!");}
-
-    void refCounterFromPtrBase(SelfRef *ptr) {refCounter = ptr;}
-    void refCounterFromPtrBase(const void *) {}
   };
 }
 

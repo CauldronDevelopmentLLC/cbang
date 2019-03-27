@@ -200,14 +200,18 @@ string Digest::toHexString() {
 }
 
 
-string Digest::toBase64(char pad, char a, char b) const {
-  return Base64(pad, a, b).encode(toString());
+string Digest::toBase64(const Base64 &base64) const {
+  return base64.encode(toString());
 }
 
 
-string Digest::toBase64(char pad, char a, char b) {
-  return Base64(pad, a, b).encode(toString());
+string Digest::toBase64(const Base64 &base64) {
+  return base64.encode(toString());
 }
+
+
+string Digest::toURLBase64() const {return toBase64(URLBase64());}
+string Digest::toURLBase64() {return toBase64(URLBase64());}
 
 
 unsigned Digest::getDigest(uint8_t *buffer, unsigned length) const {
@@ -252,6 +256,17 @@ string Digest::hashHex(const string &s, const string &digest, ENGINE *e) {
   d.init(e);
   d.update(s);
   return d.toHexString();
+}
+
+
+string Digest::base64(const string &s, const string &digest,
+                      const Base64 &base64, ENGINE *e) {
+  return base64.encode(hash(s, digest, e));
+}
+
+
+string Digest::urlBase64(const string &s, const string &digest, ENGINE *e) {
+  return base64(s, digest, URLBase64(), e);
 }
 
 

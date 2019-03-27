@@ -260,9 +260,12 @@ int Application::init(int argc, char *argv[]) {
   initialized = true;
   quit = false;
 
-  if (hasFeature(FEATURE_INFO) && !version.toU32() &&
-      Info::instance().has("Build", "Version"))
-    version = Version(Info::instance().get("Build", "Version"));
+  if (hasFeature(FEATURE_INFO) && !version.toU32()) {
+    if (Info::instance().has(name, "Version"))
+      version = Version(Info::instance().get(name, "Version"));
+    else if (Info::instance().has("Build", "Version"))
+      version = Version(Info::instance().get("Build", "Version"));
+  }
 
   // Add args to info, obscuring any obscured options
   if (hasFeature(FEATURE_INFO)) {

@@ -34,6 +34,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
+#include <cbang/net/Base64.h>
 
 #include <istream>
 #include <vector>
@@ -98,8 +99,10 @@ namespace cb {
     std::string toString();
     std::string toHexString() const;
     std::string toHexString();
-    std::string toBase64(char pad = 0, char a = '-', char b = '_') const;
-    std::string toBase64(char pad = 0, char a = '-', char b = '_');
+    std::string toBase64(const Base64 &base64 = Base64()) const;
+    std::string toBase64(const Base64 &base64 = Base64());
+    std::string toURLBase64() const;
+    std::string toURLBase64();
     unsigned getDigest(uint8_t *buffer, unsigned length) const;
     unsigned getDigest(uint8_t *buffer, unsigned length);
     const std::vector<uint8_t> &getDigest() const {return digest;}
@@ -113,6 +116,10 @@ namespace cb {
                             ENGINE *e = 0);
     static std::string hashHex(const std::string &s, const std::string &digest,
                                ENGINE *e = 0);
+    static std::string base64(const std::string &s, const std::string &digest,
+                              const Base64 &base64 = Base64(), ENGINE *e = 0);
+    static std::string urlBase64(const std::string &s,
+                                 const std::string &digest, ENGINE *e = 0);
     static std::string sign(const KeyPair &key, const std::string &s,
                             const std::string &digest, ENGINE *e = 0);
     static bool verify(const KeyPair &key, const std::string &s,

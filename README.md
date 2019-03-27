@@ -92,8 +92,8 @@ For licensing information please see the files LICENSE and COPYING.
 On Debian based systems the prerequisites can be installed with the following
 command line:
 
-sudo apt-get install scons build-essential libssl-dev binutils-dev \
-    libiberty-dev libmariadbclient-dev git
+    sudo apt-get install scons build-essential libssl-dev binutils-dev \
+      libiberty-dev libmariadbclient-dev git
 
 Unfortunately, at this time, there is no ChakraCore package for Debian.  See
 the build instructions below.

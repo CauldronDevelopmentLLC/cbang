@@ -39,6 +39,8 @@
 #include <cbang/SmartPointer.h>
 
 #include <string>
+#include <functional>
+
 
 namespace cb {
   namespace DB {
@@ -51,6 +53,7 @@ namespace cb {
       SmartPointer<Statement> replaceStmt;
       SmartPointer<Statement> deleteStmt;
       SmartPointer<Statement> selectStmt;
+      SmartPointer<Statement> foreachStmt;
 
     public:
       NameValueTable(Database &db, const std::string &table);
@@ -78,14 +81,30 @@ namespace cb {
       void set(const std::string &name, double value);
       void set(const std::string &name, float value)
       {set(name, (double)value);}
+      void set(const std::string &name, bool value);
       void set(const std::string &name);
       void unset(const std::string &name);
+
+      template <typename T>
+      void set(const std::string &name, const T &value) {
+        set(name, value.toString());
+      }
 
       const std::string getString(const std::string &name) const;
       int64_t getInteger(const std::string &name) const;
       double getDouble(const std::string &name) const;
+      bool getBoolean(const std::string &name) const;
+
+      const std::string getString(const std::string &name,
+                                  const std::string &defaultValue) const;
+      int64_t getInteger(const std::string &name, int64_t defaultValue) const;
+      double getDouble(const std::string &name, double defaultValue) const;
+      bool getBoolean(const std::string &name, bool defaultValue) const;
 
       bool has(const std::string &name) const;
+
+      void foreach(std::function<void (const std::string &name,
+                                       const std::string &value)> cb);
 
     protected:
       Column doGet(const std::string &name) const;

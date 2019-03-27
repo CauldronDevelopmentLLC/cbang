@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "BigNum.h"
 #include "KeyGenCallback.h"
 #include "PasswordCallback.h"
 #include "RSA.h"
@@ -72,6 +73,9 @@ namespace cb {
     bool isEC() const;
 
     RSA getRSA() const;
+
+    BigNum getPublic() const;
+    BigNum getPrivate() const;
 
     bool hasPublic() const;
     bool hasPrivate() const;

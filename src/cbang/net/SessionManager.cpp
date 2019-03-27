@@ -78,7 +78,7 @@ string SessionManager::generateID(const IPAddress &ip) {
   digest.updateWith(Time::now());
   digest.updateWith(Random::instance().rand<uint64_t>());
 
-  return digest.toBase64();
+  return digest.toURLBase64();
 #else
 
   return SSTR("0x" << hex << Random::instance().rand<uint64_t>());

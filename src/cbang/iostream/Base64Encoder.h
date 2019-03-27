@@ -53,8 +53,8 @@ namespace cb {
     unsigned char a, b, c;
 
   public:
-    Base64Encoder(char pad = '=', char a = '+', char b = '/') :
-      Base64(pad, a, b), count(0), state(0) {}
+    Base64Encoder(const Base64 &base64 = Base64()) :
+      Base64(base64), count(0), state(0) {}
 
 
     template<typename Source> int get(Source &src) {

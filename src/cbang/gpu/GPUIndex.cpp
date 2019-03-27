@@ -33,10 +33,16 @@
 #include "GPUIndex.h"
 
 #include <cbang/String.h>
+#include <cbang/json/Value.h>
 
 
 using namespace std;
 using namespace cb;
+
+
+bool GPUIndex::has(uint16_t vendorID, uint16_t deviceID) const {
+  return gpus.find(GPU(vendorID, deviceID)) != gpus.end();
+}
 
 
 GPU GPUIndex::find(uint16_t vendorID, uint16_t deviceID) const {
@@ -45,36 +51,23 @@ GPU GPUIndex::find(uint16_t vendorID, uint16_t deviceID) const {
 }
 
 
-void GPUIndex::add(const GPU &gpu) {
-  gpus.erase(gpu); // Remove any previous entry
-  gpus.insert(gpu);
+void GPUIndex::add(const GPU &gpu) {gpus.insert(gpu);}
+
+
+void GPUIndex::read(const JSON::Value &value) {
+  clear();
+  for (unsigned i = 0; i < value.size(); i++)
+    add(GPU(*value.get(i)));
 }
 
 
-void GPUIndex::read(istream &stream) {
-  while (stream.good()) {
-    // Read line
-    char line[4096];
-    stream.getline(line, 4096);
-    if (!stream.good()) break;
+void GPUIndex::write(JSON::Sink &sink) const {
+  sink.beginList();
 
-    // Parse line
-    vector<string> tokens;
-    String::tokenize(line, tokens, ":", true);
-    if (tokens.size() != 5) THROWS("Invalid GPUs.txt");
-
-    uint16_t vendorID = String::parseU16(tokens[0]);
-    uint16_t deviceID = String::parseU16(tokens[1]);
-    uint16_t type = tokens[2].empty() ? 0 : String::parseU16(tokens[2]);
-    uint16_t species = tokens[3].empty() ? 0 : String::parseU16(tokens[3]);
-    string &name = tokens[4];
-
-    add(GPU(vendorID, deviceID, name, type, species));
+  for (gpus_t::const_iterator it = gpus.begin(); it != gpus.end(); it++) {
+    sink.beginAppend();
+    it->write(sink);
   }
-}
 
-
-void GPUIndex::write(ostream &stream) const {
-  for (gpus_t::const_iterator it = gpus.begin(); it != gpus.end(); it++)
-    stream << it->toRowString() << '\n';
+  sink.endList();
 }

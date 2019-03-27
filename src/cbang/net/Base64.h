@@ -48,7 +48,7 @@ namespace cb {
     static const signed char decodeTable[256];
 
   public:
-    Base64(char pad = '=', char a = '+', char b = '/', unsigned width = 76) :
+    Base64(char pad = '=', char a = '+', char b = '/', unsigned width = 0) :
       pad(pad), a(a), b(b), width(width) {}
 
     std::string encode(const std::string &s) const;
@@ -65,6 +65,6 @@ namespace cb {
 
   class URLBase64 : public Base64 {
   public:
-    URLBase64() : Base64(0, '-', '_', 0) {}
+    URLBase64() : Base64(0, '-', '_') {}
   };
 }

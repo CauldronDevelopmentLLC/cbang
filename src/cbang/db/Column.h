@@ -60,6 +60,7 @@ namespace cb {
       Blob toBlob() const;
       double toDouble() const;
       int64_t toInteger() const;
+      bool toBoolean() const;
       const char *toString() const;
       const char *toText() const {return toString();}
     };

@@ -53,6 +53,29 @@ namespace cb {
   };
 
 
+  class SelfRefCounter : public RefCounter {
+  protected:
+    bool engaged;
+
+  public:
+    SelfRefCounter() : engaged(false) {}
+
+    bool isSelfRefEngaged() const {return engaged;}
+    void selfRef() {if (!engaged) {engaged = true; incCount();}}
+    void selfDeref() {if (engaged) {engaged = false; decCount(this);}}
+
+    // From RefCounter
+    bool isSelfRef() const {return true;}
+
+    // Only SelfRefCounter should access SelfRef base classes.  These functions
+    // make it possible to access the SelfRefCounter base in a safe way.
+    static RefCounter *_get(SelfRefCounter *ptr) {return ptr;}
+    static RefCounter *_get(const void *) {return 0;}
+    template <class T>
+    static RefCounter *get(T *ptr) {return _get(ptr);}
+  };
+
+
   class RefCounterPhonyImpl : public RefCounter {
     static RefCounterPhonyImpl singleton;
     RefCounterPhonyImpl() {}
@@ -67,8 +90,9 @@ namespace cb {
   };
 
 
-  template<typename T, class Dealloc_T = DeallocNew<T> >
-  class RefCounterImpl : public RefCounter {
+  template<typename T, class Dealloc_T = DeallocNew<T>,
+           class Base_T = RefCounter>
+  class RefCounterImpl : public Base_T {
   protected:
     unsigned count;
 
@@ -81,22 +105,23 @@ namespace cb {
     void incCount() {count++;}
 
     void decCount(const void *ptr) {
-      if (!count) raise("Already zero!");
+      if (!count) Base_T::raise("Already zero!");
       if (!--count) release(ptr);
     }
 
     void release(const void *ptr) {
-      if (!isSelfRef()) delete this; // Only deallocate once
+      if (!Base_T::isSelfRef()) delete this; // Only deallocate once
       if (ptr) Dealloc_T::dealloc((T *)ptr);
     }
   };
 
 
-  template<typename T, class Dealloc_T = DeallocNew<T> >
+  template<typename T, class Dealloc_T = DeallocNew<T>,
+           class Base_T = RefCounter>
   class ProtectedRefCounterImpl :
-    public RefCounterImpl<T, Dealloc_T>, public Mutex {
+    public RefCounterImpl<T, Dealloc_T, Base_T>, public Mutex {
   protected:
-    typedef RefCounterImpl<T, Dealloc_T> Super_T;
+    typedef RefCounterImpl<T, Dealloc_T, Base_T> Super_T;
     using Super_T::count;
 
   public:
@@ -124,22 +149,5 @@ namespace cb {
 
       } else unlock();
     }
-  };
-
-
-  template<typename T, class Super_T>
-  class SelfRefCounterImpl : public Super_T {
-  protected:
-    bool engaged;
-
-  public:
-    SelfRefCounterImpl(unsigned count = 0) : Super_T(count), engaged(false) {}
-
-    bool isSelfRefEngaged() const {return engaged;}
-    void selfRef() {if (!engaged) {engaged = true; Super_T::incCount();}}
-    void selfDeref() {if (engaged) {engaged = false; Super_T::decCount(this);}}
-
-    // From RefCounter
-    bool isSelfRef() const {return true;}
   };
 }

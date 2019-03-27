@@ -35,20 +35,24 @@
 #include "GPU.h"
 
 #include <cbang/StdTypes.h>
-#include <cbang/iostream/Serializable.h>
+#include <cbang/json/Serializable.h>
 
 #include <set>
 
 
 namespace cb {
-  class GPUIndex : public Serializable {
+  class GPUIndex : public JSON::Serializable {
     typedef std::set<GPU> gpus_t;
     gpus_t gpus;
 
   public:
+    GPUIndex() {}
+    GPUIndex(const JSON::Value &value) {read(value);}
+
     bool empty() const {return gpus.empty();}
     void clear() {gpus.clear();}
 
+    bool has(uint16_t vendorID, uint16_t deviceID) const;
     GPU find(uint16_t vendorID, uint16_t deviceID) const;
     void add(const GPU &gpu);
 
@@ -56,8 +60,8 @@ namespace cb {
     iterator begin() const {return gpus.begin();}
     iterator end() const {return gpus.end();}
 
-    // From Serializable
-    void read(std::istream &stream);
-    void write(std::ostream &stream) const;
+    // JSON::Serializable
+    void read(const JSON::Value &value);
+    void write(JSON::Sink &sink) const;
   };
 }

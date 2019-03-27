@@ -32,8 +32,9 @@
 
 #pragma once
 
+#include "Value.h"
+
 #include <cbang/io/InputSource.h>
-#include <cbang/SmartPointer.h>
 
 
 namespace cb {
@@ -54,9 +55,9 @@ namespace cb {
       line(0), column(0), src(src), stream(src.getStream()) {}
 
       void parse(Sink &sink);
-      SmartPointer<Value> parse();
-      static SmartPointer<Value> parse(const InputSource &src);
-      static SmartPointer<Value> parseString(const std::string &s);
+      ValuePtr parse();
+      static ValuePtr parse(const InputSource &src);
+      static ValuePtr parseString(const std::string &s);
 
       unsigned getLine() const {return line;}
       unsigned getColumn() const {return column;}
@@ -80,5 +81,14 @@ namespace cb {
 
       static std::string unescape(const std::string &s);
     };
+
+
+    static inline ValuePtr parse(const InputSource &src) {
+      return JSON::Reader::parse(src);
+    }
+
+    static inline ValuePtr parseString(const std::string &s) {
+      return JSON::Reader::parseString(s);
+    }
   }
 }

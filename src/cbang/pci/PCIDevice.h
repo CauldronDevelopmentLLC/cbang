@@ -35,6 +35,7 @@
 #include "PCIVendor.h"
 
 #include <cbang/StdTypes.h>
+#include <cbang/json/Serializable.h>
 
 #include <string>
 #include <set>
@@ -42,45 +43,44 @@
 
 
 namespace cb {
-  class PCIDevice {
+  class PCIDevice : public JSON::Serializable {
     const PCIVendor *vendor;
     uint16_t id;
     int16_t bus;
     int16_t slot;
     int16_t function;
-    std::string name;
+    std::string description;
 
   public:
     PCIDevice(uint16_t vendorID = 0, uint16_t deviceID = 0, int16_t busID = -1,
               int16_t slotID = -1, int16_t functionID = -1,
-              const std::string &name = "");
+              const std::string &description = "");
+    PCIDevice(const JSON::Value &value) {read(value);}
 
     const PCIVendor *getVendor() const {return vendor;}
 
     uint16_t getVendorID() const {return vendor ? vendor->getID() : 0;}
+    std::string getVendorName() const {return vendor ? vendor->getName() : "";}
     uint16_t getDeviceID() const {return id;}
     int16_t getBusID() const {return bus;}
     int16_t getSlotID() const {return slot;}
     int16_t getFunctionID() const {return function;}
-    const std::string &getName() const {return name;}
+    const std::string &getDescription() const {return description;}
 
     void setVendorID(uint16_t vendorID);
     void setDeviceID(uint16_t id) {this->id = id;}
     void setBusID(uint8_t bus) {this->bus = bus;}
     void setSlotID(uint8_t slot) {this->slot = slot;}
     void setFunctionID(uint8_t function) {this->function = function;}
-    void setName(const std::string &name) {this->name = name;}
+    void setDescription(const std::string &x) {description = x;}
 
     std::string getVendorIDStr() const;
     std::string getDeviceIDStr() const;
-    std::string toString() const;
 
     bool operator<(const PCIDevice &d) const;
+
+    // From JSON::Serializable
+    void read(const JSON::Value &value);
+    void write(JSON::Sink &sink) const;
   };
-
-
-  static inline
-  std::ostream &operator<<(std::ostream &stream, const PCIDevice &dev) {
-    return stream << dev.toString();
-  }
 }

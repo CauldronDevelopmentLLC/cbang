@@ -38,6 +38,7 @@
 #include "Connection.h"
 
 #include <cbang/Exception.h>
+#include <cbang/Catch.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 #include <cbang/http/Cookie.h>
@@ -58,10 +59,76 @@ using namespace cb;
 using namespace std;
 
 
+namespace {
+  void free_cb(struct evhttp_request *req, void *pr) {((Request *)pr)->freed();}
+
+
+  struct FilteringOStreamWithRef : public io::filtering_ostream {
+    SmartPointer<ostream> ref;
+    virtual ~FilteringOStreamWithRef() {reset();}
+  };
+
+
+  SmartPointer<ostream> compressBufferStream
+  (Event::Buffer buffer, Request::compression_t compression) {
+    SmartPointer<ostream> target = new Event::BufferStream<>(buffer);
+    SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
+
+    switch (compression) {
+    case Request::COMPRESS_ZLIB:  out->push(io::zlib_compressor()); break;
+    case Request::COMPRESS_GZIP:  out->push(io::gzip_compressor()); break;
+    case Request::COMPRESS_BZIP2: out->push(io::bzip2_compressor()); break;
+    default: return target;
+    }
+
+    out->ref = target;
+    out->push(*target);
+
+    return out;
+  }
+
+
+  const char *getContentEncoding(Request::compression_t compression) {
+    switch (compression) {
+    case Request::COMPRESS_ZLIB:  return "zlib";
+    case Request::COMPRESS_GZIP:  return "gzip";
+    case Request::COMPRESS_BZIP2: return "bzip2";
+    default: return 0;
+    }
+  }
+
+
+  struct JSONWriter :
+    Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
+    Request &req;
+
+    JSONWriter(Request &req, unsigned indent, bool compact,
+               Request::compression_t compression) :
+      SmartPointer<ostream>(compressBufferStream(*this, compression)),
+      JSON::Writer(*SmartPointer<ostream>::get(), indent, compact), req(req) {
+      req.outSetContentEncoding(compression);
+    }
+
+    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
+
+    ostream &getStream() {return *SmartPointer<ostream>::get();}
+
+    void close() {
+      JSON::Writer::close();
+      SmartPointer<ostream>::release();
+      send(*this);
+    }
+
+    virtual void send(Event::Buffer &buffer) {req.send(buffer);}
+  };
+}
+
+
 Request::Request(evhttp_request *req, bool deallocate) :
   req(req), deallocate(deallocate), id(0), user("anonymous"), incoming(false),
   finalized(false) {
   if (!req) THROW("Event request cannot be null");
+  init();
 
   // Parse URI
   const char *uri = evhttp_request_get_uri(req);
@@ -85,19 +152,25 @@ Request::Request(evhttp_request *req, const URI &uri, bool deallocate) :
   req(req), deallocate(deallocate), originalURI(uri), uri(uri),
   clientIP(uri.getHost(), uri.getPort()), incoming(false), finalized(false) {
   if (!req) THROW("Event request cannot be null");
+  init();
 }
 
 
 Request::~Request() {
-  if (req && deallocate) evhttp_cancel_request(req); // Also frees
+  if (req.isSet()) {
+    evhttp_request_set_on_free_cb(req.access(), 0, 0);
+    if (deallocate) evhttp_cancel_request(req.access()); // Also frees
+  }
 }
 
 
-bool Request::hasConnection() const {return evhttp_request_get_connection(req);}
+bool Request::hasConnection() const {
+  return evhttp_request_get_connection(req.access());
+}
 
 
 Connection Request::getConnection() const {
-  evhttp_connection *con = evhttp_request_get_connection(req);
+  evhttp_connection *con = evhttp_request_get_connection(req.access());
   if (!con) THROW("Request does not have Connection");
   return Connection(con, false);
 }
@@ -183,7 +256,7 @@ Version Request::getVersion() const {
 
 
 string Request::getHost() const {
-  const char *host = evhttp_request_get_host(req);
+  const char *host = evhttp_request_get_host(req.access());
   return host ? host : "";
 }
 
@@ -193,9 +266,7 @@ URI Request::getURI(evhttp_request *req) {
 }
 
 
-RequestMethod Request::getMethod() const {
-  return getMethod(req);
-}
+RequestMethod Request::getMethod() const {return getMethod(req.access());}
 
 
 RequestMethod Request::getMethod(evhttp_request *req) {
@@ -214,13 +285,13 @@ RequestMethod Request::getMethod(evhttp_request *req) {
 }
 
 
-unsigned Request::getResponseCode() const {
-  return evhttp_request_get_response_code(req);
+HTTPStatus Request::getResponseCode() const {
+  return (HTTPStatus::enum_t)evhttp_request_get_response_code(req.access());
 }
 
 
 string Request::getResponseMessage() const {
-  const char *s = evhttp_request_get_response_code_line(req);
+  const char *s = evhttp_request_get_response_code_line(req.access());
   return s ? s : "";
 }
 
@@ -232,12 +303,12 @@ string Request::getResponseLine() const {
 
 
 Headers Request::getInputHeaders() const {
-  return evhttp_request_get_input_headers(req);
+  return evhttp_request_get_input_headers(req.access());
 }
 
 
 Headers Request::getOutputHeaders() const {
-  return evhttp_request_get_output_headers(req);
+  return evhttp_request_get_output_headers(req.access());
 }
 
 
@@ -329,6 +400,18 @@ void Request::guessContentType() {
 }
 
 
+void Request::outSetContentEncoding(compression_t compression) {
+  switch (compression) {
+  case COMPRESS_ZLIB:
+  case COMPRESS_GZIP:
+  case COMPRESS_BZIP2:
+    outSet("Content-Encoding", getContentEncoding(compression));
+    break;
+  default: break;
+  }
+}
+
+
 Request::compression_t Request::getRequestedCompression() const {
   if (!inHas("Accept-Encoding")) return COMPRESS_NONE;
 
@@ -338,7 +421,7 @@ Request::compression_t Request::getRequestedCompression() const {
   double maxQ = 0;
   double otherQ = 0;
   set<string> named;
-  compression_t compression;
+  compression_t compression = COMPRESS_NONE;
 
   for (unsigned i = 0; i < accept.size(); i++) {
     double q = 1;
@@ -447,12 +530,12 @@ string Request::getOutput() const {return getOutputBuffer().toString();}
 
 
 Event::Buffer Request::getInputBuffer() const {
-  return Buffer(evhttp_request_get_input_buffer(req), false);
+  return Buffer(evhttp_request_get_input_buffer(req.access()), false);
 }
 
 
 Event::Buffer Request::getOutputBuffer() const {
-  return Buffer(evhttp_request_get_output_buffer(req), false);
+  return Buffer(evhttp_request_get_output_buffer(req.access()), false);
 }
 
 
@@ -488,26 +571,10 @@ SmartPointer<JSON::Value> Request::getJSONMessage() const {
 SmartPointer<JSON::Writer>
 Request::getJSONWriter(unsigned indent, bool compact,
                        compression_t compression) {
-  class JSONBufferWriter : public JSON::Writer {
-    SmartPointer<ostream> stream;
-
-  public:
-    JSONBufferWriter(const SmartPointer<ostream> &stream, unsigned indent,
-                     bool compact) :
-      JSON::Writer(*stream, indent, compact), stream(stream) {}
-
-
-    void close() {
-      JSON::Writer::close();
-      stream.release();
-    }
-  };
-
-
   resetOutput();
   setContentType("application/json");
 
-  return new JSONBufferWriter(getOutputStream(compression), indent, compact);
+  return new JSONWriter(*this, indent, compact, compression);
 }
 
 
@@ -517,29 +584,23 @@ SmartPointer<JSON::Writer> Request::getJSONWriter(compression_t compression) {
 
 
 SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
-  class JSONPBufferWriter : public JSON::Writer {
-    SmartPointer<ostream> stream;
-
-  public:
-    JSONPBufferWriter(const SmartPointer<ostream> &stream) :
-      JSON::Writer(*stream, 0, true), stream(stream) {}
-
+  struct Writer : public JSONWriter {
+    Writer(Request &req, const string &callback) :
+      JSONWriter(req, 0, true, COMPRESS_NONE) {
+      getStream() << callback << '(';
+    }
 
     void close() {
       JSON::Writer::close();
-      *stream << ')';
-      stream.release();
+      getStream() << ')';
+      JSONWriter::close();
     }
   };
-
 
   resetOutput();
   setContentType("application/javascript");
 
-  SmartPointer<ostream> stream = getOutputStream(COMPRESS_NONE);
-  *stream << callback << '(';
-
-  return new JSONPBufferWriter(stream);
+  return new Writer(*this, callback);
 }
 
 
@@ -548,51 +609,18 @@ SmartPointer<istream> Request::getInputStream() const {
 }
 
 
-namespace {
-  struct FilteringOStreamWithRef : public io::filtering_ostream {
-    SmartPointer<ostream> ref;
-    virtual ~FilteringOStreamWithRef() {reset();}
-  };
-}
-
-
 SmartPointer<ostream>
 Request::getOutputStream(compression_t compression) {
   // Auto select compression type based on Accept-Encoding
   if (compression == COMPRESS_AUTO) compression = getRequestedCompression();
-
-  SmartPointer<ostream> target = new Event::BufferStream<>(getOutputBuffer());
-  SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
-
-  switch (compression) {
-  case COMPRESS_ZLIB:
-    out->push(io::zlib_compressor());
-    outSet("Content-Encoding", "zlib");
-    break;
-
-  case COMPRESS_GZIP:
-    out->push(io::gzip_compressor());
-    outSet("Content-Encoding", "gzip");
-    break;
-
-  case COMPRESS_BZIP2:
-    out->push(io::bzip2_compressor());
-    outSet("Content-Encoding", "bzip2");
-    break;
-
-  default: return target;
-  }
-
-  out->ref = target;
-  out->push(*target);
-
-  return out;
+  outSetContentEncoding(compression);
+  return compressBufferStream(getOutputBuffer(), compression);
 }
 
 
 void Request::sendError(int code) {
   finalize();
-  evhttp_send_error(req, code ? code : HTTP_INTERNAL_SERVER_ERROR, 0);
+  evhttp_send_error(req.access(), code ? code : HTTP_INTERNAL_SERVER_ERROR, 0);
 }
 
 
@@ -636,7 +664,7 @@ void Request::sendFile(const std::string &path) {
 
 void Request::reply(int code) {
   finalize();
-  evhttp_send_reply(req, code,
+  evhttp_send_reply(req.access(), code,
                     HTTPStatus((HTTPStatus::enum_t)code).getDescription(), 0);
 }
 
@@ -654,7 +682,7 @@ void Request::reply(int code, const string &s) {send(s); reply(code);}
 
 void Request::reply(int code, const cb::Event::Buffer &buf) {
   finalize();
-  evhttp_send_reply(req, code,
+  evhttp_send_reply(req.access(), code,
                     HTTPStatus((HTTPStatus::enum_t)code).getDescription(),
                     buf.getBuffer());
 }
@@ -667,12 +695,12 @@ void Request::reply(int code, const char *data, unsigned length) {
 
 void Request::startChunked(int code) {
   evhttp_send_reply_start
-    (req, code, HTTPStatus((HTTPStatus::enum_t)code).getDescription());
+    (req.access(), code, HTTPStatus((HTTPStatus::enum_t)code).getDescription());
 }
 
 
 void Request::sendChunk(const cb::Event::Buffer &buf) {
-  evhttp_send_reply_chunk(req, buf.getBuffer());
+  evhttp_send_reply_chunk(req.access(), buf.getBuffer());
 }
 
 
@@ -681,9 +709,24 @@ void Request::sendChunk(const char *data, unsigned length) {
 }
 
 
+void Request::sendChunk(const string &s) {sendChunk(Buffer(s));}
+
+
+SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
+  struct Writer : public JSONWriter {
+    Writer(Request &req) : JSONWriter(req, 0, true, COMPRESS_NONE) {}
+
+    // From JSONWriter
+    void send(Buffer &buffer) {req.sendChunk(buffer);}
+  };
+
+  return new Writer(*this);
+}
+
+
 void Request::endChunked() {
   finalize();
-  evhttp_send_reply_end(req);
+  evhttp_send_reply_end(req.access());
 }
 
 
@@ -695,8 +738,7 @@ void Request::redirect(const URI &uri, int code) {
 
 
 void Request::cancel() {
-  evhttp_cancel_request(req);
-  req = 0;
+  evhttp_cancel_request(req.access());
   finalized = true;
 }
 
@@ -711,6 +753,18 @@ const char *Request::getErrorStr(int error) {
   case EVREQ_HTTP_DATA_TOO_LONG:  return "Data too long";
   default:                        return "Unknown";
   }
+}
+
+
+void Request::freed() {
+  req.release();
+  SmartPointer<Request>::SelfRef::selfDeref();
+}
+
+
+void Request::init() {
+  evhttp_request_set_on_free_cb(req.access(), free_cb, this);
+  SmartPointer<Request>::SelfRef::selfRef();
 }
 
 

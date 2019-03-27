@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "Request.h"
+
 #include <cbang/SmartPointer.h>
 #include <cbang/net/IPAddress.h>
 
@@ -46,7 +48,6 @@ namespace cb {
     class Base;
     class DNSBase;
     class BufferEvent;
-    class Request;
 
     class Connection {
       evhttp_connection *con;
@@ -75,7 +76,7 @@ namespace cb {
       void setTimeout(double timeout);
       void setLocalAddress(const IPAddress &addr);
 
-      void makeRequest(Request &req, unsigned method, const URI &uri);
+      void makeRequest(evhttp_request *req, unsigned method, const URI &uri);
 
       void logSSLErrors();
       std::string getSSLErrors();

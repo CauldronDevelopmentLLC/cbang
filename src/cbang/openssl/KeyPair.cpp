@@ -117,7 +117,7 @@ cb::RSA KeyPair::getRSA() const {
 }
 
 
-bool KeyPair::hasPublic() const {
+BigNum KeyPair::getPublic() const {
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->e;
@@ -133,7 +133,19 @@ bool KeyPair::hasPublic() const {
   case EVP_PKEY_RSA: RSA_get0_key(EVP_PKEY_get0_RSA(key), 0, &n, 0); return n;
   case EVP_PKEY_DSA: DSA_get0_key(EVP_PKEY_get0_DSA(key), &n, 0); return n;
   case EVP_PKEY_DH: DH_get0_key(EVP_PKEY_get0_DH(key), &n, 0); return n;
-  case EVP_PKEY_EC: return EC_KEY_get0_public_key(EVP_PKEY_get0_EC_KEY(key));
+  case EVP_PKEY_EC: {
+    const EC_KEY *ec = EVP_PKEY_get0_EC_KEY(key);
+    const EC_POINT *pt = EC_KEY_get0_public_key(ec);
+    const EC_GROUP *group = EC_KEY_get0_group(ec);
+    point_conversion_form_t form = EC_KEY_get_conv_form(ec);
+
+    if (pt && group) {
+      BIGNUM *n = BN_new();
+      EC_POINT_point2bn(group, pt, form, n, 0);
+      return BigNum(n, true);
+    }
+    return n;
+  }
   }
 #endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
 
@@ -141,7 +153,7 @@ bool KeyPair::hasPublic() const {
 }
 
 
-bool KeyPair::hasPrivate() const {
+BigNum KeyPair::getPrivate() const {
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->d;
@@ -165,6 +177,9 @@ bool KeyPair::hasPrivate() const {
 }
 
 
+
+bool KeyPair::hasPublic() const {return !getPublic().isNull();}
+bool KeyPair::hasPrivate() const {return !getPrivate().isNull();}
 unsigned KeyPair::size() const {return EVP_PKEY_size(key);}
 
 

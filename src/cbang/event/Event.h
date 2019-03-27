@@ -44,8 +44,8 @@ namespace cb {
     class EventCallback;
 
     class Event : SmartPointer<Event>::SelfRef, public EventFlag {
-      // Only SmartPointer should access the SelfRef base class.
-      friend class SmartPointer<Event>;
+      // Only SelfRefCounter should access the SelfRef base class.
+      friend class SelfRefCounter;
 
     public:
       typedef Base::callback_t callback_t;

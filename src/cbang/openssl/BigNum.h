@@ -39,11 +39,14 @@ typedef struct bignum_st BIGNUM;
 namespace cb {
   class BigNum {
     BIGNUM *bn;
+    bool deallocate;
 
   public:
-    BigNum(BIGNUM *bn) : bn(bn) {}
-    BigNum(const BIGNUM *bn) : bn((BIGNUM *)bn) {}
+    BigNum(const BIGNUM *bn, bool deallocate = false) :
+      bn((BIGNUM *)bn), deallocate(deallocate) {}
+    ~BigNum();
 
+    bool isNull() const {return !bn;}
     unsigned size() const;
     std::string toBinString() const;
   };

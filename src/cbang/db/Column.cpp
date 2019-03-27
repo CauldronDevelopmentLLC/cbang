@@ -89,14 +89,9 @@ Blob Column::toBlob() const {
 }
 
 
-double Column::toDouble() const {
-  return sqlite3_column_double(stmt, i);
-}
-
-
-int64_t Column::toInteger() const {
-  return sqlite3_column_int64(stmt, i);
-}
+double Column::toDouble() const {return sqlite3_column_double(stmt, i);}
+int64_t Column::toInteger() const {return sqlite3_column_int64(stmt, i);}
+bool Column::toBoolean() const {return toInteger();}
 
 
 const char *Column::toString() const {

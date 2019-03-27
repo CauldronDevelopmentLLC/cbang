@@ -53,6 +53,11 @@ static const char *cudaLib = "libcuda.so";
 #define STDCALL
 #endif
 
+#ifdef _WIN32
+#define CUDA_API __stdcall
+#else
+#define CUDA_API
+#endif
 
 #define DYNAMIC_CALL(name, args) {                                  \
     name##_t name = (name##_t)getSymbol(#name);                     \
@@ -60,14 +65,7 @@ static const char *cudaLib = "libcuda.so";
   }
 
 
-CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
-
-#ifdef _WIN32
-#define CUDA_API __stdcall
-#else
-#define CUDA_API
-#endif
-
+namespace {
   typedef int (CUDA_API *cuInit_t)(unsigned);
   typedef int (CUDA_API *cuDriverGetVersion_t)(int *);
   typedef int (CUDA_API *cuDeviceGet_t)(int *, int);
@@ -77,7 +75,12 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
 
   const int CU_DEVICE_ATTRIBUTE_PCI_BUS_ID = 33;
   const int CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 34;
+  const int CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
+  const int CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
+}
 
+
+CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
   int err;
   int version;
 
@@ -103,24 +106,12 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
       DYNAMIC_CALL(cuDeviceGet, (&device, i));
 
       cd.driverVersion = driverVersion;
-
-      int computeMajor = -1;
-      int computeMinor = -1;
-      DYNAMIC_CALL(cuDeviceComputeCapability,
-                   (&computeMajor, &computeMinor, device));
-      cd.computeVersion = VersionU16(computeMajor, computeMinor);
-
+      cd.computeVersion = VersionU16
+        (getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device),
+         getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
       cd.vendorID = GPUVendor::VENDOR_NVIDIA; // Only vendor for CUDA
-
-      int pciBus = -1;
-      DYNAMIC_CALL(cuDeviceGetAttribute,
-                   (&pciBus, CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device));
-      cd.pciBus = pciBus;
-
-      int pciSlot = -1;
-      DYNAMIC_CALL(cuDeviceGetAttribute,
-                   (&pciSlot, CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device));
-      cd.pciSlot = pciSlot;
+      cd.pciBus = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
+      cd.pciSlot = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);
 
       devices.push_back(cd);
     } CATCH_ERROR;
@@ -131,4 +122,12 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
 const ComputeDevice &CUDALibrary::getDevice(unsigned i) const {
   if (getDeviceCount() <= i) THROWS("Invalid CUDA device index " << i);
   return devices.at(i);
+}
+
+
+int CUDALibrary::getAttribute(int id, int dev) {
+  int err;
+  int value = -1;
+  DYNAMIC_CALL(cuDeviceGetAttribute, (&value, id, dev));
+  return value;
 }

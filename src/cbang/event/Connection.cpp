@@ -188,10 +188,11 @@ void Connection::setLocalAddress(const IPAddress &addr) {
 }
 
 
-void Connection::makeRequest(Request &req, unsigned method, const URI &uri) {
+void Connection::makeRequest(evhttp_request *req, unsigned method,
+                             const URI &uri) {
   evhttp_cmd_type m = convert_method(method);
 
-  if (evhttp_make_request(con, req.adopt(), m, uri.toString().c_str()))
+  if (evhttp_make_request(con, req, m, uri.toString().c_str()))
     THROWS("Failed to make request to " << uri);
 }
 

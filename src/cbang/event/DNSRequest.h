@@ -46,7 +46,7 @@ struct evdns_request;
 namespace cb {
   namespace Event {
     class DNSRequest : SmartPointer<DNSRequest>::SelfRef {
-      friend class SmartPointer<DNSRequest>;
+      friend class SelfRefCounter;
 
     public:
       typedef enum {

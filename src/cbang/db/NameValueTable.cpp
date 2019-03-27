@@ -44,23 +44,26 @@ using namespace cb::DB;
 
 
 NameValueTable::NameValueTable(Database &db, const string &table) :
-  db(db), table(table) {
-}
+  db(db), table(table) {}
 
 
 void NameValueTable::init() {
+  if (foreachStmt.isSet()) return;
+
   const char *tableName = table.c_str();
 
   replaceStmt =
-    db.compilef("REPLACE INTO %s (name, value) VALUES (@NAME, @VALUE)",
+    db.compilef("REPLACE INTO \"%s\" (name, value) VALUES (@NAME, @VALUE)",
                 tableName);
-  deleteStmt = db.compilef("DELETE FROM %s WHERE name=@NAME", tableName);
-  selectStmt = db.compilef("SELECT value FROM %s WHERE name=@NAME", tableName);
+  deleteStmt = db.compilef("DELETE FROM \"%s\" WHERE name=@NAME", tableName);
+  selectStmt =
+    db.compilef("SELECT value FROM \"%s\" WHERE name=@NAME", tableName);
+  foreachStmt = db.compilef("SELECT name, value FROM \"%s\"", tableName);
 }
 
 
 void NameValueTable::create() {
-  db.executef("CREATE TABLE IF NOT EXISTS %s "
+  db.executef("CREATE TABLE IF NOT EXISTS \"%s\" "
               "(name TEXT PRIMARY KEY, value)", table.c_str());
 }
 
@@ -88,6 +91,12 @@ void NameValueTable::set(const string &name, int64_t value) {
 
 
 void NameValueTable::set(const string &name, double value) {
+  replaceStmt->parameter(1).bind(value);
+  doSet(name);
+}
+
+
+void NameValueTable::set(const string &name, bool value) {
   replaceStmt->parameter(1).bind(value);
   doSet(name);
 }
@@ -127,11 +136,52 @@ double NameValueTable::getDouble(const string &name) const {
 }
 
 
+bool NameValueTable::getBoolean(const string &name) const {
+  bool x = doGet(name).toBoolean();
+  selectStmt->reset();
+  return x;
+}
+
+
+const string NameValueTable::getString(const string &name,
+                                       const string &defaultValue) const {
+  return has(name) ? getString(name) : defaultValue;
+}
+
+
+int64_t NameValueTable::getInteger(const string &name,
+                                   int64_t defaultValue) const {
+  return has(name) ? getInteger(name) : defaultValue;
+}
+
+
+double NameValueTable::getDouble(const string &name,
+                                 double defaultValue) const {
+  return has(name) ? getDouble(name) : defaultValue;
+}
+
+
+bool NameValueTable::getBoolean(const string &name, bool defaultValue) const {
+  return has(name) ? getBoolean(name) : defaultValue;
+}
+
+
 bool NameValueTable::has(const string &name) const {
   selectStmt->parameter(0).bind(name);
   bool hasValue = selectStmt->next();
   selectStmt->reset();
   return hasValue;
+}
+
+
+void NameValueTable::foreach(function<void (const string &,
+                                            const string &)> cb) {
+  if (!cb) THROW("Callback cannot be null");
+
+  while (foreachStmt->next())
+    cb(foreachStmt->column(0).toString(), foreachStmt->column(1).toString());
+
+  foreachStmt->reset();
 }
 
 

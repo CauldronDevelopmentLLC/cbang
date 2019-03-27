@@ -81,8 +81,8 @@ namespace cb {
     void addNameEntry(const std::string &name, const std::string &value);
     std::string getNameEntry(const std::string &name) const;
 
-    bool hasExtension(const std::string &name);
-    std::string getExtension(const std::string &name);
+    bool hasExtension(const std::string &name) const;
+    std::string getExtension(const std::string &name) const;
     void addExtension(const std::string &name, const std::string &value,
                       CertificateContext *ctx = 0);
     static void addExtensionAlias(const std::string &alias,

@@ -33,6 +33,7 @@
 #include "Base.h"
 #include "Event.h"
 
+#include <event2/thread.h>
 #include <event2/event.h>
 
 #include <cbang/Exception.h>
@@ -41,7 +42,12 @@ using namespace cb::Event;
 using namespace cb;
 
 
-Base::Base() : base(event_base_new()) {
+bool Base::_threadsEnabled = false;
+
+
+Base::Base(bool withThreads) {
+  if (withThreads) enableThreads();
+  base = event_base_new();
   if (!base) THROW("Failed to create event base");
 }
 
@@ -102,4 +108,23 @@ void Base::loopContinue() {
 
 void Base::loopExit() {
   if (event_base_loopexit(base, 0)) THROW("Loop exit failed");
+}
+
+
+void Base::enableThreads() {
+  if (_threadsEnabled) return;
+
+#if EVTHREAD_USE_PTHREADS_IMPLEMENTED
+  if (evthread_use_pthreads())
+    THROW("Failed to enable libevent thread support");
+
+#elif EVTHREAD_USE_WINDOWS_THREADS_IMPLEMENTED
+  if (evthread_use_windows_threads())
+    THROW("Failed to enable libevent thread support");
+
+#else
+  THROW("libevent not built with thread support");
+#endif
+
+  _threadsEnabled = true;
 }

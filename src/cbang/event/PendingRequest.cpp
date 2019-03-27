@@ -50,17 +50,12 @@ using namespace cb::Event;
 
 namespace {
   void request_cb(struct evhttp_request *req, void *pr) {
-    ((PendingRequest *)pr)->callback(req);
+    ((PendingRequest *)pr)->callback();
   }
 
 
   void error_cb(enum evhttp_request_error error, void *pr) {
     ((PendingRequest *)pr)->error(error);
-  }
-
-
-  void free_cb(struct evhttp_request *req, void *pr) {
-    ((PendingRequest *)pr)->freed();
   }
 }
 
@@ -70,18 +65,13 @@ PendingRequest::PendingRequest(Client &client, const URI &uri, unsigned method,
   Connection(client.getBase(), client.getDNS(), uri, client.getSSLContext()),
   Request(evhttp_request_new(request_cb, this), uri, true), client(client),
   method(method), cb(cb), err(0) {
-  evhttp_request_set_error_cb(req, error_cb);
-  evhttp_request_set_on_free_cb(req, free_cb, this);
+  evhttp_request_set_error_cb(req.access(), error_cb);
 }
 
 
 PendingRequest::~PendingRequest() {
   LOG_DEBUG(6, __func__ << "() " << Debugger::getStackTrace());
-
-  if (req) {
-    evhttp_request_set_error_cb(req, 0);
-    evhttp_request_set_on_free_cb(req, 0, 0);
-  }
+  if (req.isSet()) evhttp_request_set_error_cb(req.access(), 0);
 }
 
 
@@ -107,34 +97,26 @@ void PendingRequest::send() {
 
   // Do it
   err = 0;
-  Connection::makeRequest(*this, method, getURI());
-
-  if (err || !getRequest()) THROWS("Failed to send to " << getURI());
-
-  SmartPointer<PendingRequest>::SelfRef::selfRef();
+  selfRef = this; // Keep alive during request
+  Connection::makeRequest(req.access(), method, getURI());
 }
 
 
-void PendingRequest::callback(evhttp_request *_req) {
-  SmartPointer<PendingRequest> _ = this; // Don't deallocate while in callback
-
+void PendingRequest::callback() {
   try {
-    if (!_req) {
-      cb(0, err);
-      SmartPointer<PendingRequest>::SelfRef::selfDeref();
+    if (!req) {
+      if (cb) cb(0, err);
+      selfRef.release();
       return;
     }
 
-    Request req(_req);
+    LOG_DEBUG(5, getResponseLine() << '\n' << getInputHeaders() << '\n');
+    LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
 
-    LOG_DEBUG(5, req.getResponseLine() << '\n' << req.getInputHeaders()
-              << '\n');
-    LOG_DEBUG(6, req.getInputBuffer().hexdump() << '\n');
-
-    cb(&req, err);
+    if (cb) cb(this, err);
   } CATCH_ERROR;
 
-  SmartPointer<PendingRequest>::SelfRef::selfDeref();
+  selfRef.release();
 }
 
 
@@ -147,18 +129,4 @@ void PendingRequest::error(int code) {
                 ", SSL errors: " + sslErrors));
 
   err = code;
-}
-
-
-void PendingRequest::freed() {
-  LOG_DEBUG(1, __func__ << "() " << Debugger::getStackTrace());
-
-  unsigned refs = SmartPointer<PendingRequest>::SelfRef::getCount();
-  bool engaged = SmartPointer<PendingRequest>::SelfRef::isSelfRefEngaged();
-
-  if ((engaged && refs != 1) || (!engaged && refs != 0))
-    LOG_ERROR("PendingRequest freed in libevent but ref count " << refs
-              << " and self ref " << (engaged ? "" : "not") << " engaged");
-
-  req = 0;
 }

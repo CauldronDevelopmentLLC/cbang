@@ -37,6 +37,7 @@
 #include "Factory.h"
 
 #include <vector>
+#include <functional>
 
 
 namespace cb {
@@ -48,6 +49,8 @@ namespace cb {
 
     public:
       Builder(const ValuePtr &root = 0);
+
+      static ValuePtr build(std::function<void (Sink &sink)> cb);
 
       ValuePtr getRoot() const;
       void clear() {stack.clear();}
@@ -74,5 +77,10 @@ namespace cb {
       bool shouldAppend();
       bool shouldInsert() {return !nextKey.empty();}
     };
+
+
+    static inline ValuePtr build(std::function<void (Sink &sink)> cb) {
+      return JSON::Builder::build(cb);
+    }
   }
 }

@@ -67,11 +67,6 @@ namespace {
   }
 
 
-  void request_free_cb(evhttp_request *_req, void *arg) {
-    TRY_CATCH_ERROR(delete (Request *)arg);
-  }
-
-
   void request_cb(evhttp_request *req, void *arg) {
     TRY_CATCH_ERROR(((HTTP *)arg)->requestCB(req));
   }
@@ -149,16 +144,13 @@ void HTTP::requestCB(evhttp_request *_req) {
   LOG_DEBUG(5, "New request on " << boundAddr << ", connection count = "
             << getConnectionCount());
 
-  // NOTE, Request gets deallocated in request_free_cb() above
+  // NOTE, Request gets deallocated via SmartPointer<Request>::SelfRef
   Request *req = 0;
 
   try {
     // Allocate request
     req = handler->createRequest(_req);
     if (!req) THROW("Failed to create Event::Request");
-
-    // Set deallocator
-    evhttp_request_set_on_free_cb(_req, request_free_cb, req);
 
     // Set to incoming
     req->setIncoming(true);

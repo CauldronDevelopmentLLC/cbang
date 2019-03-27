@@ -226,12 +226,12 @@ string Certificate::getNameEntry(const string &name) const {
 }
 
 
-bool Certificate::hasExtension(const string &name) {
+bool Certificate::hasExtension(const string &name) const {
   return 0 <= X509_get_ext_by_NID(cert, SSL::findObject(name), -1);
 }
 
 
-string Certificate::getExtension(const string &name) {
+string Certificate::getExtension(const string &name) const {
   X509_EXTENSION *ext =
     X509_get_ext(cert, X509_get_ext_by_NID(cert, SSL::findObject(name), -1));
   if (!ext) THROWS("Extension '" << name << "' not in certificate");
