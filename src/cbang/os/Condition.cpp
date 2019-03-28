@@ -151,7 +151,7 @@ bool Condition::timedWait(double timeout) {
 
   // Process return code from SignalObjectAndWait() above.
   if (ret == WAIT_TIMEOUT) return true;
-  else if (ret == WAIT_FAILED) THROWS("Wait failed: " << SysError());
+  else if (ret == WAIT_FAILED) THROW("Wait failed: " << SysError());
   else if (ret == WAIT_ABANDONED) // Lock still acquired
     LOG_WARNING("Wait Abandoned, Mutex owner terminated");
 

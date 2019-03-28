@@ -418,7 +418,7 @@ void Application::evalOption(const Script::Context &ctx) {
     if (ctx.args.size() > 2) options[name].set(ctx.args[2]);
     else if (options[name].hasValue()) ctx.stream << options[name];
 
-  } else THROWS("Invalid option '" << name << "'");
+  } else THROW("Invalid option '" << name << "'");
 }
 
 

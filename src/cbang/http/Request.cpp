@@ -67,7 +67,7 @@ void Request::readHeaderLine(const string &line) {
   vector<string> parts;
   String::tokenize(line, parts);
 
-  if (parts.size() != 3) THROWS("Invalid HTTP request '" << line << "'");
+  if (parts.size() != 3) THROW("Invalid HTTP request '" << line << "'");
 
   setMethod(RequestMethod::parse(parts[0]));
   uri.read(parts[1]);

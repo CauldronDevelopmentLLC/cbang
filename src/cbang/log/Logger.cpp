@@ -200,7 +200,7 @@ void Logger::startLogFile(const string &filename) {
     // Redirect standard error and out
     if (!freopen(filename.c_str(), "a", stdout) ||
         !freopen(filename.c_str(), "a", stderr))
-      THROWS("Redirecting output to '" << filename << "'");
+      THROW("Redirecting output to '" << filename << "'");
   }
 }
 
@@ -234,7 +234,7 @@ void Logger::setLogDomainLevels(const string &levels) {
 
     } else invalid = true;
 
-    if (invalid) THROWS("Invalid log domain level entry " << (i + 1)
+    if (invalid) THROW("Invalid log domain level entry " << (i + 1)
                         << " '" << entries[i] << "'");
   }
 }
@@ -329,7 +329,7 @@ string Logger::getHeader(const string &domain, int level) const {
     case LEVEL_WARNING:  header += "W"; break;
     case LEVEL_INFO:     header += "I"; break;
     case LEVEL_DEBUG:    header += "D"; break;
-    default: THROWS("Unknown log level " << level);
+    default: THROW("Unknown log level " << level);
     }
 
     // Verbosity
@@ -345,7 +345,7 @@ string Logger::getHeader(const string &domain, int level) const {
     case LEVEL_WARNING:  header += "WARNING"; break;
     case LEVEL_INFO:     if (!logNoInfoHeader) header += "INFO"; break;
     case LEVEL_DEBUG:    header += "DEBUG"; break;
-    default: THROWS("Unknown log level " << level);
+    default: THROW("Unknown log level " << level);
     }
 
     if (!logNoInfoHeader || level != LEVEL_INFO) {

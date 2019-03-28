@@ -53,7 +53,7 @@ Statement::Statement(Database &db, const string &sql) :
   LOG_DEBUG(5, "SQL: " << sql);
 
   if (sqlite3_prepare_v2(db.getDB(), sql.c_str(), sql.length(), &stmt, 0))
-    THROWS("Failed to prepare statement: " << sql << ": "
+    THROW("Failed to prepare statement: " << sql << ": "
            << sqlite3_errmsg(db.getDB()));
 }
 
@@ -81,7 +81,7 @@ bool Statement::next() {
     return false;
 
   default:
-    THROWS("Failed to advance statement result: " << Database::errorMsg(code));
+    THROW("Failed to advance statement result: " << Database::errorMsg(code));
   }
 }
 
@@ -150,7 +150,7 @@ Parameter Statement::parameter(unsigned i) const {
 
 Parameter Statement::parameter(const std::string &name) const {
   int i = sqlite3_bind_parameter_index(stmt, name.c_str());
-  if (!i) THROWS("Invalid parameter '" << name << "' for statement");
+  if (!i) THROW("Invalid parameter '" << name << "' for statement");
   return parameter(i - 1);
 }
 

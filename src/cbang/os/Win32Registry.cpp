@@ -69,7 +69,7 @@ static HKEY parseKey(const string &path, string &key, string &name) {
   if (root == "HKU" || root == "HKEY_USERS")
     return HKEY_USERS;
 
-  THROWS("Invalid root key " << root);
+  THROW("Invalid root key " << root);
 }
 
 
@@ -78,7 +78,7 @@ static HKEY openRegKey(HKEY root, const string &key, REGSAM sam) {
   long ret = RegOpenKeyEx(root, (LPCTSTR)key.c_str(), 0, sam, &hKey);
 
   if (ret)
-    THROWS("Failed to open registry key '" << key << "': " << SysError(ret));
+    THROW("Failed to open registry key '" << key << "': " << SysError(ret));
 
   return hKey;
 }
@@ -94,7 +94,7 @@ static void setRegKey(const string &path, uint32_t type, const void *data,
                            (const BYTE *)data, size);
 
   if (ret)
-    THROWS("Failed to set registry key '" << path << "': " << SysError(ret));
+    THROW("Failed to set registry key '" << path << "': " << SysError(ret));
 
   RegCloseKey(hKey);
 }
@@ -111,10 +111,10 @@ static uint32_t getRegKey(const string &path, uint32_t type, void *data,
                              (LPBYTE)data, (LPDWORD)&size);
 
   if (ret)
-    THROWS("Failed to get registry key '" << path << "': " << SysError(ret));
+    THROW("Failed to get registry key '" << path << "': " << SysError(ret));
 
   if (type != expectedType)
-    THROWS("Type mismatch when reading key '" << path << "' " << type << "!="
+    THROW("Type mismatch when reading key '" << path << "' " << type << "!="
            << expectedType);
 
   RegCloseKey(hKey);
@@ -204,7 +204,7 @@ void Win32Registry::remove(const string &path) {
   long ret = RegDeleteKey(hKey, (LPCTSTR)key.c_str());
 
   if (ret)
-    THROWS("Failed to delete registry key '" << path << "': " << SysError(ret));
+    THROW("Failed to delete registry key '" << path << "': " << SysError(ret));
 }
 
 #endif // _WIN32

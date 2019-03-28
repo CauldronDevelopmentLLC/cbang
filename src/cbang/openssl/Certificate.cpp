@@ -70,14 +70,14 @@ Certificate::Certificate(X509 *cert) : cert(cert) {
   SSL::init();
   if (!cert)
     if (!(this->cert = X509_new()))
-      THROWS("Failed to create new certificate: " << SSL::getErrorStr());
+      THROW("Failed to create new certificate: " << SSL::getErrorStr());
 }
 
 
 Certificate::Certificate(const string &pem) : cert(0) {
   SSL::init();
   if (!(this->cert = X509_new()))
-    THROWS("Failed to create new certificate: " << SSL::getErrorStr());
+    THROW("Failed to create new certificate: " << SSL::getErrorStr());
   parse(pem);
 }
 
@@ -101,7 +101,7 @@ bool Certificate::hasPublicKey() const {return X509_get_pubkey(cert);}
 void Certificate::getPublicKey(KeyPair &key) const {
   EVP_PKEY *pkey = X509_get_pubkey(cert);
   if (!pkey)
-    THROWS("Error getting public key from certificate: " << SSL::getErrorStr());
+    THROW("Error getting public key from certificate: " << SSL::getErrorStr());
 
   if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
   key.setEVP_PKEY(pkey);
@@ -117,13 +117,13 @@ SmartPointer<KeyPair> Certificate::getPublicKey() const {
 
 void Certificate::setPublicKey(const KeyPair &key) {
   if (!X509_set_pubkey(cert, key.getEVP_PKEY()))
-    THROWS("Failed to set certificate's public key: " << SSL::getErrorStr());
+    THROW("Failed to set certificate's public key: " << SSL::getErrorStr());
 }
 
 
 void Certificate::setVersion(int version) {
   if (!X509_set_version(cert, version))
-    THROWS("Failed to set certificate version: " << SSL::getErrorStr());
+    THROW("Failed to set certificate version: " << SSL::getErrorStr());
 }
 
 
@@ -134,7 +134,7 @@ int Certificate::getVersion() const {
 
 void Certificate::setSerial(long serial) {
   if (!ASN1_INTEGER_set(X509_get_serialNumber(cert), serial))
-    THROWS("Failed to set certificate's serial: " << SSL::getErrorStr());
+    THROW("Failed to set certificate's serial: " << SSL::getErrorStr());
 }
 
 
@@ -145,7 +145,7 @@ long Certificate::getSerial() const {
 
 void Certificate::setNotBefore(uint64_t x) {
   if (!X509_gmtime_adj(X509_get_notBefore(cert), x))
-    THROWS("Failed to set certificate's not before: " << SSL::getErrorStr());
+    THROW("Failed to set certificate's not before: " << SSL::getErrorStr());
 }
 
 
@@ -153,7 +153,7 @@ bool Certificate::isNotBeforeInFuture() const {
   int ret = X509_cmp_current_time(X509_get_notBefore(cert));
 
   if (!ret)
-    THROWS("Failed to get certificate's not before: " << SSL::getErrorStr());
+    THROW("Failed to get certificate's not before: " << SSL::getErrorStr());
 
   return 0 < ret;
 }
@@ -161,7 +161,7 @@ bool Certificate::isNotBeforeInFuture() const {
 
 void Certificate::setNotAfter(uint64_t x) {
   if (!X509_gmtime_adj(X509_get_notAfter(cert), x))
-    THROWS("Failed to set certificate's not after: " << SSL::getErrorStr());
+    THROW("Failed to set certificate's not after: " << SSL::getErrorStr());
 }
 
 
@@ -169,7 +169,7 @@ bool Certificate::isNotAfterInPast() const {
   int ret = X509_cmp_current_time(X509_get_notAfter(cert));
 
   if (!ret)
-    THROWS("Failed to get certificate's not after: " << SSL::getErrorStr());
+    THROW("Failed to get certificate's not after: " << SSL::getErrorStr());
 
   return ret < 0;
 }
@@ -183,7 +183,7 @@ bool Certificate::expiredIn(unsigned secs) const {
   int ret = X509_cmp_time(X509_get_notAfter(cert), &t);
 
   if (!ret)
-    THROWS("Failed to get certificate's not after: " << SSL::getErrorStr());
+    THROW("Failed to get certificate's not after: " << SSL::getErrorStr());
 
   return ret < 0;
 }
@@ -191,10 +191,10 @@ bool Certificate::expiredIn(unsigned secs) const {
 
 void Certificate::setIssuer(const Certificate &issuer) {
   X509_NAME *name = X509_get_subject_name(issuer.cert);
-  if (!name) THROWS("Failed to get issuer name: " << SSL::getErrorStr());
+  if (!name) THROW("Failed to get issuer name: " << SSL::getErrorStr());
 
   if (!X509_set_issuer_name(cert, name))
-    THROWS("Failed to set issuer name: " << SSL::getErrorStr());
+    THROW("Failed to set issuer name: " << SSL::getErrorStr());
 }
 
 
@@ -203,7 +203,7 @@ void Certificate::addNameEntry(const string &name, const string &value) {
   if (!X509_NAME_add_entry_by_txt(X509_get_subject_name(cert), name.c_str(),
                                   MBSTRING_ASC, (uint8_t *)value.c_str(), -1,
                                   -1, 0))
-    THROWS("Failed to add certificate name entry '" << name << "'='" << value
+    THROW("Failed to add certificate name entry '" << name << "'='" << value
            << "': " << SSL::getErrorStr());
 }
 
@@ -222,7 +222,7 @@ string Certificate::getNameEntry(const string &name) const {
       return (char *)ASN1_STRING_get0_data(X509_NAME_ENTRY_get_data(entry));
   }
 
-  THROWS("Name entry '" << name << "' not found");
+  THROW("Name entry '" << name << "' not found");
 }
 
 
@@ -234,7 +234,7 @@ bool Certificate::hasExtension(const string &name) const {
 string Certificate::getExtension(const string &name) const {
   X509_EXTENSION *ext =
     X509_get_ext(cert, X509_get_ext_by_NID(cert, SSL::findObject(name), -1));
-  if (!ext) THROWS("Extension '" << name << "' not in certificate");
+  if (!ext) THROW("Extension '" << name << "' not in certificate");
 
   ostringstream stream;
   BOStream bio(stream);
@@ -251,12 +251,12 @@ void Certificate::addExtension(const string &name, const string &value,
   X509_EXTENSION *ext =
     X509V3_EXT_conf(0, ctx ? ctx->getX509V3_CTX() : 0, (char *)name.c_str(),
                     (char *)value.c_str());
-  if (!ext) THROWS("Failed to create extension '" << name << "'='" << value
+  if (!ext) THROW("Failed to create extension '" << name << "'='" << value
                   << "': " << SSL::getErrorStr());
 
   if (!X509_add_ext(cert, ext, -1)) {
     X509_EXTENSION_free(ext);
-    THROWS("Failed to add extension '" << name << "'='" << value
+    THROW("Failed to add extension '" << name << "'='" << value
            << "': " << SSL::getErrorStr());
   }
 
@@ -266,7 +266,7 @@ void Certificate::addExtension(const string &name, const string &value,
 
 void Certificate::addExtensionAlias(const string &alias, const string &name) {
   if (!X509V3_EXT_add_alias(SSL::findObject(alias), SSL::findObject(name)))
-    THROWS("Failed to alias extension '" << alias << "' to '" << name
+    THROW("Failed to alias extension '" << alias << "' to '" << name
            << "': " << SSL::getErrorStr());
 }
 
@@ -278,10 +278,10 @@ bool Certificate::issued(const Certificate &o) const {
 
 void Certificate::sign(KeyPair &key, const string &digest) {
   const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROWS("Unrecognized message digest '" << digest << "'");
+  if (!md) THROW("Unrecognized message digest '" << digest << "'");
 
   if (!X509_sign(cert, key.getEVP_PKEY(), md))
-    THROWS("Failed to sign Certificate: " << SSL::getErrorStr());
+    THROW("Failed to sign Certificate: " << SSL::getErrorStr());
 
 }
 
@@ -289,11 +289,11 @@ void Certificate::sign(KeyPair &key, const string &digest) {
 void Certificate::verify() {
   EVP_PKEY *pkey = X509_get_pubkey(cert);
   if (!pkey)
-    THROWS("Error getting public key from Certificate: " << SSL::getErrorStr());
+    THROW("Error getting public key from Certificate: " << SSL::getErrorStr());
 
   if (!X509_verify(cert, pkey)) {
     EVP_PKEY_free(pkey);
-    THROWS("Certificate failed verification: " << SSL::getErrorStr());
+    THROW("Certificate failed verification: " << SSL::getErrorStr());
   }
 
   EVP_PKEY_free(pkey);
@@ -304,7 +304,7 @@ void Certificate::read(istream &stream) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_X509(bio.getBIO(), &cert, 0, 0))
-    THROWS("Failed to read certificate: " << SSL::getErrorStr());
+    THROW("Failed to read certificate: " << SSL::getErrorStr());
 }
 
 
@@ -312,5 +312,5 @@ void Certificate::write(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_X509(bio.getBIO(), cert))
-    THROWS("Failed to write certificate: " << SSL::getErrorStr());
+    THROW("Failed to write certificate: " << SSL::getErrorStr());
 }

@@ -81,13 +81,13 @@ void Info::add(const string &category, const string &key, const string &value,
 const string &Info::get(const string &category, const string &key) const {
   categories_t::const_map_iterator it = categories.find(category);
   if (it == categories.map_end())
-    THROWS("Info category '" << category << "' does not exist.");
+    THROW("Info category '" << category << "' does not exist.");
 
   const category_t &cat = it->second;
 
   category_t::const_map_iterator it2 = cat.find(key);
   if (it2 == cat.map_end())
-    THROWS("Info category '" << category << "' does have key '" << key << "'.");
+    THROW("Info category '" << category << "' does have key '" << key << "'.");
 
   return it2->second;
 }

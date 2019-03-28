@@ -115,7 +115,7 @@ int HTTP::bind(const cb::IPAddress &addr) {
     evhttp_bind_socket_with_handle(http, addr.getHost().c_str(),
                                    addr.getPort());
 
-  if (!handle) THROWS("Unable to bind HTTP server to " << addr);
+  if (!handle) THROW("Unable to bind HTTP server to " << addr);
   boundAddr = addr;
 
   return (int)evhttp_bound_socket_get_fd(handle);

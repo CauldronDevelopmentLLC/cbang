@@ -78,7 +78,7 @@ bool TarFileReader::hasMore() {
   if (!didReadHeader) {
     SysError::clear();
     if (!readHeader(pri->filter))
-      THROWS("Tar file read failed: " << SysError());
+      THROW("Tar file read failed: " << SysError());
     didReadHeader = true;
   }
 
@@ -124,6 +124,6 @@ void TarFileReader::addCompression(compression_t compression) {
   case TARFILE_NONE: break; // none
   case TARFILE_BZIP2: pri->filter.push(BZip2Decompressor()); break;
   case TARFILE_GZIP: pri->filter.push(io::zlib_decompressor()); break;
-  default: THROWS("Invalid compression type " << compression);
+  default: THROW("Invalid compression type " << compression);
   }
 }

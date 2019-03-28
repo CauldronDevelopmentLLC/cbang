@@ -79,9 +79,9 @@ void Scanner::advance() {
 
 
 void Scanner::match(int c) {
-  if (!hasMore())  THROWS("Expected '" << String::escapeC(c)
+  if (!hasMore())  THROW("Expected '" << String::escapeC(c)
                           << "' found end of stream");
-  if (c != peek()) THROWS("Expected '" << String::escapeC(c)
+  if (c != peek()) THROW("Expected '" << String::escapeC(c)
                           << "' found '" << String::escapeC(peek()));
 
   advance();

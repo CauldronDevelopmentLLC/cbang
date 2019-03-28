@@ -48,7 +48,7 @@ KeywordArguments::KeywordArguments(const Arguments &args) {
 
     if (equal == string::npos) {
       if (started)
-        THROWS("Positional argument '" << *it << "' at " << count
+        THROW("Positional argument '" << *it << "' at " << count
                << " not allowed after keyword");
 
       push_back(*it); // Add positional arg

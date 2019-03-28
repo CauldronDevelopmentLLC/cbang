@@ -31,6 +31,8 @@
 \******************************************************************************/
 
 #include "NullSink.h"
+#include "Errors.h"
+
 
 using namespace cb::JSON;
 
@@ -51,12 +53,12 @@ bool NullSink::inDict() const {
 void NullSink::end() {
   if (inList()) endList();
   else if (inDict()) endDict();
-  else THROW("Not in list or dict");
+  else JSON_TYPE_ERROR("Not in list or dict");
 }
 
 
 void NullSink::close() {
-  if (!stack.empty()) THROWS("Writer closed with open " << stack.back());
+  if (!stack.empty()) JSON_ERROR("Writer closed with open " << stack.back());
 }
 
 
@@ -76,14 +78,14 @@ void NullSink::beginList(bool simple) {
 
 void NullSink::beginAppend() {
   assertWriteNotPending();
-  if (!inList()) THROW("Not a List");
+  if (!inList()) JSON_TYPE_ERROR("Not a List");
   canWrite = true;
 }
 
 
 void NullSink::endList() {
   assertWriteNotPending();
-  if (!inList()) THROW("Not a List");
+  if (!inList()) JSON_TYPE_ERROR("Not a List");
 
   stack.pop_back();
 }
@@ -98,14 +100,14 @@ void NullSink::beginDict(bool simple) {
 
 
 bool NullSink::has(const std::string &key) const {
-  if (!inDict()) THROW("Not a Dict");
+  if (!inDict()) JSON_TYPE_ERROR("Not a Dict");
   return keyStack.back().find(key) != keyStack.back().end();
 }
 
 
 void NullSink::beginInsert(const std::string &key) {
   assertWriteNotPending();
-  if (has(key)) THROWS("Key '" << key << "' already written to output");
+  if (has(key)) JSON_KEY_ERROR("Key '" << key << "' already written to output");
   keyStack.back().insert(key);
   canWrite = true;
 }
@@ -113,7 +115,7 @@ void NullSink::beginInsert(const std::string &key) {
 
 void NullSink::endDict() {
   assertWriteNotPending();
-  if (!inDict()) THROW("Not a Dict");
+  if (!inDict()) JSON_TYPE_ERROR("Not a Dict");
 
   stack.pop_back();
   keyStack.pop_back();
@@ -121,11 +123,11 @@ void NullSink::endDict() {
 
 
 void NullSink::assertCanWrite() {
-  if (!canWrite) THROW("Not ready for write");
+  if (!canWrite) JSON_ERROR("Not ready for write");
   canWrite = false;
 }
 
 
 void NullSink::assertWriteNotPending() {
-  if (canWrite) THROW("Expected write");
+  if (canWrite) JSON_ERROR("Expected write");
 }

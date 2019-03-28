@@ -57,7 +57,7 @@ XMLProcessor::~XMLProcessor() {
 
 
 void XMLProcessor::addFactory(const string &name, XMLHandlerFactory *factory) {
-  if (!factory) THROWS("Cannot add NULL factory");
+  if (!factory) THROW("Cannot add NULL factory");
   contextStack.back()->add(name, factory);
 }
 

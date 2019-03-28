@@ -51,10 +51,10 @@ void Object::read(istream &stream) {
   msg.read(stream);
 
   if (!msg.isValid())
-    THROWS("Invalid PyON message when reading " << getPyONType());
+    THROW("Invalid PyON message when reading " << getPyONType());
 
   if (msg.getType() != getPyONType())
-    THROWS("Expected " << getPyONType() << " found " << msg.getType());
+    THROW("Expected " << getPyONType() << " found " << msg.getType());
 
   loadJSON(*msg.get());
 }

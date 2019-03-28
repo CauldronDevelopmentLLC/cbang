@@ -106,7 +106,7 @@ void cb::SSL::setBIO(BIO *bio) {
 
 void cb::SSL::setCipherList(const string &list) {
   if (!SSL_set_cipher_list(ssl, list.c_str()))
-    THROWS("Failed to set cipher list to: " << list);
+    THROW("Failed to set cipher list to: " << list);
 }
 
 
@@ -146,7 +146,7 @@ SmartPointer<Certificate> cb::SSL::getPeerCertificate() const {
 
 void cb::SSL::setTLSExtHostname(const string &hostname) {
   if (!SSL_set_tlsext_host_name(ssl, hostname.c_str()))
-    THROWS("Failed to set TLS host name extension to '" << hostname << "'");
+    THROW("Failed to set TLS host name extension to '" << hostname << "'");
 }
 
 
@@ -164,7 +164,7 @@ void cb::SSL::connect() {
 
   state = PROCEED;
 
-  if (ret != 1) THROWS("SSL connect failed: " << getFullSSLErrorStr(ret));
+  if (ret != 1) THROW("SSL connect failed: " << getFullSSLErrorStr(ret));
 }
 
 
@@ -188,7 +188,7 @@ void cb::SSL::accept() {
   if (ret != 1) {
     string err = getFullSSLErrorStr(ret);
     LOG_DEBUG(5, "SSL accept failed: " << err);
-    THROWS("SSL accept failed: " << err);
+    THROW("SSL accept failed: " << err);
   }
 }
 
@@ -217,7 +217,7 @@ int cb::SSL::read(char *data, unsigned size) {
 
     string errMsg = getFullSSLErrorStr(ret);
     LOG_DEBUG(5, "cb::SSL::read() " << errMsg);
-    THROWS("SSL read failed: " << errMsg);
+    THROW("SSL read failed: " << errMsg);
   }
 
   LOG_DEBUG(5, "cb::SSL::read()=" << ret);
@@ -240,7 +240,7 @@ unsigned cb::SSL::write(const char *data, unsigned size) {
   if (ret <= 0) {
     int err = SSL_get_error(ssl, ret);
     if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) return 0;
-    THROWS("SSL write failed: " << getFullSSLErrorStr(ret));
+    THROW("SSL write failed: " << getFullSSLErrorStr(ret));
   }
 
   LOG_DEBUG(5, "cb::SSL::write()=" << ret);
@@ -332,7 +332,7 @@ int cb::SSL::createObject(const string &oid, const string &shortName,
   int nid = OBJ_create(oid.c_str(), shortName.c_str(), longName.c_str());
 
   if (nid == NID_undef)
-    THROWS("Failed to create SSL object oid='" << oid << ", SN='" << shortName
+    THROW("Failed to create SSL object oid='" << oid << ", SN='" << shortName
            << "', LN='" << longName << "': " << getErrorStr());
 
   return nid;
@@ -341,7 +341,7 @@ int cb::SSL::createObject(const string &oid, const string &shortName,
 
 int cb::SSL::findObject(const string &name) {
   int nid = OBJ_txt2nid(name.c_str());
-  if (nid == NID_undef) THROWS("Unrecognized SSL object '" << name << "'");
+  if (nid == NID_undef) THROW("Unrecognized SSL object '" << name << "'");
   return nid;
 }
 

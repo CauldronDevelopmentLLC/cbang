@@ -50,38 +50,13 @@ namespace cb {
   class SmartPointer;
 
   /**
-   * Exception is a general purpose exception class.  It is similar to
-   * the java Exception class.  A Exception can carry a message, error code,
-   * FileLocation and/or a pointer to an exception which was the
-   * original cause.  It also can track a file name, line and column which
-   * indicates where the exception occured.
+   * Exception is a general purpose exception class containing:
    *
-   * There are several preprocessor macros that can be used as a convient way
-   * to add the current file, line and column where the exception occured.
-   * These are:
-   *
-   *   THROW(const string &message)
-   *   THROWC(const string &message, Exception &cause)
-   *   THROWX(const string &message, int code)
-   *   THROWCX(const string &message, Exception &cause, int code)
-   *
-   *   THROWS(<message stream>)
-   *   THROWCS(<message stream>, Exception &cause)
-   *   THROWXS(<message stream>, int code)
-   *   THROWCXS(<message stream>, Exception &cause, int code)
-   *
-   *   DBG_ASSERT(bool condition, const string &message)
-   *   DBG_ASSERTS(bool condition, <message stream>)
-   *
-   * In the versions ending i 'S' <message stream> can be a chain of items to be
-   * piped to an std::ostream in order to format the message.  For example:
-   *
-   *   THROWS("The error number was: " << errno);
-   *
-   * These stream chains can be of arbitrary length.
-   *
-   * The DBG_ASSERT macros evaluate condition and throw an exception if false.
-   * These macros are compiled out if DEBUG is not defined.
+   *   - A text message
+   *   - A numeric code
+   *   - FileLocation indicating where the exception occured.
+   *   - A pointer to an exception which was the original cause.
+   *   - A stack trace.
    */
   class Exception : public std::exception {
   private:
@@ -96,38 +71,27 @@ namespace cb {
     static bool printLocations;
     static unsigned causePrintLevel;
 
-    Exception(int code = 0) : code(code) {init();}
-
-    Exception(const std::string &message, int code = 0) :
-      message(message), code(code) {
-      init();
-    }
+    Exception(const std::string &message = "", int code = 0,
+              const FileLocation &location = FileLocation(),
+              const SmartPointer<Exception> &cause = 0);
 
     Exception(const std::string &message, const FileLocation &location,
-              int code = 0) :
-      message(message), code(code), location(location) {
-      init();
-    }
+              int code = 0) : Exception(message, code, location) {}
 
-    Exception(const std::string &message, Exception &cause, int code = 0) :
-      message(message), code(code) {
-      this->cause = new Exception(cause);
-      init();
-    }
+    Exception(const std::string &message, const Exception &cause,
+              int code = 0) :
+      Exception(message, code, FileLocation(), new Exception(cause)) {}
 
     Exception(const std::string &message, const FileLocation &location,
               const Exception &cause, int code = 0) :
-      message(message), code(code), location(location) {
-      this->cause = new Exception(cause);
-      init();
-    }
+      Exception(message, code, location, new Exception(cause)) {}
 
     /// Copy constructor
     Exception(const Exception &e) :
       message(e.message), code(e.code), location(e.location), cause(e.cause),
       trace(e.trace) {}
 
-    virtual ~Exception() throw() {}
+    virtual ~Exception() {}
 
     // From std::exception
     virtual const char *what() const throw() {return message.c_str();}
@@ -162,9 +126,6 @@ namespace cb {
      * @return A reference to the passed stream.
      */
     std::ostream &print(std::ostream &stream, unsigned level = 0) const;
-
-  protected:
-    void init();
   };
 
   /**

@@ -69,14 +69,14 @@ namespace cb {
 
     Vector(const Vector<DIM - 1, T> &v, T x) {
       if (DIM < 1)
-        CBANG_THROWS("Invalid constructor for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid constructor for Vector of dimension " << DIM);
       for (unsigned i = 0; i < DIM - 1; i++) data[i] = v.data[i];
       data[DIM - 1] = x;
     }
 
     Vector(const Vector<DIM - 2, T> &v, T x, T y) {
       if (DIM < 2)
-        CBANG_THROWS("Invalid constructor for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid constructor for Vector of dimension " << DIM);
       for (unsigned i = 0; i < DIM - 2; i++) data[i] = v.data[i];
       data[DIM - 2] = x;
       data[DIM - 1] = y;
@@ -84,7 +84,7 @@ namespace cb {
 
     Vector(const Vector<DIM - 3, T> &v, T x, T y, T z) {
       if (DIM < 3)
-        CBANG_THROWS("Invalid constructor for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid constructor for Vector of dimension " << DIM);
       for (unsigned i = 0; i < DIM - 3; i++) data[i] = v.data[i];
       data[DIM - 3] = x;
       data[DIM - 2] = y;
@@ -95,7 +95,7 @@ namespace cb {
       std::vector<std::string> tokens;
       String::tokenize(s, tokens, "(,; \t\n\r)");
       if (tokens.size() != DIM)
-        CBANG_THROWS("Invalid Vector<" << DIM << "> string '" << s << "'");
+        CBANG_THROW("Invalid Vector<" << DIM << "> string '" << s << "'");
 
       for (unsigned i = 0; i < DIM; i++)
         data[i] = (T)String::parseDouble(tokens[i]);
@@ -103,14 +103,14 @@ namespace cb {
 
     Vector(T x, T y) {
       if (DIM != 2)
-        CBANG_THROWS("Invalid constructor for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid constructor for Vector of dimension " << DIM);
       data[0] = x;
       data[1] = y;
     }
 
     Vector(T x, T y, T z) {
       if (DIM != 3)
-        CBANG_THROWS("Invalid constructor for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid constructor for Vector of dimension " << DIM);
       data[0] = x;
       data[1] = y;
       data[2] = z;
@@ -118,7 +118,7 @@ namespace cb {
 
     Vector(T x, T y, T z, T a) {
       if (DIM != 4)
-        CBANG_THROWS("Invalid constructor for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid constructor for Vector of dimension " << DIM);
       data[0] = x;
       data[1] = y;
       data[2] = z;
@@ -136,22 +136,22 @@ namespace cb {
     T x() const {return data[0];}
     T &y() {
       if (DIM < 2)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return data[1];
     }
     T y() const {
       if (DIM < 2)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return data[1];
     }
     T &z() {
       if (DIM < 3)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return data[2];
     }
     T z() const {
       if (DIM < 3)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return data[2];
     }
 
@@ -202,7 +202,7 @@ namespace cb {
 
     Vector<DIM, T> crossProduct(const Vector<DIM, T> &v) const {
       if (DIM != 3)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return Vector<DIM, T>(data[1] * v.data[2] - data[2] * v.data[1],
                             data[2] * v.data[0] - data[0] * v.data[2],
                             data[0] * v.data[1] - data[1] * v.data[0]);
@@ -465,7 +465,7 @@ namespace cb {
       const JSON::List &list = value.getList();
 
       if (list.size() != DIM)
-        CBANG_THROWS("Vector<" << DIM << "> expected list of length " << DIM);
+        CBANG_THROW("Vector<" << DIM << "> expected list of length " << DIM);
       for (unsigned i = 0; i < DIM; i++) data[i] = list[i]->getNumber();
     }
 

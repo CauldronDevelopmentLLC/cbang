@@ -78,7 +78,7 @@ SmartPointer<Value> BakedCallback::call(Callback &cb, Value &args) {
         newArgs->set(key, factory->create(sig.getString(i)));
         break;
       case JSON::Value::JSON_UNDEFINED: break;
-      default: THROWS("Unexpected type " << sig.get(i)->getType()
+      default: THROW("Unexpected type " << sig.get(i)->getType()
                       << " in function signature");
       }
   }

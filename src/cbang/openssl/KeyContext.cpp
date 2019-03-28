@@ -52,7 +52,7 @@ KeyContext::KeyContext(int nid, ENGINE *e) : ctx(0), deallocate(true) {
   SSL::init();
 
   if (!(ctx = EVP_PKEY_CTX_new_id(nid, e)))
-    THROWS("Failed to create key context: " << SSL::getErrorStr());
+    THROW("Failed to create key context: " << SSL::getErrorStr());
 }
 
 
@@ -61,7 +61,7 @@ KeyContext::KeyContext(const std::string &algorithm, ENGINE *e) :
   SSL::init();
 
   if (!(ctx = EVP_PKEY_CTX_new_id(SSL::findObject(algorithm), e)))
-    THROWS("Failed to create key context: " << SSL::getErrorStr());
+    THROW("Failed to create key context: " << SSL::getErrorStr());
 }
 
 
@@ -94,23 +94,23 @@ void KeyContext::setRSAPadding(padding_t _padding) {
   case SSLV23_PADDING: padding = RSA_SSLV23_PADDING; break;
   case PKCS1_OAEP_PADDING: padding = RSA_PKCS1_OAEP_PADDING; break;
   case X931_PADDING: padding = RSA_X931_PADDING; break;
-  default: THROWS("Invalid padding " << _padding);
+  default: THROW("Invalid padding " << _padding);
   }
 
   if (EVP_PKEY_CTX_set_rsa_padding(ctx, padding) <= 0)
-    THROWS("Failed to set RSA padding: " << SSL::getErrorStr());
+    THROW("Failed to set RSA padding: " << SSL::getErrorStr());
 }
 
 
 void KeyContext::setRSAPSSSaltLen(int len) {
   if (EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, len) <= 0)
-    THROWS("Failed to set RSA salt length: " << SSL::getErrorStr());
+    THROW("Failed to set RSA salt length: " << SSL::getErrorStr());
 }
 
 
 void KeyContext::setRSABits(int bits) {
   if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0)
-    THROWS("Failed to set RSA bits: " << SSL::getErrorStr());
+    THROW("Failed to set RSA bits: " << SSL::getErrorStr());
 }
 
 
@@ -120,32 +120,32 @@ void KeyContext::setRSAPubExp(uint64_t exp) {
 
   if (EVP_PKEY_CTX_set_rsa_keygen_pubexp(ctx, num) <= 0) {
     BN_free(num);
-    THROWS("Failed to set RSA public exponent: " << SSL::getErrorStr());
+    THROW("Failed to set RSA public exponent: " << SSL::getErrorStr());
   }
 }
 
 
 void KeyContext::setDSABits(int bits) {
   if (EVP_PKEY_CTX_set_dsa_paramgen_bits(ctx, bits) <= 0)
-    THROWS("Failed to set DSA bits: " << SSL::getErrorStr());
+    THROW("Failed to set DSA bits: " << SSL::getErrorStr());
 }
 
 
 void KeyContext::setDHPrimeLen(int len) {
   if (EVP_PKEY_CTX_set_dh_paramgen_prime_len(ctx, len) <= 0)
-    THROWS("Failed to set Diffie-Hellman prime length: " << SSL::getErrorStr());
+    THROW("Failed to set Diffie-Hellman prime length: " << SSL::getErrorStr());
 }
 
 
 void KeyContext::setDHGenerator(int gen) {
   if (EVP_PKEY_CTX_set_dh_paramgen_generator(ctx, gen) <= 0)
-    THROWS("Failed to set Diffie-Hellman generator: " << SSL::getErrorStr());
+    THROW("Failed to set Diffie-Hellman generator: " << SSL::getErrorStr());
 }
 
 
 void KeyContext::setECCurve(const string &curve) {
   if (EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, SSL::findObject(curve)) <= 0)
-    THROWS("Failed to set Elliptic Curve curve: " << SSL::getErrorStr());
+    THROW("Failed to set Elliptic Curve curve: " << SSL::getErrorStr());
 }
 
 
@@ -166,16 +166,16 @@ void KeyContext::setKeyGenCallback(KeyGenCallback *callback) {
 
 void KeyContext::setSignatureMD(const string &digest) {
   const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROWS("Unrecognized message digest '" << digest << "'");
+  if (!md) THROW("Unrecognized message digest '" << digest << "'");
 
   if (EVP_PKEY_CTX_set_signature_md(ctx, md) <= 0)
-    THROWS("Failed to set signature message digest: " << SSL::getErrorStr());
+    THROW("Failed to set signature message digest: " << SSL::getErrorStr());
 }
 
 
 void KeyContext::keyGenInit() {
   if (EVP_PKEY_keygen_init(ctx) <= 0)
-    THROWS("Error initializing key context for key generation: "
+    THROW("Error initializing key context for key generation: "
            << SSL::getErrorStr());
 }
 
@@ -184,7 +184,7 @@ void KeyContext::keyGen(KeyPair &key) {
   EVP_PKEY *pkey = 0;
 
   if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
-    THROWS("Error generating key: " << SSL::getErrorStr());
+    THROW("Error generating key: " << SSL::getErrorStr());
 
   if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
   key.setEVP_PKEY(pkey);
@@ -193,7 +193,7 @@ void KeyContext::keyGen(KeyPair &key) {
 
 void KeyContext::paramGenInit() {
   if (EVP_PKEY_paramgen_init(ctx) <= 0)
-    THROWS("Error initializing key context for parameter generation: "
+    THROW("Error initializing key context for parameter generation: "
            << SSL::getErrorStr());
 }
 
@@ -202,7 +202,7 @@ void KeyContext::paramGen(KeyPair &key) {
   EVP_PKEY *pkey = 0;
 
   if (EVP_PKEY_paramgen(ctx, &pkey) <= 0)
-    THROWS("Error generating parameters: " << SSL::getErrorStr());
+    THROW("Error generating parameters: " << SSL::getErrorStr());
 
   if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
   key.setEVP_PKEY(pkey);
@@ -211,7 +211,7 @@ void KeyContext::paramGen(KeyPair &key) {
 
 void KeyContext::signInit() {
   if (EVP_PKEY_sign_init(ctx) <= 0)
-    THROWS("Error initializing key context for signing: "
+    THROW("Error initializing key context for signing: "
            << SSL::getErrorStr());
 }
 
@@ -219,7 +219,7 @@ void KeyContext::signInit() {
 size_t KeyContext::sign(uint8_t *sigData, size_t sigLen,
                         const uint8_t *msgData, size_t msgLen) {
   if (EVP_PKEY_sign(ctx, sigData, &sigLen, msgData, msgLen) <= 0)
-    THROWS("Failed to "
+    THROW("Failed to "
            << (sigData ? "sign message" : "compute signature length") << ": "
            << SSL::getErrorStr());
 
@@ -247,7 +247,7 @@ string KeyContext::sign(const string &msg) {
 
 void KeyContext::verifyInit() {
   if (EVP_PKEY_verify_init(ctx) <= 0)
-    THROWS("Error initializing key context for verification:"
+    THROW("Error initializing key context for verification:"
            << SSL::getErrorStr());
 }
 
@@ -257,7 +257,7 @@ void KeyContext::verify(const uint8_t *sigData, size_t sigLen,
   switch (EVP_PKEY_verify(ctx, sigData, sigLen, msgData, msgLen)) {
   case 0: THROW("Failed to verify signature");
   case 1: return;
-  default: THROWS("Error verifying signature: " << SSL::getErrorStr());
+  default: THROW("Error verifying signature: " << SSL::getErrorStr());
   }
 }
 
@@ -270,7 +270,7 @@ void KeyContext::verify(const string &sig, const string &msg) {
 
 void KeyContext::verifyRecoverInit() {
   if (EVP_PKEY_verify_recover_init(ctx) <= 0)
-    THROWS("Error initializing key context to recover signature data:"
+    THROW("Error initializing key context to recover signature data:"
            << SSL::getErrorStr());
 }
 
@@ -278,7 +278,7 @@ void KeyContext::verifyRecoverInit() {
 size_t KeyContext::verifyRecover(uint8_t *msgData, size_t msgLen,
                                  const uint8_t *sigData, size_t sigLen) {
   if (EVP_PKEY_verify_recover(ctx, msgData, &msgLen, sigData, sigLen) <= 0)
-    THROWS("Failed to " << (msgData ? "recover signature data: " :
+    THROW("Failed to " << (msgData ? "recover signature data: " :
                             "compute data length: ") << SSL::getErrorStr());
 
   return msgLen;
@@ -305,7 +305,7 @@ string KeyContext::verifyRecover(const string &sig) {
 
 void KeyContext::encryptInit() {
   if (EVP_PKEY_encrypt_init(ctx) <= 0)
-    THROWS("Error initializing key context for encryption: "
+    THROW("Error initializing key context for encryption: "
           << SSL::getErrorStr());
 }
 
@@ -313,7 +313,7 @@ void KeyContext::encryptInit() {
 size_t KeyContext::encrypt(uint8_t *outData, size_t outLen,
                            const uint8_t *inData, size_t inLen) {
   if (EVP_PKEY_encrypt(ctx, outData, &outLen, inData, inLen) <= 0)
-    THROWS("Failed to " << (outData ? "encrypt: " :
+    THROW("Failed to " << (outData ? "encrypt: " :
                             "compute data length: ") << SSL::getErrorStr());
 
   return outLen;
@@ -340,7 +340,7 @@ string KeyContext::encrypt(const string &in) {
 
 void KeyContext::decryptInit() {
   if (EVP_PKEY_decrypt_init(ctx) <= 0)
-    THROWS("Error initializing key context for decryption: "
+    THROW("Error initializing key context for decryption: "
            << SSL::getErrorStr());
 }
 
@@ -348,7 +348,7 @@ void KeyContext::decryptInit() {
 size_t KeyContext::decrypt(uint8_t *outData, size_t outLen,
                            const uint8_t *inData, size_t inLen) {
   if (EVP_PKEY_decrypt(ctx, outData, &outLen, inData, inLen) <= 0)
-    THROWS("Failed to " << (outData ? "decrypt: " :
+    THROW("Failed to " << (outData ? "decrypt: " :
                             "compute data length: ") << SSL::getErrorStr());
 
   return outLen;
@@ -375,20 +375,20 @@ string KeyContext::decrypt(const string &in) {
 
 void KeyContext::deriveInit() {
   if (EVP_PKEY_derive_init(ctx) <= 0)
-    THROWS("Error initializing key context to derive shared secret: "
+    THROW("Error initializing key context to derive shared secret: "
            << SSL::getErrorStr());
 }
 
 
 void KeyContext::setDerivePeer(const KeyPair &key) {
   if (EVP_PKEY_derive_set_peer(ctx, key.getEVP_PKEY()) <= 0)
-    THROWS("Failed to set derive peer: " << SSL::getErrorStr());
+    THROW("Failed to set derive peer: " << SSL::getErrorStr());
 }
 
 
 size_t KeyContext::derive(uint8_t *keyData, size_t keyLen) {
   if (EVP_PKEY_derive(ctx, keyData, &keyLen) <= 0)
-    THROWS("Failed to " << (keyData ? "derive shared secret: " :
+    THROW("Failed to " << (keyData ? "derive shared secret: " :
                             "compute data length: ") << SSL::getErrorStr());
 
   return keyLen;

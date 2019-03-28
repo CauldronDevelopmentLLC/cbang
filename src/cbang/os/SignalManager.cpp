@@ -112,7 +112,7 @@ void SignalManager::addHandler(int sig, SignalHandler *handler) {
   if (handler) {
     handlers_t::iterator it = handlers.find(sig);
     if (it != handlers.end())
-      THROWS("Signal " << sig << " already has handler.");
+      THROW("Signal " << sig << " already has handler.");
   }
 
 #ifdef _WIN32

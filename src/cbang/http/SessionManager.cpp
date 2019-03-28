@@ -129,12 +129,12 @@ SessionPtr SessionManager::getSession(WebContext &ctx,
   SmartLock lock(this);
 
   iterator it = sessions.find(id);
-  if (it == end()) THROWS("Session ID '" << id << "' does not exist");
+  if (it == end()) THROW("Session ID '" << id << "' does not exist");
   SmartPointer<Session> session = it->second;
 
   // Check that IP address matches
   if (ctx.getClientIP().getIP() != session->getIP().getIP())
-    THROWS("Session ID (" << id << ") IP address changed from "
+    THROW("Session ID (" << id << ") IP address changed from "
            << ctx.getClientIP() << " to " << session->getIP());
 
   session->touch(); // Update timestamp

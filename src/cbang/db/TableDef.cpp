@@ -62,7 +62,7 @@ void TableDef::add(const ColumnDef &column) {
 unsigned TableDef::getIndex(const std::string &column) const {
   columnMap_t::const_iterator it = columnMap.find(column);
   if (it == columnMap.end())
-    THROWS("Index for column '" << column << "' not found");
+    THROW("Index for column '" << column << "' not found");
   return it->second;
 }
 
@@ -96,13 +96,13 @@ void TableDef::rebuild(Database &db, const columnRemap_t &_columnRemap) const {
   string result;
   if (!db.execute(string("SELECT sql FROM sqlite_master WHERE name=") +
                   escName + " AND type=\"table\"", result))
-    THROWS("Failed to read " << name << " table structure");
+    THROW("Failed to read " << name << " table structure");
 
   {
     size_t start = result.find('(');
     size_t end = result.find_last_of(')');
     if (start == string::npos || end == string::npos)
-      THROWS("Failed to parse " << name << " table structure: " << result);
+      THROW("Failed to parse " << name << " table structure: " << result);
 
     result = result.substr(start + 1, end - start - 1);
   }
@@ -115,7 +115,7 @@ void TableDef::rebuild(Database &db, const columnRemap_t &_columnRemap) const {
   for (unsigned i = 0; i < cols.size() - 1; i++) {
     size_t length = cols[i].find(' ');
     if (length == string::npos)
-      THROWS("Failed to parse " << name << " table structure at: " << cols[i]);
+      THROW("Failed to parse " << name << " table structure at: " << cols[i]);
 
     string col = String::trim(cols[i].substr(0, length), "\"");
 

@@ -197,13 +197,13 @@ void Buffer::add(const string &s) {add(CBANG_CPP_TO_C_STR(s), s.length());}
 
 void Buffer::addFile(const string &path) {
   int fd = open(path.c_str(), O_RDONLY);
-  if (fd == -1) THROWS("Failed to open file " << path);
+  if (fd == -1) THROW("Failed to open file " << path);
 
   struct stat buf;
-  if (fstat(fd, &buf)) THROWS("Failed to get file size " << path);
+  if (fstat(fd, &buf)) THROW("Failed to get file size " << path);
 
   if (evbuffer_add_file(evb, fd, 0, buf.st_size))
-    THROWS("Failed to add file to buffer: " << path);
+    THROW("Failed to add file to buffer: " << path);
 }
 
 

@@ -245,7 +245,7 @@ void Reader::parseNumber(Sink &sink) {
 
   double v = strtod(start, &end);
   if (errno || (size_t)(end - start) != value.length())
-    THROWS("Invalid JSON number '" << value << "'");
+    error(SSTR("Invalid JSON number '" << value << "'"));
   sink.write(v);
 }
 
@@ -299,7 +299,8 @@ void Reader::parseDict(Sink &sink) {
 
 
 void Reader::error(const string &msg) const {
-  THROWS('@' << src << ':' << line << ':' << column << ' ' << msg);
+  throw JSON::ParseError
+    (Exception(msg, FileLocation(src.getName(), line, column)));
 }
 
 

@@ -33,6 +33,8 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
+#include <cbang/Errors.h>
+
 #include <cbang/iostream/Serializable.h>
 
 
@@ -43,7 +45,7 @@ namespace cb {
 
     class Serializable : public cb::Serializable {
     public:
-      virtual void read(const Value &value) = 0;
+      virtual void read(const Value &value) {CBANG_NOT_IMPLEMENTED_ERROR();}
       virtual void write(Sink &sink) const = 0;
 
       SmartPointer<Value> toJSON() const;

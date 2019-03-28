@@ -181,7 +181,7 @@ uint64_t SystemInfo::getFreeDiskSpace(const string &path) {
     si = fs::space(path);
 
   } catch (const fs::filesystem_error &e) {
-    THROWS("Could not get disk space at '" << path << "': " << e.what());
+    THROW("Could not get disk space at '" << path << "': " << e.what());
   }
 
   return si.available;
@@ -193,7 +193,7 @@ Version SystemInfo::getOSVersion() const {
   OSVERSIONINFO info;
   ZeroMemory(&info, sizeof(info));
   info.dwOSVersionInfoSize = sizeof(info);
-  if (!GetVersionEx(&info)) THROWS("Failed to get Windows version");
+  if (!GetVersionEx(&info)) THROW("Failed to get Windows version");
 
   return Version((uint8_t)info.dwMajorVersion, (uint8_t)info.dwMinorVersion);
 

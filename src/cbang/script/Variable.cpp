@@ -47,5 +47,5 @@ bool Variable::eval(const Context &ctx) {
 void Variable::validate(const Arguments &args) const {
   if (!args.size()) THROW("Internal error: Variable eval missing name");
   if (args.size() != 1)
-    THROWS("Variable '" << args[0] << "' cannot have arguments");
+    THROW("Variable '" << args[0] << "' cannot have arguments");
 }

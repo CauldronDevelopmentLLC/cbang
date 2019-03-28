@@ -90,7 +90,7 @@ streamsize SocketSSLImpl::write(const char *data, streamsize length,
     SmartToggle toggle(inSSL);
     streamsize ret = ssl->write(data, length);
 
-    if (SSL::peekError()) THROWS("SSL read error " << SSL::getErrorStr());
+    if (SSL::peekError()) THROW("SSL read error " << SSL::getErrorStr());
 
     if (!bio.getException().isNull()) throw *bio.getException();
     return ret;
@@ -106,7 +106,7 @@ streamsize SocketSSLImpl::read(char *data, streamsize length, unsigned flags) {
     SmartToggle toggle(inSSL);
     streamsize ret = ssl->read(data, length);
 
-    if (SSL::peekError()) THROWS("SSL read error " << SSL::getErrorStr());
+    if (SSL::peekError()) THROW("SSL read error " << SSL::getErrorStr());
 
     if (!bio.getException().isNull()) throw *bio.getException();
     return ret;

@@ -71,12 +71,12 @@ XMLAttributes::XMLAttributes(const string &attrs) {
 
     case 3: // Before value
       if (name.empty())
-        THROWS("Empty name in attribute definition at " << count);
+        THROW("Empty name in attribute definition at " << count);
 
       if (*it == '"') state = 4;
       else if (*it == '\'') state = 5;
       else if (!isspace(*it))
-        THROWS("Expected ' or \" in attribute definition at " << count);
+        THROW("Expected ' or \" in attribute definition at " << count);
       break;
 
     case 4: // " Value

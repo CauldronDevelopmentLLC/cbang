@@ -55,6 +55,6 @@ bool Backup::step() {
   case SQLITE_OK: return true; // More to do
   case SQLITE_DONE: done = true; return false;
   default:
-    THROWS("Error during database backup: " << Database::errorMsg(ret));
+    THROW("Error during database backup: " << Database::errorMsg(ret));
   }
 }

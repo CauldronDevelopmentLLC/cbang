@@ -203,7 +203,7 @@ bool TarHeader::read(istream &stream) {
   if (sum != 0) {
     unsigned calculated = computeChecksum();
     if (sum != calculated)
-      THROWS("Invalid checksum in tar header calculated=" << calculated
+      THROW("Invalid checksum in tar header calculated=" << calculated
              << " expected=" << sum);
   }
 
@@ -247,7 +247,7 @@ uint64_t TarHeader::readNumber(const char *buf, unsigned length) {
     if ('0' <= buf[i] && buf[i] <= '7')
       value = (value << 3) | (buf[i] - '0');
     else if (buf[i] == ' ' || buf[i] == 0) break;
-    else THROWS("Error converting number '" << string(buf, length) << "'");
+    else THROW("Error converting number '" << string(buf, length) << "'");
   }
 
   return value;

@@ -91,11 +91,11 @@ void XMLValueMap::startElement(const string &name, const XMLAttributes &attrs) {
   depth++;
 
   if (depth == 1) {
-    if (name != root) THROWS("Invalid root element '" << name << "'");
+    if (name != root) THROW("Invalid root element '" << name << "'");
     return;
 
   } else if (depth > 2)
-    THROWS("Invalid child eleent '" << name << "' in XML value map");
+    THROW("Invalid child eleent '" << name << "' in XML value map");
 
   XMLAttributes::const_iterator it;
 

@@ -52,12 +52,12 @@ void Arguments::parse(Arguments &args, const std::string &s) {
 
 
 void Arguments::invalidNum() const {
-  THROWS("Invalid number of arguments " << size() - 1 << " for function '"
+  THROW("Invalid number of arguments " << size() - 1 << " for function '"
          << (*this)[0] << "'");
 }
 
 
 void Arguments::invalid(unsigned index) const {
-  THROWS("Invalid argument " << index - 1 << " '" << (*this)[index]
+  THROW("Invalid argument " << index - 1 << " '" << (*this)[index]
          << "' for function '" << (*this)[0] << "'");
 }

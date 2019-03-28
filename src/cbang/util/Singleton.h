@@ -95,7 +95,7 @@ namespace cb {
 
   template <typename T> Singleton<T>::Singleton() {
     if (singleton)
-      CBANG_THROWS("There can be only one. . .instance of singleton "
+      CBANG_THROW("There can be only one. . .instance of singleton "
                    << typeid(T).name());
 
     singleton = this;
@@ -110,7 +110,7 @@ namespace cb {
     if (!singleton) new T(Inaccessible());
 
     T *ptr = dynamic_cast<T *>(singleton);
-    if (!ptr) CBANG_THROWS("Invalid singleton, not of type "
+    if (!ptr) CBANG_THROW("Invalid singleton, not of type "
                            << typeid(T).name());
 
     return *ptr;

@@ -70,7 +70,7 @@ void Database::open(const string &filename, unsigned flags) {
     string err = sqlite3_errmsg(db);
     close();
 
-    THROWS("Failed to open database '" << filename << "': " << err);
+    THROW("Failed to open database '" << filename << "': " << err);
   }
 
   sqlite3_busy_timeout(db, (int)(timeout * 1000));
@@ -113,7 +113,7 @@ void Database::execute(const string &sql) {
 
     } else errMsg = errorMsg(ret);
 
-    THROWS("Error executing: '" << sql << "': " << errMsg);
+    THROW("Error executing: '" << sql << "': " << errMsg);
   }
 }
 
@@ -186,7 +186,7 @@ void Database::rollback() {
 
 SmartPointer<Backup> Database::backup(Database &target) {
   sqlite3_backup *backup = sqlite3_backup_init(target.db, "main", db, "main");
-  if (!backup) THROWS("Failed to initialize backup");
+  if (!backup) THROW("Failed to initialize backup");
   return new Backup(backup);
 }
 

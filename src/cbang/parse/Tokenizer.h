@@ -78,10 +78,10 @@ namespace cb {
     }
 
     Token_T match(ENUM_T type) {
-      if (!hasMore()) THROWS("Expected " << type << " found end of stream");
+      if (!hasMore()) THROW("Expected " << type << " found end of stream");
       Token_T token = advance();
       if (type != token.getType())
-        THROWS("Expected " << type << " found " << token.getType());
+        THROW("Expected " << type << " found " << token.getType());
 
       return token;
     }

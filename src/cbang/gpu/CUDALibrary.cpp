@@ -61,7 +61,7 @@ static const char *cudaLib = "libcuda.so";
 
 #define DYNAMIC_CALL(name, args) {                                  \
     name##_t name = (name##_t)getSymbol(#name);                     \
-    if ((err = name args)) THROWS(#name "() returned " << err);     \
+    if ((err = name args)) THROW(#name "() returned " << err);     \
   }
 
 
@@ -120,7 +120,7 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
 
 
 const ComputeDevice &CUDALibrary::getDevice(unsigned i) const {
-  if (getDeviceCount() <= i) THROWS("Invalid CUDA device index " << i);
+  if (getDeviceCount() <= i) THROW("Invalid CUDA device index " << i);
   return devices.at(i);
 }
 

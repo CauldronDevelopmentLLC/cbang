@@ -88,7 +88,8 @@ namespace cb {
    */
   class SmartPointerBase {
   public:
-    static void raise(const std::string &msg);
+    static void castError();
+    static void referenceError(const std::string &msg);
   };
 
 
@@ -305,7 +306,7 @@ namespace cb {
     template <typename CastT>
     CastT *castPtr() const {
       CastT *ptr = dynamic_cast<CastT *>(this->ptr);
-      if (!ptr && this->ptr) raise("Invalid cast");
+      if (!ptr && this->ptr) castError();
 
       return ptr;
     }
@@ -344,7 +345,7 @@ namespace cb {
      */
     T *adopt() {
       if (refCounter && 1 < refCounter->getCount())
-        raise("Can't adopt a pointer with multiple references!");
+        referenceError("Can't adopt pointer with multiple references!");
 
       if (refCounter) refCounter->decCount(0);
       refCounter = 0;
@@ -378,7 +379,9 @@ namespace cb {
     bool isSet() const {return ptr;}
 
   protected:
-    void check() const {if (!ptr) raise("Can't dereference a NULL pointer!");}
+    void check() const {
+      if (!ptr) referenceError("Can't dereference NULL pointer!");
+    }
   };
 }
 

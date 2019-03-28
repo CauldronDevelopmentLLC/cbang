@@ -83,7 +83,7 @@ namespace DB_TABLE_NAMESPACE {
 #include DB_TABLE_DEF
 #undef CBANG_ITEM
 
-      default: THROWS("Invalid column index " << i);
+      default: THROW("Invalid column index " << i);
       }
     }
 
@@ -107,7 +107,7 @@ namespace DB_TABLE_NAMESPACE {
 #include DB_TABLE_DEF
 #undef CBANG_ITEM
 
-      default: THROWS("Invalid column index " << i);
+      default: THROW("Invalid column index " << i);
       }
     }
 

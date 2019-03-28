@@ -62,7 +62,7 @@ CRL::CRL(X509_CRL *crl) : crl(crl) {
   SSL::init();
   if (!crl)
     if (!(this->crl = X509_CRL_new()))
-      THROWS("Failed to create new CRL: " << SSL::getErrorStr());
+      THROW("Failed to create new CRL: " << SSL::getErrorStr());
 
 }
 
@@ -70,7 +70,7 @@ CRL::CRL(X509_CRL *crl) : crl(crl) {
 CRL::CRL(const string &pem) : crl(0) {
   SSL::init();
   if (!(this->crl = X509_CRL_new()))
-    THROWS("Failed to create new CRL: " << SSL::getErrorStr());
+    THROW("Failed to create new CRL: " << SSL::getErrorStr());
   istringstream stream(pem);
   read(stream);
 }
@@ -83,7 +83,7 @@ CRL::~CRL() {
 
 void CRL::setVersion(int version) {
   if (!X509_CRL_set_version(crl, version))
-    THROWS("Failed to set CRL version: " << SSL::getErrorStr());
+    THROW("Failed to set CRL version: " << SSL::getErrorStr());
 }
 
 
@@ -94,10 +94,10 @@ int CRL::getVersion() const {
 
 void CRL::setIssuer(const Certificate &cert) {
   X509_NAME *name = X509_get_subject_name(cert.getX509());
-  if (!name) THROWS("Failed to get issuer name: " << SSL::getErrorStr());
+  if (!name) THROW("Failed to get issuer name: " << SSL::getErrorStr());
 
   if (!X509_CRL_set_issuer_name(crl, name))
-    THROWS("Failed to set issuer name: " << SSL::getErrorStr());
+    THROW("Failed to set issuer name: " << SSL::getErrorStr());
 }
 
 
@@ -109,7 +109,7 @@ void CRL::setLastUpdate(uint64_t x) {
 
   if (!X509_CRL_set_lastUpdate(crl, tm)) {
     ASN1_TIME_free(tm);
-    THROWS("Failed to set CRL's last update: " << SSL::getErrorStr());
+    THROW("Failed to set CRL's last update: " << SSL::getErrorStr());
   }
 
   ASN1_TIME_free(tm);
@@ -124,7 +124,7 @@ void CRL::setNextUpdate(uint64_t x) {
 
   if (!X509_CRL_set_nextUpdate(crl, tm)) {
     ASN1_TIME_free(tm);
-    THROWS("Failed to set CRL's next update: " << SSL::getErrorStr());
+    THROW("Failed to set CRL's next update: " << SSL::getErrorStr());
   }
 
   ASN1_TIME_free(tm);
@@ -140,7 +140,7 @@ string CRL::getExtension(const string &name) {
   X509_EXTENSION *ext =
     X509_CRL_get_ext(crl,
                      X509_CRL_get_ext_by_NID(crl, SSL::findObject(name), -1));
-  if (!ext) THROWS("Extension '" << name << "' not in CRL");
+  if (!ext) THROW("Extension '" << name << "' not in CRL");
 
   ostringstream stream;
   BOStream bio(stream);
@@ -156,7 +156,7 @@ void CRL::addExtension(const string &name, const string &value) {
   Extension ext(name, value);
 
   if (!X509_CRL_add_ext(crl, ext.get(), -1))
-    THROWS("Failed to add extension '" << name << "'='" << value
+    THROW("Failed to add extension '" << name << "'='" << value
            << "': " << SSL::getErrorStr());
 }
 
@@ -175,7 +175,7 @@ void CRL::revoke(const Certificate &cert, const std::string &reason,
   rev.setReason(reason);
 
   if (!X509_CRL_add0_revoked(crl, rev.get()))
-    THROWS("Failed to add revoke: " << SSL::getErrorStr());
+    THROW("Failed to add revoke: " << SSL::getErrorStr());
 
   rev.setDeallocate(false);
 }
@@ -195,17 +195,17 @@ void CRL::sort() {
 
 void CRL::sign(KeyPair &key, const string &digest) {
   const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROWS("Unrecognized message digest '" << digest << "'");
+  if (!md) THROW("Unrecognized message digest '" << digest << "'");
 
   if (!X509_CRL_sign(crl, key.getEVP_PKEY(), md))
-    THROWS("Failed to sign CRL: " << SSL::getErrorStr());
+    THROW("Failed to sign CRL: " << SSL::getErrorStr());
 
 }
 
 
 void CRL::verify(KeyPair &key) {
   if (!X509_CRL_verify(crl, key.getEVP_PKEY()))
-    THROWS("CRL failed verification: " << SSL::getErrorStr());
+    THROW("CRL failed verification: " << SSL::getErrorStr());
 }
 
 
@@ -218,7 +218,7 @@ istream &CRL::read(istream &stream) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_X509_CRL(bio.getBIO(), &crl, 0, 0))
-    THROWS("Failed to read CRL: " << SSL::getErrorStr());
+    THROW("Failed to read CRL: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -228,7 +228,7 @@ ostream &CRL::write(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_X509_CRL(bio.getBIO(), crl))
-    THROWS("Failed to write CRL: " << SSL::getErrorStr());
+    THROW("Failed to write CRL: " << SSL::getErrorStr());
 
   return stream;
 }

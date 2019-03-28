@@ -40,7 +40,7 @@ using namespace cb;
 
 const Resource &Resource::get(const string &path) const {
   const Resource *resource = find(path);
-  if (!resource) THROWS("Failed to find resource '" << path << "'");
+  if (!resource) THROW("Failed to find resource '" << path << "'");
   return *resource;
 }
 

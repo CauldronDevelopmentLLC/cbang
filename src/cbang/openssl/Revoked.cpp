@@ -56,7 +56,7 @@ void Revoked::setDate(uint64_t ts) {
 
   if (!X509_REVOKED_set_revocationDate(rev, tm)) {
     ASN1_TIME_free(tm);
-    THROWS("Failed to set revocation date: " << SSL::getErrorStr());
+    THROW("Failed to set revocation date: " << SSL::getErrorStr());
   }
 
   ASN1_TIME_free(tm);
@@ -89,7 +89,7 @@ void Revoked::setReason(const string &reason) {
     }
 
   if (!X509_REVOKED_add1_ext_i2d(rev, NID_crl_reason, a, 0, 0)) {
-    THROWS("Failed to add extension 'CRLReason'='" << reason
+    THROW("Failed to add extension 'CRLReason'='" << reason
            << "': " << SSL::getErrorStr());
    	ASN1_ENUMERATED_free(a);
   }
@@ -103,7 +103,7 @@ void Revoked::setSerial(long number) {
   ASN1_INTEGER_set(serial, number);
 
   if (!X509_REVOKED_set_serialNumber(rev, serial))
-    THROWS("Failed to set revoked serial number: " << SSL::getErrorStr());
+    THROW("Failed to set revoked serial number: " << SSL::getErrorStr());
 
   ASN1_INTEGER_free(serial);
 }

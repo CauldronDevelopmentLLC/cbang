@@ -54,7 +54,7 @@ namespace cb {
         try {
           validate(value[i]);
         } catch (const Exception &e) {
-          CBANG_THROWCS("Item " << i << " is invalid", e);
+          CBANG_THROWC("Item " << i << " is invalid", e);
         }
     }
 

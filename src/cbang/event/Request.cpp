@@ -494,7 +494,7 @@ string Request::findCookie(const string &name) const {
 
 
 string Request::getCookie(const string &name) const {
-  if (!hasCookie(name)) THROWS("Cookie '" << name << "' not set");
+  if (!hasCookie(name)) THROW("Cookie '" << name << "' not set");
   return findCookie(name);
 }
 

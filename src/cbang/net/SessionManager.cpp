@@ -101,9 +101,9 @@ bool SessionManager::hasSession(const string &sid) const {
 
 SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
   iterator it = sessions.find(sid);
-  if (it == end()) THROWS("Session ID '" << sid << "' does not exist");
+  if (it == end()) THROW("Session ID '" << sid << "' does not exist");
   if (isExpired(*it->second))
-    THROWS("Session ID '" << sid << "' has expired, last_used="
+    THROW("Session ID '" << sid << "' has expired, last_used="
            << Time(it->second->getLastUsed()).toString() << " created="
            << Time(it->second->getCreationTime()).toString() << " now="
            << Time().toString());

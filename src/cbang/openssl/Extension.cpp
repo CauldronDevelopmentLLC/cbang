@@ -45,7 +45,7 @@ using namespace cb;
 Extension::Extension(const string &name, const string &value) :
   ext(X509V3_EXT_conf(0, 0, (char *)name.c_str(), (char *)value.c_str())),
   deallocate(true) {
-  if (!ext) THROWS("Failed to create extension '" << name << "'='" << value
+  if (!ext) THROW("Failed to create extension '" << name << "'='" << value
                   << "': " << SSL::getErrorStr());
 }
 

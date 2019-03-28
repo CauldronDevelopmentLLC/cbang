@@ -46,7 +46,7 @@ using namespace cb;
 
 XMLHandler *XIncludeHandler::getHandler(XMLProcessor &processor,
                                         const XMLAttributes &attrs) {
-  if (attrs["file"].empty()) THROWS("Empty 'file' attribute");
+  if (attrs["file"].empty()) THROW("Empty 'file' attribute");
 
   string filename =
     SystemUtilities::absolute(processor.getCurrentFile(), attrs["file"]);

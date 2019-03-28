@@ -58,7 +58,7 @@ CertificateStore::CertificateStore(X509_STORE *store) : store(store) {
   SSL::init();
   if (!store)
     if (!(this->store = X509_STORE_new()))
-      THROWS("Failed to create new certificate store: " << SSL::getErrorStr());
+      THROW("Failed to create new certificate store: " << SSL::getErrorStr());
 }
 
 
@@ -75,13 +75,13 @@ CertificateStore &CertificateStore::operator=(const CertificateStore &o) {
 
 void CertificateStore::add(const Certificate &cert) {
   if (!X509_STORE_add_cert(store, cert.getX509()))
-    THROWS("Failed to add certificate to store: " << SSL::getErrorStr());
+    THROW("Failed to add certificate to store: " << SSL::getErrorStr());
 }
 
 
 void CertificateStore::add(const CRL &crl) {
   if (!X509_STORE_add_crl(store, crl.getX509_CRL()))
-    THROWS("Failed to add CRL to store: " << SSL::getErrorStr());
+    THROW("Failed to add CRL to store: " << SSL::getErrorStr());
 }
 
 

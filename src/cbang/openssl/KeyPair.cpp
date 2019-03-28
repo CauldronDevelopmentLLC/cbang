@@ -38,11 +38,13 @@
 #include "KeyContext.h"
 #include "BIStream.h"
 #include "BOStream.h"
+#include "Digest.h"
 
 #include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/log/Logger.h>
 #include <cbang/Catch.h>
+#include <cbang/net/Base64.h>
 
 #include <openssl/pem.h>
 #include <openssl/evp.h>
@@ -97,7 +99,7 @@ KeyPair::KeyPair(const string &key, mac_key_t type, ENGINE *e) {
     EVP_PKEY_new_mac_key(type == HMAC_KEY ? EVP_PKEY_HMAC : EVP_PKEY_CMAC,
                          e, (uint8_t *)key.c_str(), key.length());
 
-  if (!this->key) THROWS("Failed to create MAC key: " << SSL::getErrorStr());
+  if (!this->key) THROW("Failed to create MAC key: " << SSL::getErrorStr());
 }
 
 
@@ -187,7 +189,7 @@ bool KeyPair::match(const KeyPair &o) const {
   switch (EVP_PKEY_cmp(key, o.key)) {
   case 0: return false;
   case 1: return true;
-  default: THROWS("Error comparing keys: " << SSL::getErrorStr());
+  default: THROW("Error comparing keys: " << SSL::getErrorStr());
   }
 }
 
@@ -259,7 +261,7 @@ istream &KeyPair::readPublic(istream &stream) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_PUBKEY(bio.getBIO(), &key, 0, 0))
-    THROWS("Failed to read public key: " << SSL::getErrorStr());
+    THROW("Failed to read public key: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -277,7 +279,7 @@ istream &KeyPair::readPrivate(istream &stream,
 
   if (!PEM_read_bio_PrivateKey
       (bio.getBIO(), &key, callback.isNull() ? 0 : password_cb, callback.get()))
-    THROWS("Failed to read private key: " << SSL::getErrorStr());
+    THROW("Failed to read private key: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -308,7 +310,7 @@ ostream &KeyPair::writePublic(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_PUBKEY(bio.getBIO(), key))
-    THROWS("Failed to write public key: " << SSL::getErrorStr());
+    THROW("Failed to write public key: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -318,7 +320,7 @@ ostream &KeyPair::writePrivate(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_PrivateKey(bio.getBIO(), key, 0, 0, 0, 0, 0))
-    THROWS("Failed to write private key: " << SSL::getErrorStr());
+    THROW("Failed to write private key: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -334,7 +336,7 @@ ostream &KeyPair::printPublic(ostream &stream, int indent) const {
   BOStream bio(stream);
 
   if (!EVP_PKEY_print_public(bio.getBIO(), key, indent, 0))
-    THROWS("Failed to print public key: " << SSL::getErrorStr());
+    THROW("Failed to print public key: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -344,7 +346,7 @@ ostream &KeyPair::printPrivate(ostream &stream, int indent) const {
   BOStream bio(stream);
 
   if (!EVP_PKEY_print_private(bio.getBIO(), key, indent, 0))
-    THROWS("Failed to print private key: " << SSL::getErrorStr());
+    THROW("Failed to print private key: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -353,4 +355,16 @@ ostream &KeyPair::printPrivate(ostream &stream, int indent) const {
 ostream &KeyPair::print(ostream &stream, int indent) const {
   if (hasPrivate()) return printPrivate(stream, indent);
   return printPublic(stream, indent);
+}
+
+
+void KeyPair::verify(const string &signature, const string &data) {
+  KeyContext ctx(*this);
+  ctx.verifyInit();
+  ctx.verify(signature, data);
+}
+
+
+void KeyPair::verifyBase64SHA256(const string &sig64, const string &data) {
+  verify(Base64().decode(sig64), Digest::hash(data, "sha256"));
 }

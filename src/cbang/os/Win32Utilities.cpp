@@ -56,7 +56,7 @@ namespace cb {
 
       DWORD flags = inherit ? HANDLE_FLAG_INHERIT : 0;
       if (!SetHandleInformation(handle, HANDLE_FLAG_INHERIT, flags))
-        THROWS("Failed to clear pipe inherit flag: " << SysError());
+        THROW("Failed to clear pipe inherit flag: " << SysError());
     }
 
 
@@ -68,7 +68,7 @@ namespace cb {
       case ProcessPriority::PRIORITY_LOW: return BELOW_NORMAL_PRIORITY_CLASS;
       case ProcessPriority::PRIORITY_HIGH: return ABOVE_NORMAL_PRIORITY_CLASS;
       case ProcessPriority::PRIORITY_REALTIME: return REALTIME_PRIORITY_CLASS;
-      default: THROWS("Invalid priority: " << priority);
+      default: THROW("Invalid priority: " << priority);
       }
     }
   };

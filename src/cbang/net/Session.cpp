@@ -68,7 +68,7 @@ void Session::setLastUsed(uint64_t lastUsed) {
 
 void Session::matchIP(const IPAddress &ip) const {
   if (ip.getIP() != getIP().getIP())
-    THROWS("Session IP changed from " << getIP() << " to " << ip);
+    THROW("Session IP changed from " << getIP() << " to " << ip);
 }
 
 

@@ -60,7 +60,7 @@ EnumerationManager::EnumerationManager(Application &app) {
 
 void EnumerationManager::print(ostream &stream, const string &name) const {
   enums_t::const_iterator it = enums.find(name);
-  if (it == enums.end()) THROWS("Enumeration '" << name << "' not found");
+  if (it == enums.end()) THROW("Enumeration '" << name << "' not found");
 
   for (unsigned i = 0; i < it->second.getCount(); i++)
     stream << it->second.getName(i) << '\n';

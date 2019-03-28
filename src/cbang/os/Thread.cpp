@@ -156,7 +156,7 @@ void Thread::start() {
     }
 #endif
 
-    THROWS("Error creating thread: " << msg);
+    THROW("Error creating thread: " << msg);
   }
 }
 

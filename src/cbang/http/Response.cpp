@@ -70,7 +70,7 @@ void Response::readHeaderLine(const string &line) {
   String::tokenize(line, parts);
 
   if (parts.size() < 3)
-    THROWS("Invalid HTTP response header line '" << line << "'");
+    THROW("Invalid HTTP response header line '" << line << "'");
 
   readVersionString(parts[0]);
   status = (StatusCode::enum_t)String::parseU32(parts[1]);

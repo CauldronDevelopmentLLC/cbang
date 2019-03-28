@@ -52,11 +52,11 @@ Cipher::Cipher(const string &cipher, bool encrypt, const void *key,
   EVP_CIPHER_CTX_init(ctx);
 
   const EVP_CIPHER *c = EVP_get_cipherbyname(cipher.c_str());
-  if (!c) THROWS("Unrecognized cipher '" << cipher << "'");
+  if (!c) THROW("Unrecognized cipher '" << cipher << "'");
 
   if (!(encrypt ? EVP_EncryptInit_ex : EVP_DecryptInit_ex)
       (ctx, c, e, (const unsigned char *)key, (const unsigned char *)iv))
-    THROWS("Cipher init failed: " << SSL::getErrorStr());
+    THROW("Cipher init failed: " << SSL::getErrorStr());
 }
 
 
@@ -76,7 +76,7 @@ unsigned Cipher::getKeyLength() const {
 void Cipher::setKey(const void *key) {
   if (!(encrypt ? EVP_EncryptInit_ex : EVP_DecryptInit_ex)
       (ctx, 0, 0, (const unsigned char *)key, 0))
-    THROWS("Failed to set cipher key: " << SSL::getErrorStr());
+    THROW("Failed to set cipher key: " << SSL::getErrorStr());
 }
 
 
@@ -88,7 +88,7 @@ unsigned Cipher::getIVLength() const {
 void Cipher::setIV(const void *iv) {
   if (!(encrypt ? EVP_EncryptInit_ex : EVP_DecryptInit_ex)
       (ctx, 0, 0, 0, (const unsigned char *)iv))
-    THROWS("Failed to set cipher IV: " << SSL::getErrorStr());
+    THROW("Failed to set cipher IV: " << SSL::getErrorStr());
 }
 
 
@@ -113,7 +113,7 @@ unsigned Cipher::update(void *out, unsigned length, const void *in,
   if (!(encrypt ? EVP_EncryptUpdate : EVP_DecryptUpdate)
       (ctx, (unsigned char *)out, (int *)&length,
        (unsigned char *)in, inLen))
-    THROWS("Error updating cipher: " << SSL::getErrorStr());
+    THROW("Error updating cipher: " << SSL::getErrorStr());
 
   return length;
 }
@@ -122,7 +122,7 @@ unsigned Cipher::update(void *out, unsigned length, const void *in,
 unsigned Cipher::final(void *out, unsigned length) {
   if (!(encrypt ? EVP_EncryptFinal_ex : EVP_DecryptFinal_ex)
       (ctx, (unsigned char *)out, (int *)&length))
-    THROWS("Error finalizing cipher: " << SSL::getErrorStr());
+    THROW("Error finalizing cipher: " << SSL::getErrorStr());
 
   return length;
 }

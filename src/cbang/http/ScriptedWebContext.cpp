@@ -104,7 +104,7 @@ void ScriptedWebContext::evalInclude(const Script::Context &ctx) {
     unsigned j = 0;
     for (unsigned i = 0; i < parts.size(); i++) {
       if (parts[i] == "..") {
-        if (!j) THROWS("Invalid path: " << path);
+        if (!j) THROW("Invalid path: " << path);
         j--;
 
       } else if (parts[i] != ".") parts[j++] = parts[i];

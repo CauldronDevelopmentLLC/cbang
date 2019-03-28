@@ -63,7 +63,7 @@ IPAddressRange::IPAddressRange(const string &spec) {
         if (isdigit(s[1])) num += *++s;
         uint8_t bits = String::parseU8(num);
 
-        if (32 < bits) THROWS("Invalid IP bit mask /" << bits);
+        if (32 < bits) THROW("Invalid IP bit mask /" << bits);
         bits = 32 - bits;
 
         uint32_t ip = start.getIP();
@@ -92,7 +92,7 @@ IPAddressRange::IPAddressRange(const string &spec) {
     }
   }
 
-  THROWS("Invalid IP address range '" << spec << "'");
+  THROW("Invalid IP address range '" << spec << "'");
 }
 
 

@@ -64,7 +64,7 @@ void Schema::validate(Database &db) {
   }
 
   if (latest < current)
-    THROWS("Database version is " << current
+    THROW("Database version is " << current
            << " but this program only supports " << latest);
 
   if (current != latest) setCurrentVersion(db, latest);

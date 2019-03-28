@@ -84,13 +84,13 @@ void BZip2::update(const char *data, unsigned length) {
     if (comp) {
       int ret = BZ2_bzCompress(bz.get(), BZ_RUN);
       if (ret != BZ_RUN_OK)
-        THROWS("BZip2: Compression failed " << errorStr(ret));
+        THROW("BZip2: Compression failed " << errorStr(ret));
 
     } else {
       int ret = BZ2_bzDecompress(bz.get());
       if (ret == BZ_STREAM_END) bz->avail_in = 0;
       else if (ret != BZ_OK)
-        THROWS("BZip2: Decompression failed " << errorStr(ret));
+        THROW("BZip2: Decompression failed " << errorStr(ret));
     }
 
     out.write(buf, BUFFER_SIZE - bz->avail_out);
@@ -133,13 +133,13 @@ void BZip2::finish() {
     } while (ret == BZ_FINISH_OK);
 
     if (ret != BZ_STREAM_END)
-      THROWS("BZip2: compress finish " << errorStr(ret));
+      THROW("BZip2: compress finish " << errorStr(ret));
   }
 
   if (comp) ret = BZ2_bzCompressEnd(bz.get());
   else ret = BZ2_bzDecompressEnd(bz.get());
 
-  if (ret != BZ_OK) THROWS("BZip2: end failed " << errorStr(ret));
+  if (ret != BZ_OK) THROW("BZip2: end failed " << errorStr(ret));
 
   bz->clear();
   init = false;

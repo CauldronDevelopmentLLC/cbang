@@ -144,7 +144,7 @@ namespace cb {
 
       case 3:
         if (x != c)
-          THROWS("Output character changed from '" << c << "' to '"
+          THROW("Output character changed from '" << c << "' to '"
                  << (unsigned char)x << "'");
         ok = out(dest, Base64::encode(63 & c));
         if (ok) state = 0;

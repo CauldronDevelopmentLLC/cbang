@@ -71,7 +71,7 @@ namespace cb {
 
     const std::string &get(const std::string &key) const {
       const_iterator it = find(key);
-      if (it == end()) CBANG_THROWS("'" << key << "' not set");
+      if (it == end()) CBANG_THROW("'" << key << "' not set");
       return it->second;
     }
 

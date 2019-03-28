@@ -88,7 +88,7 @@ CSR::~CSR() {
 void CSR::getPublicKey(KeyPair &key) {
   EVP_PKEY *pkey = X509_REQ_get_pubkey(csr);
   if (!pkey)
-    THROWS("Error getting public key from CSR: " << SSL::getErrorStr());
+    THROW("Error getting public key from CSR: " << SSL::getErrorStr());
 
   if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
   key.setEVP_PKEY(pkey);
@@ -106,7 +106,7 @@ void CSR::addNameEntry(const string &name, const string &value) {
   if (!X509_NAME_add_entry_by_txt(X509_REQ_get_subject_name(csr), name.c_str(),
                                   MBSTRING_ASC, (uint8_t *)value.c_str(), -1,
                                   -1, 0))
-    THROWS("Failed to add CSR name entry '" << name << "'='" << value
+    THROW("Failed to add CSR name entry '" << name << "'='" << value
            << "': " << SSL::getErrorStr());
 }
 
@@ -123,13 +123,13 @@ string CSR::getNameEntry(const string &name) const {
       return (char *)ASN1_STRING_get0_data(X509_NAME_ENTRY_get_data(entry));
   }
 
-  THROWS("Name entry '" << name << "' not found");
+  THROW("Name entry '" << name << "' not found");
 }
 
 
 bool CSR::hasExtension(const string &name) {
   ASN1_OBJECT *obj = OBJ_txt2obj(name.c_str(), 0);
-  if (!obj) THROWS("Unrecognized extension name '" << name << "'");
+  if (!obj) THROW("Unrecognized extension name '" << name << "'");
 
   STACK_OF(X509_EXTENSION) *exts = X509_REQ_get_extensions(csr);
   if (!exts) return false;
@@ -151,7 +151,7 @@ bool CSR::hasExtension(const string &name) {
 
 string CSR::getExtension(const string &name) {
   ASN1_OBJECT *obj = OBJ_txt2obj(name.c_str(), 0);
-  if (!obj) THROWS("Unrecognized extension name '" << name << "'");
+  if (!obj) THROW("Unrecognized extension name '" << name << "'");
 
   string value;
   bool found = false;
@@ -179,7 +179,7 @@ string CSR::getExtension(const string &name) {
     sk_X509_EXTENSION_pop_free(exts, X509_EXTENSION_free);
   }
 
-  if (!found) THROWS("Extension '" << name << "' not in CSR");
+  if (!found) THROW("Extension '" << name << "' not in CSR");
 
   return value;
 }
@@ -197,27 +197,27 @@ void CSR::addExtension(const string &name, const string &value) {
 
 void CSR::sign(const KeyPair &key, const string &digest) {
   const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROWS("Unrecognized message digest '" << digest << "'");
+  if (!md) THROW("Unrecognized message digest '" << digest << "'");
 
   if (!X509_REQ_set_pubkey(csr, key.getEVP_PKEY()))
-    THROWS("Failed to set CSR pub key: " << SSL::getErrorStr());
+    THROW("Failed to set CSR pub key: " << SSL::getErrorStr());
 
   if (pri->exts && !X509_REQ_add_extensions(csr, pri->exts))
-    THROWS("Failed to add extensions: " << SSL::getErrorStr());
+    THROW("Failed to add extensions: " << SSL::getErrorStr());
 
   if (!X509_REQ_sign(csr, key.getEVP_PKEY(), md))
-    THROWS("Failed to sign CSR: " << SSL::getErrorStr());
+    THROW("Failed to sign CSR: " << SSL::getErrorStr());
 }
 
 
 void CSR::verify() {
   EVP_PKEY *pkey = X509_REQ_get_pubkey(csr);
   if (!pkey)
-    THROWS("Error getting public key from CSR: " << SSL::getErrorStr());
+    THROW("Error getting public key from CSR: " << SSL::getErrorStr());
 
   if (!X509_REQ_verify(csr, pkey)) {
     EVP_PKEY_free(pkey);
-    THROWS("CSR failed verification: " << SSL::getErrorStr());
+    THROW("CSR failed verification: " << SSL::getErrorStr());
   }
 
   EVP_PKEY_free(pkey);
@@ -232,7 +232,7 @@ string CSR::toDER() const {
   // Get length
   int len = i2d_X509_REQ(csr, 0);
 
-  if (len < 0) THROWS("Failed to convert CSR to DER: " << SSL::getErrorStr());
+  if (len < 0) THROW("Failed to convert CSR to DER: " << SSL::getErrorStr());
 
   SmartPointer<unsigned char>::Array buffer = new unsigned char[len];
   unsigned char *ptr = buffer.get();
@@ -248,7 +248,7 @@ istream &CSR::read(istream &stream) {
   X509_REQ_free(csr); // Allocate new
 
   csr = PEM_read_bio_X509_REQ(bio.getBIO(), 0, 0, 0);
-  if (!csr) THROWS("Failed to read CSR: " << SSL::getErrorStr());
+  if (!csr) THROW("Failed to read CSR: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -258,7 +258,7 @@ ostream &CSR::write(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_X509_REQ_NEW(bio.getBIO(), csr))
-    THROWS("Failed to write CSR: " << SSL::getErrorStr());
+    THROW("Failed to write CSR: " << SSL::getErrorStr());
 
   return stream;
 }
@@ -268,7 +268,7 @@ ostream &CSR::print(ostream &stream) const {
   BOStream bio(stream);
 
   if (!X509_REQ_print(bio.getBIO(), csr))
-    THROWS("Failed to print CSR: " << SSL::getErrorStr());
+    THROW("Failed to print CSR: " << SSL::getErrorStr());
 
   return stream;
 }

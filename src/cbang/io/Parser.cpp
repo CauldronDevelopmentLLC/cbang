@@ -77,7 +77,7 @@ bool Parser::check(const string &token) {
 
 void Parser::match(const string &token) {
   if (!check(token))
-    THROWS("Expected '" << token << "' but found " <<
+    THROW("Expected '" << token << "' but found " <<
            (current.empty() ? string("end of stream") :
             SSTR("'" << current << '"')));
   current.clear();

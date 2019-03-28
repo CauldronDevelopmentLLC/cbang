@@ -72,6 +72,6 @@ void List::write(Sink &sink) const {
 
 
 void List::set(unsigned i, const ValuePtr &value) {
-  if (size() <= i) THROWS("Index " << i << " out of range " << size());
+  if (size() <= i) JSON_KEY_ERROR("Index " << i << " out of range " << size());
   at(i) = value;
 }

@@ -31,12 +31,11 @@
 \******************************************************************************/
 
 #include "SmartPointer.h"
-#include "Exception.h"
+#include "Errors.h"
 
 using namespace std;
 using namespace cb;
 
 
-void SmartPointerBase::raise(const string &msg) {
-  THROW("SmartPointer: " + msg);
-}
+void SmartPointerBase::castError() {CAST_ERROR();}
+void SmartPointerBase::referenceError(const string &msg) {REFERENCE_ERROR(msg);}

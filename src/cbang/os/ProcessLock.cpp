@@ -80,7 +80,7 @@ ProcessLock::ProcessLock(const string &filename, unsigned wait) :
   // file if it does not exist with out truncating as well.
   int fd = open(filename.c_str(), O_CREAT | O_WRONLY, 0666);
   if (fd == -1)
-    THROWS("Failed to access process lock file '" << filename << "': "
+    THROW("Failed to access process lock file '" << filename << "': "
            << SysError());
   close(fd);
 
@@ -102,7 +102,7 @@ ProcessLock::ProcessLock(const string &filename, unsigned wait) :
     char pid[1024] = {0};
     SystemUtilities::open(filename, ios::in)->getline(pid, 1024);
 
-    THROWS("Cannot get an exclusive lock on '" << filename
+    THROW("Cannot get an exclusive lock on '" << filename
            << "'.  Another process must be running with PID="
            << (pid[0] ? pid : "unknown"));
   }

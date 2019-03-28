@@ -117,7 +117,7 @@ bool Connection::isPersistent() const {
 
 void Connection::error(StatusCode reason) {
   if (reason) response.setStatus(reason);
-  THROWS("Request from " << *this << " failed"
+  THROW("Request from " << *this << " failed"
          << (reason ? string(": ") + reason.toString() : ""));
 }
 
@@ -168,7 +168,7 @@ void Connection::readRequest(istream &stream) {
 
   // Parse header
   unsigned size = tryParsingHeader(utilBuf);
-  if (!size) THROWS("Failed to parse header");
+  if (!size) THROW("Failed to parse header");
   utilBuf.incPosition(size);
 
   // Read data

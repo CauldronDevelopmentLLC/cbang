@@ -117,7 +117,7 @@ istream &Header::read(istream &stream) {
 
     } else {
       ptr = strchr(line, ':');
-      if (!ptr) THROWS("Invalid  header '" << line << "'");
+      if (!ptr) THROW("Invalid  header '" << line << "'");
 
       *ptr++ = 0;
       key = line;
@@ -205,7 +205,7 @@ string Header::quoted(const string &s) {
 
   for (string::const_iterator it = s.begin(); it != s.end(); it++) {
     if ((!isspace(*it) && *it < 32) || *it == 127)
-      THROWS("Character " << (int)*it << " not allowed in HTTP quoted string");
+      THROW("Character " << (int)*it << " not allowed in HTTP quoted string");
 
     if (*it == '"') result += "\\";
     result += *it;

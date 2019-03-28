@@ -67,7 +67,7 @@ Javascript::Javascript(const string &implName,
 
   if (impl.isNull()) {
     if (implName.empty()) THROW("No Javscript implementation compiled in");
-    else THROWS("Javscript implementation '" << implName
+    else THROW("Javscript implementation '" << implName
                 << "' not found in this build");
   }
 
@@ -109,7 +109,7 @@ void Javascript::import(const string &id, const string &as) {
 
   // Find module
   modules_t::iterator it = modules.find(id);
-  if (it == modules.end()) return THROWS("Module '" << id << "' not found");
+  if (it == modules.end()) return THROW("Module '" << id << "' not found");
 
   // Get target object
   SmartPointer<Value> target = getFactory()->createObject();
@@ -155,7 +155,7 @@ SmartPointer<Value> Javascript::require(const string &id) {
   if (it != modules.end()) return it->second->getExports();
 
   string path = searchPath(id);
-  if (path.empty()) THROWS("Module '" << id << "' not found");
+  if (path.empty()) THROW("Module '" << id << "' not found");
 
   // Handle package.json
   if (String::endsWith(path, "/package.json")) {

@@ -82,7 +82,7 @@ string Time::toString() const {
     return ss.str();
 
   } catch (const exception &e) {
-    THROWS("Failed to format time '" << time << "' with format '" << format
+    THROW("Failed to format time '" << time << "' with format '" << format
            << "': " << e.what());
   }
 }
@@ -103,7 +103,7 @@ Time Time::parse(const string &s, const string &format) {
     return Time(diff.total_seconds(), format);
 
   } catch (const exception &e) {
-    THROWS("Failed to parse time '" << s << "' with format '" << format
+    THROW("Failed to parse time '" << s << "' with format '" << format
            << "': " << e.what());
   }
 }

@@ -190,7 +190,7 @@ Column NameValueTable::doGet(const string &name) const {
 
   if (!selectStmt->next()) {
     selectStmt->reset();
-    THROWS("'" << name << "' not found in NameValueTable '" << table << "'");
+    THROW("'" << name << "' not found in NameValueTable '" << table << "'");
   }
 
   return selectStmt->column(0);

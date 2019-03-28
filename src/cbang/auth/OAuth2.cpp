@@ -103,7 +103,7 @@ URI OAuth2::getVerifyURL(const URI &uri, const string &state) const {
               << (uri.has("code") ? uri.get("code") : "<null>") << " uri state="
               << (uri.has("state") ? uri.get("state") : "<null>")
               << " server state=" << state);
-    THROWCS("Failed anti-forgery check", Event::HTTPStatus::HTTP_UNAUTHORIZED);
+    THROWC("Failed anti-forgery check", Event::HTTPStatus::HTTP_UNAUTHORIZED);
   }
 
   // Check config
@@ -155,6 +155,6 @@ string OAuth2::verifyToken(const SmartPointer<JSON::Value> &json) const {
 
 void OAuth2::validateOption(const string &option, const string &name) const {
   if (option.empty())
-    THROWCS(provider + "-" + name + " not configured",
+    THROWC(provider + "-" + name + " not configured",
             Event::HTTPStatus::HTTP_UNAUTHORIZED);
 }

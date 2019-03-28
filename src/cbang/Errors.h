@@ -32,32 +32,38 @@
 
 #pragma once
 
-#include "Constraint.h"
-
+#include "Throw.h"
 
 namespace cb {
-  template <typename T>
-  class EnumConstraint : public Constraint {
-  public:
-    // From Constraint
-    void validate(const std::string &value) const {T::parse(value);}
-
-    void validate(int64_t value) const {
-      if (!T::isValid((typename T::enum_t)value))
-        CBANG_THROW(value << " is not a member of enumeration "
-                     << T::getName());
-    }
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(KeyError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(TypeError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(CastError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(SystemError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(IOError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(ReferenceError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(ParseError);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(NotImplementedError);
+};
 
 
-    std::string getHelp() const {
-      std::string s = "one of";
+#define CBANG_KEY_ERROR(MSG) CBANG_THROWT(cb::KeyError, MSG)
+#define CBANG_TYPE_ERROR(MSG) CBANG_THROWT(cb::TypeError, MSG)
+#define CBANG_CAST_ERROR() CBANG_THROWT(cb::CastError, "Invalid Cast")
+#define CBANG_SYSTEM_ERROR(MSG) CBANG_THROWT(cb::SystemError, MSG)
+#define CBANG_IO_ERROR(MSG) CBANG_THROWT(cb::IOError, MSG)
+#define CBANG_REFERENCE_ERROR(MSG) CBANG_THROWT(cb::ReferenceError, MSG)
+#define CBANG_PARSE_ERROR(MSG) CBANG_THROWT(cb::ParseError, MSG)
+#define CBANG_NOT_IMPLEMENTED_ERROR() \
+  CBANG_THROWT(cb::NotImplementedError, "Not implemented")
 
-      for (unsigned i = 0; i < T::getCount(); i++) {
-        if (0) s += ",";
-        s += std::string(" \"") + T::getName(i) + "\"";
-      }
 
-      return s;
-    }
-  };
-}
+#ifdef USING_CBANG
+#define KEY_ERROR(MSG)          CBANG_KEY_ERROR(MSG)
+#define TYPE_ERROR(MSG)         CBANG_TYPE_ERROR(MSG)
+#define CAST_ERROR()            CBANG_CAST_ERROR()
+#define SYSTEM_ERROR(MSG)       CBANG_SYSTEM_ERROR(MSG)
+#define IO_ERROR(MSG)           CBANG_IO_ERROR(MSG)
+#define REFERENCE_ERROR(MSG)    CBANG_REFERENCE_ERROR(MSG)
+#define PARSE_ERROR(MSG)        CBANG_PARSE_ERROR(MSG)
+#define NOT_IMPLEMENTED_ERROR() CBANG_NOT_IMPLEMENTED_ERROR()
+#endif // USING_CBANG

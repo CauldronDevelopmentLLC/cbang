@@ -54,7 +54,7 @@ CertificateStoreContext::CertificateStoreContext(const CertificateStore &store,
                                                  const Certificate &cert) :
   ctx(X509_STORE_CTX_new()) {
   if (!X509_STORE_CTX_init(ctx, store.getX509_STORE(), cert.getX509(), 0))
-    THROWS("Failed to create certificate store context: "
+    THROW("Failed to create certificate store context: "
            << SSL::getErrorStr());
 }
 
@@ -65,7 +65,7 @@ CertificateStoreContext(const CertificateStore &store, const Certificate &cert,
   ctx(X509_STORE_CTX_new()) {
   if (!X509_STORE_CTX_init(ctx, store.getX509_STORE(), cert.getX509(),
                            chain.getX509_CHAIN()))
-    THROWS("Failed to create certificate store context: "
+    THROW("Failed to create certificate store context: "
            << SSL::getErrorStr());
 }
 
@@ -141,14 +141,14 @@ const char *CertificateStoreContext::getErrorString(int error) {
 
 void CertificateStoreContext::setPurpose(int purpose) {
   if (!X509_STORE_CTX_set_purpose(ctx, purpose))
-    THROWS("Failed to set certificate store context purpose: "
+    THROW("Failed to set certificate store context purpose: "
            << SSL::getErrorStr());
 }
 
 
 void CertificateStoreContext::setTrust(int trust) {
   if (!X509_STORE_CTX_set_trust(ctx, trust))
-    THROWS("Failed to set certificate store context trust: "
+    THROW("Failed to set certificate store context trust: "
            << SSL::getErrorStr());
 }
 
@@ -156,7 +156,7 @@ void CertificateStoreContext::setTrust(int trust) {
 void CertificateStoreContext::setPurposeInherit(int defPurpose, int purpose,
                                                 int trust) {
   if (!X509_STORE_CTX_purpose_inherit(ctx, defPurpose, purpose, trust))
-    THROWS("Certificate store context purpose inherit failed: "
+    THROW("Certificate store context purpose inherit failed: "
            << SSL::getErrorStr());
 }
 
@@ -173,6 +173,6 @@ void CertificateStoreContext::setTime(unsigned long flags, time_t t) {
 
 void CertificateStoreContext::verify() const {
   if (!X509_verify_cert(ctx))
-    THROWS("Failed to verify certificate: " << getErrorString(getError())
+    THROW("Failed to verify certificate: " << getErrorString(getError())
            << ": " << SSL::getErrorStr());
 }

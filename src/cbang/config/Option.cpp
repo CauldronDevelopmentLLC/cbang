@@ -76,7 +76,7 @@ const string Option::getTypeString() const {
   case STRINGS_TYPE: return "string ...";
   case INTEGERS_TYPE: return "integer ...";
   case DOUBLES_TYPE: return "double ...";
-  default: THROWS("Invalid type " << type);
+  default: THROW("Invalid type " << type);
   }
 }
 
@@ -153,7 +153,7 @@ void Option::unset() {
 
 void Option::set(const string &value) {
   if (isDepreciated())
-    THROWS("Option '" << name << "' has been depreciated: " << help);
+    THROW("Option '" << name << "' has been depreciated: " << help);
   if (isSet() && this->value == value) return;
 
   uint32_t oldFlags = flags;
@@ -269,7 +269,7 @@ const string &Option::toString() const {
   if (isSet()) return value;
   else if (hasDefault()) return getDefault();
   else if (getType() == STRINGS_TYPE) return value;
-  THROWS("Option '" << name << "' has no default and is not set.");
+  THROW("Option '" << name << "' has no default and is not set.");
 }
 
 
@@ -396,7 +396,7 @@ void Option::validate() const {
   case STRINGS_TYPE: checkConstraint(toStrings()); break;
   case INTEGERS_TYPE: checkConstraint(toIntegers()); break;
   case DOUBLES_TYPE: checkConstraint(toDoubles()); break;
-  default: THROWS("Invalid type " << type);
+  default: THROW("Invalid type " << type);
   }
 }
 
@@ -545,7 +545,7 @@ void Option::writeValue(JSON::Sink &sink, const string &value,
   case STRINGS_TYPE: writeStrings(sink, value, delims); break;
   case INTEGERS_TYPE: writeIntegers(sink, value, delims); break;
   case DOUBLES_TYPE: writeDoubles(sink, value, delims); break;
-  default: THROWS("Invalid type " << type);
+  default: THROW("Invalid type " << type);
   }
 }
 

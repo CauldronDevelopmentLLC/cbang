@@ -123,7 +123,7 @@ string Base64::decode(const string &s) const {
     char z = it == s.end() ? -2 : decode(next(it, s.end()));
 
     if (w == -2 || x == -2 || w == -1 || x == -1 || y == -1 || z == -1)
-      THROWS("Invalid Base64 data at " << (it - s.begin()));
+      THROW("Invalid Base64 data at " << (it - s.begin()));
 
     result += (char)(w << 2 | x >> 4);
     if (y != -2) {

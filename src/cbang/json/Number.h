@@ -98,12 +98,12 @@ namespace cb {
       double getNumber() const {return value;}
 
 
-#define CBANG_GET_NUM(TYPE, SHORT, LONG)                             \
-      TYPE get##SHORT() const {                                      \
-        if (!Num::InRange<TYPE>(value))                              \
-          CBANG_THROWS("Value " << value << " is not a " #LONG);     \
-                                                                     \
-        return (TYPE)value;                                          \
+#define CBANG_GET_NUM(TYPE, SHORT, LONG)                                \
+      TYPE get##SHORT() const {                                         \
+        if (!Num::InRange<TYPE>(value))                                 \
+          CBANG_JSON_TYPE_ERROR("Value " << value << " is not a " #LONG); \
+                                                                        \
+        return (TYPE)value;                                             \
       }
 
       CBANG_GET_NUM(int8_t,   S8,   8-bit signed integer);

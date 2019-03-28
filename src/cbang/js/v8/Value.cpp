@@ -172,7 +172,7 @@ unsigned Value::length() const {
 
 
 Value Value::call(Value arg0, const vector<Value> &args) const {
-  if (!isFunction()) THROWS("Value is not a function");
+  if (!isFunction()) THROW("Value is not a function");
 
   SmartPointer<v8::Handle<v8::Value> >::Array argv =
     new v8::Handle<v8::Value>[args.size()];
@@ -198,20 +198,20 @@ Value::call(const vector<SmartPointer<js::Value> > &_args) const {
 
 
 string Value::getName() const {
-  if (!isFunction()) THROWS("Value is not a function");
+  if (!isFunction()) THROW("Value is not a function");
   return Value(v8::Handle<v8::Function>::Cast(value)->GetName()).
     toString();
 }
 
 
 void Value::setName(const string &name) {
-  if (!isFunction()) THROWS("Value is not a function");
+  if (!isFunction()) THROW("Value is not a function");
   v8::Handle<v8::Function>::Cast(value)->
     SetName(v8::String::NewSymbol(name.c_str(), name.length()));
 }
 
 
 int Value::getScriptLineNumber() const {
-  if (!isFunction()) THROWS("Value is not a function");
+  if (!isFunction()) THROW("Value is not a function");
   return v8::Handle<v8::Function>::Cast(value)->GetScriptLineNumber();
 }

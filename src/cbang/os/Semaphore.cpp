@@ -80,13 +80,13 @@ Semaphore::Semaphore(const string &name, unsigned count, unsigned mode) :
   p->sem =
     CreateSemaphore(0, count, 1 << 30, isNamed() ? name.c_str(): 0);
   if (p->sem == 0)
-    THROWS("Failed to create Semaphore: " << SysError());
+    THROW("Failed to create Semaphore: " << SysError());
 
 #else // _WIN32
   if (isNamed()) {
     p->sem = sem_open(name.c_str(), O_CREAT, (mode_t)mode, count);
     if (p->sem == SEM_FAILED)
-      THROWS("Failed to create Semaphore: " << SysError());
+      THROW("Failed to create Semaphore: " << SysError());
 
   } else {
 #ifdef __APPLE__
@@ -98,12 +98,12 @@ Semaphore::Semaphore(const string &name, unsigned count, unsigned mode) :
     uuid_unparse_lower(uuid, &(p->name2[2]));
     p->sem = sem_open(p->name2, O_CREAT, (mode_t)mode, count);
     if (p->sem == SEM_FAILED)
-      THROWS("Failed to create Semaphore: " << SysError());
+      THROW("Failed to create Semaphore: " << SysError());
 
 #else
     p->sem = new sem_t;
     if (sem_init(p->sem, 0, count))
-      THROWS("Failed to initialize Semaphore: " << SysError());
+      THROW("Failed to initialize Semaphore: " << SysError());
 #endif // __APPLE__
   }
 #endif // _WIN32
@@ -172,7 +172,7 @@ bool Semaphore::wait(double timeout) const {
   else if (!ret) return true;
 #endif // _WIN32
 
-  THROWS("Wait on Semaphore failed: " << SysError());
+  THROW("Wait on Semaphore failed: " << SysError());
 }
 
 
@@ -181,11 +181,11 @@ void Semaphore::post(unsigned count) const {
 
 #ifdef _WIN32
   if (!ReleaseSemaphore(p->sem, count, 0))
-    THROWS("Semaphore post failed: " << SysError());
+    THROW("Semaphore post failed: " << SysError());
 
 #else // _WIN32
   while (count--)
     if (sem_post(p->sem))
-      THROWS("Semaphore post failed: " << SysError());
+      THROW("Semaphore post failed: " << SysError());
 #endif // _WIN32
 }

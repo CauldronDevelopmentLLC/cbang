@@ -77,13 +77,13 @@ namespace cb {
 
      size_type indexOf(const KEY &key) const {
       typename dict_t::const_iterator it = dict.find(key);
-      if (it == dict.end()) CBANG_THROWS("Key '" << key << "' not found");
+      if (it == dict.end()) CBANG_THROW("Key '" << key << "' not found");
       return it->second;
     }
 
 
     const KEY &keyAt(size_type i) const {
-      if (size() <= i) CBANG_THROWS("Index " << i << " out of range");
+      if (size() <= i) CBANG_THROW("Index " << i << " out of range");
       return this->at(i).first;
     }
 
@@ -95,14 +95,14 @@ namespace cb {
 
     const typename OrderedDict::type_t &
     get(size_type i) const {
-      if (size() <= i) CBANG_THROWS("Index " << i << " out of range");
+      if (size() <= i) CBANG_THROW("Index " << i << " out of range");
       return this->at(i).second;
     }
 
 
     typename OrderedDict::type_t &
     get(size_type i) {
-      if (size() <= i) CBANG_THROWS("Index " << i << " out of range");
+      if (size() <= i) CBANG_THROW("Index " << i << " out of range");
       return this->at(i).second;
     }
 
@@ -149,7 +149,7 @@ namespace cb {
 
     typename OrderedDict::type_t &
     operator[](size_type i) {
-      if (size() <= i) CBANG_THROWS("Index " << i << " out of range");
+      if (size() <= i) CBANG_THROW("Index " << i << " out of range");
       return this->at(i).second;
     }
 

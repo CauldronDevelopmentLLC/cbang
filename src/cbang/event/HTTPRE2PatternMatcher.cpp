@@ -48,7 +48,7 @@ HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
 (const string &search, const string &replace,
  const SmartPointer<HTTPRequestHandler> &child) :
   regex(search), replace(replace), child(child) {
-  if (regex.error_code()) THROWS("Failed to compile RE2: " << regex.error());
+  if (regex.error_code()) THROW("Failed to compile RE2: " << regex.error());
 
   // Regex args
   const map<int, string> &names = regex.CapturingGroupNames();

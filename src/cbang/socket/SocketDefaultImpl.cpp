@@ -112,7 +112,7 @@ void SocketDefaultImpl::setReuseAddr(bool reuse) {
   SysError::clear();
   if (setsockopt((socket_t)socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt,
                  sizeof(opt)))
-    THROWS("Failed to set reuse addr: " << SysError());
+    THROW("Failed to set reuse addr: " << SysError());
 }
 
 
@@ -149,7 +149,7 @@ void SocketDefaultImpl::setKeepAlive(bool keepAlive) {
   SysError::clear();
   if (setsockopt((socket_t)socket, SOL_SOCKET, SO_KEEPALIVE, (char *)&opt,
                  sizeof(opt)))
-    THROWS("Failed to set socket keep alive: " << SysError());
+    THROW("Failed to set socket keep alive: " << SysError());
 }
 
 
@@ -158,7 +158,7 @@ void SocketDefaultImpl::setSendBuffer(int size) {
 
   if (setsockopt((socket_t)socket, SOL_SOCKET, SO_SNDBUF, (char *)&size,
                  sizeof(size)))
-    THROWS("Could not set send buffer to " << size << ": " << SysError());
+    THROW("Could not set send buffer to " << size << ": " << SysError());
 }
 
 
@@ -167,7 +167,7 @@ void SocketDefaultImpl::setReceiveBuffer(int size) {
 
   if (setsockopt((socket_t)socket, SOL_SOCKET, SO_RCVBUF, (char *)&size,
                  sizeof(size)))
-    THROWS("Could not set receive buffer to " << size << ": " << SysError());
+    THROW("Could not set receive buffer to " << size << ": " << SysError());
 }
 
 
@@ -182,7 +182,7 @@ void SocketDefaultImpl::setSendTimeout(double timeout) {
 
   if (setsockopt((socket_t)socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&t,
                  sizeof(t)))
-    THROWS("Could not set send timeout to " << timeout << ": " << SysError());
+    THROW("Could not set send timeout to " << timeout << ": " << SysError());
 }
 
 
@@ -197,7 +197,7 @@ void SocketDefaultImpl::setReceiveTimeout(double timeout) {
 
   if (setsockopt((socket_t)socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&t,
                  sizeof(t)))
-    THROWS("Could not set receive timeout to " << timeout << ": "
+    THROW("Could not set receive timeout to " << timeout << ": "
            << SysError());
 }
 
@@ -215,7 +215,7 @@ void SocketDefaultImpl::bind(const IPAddress &ip) {
   SysError::clear();
   if (::bind((socket_t)socket, (struct sockaddr *)&addr, sizeof(addr)) ==
       SOCKET_ERROR)
-    THROWS("Could not bind socket to " << ip << ": " << SysError());
+    THROW("Could not bind socket to " << ip << ": " << SysError());
 }
 
 
@@ -279,7 +279,7 @@ void SocketDefaultImpl::connect(const IPAddress &ip) {
     SysError::clear();
     if (::connect((socket_t)socket, (struct sockaddr *)&sin, sizeof(sin)) == -1)
       if (SysError::get() != EINPROGRESS)
-        THROWS("Failed to connect to " << ip << ": " << SysError());
+        THROW("Failed to connect to " << ip << ": " << SysError());
 
     connected = true;
     capture(ip, false);
@@ -314,7 +314,7 @@ streamsize SocketDefaultImpl::write(const char *data, streamsize length,
     if (err == EAGAIN) return 0;
 #endif
 
-    THROWS("Send error: " << err << ": " << SysError(err));
+    THROW("Send error: " << err << ": " << SysError(err));
   }
 
   if (!out.isNull()) out->write(data, ret); // Capture
@@ -348,7 +348,7 @@ streamsize SocketDefaultImpl::read(char *data, streamsize length,
     if (err == EAGAIN || err == EWOULDBLOCK) return 0;
 #endif
 
-    THROWS("Receive error: " << err << ": " << SysError(err));
+    THROW("Receive error: " << err << ": " << SysError(err));
   }
 
   if (!in.isNull()) in->write(data, ret); // Capture

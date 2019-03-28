@@ -98,7 +98,7 @@ void BufferEvent::setPriority(int priority) {
   bufferevent *ubev = bufferevent_get_underlying(bev);
   if (ubev) BufferEvent(ubev, false).setPriority(priority);
   else if (bufferevent_priority_set(bev, priority))
-    THROWS("Unable to set buffer event priority to " << priority);
+    THROW("Unable to set buffer event priority to " << priority);
 }
 
 

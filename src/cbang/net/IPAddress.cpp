@@ -77,7 +77,7 @@ IPAddress::IPAddress(const string &host, uint16_t port) :
   Socket::initialize(); // Windows needs this
 
   if (host.find(":") != string::npos)
-    THROWS("Address '" << host << "' already has port.");
+    THROW("Address '" << host << "' already has port.");
 
   if (this->host == "0") this->host = "0.0.0.0"; // OSX needs this
 }
@@ -118,7 +118,7 @@ uint32_t IPAddress::ipFromString(const string &host) {
   vector<IPAddress> addrs;
 
   if (!ipsFromString(host, addrs, 0, 1))
-    THROWS("Could not get IP address for " << host);
+    THROW("Could not get IP address for " << host);
 
   return addrs[0].getIP();
 }
@@ -147,7 +147,7 @@ unsigned IPAddress::ipsFromString(const string &host, vector<IPAddress> &addrs,
   hints.ai_socktype = SOCK_STREAM;
 
   if ((err = getaddrinfo(hostname.c_str(), 0, &hints, &res)))
-    THROWS("Could not get IP address for " << hostname << ": "
+    THROW("Could not get IP address for " << hostname << ": "
            << gai_strerror(err));
 
   unsigned count = 0;
@@ -184,7 +184,7 @@ string IPAddress::hostFromIP(const IPAddress &ip) {
 
   if (getnameinfo((struct sockaddr *)&addr, sizeof(addr), buffer,
                   sizeof(buffer), 0, 0, 0))
-    THROWS("Reverse lookup for " << ip << " failed: " << SysError());
+    THROW("Reverse lookup for " << ip << " failed: " << SysError());
 
   return buffer;
 }

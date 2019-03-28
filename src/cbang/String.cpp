@@ -121,13 +121,13 @@ string String::vprintf(const char *format, va_list ap) {
   int length = vsnprintf(0, 0, format, copy);
   va_end(copy);
 
-  if (length < 0) THROWS("String format '" << format << "' invalid");
+  if (length < 0) THROW("String format '" << format << "' invalid");
 
   SmartPointer<char>::Array result = new char[length + 1];
 
   int ret = vsnprintf(result.get(), length + 1, format, ap);
 
-  if (ret != length) THROWS("String format '" << format << "' failed");
+  if (ret != length) THROW("String format '" << format << "' failed");
 
   return result.get();
 }
@@ -208,7 +208,7 @@ bool String::isNumber(const string &s) {
 
 uint8_t String::parseU8(const string &s) {
   uint32_t v = parseU32(s);
-  if (v > 255) THROWS("Unsigned 8-bit value '" << s << "' out of range");
+  if (v > 255) THROW("Unsigned 8-bit value '" << s << "' out of range");
 
   return (uint8_t)v;
 }
@@ -217,7 +217,7 @@ uint8_t String::parseU8(const string &s) {
 int8_t String::parseS8(const string &s) {
   int32_t v = parseS32(s);
   if (v < -127 || 127 < v)
-    THROWS("Signed 8-bit value '" << s << "' out of range");
+    THROW("Signed 8-bit value '" << s << "' out of range");
 
   return (int8_t)v;
 }
@@ -225,7 +225,7 @@ int8_t String::parseS8(const string &s) {
 
 uint16_t String::parseU16(const string &s) {
   uint32_t v = parseU32(s);
-  if (65535 < v) THROWS("Unsigned 16-bit value '" << s << "' out of range");
+  if (65535 < v) THROW("Unsigned 16-bit value '" << s << "' out of range");
 
   return (uint16_t)v;
 }
@@ -234,7 +234,7 @@ uint16_t String::parseU16(const string &s) {
 int16_t String::parseS16(const string &s) {
   int32_t v = parseS32(s);
   if (v < -32767 || 32767 < v)
-    THROWS("Signed 16-bit value '" << s << "' out of range");
+    THROW("Signed 16-bit value '" << s << "' out of range");
 
   return (int16_t)v;
 }
@@ -244,7 +244,7 @@ uint32_t String::parseU32(const string &s) {
   errno = 0;
   unsigned long v = strtoul(s.c_str(), 0, 0);
   if (errno || numeric_limits<uint32_t>::max() < v)
-    THROWS("Invalid unsigned 32-bit value '" << s << "'");
+    THROW("Invalid unsigned 32-bit value '" << s << "'");
 
   return (uint32_t)v;
 }
@@ -255,7 +255,7 @@ int32_t String::parseS32(const string &s) {
   long v = strtol(s.c_str(), 0, 0);
   if (errno|| v < -numeric_limits<int32_t>::max() ||
       numeric_limits<int32_t>::max() < v)
-    THROWS("Invalid signed 32-bit value '" << s << "'");
+    THROW("Invalid signed 32-bit value '" << s << "'");
 
   return (int32_t)v;
 }
@@ -264,7 +264,7 @@ int32_t String::parseS32(const string &s) {
 uint64_t String::parseU64(const string &s) {
   errno = 0;
   unsigned long long v = strtoull(s.c_str(), 0, 0);
-  if (errno) THROWS("Invalid unsigned 64-bit value '" << s << "'");
+  if (errno) THROW("Invalid unsigned 64-bit value '" << s << "'");
 
   return (uint64_t)v;
 }
@@ -273,7 +273,7 @@ uint64_t String::parseU64(const string &s) {
 int64_t String::parseS64(const string &s) {
   errno = 0;
   long long int v = strtoll(s.c_str(), 0, 0);
-  if (errno) THROWS("Invalid signed 64-bit value '" << s << "'");
+  if (errno) THROW("Invalid signed 64-bit value '" << s << "'");
 
   return (int64_t)v;
 }
@@ -283,7 +283,7 @@ uint128_t String::parseU128(const string &s) {
   int len = s.length();
 
   if (!startsWith(s, "0x") || len < 3 || 34 < len)
-    THROWS("Invalid 128-bit format '" << s << "'");
+    THROW("Invalid 128-bit format '" << s << "'");
 
   uint128_t v;
   int loLen = min(len - 2, 16);
@@ -297,7 +297,7 @@ uint128_t String::parseU128(const string &s) {
 double String::parseDouble(const string &s) {
   errno = 0;
   double v = strtod(s.c_str(), 0);
-  if (errno) THROWS("Invalid double '" << s << "'");
+  if (errno) THROW("Invalid double '" << s << "'");
   return v;
 }
 
@@ -305,7 +305,7 @@ double String::parseDouble(const string &s) {
 float String::parseFloat(const string &s) {
   errno = 0;
   float v = strtof(s.c_str(), 0);
-  if (errno) THROWS("Invalid float '" << s << "'");
+  if (errno) THROW("Invalid float '" << s << "'");
   return v;
 }
 
@@ -318,7 +318,7 @@ bool String::parseBool(const string &s) {
   if (v == "false" || v == "f" || v == "0" || v == "no" || v == "n")
     return false;
 
-  THROWS("Invalid bool '" << s << "'");
+  THROW("Invalid bool '" << s << "'");
 }
 
 

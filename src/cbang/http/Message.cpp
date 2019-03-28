@@ -110,7 +110,7 @@ string Message::getCookie(const string &name) const {
     }
   }
 
-  THROWS("Cookie '" << name << "' not set");
+  THROW("Cookie '" << name << "' not set");
 }
 
 
@@ -154,7 +154,7 @@ string Message::getVersionString() const {
 
 void Message::readVersionString(const string &s) {
   if (s.length() < 5 || s.substr(0, 5) != "HTTP/")
-    THROWS("Missing 'HTTP/' in HTTP-Version '" << s << "'");
+    THROW("Missing 'HTTP/' in HTTP-Version '" << s << "'");
 
   setVersion(String::parseDouble(s.substr(5)));
 }

@@ -73,7 +73,7 @@ namespace {
 
 
   char match(const char *&s, char c) {
-    if (*s != c) THROWS("Expected '" << c << "'");
+    if (*s != c) THROW("Expected '" << c << "'");
     s++;
     return c;
   }
@@ -131,7 +131,7 @@ unsigned URI::getPort() const {
   if (scheme == "ldap") return 389;
   if (scheme == "https") return 443;
 
-  THROWS("Unknown scheme '" << String::escapeC(scheme) << "' and port not set");
+  THROW("Unknown scheme '" << String::escapeC(scheme) << "' and port not set");
 }
 
 
@@ -169,7 +169,7 @@ void URI::setQuery(const char *query) {
   try {
     parseQuery(s);
   } catch (const Exception &e) {
-    THROWS("Failed to parse URI query '" << String::escapeC(query)
+    THROW("Failed to parse URI query '" << String::escapeC(query)
            << "' at char " << (s - query) << ": " << e.getMessage());
   }
 }
@@ -226,7 +226,7 @@ void URI::read(const char *uri) {
     if (consume(s, '?')) parseQuery(s);
 
   } catch (const Exception &e) {
-    THROWS("Failed to parse URI '" << String::escapeC(uri) << "' at char "
+    THROW("Failed to parse URI '" << String::escapeC(uri) << "' at char "
            << (s - uri) << ": " << e.getMessage());
   }
 }

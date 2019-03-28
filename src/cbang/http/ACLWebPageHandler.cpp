@@ -66,7 +66,7 @@ bool ACLWebPageHandler::handlePage(WebContext &ctx, ostream &stream,
            << (user.empty() ? "@" + group : user) << ") = "
            << (allow ? "true" : "false") << " ip=" << ctx.getClientIP());
 
-  if (!allow) THROWCS("Access denied", StatusCode::HTTP_UNAUTHORIZED);
+  if (!allow) THROWC("Access denied", StatusCode::HTTP_UNAUTHORIZED);
 
   return false;
 }

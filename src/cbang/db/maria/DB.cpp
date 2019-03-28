@@ -691,8 +691,8 @@ unsigned DB::getErrorNumber() const {return mysql_errno(db);}
 
 
 void DB::raiseError(const string &msg, bool withDBError) const {
-  if (!withDBError || db) THROWS("MariaDB: " << msg << ": " << getError());
-  else THROWS("MariaDB: " << msg);
+  if (!withDBError || db) THROW("MariaDB: " << msg << ": " << getError());
+  else THROW("MariaDB: " << msg);
 }
 
 

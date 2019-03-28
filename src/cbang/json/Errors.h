@@ -32,32 +32,27 @@
 
 #pragma once
 
-#include "Constraint.h"
-
+#include <cbang/Errors.h>
 
 namespace cb {
-  template <typename T>
-  class EnumConstraint : public Constraint {
-  public:
-    // From Constraint
-    void validate(const std::string &value) const {T::parse(value);}
-
-    void validate(int64_t value) const {
-      if (!T::isValid((typename T::enum_t)value))
-        CBANG_THROW(value << " is not a member of enumeration "
-                     << T::getName());
-    }
-
-
-    std::string getHelp() const {
-      std::string s = "one of";
-
-      for (unsigned i = 0; i < T::getCount(); i++) {
-        if (0) s += ",";
-        s += std::string(" \"") + T::getName(i) + "\"";
-      }
-
-      return s;
-    }
-  };
+  namespace JSON {
+    CBANG_DEFINE_EXCEPTION_SUBCLASS(Error);
+    CBANG_DEFINE_EXCEPTION_SUPER(KeyError, cb::KeyError);
+    CBANG_DEFINE_EXCEPTION_SUPER(TypeError, cb::TypeError);
+    CBANG_DEFINE_EXCEPTION_SUPER(ParseError, cb::ParseError);
+  }
 }
+
+
+#define CBANG_JSON_ERROR(MSG) CBANG_THROWT(cb::JSON::Error, MSG)
+#define CBANG_JSON_KEY_ERROR(MSG) CBANG_THROWT(cb::JSON::KeyError, MSG)
+#define CBANG_JSON_TYPE_ERROR(MSG) CBANG_THROWT(cb::JSON::TypeError, MSG)
+#define CBANG_JSON_PARSE_ERROR(MSG) CBANG_THROWT(cb::JSON::ParseError, MSG)
+
+
+#ifdef USING_CBANG
+#define JSON_ERROR(MSG) CBANG_JSON_ERROR(MSG)
+#define JSON_KEY_ERROR(MSG) CBANG_JSON_KEY_ERROR(MSG)
+#define JSON_TYPE_ERROR(MSG) CBANG_JSON_TYPE_ERROR(MSG)
+#define JSON_PARSE_ERROR(MSG) CBANG_JSON_PARSE_ERROR(MSG)
+#endif // USING_CBANG

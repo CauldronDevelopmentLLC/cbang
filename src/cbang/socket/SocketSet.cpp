@@ -124,6 +124,6 @@ bool SocketSet::select(double timeout) {
   int ret =
     ::select(maxFD + 1, &p->read, &p->write, &p->except, 0 <= timeout ? &t : 0);
 
-  if (ret < 0) THROWS("select() " << SysError());
+  if (ret < 0) THROW("select() " << SysError());
   return ret;
 }

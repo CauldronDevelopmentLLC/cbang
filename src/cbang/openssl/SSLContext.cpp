@@ -65,7 +65,7 @@ SSLContext::SSLContext() : ctx(0) {
   cb::SSL::init();
 
   ctx = SSL_CTX_new(TLS_method());
-  if (!ctx) THROWS("Failed to create SSL context: " << cb::SSL::getErrorStr());
+  if (!ctx) THROW("Failed to create SSL context: " << cb::SSL::getErrorStr());
 
   SSL_CTX_set_default_passwd_cb(ctx, cb::SSL::passwordCallback);
 
@@ -97,7 +97,7 @@ SmartPointer<cb::SSL> SSLContext::createSSL(BIO *bio) {
 
 void SSLContext::setCipherList(const string &list) {
   if (!SSL_CTX_set_cipher_list(ctx, list.c_str()))
-    THROWS("Failed to set cipher list to: " << list);
+    THROW("Failed to set cipher list to: " << list);
 }
 
 
@@ -118,32 +118,32 @@ void SSLContext::setVerifyPeer(bool verifyClientOnce, bool failIfNoPeerCert,
 
 void SSLContext::addClientCA(const Certificate &cert) {
   if (!SSL_CTX_add_client_CA(ctx, X509_dup(cert.getX509())))
-    THROWS("Failed to add client CA: " << cb::SSL::getErrorStr());
+    THROW("Failed to add client CA: " << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::useCertificate(const Certificate &cert) {
   if (!SSL_CTX_use_certificate(ctx, X509_dup(cert.getX509())))
-    THROWS("Failed to use certificate: " << cb::SSL::getErrorStr());
+    THROW("Failed to use certificate: " << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::addExtraChainCertificate(const Certificate &cert) {
   if (!SSL_CTX_add_extra_chain_cert(ctx, X509_dup(cert.getX509())))
-    THROWS("Failed to add extra chain certificate: " << cb::SSL::getErrorStr());
+    THROW("Failed to add extra chain certificate: " << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::useCertificateChainFile(const string &filename) {
   if (!(SSL_CTX_use_certificate_chain_file(ctx, filename.c_str())))
-    THROWS("Failed to load certificate chain file '" << filename
+    THROW("Failed to load certificate chain file '" << filename
            << "': " << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::usePrivateKey(const KeyPair &key) {
   if (!(SSL_CTX_use_PrivateKey(ctx, key.getEVP_PKEY())))
-    THROWS("Failed to use private key: " << cb::SSL::getErrorStr());
+    THROW("Failed to use private key: " << cb::SSL::getErrorStr());
 }
 
 
@@ -157,7 +157,7 @@ void SSLContext::usePrivateKey(const InputSource &source) {
 void SSLContext::addTrustedCA(const Certificate &cert) {
   X509_STORE *store = getStore();
   if (!X509_STORE_add_cert(store, X509_dup(cert.getX509())))
-    THROWS("Failed to add certificate to store " << cb::SSL::getErrorStr());
+    THROW("Failed to add certificate to store " << cb::SSL::getErrorStr());
 }
 
 
@@ -175,23 +175,23 @@ void SSLContext::addTrustedCA(const InputSource &source) {
 void SSLContext::addTrustedCA(BIO *bio) {
   // TODO free X509
   X509 *cert = PEM_read_bio_X509(bio, 0, cb::SSL::passwordCallback, 0);
-  if (!cert) THROWS("Failed to read certificate " << cb::SSL::getErrorStr());
+  if (!cert) THROW("Failed to read certificate " << cb::SSL::getErrorStr());
 
   X509_STORE *store = getStore();
   if (!X509_STORE_add_cert(store, cert))
-    THROWS("Failed to add certificate to store " << cb::SSL::getErrorStr());
+    THROW("Failed to add certificate to store " << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::loadVerifyLocationsFile(const string &path) {
   if (!SSL_CTX_load_verify_locations(ctx, path.c_str(), 0))
-    THROWS("Failed to load verify locations file '" << path << "'");
+    THROW("Failed to load verify locations file '" << path << "'");
 }
 
 
 void SSLContext::loadVerifyLocationsPath(const string &path) {
   if (!SSL_CTX_load_verify_locations(ctx, 0, path.c_str()))
-    THROWS("Failed to load verify locations path '" << path << "'");
+    THROW("Failed to load verify locations path '" << path << "'");
 }
 
 
@@ -200,7 +200,7 @@ void SSLContext::addCRL(const CRL &crl) {
 
   // Add CRL
   if (!X509_STORE_add_crl(store, crl.getX509_CRL()))
-    THROWS("Error adding CRL" << cb::SSL::getErrorStr());
+    THROW("Error adding CRL" << cb::SSL::getErrorStr());
 
   setCheckCRL(true);
 }
@@ -223,11 +223,11 @@ void SSLContext::addCRL(BIO *bio) {
   // Read CRL
   X509_CRL *crl = PEM_read_bio_X509_CRL(bio, 0, 0, 0);
   if (!crl || cb::SSL::peekError())
-    THROWS("Error reading CRL " << cb::SSL::getErrorStr());
+    THROW("Error reading CRL " << cb::SSL::getErrorStr());
 
   // Add CRL
   if (!X509_STORE_add_crl(store, crl))
-    THROWS("Error adding CRL" << cb::SSL::getErrorStr());
+    THROW("Error adding CRL" << cb::SSL::getErrorStr());
 
   setCheckCRL(true);
 }

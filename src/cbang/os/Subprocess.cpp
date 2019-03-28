@@ -120,15 +120,15 @@ namespace {
       sAttrs.lpSecurityDescriptor = 0;
 
       if (!CreatePipe(&handles[0], &handles[1], &sAttrs, 0))
-        THROWS("Failed to create pipe: " << SysError());
+        THROW("Failed to create pipe: " << SysError());
 
       // Don't inherit other handle
       if (!SetHandleInformation(handles[toChild ? 1 : 0],
                                 HANDLE_FLAG_INHERIT, 0))
-        THROWS("Failed to clear pipe inherit flag: " << SysError());
+        THROW("Failed to clear pipe inherit flag: " << SysError());
 
 #else
-      if (pipe(handles)) THROWS("Failed to create pipe: " << SysError());
+      if (pipe(handles)) THROW("Failed to create pipe: " << SysError());
 #endif
 
       closeHandles[0] = closeHandles[1] = true;
@@ -241,20 +241,20 @@ unsigned Subprocess::createPipe(bool toChild) {
 
 
 Subprocess::handle_t Subprocess::getPipeHandle(unsigned i, bool childEnd) {
-  if (p->pipes.size() <= i) THROWS("Subprocess does not have pipe " << i);
+  if (p->pipes.size() <= i) THROW("Subprocess does not have pipe " << i);
   return p->pipes[i].handles[(p->pipes[i].toChild ^ childEnd) ? 1 : 0];
 }
 
 
 const SmartPointer<iostream> &Subprocess::getStream(unsigned i) const {
   if (p->pipes.size() <= i || p->pipes[i].stream.isNull())
-    THROWS("Subprocess stream " << i << " not available");
+    THROW("Subprocess stream " << i << " not available");
   return p->pipes[i].stream;
 }
 
 
 void Subprocess::closeStream(unsigned i) {
-  if (p->pipes.size() <= i) THROWS("Subprocess does not have pipe " << i);
+  if (p->pipes.size() <= i) THROW("Subprocess does not have pipe " << i);
   p->pipes[i].closeStream();
 }
 
@@ -379,7 +379,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     // Start process
     if (!CreateProcess(0, (LPSTR)command.c_str(), 0, 0, TRUE, cFlags,
                        (LPVOID)env, dir, &p->si, &p->pi))
-      THROWS("Failed to create process with: " << command << ": "
+      THROW("Failed to create process with: " << command << ": "
              << SysError());
 
     if (flags & W32_WAIT_FOR_INPUT_IDLE) {
@@ -449,7 +449,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       exit(-1);
 
     } else if (p->pid == -1)
-      THROWS("Failed to spawn subprocess: " << SysError());
+      THROW("Failed to spawn subprocess: " << SysError());
 #endif // _WIN32
 
   } catch (...) {
@@ -488,7 +488,7 @@ void Subprocess::interrupt() {
   if (!(signalGroup ? ::killpg : ::kill)((pid_t)getPID(), SIGINT)) return;
 #endif // _WIN32
 
-  THROWS("Failed to interrupt process " << getPID() << ": " << SysError());
+  THROW("Failed to interrupt process " << getPID() << ": " << SysError());
 }
 
 

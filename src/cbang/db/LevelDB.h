@@ -50,7 +50,7 @@ namespace leveldb {
 
 
 namespace cb {
-  CBANG_DEFINE_EXCEPTION_SUBCLASS(LevelDBException);
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(LevelDBError);
 
   class LevelDBNS {
     std::string name;

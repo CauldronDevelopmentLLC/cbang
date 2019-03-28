@@ -73,7 +73,7 @@ string Headers::find(const string &key) const {
 
 string Headers::get(const string &key) const {
   const char *value = evhttp_find_header(hdrs, key.c_str());
-  if (!value) THROWS("Header '" << key << "' not found");
+  if (!value) THROW("Header '" << key << "' not found");
   return value;
 }
 

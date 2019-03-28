@@ -88,6 +88,6 @@ void Parameter::bind() const {
 
 
 void Parameter::error(const string &msg, int err) const {
-  THROWS(msg << ": in parameter '" << getName() << "' (" << i << "): "
+  THROW(msg << ": in parameter '" << getName() << "' (" << i << "): "
          << Database::errorMsg(err));
 }

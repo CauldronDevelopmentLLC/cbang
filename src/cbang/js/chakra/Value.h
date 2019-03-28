@@ -125,6 +125,6 @@ namespace cb {
   do {                                                              \
     JsErrorCode err = CMD;                                          \
     if (err != JsNoError)                                           \
-      THROWS(#CMD << " failed with 0x" << std::hex << err           \
+      THROW(#CMD << " failed with 0x" << std::hex << err           \
              << ' ' << Value::errorToString(err));                  \
   } while (0)

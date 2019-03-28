@@ -119,6 +119,10 @@ namespace cb {
     std::ostream &printPublic(std::ostream &stream, int indent = 0) const;
     std::ostream &printPrivate(std::ostream &stream, int indent = 0) const;
     std::ostream &print(std::ostream &stream, int indent = 0) const;
+
+    // Check Signatures
+    void verify(const std::string &signature, const std::string &data);
+    void verifyBase64SHA256(const std::string &sig64, const std::string &data);
   };
 
 

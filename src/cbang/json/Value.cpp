@@ -101,8 +101,8 @@ void Value::merge(const Value &value) {
   }
 
   if (!isDict() || !value.isDict())
-    THROWS("Cannot merge JSON nodes of type " << getType() << " and "
-           << value.getType());
+    JSON_TYPE_ERROR("Cannot merge JSON nodes of type " << getType() << " and "
+                    << value.getType());
 
   // Merge dicts
   for (unsigned i = 0; i < value.size(); i++) {
@@ -133,8 +133,8 @@ string Value::format(char type) const {
     case 's': return "\"" + String::escapeC(asString()) + "\"";
   }
 
-  THROWS("Unsupported format type specifier '"
-         << String::escapeC(string(1, type)) << "'");
+  JSON_ERROR("Unsupported format type specifier '"
+             << String::escapeC(string(1, type)) << "'");
 }
 
 

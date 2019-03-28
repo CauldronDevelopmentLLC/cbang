@@ -60,13 +60,13 @@ namespace cb {
 
       DWORD mode;
       if (!GetConsoleMode(handle, &mode))
-        THROWS("Failed to get console mode: " << SysError());
+        THROW("Failed to get console mode: " << SysError());
 
       DWORD newMode = mode | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT;
       newMode &= ~ENABLE_ECHO_INPUT;
 
       if (!SetConsoleMode(handle, newMode))
-        THROWS("Failed to turn off echo for password entry: " << SysError());
+        THROW("Failed to turn off echo for password entry: " << SysError());
 
 #else
       struct termios oflags, nflags;
@@ -78,7 +78,7 @@ namespace cb {
       nflags.c_lflag |= ECHONL;
 
       if (tcsetattr(fileno(stdin), TCSANOW, &nflags) != 0)
-        THROWS("Failed to turn off echo for password entry: " << SysError());
+        THROW("Failed to turn off echo for password entry: " << SysError());
 #endif
 
       string pass;
@@ -94,12 +94,12 @@ namespace cb {
 
 #ifdef _WIN32
       if (!SetConsoleMode(handle, mode))
-        THROWS("Failed to restore echo after password entry: " << SysError());
+        THROW("Failed to restore echo after password entry: " << SysError());
 
 #else
       // Restore terminal
       if (tcsetattr(fileno(stdin), TCSANOW, &oflags) != 0)
-        THROWS("Failed to restore echo after password entry: " << SysError());
+        THROW("Failed to restore echo after password entry: " << SysError());
 #endif
 
       return pass;

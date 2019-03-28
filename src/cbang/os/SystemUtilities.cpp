@@ -362,7 +362,7 @@ namespace cb {
       // Get module path
       TCHAR path[MAX_PATH];
       if (!GetModuleFileName(0, path, MAX_PATH))
-        THROWS("Failed to get module file name: " << SysError());
+        THROW("Failed to get module file name: " << SysError());
 
       return path;
 
@@ -371,7 +371,7 @@ namespace cb {
       uint32_t size = PATH_MAX;
 
       if (_NSGetExecutablePath(path, &size) == 0) return (char *)path;
-      THROWS("Failed to get executable path: " << SysError());
+      THROW("Failed to get executable path: " << SysError());
 
 #elif __FreeBSD__
       static int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
@@ -381,7 +381,7 @@ namespace cb {
       path[0] = path[PATH_MAX] = 0;
 
       if (sysctl(mib, 4, path, &len, 0, 0) || *path)
-        THROWS("Failed to get executable path: " <<  SysError());
+        THROW("Failed to get executable path: " <<  SysError());
 
       return (char *)path;
 
@@ -400,7 +400,7 @@ namespace cb {
 
 
     string findInPath(const string &path, const string &name) {
-      if (basename(name) != name) THROWS("Invalid name '" << name << "'");
+      if (basename(name) != name) THROW("Invalid name '" << name << "'");
 
       vector<string> paths;
       splitPaths(path, paths);
@@ -423,7 +423,7 @@ namespace cb {
         if (parent != ".") {
           if (!isDirectory(parent)) {
             if (exists(parent))
-              THROWS("'" << parent << "' exists but is not a directory");
+              THROW("'" << parent << "' exists but is not a directory");
 
             mkdir(parent, true);
           }
@@ -433,10 +433,10 @@ namespace cb {
       try {
         if (fs::create_directory(path)) return;
       } catch (const exception &e) {
-        THROWS("Failed to create directory '" << path << "': " << e.what());
+        THROW("Failed to create directory '" << path << "': " << e.what());
       }
 
-      THROWS("Failed to create directory '" << path << "': " << SysError());
+      THROW("Failed to create directory '" << path << "': " << SysError());
     }
 
 
@@ -444,13 +444,13 @@ namespace cb {
       if (!exists(path)) return;
 
       if (!isDirectory(path))
-        THROWS("Cannot remove '" << path << "' as directory");
+        THROW("Cannot remove '" << path << "' as directory");
 
       try {
         if (withChildren) fs::remove_all(path);
         else fs::remove(path);
       } catch (const fs::filesystem_error &e) {
-        THROWS("Failed to remove directory '" << path << "': " << e.what());
+        THROW("Failed to remove directory '" << path << "': " << e.what());
       }
     }
 
@@ -458,7 +458,7 @@ namespace cb {
     bool ensureDirectory(const string &path) {
       if (!isDirectory(path)) {
         if (exists(path))
-          THROWS("'" << path << "' exists but is not a directory");
+          THROW("'" << path << "' exists but is not a directory");
 
         mkdir(path, true);
 
@@ -496,7 +496,7 @@ namespace cb {
 #else
       if (::chdir(path.c_str()) < 0)
 #endif
-        THROWS("chdir(" << path << ") failed: " << SysError());
+        THROW("chdir(" << path << ") failed: " << SysError());
     }
 
 
@@ -517,7 +517,7 @@ namespace cb {
 #else
         if (!mkdtemp(buf.get()))
 #endif
-          THROWS("Failed to create temporary directory from template '"
+          THROW("Failed to create temporary directory from template '"
                  << buf.get() << "'");
 
       return buf.get();
@@ -533,7 +533,7 @@ namespace cb {
 
     uint64_t getFileSize(const string &filename) {
       if (!exists(filename))
-        THROWS("Error accessing file '" << filename << "'");
+        THROW("Error accessing file '" << filename << "'");
 
       try {
         return fs::file_size(filename);
@@ -546,7 +546,7 @@ namespace cb {
     uint64_t getModificationTime(const string &filename) {
       struct stat buf;
       if (stat(filename.c_str(), &buf))
-        THROWS("Accessing '" << filename << "': " << SysError());
+        THROW("Accessing '" << filename << "': " << SysError());
 
       return buf.st_mtime;
     }
@@ -589,7 +589,7 @@ namespace cb {
       uint64_t bytes = cp(*in, *out, length);
 
       if (out->fail())
-        THROWS("Failed to copy '" << src << "' to '" << dst << "'");
+        THROW("Failed to copy '" << src << "' to '" << dst << "'");
 
       return bytes;
     }
@@ -633,7 +633,7 @@ namespace cb {
       }
 #endif
 
-      if (fail) THROWS("Failed to rename '" << src << "' to '" << dst << "': "
+      if (fail) THROW("Failed to rename '" << src << "' to '" << dst << "': "
                        << SysError());
     }
 
@@ -706,7 +706,7 @@ namespace cb {
     static HANDLE OpenProcess(DWORD access, uint64_t pid) {
       HANDLE h = ::OpenProcess(access, false, (DWORD)pid);
       if (!h)
-        THROWS("Failed to open process " << pid << ": " << SysError());
+        THROW("Failed to open process " << pid << ": " << SysError());
       return h;
     }
 #endif // _WIN32
@@ -745,7 +745,7 @@ namespace cb {
       case ProcessPriority::PRIORITY_LOW:      return 10;
       case ProcessPriority::PRIORITY_HIGH:     return -10;
       case ProcessPriority::PRIORITY_REALTIME: return -20;
-      default: THROWS("Invalid priority: " << priority);
+      default: THROW("Invalid priority: " << priority);
       }
     }
 
@@ -761,14 +761,14 @@ namespace cb {
       SmartWin32Handle h = OpenProcess(PROCESS_SET_INFORMATION, pid);
       bool err = !SetPriorityClass(h, pclass);
 
-      if (err) THROWS("Failed to set process priority: " << SysError());
+      if (err) THROW("Failed to set process priority: " << SysError());
 
 #else
       SysError::clear();
       setpriority(PRIO_PROCESS, (pid_t)pid, priorityToInt(priority));
 
       if (SysError::get())
-        THROWS("Failed to set process priority: " << SysError());
+        THROW("Failed to set process priority: " << SysError());
 #endif
     }
 
@@ -817,7 +817,7 @@ namespace cb {
       FILETIME createTime, exitTime, kernelTime, userTime;
       if (!GetProcessTimes(GetCurrentProcess(), &createTime, &exitTime,
                            &kernelTime, &userTime))
-        THROWS("Could not get CPU time: " << SysError());
+        THROW("Could not get CPU time: " << SysError());
 
       double t =
         (((UINT64)kernelTime.dwHighDateTime + userTime.dwHighDateTime) << 32) +
@@ -828,7 +828,7 @@ namespace cb {
 #else
       struct tms t;
       if (times(&t) == (clock_t)-1)
-        THROWS("Could not get CPU time: " << SysError());
+        THROW("Could not get CPU time: " << SysError());
 
       return (double)(t.tms_utime + t.tms_stime) / sysconf(_SC_CLK_TCK);
 #endif
@@ -846,7 +846,7 @@ namespace cb {
 #ifdef _WIN32
       SmartWin32Handle h =
         OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE, pid);
-      if (!h) THROWS("Failed to access PID " << pid << ": " << SysError());
+      if (!h) THROW("Failed to access PID " << pid << ": " << SysError());
 
       // Check if process has exited
       switch (WaitForSingleObject(h, nonblocking ? 0 : INFINITE)) {
@@ -855,7 +855,7 @@ namespace cb {
       case WAIT_OBJECT_0: { // Process has ended, get exit code
         DWORD exitCode = 0;
         if (!GetExitCodeProcess(h, &exitCode))
-          THROWS("Failed to get PID " << pid << " exit code: " << SysError());
+          THROW("Failed to get PID " << pid << " exit code: " << SysError());
 
         // NOTE Checking for STILL_ACTIVE is unreliable
         if (returnCode) *returnCode = exitCode;
@@ -863,7 +863,7 @@ namespace cb {
         return true; // Exited
       }
 
-      default: THROWS("Failed to wait for PID " << pid << ": " << SysError());
+      default: THROW("Failed to wait for PID " << pid << ": " << SysError());
       }
 
 #else // _WIN32
@@ -871,7 +871,7 @@ namespace cb {
       int retVal = waitpid((pid_t)pid, &status, nonblocking ? WNOHANG : 0);
 
       if (retVal == -1)
-        THROWS("Failed to wait on process " << pid << ":" << SysError());
+        THROW("Failed to wait on process " << pid << ":" << SysError());
 
       if (retVal) { // Returned PID
         if (WIFSIGNALED(status)) {
@@ -928,12 +928,12 @@ namespace cb {
       if (!gid) {
         // TODO this call is not reentrable
         struct group *entry = getgrnam(group.c_str());
-        if (!entry) THROWS("Could not find group '" << group << "'");
+        if (!entry) THROW("Could not find group '" << group << "'");
         gid = entry->gr_gid;
       }
 
       if (setgid(gid) == -1)
-        THROWS("Failed to set group ID to " << gid << ": " << SysError());
+        THROW("Failed to set group ID to " << gid << ": " << SysError());
 #endif
     }
 
@@ -953,12 +953,12 @@ namespace cb {
       if (!uid) {
         // TODO this call is not reentrable
         struct passwd *entry = getpwnam(user.c_str());
-        if (!entry) THROWS("Could not find user '" << user << "'");
+        if (!entry) THROW("Could not find user '" << user << "'");
         uid = entry->pw_uid;
       }
 
       if (setuid(uid) == -1)
-        THROWS("Failed to set user ID to " << uid << ": " << SysError());
+        THROW("Failed to set user ID to " << uid << ": " << SysError());
 #endif
     }
 
@@ -982,7 +982,7 @@ namespace cb {
 
       // Fork the parent process
       pid_t pid = ::fork();
-      if (pid < 0) THROWS("Failed to daemonize: " << SysError());
+      if (pid < 0) THROW("Failed to daemonize: " << SysError());
 
       // If we got a good PID, then we can exit the parent process.
       if (pid > 0) ::exit(0);
@@ -992,7 +992,7 @@ namespace cb {
 
       // Create a new SID
       pid_t sid = setsid();
-      if (sid < 0) THROWS("Failed to create new session ID: " << SysError());
+      if (sid < 0) THROW("Failed to create new session ID: " << SysError());
 
       // Redirect standard files to /dev/null
       if (!freopen("/dev/null", "r", stdin))
@@ -1014,7 +1014,7 @@ namespace cb {
         return new File(filename, mode, perm);
 
       } catch (const exception &e) {
-        THROWS("Failed to open '" << filename << "': " << e.what()
+        THROW("Failed to open '" << filename << "': " << e.what()
                << ": " << SysError());
       }
     }
@@ -1026,7 +1026,7 @@ namespace cb {
         return new File(filename, ios::in);
 
       } catch (const exception &e) {
-        THROWS("Failed to open '" << filename << "': " << e.what()
+        THROW("Failed to open '" << filename << "': " << e.what()
                << ": " << SysError());
       }
     }
@@ -1042,7 +1042,7 @@ namespace cb {
         return new File(filename, mode, perm);
 
       } catch (const exception &e) {
-        THROWS("Failed to open '" << filename << "': " << e.what()
+        THROW("Failed to open '" << filename << "': " << e.what()
                << ": " << SysError());
       }
     }
@@ -1077,7 +1077,7 @@ namespace cb {
 #endif
 
       if (failed)
-        THROWS("Failed to truncate '" << path << "' to " << length << ": "
+        THROW("Failed to truncate '" << path << "' to " << length << ": "
                << SysError());
     }
 
@@ -1094,7 +1094,7 @@ namespace cb {
       #endif
 
       if (fail)
-        THROWS("Failed to change permissions on '" << path << "'"
+        THROW("Failed to change permissions on '" << path << "'"
                << SysError());
     }
 
@@ -1103,7 +1103,7 @@ namespace cb {
 
 #ifdef _WIN32
       // TODO implement for Windows
-      THROWS("function not yet implemented in Windows");
+      THROW("function not yet implemented in Windows");
 
 #else // _WIN32
       struct passwd u;
@@ -1111,9 +1111,9 @@ namespace cb {
       struct passwd *result;
 
       if (getpwnam_r(name.c_str(), &u, buffer, 4096, &result))
-        THROWS("Failed to get user '" << name << "'s info " << SysError());
+        THROW("Failed to get user '" << name << "'s info " << SysError());
 
-      if (!result) THROWS("User '" << name << "' does not exist");
+      if (!result) THROW("User '" << name << "' does not exist");
 
       return u.pw_dir;
 #endif // _WIN32

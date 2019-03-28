@@ -183,7 +183,7 @@ static const char *parseVar(const Context &ctx, const char *s) {
   if (*s == '(') {
     // Function
     s = parseArgs(args, s + 1);
-    if (*s != ')') THROWS("Expected ')' found '"
+    if (*s != ')') THROW("Expected ')' found '"
                           << (*s ? string(1, *s) : string("null")) << "'");
     ctx.handler.eval(Context(ctx, args));
     return s + 1;
@@ -249,7 +249,7 @@ void Handler::exec(const Context &ctx, const std::string &script) {
   // Read it
   SmartPointer<iostream> f = SystemUtilities::open(script, ios::in);
   f->read(buffer.get(), size);
-  if (f->fail()) THROWS("Failed to read '" << script << "'");
+  if (f->fail()) THROW("Failed to read '" << script << "'");
 
   // Run it
   eval(ctx, buffer.get());

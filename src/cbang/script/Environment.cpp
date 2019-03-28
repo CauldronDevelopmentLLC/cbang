@@ -63,7 +63,7 @@ Environment::Environment(const string &name, Handler *parent) :
 
 const SmartPointer<Entity> &Environment::add(const SmartPointer<Entity> &e) {
   if (!insert(value_type(e->getName(), e)).second)
-    THROWS("Environment already has '" << e->getName() << "'");
+    THROW("Environment already has '" << e->getName() << "'");
 
   return e;
 }
@@ -77,7 +77,7 @@ void Environment::set(const string &name, const string &value) {
   else {
     const SmartPointer<Entity> &e = it->second;
     if (e->getType() != Entity::VARIABLE)
-      THROWS("'" << name << "' is not a variable in this context");
+      THROW("'" << name << "' is not a variable in this context");
 
     e.cast<Variable>()->set(value);
   }

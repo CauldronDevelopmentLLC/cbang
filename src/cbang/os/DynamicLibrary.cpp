@@ -69,14 +69,14 @@ DynamicLibrary::DynamicLibrary(const string &path) :
 #ifdef _WIN32
   pri->handle = LoadLibrary(path.c_str());
   if (!pri->handle)
-    THROWS("Failed to open dynamic library '" << path << "': " << SysError());
+    THROW("Failed to open dynamic library '" << path << "': " << SysError());
 
 #else
   dlerror(); // Clear errors
 
   pri->handle = dlopen(path.c_str(), RTLD_LAZY);
   if (!pri->handle)
-    THROWS("Failed to open dynamic library '" << path << "': " << dlerror());
+    THROW("Failed to open dynamic library '" << path << "': " << dlerror());
 #endif
 }
 
@@ -97,7 +97,7 @@ void *DynamicLibrary::getSymbol(const string &name) {
 #ifdef _WIN32
   void *symbol = (void *)GetProcAddress(pri->handle, name.c_str());
   if (!symbol)
-    THROWS("Failed to load dynamic symbol '" << name << "' from library '"
+    THROW("Failed to load dynamic symbol '" << name << "' from library '"
            << path << "': " << SysError());
 
 #else
@@ -107,7 +107,7 @@ void *DynamicLibrary::getSymbol(const string &name) {
 
   char *err = dlerror();
   if (err)
-    THROWS("Failed to load dynamic symbol '" << name << "' from library '"
+    THROW("Failed to load dynamic symbol '" << name << "' from library '"
            << path << "': " << err);
 #endif
 

@@ -64,7 +64,7 @@ UnixFile::UnixFile(const string &path, ios::openmode mode, int perm) : fd(-1) {
 void UnixFile::open(const string &path, ios::openmode mode, int perm) {
   SysError::clear();
 
-  if (is_open()) BOOST_IOS_THROWS("File already open");
+  if (is_open()) BOOST_IOS_THROW("File already open");
 
 #ifdef _WIN32
   perm &= 0600; // Windows only understands these permissions.
@@ -72,7 +72,7 @@ void UnixFile::open(const string &path, ios::openmode mode, int perm) {
 
   fd = _open(path, mode, perm);
 
-  if (!is_open()) BOOST_IOS_THROWS("Failed to open '" << path << "'");
+  if (!is_open()) BOOST_IOS_THROW("Failed to open '" << path << "'");
 
   // Simulate ios::ate
   if (IS_SET(mode, ios::ate)) seek(0, ios::end);
@@ -87,7 +87,7 @@ streamsize UnixFile::read(char *s, streamsize n) {
   streamsize result = _read(fd, s, n);
 
   if (SysError::get()) {
-    BOOST_IOS_THROWS("read() failed");
+    BOOST_IOS_THROW("read() failed");
     return -1;
   }
 
@@ -103,7 +103,7 @@ streamsize UnixFile::write(const char *s, streamsize n) {
   ssize_t size;
   size = _write(fd, s, n);
 
-  if (size < 0) BOOST_IOS_THROWS("write() failed");
+  if (size < 0) BOOST_IOS_THROW("write() failed");
 
   return size;
 }
@@ -120,12 +120,12 @@ streampos UnixFile::seek(streampos off, ios::seekdir way) {
   case ios::cur: whence = SEEK_CUR; break;
   case ios::end: whence = SEEK_END; break;
   default:
-    BOOST_IOS_THROWS("Invalid seek()");
+    BOOST_IOS_THROW("Invalid seek()");
     return -1;
   }
 
   off_t o = lseek(fd, off, whence);
-  if (o == (off_t)-1) BOOST_IOS_THROWS("seek() failed");
+  if (o == (off_t)-1) BOOST_IOS_THROW("seek() failed");
 
   return o;
 }
@@ -143,7 +143,7 @@ streamsize UnixFile::size() const {
   struct stat buf;
 
   if (fstat(fd, &buf) == -1)
-    THROWS("Error getting file status: " << SysError());
+    THROW("Error getting file status: " << SysError());
 
   return buf.st_size;
 }

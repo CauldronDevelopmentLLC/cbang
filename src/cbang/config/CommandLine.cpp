@@ -158,7 +158,7 @@ int CommandLine::parse(const vector<string> &args) {
         continue;
       }
 
-      THROWCS("Invalid argument '" << args[i] << "'", e);
+      THROWC("Invalid argument '" << args[i] << "'", e);
     }
 
     option->parse(i, args);
@@ -177,7 +177,7 @@ int CommandLine::usageAction(Option &option) {
     if (has(string("--") + name)) opt = get(string("--") + name);
     else if (has(string("-") + name)) opt = get(string("-") + name);
     else if (keywords && keywords->has(name)) opt = keywords->get(name);
-    else THROWS("Unrecognized command line option or keyword '" << name << "'");
+    else THROW("Unrecognized command line option or keyword '" << name << "'");
 
     opt->printHelp(cout) << endl;
 

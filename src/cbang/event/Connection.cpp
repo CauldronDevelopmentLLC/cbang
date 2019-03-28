@@ -66,7 +66,7 @@ namespace {
     case RequestMethod::HTTP_TRACE:   return EVHTTP_REQ_TRACE;
     case RequestMethod::HTTP_CONNECT: return EVHTTP_REQ_CONNECT;
     case RequestMethod::HTTP_PATCH:   return EVHTTP_REQ_PATCH;
-    default: THROWS("Unknown method " << method);
+    default: THROW("Unknown method " << method);
     }
   }
 }
@@ -83,7 +83,7 @@ Connection::Connection(cb::Event::Base &base, DNSBase &dns,
   con(evhttp_connection_base_new(base.getBase(), dns.getDNSBase(),
                                  peer.getHost().c_str(), peer.getPort())),
   deallocate(true) {
-  if (!con) THROWS("Failed to create connection to " << peer);
+  if (!con) THROW("Failed to create connection to " << peer);
 }
 
 
@@ -92,7 +92,7 @@ Connection::Connection(cb::Event::Base &base, DNSBase &dns, BufferEvent &bev,
   con(evhttp_connection_base_bufferevent_new
       (base.getBase(), dns.getDNSBase(), bev.adopt(), peer.getHost().c_str(),
        peer.getPort())), deallocate(true) {
-  if (!con) THROWS("Failed to create connection to " << peer);
+  if (!con) THROW("Failed to create connection to " << peer);
 }
 
 
@@ -119,7 +119,7 @@ Connection::Connection(cb::Event::Base &base, DNSBase &dns, const URI &uri,
 
   LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
 
-  if (!con) THROWS("Failed to create connection to " << uri);
+  if (!con) THROW("Failed to create connection to " << uri);
 }
 
 
@@ -193,7 +193,7 @@ void Connection::makeRequest(evhttp_request *req, unsigned method,
   evhttp_cmd_type m = convert_method(method);
 
   if (evhttp_make_request(con, req, m, uri.toString().c_str()))
-    THROWS("Failed to make request to " << uri);
+    THROW("Failed to make request to " << uri);
 }
 
 

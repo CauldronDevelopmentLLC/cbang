@@ -51,8 +51,8 @@ namespace cb {
       Super(lock, &Lockable::unlock, false) {
 
       if (!alreadyLocked && !lock->lock(timeout)) {
-        if (timeout == -1) CBANG_THROWS("Failed to acquire lock");
-        else CBANG_THROWS("Failed to acquire lock, timeout was " << timeout);
+        if (timeout == -1) CBANG_THROW("Failed to acquire lock");
+        else CBANG_THROW("Failed to acquire lock, timeout was " << timeout);
 
       } else setEngaged(true);
     }

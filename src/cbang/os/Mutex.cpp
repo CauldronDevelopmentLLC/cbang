@@ -89,7 +89,7 @@ bool Mutex::lock(double timeout) const {
   DWORD ret = WaitForSingleObject(p->h, t);
   if (ret == WAIT_TIMEOUT) return false;
   if (ret == WAIT_FAILED)
-    THROWS("Wait failed: " << SysError());
+    THROW("Wait failed: " << SysError());
   if (ret == WAIT_ABANDONED) // Lock still acquired
     LOG_WARNING("Wait Abandoned, Mutex owner terminated");
 
@@ -100,13 +100,13 @@ bool Mutex::lock(double timeout) const {
     ret = pthread_mutex_trylock(&p->mutex);
 
     if (ret == EBUSY) return false;
-    if (ret) THROWS("Mutex " << ID((uint64_t)this) << " trylock failed: "
+    if (ret) THROW("Mutex " << ID((uint64_t)this) << " trylock failed: "
                     << SysError(ret));
 
   } else if (timeout < 0) {
     ret = pthread_mutex_lock(&p->mutex);
 
-    if (ret) THROWS("Mutex " << ID((uint64_t)this) << " lock failed: "
+    if (ret) THROW("Mutex " << ID((uint64_t)this) << " lock failed: "
                     << SysError(ret));
 
   } else {
@@ -130,7 +130,7 @@ bool Mutex::lock(double timeout) const {
     if (ret == ETIMEDOUT) return false;
 #endif // __APPLE__
 
-    if (ret) THROWS("Mutex " << ID((uint64_t)this) << " timedlock failed: "
+    if (ret) THROW("Mutex " << ID((uint64_t)this) << " timedlock failed: "
                     << SysError(ret));
   }
 #endif // _WIN32
@@ -141,7 +141,7 @@ bool Mutex::lock(double timeout) const {
 
 
 void Mutex::unlock() const {
-  if (!locked) THROWS("Mutex " << ID((uint64_t)this) << " was not locked");
+  if (!locked) THROW("Mutex " << ID((uint64_t)this) << " was not locked");
 
   locked--;
 
@@ -154,7 +154,7 @@ void Mutex::unlock() const {
 #endif // _WIN32
 
   locked++;
-  THROWS("Mutex " << ID((uint64_t)this) << " unlock failed: " << SysError(ret));
+  THROW("Mutex " << ID((uint64_t)this) << " unlock failed: " << SysError(ret));
 }
 
 

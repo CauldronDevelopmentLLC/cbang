@@ -47,12 +47,12 @@ namespace cb {
     // From Constraint
     void validate(int64_t value) const {
       if (value < minimum)
-        CBANG_THROWS(value << " is less than minium value " << minimum);
+        CBANG_THROW(value << " is less than minium value " << minimum);
     }
 
     void validate(double value) const {
       if (value < minimum)
-        CBANG_THROWS(value << " is less than minium value " << minimum);
+        CBANG_THROW(value << " is less than minium value " << minimum);
     }
 
 

@@ -43,7 +43,7 @@
 #include <leveldb/write_batch.h>
 
 #undef CBANG_EXCEPTION
-#define CBANG_EXCEPTION CBANG_EXCEPTION_SUBCLASS(LevelDBException)
+#define CBANG_EXCEPTION LevelDBError
 
 using namespace cb;
 using namespace std;
@@ -66,7 +66,7 @@ string LevelDBNS::nsKey(const string &key) const {
 
 string LevelDBNS::stripKey(const string &key) const {
   if (key.length() < name.length())
-    THROWS("Invalid key '" << key << "' for namespace '" << name << "'");
+    THROW("Invalid key '" << key << "' for namespace '" << name << "'");
   return key.substr(name.length());
 }
 
@@ -78,8 +78,8 @@ bool LevelDBNS::inNS(const string &key) const {
 
 void LevelDBNS::check(const leveldb::Status &s, const std::string &key) const {
   if (s.ok()) return;
-  if (s.IsNotFound()) THROWS("DB ERROR: Not '" << nsKey(key) << "' found");
-  THROWS("DB ERROR: " << s.ToString());
+  if (s.IsNotFound()) THROW("DB ERROR: Not '" << nsKey(key) << "' found");
+  THROW("DB ERROR: " << s.ToString());
 }
 
 
@@ -229,7 +229,7 @@ void LevelDB::open(const string &path, int options) {
   leveldb::DB *db;
   leveldb::Status status = leveldb::DB::Open(opts, path, &db);
   if (!status.ok())
-    THROWS("Failed to open DB '" << path << "': " << status.ToString());
+    THROW("Failed to open DB '" << path << "': " << status.ToString());
 
   this->db = db;
 }
@@ -308,7 +308,7 @@ LevelDB::Batch LevelDB::batch() {
 string LevelDB::getProperty(const string &name) {
   string value;
   if (!db->GetProperty(name, &value))
-    THROWS("Invalid property '" << name << "'");
+    THROW("Invalid property '" << name << "'");
   return value;
 }
 

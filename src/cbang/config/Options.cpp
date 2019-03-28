@@ -65,7 +65,7 @@ void Options::add(const string &_key, SmartPointer<Option> option) {
   string key = cleanKey(_key);
   iterator it = map.find(key);
 
-  if (it != map.end()) THROWS("Option '" << key << "' already exists.");
+  if (it != map.end()) THROW("Option '" << key << "' already exists.");
 
   map[key] = option;
   categoryStack.back()->add(option);
@@ -94,7 +94,7 @@ const SmartPointer<Option> &Options::get(const string &_key) const {
       categoryStack.back()->add(option);
       return option;
 
-    } else THROWS("Option '" << key << "' does not exist.");
+    } else THROW("Option '" << key << "' does not exist.");
   }
 
   return it->second;
@@ -109,7 +109,7 @@ void Options::alias(const string &_key, const string &_alias) {
 
   iterator it = map.find(alias);
   if (it != map.end())
-    THROWS("Cannot alias, option '" << alias << "' already exists.");
+    THROW("Cannot alias, option '" << alias << "' already exists.");
 
   option->addAlias(alias);
   map[alias] = option;

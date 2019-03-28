@@ -47,12 +47,12 @@ namespace cb {
     // From Constraint
     void validate(int64_t value) const {
       if (maximum < value)
-        CBANG_THROWS(value << " is greater than maximum value " << maximum);
+        CBANG_THROW(value << " is greater than maximum value " << maximum);
     }
 
     void validate(double value) const {
       if (maximum < value)
-        CBANG_THROWS(value << " is greater than maximum value " << maximum);
+        CBANG_THROW(value << " is greater than maximum value " << maximum);
     }
 
 

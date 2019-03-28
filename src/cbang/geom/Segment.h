@@ -59,7 +59,7 @@ namespace cb {
     bool intersection(const Segment<DIM, T> &s, Vector<DIM, T> &p) const {
       // TODO Currently only implemented for the 2D case
       if (DIM != 2)
-        CBANG_THROWS("Invalid operation for Segment of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Segment of dimension " << DIM);
 
       T d = (s.data[1][1] - s.data[0][1]) * (data[1][0] - data[0][0]) -
         (s.data[1][0] - s.data[0][0]) * (data[1][1] - data[0][1]);

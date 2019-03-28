@@ -113,6 +113,6 @@ void TarFileWriter::addCompression(compression_t compression) {
   case TARFILE_NONE: break; // none
   case TARFILE_BZIP2: pri->filter.push(BZip2Compressor()); break;
   case TARFILE_GZIP: pri->filter.push(io::zlib_compressor()); break;
-  default: THROWS("Invalid compression type " << compression);
+  default: THROW("Invalid compression type " << compression);
   }
 }

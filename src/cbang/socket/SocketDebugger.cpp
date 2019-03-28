@@ -166,7 +166,7 @@ SocketDebugConnection *SocketDebugger::connect(const IPAddress &addr) {
 
   connection_map_t::iterator it = outgoing.find(addr);
   if (it == outgoing.end() || it->second.empty())
-    THROWS("SocketDebugger not ready for outgoing connection to " << addr);
+    THROW("SocketDebugger not ready for outgoing connection to " << addr);
 
   SocketDebugConnection *con = it->second.front();
   con->connect(addr);

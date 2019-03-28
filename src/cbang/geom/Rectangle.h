@@ -73,12 +73,12 @@ namespace cb {
     T getWidth() const {return rmax[0] - rmin[0];}
     T getLength() const {
       if (DIM < 2)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return rmax[1] - rmin[1];
     }
     T getHeight() const {
       if (DIM < 3)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
       return rmax[2] - rmin[2];
     }
 
@@ -222,7 +222,7 @@ namespace cb {
                     Vector<DIM, T> &p2) const {
       // TODO Currently only implemented for the 2D case
       if (DIM != 2)
-        CBANG_THROWS("Invalid operation for Vector of dimension " << DIM);
+        CBANG_THROW("Invalid operation for Vector of dimension " << DIM);
 
       // NOTE This does not work if the segment is wholly inside the square.
       //   Of course then there are no intersection points either.
@@ -287,12 +287,12 @@ namespace cb {
     }
 
     const Vector<DIM, T> &operator[](unsigned i) const {
-      if (1 < i) CBANG_THROWS("Invalid Rectangle index" << i);
+      if (1 < i) CBANG_THROW("Invalid Rectangle index" << i);
       return i ? rmax : rmin;
     }
 
     Vector<DIM, T> &operator[](unsigned i) {
-      if (1 < i) CBANG_THROWS("Invalid Rectangle index " << i);
+      if (1 < i) CBANG_THROW("Invalid Rectangle index " << i);
       return i ? rmax : rmin;
     }
 

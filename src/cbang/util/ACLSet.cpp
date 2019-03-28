@@ -143,7 +143,7 @@ void ACLSet::groupAddUser(const string &group, const string &user) {
 void ACLSet::groupDelUser(const string &groupName, const string &user) {
   dirty = true;
   groups_t::iterator it = groups.find(groupName);
-  if (it == groups.end()) THROWS("Group '" << groupName << "' does not exist");
+  if (it == groups.end()) THROW("Group '" << groupName << "' does not exist");
   Group &group = it->second;
 
   group.users.erase(user);
@@ -187,7 +187,7 @@ void ACLSet::aclAddUser(const string &path, const string &user) {
 void ACLSet::aclDelUser(const string &path, const string &user) {
   dirty = true;
   acls_t::iterator it = acls.find(path);
-  if (it == acls.end()) THROWS("ACL '" << path << "' does not exist");
+  if (it == acls.end()) THROW("ACL '" << path << "' does not exist");
   ACL &acl = it->second;
 
   acl.users.erase(user);
@@ -214,7 +214,7 @@ void ACLSet::aclAddGroup(const string &path, const string &group) {
 void ACLSet::aclDelGroup(const string &path, const string &group) {
   dirty = true;
   acls_t::iterator it = acls.find(path);
-  if (it == acls.end()) THROWS("ACL '" << path << "' does not exist");
+  if (it == acls.end()) THROW("ACL '" << path << "' does not exist");
   ACL &acl = it->second;
 
   acl.groups.erase(group);
@@ -380,7 +380,7 @@ bool ACLSet::allowNoCache(const string &_path, const string &user) const {
       for (it2 = acl.groups.begin(); it2 != acl.groups.end(); it2++) {
         groups_t::const_iterator it3 = groups.find(*it2);
         if (it3 == groups.end())
-          THROWS("ACL contains non-existant group '" << *it2);
+          THROW("ACL contains non-existant group '" << *it2);
 
         const Group &group = it3->second;
         if (group.users.find(user) != group.users.end()) return true;

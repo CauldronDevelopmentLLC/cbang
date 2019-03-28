@@ -218,7 +218,7 @@ void Signature::parseArgs(const string &args) {
         if (isdigit(*it)) {hasDigit = true; value.append(1, *it); break;}
       }
 
-      if (!hasDigit) THROWS("Invalid number '" << value << "' in signature");
+      if (!hasDigit) THROW("Invalid number '" << value << "' in signature");
 
       if (hasDot) insert(name, String::parseDouble(value));
       else if (hasMinus) insert(name, String::parseS32(value));
@@ -234,7 +234,7 @@ void Signature::parseArgs(const string &args) {
       else if (value == "null") insertNull(name);
       else if (value == "true") insertBoolean(name, true);
       else if (value == "false") insertBoolean(name, false);
-      else THROWS("Invalid keyword '" << value << "' in signature");
+      else THROW("Invalid keyword '" << value << "' in signature");
 
       state = 7;
       // Fall through
@@ -282,10 +282,10 @@ void Signature::parseArgs(const string &args) {
 
 
 void Signature::invalidChar(char c, const string &expected) {
-  THROWS("Invalid character '" << c << "' in signature, expected " << expected);
+  THROW("Invalid character '" << c << "' in signature, expected " << expected);
 }
 
 
 void Signature::invalidEnd(const string &expected) {
-  THROWS("End of signature, expected " << expected);
+  THROW("End of signature, expected " << expected);
 }

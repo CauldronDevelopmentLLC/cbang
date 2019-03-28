@@ -82,7 +82,7 @@ unsigned CertificateChain::size() const {return sk_X509_num(chain);}
 
 
 Certificate CertificateChain::get(unsigned i) const {
-  if (size() <= i) THROWS("Invalid certificate chain index " << i);
+  if (size() <= i) THROW("Invalid certificate chain index " << i);
   return Certificate(sk_X509_value(chain, i));
 }
 

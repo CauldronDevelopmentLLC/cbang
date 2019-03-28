@@ -41,6 +41,46 @@ using namespace std;
 using namespace cb;
 
 
+#if defined(_WIN32) && !defined(__MINGW32__)
+#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
+#include <windows.h>
+
+extern "C" void convert_win32_exception(unsigned x, EXCEPTION_POINTERS *e){
+  const char *msg;
+  switch (e->ExceptionRecord->ExceptionCode) {
+  case EXCEPTION_ACCESS_VIOLATION: msg = "Exception access violation"; break;
+  case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: msg = "Array bounds exceeded"; break;
+  case EXCEPTION_BREAKPOINT: msg = "Breakpoint"; break;
+  case EXCEPTION_DATATYPE_MISALIGNMENT: msg = "Datatype misalignment"; break;
+  case EXCEPTION_FLT_DENORMAL_OPERAND:
+    msg = "Floating-point denormal operand"; break;
+  case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+    msg = "Floating-point divide by zero"; break;
+  case EXCEPTION_FLT_INEXACT_RESULT:
+    msg = "Floating-point inexact result"; break;
+  case EXCEPTION_FLT_INVALID_OPERATION:
+    msg = "Floating-point invalid operation"; break;
+  case EXCEPTION_FLT_OVERFLOW: msg = "Floating-point overflow"; break;
+  case EXCEPTION_FLT_STACK_CHECK: msg = "Floating-point stack check"; break;
+  case EXCEPTION_FLT_UNDERFLOW: msg = "Floating-point underflow"; break;
+  case EXCEPTION_ILLEGAL_INSTRUCTION: msg = "Illegal instruction"; break;
+  case EXCEPTION_IN_PAGE_ERROR: msg = "In page error"; break;
+  case EXCEPTION_INT_DIVIDE_BY_ZERO: msg = "Tnteger divide by zero"; break;
+  case EXCEPTION_INT_OVERFLOW: msg = "Integer overflow"; break;
+  case EXCEPTION_INVALID_DISPOSITION: msg = "Invalid disposition"; break;
+  case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+    msg = "Noncontinuable exception"; break;
+  case EXCEPTION_PRIV_INSTRUCTION: msg = "Private instruction"; break;
+  case EXCEPTION_SINGLE_STEP: msg = "Single step"; break;
+  case EXCEPTION_STACK_OVERFLOW: msg = "Stack overflow"; break;
+  default: msg = "Unknown"; break;
+  }
+
+  THROW("Win32: 0x" << hex << x << ": " << msg);
+}
+#endif // _WIN32
+
+
 #ifdef DEBUG
 bool Exception::enableStackTraces = true;
 #else
@@ -49,6 +89,24 @@ bool Exception::enableStackTraces = false;
 
 bool Exception::printLocations = true;
 unsigned Exception::causePrintLevel = 10;
+
+
+Exception::Exception(const string &message, int code,
+                     const FileLocation &location,
+                     const SmartPointer<Exception> &cause) :
+  message(message), code(code), location(location), cause(cause) {
+
+#if defined(_WIN32) && !defined(__MINGW32__)
+  _set_se_translator(convert_win32_exception);
+#endif
+
+#ifdef HAVE_DEBUGGER
+  if (enableStackTraces) {
+    trace = new StackTrace();
+    Debugger::instance().getStackTrace(*trace);
+  }
+#endif
+}
 
 
 ostream &Exception::print(ostream &stream, unsigned level) const {
@@ -86,56 +144,4 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
   }
 
   return stream;
-}
-
-#if defined(_WIN32) && !defined(__MINGW32__)
-#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
-#include <windows.h>
-
-extern "C" void convert_win32_exception(unsigned x, EXCEPTION_POINTERS *e){
-  const char *msg;
-  switch (e->ExceptionRecord->ExceptionCode) {
-  case EXCEPTION_ACCESS_VIOLATION: msg = "Exception access violation"; break;
-  case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: msg = "Array bounds exceeded"; break;
-  case EXCEPTION_BREAKPOINT: msg = "Breakpoint"; break;
-  case EXCEPTION_DATATYPE_MISALIGNMENT: msg = "Datatype misalignment"; break;
-  case EXCEPTION_FLT_DENORMAL_OPERAND:
-    msg = "Floating-point denormal operand"; break;
-  case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-    msg = "Floating-point divide by zero"; break;
-  case EXCEPTION_FLT_INEXACT_RESULT:
-    msg = "Floating-point inexact result"; break;
-  case EXCEPTION_FLT_INVALID_OPERATION:
-    msg = "Floating-point invalid operation"; break;
-  case EXCEPTION_FLT_OVERFLOW: msg = "Floating-point overflow"; break;
-  case EXCEPTION_FLT_STACK_CHECK: msg = "Floating-point stack check"; break;
-  case EXCEPTION_FLT_UNDERFLOW: msg = "Floating-point underflow"; break;
-  case EXCEPTION_ILLEGAL_INSTRUCTION: msg = "Illegal instruction"; break;
-  case EXCEPTION_IN_PAGE_ERROR: msg = "In page error"; break;
-  case EXCEPTION_INT_DIVIDE_BY_ZERO: msg = "Tnteger divide by zero"; break;
-  case EXCEPTION_INT_OVERFLOW: msg = "Integer overflow"; break;
-  case EXCEPTION_INVALID_DISPOSITION: msg = "Invalid disposition"; break;
-  case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-    msg = "Noncontinuable exception"; break;
-  case EXCEPTION_PRIV_INSTRUCTION: msg = "Private instruction"; break;
-  case EXCEPTION_SINGLE_STEP: msg = "Single step"; break;
-  case EXCEPTION_STACK_OVERFLOW: msg = "Stack overflow"; break;
-  default: msg = "Unknown"; break;
-  }
-
-  THROWS("Win32: 0x" << hex << x << ": " << msg);
-}
-#endif // _WIN32
-
-void Exception::init() {
-#if defined(_WIN32) && !defined(__MINGW32__)
-  _set_se_translator(convert_win32_exception);
-#endif
-
-#ifdef HAVE_DEBUGGER
-  if (enableStackTraces) {
-    trace = new StackTrace();
-    Debugger::instance().getStackTrace(*trace);
-  }
-#endif
 }

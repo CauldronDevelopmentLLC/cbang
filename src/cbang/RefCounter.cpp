@@ -31,8 +31,7 @@
 \******************************************************************************/
 
 #include "RefCounter.h"
-
-#include "Exception.h"
+#include "Errors.h"
 
 using namespace cb;
 using namespace std;
@@ -41,4 +40,4 @@ using namespace std;
 RefCounterPhonyImpl RefCounterPhonyImpl::singleton;
 
 
-void RefCounter::raise(const string &msg) {THROW("RefCount: " + msg);}
+void RefCounter::raise(const string &msg) {REFERENCE_ERROR(msg);}

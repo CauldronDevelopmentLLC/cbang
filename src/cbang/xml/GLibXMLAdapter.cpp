@@ -92,7 +92,7 @@ void GLibXMLAdapter::read(istream &stream) {
         }
 
         if (gerror)
-          THROWS("Parse failed " << g_quark_to_string(gerror->domain) << ": "
+          THROW("Parse failed " << g_quark_to_string(gerror->domain) << ": "
                  << gerror->code << ": " << gerror->message);
       }
     }

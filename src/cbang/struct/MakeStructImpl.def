@@ -57,7 +57,7 @@ namespace CBANG_STRUCT_NAMESPACE {
       case CBANG_CONCAT(INDEX_, MNAME): return #MNAME;
 #include CBANG_STRUCT_DEF
 #undef CBANG_ITEM
-    default: THROWS("Invalid member index " << index << " to structure "
+    default: THROW("Invalid member index " << index << " to structure "
                     CBANG_STRING(CBANG_STRUCT_NAME));
     }
   }
@@ -89,7 +89,7 @@ namespace CBANG_STRUCT_NAMESPACE {
       case CBANG_CONCAT(INDEX_, MNAME): return SSTR(PRINT NAME);
 #include CBANG_STRUCT_DEF
 #undef CBANG_ITEM
-    default: THROWS("Invalid member index " << index << " to structure "
+    default: THROW("Invalid member index " << index << " to structure "
                     CBANG_STRING(CBANG_STRUCT_NAME));
     }
   }
@@ -101,7 +101,7 @@ namespace CBANG_STRUCT_NAMESPACE {
       case CBANG_CONCAT(INDEX_, MNAME): NAME = PARSE(value); break;
 #include CBANG_STRUCT_DEF
 #undef CBANG_ITEM
-    default: THROWS("Invalid member index " << index << " to structure "
+    default: THROW("Invalid member index " << index << " to structure "
                     CBANG_STRING(CBANG_STRUCT_NAME));
     }
   }
@@ -113,7 +113,7 @@ namespace CBANG_STRUCT_NAMESPACE {
       case CBANG_CONCAT(INDEX_, MNAME): return stream << PRINT NAME;
 #include CBANG_STRUCT_DEF
 #undef CBANG_ITEM
-    default: THROWS("Invalid member index " << index << " to structure "
+    default: THROW("Invalid member index " << index << " to structure "
                     CBANG_STRING(CBANG_STRUCT_NAME));
     }
   }

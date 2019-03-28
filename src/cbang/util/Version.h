@@ -55,14 +55,14 @@ namespace cb {
 
     VersionBase(const std::string &s) {
       if (s.find_first_not_of("1234567890. ") != std::string::npos)
-        CBANG_THROWS("Invalid character in version string: "
+        CBANG_THROW("Invalid character in version string: "
                      << String::hexdump(s));
 
       std::vector<std::string> parts;
       String::tokenize(s, parts, ".");
 
       if (parts.empty() || 3 < parts.size())
-        CBANG_THROWS("Error parsing version string: '" << s << "'");
+        CBANG_THROW("Error parsing version string: '" << s << "'");
 
       setMajor(parsePart(parts[0]));
       if (1 < parts.size()) setMinor(parsePart(parts[1]));

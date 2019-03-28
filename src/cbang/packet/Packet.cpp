@@ -147,7 +147,7 @@ void Packet::increase(unsigned capacity) {
 
   // Allocate
   if (!(newData = (char *)realloc(newData, newSize)))
-    THROWS("Failed to allocate " << newSize << " bytes.");
+    THROW("Failed to allocate " << newSize << " bytes.");
 
   // If this was a new allocation then copy old data
   if (!deallocate) memcpy(newData, data, size);

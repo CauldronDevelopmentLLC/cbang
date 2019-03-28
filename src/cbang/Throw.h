@@ -30,6 +30,29 @@
 
 \******************************************************************************/
 
+/*
+ * Hear you will find several preprocessor macros that can be used as a
+ * convient way to add the current file, line and column where an exception
+ * occured.  These are:
+ *
+ *   THROW(<message stream>)
+ *   THROWC(<message stream>, Exception &cause)
+ *   THROWX(<message stream>, int code)
+ *   THROWCX(<message stream>, Exception &cause, int code)
+ *
+ *   ASSERT(bool condition, <message stream>)
+ *
+ * <message stream> can be a chain of items to be piped to an std::ostream
+ * in order to format the message.  For example:
+ *
+ *   THROW("The error number was: " << errno);
+ *
+ * These stream chains can be of arbitrary length.
+ *
+ * The ASSERT macros evaluate condition and throw an exception if false.
+ * ASSERTs are compiled out if DEBUG is not defined.
+ */
+
 #pragma once
 
 #include "Exception.h"
@@ -41,62 +64,72 @@
 #define CBANG_EXCEPTION cb::Exception
 #endif
 
-#define CBANG_EXCEPTION_SUBCLASS(name) (name)cb::Exception
-#define CBANG_DEFINE_EXCEPTION_SUBCLASS(name)                       \
-  struct name : public cb::Exception {                              \
-    name(const cb::Exception &e) : cb::Exception(e) {}              \
+#define CBANG_DEFINE_EXCEPTION_SUPER(NAME, SUPER)           \
+  struct NAME : public SUPER {                              \
+    NAME(const cb::Exception &e) : SUPER(e) {}              \
   }
 
 
-// Throws
-#define CBANG_THROW(msg) throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION)
-#define CBANG_THROWC(msg, cause) \
-  throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION, (cause))
-#define CBANG_THROWX(msg, code) \
-  throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION, code)
-#define CBANG_THROWCX(msg, cause, code) \
-  throw CBANG_EXCEPTION((msg), CBANG_FILE_LOCATION, (cause), code)
+#define CBANG_DEFINE_EXCEPTION_SUBCLASS(NAME)           \
+  CBANG_DEFINE_EXCEPTION_SUPER(NAME, cb::Exception)
 
-// Stream to string versions
-#define CBANG_THROWS(msg) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION)
-#define CBANG_THROWCS(msg, cause) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION, (cause))
-#define CBANG_THROWXS(msg, code) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION, code)
-#define CBANG_THROWCXS(msg, cause, code) \
-  throw CBANG_EXCEPTION(CBANG_SSTR(msg), CBANG_FILE_LOCATION, (cause), code)
+
+// Exception type throws
+#define CBANG_THROWT(TYPE, MSG)                                         \
+  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION)
+#define CBANG_THROWTC(TYPE, MSG, CAUSE)                                  \
+  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CAUSE)
+#define CBANG_THROWTX(TYPE, MSG, CODE)                                   \
+  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CODE)
+#define CBANG_THROWTCX(TYPE, MSG, CAUSE, CODE)                          \
+  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CAUSE, CODE)
+
+// Throws
+#define CBANG_THROW(MSG) CBANG_THROWT(CBANG_EXCEPTION, MSG)
+#define CBANG_THROWC(MSG, CAUSE) CBANG_THROWTC(CBANG_EXCEPTION, MSG, CAUSE)
+#define CBANG_THROWX(MSG, CODE) CBANG_THROWTX(CBANG_EXCEPTION, MSG, CODE)
+#define CBANG_THROWCX(MSG, CAUSE, CODE)                 \
+  CBANG_THROWTCX(CBANG_EXCEPTION, MSG, CAUSE, CODE)
+
+// Deprecated
+#define CBANG_THROWS(MSG) CBANG_THROW(MSG)
+#define CBANG_THROWCS(MSG, CAUSE) CBANG_THROWC(MSG, CAUSE)
+#define CBANG_THROWXS(MSG, CODE) CBANG_THROWX(MSG, CODE)
+#define CBANG_THROWCXS(MSG, CAUSE, CODE) CBANG_THROWCX(MSG, CAUSE, CODE)
 
 // Asserts
 #ifdef DEBUG
-#define CBANG_ASSERT(cond, msg) do {if (!(cond)) CBANG_THROW(msg);} while (0)
-#define CBANG_ASSERTS(cond, msg) do {if (!(cond)) CBANG_THROWS(msg);} while (0)
-#define CBANG_ASSERTXS(cond, msg, code) \
-  do {if (!(cond)) CBANG_THROWXS(msg, code);} while (0)
+#define CBANG_ASSERTX(COND, MSG, CODE)                  \
+  do {if (!(COND)) CBANG_THROWX(MSG, CODE);} while (0)
+#define CBANG_ASSERT(COND, MSG) CBANG_ASSERTX(COND, MSG, 0)
+
+// Deprecated
+#define CBANG_ASSERTS(COND, MSG) CBANG_ASSERT(COND, MSG)
+#define CBANG_ASSERTXS(COND, MSG, CODE) CBANG_ASSERTX(COND, MSG, CODE)
 
 #else // DEBUG
-#define CBANG_ASSERT(cond, msg)
-#define CBANG_ASSERTS(cond, msg)
-#define CBANG_ASSERTXS(cond, msg, code)
+#define CBANG_ASSERT(COND, MSG)
+#define CBANG_ASSERTS(COND, MSG)
+#define CBANG_ASSERTXS(COND, MSG, CODE)
 #endif // DEBUG
 
 
 #ifdef USING_CBANG
 #define EXCEPTION                       CBANG_EXCEPTION
-#define EXCEPTION_SUBCLASS(name)        CBANG_EXCEPTION_SUBCLASS(name)
-#define DEFINE_EXCEPTION_SUBCLASS(name) CBANG_DEFINE_EXCEPTION_SUBCLASS(name)
+#define EXCEPTION_SUBCLASS(NAME)        CBANG_EXCEPTION_SUBCLASS(NAME)
+#define DEFINE_EXCEPTION_SUBCLASS(NAME) CBANG_DEFINE_EXCEPTION_SUBCLASS(NAME)
 
-#define THROW(msg)                 CBANG_THROW(msg)
-#define THROWC(msg, cause)         CBANG_THROWC(msg, cause)
-#define THROWX(msg, code)          CBANG_THROWX(msg, code)
-#define THROWCX(msg, cause, code)  CBANG_THROWCX(msg, cause, code)
+#define THROW(MSG)                 CBANG_THROW(MSG)
+#define THROWC(MSG, CAUSE)         CBANG_THROWC(MSG, CAUSE)
+#define THROWX(MSG, CODE)          CBANG_THROWX(MSG, CODE)
+#define THROWCX(MSG, CAUSE, CODE)  CBANG_THROWCX(MSG, CAUSE, CODE)
 
-#define THROWS(msg)                CBANG_THROWS(msg)
-#define THROWCS(msg, cause)        CBANG_THROWCS(msg, cause)
-#define THROWXS(msg, code)         CBANG_THROWXS(msg, code)
-#define THROWCXS(msg, cause, code) CBANG_THROWCXS(msg, cause, code)
+#define THROWS(MSG)                CBANG_THROWS(MSG)
+#define THROWCS(MSG, CAUSE)        CBANG_THROWCS(MSG, CAUSE)
+#define THROWXS(MSG, CODE)         CBANG_THROWXS(MSG, CODE)
+#define THROWCXS(MSG, CAUSE, CODE) CBANG_THROWCXS(MSG, CAUSE, CODE)
 
-#define ASSERT(cond, msg)          CBANG_ASSERT(cond, msg)
-#define ASSERTS(cond, msg)         CBANG_ASSERTS(cond, msg)
-#define ASSERTXS(cond, msg, code)  CBANG_ASSERTXS(cond, msg, code)
+#define ASSERT(COND, MSG)          CBANG_ASSERT(COND, MSG)
+#define ASSERTS(COND, MSG)         CBANG_ASSERTS(COND, MSG)
+#define ASSERTXS(COND, MSG, CODE)  CBANG_ASSERTXS(COND, MSG, CODE)
 #endif // USING_CBANG

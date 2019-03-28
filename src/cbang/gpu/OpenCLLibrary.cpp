@@ -133,7 +133,7 @@ namespace {
 
 #define DYNAMIC_CALL(lib, name, args) {                                 \
     name##_t name = (name##_t)lib->getSymbol(#name);                    \
-    if ((err = name args)) THROWS(#name "() returned " << err);         \
+    if ((err = name args)) THROW(#name "() returned " << err);         \
   }
 
 
@@ -300,6 +300,6 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
 
 
 const ComputeDevice &OpenCLLibrary::getDevice(unsigned i) const {
-  if (getDeviceCount() <= i) THROWS("Invalid OpenCL device index " << i);
+  if (getDeviceCount() <= i) THROW("Invalid OpenCL device index " << i);
   return devices.at(i);
 }

@@ -112,7 +112,7 @@ void ProxyManager::authenticate(Response &response) {
     size_t start = auth.find_first_not_of(" \t\n\r");
     size_t end = auth.find_first_of(" \t\n\r", start);
     if (start == string::npos || end == string::npos)
-      THROWS("Invalid Proxy-Authenticate");
+      THROW("Invalid Proxy-Authenticate");
 
     scheme = String::toLower(auth.substr(start, end - start));
     if (scheme == "basic") initialized = true;
@@ -138,7 +138,7 @@ void ProxyManager::authenticate(Response &response) {
       if (challenge.has("algorithm")) {
         algorithm = String::toUpper(challenge["algorithm"]);
         if (Digest::hasAlgorithm(String::toLower(algorithm)))
-          THROWS("Unsupported proxy digest authentication algorithm: "
+          THROW("Unsupported proxy digest authentication algorithm: "
                  << algorithm);
       } else algorithm.clear();
 
@@ -158,7 +158,7 @@ void ProxyManager::authenticate(Response &response) {
     }
 #endif // HAVE_OPENSSL
 
-    else THROWS("Unsupported proxy authorization scheme: " << scheme);
+    else THROW("Unsupported proxy authorization scheme: " << scheme);
 
   } else if (response.has("Proxy-Authentication-Info")) {
     StringMap info;
