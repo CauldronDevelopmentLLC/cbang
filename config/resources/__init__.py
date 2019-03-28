@@ -108,7 +108,8 @@ def write_resource(ctx, output, data_dir, path, children = None,
         while True:
             count = 0
             for c in f.read(102400):
-                write_string(ctx, out, '%d,' % ord(c))
+                if not isinstance(c, int): c = ord(c)
+                write_string(ctx, out, '%d,' % c)
                 count += 1
 
             if count == 0: break
