@@ -18,7 +18,7 @@ class ResourceContext:
 
 
 def start_file(ctx, path):
-    f = open(path, 'wb')
+    f = open(path, 'w')
 
     note = ('WARNING: This file was auto generated.  Please do NOT '
             'edit directly or check in to source control.')
