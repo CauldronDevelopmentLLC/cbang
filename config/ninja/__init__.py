@@ -48,7 +48,8 @@ def GenerateNinjaFile(env, dest_file):
     if len(targets) != 1:
       sys.stderr.write('Ninja build: Skipping multi-file target: '
                        '%s from %s\n' % (
-          repr(map(str, targets)), repr(map(str, source))))
+                         repr(list(map(str, targets))),
+                         repr(list(map(str, source)))))
       return
 
     node = targets[0]

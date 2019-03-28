@@ -35,7 +35,7 @@ if 'dist' in COMMAND_LINE_TARGETS:
     lines = os.popen('svn status -v').readlines()
     lines = filter(lambda l: len(l) and l[0] in 'MA ', lines)
     files = map(lambda l: l.split()[-1], lines)
-    files = filter(lambda f: not os.path.isdir(f), files)
+    files = list(filter(lambda f: not os.path.isdir(f), files))
 
     tar = env.TarBZ2Dist('libcbang' + libversion, files)
     Alias('dist', tar)
@@ -89,7 +89,7 @@ conf.Finish()
 # Build in 'build'
 import re
 VariantDir('build', 'src', duplicate = False)
-src = map(lambda path: re.sub(r'^src/', 'build/', str(path)), src)
+src = list(map(lambda path: re.sub(r'^src/', 'build/', str(path)), src))
 
 
 # Resources
