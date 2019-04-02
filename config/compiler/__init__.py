@@ -501,6 +501,7 @@ def FindLibPath(env, lib):
 
     path = Popen(cmd + ['-print-file-name=' + libpat],
                  stdout = PIPE, env = eenv).communicate()[0].strip()
+    if isinstance(path, bytes): path = path.decode()
 
     if path != libpat: return path
 

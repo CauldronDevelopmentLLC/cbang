@@ -105,7 +105,9 @@ def GetPackageArch(env):
     if type == 'deb':
         proc = subprocess.Popen(['/usr/bin/dpkg', '--print-architecture'],
                                 stdout = subprocess.PIPE)
-        return proc.communicate()[0].strip()
+        arch = proc.communicate()[0]
+        if isinstance(arch, bytes): arch = arch.decode()
+        return arch.strip()
 
     return platform.machine()
 
@@ -170,7 +172,7 @@ def FindFiles(env, path, **kwargs):
 
 
 def resolve_file_map(sources, target, ignores = None, mode = None):
-    if not hasattr(sources, '__iter__'): sources = [sources]
+    if not isinstance(sources, (list, tuple)): sources = [sources]
 
     for src in sources:
         if isinstance(src, (list, tuple)) and len(src) in (2, 3):
@@ -188,9 +190,9 @@ def resolve_file_map(sources, target, ignores = None, mode = None):
 
             if ignores is not None:
                 ignored_names = ignores(src_path, names)
-                names = filter(lambda x: not x in ignored_names, names)
+                names = list(filter(lambda x: not x in ignored_names, names))
 
-            names = map(lambda x: os.path.join(src_path, x), names)
+            names = list(map(lambda x: os.path.join(src_path, x), names))
 
             for item in resolve_file_map(names, dst_path, ignores, mode):
                 yield item
@@ -200,7 +202,7 @@ def resolve_file_map(sources, target, ignores = None, mode = None):
 
 def ResolvePackageFileMap(env, sources, target):
     ignores = ignore_patterns(*env.get('PACKAGE_EXCLUDES'))
-    return resolve_file_map(sources, target, ignores)
+    return list(resolve_file_map(sources, target, ignores))
 
 
 def CopyToPackage(env, sources, target, perms = 0o644, dperms = 0o755):
@@ -229,7 +231,7 @@ def RunCommand(env, cmd):
 
 
 def WriteStringToFile(env, path, contents):
-    if not hasattr(contents, '__iter__'): contents = [contents]
+    if not isinstance(contents, (list, tuple)): contents = [contents]
 
     f = None
     try:

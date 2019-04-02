@@ -1,7 +1,7 @@
 # flatdistpkg.py
 from __future__ import print_function
 
-import os, platform, shutil, subprocess
+import os, platform, shutil
 import config
 import zipfile
 

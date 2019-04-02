@@ -34,6 +34,8 @@ def find_dlls(env, path, exclude = set()):
 
     p = subprocess.Popen(cmd, stdout = subprocess.PIPE)
     out, err = p.communicate()
+    if isinstance(out, bytes): out = out.decode()
+    if isinstance(err, bytes): err = err.decode()
 
     if p.returncode:
         raise Exception('Command failed: %s %s' % (cmd, err))

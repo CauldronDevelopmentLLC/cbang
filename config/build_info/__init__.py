@@ -41,6 +41,7 @@ def svn_get_info():
         p = subprocess.Popen(['svn', 'info'], stderr = subprocess.PIPE,
                              stdout = subprocess.PIPE)
         out, err = p.communicate()
+        if isinstance(out, bytes): out = out.decode()
 
         for line in out.splitlines():
             if line.startswith('Revision: '): revision = line[10:].strip()
@@ -60,6 +61,7 @@ def git_get_info():
         p = subprocess.Popen(['git', 'rev-parse', 'HEAD'],
                              stderr = subprocess.PIPE, stdout = subprocess.PIPE)
         out, err = p.communicate()
+        if isinstance(out, bytes): out = out.decode()
         revision = out.strip()
 
     except Exception as e: print(e)
@@ -68,6 +70,7 @@ def git_get_info():
         p = subprocess.Popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
                              stderr = subprocess.PIPE, stdout = subprocess.PIPE)
         out, err = p.communicate()
+        if isinstance(out, bytes): out = out.decode()
         branch = out.strip()
 
     except Exception as e: print(e)
