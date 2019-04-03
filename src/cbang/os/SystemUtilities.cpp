@@ -917,10 +917,10 @@ namespace cb {
 #ifdef _WIN32
       THROW("setGroup() not supported on Windows systems.");
 #else
-      unsigned gid;
+      gid_t gid;
 
       try {
-        gid = String::parseU32(group);
+        gid = (gid_t)String::parseU32(group);
       } catch (const Exception &e) {
         gid = 0;
       }
@@ -932,7 +932,7 @@ namespace cb {
         gid = entry->gr_gid;
       }
 
-      if (setgid(gid) == -1)
+      if (setgroups(1, &gid) == -1)
         THROW("Failed to set group ID to " << gid << ": " << SysError());
 #endif
     }
@@ -1032,14 +1032,12 @@ namespace cb {
     }
 
 
-    SmartPointer<ostream> oopen(const string &filename, ios::openmode mode,
-                                int perm) {
-      mode |= ios::out;
+    SmartPointer<ostream> oopen(const string &filename, int perm) {
       ensureDirectory(dirname(filename));
 
       SysError::clear();
       try {
-        return new File(filename, mode, perm);
+        return new File(filename, ios::out, perm);
 
       } catch (const exception &e) {
         THROW("Failed to open '" << filename << "': " << e.what()
