@@ -57,7 +57,7 @@ void BZip2::compressInit(int blockSize100k, int verbosity, int workFactor) {
   if (init) THROW("BZip2: Already initialized");
   init = true;
   comp = true;
-  BZ2_bzCompressInit(bz.get(), blockSize100k, 0, 0);
+  BZ2_bzCompressInit(bz.get(), blockSize100k, verbosity, workFactor);
 }
 
 
@@ -65,7 +65,7 @@ void BZip2::decompressInit(int verbosity, int small) {
   if (init) THROW("BZip2: Already initialized");
   init = true;
   comp = false;
-  BZ2_bzDecompressInit(bz.get(), 0, 0);
+  BZ2_bzDecompressInit(bz.get(), verbosity, small);
 }
 
 
