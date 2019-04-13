@@ -428,6 +428,11 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['-static'])
 
 
+    # Don't link unneeded dynamic libs
+    if compiler_mode == 'gnu':
+        env.PrependUnique(LINKFLAGS = ['-Wl,--as-needed'])
+
+
     # For darwin
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         env.CBDefine('__APPLE__')
