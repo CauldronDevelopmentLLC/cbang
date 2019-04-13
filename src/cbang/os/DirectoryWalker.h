@@ -41,13 +41,14 @@
 
 
 namespace cb {
-  /// Walk a directory tree and return files that match pattern.
+  /// Walk directory tree in depth first order returning files matching pattern.
   class DirectoryWalker {
     Regex re;
     std::string path;
     std::vector<SmartPointer<Directory> > dirStack;
     std::string nextFile;
     unsigned maxDepth;
+    bool listDirs;
 
   public:
     /**
@@ -61,7 +62,8 @@ namespace cb {
      */
     DirectoryWalker(const std::string &root = "",
                     const std::string &pattern = ".*",
-                    unsigned maxDepth = ~0);
+                    unsigned maxDepth = ~0,
+                    bool listDirs = false);
 
     /**
      * Initialize the DirectoryWalker with a new root and start over.

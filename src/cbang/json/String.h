@@ -57,10 +57,10 @@ namespace cb {
       ValuePtr copy(bool deep = false) const {return new String(s);}
       bool getBoolean() const {return cb::String::parseBool(getString());}
       double getNumber() const;
-      int32_t getS32() const {return cb::String::parseS32(getString());}
-      uint32_t getU32() const {return cb::String::parseU32(getString());}
-      int64_t getS64() const {return cb::String::parseS64(getString());}
-      uint64_t getU64() const {return cb::String::parseU64(getString());}
+      int32_t getS32() const;
+      uint32_t getU32() const;
+      int64_t getS64() const;
+      uint64_t getU64() const;
       std::string &getString() {return getValue();}
       const std::string &getString() const {return getValue();}
       void set(const std::string &value) {s = value;}

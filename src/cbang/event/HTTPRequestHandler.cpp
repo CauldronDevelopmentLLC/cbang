@@ -63,7 +63,8 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
 
   } catch (const Exception &e) {
     LOG_ERROR(e);
-    req.sendJSONError(e.getCode(), e.getMessage());
+    req.setContentType("application/json");
+    req.sendError(e);
   }
 
   return true;

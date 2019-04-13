@@ -33,20 +33,34 @@
 #include "StackTrace.h"
 #include "Debugger.h"
 
+#include <cbang/json/Sink.h>
+
 #include <iostream>
 
 using namespace cb;
 using namespace std;
 
 
+StackTrace StackTrace::get() {return Debugger::getStackTrace();}
+
+
 ostream &StackTrace::print(ostream &stream) const {
   unsigned count = 0;
-  const_iterator it;
-  for (it = begin(); it != end(); it++)
+
+  for (auto it = begin(); it != end(); it++)
     stream << '#' << count++ << ' ' << *it << endl;
 
   return stream;
 }
 
 
-StackTrace StackTrace::get() {return Debugger::getStackTrace();}
+void StackTrace::write(JSON::Sink &sink) const {
+  sink.beginList();
+
+  for (auto it = begin(); it != end(); it++) {
+    sink.beginAppend();
+    it->write(sink);
+  }
+
+  sink.endList();
+}

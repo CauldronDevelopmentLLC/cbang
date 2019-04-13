@@ -35,6 +35,7 @@
 #include "Database.h"
 
 #include <cbang/String.h>
+#include <cbang/json/Reader.h>
 
 #include <stdarg.h>
 
@@ -143,6 +144,11 @@ bool NameValueTable::getBoolean(const string &name) const {
 }
 
 
+SmartPointer<JSON::Value> NameValueTable::getJSON(const string &name) const {
+  return JSON::Reader::parseString(getString(name));
+}
+
+
 const string NameValueTable::getString(const string &name,
                                        const string &defaultValue) const {
   return has(name) ? getString(name) : defaultValue;
@@ -163,6 +169,13 @@ double NameValueTable::getDouble(const string &name,
 
 bool NameValueTable::getBoolean(const string &name, bool defaultValue) const {
   return has(name) ? getBoolean(name) : defaultValue;
+}
+
+
+SmartPointer<JSON::Value>
+NameValueTable::getJSON(const string &name,
+                        const SmartPointer<JSON::Value> &defaultValue) const {
+  return has(name) ? getJSON(name) : defaultValue;
 }
 
 

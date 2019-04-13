@@ -358,13 +358,42 @@ ostream &KeyPair::print(ostream &stream, int indent) const {
 }
 
 
-void KeyPair::verify(const string &signature, const string &data) {
+string KeyPair::sign(const string &data) const {
+  KeyContext ctx(*this);
+
+  ctx.signInit();
+
+  if (isRSA()) {
+    ctx.setRSAPadding(KeyContext::PKCS1_PADDING);
+    ctx.setSignatureMD("sha256");
+  }
+
+  return ctx.sign(data);
+}
+
+
+string KeyPair::signSHA256(const string &data) const {
+  return sign(Digest::hash(data, "sha256"));
+}
+
+
+string KeyPair::signBase64SHA256(const string &data) const {
+  return Base64().encode(signSHA256(data));
+}
+
+
+void KeyPair::verify(const string &signature, const string &data) const {
   KeyContext ctx(*this);
   ctx.verifyInit();
+  if (isRSA()) {
+    ctx.setRSAPadding(KeyContext::PKCS1_PADDING);
+    ctx.setSignatureMD("sha256");
+  }
   ctx.verify(signature, data);
 }
 
 
-void KeyPair::verifyBase64SHA256(const string &sig64, const string &data) {
+void KeyPair::verifyBase64SHA256(const string &sig64,
+                                 const string &data) const {
   verify(Base64().decode(sig64), Digest::hash(data, "sha256"));
 }

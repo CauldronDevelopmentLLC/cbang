@@ -101,7 +101,7 @@ namespace cb {
 #define CBANG_GET_NUM(TYPE, SHORT, LONG)                                \
       TYPE get##SHORT() const {                                         \
         if (!Num::InRange<TYPE>(value))                                 \
-          CBANG_JSON_TYPE_ERROR("Value " << value << " is not a " #LONG); \
+          CBANG_TYPE_ERROR("Value " << value << " is not a " #LONG); \
                                                                         \
         return (TYPE)value;                                             \
       }

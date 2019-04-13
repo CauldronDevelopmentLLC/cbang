@@ -64,25 +64,23 @@
 #define CBANG_EXCEPTION cb::Exception
 #endif
 
-#define CBANG_DEFINE_EXCEPTION_SUPER(NAME, SUPER)           \
-  struct NAME : public SUPER {                              \
-    NAME(const cb::Exception &e) : SUPER(e) {}              \
-  }
 
+#define CBANG_DEFINE_EXCEPTION_SUPER(NAME, SUPER)               \
+  struct NAME : public SUPER {using cb::Exception::Exception;}
 
 #define CBANG_DEFINE_EXCEPTION_SUBCLASS(NAME)           \
   CBANG_DEFINE_EXCEPTION_SUPER(NAME, cb::Exception)
 
 
 // Exception type throws
-#define CBANG_THROWT(TYPE, MSG)                                         \
-  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION)
-#define CBANG_THROWTC(TYPE, MSG, CAUSE)                                  \
-  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CAUSE)
-#define CBANG_THROWTX(TYPE, MSG, CODE)                                   \
-  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CODE)
-#define CBANG_THROWTCX(TYPE, MSG, CAUSE, CODE)                          \
-  throw (TYPE)cb::Exception(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CAUSE, CODE)
+#define CBANG_THROWT(TYPE, MSG)                         \
+  throw TYPE(CBANG_SSTR(MSG), CBANG_FILE_LOCATION)
+#define CBANG_THROWTC(TYPE, MSG, CAUSE)                         \
+  throw TYPE(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CAUSE)
+#define CBANG_THROWTX(TYPE, MSG, CODE)                          \
+  throw TYPE(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CODE)
+#define CBANG_THROWTCX(TYPE, MSG, CAUSE, CODE)                  \
+  throw TYPE(CBANG_SSTR(MSG), CBANG_FILE_LOCATION, CAUSE, CODE)
 
 // Throws
 #define CBANG_THROW(MSG) CBANG_THROWT(CBANG_EXCEPTION, MSG)

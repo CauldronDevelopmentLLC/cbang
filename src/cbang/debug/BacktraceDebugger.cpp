@@ -176,8 +176,8 @@ bool BacktraceDebugger::getStackTrace(StackTrace &trace) {
       if (!status && demangled) function = demangled;
     }
 
-    trace.push_back(StackFrame(stack[i], FileLocation(filename, line),
-                               function));
+    trace.push_back
+      (StackFrame(stack[i], FileLocation(filename, function, line)));
 
     if (demangled) free(demangled);
   }

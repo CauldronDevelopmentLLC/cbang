@@ -92,7 +92,7 @@ public:
 
   Private(istream &stream) {
     if (!yaml_parser_initialize(&parser))
-      JSON_ERROR("Failed to initialize YAML parser");
+      THROW("Failed to initialize YAML parser");
 
     yaml_parser_set_input(&parser, _yaml_read_handler, &stream);
   }
@@ -103,7 +103,7 @@ public:
 
   void parse(yaml_event_t &event) {
     if (!yaml_parser_parse(&parser, &event))
-      JSON_PARSE_ERROR("Parser error " << parser.error << ": "
+      PARSE_ERROR("Parser error " << parser.error << ": "
                        << parser.problem);
   }
 };
@@ -134,7 +134,7 @@ void YAMLReader::parse(Sink &sink) {
     LOG_DEBUG(5, "YAML: " << _yaml_event_type_str(event.type));
 
     switch (event.type) {
-    case YAML_NO_EVENT: JSON_PARSE_ERROR("YAML No event");
+    case YAML_NO_EVENT: PARSE_ERROR("YAML No event");
     case YAML_STREAM_START_EVENT: break;
 
     case YAML_STREAM_END_EVENT: yaml_event_delete(&event); return;
@@ -152,7 +152,7 @@ void YAMLReader::parse(Sink &sink) {
 
     case YAML_SEQUENCE_END_EVENT:
       if (stack.empty() || stack.back() != YAML_SEQUENCE_START_EVENT)
-        JSON_PARSE_ERROR("Invalid YAML end sequence");
+        PARSE_ERROR("Invalid YAML end sequence");
       stack.pop_back();
       sink.endList();
       break;
@@ -167,7 +167,7 @@ void YAMLReader::parse(Sink &sink) {
 
     case YAML_MAPPING_END_EVENT:
       if (stack.empty() || stack.back() != YAML_MAPPING_START_EVENT)
-        JSON_PARSE_ERROR("Invalid YAML end mapping");
+        PARSE_ERROR("Invalid YAML end mapping");
       stack.pop_back();
       sink.endDict();
       break;

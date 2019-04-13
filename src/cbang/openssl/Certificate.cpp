@@ -246,6 +246,12 @@ string Certificate::getExtension(const string &name) const {
 }
 
 
+string Certificate::getExtension(const string &name,
+                                 const string &defaultValue) const {
+  return hasExtension(name) ? getExtension(name) : defaultValue;
+}
+
+
 void Certificate::addExtension(const string &name, const string &value,
                                CertificateContext *ctx) {
   X509_EXTENSION *ext =
@@ -276,7 +282,7 @@ bool Certificate::issued(const Certificate &o) const {
 }
 
 
-void Certificate::sign(KeyPair &key, const string &digest) {
+void Certificate::sign(const KeyPair &key, const string &digest) const {
   const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
   if (!md) THROW("Unrecognized message digest '" << digest << "'");
 
@@ -286,17 +292,10 @@ void Certificate::sign(KeyPair &key, const string &digest) {
 }
 
 
-void Certificate::verify() {
-  EVP_PKEY *pkey = X509_get_pubkey(cert);
-  if (!pkey)
-    THROW("Error getting public key from Certificate: " << SSL::getErrorStr());
-
-  if (!X509_verify(cert, pkey)) {
-    EVP_PKEY_free(pkey);
-    THROW("Certificate failed verification: " << SSL::getErrorStr());
-  }
-
-  EVP_PKEY_free(pkey);
+void Certificate::verify(const KeyPair &key) const {
+  int ret = X509_verify(cert, key.getEVP_PKEY());
+  if (!ret) THROW("Certificate verification failed");
+  if (ret < 0) THROW("Certificate verification error: " << SSL::getErrorStr());
 }
 
 

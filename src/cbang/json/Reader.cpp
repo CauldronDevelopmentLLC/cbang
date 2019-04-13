@@ -299,8 +299,7 @@ void Reader::parseDict(Sink &sink) {
 
 
 void Reader::error(const string &msg) const {
-  throw JSON::ParseError
-    (Exception(msg, FileLocation(src.getName(), line, column)));
+  throw ParseError(msg, FileLocation(src.getName(), line, column));
 }
 
 

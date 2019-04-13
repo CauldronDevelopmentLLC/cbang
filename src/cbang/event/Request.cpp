@@ -619,26 +619,56 @@ Request::getOutputStream(compression_t compression) {
 
 
 void Request::sendError(int code) {
-  finalize();
-  evhttp_send_error(req.access(), code ? code : HTTP_INTERNAL_SERVER_ERROR, 0);
+  if (getContentType() == "application/json") sendJSONError(code, "");
+  else {
+    finalize();
+    code = code ? code : HTTP_INTERNAL_SERVER_ERROR;
+    evhttp_send_error(req.access(), code, 0);
+  }
 }
 
 
 void Request::sendError(int code, const string &message) {
-  resetOutput();
-  setContentType("text/plain");
-  send(message);
-  sendError(code);
+  if (getContentType() == "application/json") sendJSONError(code, message);
+  else {
+    resetOutput();
+    setContentType("text/plain");
+    send(message);
+    sendError(code);
+  }
+}
+
+
+void Request::sendError(const Exception &e) {
+  int code = e.getTopCode();
+  code = code ? code : HTTP_INTERNAL_SERVER_ERROR;
+
+  if (getContentType() == "application/json") {
+    auto writer = getJSONWriter();
+
+    writer->beginDict();
+    writer->beginInsert("error");
+    e.write(*writer, false);
+    writer->endDict();
+    writer->close();
+
+    reply(code);
+
+  } else sendError(code, e.getMessages());
+}
+
+
+void Request::sendError(const exception &e) {
+  sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
 }
 
 
 void Request::sendJSONError(int code, const string &message) {
-  SmartPointer<JSON::Writer> writer = getJSONWriter();
+  auto writer = getJSONWriter();
 
-  writer->beginList();
-  writer->append("error");
-  writer->append(message);
-  writer->endList();
+  writer->beginDict();
+  writer->insert("error", message);
+  writer->endDict();
   writer->close();
 
   reply(code ? code : HTTP_INTERNAL_SERVER_ERROR);

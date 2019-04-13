@@ -446,8 +446,10 @@ namespace cb {
       if (!isDirectory(path))
         THROW("Cannot remove '" << path << "' as directory");
 
+      LOG_DEBUG(4, "Removing directory '" << path << "'");
+
       try {
-        if (withChildren) fs::remove_all(path);
+        if (withChildren) rmtree(path);
         else fs::remove(path);
       } catch (const fs::filesystem_error &e) {
         THROW("Failed to remove directory '" << path << "': " << e.what());
@@ -528,6 +530,17 @@ namespace cb {
                        const string &pattern, unsigned maxDepth) {
       DirectoryWalker walker(path, pattern, maxDepth);
       while (walker.hasNext()) paths.push_back(walker.next());
+    }
+
+
+    void rmtree(const string &path) {
+      DirectoryWalker walker(path, ".*", ~0, true);
+
+      while (walker.hasNext()) {
+        string filename = walker.next();
+        if (isDirectory(filename)) rmdir(filename);
+        else unlink(filename);
+      }
     }
 
 
