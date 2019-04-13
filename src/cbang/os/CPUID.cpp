@@ -200,7 +200,7 @@ void CPUID::getCPUCounts(uint32_t &logical, uint32_t &cores,
       logical /= threadsPerCache;
     }
 
-  } else if (vendor == "AuthenticAMD") {
+  } else if (vendor == "AuthenticAMD" || vendor == "HygonGenuine") {
     // Number of CPU cores
     cpuID(0x80000008);
     cores = ECX(7, 0) + 1;
