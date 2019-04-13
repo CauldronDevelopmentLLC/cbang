@@ -83,6 +83,8 @@ namespace cb {
 
     bool hasExtension(const std::string &name) const;
     std::string getExtension(const std::string &name) const;
+    std::string getExtension(const std::string &name,
+                             const std::string &defaultValue) const;
     void addExtension(const std::string &name, const std::string &value,
                       CertificateContext *ctx = 0);
     static void addExtensionAlias(const std::string &alias,
@@ -90,8 +92,8 @@ namespace cb {
 
     bool issued(const Certificate &o) const;
 
-    void sign(KeyPair &key, const std::string &digest = "sha256");
-    void verify();
+    void sign(const KeyPair &key, const std::string &digest = "sha256") const;
+    void verify(const KeyPair &key) const;
 
     // From Serializable
     void read(std::istream &stream);

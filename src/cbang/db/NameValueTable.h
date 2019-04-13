@@ -43,6 +43,8 @@
 
 
 namespace cb {
+  namespace JSON {class Value;}
+
   namespace DB {
     class Database;
 
@@ -83,6 +85,7 @@ namespace cb {
       {set(name, (double)value);}
       void set(const std::string &name, bool value);
       void set(const std::string &name);
+
       void unset(const std::string &name);
 
       template <typename T>
@@ -94,12 +97,16 @@ namespace cb {
       int64_t getInteger(const std::string &name) const;
       double getDouble(const std::string &name) const;
       bool getBoolean(const std::string &name) const;
+      SmartPointer<JSON::Value> getJSON(const std::string &name) const;
 
       const std::string getString(const std::string &name,
                                   const std::string &defaultValue) const;
       int64_t getInteger(const std::string &name, int64_t defaultValue) const;
       double getDouble(const std::string &name, double defaultValue) const;
       bool getBoolean(const std::string &name, bool defaultValue) const;
+      SmartPointer<JSON::Value>
+      getJSON(const std::string &name,
+              const SmartPointer<JSON::Value> &defaultValue) const;
 
       bool has(const std::string &name) const;
 

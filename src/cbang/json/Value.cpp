@@ -40,6 +40,26 @@ using namespace cb;
 using namespace cb::JSON;
 
 
+ValuePtr Value::select(const string &path) const {
+  vector<string> parts;
+  String::tokenize(path, parts, ".");
+
+  unsigned i;
+  ValuePtr value;
+
+  try {
+    for (i = 0; i < parts.size(); i++)
+      value = i ? value->get(parts[i]) : get(parts[i]);
+
+    return value;
+
+  } catch (const Exception &e) {
+    parts.resize(i + 1);
+    THROWC("At JSON path " << String::join(parts, "."), e);
+  }
+}
+
+
 void Value::appendDict() {append(createDict());}
 void Value::appendList() {append(createList());}
 void Value::appendUndefined() {append(createUndefined());}
@@ -101,8 +121,8 @@ void Value::merge(const Value &value) {
   }
 
   if (!isDict() || !value.isDict())
-    JSON_TYPE_ERROR("Cannot merge JSON nodes of type " << getType() << " and "
-                    << value.getType());
+    TYPE_ERROR("Cannot merge JSON nodes of type " << getType() << " and "
+               << value.getType());
 
   // Merge dicts
   for (unsigned i = 0; i < value.size(); i++) {
@@ -133,8 +153,8 @@ string Value::format(char type) const {
     case 's': return "\"" + String::escapeC(asString()) + "\"";
   }
 
-  JSON_ERROR("Unsupported format type specifier '"
-             << String::escapeC(string(1, type)) << "'");
+  THROW("Unsupported format type specifier '"
+        << String::escapeC(string(1, type)) << "'");
 }
 
 

@@ -33,20 +33,36 @@
 #include "StackFrame.h"
 
 #include <cbang/StdTypes.h>
+#include <cbang/String.h>
+#include <cbang/json/Sink.h>
 
-#include <iomanip>
 
 using namespace std;
 using namespace cb;
 
 
-ostream &StackFrame::print(ostream &stream) const {
-  stream
-    << "0x" << hex << setfill('0') << setw(8) << (uintptr_t)addr << dec
-    << " in " << (function == "" ? "??" : function);
+string StackFrame::getAddrString() const {
+  return String::printf("0x%08x", (uintptr_t)addr);
+}
 
-  if (location.getFilename() != "")
-    stream << " at " << location;
+
+ostream &StackFrame::print(ostream &stream) const {
+  stream << getAddrString() << " in "
+         << (getFunction().empty() ? "??" : getFunction());
+
+  if (!location.getFilename().empty())
+    stream << " at " << location.getFileLineColumn();
 
   return stream;
+}
+
+
+void StackFrame::write(JSON::Sink &sink) const {
+  sink.beginDict();
+  sink.insert("address", getAddrString());
+  if (!location.isEmpty()) {
+    sink.beginInsert("location");
+    location.write(sink);
+  }
+  sink.endDict();
 }

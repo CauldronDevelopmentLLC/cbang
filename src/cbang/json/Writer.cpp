@@ -107,7 +107,7 @@ void Writer::write(const string &value) {
 void Writer::beginList(bool simple) {
   NullSink::beginList(simple);
   this->simple = simple;
-  stream << "[";
+  stream << '[';
   level++;
   first = true;
 }
@@ -138,7 +138,7 @@ void Writer::endList() {
     indent();
   }
 
-  stream << "]";
+  stream << ']';
 
   first = false;
   simple = false;
@@ -148,7 +148,7 @@ void Writer::endList() {
 void Writer::beginDict(bool simple) {
   NullSink::beginDict(simple);
   this->simple = simple;
-  stream << "{";
+  stream << '{';
   level++;
   first = true;
 }
@@ -168,7 +168,8 @@ void Writer::beginInsert(const string &key) {
   }
 
   write(key);
-  stream << ": ";
+  stream << ':';
+  if (!compact) stream << ' ';
 
   canWrite = true;
 }
@@ -184,7 +185,7 @@ void Writer::endDict() {
     indent();
   }
 
-  stream << "}";
+  stream << '}';
 
   first = false;
   simple = false;
@@ -242,32 +243,28 @@ string Writer::escape(const string &s, bool python) {
         // Check if UTF-8 code is valid
         bool valid = true;
         uint16_t code = c & (0x3f >> width);
-        string data = string(1, c);
+        auto it2 = it;
 
         for (int i = 0; i < width; i++) {
           // Check for early end of string
-          if (++it == s.end()) {valid = false; break;}
-
-          data.push_back(*it);
+          if (++it2 == s.end()) {valid = false; break;}
 
           // Check for invalid start bits
-          if ((*it & 0xc0) != 0x80) {valid = false; break;}
+          if ((*it2 & 0xc0) != 0x80) {valid = false; break;}
 
-          code = (code << 6) | (*it & 0x3f);
+          code = (code << 6) | (*it2 & 0x3f);
         }
 
-        if (!valid) {
-          // Encode start character
-          result.append(encodeChar((uint8_t)data[0], python));
+        if (!valid) result.append(encodeChar(*it, python)); // Encode character
+        else {
+          if (!python && (0x2000 <= code || code <= 0x2100))
+            // Always encode Javascript line separators
+            result.append(String::printf("\\u%04x", code));
 
-          // Rewind
-          it -= data.length() - 1;
+          else result.append(it, it2); // Otherwise, pass valid UTF-8
 
-        } else if (!python && (0x2000 <= code || code <= 0x2100))
-          // Always encode Javascript line separators
-          result.append(String::printf("\\u%04x", code));
-
-        else result.append(data); // Otherwise, pass valid UTF-8
+          it = it2;
+        }
 
       } else if (iscntrl(c)) // Always encode control characters
         result.append(encodeChar(c, python));

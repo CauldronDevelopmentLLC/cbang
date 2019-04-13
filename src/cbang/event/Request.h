@@ -216,6 +216,8 @@ namespace cb {
       virtual void sendError(int code);
       virtual void sendError(int code, const std::string &message);
       virtual void sendJSONError(int code, const std::string &message);
+      virtual void sendError(const Exception &e);
+      virtual void sendError(const std::exception &e);
 
       virtual void send(const Buffer &buf);
       virtual void send(const char *data, unsigned length);

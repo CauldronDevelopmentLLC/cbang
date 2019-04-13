@@ -98,6 +98,7 @@ namespace cb {
     void listDirectory(std::vector<std::string> &paths, const std::string &path,
                        const std::string &pattern = ".*",
                        unsigned maxDepth = 1);
+    void rmtree(const std::string &path);
 
     // File
     uint64_t getFileSize(const std::string &filename);

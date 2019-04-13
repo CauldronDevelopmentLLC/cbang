@@ -34,6 +34,9 @@
 
 #include <limits>
 
+#include <stdlib.h>
+#include <errno.h>
+
 using namespace std;
 using namespace cb::JSON;
 
@@ -49,5 +52,62 @@ double String::getNumber() const {
   if (l == "infinity" || l == "inf")
     return numeric_limits<double>::infinity();
 
-  return cb::String::parseDouble(s);
+  errno = 0;
+  char *end = 0;
+  double v = strtod(s.c_str(), &end);
+  if (errno || (end && *end)) TYPE_ERROR("Not a number");
+
+  return v;
+}
+
+
+int32_t String::getS32() const {
+  errno = 0;
+  char *end = 0;
+  long v = strtol(s.c_str(), &end, 0);
+
+  if (errno || v < -numeric_limits<int32_t>::max() ||
+      numeric_limits<int32_t>::max() < v || (end && *end))
+    TYPE_ERROR("Not a signed 32-bit number");
+
+  return (int32_t)v;
+}
+
+
+uint32_t String::getU32() const {
+  errno = 0;
+  char *end = 0;
+  unsigned long v = strtoul(s.c_str(), &end, 0);
+
+  if (errno || v < -numeric_limits<uint32_t>::max() ||
+      numeric_limits<uint32_t>::max() < v || (end && *end))
+    TYPE_ERROR("Not an unsigned 32-bit number");
+
+  return (uint32_t)v;
+}
+
+
+int64_t String::getS64() const {
+  errno = 0;
+  char *end = 0;
+  long long v = strtoll(s.c_str(), &end, 0);
+
+  if (errno || v < -numeric_limits<int64_t>::max() ||
+      numeric_limits<int64_t>::max() < v || (end && *end))
+    TYPE_ERROR("Not a signed 64-bit number");
+
+  return (int64_t)v;
+}
+
+
+uint64_t String::getU64() const {
+  errno = 0;
+  char *end = 0;
+  unsigned long long v = strtoull(s.c_str(), &end, 0);
+
+  if (errno || v < -numeric_limits<uint64_t>::max() ||
+      numeric_limits<uint64_t>::max() < v || (end && *end))
+    TYPE_ERROR("Not an unsigned 64-bit number");
+
+  return (uint64_t)v;
 }

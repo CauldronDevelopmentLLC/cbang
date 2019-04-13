@@ -99,8 +99,22 @@ namespace cb {
     const std::string &getMessage() const {return message;}
     void setMessage(const std::string &message) {this->message = message;}
 
+
+    std::string getMessages() const {
+      if (cause.isNull()) return message;
+      return message + ": " + cause->getMessages();
+    }
+
+
     int getCode() const {return code;}
     void setCode(int code) {this->code = code;}
+
+
+    int getTopCode() const {
+      if (code || cause.isNull()) return code;
+      return cause->getTopCode();
+    }
+
 
     const FileLocation &getLocation() const {return location;}
     void setLocation(const FileLocation &location) {this->location = location;}
@@ -126,6 +140,9 @@ namespace cb {
      * @return A reference to the passed stream.
      */
     std::ostream &print(std::ostream &stream, unsigned level = 0) const;
+
+
+    void write(cb::JSON::Sink &sink, bool withDebugInfo = true) const;
   };
 
   /**

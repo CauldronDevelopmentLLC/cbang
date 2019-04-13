@@ -35,7 +35,9 @@
 #include <string>
 #include <iostream>
 
+
 namespace cb {
+  namespace JSON {class Sink;}
 
   /**
    * This class is mainly used by Exception, but can be used
@@ -48,20 +50,18 @@ namespace cb {
     std::string function;
     long line;
     long col;
-    bool empty;
 
   public:
     /**
      * Construct a default FileLocation with an empty value.
      */
-    FileLocation() : line(-1), col(-1), empty(true) {}
+    FileLocation() : line(-1), col(-1) {}
 
     /**
      * Copy constructor.
      */
     FileLocation(const FileLocation &x) :
-      filename(x.filename), function(x.function), line(x.line), col(x.col),
-      empty(x.empty) {}
+      filename(x.filename), function(x.function), line(x.line), col(x.col) {}
 
     /**
      * @param filename The name of the file.
@@ -70,41 +70,40 @@ namespace cb {
      */
     FileLocation(const std::string &filename, const long line = -1,
                  const long col = -1) :
-      filename(filename), line(line), col(col), empty(false) {}
+      filename(filename), line(line), col(col) {}
 
     FileLocation(const std::string &filename, const std::string &function,
                  const long line = -1,  const long col = -1) :
-      filename(filename), function(function), line(line), col(col),
-      empty(false) {}
+      filename(filename), function(function), line(line), col(col) {}
 
     virtual ~FileLocation() {}
 
     const std::string &getFilename() const {return filename;}
-    void setFilename(const std::string &filename)
-    {this->filename = filename; empty = false;}
+    void setFilename(const std::string &filename) {this->filename = filename;}
 
     const std::string &getFunction() const {return function;}
-    void setFunction(const std::string &function)
-    {this->function = function; empty = false;}
+    void setFunction(const std::string &function) {this->function = function;}
+
+    std::string getFileLineColumn() const;
 
     /// @return -1 if no line was set the line number otherwise
     long getLine() const {return line;}
-    void setLine(long line) {this->line = line; empty = false;}
-    void incLine() {line++; empty = false;}
+    void setLine(long line) {this->line = line;}
+    void incLine() {line++;}
 
     /// @return -1 of no column was set the column number otherwise
     long getCol() const {return col;}
-    void setCol(long col) {this->col = col; empty = false;}
-    void incCol() {col++; empty = false;}
+    void setCol(long col) {this->col = col;}
+    void incCol() {col++;}
 
-    /// @return True of no filename, line, or column have been set
-    bool isEmpty() const {return empty;}
+    /// @return True of nothing set
+    bool isEmpty() const;
 
     bool operator==(const FileLocation &o) const;
     bool operator!=(const FileLocation &o) const {return *this == o;}
 
-    friend std::ostream &operator<<(std::ostream &stream,
-                                    const FileLocation &fl);
+    void print(std::ostream &stream) const;
+    void write(cb::JSON::Sink &sink) const;
   };
 
   /**
@@ -116,7 +115,11 @@ namespace cb {
    *
    * @return A reference to the passed stream.
    */
-  std::ostream &operator<<(std::ostream &stream, const FileLocation &fl);
+  static inline
+  std::ostream &operator<<(std::ostream &stream, const FileLocation &fl) {
+    fl.print(stream);
+    return stream;
+  }
 }
 
 #if __STDC_VERSION__ < 199901L

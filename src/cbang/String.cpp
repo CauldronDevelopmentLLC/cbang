@@ -253,7 +253,7 @@ uint32_t String::parseU32(const string &s) {
 int32_t String::parseS32(const string &s) {
   errno = 0;
   long v = strtol(s.c_str(), 0, 0);
-  if (errno|| v < -numeric_limits<int32_t>::max() ||
+  if (errno || v < -numeric_limits<int32_t>::max() ||
       numeric_limits<int32_t>::max() < v)
     THROW("Invalid signed 32-bit value '" << s << "'");
 

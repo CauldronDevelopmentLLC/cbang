@@ -166,16 +166,16 @@ void HTTP::requestCB(evhttp_request *_req) {
 bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
   try {
     if (handler.handleRequest(req)) return true;
-    else req.sendError(HTTPStatus::HTTP_NOT_FOUND);
+    req.sendError(HTTPStatus::HTTP_NOT_FOUND);
 
   } catch (cb::Exception &e) {
     if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
     LOG_DEBUG(3, e);
-    req.sendError(e.getCode(), e.getMessage());
+    req.sendError(e);
 
   } catch (std::exception &e) {
     LOG_ERROR(e.what());
-    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR, e.what());
+    req.sendError(e);
 
   } catch (...) {
     LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)

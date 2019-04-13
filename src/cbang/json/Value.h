@@ -35,7 +35,8 @@
 #include "ValueType.h"
 #include "Factory.h"
 #include "Writer.h"
-#include "Errors.h"
+
+#include <cbang/Errors.h>
 
 #include <ostream>
 
@@ -79,27 +80,60 @@ namespace cb {
         return *ptr;
       }
 
-      virtual bool getBoolean() const {CBANG_JSON_TYPE_ERROR("Not a Boolean");}
-      virtual double getNumber() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual int8_t getS8() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual uint8_t getU8() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual int16_t getS16() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual uint16_t getU16() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual int32_t getS32() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual uint32_t getU32() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual int64_t getS64() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual uint64_t getU64() const {CBANG_JSON_TYPE_ERROR("Not a Number");}
-      virtual std::string &getString() {CBANG_JSON_TYPE_ERROR("Not a String");}
-      virtual const std::string &getString() const
-        {CBANG_JSON_TYPE_ERROR("Not a String");}
-      virtual List &getList() {CBANG_JSON_TYPE_ERROR("Not a List");}
-      virtual const List &getList() const {CBANG_JSON_TYPE_ERROR("Not a List");}
-      virtual Dict &getDict() {CBANG_JSON_TYPE_ERROR("Not a Dict");}
-      virtual const Dict &getDict() const {CBANG_JSON_TYPE_ERROR("Not a Dict");}
+      ValuePtr select(const std::string &path) const;
 
-      virtual void setBoolean(bool value)
-        {CBANG_JSON_TYPE_ERROR("Not a Boolean");}
-      virtual void set(double value) {CBANG_JSON_TYPE_ERROR("Not a Number");}
+#define CBANG_JSON_SELECT(NAME, TYPE)                               \
+      TYPE select##NAME(const std::string &path) const {            \
+        ValuePtr value = select(path);                              \
+        try {                                                       \
+          return value->get##NAME();                                \
+        } catch (const Exception &e) {                              \
+          CBANG_THROWC("At JSON path " << path, e);                 \
+        }                                                           \
+      }                                                             \
+      TYPE select##NAME(const std::string &path,                    \
+                        TYPE defaultValue) const {                  \
+        try {                                                       \
+          return select##NAME(path);                                \
+        } catch (...) {return defaultValue;}                        \
+      }
+
+      CBANG_JSON_SELECT(Boolean, bool);
+      CBANG_JSON_SELECT(Number, double);
+      CBANG_JSON_SELECT(S8, int8_t);
+      CBANG_JSON_SELECT(U8, uint8_t);
+      CBANG_JSON_SELECT(S16, int16_t);
+      CBANG_JSON_SELECT(U16, uint16_t);
+      CBANG_JSON_SELECT(S32, int32_t);
+      CBANG_JSON_SELECT(U32, uint32_t);
+      CBANG_JSON_SELECT(S64, int64_t);
+      CBANG_JSON_SELECT(U64, uint64_t);
+      CBANG_JSON_SELECT(String, const std::string &);
+      CBANG_JSON_SELECT(List, List &);
+      CBANG_JSON_SELECT(Dict, Dict &);
+
+#undef CBANG_JSON_SELECT
+
+      virtual bool getBoolean() const {CBANG_TYPE_ERROR("Not a Boolean");}
+      virtual double getNumber() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual int8_t getS8() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual uint8_t getU8() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual int16_t getS16() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual uint16_t getU16() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual int32_t getS32() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual uint32_t getU32() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual int64_t getS64() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual uint64_t getU64() const {CBANG_TYPE_ERROR("Not a Number");}
+      virtual std::string &getString() {CBANG_TYPE_ERROR("Not a String");}
+      virtual const std::string &getString() const
+        {CBANG_TYPE_ERROR("Not a String");}
+      virtual List &getList() {CBANG_TYPE_ERROR("Not a List");}
+      virtual const List &getList() const {CBANG_TYPE_ERROR("Not a List");}
+      virtual Dict &getDict() {CBANG_TYPE_ERROR("Not a Dict");}
+      virtual const Dict &getDict() const {CBANG_TYPE_ERROR("Not a Dict");}
+
+      virtual void setBoolean(bool value) {CBANG_TYPE_ERROR("Not a Boolean");}
+      virtual void set(double value) {CBANG_TYPE_ERROR("Not a Number");}
       virtual void set(float value) {set((double)value);}
       virtual void set(int8_t value) {set((int16_t)value);}
       virtual void set(uint8_t value) {set((uint16_t)value);}
@@ -110,14 +144,13 @@ namespace cb {
       virtual void set(int64_t value) {set((double)value);}
       virtual void set(uint64_t value) {set((double)value);}
       virtual void set(const std::string &value)
-        {CBANG_JSON_TYPE_ERROR("Not a String");}
+        {CBANG_TYPE_ERROR("Not a String");}
 
-      virtual unsigned size() const
-        {CBANG_JSON_TYPE_ERROR("Not a List or Dict");}
+      virtual unsigned size() const {CBANG_TYPE_ERROR("Not a List or Dict");}
 
       // List functions
       virtual const ValuePtr &get(unsigned i) const
-      {CBANG_JSON_TYPE_ERROR("Not a List or Dict");}
+        {CBANG_TYPE_ERROR("Not a List or Dict");}
       void appendDict();
       void appendList();
       void appendUndefined();
@@ -135,7 +168,7 @@ namespace cb {
       void append(uint64_t value);
       void append(const std::string &value);
       virtual void append(const ValuePtr &value)
-        {CBANG_JSON_TYPE_ERROR("Not a List");}
+        {CBANG_TYPE_ERROR("Not a List");}
 
       // List accessors
       bool getBoolean(unsigned i) const {return get(i)->getBoolean();}
@@ -159,7 +192,7 @@ namespace cb {
 
       // List setters
       virtual void set(unsigned i, const ValuePtr &value)
-        {CBANG_JSON_TYPE_ERROR("Not a List");}
+        {CBANG_TYPE_ERROR("Not a List");}
       void setDict(unsigned i);
       void setList(unsigned i);
       void setUndefined(unsigned i);
@@ -179,9 +212,9 @@ namespace cb {
 
       // Dict functions
       virtual const std::string &keyAt(unsigned i) const
-        {CBANG_JSON_TYPE_ERROR("Not a Dict");}
+        {CBANG_TYPE_ERROR("Not a Dict");}
       virtual int indexOf(const std::string &key) const
-        {CBANG_JSON_TYPE_ERROR("Not a Dict");}
+        {CBANG_TYPE_ERROR("Not a Dict");}
       bool has(const std::string &key) const {return indexOf(key) != -1;}
       bool hasNull(const std::string &key) const {
         int index = indexOf(key);
@@ -208,10 +241,10 @@ namespace cb {
         return index == -1 ? false : get(index)->isDict();
       }
       virtual const ValuePtr &get(const std::string &key) const
-        {CBANG_JSON_TYPE_ERROR("Not a Dict");}
+        {CBANG_TYPE_ERROR("Not a Dict");}
 
       virtual void insert(const std::string &key, const ValuePtr &value)
-        {CBANG_JSON_TYPE_ERROR("Not a Dict");}
+        {CBANG_TYPE_ERROR("Not a Dict");}
       void insertDict(const std::string &key);
       void insertList(const std::string &key);
       void insertUndefined(const std::string &key);

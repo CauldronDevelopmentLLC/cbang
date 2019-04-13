@@ -71,7 +71,7 @@ void Builder::beginAppend() {
 void Builder::endList() {
   assertNotPending();
 
-  if (stack.empty() || !stack.back()->isList()) JSON_TYPE_ERROR("Not a List");
+  if (stack.empty() || !stack.back()->isList()) TYPE_ERROR("Not a List");
   if (stack.size() != 1) stack.pop_back();
 }
 
@@ -80,7 +80,7 @@ void Builder::beginDict(bool simple) {add(createDict());}
 
 
 bool Builder::has(const string &key) const {
-  if (stack.empty() || !stack.back()->isDict()) JSON_TYPE_ERROR("Not a Dict");
+  if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
   return stack.back()->has(key);
 }
 
@@ -94,7 +94,7 @@ void Builder::beginInsert(const string &key) {
 void Builder::endDict() {
   assertNotPending();
 
-  if (stack.empty() || !stack.back()->isDict()) JSON_TYPE_ERROR("Not a Dict");
+  if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
   if (stack.size() != 1) stack.pop_back();
 }
 
@@ -106,7 +106,7 @@ void Builder::add(const ValuePtr &value) {
     stack.back()->insert(nextKey, value);
     nextKey.clear();
 
-  } else if (!stack.empty()) JSON_ERROR("Cannot add " << value->getType());
+  } else if (!stack.empty()) THROW("Cannot add " << value->getType());
 
   if (stack.empty() || value->isList() || value->isDict())
     stack.push_back(value);
@@ -114,8 +114,8 @@ void Builder::add(const ValuePtr &value) {
 
 
 void Builder::assertNotPending() {
-  if (appendNext) JSON_ERROR("Already called append()");
-  if (!nextKey.empty()) JSON_ERROR("Already called insert()");
+  if (appendNext) THROW("Already called append()");
+  if (!nextKey.empty()) THROW("Already called insert()");
 }
 
 

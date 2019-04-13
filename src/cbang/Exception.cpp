@@ -36,6 +36,7 @@
 #include <iomanip>
 
 #include <cbang/debug/Debugger.h>
+#include <cbang/json/Sink.h>
 
 using namespace std;
 using namespace cb;
@@ -144,4 +145,31 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
   }
 
   return stream;
+}
+
+
+void Exception::write(cb::JSON::Sink &sink, bool withDebugInfo) const {
+  sink.beginDict();
+
+  if (!message.empty()) sink.insert("message", message);
+  if (code) sink.insert("code", code);
+
+  if (withDebugInfo) {
+    if (!location.isEmpty()) {
+      sink.beginInsert("location");
+      location.write(sink);
+    }
+
+    if (trace.isSet()) {
+      sink.beginInsert("trace");
+      trace->write(sink);
+    }
+  }
+
+  if (cause.isSet()) {
+    sink.beginInsert("cause");
+    cause->write(sink, withDebugInfo);
+  }
+
+  sink.endDict();
 }

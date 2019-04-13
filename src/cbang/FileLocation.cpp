@@ -31,11 +31,32 @@
 \******************************************************************************/
 
 #include "FileLocation.h"
+#include "String.h"
+
+#include <cbang/json/Sink.h>
 
 #include <iostream>
 
 using namespace std;
 using namespace cb;
+
+
+string FileLocation::getFileLineColumn() const {
+  string s = filename;
+
+  if (0 <= line) {
+    s += ":" + String(line);
+    if (0 <= col) s += ":" + String(col);
+  }
+
+  return s;
+}
+
+
+bool FileLocation::isEmpty() const {
+  return filename.empty() && function.empty() && line < 0 && col < 0;
+}
+
 
 bool FileLocation::operator==(const FileLocation &o) const {
   return filename == o.filename && line == o.line && col == o.col &&
@@ -43,17 +64,18 @@ bool FileLocation::operator==(const FileLocation &o) const {
 }
 
 
-ostream &cb::operator<<(ostream &stream, const FileLocation &fl) {
-  if (!fl.isEmpty()) {
-    stream << fl.filename;
-    if (fl.line >= 0) {
-      stream << ':' << fl.line;
+void FileLocation::print(ostream &stream) const {
+  if (isEmpty()) return;
+  stream << getFileLineColumn();
+  if (!function.empty()) stream << ':' << function << "()";
+}
 
-      if (fl.col >= 0) stream << ':' << fl.col;
-    }
 
-    if (fl.function != "") stream << ':' << fl.function << "()";
-  }
-
-  return stream;
+void FileLocation::write(JSON::Sink &sink) const {
+  sink.beginDict();
+  if (!filename.empty()) sink.insert("filename", filename);
+  if (!function.empty()) sink.insert("function", function);
+  if (0 <= line) sink.insert("line", line);
+  if (0 <= col) sink.insert("column", col);
+  sink.endDict();
 }

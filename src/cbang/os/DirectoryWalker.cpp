@@ -44,8 +44,8 @@ using namespace cb;
 
 
 DirectoryWalker::DirectoryWalker(const string &root, const string &pattern,
-                                 unsigned maxDepth) :
-  re(pattern), maxDepth(maxDepth) {
+                                 unsigned maxDepth, bool listDirs) :
+  re(pattern), maxDepth(maxDepth), listDirs(listDirs) {
 
   if (root != "") init(root);
 }
@@ -63,8 +63,16 @@ bool DirectoryWalker::hasNext() {
   if (!nextFile.empty()) return true;
 
   while (!dirStack.empty()) {
-    if (!*dirStack.back()) pop();
-    else {
+    if (!*dirStack.back()) {
+      if (listDirs) {
+        nextFile = path.substr(0, path.length() - 1);
+        pop();
+        return true;
+      }
+
+      pop();
+
+    } else {
       string name = dirStack.back()->getFilename();
       bool isDir = dirStack.back()->isSubdirectory();
 
