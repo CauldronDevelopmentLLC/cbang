@@ -40,10 +40,6 @@
 
 #include <cbang/util/Base.h>
 
-#if defined(HAVE_CBANG_BACKTRACE) || defined(HAVE_CBANG_GDB)
-#define HAVE_DEBUGGER
-#endif
-
 namespace cb {
   class Debugger : public Base, public Mutex {
   public:

@@ -33,11 +33,39 @@
 #include "RefCounter.h"
 #include "Errors.h"
 
+#include <cbang/String.h>
+#include <cbang/log/Logger.h>
+#include <cbang/util/SmartToggle.h>
+
+#include <inttypes.h>
+#include <cxxabi.h>
+
 using namespace cb;
 using namespace std;
 
 
 RefCounterPhonyImpl RefCounterPhonyImpl::singleton;
+
+
+void RefCounter::log(const char *name, unsigned count) {
+  static bool entered = false;
+  if (entered) return;
+  SmartToggle toggle(entered);
+
+  // Demangle C++ name
+  int status = 0;
+  char *demangled = abi::__cxa_demangle(name, 0, 0, &status);
+  if (!status && demangled) name = demangled;
+
+  string domain = string("RefCounter<") + name + ">";
+  unsigned level = LOG_DEBUG_LEVEL(4);
+
+  if (CBANG_LOG_ENABLED(domain, level))
+    *CBANG_LOG_STREAM(domain, level)
+      << name << String::printf(" 0x%" PRIxPTR " ", (uintptr_t)this) << count;
+
+  if (demangled) free(demangled);
+}
 
 
 void RefCounter::raise(const string &msg) {REFERENCE_ERROR(msg);}

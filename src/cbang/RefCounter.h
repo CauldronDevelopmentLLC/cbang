@@ -36,6 +36,8 @@
 
 #include <cbang/os/Mutex.h>
 
+#include <typeinfo>
+
 
 namespace cb {
   /// This class is used by SmartPointer to count pointer references
@@ -48,6 +50,7 @@ namespace cb {
     virtual void incCount() = 0;
     virtual void decCount(const void *ptr) = 0;
     virtual bool isSelfRef() const {return false;}
+    void log(const char *name, unsigned count);
 
     static void raise(const std::string &msg);
   };
@@ -92,7 +95,7 @@ namespace cb {
 
   template<typename T, class Dealloc_T = DeallocNew<T>,
            class Base_T = RefCounter>
-  class RefCounterImpl : public Base_T {
+  class RefCounterImpl : public virtual Base_T {
   protected:
     unsigned count;
 
@@ -102,10 +105,18 @@ namespace cb {
 
     // From RefCounter
     unsigned getCount() const {return count;}
-    void incCount() {count++;}
+    void incCount() {
+      count++;
+#ifdef DEBUG
+      RefCounter::log(typeid(T).name(), count);
+#endif
+    }
 
     void decCount(const void *ptr) {
       if (!count) Base_T::raise("Already zero!");
+#ifdef DEBUG
+      RefCounter::log(typeid(T).name(), count - 1);
+#endif
       if (!--count) release(ptr);
     }
 

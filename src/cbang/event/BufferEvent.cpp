@@ -31,13 +31,16 @@
 \******************************************************************************/
 
 #include "BufferEvent.h"
-#include "Buffer.h"
 #include "Base.h"
+#include "DNSBase.h"
 
 #include <cbang/Exception.h>
+#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
+#include <cbang/os/SysError.h>
 
 #include <event2/bufferevent.h>
+#include <event2/event.h>
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSL.h>
@@ -48,57 +51,95 @@
 #include <openssl/ssl.h>
 #endif // HAVE_OPENSSL
 
+
+extern "C"
+int bufferevent_disable_hard_(struct bufferevent *bufev, short event);
+
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
-BufferEvent::BufferEvent(bufferevent *bev, bool deallocate) :
-  bev(bev), deallocate(deallocate) {
+namespace {
+  void read_cb(struct bufferevent *bev, void *arg) {
+    TRY_CATCH_ERROR(((BufferEvent *)arg)->readCB());
+  }
+
+
+  void write_cb(struct bufferevent *bev, void *arg) {
+    TRY_CATCH_ERROR(((BufferEvent *)arg)->writeCB());
+  }
+
+
+  void event_cb(struct bufferevent *bev, short what, void *arg) {
+    TRY_CATCH_ERROR(((BufferEvent *)arg)->eventCB(what));
+  }
 }
 
 
-BufferEvent::BufferEvent(cb::Event::Base &base,
-                         const SmartPointer<SSLContext> &sslCtx,
-                         const string &host) : bev(0), deallocate(true) {
+BufferEvent::BufferEvent(cb::Event::Base &base, bool incoming, socket_t fd,
+                         const SmartPointer<SSLContext> &sslCtx) :
+  bev(0), inputBuffer((evbuffer *)0), outputBuffer((evbuffer *)0) {
+
   if (sslCtx.isNull())
-    bev = bufferevent_socket_new(base.getBase(), -1, BEV_OPT_CLOSE_ON_FREE);
+    bev = bufferevent_socket_new
+      (base.getBase(), fd, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 
 #ifdef HAVE_OPENSSL
-  else {
-    ::SSL *ssl = SSL_new(sslCtx->getCTX());
-
-#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
-    if (!host.empty() && host.find_first_not_of("1234567890.") != string::npos)
-      SSL_set_tlsext_host_name(ssl, host.c_str());
-#endif
-
+  else
     bev = bufferevent_openssl_socket_new
-      (base.getBase(), -1, ssl, BUFFEREVENT_SSL_CONNECTING,
+      (base.getBase(), fd, SSL_new(sslCtx->getCTX()),
+       incoming ? BUFFEREVENT_SSL_ACCEPTING : BUFFEREVENT_SSL_CONNECTING,
        BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
-  }
-#else
+
+#else // HAVE_OPENSSL
   else THROW("C! was not built with OpenSSL support");
 
 #endif // HAVE_OPENSSL
 
-
   if (!bev) THROW("Failed to create buffer event");
 
+  bufferevent_setcb(bev, read_cb, write_cb, event_cb, this);
+
 #ifdef HAVE_OPENSSL
-  bufferevent_openssl_set_allow_dirty_shutdown(bev, 1);
+  if (sslCtx.isSet()) bufferevent_openssl_set_allow_dirty_shutdown(bev, 1);
 #endif
+
+  inputBuffer = bufferevent_get_input(bev);
+  outputBuffer = bufferevent_get_output(bev);
 }
 
 
-BufferEvent::~BufferEvent() {if (bev && deallocate) bufferevent_free(bev);}
+BufferEvent::~BufferEvent() {
+  if (!bev) return;
+
+  bufferevent_disable(bev, EV_READ | EV_WRITE);
+  bufferevent_setcb(bev, 0, 0, 0, 0);
+  bufferevent_free(bev);
+}
+
+
+void BufferEvent::setFD(socket_t fd) {bufferevent_setfd(bev, fd);}
+socket_t BufferEvent::getFD() const {return bufferevent_getfd(bev);}
 
 
 void BufferEvent::setPriority(int priority) {
-  bufferevent *ubev = bufferevent_get_underlying(bev);
-  if (ubev) BufferEvent(ubev, false).setPriority(priority);
-  else if (bufferevent_priority_set(bev, priority))
+  bufferevent *bev = bufferevent_get_underlying(this->bev);
+  if (!bev) bev = this->bev;
+
+  if (bufferevent_priority_set(bev, priority))
     THROW("Unable to set buffer event priority to " << priority);
+}
+
+
+int BufferEvent::getPriority() const {return bufferevent_get_priority(bev);}
+
+
+void BufferEvent::setTimeouts(unsigned read, unsigned write) {
+  const struct timeval read_tv = {(time_t)read, 0};
+  const struct timeval write_tv = {(time_t)write, 0};
+  bufferevent_set_timeouts(bev, &read_tv, &write_tv);
 }
 
 
@@ -147,19 +188,44 @@ string BufferEvent::getSSLErrors() {
 bool BufferEvent::isWrapper() const {return bufferevent_get_underlying(bev);}
 
 
-BufferEvent BufferEvent::getUnderlying() const {
-  return BufferEvent(bufferevent_get_underlying(bev), false);
+void BufferEvent::setRead(bool enabled, bool hard) {
+  if (!enabled && hard) bufferevent_disable_hard_(bev, EV_READ);
+  else (enabled ? bufferevent_enable : bufferevent_disable)(bev, EV_READ);
 }
 
 
-int BufferEvent::getFD() const {return (int)bufferevent_getfd(bev);}
-
-
-cb::Event::Buffer BufferEvent::getInput() const {
-  return Buffer(bufferevent_get_input(bev), false);
+void BufferEvent::setWrite(bool enabled, bool hard) {
+  if (!enabled && hard) bufferevent_disable_hard_(bev, EV_WRITE);
+  else (enabled ? bufferevent_enable : bufferevent_disable)(bev, EV_WRITE);
 }
 
 
-cb::Event::Buffer BufferEvent::getOutput() const {
-  return Buffer(bufferevent_get_output(bev), false);
+void BufferEvent::setWatermark(bool read, size_t low, size_t high) {
+  bufferevent_setwatermark(bev, read ? EV_READ : EV_WRITE, low, high);
+}
+
+
+void BufferEvent::connect(DNSBase &dns, const IPAddress &peer) {
+  const char *hostname = peer.getHost().c_str();
+  int port = peer.getPort();
+
+  // TODO for some reason async DNS lookups fail with SSL connections
+
+  if (bufferevent_socket_connect_hostname
+      (bev, hasSSL() ? 0 : dns.getDNSBase(), AF_UNSPEC, hostname, port) < 0)
+    THROW("Failed to connect to " << peer << ", System error: " << SysError());
+}
+
+
+string BufferEvent::getEventsString(short events) {
+  vector<string> parts;
+
+  if (events & BEV_EVENT_READING)   parts.push_back("READING");
+  if (events & BEV_EVENT_WRITING)   parts.push_back("WRITING");
+  if (events & BEV_EVENT_EOF)       parts.push_back("EOF");
+  if (events & BEV_EVENT_ERROR)     parts.push_back("ERROR");
+  if (events & BEV_EVENT_TIMEOUT)   parts.push_back("TIMEOUT");
+  if (events & BEV_EVENT_CONNECTED) parts.push_back("CONNECTED");
+
+  return String::join(parts, "|");
 }

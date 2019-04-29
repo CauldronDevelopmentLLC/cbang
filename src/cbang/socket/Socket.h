@@ -116,5 +116,6 @@ namespace cb {
     virtual void close() {impl->close();}
 
     virtual socket_t get() const {return impl->get();}
+    virtual socket_t adopt() {return impl->adopt();}
   };
 }

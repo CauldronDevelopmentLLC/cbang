@@ -84,6 +84,7 @@ void SocketSet::clear() {
 
 
 void SocketSet::add(const Socket &socket, int type) {
+  if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
   if (type & READ) FD_SET(s, &p->read);
@@ -94,6 +95,7 @@ void SocketSet::add(const Socket &socket, int type) {
 
 
 void SocketSet::remove(const Socket &socket, int type) {
+  if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
   if (type & READ) FD_CLR(s, &p->read);
@@ -103,6 +105,7 @@ void SocketSet::remove(const Socket &socket, int type) {
 
 
 bool SocketSet::isSet(const Socket &socket, int type) const {
+  if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
   return

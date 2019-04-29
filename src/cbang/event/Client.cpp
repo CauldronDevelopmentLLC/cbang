@@ -32,16 +32,12 @@
 
 #include "Client.h"
 #include "Buffer.h"
-#include "BufferEvent.h"
-#include "PendingRequest.h"
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
 #else
 namespace cb {class SSLContext {};}
 #endif
-
-#include <event2/http.h>
 
 using namespace std;
 using namespace cb;
@@ -60,27 +56,26 @@ Client::Client(Base &base, DNSBase &dns,
 Client::~Client() {}
 
 
-SmartPointer<PendingRequest>
-Client::call(const URI &uri, unsigned method, const char *data, unsigned length,
-             callback_t cb) {
-  SmartPointer<PendingRequest> req =
-    new PendingRequest(*this, uri, method, cb);
+SmartPointer<OutgoingRequest>
+Client::call(const URI &uri, RequestMethod method, const char *data,
+             unsigned length, callback_t cb) {
+  SmartPointer<OutgoingRequest> req =
+    new OutgoingRequest(*this, uri, method, cb);
 
   if (data) req->getOutputBuffer().add(data, length);
-  if (0 <= priority) req->getBufferEvent().setPriority(priority);
+  if (0 <= priority) req->setPriority(priority);
 
   return req;
 }
 
 
-SmartPointer<PendingRequest>
-Client::call(const URI &uri, unsigned method, const string &data,
-             callback_t cb) {
+SmartPointer<OutgoingRequest> Client::call
+(const URI &uri, RequestMethod method, const string &data, callback_t cb) {
   return call(uri, method, CPP_TO_C_STR(data), data.length(), cb);
 }
 
 
-SmartPointer<PendingRequest>
-Client::call(const URI &uri, unsigned method, callback_t cb) {
+SmartPointer<OutgoingRequest>
+Client::call(const URI &uri, RequestMethod method, callback_t cb) {
   return call(uri, method, 0, 0, cb);
 }

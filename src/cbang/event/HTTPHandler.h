@@ -34,16 +34,18 @@
 
 #include "HTTPRequestHandler.h"
 
-struct evhttp_request;
+#include <cbang/util/Version.h>
+#include <cbang/net/URI.h>
 
 
 namespace cb {
   namespace Event {
     struct HTTPHandler {
       virtual ~HTTPHandler() {}
-      virtual Request *createRequest(evhttp_request *) = 0;
+      virtual SmartPointer<Request> createRequest
+      (RequestMethod method, const URI &uri, const Version &version) = 0;
       virtual bool handleRequest(Request &req) = 0;
-      virtual void endRequest(Request *) = 0;
+      virtual void endRequest(Request &req) = 0;
     };
   }
 }

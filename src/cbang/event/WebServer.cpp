@@ -49,11 +49,11 @@ using namespace std;
 using namespace cb::Event;
 
 
-WebServer::WebServer(cb::Options &options, const Base &base,
+WebServer::WebServer(cb::Options &options, Base &base,
                      const cb::SmartPointer<cb::SSLContext> &sslCtx,
                      const cb::SmartPointer<HTTPHandlerFactory> &factory) :
   HTTPHandlerGroup(factory), options(options), sslCtx(sslCtx),
-  initialized(false), logPrefix(false), nextID(1) {
+  initialized(false), logPrefix(false) {
 
   SmartPointer<HTTPHandler>::Phony handler(this);
   http = new HTTP(base, handler);
@@ -177,22 +177,23 @@ void WebServer::shutdown() {
 }
 
 
-Request *WebServer::createRequest(evhttp_request *req) {
-  return new Request(req);
+cb::SmartPointer<Request> WebServer::createRequest
+(RequestMethod method, const URI &uri, const Version &version) {
+  return new Request(method, uri, version);
 }
 
 
 bool WebServer::handleRequest(Request &req) {
-  req.setID(nextID++);
+  if (logPrefix)
+    Logger::instance().setThreadPrefix(String::printf("#%lld", req.getID()));
 
-  if (logPrefix) Logger::instance().setThreadPrefix(req.getLogPrefix());
   if (!allow(req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
 
   return HTTPHandlerGroup::operator()(req);
 }
 
 
-void WebServer::endRequest(Request *req) {
+void WebServer::endRequest(Request &req) {
   if (logPrefix) Logger::instance().setThreadPrefix("");
 }
 
@@ -246,6 +247,11 @@ void WebServer::setMaxHeadersSize(unsigned size) {
 
 
 void WebServer::setTimeout(int timeout) {
-  http->setTimeout(timeout);
-  if (!https.isNull()) https->setTimeout(timeout);
+  http->setReadTimeout(timeout);
+  http->setWriteTimeout(timeout);
+
+  if (https.isSet()) {
+    https->setReadTimeout(timeout);
+    https->setWriteTimeout(timeout);
+  }
 }

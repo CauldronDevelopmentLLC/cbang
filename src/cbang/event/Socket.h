@@ -32,72 +32,12 @@
 
 #pragma once
 
-#include "Socket.h"
-#include "Buffer.h"
-
-#include <cbang/SmartPointer.h>
-
-#include <string>
-
-struct bufferevent;
-
-
 namespace cb {
-  class SSLContext;
-  class SSL;
-  class IPAddress;
-
   namespace Event {
-    class Base;
-    class DNSBase;
-
-    class BufferEvent : SmartPointer<BufferEvent>::SelfRef {
-      friend class SelfRefCounter;
-
-      bufferevent *bev;
-
-      Buffer inputBuffer;
-      Buffer outputBuffer;
-
-    public:
-      BufferEvent(Base &base, bool incoming, socket_t fd = -1,
-                  const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~BufferEvent();
-
-      bufferevent *getBufferEvent() const {return bev;}
-
-      const Buffer &getInput() const {return inputBuffer;}
-      const Buffer &getOutput() const {return outputBuffer;}
-      Buffer &getInput() {return inputBuffer;}
-      Buffer &getOutput() {return outputBuffer;}
-
-      void setFD(socket_t fd);
-      socket_t getFD() const;
-
-      void setPriority(int priority);
-      int getPriority() const;
-
-      void setTimeouts(unsigned read, unsigned write);
-
-      bool hasSSL() const;
-      SSL getSSL() const;
-      void logSSLErrors();
-      std::string getSSLErrors();
-
-      bool isWrapper() const;
-
-      void setRead(bool enabled, bool hard = false);
-      void setWrite(bool enabled, bool hard = false);
-
-      void setWatermark(bool read, size_t low, size_t high = 0);
-
-      void connect(DNSBase &dns, const IPAddress &peer);
-
-      virtual void readCB() {}
-      virtual void writeCB() {}
-      virtual void eventCB(short what) {}
-
-      static std::string getEventsString(short events);
-    };
+#ifdef _WIN32
+    typedef intptr_t socket_t;
+#else
+    typedef int socket_t;
+#endif
   }
 }

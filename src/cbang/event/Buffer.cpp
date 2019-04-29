@@ -50,37 +50,36 @@ using namespace std;
 using namespace cb::Event;
 
 
-Buffer::Buffer(evbuffer *evb, bool deallocate) :
-  evb(evb), deallocate(deallocate) {
+extern "C" {
+  void evbuffer_incref_(struct evbuffer *buf);
 }
 
 
-Buffer::Buffer(const char *data, unsigned length) :
-  evb(evbuffer_new()), deallocate(true) {
+Buffer::Buffer() : evb(evbuffer_new()) {
   if (!evb) THROW("Failed to create event buffer");
+}
+
+
+Buffer::Buffer(evbuffer *evb) : evb(evb) {
+  if (evb) evbuffer_incref_(evb);
+}
+
+
+Buffer::Buffer(const char *data, unsigned length) : Buffer() {
   add(data, length);
 }
 
 
-Buffer::Buffer(const char *s) : evb(evbuffer_new()), deallocate(true) {
-  if (!evb) THROW("Failed to create event buffer");
-  add(s);
-}
+Buffer::Buffer(const char *s) : Buffer() {add(s);}
+Buffer::Buffer(const string &s) : Buffer() {add(s);}
+Buffer::~Buffer() {if (evb) evbuffer_free(evb);}
 
 
-Buffer::Buffer(const string &s) : evb(evbuffer_new()), deallocate(true) {
-  if (!evb) THROW("Failed to create event buffer");
-  add(s);
-}
-
-
-Buffer::Buffer() : evb(evbuffer_new()), deallocate(true) {
-  if (!evb) THROW("Failed to create event buffer");
-}
-
-
-Buffer::~Buffer() {
-  if (evb && deallocate) evbuffer_free(evb);
+Buffer &Buffer::operator=(const Buffer &o) {
+  if (evb) evbuffer_free(evb);
+  evb = o.evb;
+  if (evb) evbuffer_incref_(evb);
+  return *this;
 }
 
 
@@ -100,14 +99,17 @@ string Buffer::hexdump() const {
 }
 
 
-void Buffer::reset() {
-  if (evb && deallocate) evbuffer_free(evb);
-  evb = evbuffer_new();
-  deallocate = true;
+void Buffer::freeze(bool enable, bool front) {
+  if ((enable ? evbuffer_freeze : evbuffer_unfreeze)(evb, front))
+    THROW("Failed to " << (enable ? "freeze" : "unfreeze") << " buffer at "
+          << (front ? "front" : "back"));
 }
 
 
-void Buffer::clear() {drain(getLength());}
+void Buffer::clear() {
+  freeze(false, true);
+  drain(getLength());
+}
 
 
 void Buffer::expand(unsigned length) {
@@ -146,12 +148,20 @@ unsigned Buffer::copy(ostream &stream) {return copy(stream, getLength());}
 
 
 void Buffer::drain(unsigned length) {
-  if (evbuffer_drain(evb, length)) THROW("Buffer drain failed");
+  if (length && evbuffer_drain(evb, length))
+    THROW("Buffer draining " << length << " bytes failed");
 }
 
 
 unsigned Buffer::remove(char *data, unsigned length) {
   ev_ssize_t ret = evbuffer_remove(evb, data, length);
+  if (ret < 0) THROW("Failed to remove data from buffer");
+  return (unsigned)ret;
+}
+
+
+unsigned Buffer::remove(Buffer &buf, unsigned length) {
+  ev_ssize_t ret = evbuffer_remove_buffer(evb, buf.evb, length);
   if (ret < 0) THROW("Failed to remove data from buffer");
   return (unsigned)ret;
 }
@@ -173,6 +183,16 @@ unsigned Buffer::remove(ostream &stream, unsigned length) {
 
 
 unsigned Buffer::remove(ostream &stream) {return remove(stream, getLength());}
+
+
+string Buffer::readLine(unsigned maxLength, eol_t eol) {
+  // TODO Don't read more then maxLength
+  size_t length = 0;
+  SmartPointer<char>::Malloc line =
+    evbuffer_readln(evb, &length, (evbuffer_eol_style)eol);
+  if (line.isNull()) THROW("Failed to read line from buffer");
+  return string(line.get(), length);
+}
 
 
 void Buffer::add(const Buffer &buf) {

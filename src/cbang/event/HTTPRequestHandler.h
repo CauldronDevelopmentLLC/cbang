@@ -33,8 +33,7 @@
 #pragma once
 
 #include "Request.h"
-#include "HTTPStatus.h"
-#include "RequestMethod.h"
+#include "Enum.h"
 
 #include <cbang/json/Value.h>
 #include <cbang/json/Sink.h>
@@ -44,7 +43,7 @@
 
 namespace cb {
   namespace Event {
-    struct HTTPRequestHandler : public HTTPStatus, public RequestMethod {
+    struct HTTPRequestHandler : public Enum {
       virtual ~HTTPRequestHandler() {}
       virtual bool operator()(Request &req) = 0;
     };

@@ -92,8 +92,11 @@ bool HTTPOAuth2LoginHandler::operator()(Request &req) {
     // Open new Session
     session = sessionManager->openSession(req.getClientIP());
     // Set cookie so we can pass anti-forgery test
-    req.setCookie
-      (sessionManager->getSessionCookie(), session->getID(), "", "/");
+    const string &cookie = sessionManager->getSessionCookie();
+    req.setCookie(cookie, session->getID(), "", "/");
+
+    LOG_DEBUG(3, "Opened new login session " << session->getID() << " for "
+              << req.getClientIP() << " with cookie=" << cookie);
 
   } else if (session->hasGroup("authenticated")) return false; // Logged in
 

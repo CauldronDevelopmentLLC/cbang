@@ -33,53 +33,91 @@
 #pragma once
 
 #include "HTTPHandler.h"
+#include "Enum.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/Base.h>
 #include <cbang/net/IPAddress.h>
 
-#include <vector>
-
-struct evhttp;
-struct event_base;
-struct bufferevent;
+#include <list>
+#include <limits>
 
 
 namespace cb {
   class SSLContext;
   class IPAddress;
+  class Socket;
 
   namespace Event {
     class Base;
+    class Event;
+    class Connection;
 
-    class HTTP {
-      evhttp *http;
+    class HTTP : SmartPointer<HTTP>::SelfRef, public Enum {
+      friend class SelfRefCounter;
+
+      Base &base;
+
       SmartPointer<HTTPHandler> handler;
       SmartPointer<SSLContext> sslCtx;
-      int priority;
+      cb::SmartPointer<Event> expireEvent;
 
-      cb::IPAddress boundAddr;
+      std::string defaultContentType = "text/html; charset=UTF-8";
+      unsigned maxBodySize = std::numeric_limits<unsigned>::max();
+      unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
+      unsigned maxConnections = std::numeric_limits<unsigned>::max();
+      unsigned maxConnectionTTL = 0;
+      int readTimeout = 50;
+      int writeTimeout = 50;
+      int priority = -1;
+
+      IPAddress boundAddr;
+      SmartPointer<Socket> socket;
+      std::list<SmartPointer<Connection> > connections;
 
     public:
-      HTTP(const Base &base, const SmartPointer<HTTPHandler> &handler,
+      HTTP(Base &base, const SmartPointer<HTTPHandler> &handler,
            const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~HTTP();
+      ~HTTP();
 
-      void setMaxBodySize(unsigned size);
-      void setMaxHeadersSize(unsigned size);
-      void setTimeout(int timeout);
-      void setEventPriority(int priority) {this->priority = priority;}
-      void setMaxConnections(unsigned x);
-      int getConnectionCount() const;
+      const std::string &getDefaultContentType() const
+        {return defaultContentType;}
+      void setDefaultContentType(const std::string &s) {defaultContentType = s;}
+
+      unsigned getMaxBodySize() const {return maxBodySize;}
+      void setMaxBodySize(unsigned size) {maxBodySize = size;}
+
+      unsigned getMaxHeadersSize() const {return maxHeaderSize;}
+      void setMaxHeadersSize(unsigned size) {maxHeaderSize = size;}
+
+      int getReadTimeout() const {return readTimeout;}
+      void setReadTimeout(unsigned t) {readTimeout = t;}
+
+      int getWriteTimeout() const {return writeTimeout;}
+      void setWriteTimeout(unsigned t) {writeTimeout = t;}
+
+      unsigned getMaxConnections() const {return maxConnections;}
+      void setMaxConnections(unsigned x) {maxConnections = x;}
+
+      unsigned getMaxConnectionTTL() const {return maxConnectionTTL;}
       void setMaxConnectionTTL(unsigned x);
 
-      int bind(const IPAddress &addr);
-      const cb::IPAddress &getBoundAddress() const {return boundAddr;}
+      int getEventPriority() const {return priority;}
+      void setEventPriority(int priority) {this->priority = priority;}
 
-      bufferevent *bevCB(event_base *base);
-      void requestCB(evhttp_request *req);
+      unsigned getConnectionCount() const {return connections.size();}
+      void remove(Connection &con);
+
+      void bind(const IPAddress &addr);
+
+      SmartPointer<Request> createRequest
+      (RequestMethod method, const URI &uri, const Version &version);
+      void handleRequest(Request &req);
 
       static bool dispatch(HTTPHandler &handler, Request &req);
+
+    protected:
+      void expireCB();
+      void acceptCB();
     };
   }
 }

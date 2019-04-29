@@ -32,7 +32,7 @@
 
 #include "OAuth2Login.h"
 #include "Request.h"
-#include "PendingRequest.h"
+#include "OutgoingRequest.h"
 #include "Client.h"
 
 #include <cbang/auth/OAuth2.h>
@@ -63,23 +63,23 @@ bool OAuth2Login::authRedirect(Request &req, const string &state) {
 
 
 bool OAuth2Login::requestToken(Request &req, const string &state,
-                               const string &redirect_uri) {
+                               const string &redirectURI) {
   auto handler =
-    [this, &req] (Request *_req, int err) {
-      verifyToken(req, _req ? _req->getInput() : "");
+    [this, &req] (Request &_req) {
+      verifyToken(req, _req.getInput());
     };
 
   URI verifyURL = getOAuth2()->getVerifyURL(req.getURI(), state);
 
   // Override redirect URI
-  if (!redirect_uri.empty()) verifyURL.set("redirect_uri", redirect_uri);
+  if (!redirectURI.empty()) verifyURL.set("redirect_uri", redirectURI);
 
   // Extract query data
   string data = verifyURL.getQuery();
   verifyURL.setQuery("");
 
   // Verify authorization with OAuth2 server
-  SmartPointer<PendingRequest> pr =
+  SmartPointer<OutgoingRequest> pr =
     client.call(verifyURL, HTTP_POST, data, handler);
   pr->setContentType("application/x-www-form-urlencoded");
   pr->outSet("Accept", "application/json");
@@ -91,11 +91,11 @@ bool OAuth2Login::requestToken(Request &req, const string &state,
 
 void OAuth2Login::verifyToken(Request &req, const string &response) {
   auto handler =
-    [this, &req] (Request *_req, int err) {
-      if (_req)
+    [this, &req] (Request &_req) {
+      if (_req.isOk())
         try {
           SmartPointer<JSON::Value> profile =
-            getOAuth2()->processProfile(_req->getInputJSON());
+            getOAuth2()->processProfile(_req.getInputJSON());
 
           LOG_DEBUG(3, "OAuth2 Profile: " << *profile);
           processProfile(req, profile);
@@ -111,7 +111,7 @@ void OAuth2Login::verifyToken(Request &req, const string &response) {
       string accessToken = getOAuth2()->verifyToken(response);
 
       // Get profile
-      SmartPointer<PendingRequest> pr =
+      SmartPointer<OutgoingRequest> pr =
         client.call(getOAuth2()->getProfileURL(accessToken), HTTP_GET, handler);
       pr->outSet("User-Agent", "cbang.org");
       pr->send();

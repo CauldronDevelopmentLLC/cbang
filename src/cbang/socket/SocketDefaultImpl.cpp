@@ -378,6 +378,15 @@ void SocketDefaultImpl::close() {
 }
 
 
+socket_t SocketDefaultImpl::adopt() {
+  socket_t s = socket;
+  in = out = 0; // Flush capture
+  socket = INVALID_SOCKET;
+  connected = false;
+  return s;
+}
+
+
 void SocketDefaultImpl::capture(const IPAddress &addr, bool incoming) {
   SocketDebugger &debugger = SocketDebugger::instance();
   if (!debugger.getCapture()) return;

@@ -43,16 +43,19 @@ using namespace cb::Event;
 
 bool HTTPSessionHandler::operator()(Request &req) {
   // Check if Session is already loaded
-  if (!req.getSession().isNull()) return false;
+  if (req.getSession().isSet()) return false;
 
   // Get session ID
-  string sid = req.getSessionID(sessionManager->getSessionCookie(), header);
+  const string &cookie = sessionManager->getSessionCookie();
+  string sid = req.getSessionID(cookie, header);
+  LOG_DEBUG(4, "Client " << req.getClientIP() << " sid=" << sid
+            << " cookie=" << cookie << " header=" << header);
   if (sid.empty()) return false;
 
   // Get session
   try {
     req.setSession(sessionManager->lookupSession(sid));
-  } catch (const Exception &) {return false;}
+  } catch (const Exception &) {}
 
   return false;
 }

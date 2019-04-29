@@ -48,7 +48,7 @@ namespace cb {
   class Options;
 
   namespace ACMEv2 {
-    class Account : public Event::RequestMethod {
+    class Account : public Event::RequestMethod::Enum {
       Event::Client &client;
       KeyPair key;
 
@@ -128,7 +128,7 @@ namespace cb {
     protected:
       std::string getProblemString(const JSON::ValuePtr &problem) const;
 
-      void call(const std::string &url, unsigned method);
+      void call(const std::string &url, Event::RequestMethod method);
       void head(const std::string &url) {call(url, HTTP_HEAD);}
       void get(const std::string &url) {call(url, HTTP_GET);}
       void post(const std::string &url, const std::string &payload);
@@ -137,7 +137,7 @@ namespace cb {
       void nextAuth();
       void next();
       void retry();
-      void responseHandler(Event::Request *req, int err);
+      void responseHandler(Event::Request &req);
     };
   }
 }

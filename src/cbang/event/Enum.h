@@ -34,9 +34,19 @@
 
 #include "HTTPStatus.h"
 #include "RequestMethod.h"
+#include "EventFlag.h"
+#include "ConnectionError.h"
+#include "WebsockOpCode.h"
+#include "WebsockStatus.h"
 
 namespace cb {
   namespace Event {
-    class Enum : public HTTPStatus::Enum, public RequestMethod::Enum {};
+    class Enum :
+      public HTTPStatus::Enum,
+      public RequestMethod::Enum,
+      public EventFlag::Enum,
+      public ConnectionError::Enum,
+      public WebsockOpCode::Enum,
+      public WebsockStatus::Enum {};
   }
 }

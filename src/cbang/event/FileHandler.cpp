@@ -67,7 +67,7 @@ bool FileHandler::operator()(Request &req) {
   req.reply(buf);
 
   if (!req.outHas("Cache-Control"))
-    req.outAdd("Cache-Control", "max-age=" + String(timeout));
+    req.outSet("Cache-Control", "max-age=" + String(timeout));
 
   return true;
 }

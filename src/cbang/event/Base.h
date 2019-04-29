@@ -33,6 +33,7 @@
 #pragma once
 
 #include "EventFlag.h"
+#include "Socket.h"
 
 #include <cbang/SmartPointer.h>
 
@@ -67,7 +68,7 @@ namespace cb {
       void initPriority(int num);
 
       SmartPointer<Event> newEvent(callback_t cb, bool persistent = false);
-      SmartPointer<Event> newEvent(int fd, unsigned events, callback_t cb);
+      SmartPointer<Event> newEvent(socket_t fd, unsigned events, callback_t cb);
       SmartPointer<Event> newSignal(int signal, callback_t cb,
                                     bool persistent = false);
 
@@ -79,7 +80,8 @@ namespace cb {
       SmartPointer<Event> newEvent(bare_callback_t cb, bool persistent = false)
       {return newEvent(bind(cb), persistent);}
 
-      SmartPointer<Event> newEvent(int fd, unsigned events, bare_callback_t cb)
+      SmartPointer<Event>
+      newEvent(socket_t fd, unsigned events, bare_callback_t cb)
       {return newEvent(fd, events, bind(cb));}
 
       SmartPointer<Event> newSignal(int signal, bare_callback_t cb,
@@ -99,7 +101,7 @@ namespace cb {
       {return newEvent(bind(obj, member), persistent);}
 
       template <class T>
-      SmartPointer<Event> newEvent(int fd, unsigned events, T *obj,
+      SmartPointer<Event> newEvent(socket_t fd, unsigned events, T *obj,
                                    typename Callback<T>::member_t member)
       {return newEvent(fd, events, bind(obj, member));}
 
@@ -122,7 +124,7 @@ namespace cb {
       {return newEvent(bind(obj, member), persistent);}
 
       template <class T>
-      SmartPointer<Event> newEvent(int fd, unsigned events, T *obj,
+      SmartPointer<Event> newEvent(socket_t fd, unsigned events, T *obj,
                                    typename Callback<T>::bare_member_t member)
       {return newEvent(fd, events, bind(obj, member));}
 

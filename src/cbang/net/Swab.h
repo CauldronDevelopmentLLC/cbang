@@ -46,37 +46,73 @@
 #include <endian.h>
 #endif
 
-inline uint16_t swap16(uint16_t x) {return (x << 8) | (x >> 8);}
-inline int16_t swap16(int16_t x) {return (int16_t)swap16((uint16_t)x);}
-inline uint32_t swap32(uint32_t x)
-{return ((uint32_t)swap16((uint16_t)x) << 16) | swap16((uint16_t)(x >> 16));}
-inline int32_t swap32(int32_t x) {return (int32_t)swap32((uint32_t)x);}
-inline uint64_t swap64(uint64_t x)
-{return ((uint64_t)swap32((uint32_t)x) << 32) | swap32((uint32_t)(x >> 32));}
-inline int64_t swap64(int64_t x) {return (int64_t)swap64((uint64_t)x);}
-// TODO Is this correct?  Shouldn't we also swap the 64-bit parts?
-// Bug inherited from Cosm?
+
+#define CBANG_SWAP16(OUT, IN)                                           \
+  inline OUT swap16(IN x) {return ((OUT)x << 8) | ((OUT)x >> 8);}
+
+#define CBANG_SWAP32(OUT, IN)                                           \
+  inline OUT swap32(IN x) {                                             \
+    return ((OUT)swap16(x) << 16) | swap16((OUT)x >> 16);               \
+  }
+
+#define CBANG_SWAP64(OUT, IN)                                           \
+  inline OUT swap64(IN x) {                                             \
+    return ((OUT)swap32(x) << 32) | swap32((OUT)x >> 32);               \
+  }
+
+CBANG_SWAP16(uint16_t, uint8_t);
+CBANG_SWAP16(int16_t,  int8_t);
+CBANG_SWAP16(uint16_t, uint16_t);
+CBANG_SWAP16(int16_t,  int16_t);
+CBANG_SWAP16(uint16_t, uint32_t);
+CBANG_SWAP16(int16_t,  int32_t);
+CBANG_SWAP16(uint16_t, uint64_t);
+CBANG_SWAP16(int16_t,  int64_t);
+
+CBANG_SWAP32(uint32_t, uint8_t);
+CBANG_SWAP32(int32_t,  int8_t);
+CBANG_SWAP32(uint32_t, uint16_t);
+CBANG_SWAP32(int32_t,  int16_t);
+CBANG_SWAP32(uint32_t, uint32_t);
+CBANG_SWAP32(int32_t,  int32_t);
+CBANG_SWAP32(uint32_t, uint64_t);
+CBANG_SWAP32(int32_t,  int64_t);
+
+CBANG_SWAP64(uint64_t, uint8_t);
+CBANG_SWAP64(int64_t,  int8_t);
+CBANG_SWAP64(uint64_t, uint16_t);
+CBANG_SWAP64(int64_t,  int16_t);
+CBANG_SWAP64(uint64_t, uint32_t);
+CBANG_SWAP64(int64_t,  int32_t);
+CBANG_SWAP64(uint64_t, uint64_t);
+CBANG_SWAP64(int64_t,  int64_t);
+
+#undef CBANG_SWAP16
+#undef CBANG_SWAP32
+#undef CBANG_SWAP64
+
+// TODO Should also swap the 64-bit parts.  Bug inherited from COSM.
 inline uint128_t swap128(uint128_t x) {return uint128_t(x.lo, x.hi);}
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-#define hton16(x) swap16(x)
-#define hton32(x) swap32(x)
-#define hton64(x) swap64(x)
+#define hton16(x)  swap16(x)
+#define hton32(x)  swap32(x)
+#define hton64(x)  swap64(x)
 #define hton128(x) swap128(x)
 
-#define htol16(x) (x)
-#define htol32(x) (x)
-#define htol64(x) (x)
+#define htol16(x)  (x)
+#define htol32(x)  (x)
+#define htol64(x)  (x)
 #define htol128(x) (x)
 
 #else // BIG_ENDIAN
-#define hton16(x) (x)
-#define hton32(x) (x)
-#define hton64(x) (x)
+#define hton16(x)  (x)
+#define hton32(x)  (x)
+#define hton64(x)  (x)
 #define hton128(x) (x)
 
-#define htol16(x) swap16(x)
-#define htol32(x) swap32(x)
-#define htol64(x) swap64(x)
+#define htol16(x)  swap16(x)
+#define htol32(x)  swap32(x)
+#define htol64(x)  swap64(x)
 #define htol128(x) swap128(x)
 #endif

@@ -31,65 +31,38 @@
 \******************************************************************************/
 
 #include "Headers.h"
+#include "Buffer.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/http/ContentTypes.h>
 
-#include <event2/http.h>
-#include <event2/keyvalq_struct.h>
-#include <sys/queue.h>
-
 using namespace cb::Event;
 using namespace std;
 
 
-void Headers::clear() {
-  evhttp_clear_headers(hdrs);
+string Headers::find(const string &key) const {return has(key) ? get(key) : "";}
+void Headers::remove(const std::string &key) {if (has(key)) insert(key, "");}
+
+
+bool Headers::keyContains(const string &key, const string &value) const{
+  string hdr = String::toLower(find(key));
+  vector<string> parts;
+
+  String::tokenize(hdr, parts, " ,");
+
+  for (unsigned i = 0; i < parts.size(); i++)
+    if (parts[i] == String::toLower(value)) return true;
+
+  return false;
 }
 
 
-void Headers::add(const string &key, const string &value) {
-  evhttp_add_header(hdrs, key.c_str(), value.c_str());
-}
-
-
-void Headers::set(const string &key, const string &value) {
-  if (has(key)) remove(key);
-  add(key, value);
-}
-
-
-bool Headers::has(const string &key) const {
-  return evhttp_find_header(hdrs, key.c_str());
-}
-
-
-string Headers::find(const string &key) const {
-  const char *value = evhttp_find_header(hdrs, key.c_str());
-  return value ? value : "";
-}
-
-
-string Headers::get(const string &key) const {
-  const char *value = evhttp_find_header(hdrs, key.c_str());
-  if (!value) THROW("Header '" << key << "' not found");
-  return value;
-}
-
-
-void Headers::remove(const string &key) {
-  evhttp_remove_header(hdrs, key.c_str());
-}
-
-
-string Headers::getContentType() const {
-  return find("Content-Type");
-}
+string Headers::getContentType() const {return find("Content-Type");}
 
 
 void Headers::setContentType(const string &contentType) {
-  set("Content-Type", contentType);
+  insert("Content-Type", contentType);
 }
 
 
@@ -100,7 +73,46 @@ void Headers::guessContentType(const std::string &ext) {
 }
 
 
+/// @return true if we should send a "Connection: close" when request done.
+bool Headers::needsClose() const {return keyContains("Connection", "close");}
+bool Headers::connectionKeepAlive() const {
+  return keyContains("Connection", "keep-alive");
+}
+
+
+bool Headers::parse(Buffer &buf, unsigned maxSize) {
+  unsigned bytes = 0;
+
+  while (buf.getLength()) {
+    string line = buf.readLine(maxSize ? maxSize - bytes : 0);
+
+    // Last header
+    if (line.empty()) return true;
+
+    bytes += line.length() + 2;
+    if (maxSize && maxSize < bytes) THROW("Header too long");
+
+    // Continuation line
+    if (line[0] == ' ' || line[0] == '\t') {
+      if (empty()) THROW("Invalid header line: " << line);
+      get(size() - 1) += String::trim(line);
+      continue;
+    }
+
+    // Parse
+    size_t semi = line.find_first_of(':');
+    if (semi == string::npos) THROW("Invalid header line: " << line);
+
+    string key = line.substr(0, semi);
+    string value = String::trim(line.substr(semi + 1));
+    insert(key, value);
+  }
+
+  return false;
+}
+
+
 void Headers::write(ostream &stream) const {
-  for (evkeyval *hdr = TAILQ_FIRST(hdrs); hdr; hdr = TAILQ_NEXT(hdr, next))
-    stream << hdr->key << ": " << hdr->value << "\n";
+  for (auto it = begin(); it != end(); it++)
+    stream << it->first << ": " << it->second << '\n';
 }

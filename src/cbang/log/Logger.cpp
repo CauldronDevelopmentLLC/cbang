@@ -39,14 +39,14 @@
 
 #include <cbang/time/Time.h>
 #include <cbang/iostream/NullDevice.h>
+#include <cbang/util/SmartLock.h>
+#include <cbang/debug/Debugger.h>
 
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/ThreadLocalStorage.h>
 
 #include <cbang/config/Options.h>
 #include <cbang/config/OptionActionSet.h>
-
-#include <cbang/util/SmartLock.h>
 
 #include <iostream>
 #include <stdio.h> // for freopen()
@@ -127,7 +127,7 @@ void Logger::addOptions(Options &options) {
 #ifdef DEBUG
               "\td - debug\n"
 #endif
-#ifdef HAVE_DEBUGGER
+#ifdef HAVE_CBANG_BACKTRACE
               "\tt - enable traces\n"
 #endif
               "For example: server:i:3 module:6\n"
@@ -210,29 +210,33 @@ void Logger::setLogDomainLevels(const string &levels) {
   String::tokenize(levels, entries, Option::DEFAULT_DELIMS + ",");
 
   for (unsigned i = 0; i < entries.size(); i++) {
-    vector<string> tokens;
-    String::tokenize(entries[i], tokens, ":");
     bool invalid = false;
 
-    if (tokens.size() == 3) {
-      int level = String::parseS32(tokens[2]);
+    size_t pos = entries[i].find_last_of(':');
 
-      for (unsigned j = 0; j < tokens[1].size(); j++)
-        switch (tokens[1][j]) {
-        case 'i': infoDomainLevels[tokens[0]] = level; break;
-        case 'd': debugDomainLevels[tokens[0]] = level; break;
-#ifdef HAVE_DEBUGGER
-        case 't': domainTraces.insert(tokens[0]); break;
+    if (!pos || pos == string::npos) invalid = true;
+    else {
+      int level = String::parseS32(entries[i].substr(pos + 1));
+
+      size_t pos2 = entries[i].find_last_not_of("idt", pos - 1);
+      if (pos2 && pos2 != string::npos && entries[i][pos2] == ':') {
+        string name = entries[i].substr(0, pos2);
+
+        while (++pos2 < pos)
+          switch (entries[i][pos2]) {
+          case 'i': infoDomainLevels[name] = level; break;
+          case 'd': debugDomainLevels[name] = level; break;
+#ifdef HAVE_CBANG_BACKTRACE
+          case 't': domainTraces.insert(name); break;
 #endif
-        default: invalid = true;
-        }
+          }
 
-    } else if (tokens.size() == 2) {
-      int level = String::parseS32(tokens[1]);
-      infoDomainLevels[tokens[0]] = level;
-      debugDomainLevels[tokens[0]] = level;
-
-    } else invalid = true;
+      } else {
+        string name = entries[i].substr(0, pos);
+        infoDomainLevels[name] = level;
+        debugDomainLevels[name] = level;
+      }
+    }
 
     if (invalid) THROW("Invalid log domain level entry " << (i + 1)
                         << " '" << entries[i] << "'");
@@ -425,12 +429,12 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
   string suffix = endColor(level);
   string trailer;
 
-#ifdef HAVE_DEBUGGER
+#ifdef HAVE_CBANG_BACKTRACE
   if (domainTraces.find(domain) != domainTraces.end()) {
     StackTrace trace;
     Debugger::instance().getStackTrace(trace);
-    for (int i = 0; i < 3; i++) trace.pop_front();
-    trailer = SSTR(trace);
+    trace.erase(trace.begin(), trace.begin() + 3);
+    trailer = SSTR('\n' << trace);
   }
 #endif
 

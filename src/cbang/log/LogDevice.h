@@ -60,7 +60,7 @@ namespace cb {
       std::vector<char> buffer;
       bool startOfLine;
       bool locked;
-#ifdef HAVE_DEBUGGER
+#ifdef HAVE_CBANG_BACKTRACE
       StackTrace trace;
 #endif
 

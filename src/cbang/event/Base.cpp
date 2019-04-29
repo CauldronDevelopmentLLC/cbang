@@ -68,7 +68,7 @@ Base::newEvent(callback_t cb, bool persistent) {
 
 
 SmartPointer<cb::Event::Event>
-Base::newEvent(int fd, unsigned events, callback_t cb) {
+Base::newEvent(socket_t fd, unsigned events, callback_t cb) {
   return new Event(*this, fd, events, cb);
 }
 
@@ -76,7 +76,7 @@ Base::newEvent(int fd, unsigned events, callback_t cb) {
 SmartPointer<cb::Event::Event>
 Base::newSignal(int signal, callback_t cb, bool persistent) {
   return
-    new Event(*this, signal, (persistent ? EVENT_PERSIST: 0) | EV_SIGNAL, cb);
+    new Event(*this, signal, (persistent ? EVENT_PERSIST : 0) | EV_SIGNAL, cb);
 }
 
 

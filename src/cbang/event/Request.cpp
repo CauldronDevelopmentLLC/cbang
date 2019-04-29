@@ -31,11 +31,10 @@
 \******************************************************************************/
 
 #include "Request.h"
-#include "Buffer.h"
 #include "BufferDevice.h"
-#include "BufferEvent.h"
-#include "Headers.h"
 #include "Connection.h"
+#include "Event.h"
+#include "HTTP.h"
 
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
@@ -44,9 +43,6 @@
 #include <cbang/http/Cookie.h>
 #include <cbang/json/JSON.h>
 #include <cbang/time/Time.h>
-
-#include <event2/http.h>
-#include <event2/http_struct.h>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -60,9 +56,6 @@ using namespace std;
 
 
 namespace {
-  void free_cb(struct evhttp_request *req, void *pr) {((Request *)pr)->freed();}
-
-
   struct FilteringOStreamWithRef : public io::filtering_ostream {
     SmartPointer<ostream> ref;
     virtual ~FilteringOStreamWithRef() {reset();}
@@ -70,8 +63,8 @@ namespace {
 
 
   SmartPointer<ostream> compressBufferStream
-  (Event::Buffer buffer, Request::compression_t compression) {
-    SmartPointer<ostream> target = new Event::BufferStream<>(buffer);
+  (cb::Event::Buffer buffer, Request::compression_t compression) {
+    SmartPointer<ostream> target = new BufferStream<>(buffer);
     SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
 
     switch (compression) {
@@ -99,7 +92,7 @@ namespace {
 
 
   struct JSONWriter :
-    Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
+    cb::Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
     Request &req;
 
     JSONWriter(Request &req, unsigned indent, bool compact,
@@ -119,65 +112,43 @@ namespace {
       send(*this);
     }
 
-    virtual void send(Event::Buffer &buffer) {req.send(buffer);}
+    virtual void send(cb::Event::Buffer &buffer) {req.send(buffer);}
   };
 }
 
 
-Request::Request(evhttp_request *req, bool deallocate) :
-  req(req), deallocate(deallocate), id(0), user("anonymous"), incoming(false),
-  finalized(false) {
-  if (!req) THROW("Event request cannot be null");
-  init();
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX << "REQ" << getID() << ':'
 
-  // Parse URI
-  const char *uri = evhttp_request_get_uri(req);
-  if (uri) this->uri = originalURI = uri;
 
-  // Parse client IP
-  evhttp_connection *_con = evhttp_request_get_connection(req);
-  if (_con) {
-    Connection con(_con, false);
-    clientIP = con.getPeer();
-  }
-
-  // Log request
-  LOG_INFO(1, "< " << getMethod() << " " << getURI());
-  LOG_DEBUG(5, getInputHeaders() << '\n');
-  LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
+Request::Request(RequestMethod method, const URI &uri, const Version &version) :
+  method(method), originalURI(uri), uri(uri), version(version) {
+  LOG_DEBUG(4, "created");
 }
 
 
-Request::Request(evhttp_request *req, const URI &uri, bool deallocate) :
-  req(req), deallocate(deallocate), originalURI(uri), uri(uri),
-  clientIP(uri.getHost(), uri.getPort()), incoming(false), finalized(false) {
-  if (!req) THROW("Event request cannot be null");
-  init();
+Request::~Request() {LOG_DEBUG(4, "destroyed");}
+
+
+uint64_t Request::getID() const {
+  return connection.isSet() ? connection->getID() : 0;
 }
 
 
-Request::~Request() {
-  if (req.isSet()) {
-    evhttp_request_set_on_free_cb(req.access(), 0, 0);
-    if (deallocate) evhttp_cancel_request(req.access()); // Also frees
-  }
+string Request::getResponseLine() const {
+  return SSTR("HTTP/" << version << ' ' << (int)responseCode << ' '
+              << (responseCodeLine.empty() ?
+                  responseCode.getDescription() : responseCodeLine));
 }
 
 
-bool Request::hasConnection() const {
-  return evhttp_request_get_connection(req.access());
+string Request::getRequestLine() const {
+  return SSTR(method << ' ' << uri << " HTTP/" << version);
 }
 
 
-Connection Request::getConnection() const {
-  evhttp_connection *con = evhttp_request_get_connection(req.access());
-  if (!con) THROW("Request does not have Connection");
-  return Connection(con, false);
-}
-
-
-string Request::getLogPrefix() const {
-  return String::printf("#%lld:", getID());
+bool Request::isConnected() const {
+  return hasConnection() && getConnection().isConnected();
 }
 
 
@@ -198,28 +169,23 @@ void Request::setUser(const string &user) {
 
 
 bool Request::isSecure() const {
-  return hasConnection() && getConnection().getBufferEvent().hasSSL();
+  return connection.isSet() && connection->hasSSL();
 }
 
 
-SSL Request::getSSL() const {return getConnection().getBufferEvent().getSSL();}
-
-
-void Request::resetOutput() {
-  if (finalized) THROW("Cannot reset output after Request has been finalized");
-  getOutputBuffer().reset();
-}
+SSL Request::getSSL() const {return connection->getSSL();}
+void Request::resetOutput() {getOutputBuffer().clear();}
 
 
 JSON::Dict &Request::parseJSONArgs() {
-  Headers hdrs = getInputHeaders();
+  Headers &hdrs = getInputHeaders();
 
   if (hdrs.hasContentType() &&
       String::startsWith(hdrs.getContentType(), "application/json")) {
 
     Buffer buf = getInputBuffer();
     if (buf.getLength()) {
-      Event::BufferStream<> stream(buf);
+      BufferStream<> stream(buf);
       JSON::Reader reader(stream);
 
       // Find start of dict & parse keys into request args
@@ -250,66 +216,7 @@ JSON::Dict &Request::parseArgs() {
 }
 
 
-Version Request::getVersion() const {
-  return Version(req->major, req->minor);
-}
-
-
-string Request::getHost() const {
-  const char *host = evhttp_request_get_host(req.access());
-  return host ? host : "";
-}
-
-
-URI Request::getURI(evhttp_request *req) {
-  return evhttp_request_get_uri(req);
-}
-
-
-RequestMethod Request::getMethod() const {return getMethod(req.access());}
-
-
-RequestMethod Request::getMethod(evhttp_request *req) {
-  switch (evhttp_request_get_command(req)) {
-  case EVHTTP_REQ_GET:     return HTTP_GET;
-  case EVHTTP_REQ_POST:    return HTTP_POST;
-  case EVHTTP_REQ_HEAD:    return HTTP_HEAD;
-  case EVHTTP_REQ_PUT:     return HTTP_PUT;
-  case EVHTTP_REQ_DELETE:  return HTTP_DELETE;
-  case EVHTTP_REQ_OPTIONS: return HTTP_OPTIONS;
-  case EVHTTP_REQ_TRACE:   return HTTP_TRACE;
-  case EVHTTP_REQ_CONNECT: return HTTP_CONNECT;
-  case EVHTTP_REQ_PATCH:   return HTTP_PATCH;
-  default:                 return RequestMethod::HTTP_UNKNOWN;
-  }
-}
-
-
-HTTPStatus Request::getResponseCode() const {
-  return (HTTPStatus::enum_t)evhttp_request_get_response_code(req.access());
-}
-
-
-string Request::getResponseMessage() const {
-  const char *s = evhttp_request_get_response_code_line(req.access());
-  return s ? s : "";
-}
-
-
-string Request::getResponseLine() const {
-  return SSTR("HTTP/" << (int)req->major << '.' << (int)req->minor << ' '
-              << getResponseCode() << ' ' << getResponseMessage());
-}
-
-
-Headers Request::getInputHeaders() const {
-  return evhttp_request_get_input_headers(req.access());
-}
-
-
-Headers Request::getOutputHeaders() const {
-  return evhttp_request_get_output_headers(req.access());
-}
+const IPAddress &Request::getClientIP() const {return connection->getPeer();}
 
 
 bool Request::inHas(const string &name) const {
@@ -327,13 +234,8 @@ string Request::inGet(const string &name) const {
 }
 
 
-void Request::inAdd(const string &name, const string &value) {
-  getInputHeaders().add(name, value);
-}
-
-
 void Request::inSet(const string &name, const string &value) {
-  getInputHeaders().set(name, value);
+  getInputHeaders().insert(name, value);
 }
 
 
@@ -355,13 +257,8 @@ string Request::outGet(const string &name) const {
 }
 
 
-void Request::outAdd(const string &name, const string &value) {
-  getOutputHeaders().add(name, value);
-}
-
-
 void Request::outSet(const string &name, const string &value) {
-  getOutputHeaders().set(name, value);
+  getOutputHeaders().insert(name, value);
 }
 
 
@@ -371,12 +268,29 @@ void Request::outRemove(const string &name) {
 
 
 void Request::setPersistent(bool x) {
-  if (getVersion() < Version(1, 1)) {
+  if (version < Version(1, 1)) {
     if (x) outSet("Connection", "Keep-Alive");
     else outRemove("Connection");
 
   } else if (x) outRemove("Connection");
   else outSet("Connection", "close");
+}
+
+
+void Request::setCache(uint32_t age) {
+  const char *format = "%a, %d %b %Y %H:%M:%S GMT";
+  string now = Time(format).toString();
+
+  outSet("Date", now);
+
+  if (age) {
+    outSet("Cache-Control", "max-age=" + String(age));
+    outSet("Expires", Time(Time::now() + age, format).toString());
+
+  } else {
+    outSet("Cache-Control", "max-age=0, no-cache, no-store");
+    outSet("Expires", now);
+  }
 }
 
 
@@ -503,25 +417,8 @@ void Request::setCookie(const string &name, const string &value,
                         const string &domain, const string &path,
                         uint64_t expires, uint64_t maxAge, bool httpOnly,
                         bool secure) {
-  outAdd("Set-Cookie", HTTP::Cookie(name, value, domain, path, expires, maxAge,
-                                    httpOnly, secure).toString());
-}
-
-
-void Request::setCache(uint32_t age) {
-  const char *format = "%a, %d %b %Y %H:%M:%S GMT";
-  string now = Time(format).toString();
-
-  outSet("Date", now);
-
-  if (age) {
-    outSet("Cache-Control", "max-age=" + String(age));
-    outSet("Expires", Time(Time::now() + age, format).toString());
-
-  } else {
-    outSet("Cache-Control", "max-age=0, no-cache, no-store");
-    outSet("Expires", now);
-  }
+  outSet("Set-Cookie", cb::HTTP::Cookie(name, value, domain, path, expires,
+                                        maxAge, httpOnly, secure).toString());
 }
 
 
@@ -529,20 +426,10 @@ string Request::getInput() const {return getInputBuffer().toString();}
 string Request::getOutput() const {return getOutputBuffer().toString();}
 
 
-Event::Buffer Request::getInputBuffer() const {
-  return Buffer(evhttp_request_get_input_buffer(req.access()), false);
-}
-
-
-Event::Buffer Request::getOutputBuffer() const {
-  return Buffer(evhttp_request_get_output_buffer(req.access()), false);
-}
-
-
 SmartPointer<JSON::Value> Request::getInputJSON() const {
   Buffer buf = getInputBuffer();
   if (!buf.getLength()) return 0;
-  Event::BufferStream<> stream(buf);
+  BufferStream<> stream(buf);
   return JSON::Reader(stream).parse();
 }
 
@@ -605,12 +492,11 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
 
 
 SmartPointer<istream> Request::getInputStream() const {
-  return new Event::BufferStream<>(getInputBuffer());
+  return new BufferStream<>(getInputBuffer());
 }
 
 
-SmartPointer<ostream>
-Request::getOutputStream(compression_t compression) {
+SmartPointer<ostream> Request::getOutputStream(compression_t compression) {
   // Auto select compression type based on Accept-Encoding
   if (compression == COMPRESS_AUTO) compression = getRequestedCompression();
   outSetContentEncoding(compression);
@@ -618,30 +504,35 @@ Request::getOutputStream(compression_t compression) {
 }
 
 
-void Request::sendError(int code) {
-  if (getContentType() == "application/json") sendJSONError(code, "");
-  else {
-    finalize();
-    code = code ? code : HTTP_INTERNAL_SERVER_ERROR;
-    evhttp_send_error(req.access(), code, 0);
-  }
+void Request::sendError(HTTPStatus code) {
+  if (getContentType() == "application/json") return sendJSONError(code, "");
+
+  outSet("Content-Type", "text/html");
+  outSet("Connection", "close");
+
+  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
+  string msg = String((int)code) + " " + code.getDescription();
+
+  send(SSTR("<html><head><title>" << msg << "</title></head><body><h1>"
+            << msg << "</h1></body></html>"));
+
+  reply(code);
 }
 
 
-void Request::sendError(int code, const string &message) {
-  if (getContentType() == "application/json") sendJSONError(code, message);
-  else {
-    resetOutput();
-    setContentType("text/plain");
-    send(message);
-    sendError(code);
-  }
+void Request::sendError(HTTPStatus code, const string &msg) {
+  if (getContentType() == "application/json") return sendJSONError(code, msg);
+
+  resetOutput();
+  setContentType("text/plain");
+  send(msg);
+  sendError(code);
 }
 
 
 void Request::sendError(const Exception &e) {
-  int code = e.getTopCode();
-  code = code ? code : HTTP_INTERNAL_SERVER_ERROR;
+  HTTPStatus code = (HTTPStatus::enum_t)e.getTopCode();
+  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
 
   if (getContentType() == "application/json") {
     auto writer = getJSONWriter();
@@ -663,7 +554,7 @@ void Request::sendError(const exception &e) {
 }
 
 
-void Request::sendJSONError(int code, const string &message) {
+void Request::sendJSONError(HTTPStatus code, const string &message) {
   auto writer = getJSONWriter();
 
   writer->beginDict();
@@ -671,7 +562,8 @@ void Request::sendJSONError(int code, const string &message) {
   writer->endDict();
   writer->close();
 
-  reply(code ? code : HTTP_INTERNAL_SERVER_ERROR);
+  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
+  reply(code);
 }
 
 
@@ -684,18 +576,22 @@ void Request::send(const char *data, unsigned length) {
 
 
 void Request::send(const char *s) {getOutputBuffer().add(s);}
-void Request::send(const std::string &s) {getOutputBuffer().add(s);}
+void Request::send(const string &s) {getOutputBuffer().add(s);}
+void Request::sendFile(const string &path) {getOutputBuffer().addFile(path);}
 
 
-void Request::sendFile(const std::string &path) {
-  getOutputBuffer().addFile(path);
-}
+void Request::reply(HTTPStatus code) {
+  if (replying) THROW("Request already replying");
+  replying = true;
 
+  if (code) responseCode = code;
+  else responseCode = HTTP_INTERNAL_SERVER_ERROR;
 
-void Request::reply(int code) {
-  finalize();
-  evhttp_send_reply(req.access(), code,
-                    HTTPStatus((HTTPStatus::enum_t)code).getDescription(), 0);
+  // Log results
+  LOG_DEBUG(5, getResponseLine() << '\n' << getOutputHeaders() << '\n');
+  LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
+
+  write();
 }
 
 
@@ -707,30 +603,37 @@ void Request::reply(const char *data, unsigned length) {
 }
 
 
-void Request::reply(int code, const string &s) {send(s); reply(code);}
-
-
-void Request::reply(int code, const cb::Event::Buffer &buf) {
-  finalize();
-  evhttp_send_reply(req.access(), code,
-                    HTTPStatus((HTTPStatus::enum_t)code).getDescription(),
-                    buf.getBuffer());
-}
-
-
-void Request::reply(int code, const char *data, unsigned length) {
+void Request::reply(HTTPStatus code, const char *data, unsigned length) {
   reply(code, Buffer(data, length));
 }
 
 
-void Request::startChunked(int code) {
-  evhttp_send_reply_start
-    (req.access(), code, HTTPStatus((HTTPStatus::enum_t)code).getDescription());
+void Request::startChunked(HTTPStatus code) {
+  if (outHas("Content-Length"))
+    THROW("Cannot start chunked with Content-Length set");
+  if (version < Version(1, 1))
+    THROW("Cannot start chunked with HTTP version " << version);
+  if (!mustHaveBody()) THROW("Cannot start chunked with " << method);
+  if (outputBuffer.getLength())
+    THROW("Cannot start chunked data in output buffer");
+
+  outSet("Transfer-Encoding", "chunked");
+  chunked = true;
+  reply(code);
 }
 
 
 void Request::sendChunk(const cb::Event::Buffer &buf) {
-  evhttp_send_reply_chunk(req.access(), buf.getBuffer());
+  if (!chunked) THROW("Not chunked");
+
+  Buffer out;
+  out.add(String::printf("%x\r\n", buf.getLength()));
+  out.add(buf);
+  out.add("\r\n");
+
+  connection->write(*this, out);
+
+  if (!buf.getLength()) chunked = false; // Last chunk is empty
 }
 
 
@@ -754,57 +657,134 @@ SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
 }
 
 
-void Request::endChunked() {
-  finalize();
-  evhttp_send_reply_end(req.access());
-}
+void Request::endChunked() {sendChunk(Buffer(""));}
 
 
-void Request::redirect(const URI &uri, int code) {
+void Request::redirect(const URI &uri, HTTPStatus code) {
   outSet("Location", uri);
   outSet("Content-Length", "0");
   reply(code, "", 0);
 }
 
 
-void Request::cancel() {
-  evhttp_cancel_request(req.access());
-  finalized = true;
-}
+void Request::cancel() {connection->cancelRequest(*this);}
 
 
-const char *Request::getErrorStr(int error) {
-  switch (error) {
-  case EVREQ_HTTP_TIMEOUT:        return "Timeout";
-  case EVREQ_HTTP_EOF:            return "End of file";
-  case EVREQ_HTTP_INVALID_HEADER: return "Invalid header";
-  case EVREQ_HTTP_BUFFER_ERROR:   return "Buffer error";
-  case EVREQ_HTTP_REQUEST_CANCEL: return "Request canceled";
-  case EVREQ_HTTP_DATA_TOO_LONG:  return "Data too long";
-  default:                        return "Unknown";
+void Request::onRequest() {
+  LOG_INFO(1, "< " << getRequestLine());
+  LOG_DEBUG(5, inputHeaders << '\n');
+  LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
+
+  if (connection.isSet()) {
+    bytesRead = connection->getHeaderSize() + connection->getBodySize();
+
+    if (connection->getHTTP().isSet())
+      connection->getHTTP()->handleRequest(*this);
   }
 }
 
 
-void Request::freed() {
-  req.release();
-  SmartPointer<Request>::SelfRef::selfDeref();
+bool Request::mustHaveBody() const {
+  return responseCode != HTTP_NO_CONTENT && responseCode != HTTP_NOT_MODIFIED &&
+    (200 <= responseCode || responseCode < 100) && method != HTTP_HEAD;
 }
 
 
-void Request::init() {
-  evhttp_request_set_on_free_cb(req.access(), free_cb, this);
-  SmartPointer<Request>::SelfRef::selfRef();
+bool Request::mayHaveBody() const {
+  return method == HTTP_POST || method == HTTP_PUT || method == HTTP_PATCH;
 }
 
 
-void Request::finalize() {
-  if (finalized) THROW("Request already finalized");
-  finalized = true;
+bool Request::needsClose() const {
+  return inputHeaders.needsClose() || outputHeaders.needsClose();
+}
 
-  if (!hasContentType()) guessContentType();
 
-  // Log results
-  LOG_DEBUG(5, getResponseLine() << '\n' << getOutputHeaders() << '\n');
-  LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
+Version Request::parseHTTPVersion(const string &s) {
+  if (!String::startsWith(s, "HTTP/"))
+    THROW("Expected 'HTTP/' got '" << s << "'");
+  return Version(s.substr(5));
+}
+
+
+void Request::parseResponseLine(const string &line) {
+  vector<string> parts;
+  String::tokenize(line, parts, " ");
+
+  if (parts.size() < 2 || 3 < parts.size())
+    THROW("Invalid HTTP response line: " << line);
+
+  version = parseHTTPVersion(parts[0]);
+
+  responseCode = HTTPStatus::parse(parts[1]);
+  if (!responseCode) THROW("Bad response code " << parts[1]);
+
+  if (parts.size() == 3) responseCodeLine = parts[2];
+}
+
+
+void Request::write() {
+  Buffer out;
+
+  writeHeaders(out);
+  if (outputBuffer.getLength()) out.add(outputBuffer);
+
+  bytesWritten += out.getLength();
+  connection->write(*this, out);
+}
+
+
+void Request::writeResponse(cb::Event::Buffer &buf) {
+  buf.add(getResponseLine() + "\r\n");
+
+  if (version.getMajor() == 1) {
+    if (1 <= version.getMinor() && !outHas("Date"))
+      outSet("Date", Time("%a, %d %b %Y %H:%M:%S GMT"));
+
+    // if the protocol is 1.0 and connection was keep-alive add keep-alive
+    bool keepAlive = inputHeaders.connectionKeepAlive();
+    if (!version.getMinor() && keepAlive) outSet("Connection", "keep-alive");
+
+    if ((0 < version.getMinor() || keepAlive) && mustHaveBody() &&
+        !outHas("Transfer-Encoding") && !outHas("Content-Length"))
+      outSet("Content-Length", String(outputBuffer.getLength()));
+  }
+
+  // Add Content-Type
+  if (mustHaveBody() && !hasContentType()) {
+    guessContentType();
+
+    if (!hasContentType()) {
+      auto &type = connection->getDefaultContentType();
+      if (!type.empty()) outSet("Content-Type", type);
+    }
+  }
+
+  // If request asked for close, send close
+  if (inputHeaders.needsClose()) outSet("Connection", "close");
+}
+
+
+void Request::writeRequest(cb::Event::Buffer &buf) {
+  // Generate request line
+  buf.add(getRequestLine() + "\r\n");
+
+  // Add the content length on a post or put request if missing
+  if ((method == HTTP_POST || method == HTTP_PUT) && !outHas("Content-Length"))
+    outSet("Content-Length", String(outputBuffer.getLength()));
+}
+
+
+void Request::writeHeaders(cb::Event::Buffer &buf) {
+  if (connection->isIncoming()) writeResponse(buf);
+  else writeRequest(buf);
+
+  for (auto it = outputHeaders.begin(); it != outputHeaders.end(); it++) {
+    const string &key = it->first;
+    const string &value = it->second;
+    if (!value.empty())
+      buf.add(String::printf("%s: %s\r\n", key.c_str(), value.c_str()));
+  }
+
+  buf.add("\r\n");
 }

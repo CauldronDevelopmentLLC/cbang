@@ -32,72 +32,32 @@
 
 #pragma once
 
-#include "Socket.h"
-#include "Buffer.h"
+#include "Websocket.h"
 
-#include <cbang/SmartPointer.h>
-
-#include <string>
-
-struct bufferevent;
+#include <cbang/json/JSON.h>
 
 
 namespace cb {
-  class SSLContext;
-  class SSL;
-  class IPAddress;
-
   namespace Event {
-    class Base;
-    class DNSBase;
-
-    class BufferEvent : SmartPointer<BufferEvent>::SelfRef {
-      friend class SelfRefCounter;
-
-      bufferevent *bev;
-
-      Buffer inputBuffer;
-      Buffer outputBuffer;
+    class JSONWebsocket : public Websocket {
+      typedef std::function<void (const JSON::ValuePtr &)> cb_t;
+      cb_t cb;
 
     public:
-      BufferEvent(Base &base, bool incoming, socket_t fd = -1,
-                  const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~BufferEvent();
+      using Websocket::Websocket;
 
-      bufferevent *getBufferEvent() const {return bev;}
+      void setCallback(const cb_t &cb) {this->cb = cb;}
 
-      const Buffer &getInput() const {return inputBuffer;}
-      const Buffer &getOutput() const {return outputBuffer;}
-      Buffer &getInput() {return inputBuffer;}
-      Buffer &getOutput() {return outputBuffer;}
+      void send(const JSON::ValuePtr &msg);
+      SmartPointer<JSON::Writer> getJSONWriter();
 
-      void setFD(socket_t fd);
-      socket_t getFD() const;
+      virtual void onMessage(const JSON::ValuePtr &msg);
 
-      void setPriority(int priority);
-      int getPriority() const;
+      // From Websocket
+      void onMessage(const char *data, uint64_t length);
 
-      void setTimeouts(unsigned read, unsigned write);
-
-      bool hasSSL() const;
-      SSL getSSL() const;
-      void logSSLErrors();
-      std::string getSSLErrors();
-
-      bool isWrapper() const;
-
-      void setRead(bool enabled, bool hard = false);
-      void setWrite(bool enabled, bool hard = false);
-
-      void setWatermark(bool read, size_t low, size_t high = 0);
-
-      void connect(DNSBase &dns, const IPAddress &peer);
-
-      virtual void readCB() {}
-      virtual void writeCB() {}
-      virtual void eventCB(short what) {}
-
-      static std::string getEventsString(short events);
+    protected:
+      using Websocket::send;
     };
   }
 }

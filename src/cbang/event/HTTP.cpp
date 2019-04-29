@@ -35,23 +35,19 @@
 #include "Request.h"
 #include "HTTPStatus.h"
 #include "Headers.h"
+#include "Event.h"
 #include "Buffer.h"
 #include "BufferEvent.h"
+#include "Connection.h"
 
 #include <cbang/Exception.h>
-#include <cbang/log/Logger.h>
 #include <cbang/Catch.h>
-
-#include <event2/http.h>
-#include <event2/bufferevent.h>
+#include <cbang/log/Logger.h>
+#include <cbang/time/Timer.h>
+#include <cbang/socket/Socket.h>
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
-
-#include <event2/bufferevent_ssl.h>
-
-#include <openssl/ssl.h>
-
 #else
 namespace cb {class SSLContext {};}
 #endif
@@ -60,28 +56,9 @@ using namespace std;
 using namespace cb::Event;
 
 
-namespace {
-  bufferevent *bev_cb(event_base *base, void *arg) {
-    TRY_CATCH_ERROR(return ((HTTP *)arg)->bevCB(base))
-    return 0;
-  }
-
-
-  void request_cb(evhttp_request *req, void *arg) {
-    TRY_CATCH_ERROR(((HTTP *)arg)->requestCB(req));
-  }
-}
-
-
-HTTP::HTTP(const Base &base, const SmartPointer<HTTPHandler> &handler,
+HTTP::HTTP(Base &base, const SmartPointer<HTTPHandler> &handler,
            const cb::SmartPointer<cb::SSLContext> &sslCtx) :
-  http(evhttp_new(base.getBase())), handler(handler), sslCtx(sslCtx),
-  priority(-1) {
-  if (!http) THROW("Failed to create event HTTP");
-
-  evhttp_set_bevcb(http, bev_cb, this);
-  evhttp_set_allowed_methods(http, ~0); // Allow all methods
-  evhttp_set_gencb(http, request_cb, this);
+  base(base), handler(handler), sslCtx(sslCtx) {
 
 #ifndef HAVE_OPENSSL
   if (!sslCtx.isNull()) THROW("C! was not built with openssl support");
@@ -89,83 +66,64 @@ HTTP::HTTP(const Base &base, const SmartPointer<HTTPHandler> &handler,
 }
 
 
-HTTP::~HTTP() {if (http) evhttp_free(http);}
-
-
-void HTTP::setMaxBodySize(unsigned size) {evhttp_set_max_body_size(http, size);}
-
-
-void HTTP::setMaxHeadersSize(unsigned size) {
-  evhttp_set_max_headers_size(http, size);
-}
-
-
-void HTTP::setTimeout(int timeout) {evhttp_set_timeout(http, timeout);}
-void HTTP::setMaxConnections(unsigned x) {evhttp_set_max_connections(http, x);}
-int HTTP::getConnectionCount() const {return evhttp_get_connection_count(http);}
+HTTP::~HTTP() {}
 
 
 void HTTP::setMaxConnectionTTL(unsigned x) {
-  evhttp_set_max_connection_ttl(http, x);
+  maxConnectionTTL = x;
+
+  if (maxConnectionTTL) {
+    if (expireEvent.isNull())
+      expireEvent = base.newEvent(this, &HTTP::expireCB, true);
+
+    expireEvent->add(60); // Check once per minute
+
+  } else if (expireEvent->isPending()) expireEvent->del();
 }
 
 
-int HTTP::bind(const cb::IPAddress &addr) {
-  evhttp_bound_socket *handle =
-    evhttp_bind_socket_with_handle(http, addr.getHost().c_str(),
-                                   addr.getPort());
+void HTTP::remove(Connection &con) {connections.remove(&con);}
 
-  if (!handle) THROW("Unable to bind HTTP server to " << addr);
+
+void HTTP::bind(const cb::IPAddress &addr) {
+  // TODO Support binding multiple addresses
+  if (this->socket.isSet()) THROW("Already bound");
+
+  SmartPointer<Socket> socket = new Socket;
+  socket->setReuseAddr(true);
+  socket->bind(addr);
+  socket->listen(128);
+  socket_t fd = socket->get();
+
+  // TODO This event should be destroyed with the HTTP
+  base.newEvent(fd, EVENT_READ | EVENT_PERSIST, this, &HTTP::acceptCB)->add();
+
+  this->socket = socket;
   boundAddr = addr;
-
-  return (int)evhttp_bound_socket_get_fd(handle);
 }
 
 
-bufferevent *HTTP::bevCB(event_base *base) {
-  bufferevent *bev;
-
-#ifdef HAVE_OPENSSL
-  if (!sslCtx.isNull())
-    bev = bufferevent_openssl_socket_new(base, -1, SSL_new(sslCtx->getCTX()),
-                                         BUFFEREVENT_SSL_ACCEPTING,
-                                         BEV_OPT_CLOSE_ON_FREE);
-  else
-#endif
-    bev = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
-
-  if (0 <= priority) BufferEvent(bev, false).setPriority(priority);
-
-  return bev;
+cb::SmartPointer<Request> HTTP::createRequest
+(RequestMethod method, const URI &uri, const Version &version) {
+  return handler->createRequest(method, uri, version);
 }
 
 
-void HTTP::requestCB(evhttp_request *_req) {
+void HTTP::handleRequest(Request &req) {
   LOG_DEBUG(5, "New request on " << boundAddr << ", connection count = "
             << getConnectionCount());
 
-  // NOTE, Request gets deallocated via SmartPointer<Request>::SelfRef
-  Request *req = 0;
-
-  try {
-    // Allocate request
-    req = handler->createRequest(_req);
-    if (!req) THROW("Failed to create Event::Request");
-
-    // Set to incoming
-    req->setIncoming(true);
-
-    // Dispatch request
-    dispatch(*handler, *req);
-  } CATCH_ERROR;
-
-  if (req) handler->endRequest(req);
+  TRY_CATCH_ERROR(dispatch(*handler, req));
 }
 
 
 bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
   try {
-    if (handler.handleRequest(req)) return true;
+    if (handler.handleRequest(req)) {
+      handler.endRequest(req);
+      return true;
+    }
+
     req.sendError(HTTPStatus::HTTP_NOT_FOUND);
 
   } catch (cb::Exception &e) {
@@ -183,5 +141,49 @@ bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
     req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
   }
 
+  handler.endRequest(req);
   return false;
+}
+
+
+void HTTP::expireCB() {
+  double now = Timer::now();
+  unsigned count;
+
+  for (auto it = connections.begin(); it != connections.end();)
+    if (maxConnectionTTL < now - (*it)->getStartTime()) {
+      it = connections.erase(it);
+      count++;
+
+    } else it++;
+
+  LOG_DEBUG(4, "Dropped " << count << " expired connections");
+}
+
+
+void HTTP::acceptCB() {
+  IPAddress peer;
+  auto newSocket = socket->accept(&peer);
+  newSocket->setBlocking(false);
+
+  LOG_DEBUG(4, "New connection from " << peer);
+
+  // Create new Connection
+  SmartPointer<Connection> con =
+    new Connection(base, true, peer, newSocket->adopt(), sslCtx);
+
+  con->setHTTP(this);
+  con->setMaxHeaderSize(maxHeaderSize);
+  con->setMaxBodySize(maxBodySize);
+  if (0 <= priority) con->setPriority(priority);
+  con->setReadTimeout(readTimeout);
+  con->setWriteTimeout(writeTimeout);
+
+  connections.push_back(con);
+
+  // Send "service unavailable" at connection limit
+  if (maxConnections && maxConnections < connections.size())
+    con->sendServiceUnavailable();
+
+  else con->acceptRequest();
 }

@@ -32,34 +32,31 @@
 
 #pragma once
 
-#include <string>
-#include <ostream>
+#include <cbang/util/OrderedDict.h>
 
-struct evkeyvalq;
+#include <ostream>
 
 
 namespace cb {
   namespace Event {
-    class Headers {
-      evkeyvalq *hdrs;
+    class Buffer;
 
+    class Headers : public OrderedDict<std::string> {
     public:
-      Headers(evkeyvalq *hdrs) : hdrs(hdrs) {}
-      ~Headers() {}
-
-      void clear();
-      void add(const std::string &key, const std::string &value);
-      void set(const std::string &key, const std::string &value);
-      bool has(const std::string &key) const;
       std::string find(const std::string &key) const;
-      std::string get(const std::string &key) const;
+      void set(const std::string &key, const std::string &value)
+        {insert(key, value);}
       void remove(const std::string &key);
+      bool keyContains(const std::string &key, const std::string &value) const;
 
       bool hasContentType() const {return has("Content-Type");}
       std::string getContentType() const;
       void setContentType(const std::string &contentType);
       void guessContentType(const std::string &ext);
+      bool needsClose() const;
+      bool connectionKeepAlive() const;
 
+      bool parse(Buffer &buf, unsigned maxSize = 0);
       void write(std::ostream &stream) const;
     };
 

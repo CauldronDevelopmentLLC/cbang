@@ -33,11 +33,16 @@
 #pragma once
 
 #include "Request.h"
+#include "BufferEvent.h"
+#include "Enum.h"
+#include "Socket.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/net/IPAddress.h>
 
-struct evhttp_connection;
+#include <limits>
+#include <list>
+#include <vector>
 
 
 namespace cb {
@@ -45,41 +50,159 @@ namespace cb {
   class SSLContext;
 
   namespace Event {
-    class Base;
-    class DNSBase;
-    class BufferEvent;
+    class Event;
+    class HTTP;
+    class Request;
+    class Websocket;
 
-    class Connection {
-      evhttp_connection *con;
-      bool deallocate;
+    class Connection : public BufferEvent, public Enum {
+      Base &base;
+
+      static uint64_t nextID;
+      uint64_t id = ++nextID;
+
+      typedef enum {
+        STATE_DISCONNECTED,
+        STATE_CONNECTING,
+        STATE_IDLE,
+        STATE_READING_FIRSTLINE,
+        STATE_READING_HEADERS,
+        STATE_READING_BODY,
+        STATE_READING_TRAILER,
+        STATE_WEBSOCK_HEADER,
+        STATE_WEBSOCK_BODY,
+        STATE_WRITING,
+      } state_t;
+
+      state_t state;
+      bool incoming;
+      IPAddress peer;
+      IPAddress bind;
+      double startTime;
+      SmartPointer<HTTP> http;
+      SmartPointer<SSLContext> sslCtx;
+
+      unsigned retries = 0;
+      SmartPointer<Event> retryEvent;
+      std::list<SmartPointer<Request> > requests;
+
+      std::string defaultContentType = "text/html; charset=UTF-8";
+      uint32_t maxBodySize = std::numeric_limits<unsigned>::max();
+      uint32_t maxHeaderSize = std::numeric_limits<unsigned>::max();
+      double retryTimeout = 0;
+      unsigned maxRetries = 0;
+      unsigned readTimeout = 50;
+      unsigned writeTimeout = 50;
+      unsigned connectTimeout = 0;
+
+      bool detectClose = false;
+      bool chunkedRequest = false;
+
+      uint32_t headerSize = 0;
+      uint32_t bodySize = 0;
+      int64_t bytesToRead = 0;
 
     public:
-      Connection(evhttp_connection *con, bool deallocate = true);
-      Connection(Base &base, DNSBase &dnsBase, const IPAddress &peer);
-      Connection(Base &base, DNSBase &dnsBase, BufferEvent &bev,
-                 const IPAddress &peer);
-      Connection(Base &base, DNSBase &dnsBase, const URI &uri,
-                 const SmartPointer<SSLContext> &sslCtx = 0);
-      ~Connection();
+      Connection(Base &base, bool incoming, const IPAddress &peer,
+                 socket_t fd = -1, const SmartPointer<SSLContext> &sslCtx = 0);
+      virtual ~Connection();
 
-      evhttp_connection *getConnection() const {return con;}
-      evhttp_connection *adopt() {deallocate = false; return con;}
+      virtual DNSBase &getDNS() {THROW("No DNSBase");}
 
-      BufferEvent getBufferEvent() const;
+      uint64_t getID() const {return id;}
+      bool isConnected() const;
+      bool isIncoming() const {return incoming;}
 
-      cb::IPAddress getPeer() const;
+      const cb::IPAddress &getPeer() const {return peer;}
+      void setPeer(const cb::IPAddress &peer) {this->peer = peer;}
 
-      void setMaxBodySize(unsigned size);
-      void setMaxHeaderSize(unsigned size);
-      void setInitialRetryDelay(double delay);
-      void setRetries(unsigned retries);
-      void setTimeout(double timeout);
-      void setLocalAddress(const IPAddress &addr);
+      const cb::IPAddress &getLocalAddress() const {return bind;}
+      void setLocalAddress(const cb::IPAddress &bind) {this->bind = bind;}
 
-      void makeRequest(evhttp_request *req, unsigned method, const URI &uri);
+      double getStartTime() const {return startTime;}
 
-      void logSSLErrors();
-      std::string getSSLErrors();
+      const SmartPointer<HTTP> &getHTTP() const {return http;}
+      void setHTTP(const SmartPointer<HTTP> &http) {this->http = http;}
+
+      const SmartPointer<Request> &getRequest() const;
+      void checkActiveRequest(Request &req) const;
+      bool isWebsocket() const;
+      Websocket &getWebsocket() const;
+
+      const std::string &getDefaultContentType() const
+        {return defaultContentType;}
+      void setDefaultContentType(const std::string &s) {defaultContentType = s;}
+
+      void setMaxBodySize(uint32_t size) {maxBodySize = size;}
+      uint32_t getMaxBodySize() const {return maxBodySize;}
+
+      void setMaxHeaderSize(uint32_t size) {maxHeaderSize = size;}
+      uint32_t getMaxHeaderSize() const {return maxHeaderSize;}
+
+      void setMaxRetries(unsigned retries) {maxRetries = retries;}
+      unsigned getMaxRetries() const {return maxRetries;}
+
+      void setReadTimeout(unsigned t) {readTimeout = t;}
+      unsigned getReadTimeout() const {return readTimeout;}
+
+      void setWriteTimeout(unsigned t) {writeTimeout = t;}
+      unsigned getWriteTimeout() const {return writeTimeout;}
+
+      void setConnectTimeout(unsigned t) {connectTimeout = t;}
+      unsigned getConnectTimeout() const {return connectTimeout;}
+
+      uint32_t getHeaderSize() const {return headerSize;}
+      uint32_t getBodySize() const {return bodySize;}
+
+      void sendServiceUnavailable();
+      void makeRequest(Request &req);
+      void acceptRequest();
+      void cancelRequest(Request &req);
+      void write(Request &req, const Buffer &buf);
+
+    protected:
+      static const char *getStateString(state_t state);
+      void setState(state_t state);
+
+      void push(const SmartPointer<Request> &req);
+      SmartPointer<Request> pop();
+
+      void free(ConnectionError error);
+      void fail(ConnectionError error);
+      void reset();
+      void dispatch();
+      void done();
+      void retry();
+      void connect();
+
+      void websockClose(WebsockStatus status, const std::string &msg = "");
+      void websockReadHeader();
+      void websockReadBody();
+
+      void startRead();
+      void newRequest(const std::string &line);
+      void readFirstLine();
+      bool tryReadHeader();
+      void headersCallback();
+      void readHeader();
+      void getBody();
+      void readBody();
+      void readTrailer();
+
+      // From BufferEvent
+      using BufferEvent::setTimeouts;
+      using BufferEvent::setFD;
+      using BufferEvent::getFD;
+      using BufferEvent::setRead;
+      using BufferEvent::setWrite;
+      using BufferEvent::setWatermark;
+      using BufferEvent::getOutput;
+      using BufferEvent::getInput;
+      using BufferEvent::connect;
+
+      void readCB();
+      void writeCB();
+      void eventCB(short what);
     };
   }
 }

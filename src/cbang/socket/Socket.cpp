@@ -54,11 +54,7 @@ using namespace cb;
 bool Socket::initialized = false;
 
 
-Socket::Socket() {
-  if (SocketDebugger::instance().isEnabled())
-    impl = new SocketDebugImpl(this);
-  else impl = new SocketDefaultImpl(this);
-}
+Socket::Socket() : Socket(0) {}
 
 
 Socket::Socket(const SmartPointer<SSLContext> &sslCtx) {

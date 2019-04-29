@@ -33,46 +33,62 @@
 #pragma once
 
 #include "Request.h"
-#include "Connection.h"
-
-#include <cbang/SmartPointer.h>
 
 #include <functional>
 
 
 namespace cb {
-  class URI;
-
   namespace Event {
-    class Client;
-    class HTTPHandler;
+    class Websocket : public Request {
+      bool active = false;
 
-    class PendingRequest : public Connection, public Request {
+      typedef std::function<void (const char *, uint64_t)> cb_t;
+      cb_t cb;
+
+      uint64_t bytesToRead = 0;
+      WebsockOpCode wsOpCode;
+      uint8_t wsMask[4];
+      bool wsFinish = false;
+      std::vector<char> wsMsg;
+
+      std::string pongPayload;
+
     public:
-      typedef std::function<void (Request *, int)> callback_t;
+      using Request::Request;
+
+      bool isActive() const {return active;}
+
+      void setCallback(const cb_t &cb) {this->cb = cb;}
+
+      void send(const char *data, uint64_t length);
+      void send(const std::string &s);
+      void send(const char *s) {send(std::string(s));}
+
+      void close(WebsockStatus status, const std::string &msg = "");
+      void ping(const std::string &payload = "");
+
+      // Called by Connection
+      bool upgrade();
+      bool readHeader(Buffer &input);
+      bool readBody(Buffer &input);
+
+      // From Request
+      bool isWebsocket() const {return active;}
+
+      // Callbacks
+      virtual bool onUpgrade() {return true;}
+      virtual void onOpen() {}
+      virtual void onMessage(const char *data, uint64_t length);
+      virtual void onClose(WebsockStatus status, const std::string &msg) {}
 
     protected:
-      Client &client;
-      unsigned method;
-      callback_t cb;
-      int err;
-      SmartPointer<Request> selfRef;
-
-    public:
-      PendingRequest(Client &client, const URI &uri, unsigned method,
-                     callback_t cb);
-      ~PendingRequest();
-
-      Client &getClient() {return client;}
-      RequestMethod getMethod() const {return (RequestMethod::enum_t)method;}
-
       using Request::send;
-      void send();
+      using Request::reply;
 
-      void callback();
-      void error(int code);
+      void writeFrame(WebsockOpCode opcode, bool finish,
+                      const void *data, uint64_t len);
+      void pong();
+      void message(const char *data, uint64_t length);
     };
-
-    typedef SmartPointer<PendingRequest> PendingRequestPtr;
   }
 }
