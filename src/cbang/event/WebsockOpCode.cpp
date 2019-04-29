@@ -30,27 +30,6 @@
 
 \******************************************************************************/
 
-#include "ResourceHTTPHandler.h"
-#include "Request.h"
-
-#include <cbang/String.h>
-
-using namespace cb;
-using namespace cb::Event;
-
-
-bool ResourceHTTPHandler::operator()(Request &req) {
-  const Resource *res;
-
-  if (root.isDirectory()) res = root.find(req.getURI().getPath());
-  else res = &root;
-
-  if (!res || res->isDirectory()) return false;
-
-  req.reply(HTTP_OK, res->getData(), res->getLength());
-
-  if (!req.outHas("Cache-Control"))
-    req.outSet("Cache-Control", "max-age=" + String(timeout));
-
-  return true;
-}
+#define CBANG_ENUM_IMPL
+#include "WebsockOpCode.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

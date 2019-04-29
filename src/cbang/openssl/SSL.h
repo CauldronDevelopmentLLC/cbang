@@ -41,6 +41,7 @@ typedef struct ssl_st _SSL;
 typedef struct ssl_ctx_st SSL_CTX;
 typedef struct bio_st BIO;
 
+
 namespace cb {
   class Mutex;
   class BStream;

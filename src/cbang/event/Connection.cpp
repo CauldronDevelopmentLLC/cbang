@@ -33,13 +33,20 @@
 #include "Connection.h"
 #include "Base.h"
 #include "DNSBase.h"
-#include "BufferEvent.h"
 #include "Request.h"
+#include "HTTP.h"
+#include "Event.h"
+#include "Websocket.h"
 
 #include <cbang/Exception.h>
+#include <cbang/Catch.h>
+
 #include <cbang/net/IPAddress.h>
+
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
+#include <cbang/socket/Socket.h>
+#include <cbang/os/SysError.h>
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
@@ -47,169 +54,724 @@
 namespace cb {class SSLContext {};}
 #endif
 
-#include <event2/http.h>
+#include <event2/bufferevent.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
-namespace {
-  evhttp_cmd_type convert_method(unsigned method) {
-    switch (method) {
-    case RequestMethod::HTTP_GET:     return EVHTTP_REQ_GET;
-    case RequestMethod::HTTP_POST:    return EVHTTP_REQ_POST;
-    case RequestMethod::HTTP_HEAD:    return EVHTTP_REQ_HEAD;
-    case RequestMethod::HTTP_PUT:     return EVHTTP_REQ_PUT;
-    case RequestMethod::HTTP_DELETE:  return EVHTTP_REQ_DELETE;
-    case RequestMethod::HTTP_OPTIONS: return EVHTTP_REQ_OPTIONS;
-    case RequestMethod::HTTP_TRACE:   return EVHTTP_REQ_TRACE;
-    case RequestMethod::HTTP_CONNECT: return EVHTTP_REQ_CONNECT;
-    case RequestMethod::HTTP_PATCH:   return EVHTTP_REQ_PATCH;
-    default: THROW("Unknown method " << method);
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX << "CON" << id << ':'
+
+
+uint64_t Connection::nextID = 0;
+
+
+Connection::Connection(Base &base, bool incoming, const IPAddress &peer,
+                       socket_t fd, const SmartPointer<SSLContext> &sslCtx) :
+  BufferEvent(base, incoming, fd, sslCtx), base(base),
+  state(incoming ? STATE_READING_FIRSTLINE : STATE_DISCONNECTED),
+  incoming(incoming), peer(peer), startTime(Timer::now()), sslCtx(sslCtx) {
+
+  LOG_DEBUG(4, "created " << getStateString(state));
+}
+
+
+Connection::~Connection() {
+  if (retryEvent.isSet()) {
+    TRY_CATCH_ERROR(retryEvent->del());
+    retryEvent.release();
+  }
+
+  LOG_DEBUG(4, "destroyed " << getStateString(state));
+}
+
+
+bool Connection::isConnected() const {
+  return state != STATE_DISCONNECTED && state != STATE_CONNECTING;
+}
+
+
+const SmartPointer<Request> &Connection::getRequest() const {
+  if (requests.empty()) THROW("No request");
+  return requests.front();
+}
+
+
+void Connection::checkActiveRequest(Request &req) const {
+  if (getRequest() != &req) THROW("Not the active request");
+}
+
+
+bool Connection::isWebsocket() const {
+  return requests.size() && dynamic_cast<Websocket *>(requests.front().get());
+}
+
+
+Websocket &Connection::getWebsocket() const {
+  return *getRequest().cast<Websocket>();
+}
+
+
+void Connection::sendServiceUnavailable() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  if (requests.size()) THROW("Not a new Connection");
+  push(new Request);
+  getRequest()->sendError(HTTP_SERVICE_UNAVAILABLE);
+}
+
+
+void Connection::makeRequest(Request &req) {
+  LOG_DEBUG(4, __func__ << "()");
+
+  if (req.isReplying()) THROW("Request already replying");
+
+  bool first = requests.empty();
+  push(&req);
+
+  // If this is the active request dispatch it
+  if (first) dispatch();
+}
+
+
+void Connection::acceptRequest() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  if (requests.size()) THROW("Not a new Connection");
+  startRead();
+}
+
+
+void Connection::cancelRequest(Request &req) {
+  LOG_DEBUG(4, __func__ << "()");
+
+  if (getRequest() == &req) fail(CONN_ERR_REQUEST_CANCEL);
+  else requests.remove(&req);
+}
+
+
+void Connection::write(Request &req, const Buffer &buf) {
+  LOG_DEBUG(4, __func__ << "() bytes=" << buf.getLength());
+  checkActiveRequest(req);
+
+  getOutput().add(buf);
+
+  detectClose = false; // Stop detect close
+  setWrite(true);
+
+  // Don't change state or disable read if active Websocket
+  if (!req.isWebsocket()) {
+    setRead(false);
+    setState(STATE_WRITING);
+  }
+}
+
+
+const char *Connection::getStateString(state_t state) {
+  switch (state) {
+  case STATE_DISCONNECTED:      return "DISCONNECTED";
+  case STATE_CONNECTING:        return "CONNECTING";
+  case STATE_IDLE:              return "IDLE";
+  case STATE_READING_FIRSTLINE: return "READING_FIRSTLINE";
+  case STATE_READING_HEADERS:   return "READING_HEADERS";
+  case STATE_READING_BODY:      return "READING_BODY";
+  case STATE_READING_TRAILER:   return "READING_TRAILER";
+  case STATE_WEBSOCK_HEADER:    return "WEBSOCK_HEADER";
+  case STATE_WEBSOCK_BODY:      return "WEBSOCK_BODY";
+  case STATE_WRITING:           return "WRITING";
+  }
+
+  return "INVALID";
+}
+
+
+void Connection::setState(state_t state) {
+  if (state == this->state) return;
+  LOG_DEBUG(4, getStateString(this->state) << " -> " << getStateString(state));
+  this->state = state;
+}
+
+
+void Connection::push(const SmartPointer<Request> &req) {
+  if (req->hasConnection()) THROW("Request already associated with Connection");
+  req->setConnection(this);
+  requests.push_back(req);
+}
+
+
+SmartPointer<Request> Connection::pop() {
+  auto req = getRequest();
+  requests.pop_front();
+  return req;
+}
+
+
+void Connection::free(ConnectionError error) {
+  LOG_DEBUG(4, __func__ << '(' << error << ')');
+
+  reset();
+
+  // Remove request and callback
+  while (!requests.empty()) {
+    auto req = pop();
+    if (!incoming) TRY_CATCH_ERROR(req->onResponse(error));
+  }
+
+  // Remove from HTTP
+  if (http.isSet()) http->remove(*this);
+}
+
+
+void Connection::fail(ConnectionError error) {
+  LOG_DEBUG(4, __func__ << '(' << error << ')');
+
+  if (incoming) free(error);
+  else {
+    reset();
+    TRY_CATCH_ERROR(pop()->onResponse(error));
+    if (requests.size()) connect(); // Next request
+    else free(error);
+  }
+}
+
+
+void Connection::reset() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  // Disable events
+  setRead(false);
+  setWrite(false, true);
+
+  // Clear any buffered data
+  getOutput().clear();
+  getInput().clear();
+
+  setState(STATE_DISCONNECTED);
+}
+
+
+void Connection::dispatch() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  if (incoming) THROW("Expected outgoing Connection");
+  if (!isConnected()) return connect();
+  getRequest()->write();
+}
+
+
+void Connection::done() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  // Incoming connection just processed request; respond
+  // Outgoing connection just processed response; idle or close
+
+  setRead(false); // Done reading
+
+  auto req = getRequest();
+
+  if (incoming) {
+    setState(STATE_WRITING);                  // Start reply
+    TRY_CATCH_ERROR(return req->onRequest()); // Callback
+    fail(CONN_ERR_EXCEPTION);                 // Error on exception
+
+  } else {
+    // Idle or close the connection
+    setState(STATE_IDLE);
+
+    // Remove request
+    pop();
+
+    try {
+      // Callback
+      req->onResponse(CONN_ERR_OK);
+
+      // Close connection if needed
+      bool needsClose = req->needsClose();
+      if (needsClose) reset();
+
+      // If there are more requests start the next one
+      if (!requests.empty()) dispatch();
+      else if (!needsClose) {
+        // Persistent Connection, detect if other side closes
+        detectClose = true;
+        setRead(true);
+
+      } else free(CONN_ERR_OK); // Free if last request and not closing
+
+      return;
+    } CATCH_ERROR;
+
+    free(CONN_ERR_EXCEPTION);
+  }
+}
+
+
+void Connection::retry() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  reset();
+
+  if (!maxRetries || retries < maxRetries) {
+    if (retryEvent.isNull())
+      retryEvent = base.newEvent(this, &Connection::connect);
+
+    if (!retries++) retryTimeout = 2;
+    else retryTimeout *= 2; // Backoff
+
+    retryEvent->add(retryTimeout);
+    return;
+  }
+
+  // No more retries, fail all requests
+  free(CONN_ERR_CONNECT);
+}
+
+
+void Connection::connect() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  if (incoming) THROW("Cannot call connect() on incoming Connection");
+  if (state == STATE_CONNECTING) return;
+  state_t oldState = state;
+
+  try {
+    reset();
+
+    // Open and bind new socket
+    Socket socket;
+    if (bind.getIP()) socket.bind(bind);
+    else socket.open();
+    socket.setBlocking(false);
+    setFD(socket.adopt());
+
+    setTimeouts(0, connectTimeout);
+    setState(STATE_CONNECTING);
+    setWrite(true); // Enable write callback
+
+    BufferEvent::connect(getDNS(), peer);
+    return;
+
+  } CATCH_ERROR;
+
+  setState(oldState);
+  retry();
+}
+
+
+void Connection::websockClose(WebsockStatus status, const string &msg) {
+  getWebsocket().close(status, msg);
+}
+
+
+void Connection::websockReadHeader() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  setRead(true);
+  setWrite(false);
+  setState(STATE_WEBSOCK_HEADER);
+
+  if (getWebsocket().readHeader(getInput())) websockReadBody();
+}
+
+
+void Connection::websockReadBody() {
+  setState(STATE_WEBSOCK_BODY);
+
+  auto &ws = getWebsocket();
+
+  if (ws.readBody(getInput())) {
+    if (ws.isActive()) setState(STATE_WEBSOCK_HEADER);
+    else setState(STATE_WRITING); // Writing close
+  }
+}
+
+
+void Connection::startRead() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  // Start reading response
+  setWrite(false);
+  setRead(true);
+  setState(STATE_READING_FIRSTLINE);
+}
+
+
+void Connection::newRequest(const string &line) {
+  LOG_DEBUG(4, __func__ << "()");
+
+  vector<string> parts;
+  String::tokenize(line, parts, " ");
+
+  if (parts.size() != 3) THROW("Invalid HTTP request line: " << line);
+
+  RequestMethod method = RequestMethod::parse(parts[0]);
+  URI uri = parts[1];
+  Version version = Request::parseHTTPVersion(parts[2]);
+
+  push(http->createRequest(method, uri, version));
+}
+
+
+void Connection::readFirstLine() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  try {
+    string line = getInput().readLine(maxHeaderSize);
+    if (line.empty()) return; // Need more data
+
+    if (maxHeaderSize && maxHeaderSize < line.length())
+      return getRequest()->sendError(HTTP_BAD_REQUEST, "Header too long");
+
+    headerSize += line.length() + 2;
+
+    if (incoming) newRequest(line);
+    else getRequest()->parseResponseLine(line);
+
+    readHeader();
+
+  } catch (const Exception &e) {
+    LOG_ERROR(e.getMessage());
+    getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+  }
+}
+
+
+bool Connection::tryReadHeader() {
+  try {
+    unsigned maxSize = maxHeaderSize ? maxHeaderSize - headerSize : 0;
+    unsigned bytes = getInput().getLength();
+    bool done = getRequest()->getInputHeaders().parse(getInput(), maxSize);
+
+    headerSize += bytes - getInput().getLength();
+
+    return done;
+
+  } catch (const Exception &e) {
+    LOG_ERROR(e.getMessage());
+    getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+  }
+
+  return false;
+}
+
+
+void Connection::headersCallback() {
+  TRY_CATCH_ERROR(return getRequest()->onHeaders());
+  fail(CONN_ERR_EXCEPTION);
+}
+
+
+void Connection::readHeader() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  setState(STATE_READING_HEADERS);
+
+  if (!tryReadHeader()) return;
+
+  // Request may be canceled based on headers
+  headersCallback();
+  if (state != STATE_READING_HEADERS) return;
+
+  auto req = getRequest();
+
+  // Done reading headers
+  if (incoming) {
+    // Handle protocol upgrades
+    if (req->inHas("Upgrade")) {
+      string upgrade = String::toLower(req->inFind("Upgrade"));
+
+      if (upgrade == "websocket") {
+        Websocket *websock = dynamic_cast<Websocket *>(req.get());
+        if (websock && websock->upgrade()) {
+          TRY_CATCH_ERROR(websock->onOpen(); return);
+          websock->close(WS_STATUS_UNEXPECTED, "Exception");
+          return;
+        }
+      }
+
+      return req->sendError(HTTP_BAD_REQUEST, "Cannot upgrade");
+    }
+
+    getBody();
+
+  } else {
+    // Start over on 100 Continue
+    if (req->getResponseCode() == 100) return startRead();
+
+    if (req->mustHaveBody()) getBody();
+    else done();
+  }
+}
+
+
+void Connection::getBody() {
+  LOG_DEBUG(4, __func__ << "()");
+
+  // If this is a request without a body, then we are done
+  if (incoming && !getRequest()->mayHaveBody()) return done();
+
+  setState(STATE_READING_BODY);
+  bytesToRead = -1;
+  bodySize = 0;
+  auto req = getRequest();
+
+  string xferEnc = String::toLower(req->inFind("Transfer-Encoding"));
+  if (xferEnc == "chunked") chunkedRequest = true;
+  else {
+    string contentLength = req->inFind("Content-Length");
+
+    if (contentLength.empty()) {
+      // Check for Connection: close
+      string connection = String::toLower(req->inFind("Connection"));
+
+      if (connection != "close") {
+        // Bad combination, cannot tell when communication should end
+        LOG_ERROR("No Content-Length but peer wants to keep connection open");
+        return req->sendError(HTTP_BAD_REQUEST,
+                             "Need Content-Length or Connection: close");
+      }
+
+      // Incoming non-chunked request /wo Content-Length has no body
+      if (incoming) return done();
+
+    } else {
+      try {
+        bytesToRead = String::parseU32(contentLength);
+      } catch (const Exception &e) {
+        return req->sendError(HTTP_BAD_REQUEST, "Invalid Content-Length");
+      }
+
+      if (maxBodySize && maxBodySize < (uint64_t)bytesToRead)
+        return req->sendError(HTTP_REQUEST_ENTITY_TOO_LARGE);
+
+      // Allocate space
+      req->getInputBuffer().expand(bytesToRead);
     }
   }
-}
 
+  // 100 HTTP continue
+  auto &version = req->getVersion();
+  if (incoming && Version(1, 1) <= version && !getInput().getLength()) {
+    string expect = String::toLower(req->inFind("Expect"));
 
-Connection::Connection(evhttp_connection *con, bool deallocate) :
-  con(con), deallocate(deallocate) {
-  if (!con) THROW("Connection cannot be null");
-}
+    if (!expect.empty()) {
+      if (expect == "100-continue")
+        try {
+          if (req->onContinue()) {
+            setWrite(true);
+            getOutput()
+              .add("HTTP/" + version.toString() + " 100 Continue\r\n\r\n");
+            return;
+          }
+        } CATCH_ERROR;
 
-
-Connection::Connection(cb::Event::Base &base, DNSBase &dns,
-                       const IPAddress &peer) :
-  con(evhttp_connection_base_new(base.getBase(), dns.getDNSBase(),
-                                 peer.getHost().c_str(), peer.getPort())),
-  deallocate(true) {
-  if (!con) THROW("Failed to create connection to " << peer);
-}
-
-
-Connection::Connection(cb::Event::Base &base, DNSBase &dns, BufferEvent &bev,
-                       const IPAddress &peer) :
-  con(evhttp_connection_base_bufferevent_new
-      (base.getBase(), dns.getDNSBase(), bev.adopt(), peer.getHost().c_str(),
-       peer.getPort())), deallocate(true) {
-  if (!con) THROW("Failed to create connection to " << peer);
-}
-
-
-Connection::Connection(cb::Event::Base &base, DNSBase &dns, const URI &uri,
-                       const SmartPointer<SSLContext> &sslCtx) :
-  con(0), deallocate(true) {
-  bool https = uri.getScheme() == "https";
-
-#ifdef HAVE_OPENSSL
-  if (https && sslCtx.isNull()) THROW("Need SSL context for https connection");
-
-  BufferEvent bev(base, https ? sslCtx : 0, uri.getHost());
-#else
-
-  if (https) THROW("C! not built with OpenSSL support");
-
-  BufferEvent bev(base, 0, uri.getHost());
-#endif
-
-  // TODO OpenSSL connections do not work with async DNS
-  con = evhttp_connection_base_bufferevent_new
-    (base.getBase(), sslCtx.isNull() ? dns.getDNSBase() : 0, bev.adopt(),
-     uri.getHost().c_str(), uri.getPort());
-
-  LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
-
-  if (!con) THROW("Failed to create connection to " << uri);
-}
-
-
-Connection::~Connection() {if (con && deallocate) evhttp_connection_free(con);}
-
-
-BufferEvent Connection::getBufferEvent() const {
-  bufferevent *bev = evhttp_connection_get_bufferevent(con);
-  if (!bev) THROW("Connection does not have BufferEvent");
-  return BufferEvent(bev, false);
-}
-
-
-IPAddress Connection::getPeer() const {
-  IPAddress peer;
-
-  char *addr;
-  ev_uint16_t port;
-  evhttp_connection_get_peer(con, &addr, &port);
-  if (addr) peer = IPAddress(addr, port);
-
-  const sockaddr *sa = evhttp_connection_get_addr(con);
-  if (sa && sa->sa_family == AF_INET) {
-    peer.setPort(((sockaddr_in *)sa)->sin_port);
-    peer.setIP(((sockaddr_in *)sa)->sin_addr.s_addr);
+      req->sendError(HTTP_EXPECTATION_FAILED);
+      return;
+    }
   }
 
-  return peer;
+  readBody();
 }
 
 
-void Connection::setMaxBodySize(unsigned size) {
-  evhttp_connection_set_max_body_size(con, size);
-}
+void Connection::readBody() {
+  LOG_DEBUG(4, __func__ << "()");
 
+  auto buf = getInput();
+  auto req = getRequest();
 
-void Connection::setMaxHeaderSize(unsigned size) {
-  evhttp_connection_set_max_headers_size(con, size);
-}
+  if (chunkedRequest) {
+    while (buf.getLength()) {
+      if (bytesToRead < 0) {
+        // Read chunk size
+        string size = buf.readLine(12);
 
+        // Last chunk on a new line?
+        if (size.empty()) continue;
 
-void Connection::setInitialRetryDelay(double delay) {
-  struct timeval tv = Timer::toTimeVal(delay);
-  evhttp_connection_set_initial_retry_tv(con, &tv);
-}
+        unsigned bytes = String::parseU32("0x" + size);
 
+        bodySize += bytes;
+        bytesToRead = bytes;
 
-void Connection::setRetries(unsigned retries) {
-  evhttp_connection_set_retries(con, retries);
-}
+        if (maxBodySize && maxBodySize < bodySize)
+          return req->sendError(HTTP_BAD_REQUEST, "Too long");
 
+        if (!bytesToRead) {
+          // Finished last chunk
+          headerSize = 0;
+          return readTrailer();
+        }
+      }
 
-void Connection::setTimeout(double timeout) {
-  struct timeval tv = Timer::toTimeVal(timeout);
-  evhttp_connection_set_timeout_tv(con, &tv);
-}
+      // Wait for end of chunk
+      if (0 < bytesToRead && buf.getLength() < bytesToRead) break;
 
+      // Completed chunk
+      buf.remove(req->getInputBuffer(), bytesToRead);
+      bytesToRead = -1;
+    }
 
-void Connection::setLocalAddress(const IPAddress &addr) {
-  if (addr.getIP()) {
-    string ip(IPAddress(addr.getIP()).getHost());
-    evhttp_connection_set_local_address(con, ip.c_str());
+  } else {
+    unsigned bytes = buf.getLength();
+
+    if (0 <= bytesToRead) {
+      if (bytesToRead < bytes) bytes = bytesToRead;
+      bytesToRead -= bytes;
+    }
+
+    bodySize += bytes;
+
+    if (maxBodySize && maxBodySize < bodySize)
+      return req->sendError(HTTP_BAD_REQUEST, "Too long");
+
+    buf.remove(req->getInputBuffer(), bytes);
   }
 
-  if (addr.getPort()) evhttp_connection_set_local_port(con, addr.getPort());
+  if (bytesToRead) {
+    setRead(true); // Read more
+    if (0 < bytesToRead) setWatermark(true, bytesToRead);
+
+  } else done();
 }
 
 
-void Connection::makeRequest(evhttp_request *req, unsigned method,
-                             const URI &uri) {
-  evhttp_cmd_type m = convert_method(method);
+void Connection::readTrailer() {
+  LOG_DEBUG(4, __func__ << "()");
+  setState(STATE_READING_TRAILER);
 
-  if (evhttp_make_request(con, req, m, uri.toString().c_str()))
-    THROW("Failed to make request to " << uri);
+  if (tryReadHeader()) done();
 }
 
 
-void Connection::logSSLErrors() {
-#ifdef HAVE_OPENSSL
-  bufferevent *bev = evhttp_connection_get_bufferevent(con);
-  if (bev) BufferEvent(bev, false).logSSLErrors();
+void Connection::readCB() {
+  LOG_DEBUG(4, __func__ << "() bytes=" << getInput().getLength());
+
+  setWatermark(true, 0);
+
+  try {
+    switch (state) {
+    case STATE_DISCONNECTED:      break;
+    case STATE_CONNECTING:        return;
+    case STATE_IDLE:              return reset();
+    case STATE_READING_FIRSTLINE: return readFirstLine();
+    case STATE_READING_HEADERS:   return readHeader();
+    case STATE_READING_BODY:      return readBody();
+    case STATE_READING_TRAILER:   return readTrailer();
+    case STATE_WEBSOCK_HEADER:    return websockReadHeader();
+    case STATE_WEBSOCK_BODY:      return websockReadBody();
+    case STATE_WRITING:           return;
+    }
+
+    THROW("Unexpected state " << state << " in read callback");
+  } CATCH_ERROR;
+
+  fail(CONN_ERR_UNKNOWN);
+}
+
+
+/// Invoked when data has been written
+void Connection::writeCB() {
+  LOG_DEBUG(4, __func__ << "() bytes=" << getInput().getLength());
+
+  try {
+    switch (state) {
+    case STATE_CONNECTING: return;
+    case STATE_READING_BODY: // Handle Continue during body read
+    case STATE_WEBSOCK_HEADER:
+    case STATE_WEBSOCK_BODY:
+    case STATE_WRITING:
+      // NOTE, Output buffer must be empty if write low watermark zero
+      if (getOutput().getLength()) return; // Still writing
+      break;
+    default: THROW("Unexpected state " << state << " in write callback");
+    }
+
+    setWrite(false); // Done writing
+
+    if (state != STATE_WRITING) return;
+
+    auto req = getRequest();
+
+    if (incoming) {
+      if (req->isChunked()) return; // Still writing
+      if (req->isWebsocket()) return websockReadHeader();
+
+      // Done
+      pop();
+
+      // Free connection if not persistent
+      auto &version = req->getVersion();
+      bool keepAlive = req->getInputHeaders().connectionKeepAlive();
+      if ((version < Version(1, 1) && !keepAlive) || req->needsClose())
+        return free(CONN_ERR_OK);
+    }
+
+    // Incoming: accept another request
+    // Outgoing: all output written, read response
+    startRead();
+
+    return;
+  } CATCH_ERROR;
+
+  fail(CONN_ERR_UNKNOWN);
+}
+
+
+void Connection::eventCB(short what) {
+  LOG_DEBUG(5, __func__ << "(" << BufferEvent::getEventsString(what) << ") "
+            << getStateString(state));
+
+  if (state == STATE_DISCONNECTED) return;
+
+  if (state == STATE_CONNECTING) {
+    if (what & BEV_EVENT_CONNECTED) {
+      LOG_DEBUG(3, "Connected to " << peer);
+      retries = 0; // Success
+      setState(STATE_IDLE);
+
+      // Set Read/Write timeouts
+      setTimeouts(readTimeout, writeTimeout);
+
+      // Start new requests
+      if (!requests.empty()) dispatch();
+
+    } else {
+      LOG_DEBUG(3, "Connection failed for " << peer << " with "
+                << BufferEvent::getEventsString(what)
+                << ", System Error: " << SysError());
+
+#ifndef _WIN32
+      if (errno == ECONNREFUSED) return retry();
 #endif
-}
 
+      if (what & BEV_EVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
+      else retry();
+    }
 
-string Connection::getSSLErrors() {
-#ifdef HAVE_OPENSSL
-  bufferevent *bev = evhttp_connection_get_bufferevent(con);
-  if (bev) return BufferEvent(bev, false).getSSLErrors();
-#endif
+    return;
+  }
 
-  return "";
+  if (state == STATE_WEBSOCK_HEADER || state == STATE_WEBSOCK_BODY) pop();
+
+  if (state == STATE_READING_BODY && !chunkedRequest && bytesToRead < 0 &&
+      what == (BEV_EVENT_READING | BEV_EVENT_EOF))
+    return done(); // Benign EOF on read
+
+  // When in close detect mode, a read error means the other side closed
+  if (detectClose) {
+    detectClose = false;
+    if (state != STATE_IDLE || incoming) THROW("Unexpected state " << state);
+    reset();
+
+    // Free if no more requests
+    if (requests.empty()) free(CONN_ERR_OK);
+    return;
+  }
+
+  if (what & BEV_EVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
+  else if (what & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) fail(CONN_ERR_EOF);
+  else if (what != BEV_EVENT_CONNECTED) fail(CONN_ERR_BUFFER_ERROR);
 }

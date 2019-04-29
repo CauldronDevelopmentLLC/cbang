@@ -30,7 +30,7 @@
 
 \******************************************************************************/
 
-#include "PendingRequest.h"
+#include "OutgoingRequest.h"
 #include "Client.h"
 #include "Buffer.h"
 #include "Headers.h"
@@ -38,95 +38,65 @@
 #include <cbang/String.h>
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
-#include <cbang/debug/Debugger.h>
 #include <cbang/os/SysError.h>
-
-#include <event2/http.h>
+#include <cbang/openssl/SSLContext.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
-namespace {
-  void request_cb(struct evhttp_request *req, void *pr) {
-    ((PendingRequest *)pr)->callback();
-  }
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX << "OUT" << Connection::getID() << ':'
 
 
-  void error_cb(enum evhttp_request_error error, void *pr) {
-    ((PendingRequest *)pr)->error(error);
-  }
+OutgoingRequest::OutgoingRequest(Client &client, const URI &uri,
+                                 RequestMethod method, callback_t cb) :
+  Connection(client.getBase(), false, uri.getIPAddress(), -1,
+             uri.getScheme() == "https" ? client.getSSLContext() : 0),
+  Request(method, uri), dns(client.getDNS()), cb(cb) {
+  LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
 }
 
 
-PendingRequest::PendingRequest(Client &client, const URI &uri, unsigned method,
-                               callback_t cb) :
-  Connection(client.getBase(), client.getDNS(), uri, client.getSSLContext()),
-  Request(evhttp_request_new(request_cb, this), uri, true), client(client),
-  method(method), cb(cb), err(0) {
-  evhttp_request_set_error_cb(req.access(), error_cb);
-}
+OutgoingRequest::~OutgoingRequest() {}
 
 
-PendingRequest::~PendingRequest() {
-  LOG_DEBUG(6, __func__ << "() " << Debugger::getStackTrace());
-  if (req.isSet()) evhttp_request_set_error_cb(req.access(), 0);
-}
-
-
-void PendingRequest::send() {
+void OutgoingRequest::send() {
   // Set output headers
   if (!outHas("Host")) outSet("Host", getURI().getHost());
   if (!outHas("Connection")) outSet("Connection", "close");
 
   // Set Content-Length
-  switch (method) {
-  case HTTP_POST:
-  case HTTP_PUT:
-  case HTTP_PATCH:
-    if (!outHas("Content-Length"))
-      outSet("Content-Length", String(getOutputBuffer().getLength()));
-    break;
-  default: break;
-  }
+  if (mayHaveBody() && !outHas("Content-Length"))
+    outSet("Content-Length", String(getOutputBuffer().getLength()));
 
-  LOG_INFO(1, "> " << getMethod() << " " << getURI());
+  LOG_INFO(1, "> " << getRequestLine());
   LOG_DEBUG(5, getOutputHeaders() << '\n');
   LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
 
   // Do it
-  err = 0;
-  selfRef = this; // Keep alive during request
-  Connection::makeRequest(req.access(), method, getURI());
+  Connection::makeRequest(*this);
 }
 
 
-void PendingRequest::callback() {
-  try {
-    if (!req) {
-      if (cb) cb(0, err);
-      selfRef.release();
-      return;
-    }
+void OutgoingRequest::onResponse(ConnectionError error) {
+  if (error) {
+    LOG_ERROR("< " << error);
 
-    LOG_DEBUG(5, getResponseLine() << '\n' << getInputHeaders() << '\n');
+    string sslErrors = getSSLErrors();
+    if (!sslErrors.empty()) sslErrors = " SSL:" + sslErrors;
+
+    LOG_DEBUG(4, "SYS:" << SysError() << sslErrors);
+
+  } else {
+    LOG_INFO(1, "< " << getResponseLine());
+    LOG_DEBUG(5, getInputHeaders() << '\n');
     LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
+  }
 
-    if (cb) cb(this, err);
-  } CATCH_ERROR;
+  setConnectionError(error);
+  TRY_CATCH_ERROR(if (cb) cb(*this));
 
-  selfRef.release();
-}
-
-
-void PendingRequest::error(int code) {
-  string sslErrors = getSSLErrors();
-
-  LOG_ERROR("Request failed: " << getErrorStr(code)
-            << ", System error: " << SysError()
-            << (sslErrors.empty() ? string() :
-                ", SSL errors: " + sslErrors));
-
-  err = code;
+  setConnection(0); // Release self reference
 }

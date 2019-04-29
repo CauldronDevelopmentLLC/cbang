@@ -151,14 +151,11 @@ void Event::activate(int flags) {
 void Event::call(int fd, short flags) {
   SmartPointer<Event> _ = this; // Don't deallocate while in callback
 
-  if (!logPrefix.empty()) Logger::instance().setThreadPrefix(logPrefix);
-
   LOG_DEBUG(5, "Event callback fd=" << fd << " flags=" << flags);
 
   TRY_CATCH_ERROR(cb(*this, fd, flags));
 
   if (!isPending()) SmartPointer<Event>::SelfRef::selfDeref();
-  if (!logPrefix.empty()) Logger::instance().setThreadPrefix("");
 }
 
 

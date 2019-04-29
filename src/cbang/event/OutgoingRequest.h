@@ -32,72 +32,50 @@
 
 #pragma once
 
-#include "Socket.h"
-#include "Buffer.h"
+#include "Request.h"
+#include "Connection.h"
 
 #include <cbang/SmartPointer.h>
 
-#include <string>
-
-struct bufferevent;
+#include <functional>
 
 
 namespace cb {
-  class SSLContext;
-  class SSL;
-  class IPAddress;
+  class URI;
 
   namespace Event {
-    class Base;
-    class DNSBase;
+    class Client;
+    class HTTPHandler;
 
-    class BufferEvent : SmartPointer<BufferEvent>::SelfRef {
-      friend class SelfRefCounter;
+    class OutgoingRequest : public Connection, public Request {
+    public:
+      typedef std::function<void (Request &)> callback_t;
 
-      bufferevent *bev;
-
-      Buffer inputBuffer;
-      Buffer outputBuffer;
+    protected:
+      DNSBase &dns;
+      callback_t cb;
 
     public:
-      BufferEvent(Base &base, bool incoming, socket_t fd = -1,
-                  const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~BufferEvent();
+      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
+                      callback_t cb);
+      ~OutgoingRequest();
 
-      bufferevent *getBufferEvent() const {return bev;}
+      using Request::send;
+      void send();
 
-      const Buffer &getInput() const {return inputBuffer;}
-      const Buffer &getOutput() const {return outputBuffer;}
-      Buffer &getInput() {return inputBuffer;}
-      Buffer &getOutput() {return outputBuffer;}
+      // Disambiguate RefCounter
+      unsigned getCount() const {return Request::getCount();}
+      void incCount() {Request::incCount();}
+      void decCount(const void *ptr) {Request::decCount(ptr);}
 
-      void setFD(socket_t fd);
-      socket_t getFD() const;
+      // From Connection
+      DNSBase &getDNS() {return dns;}
 
-      void setPriority(int priority);
-      int getPriority() const;
-
-      void setTimeouts(unsigned read, unsigned write);
-
-      bool hasSSL() const;
-      SSL getSSL() const;
-      void logSSLErrors();
-      std::string getSSLErrors();
-
-      bool isWrapper() const;
-
-      void setRead(bool enabled, bool hard = false);
-      void setWrite(bool enabled, bool hard = false);
-
-      void setWatermark(bool read, size_t low, size_t high = 0);
-
-      void connect(DNSBase &dns, const IPAddress &peer);
-
-      virtual void readCB() {}
-      virtual void writeCB() {}
-      virtual void eventCB(short what) {}
-
-      static std::string getEventsString(short events);
+      // From Request
+      void onRequest() {}
+      void onResponse(ConnectionError error);
     };
+
+    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }

@@ -101,7 +101,7 @@ Exception::Exception(const string &message, int code,
   _set_se_translator(convert_win32_exception);
 #endif
 
-#ifdef HAVE_DEBUGGER
+#ifdef HAVE_CBANG_BACKTRACE
   if (enableStackTraces) {
     trace = new StackTrace();
     Debugger::instance().getStackTrace(*trace);

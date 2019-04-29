@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "StdTypes.h"
+
 #include <string>
 #include <iostream>
 
@@ -48,8 +50,8 @@ namespace cb {
   protected:
     std::string filename;
     std::string function;
-    long line;
-    long col;
+    int32_t line;
+    int32_t col;
 
   public:
     /**
@@ -68,12 +70,12 @@ namespace cb {
      * @param line The line with that file.
      * @param col The column on that line.
      */
-    FileLocation(const std::string &filename, const long line = -1,
-                 const long col = -1) :
+    FileLocation(const std::string &filename, const int32_t line = -1,
+                 const int32_t col = -1) :
       filename(filename), line(line), col(col) {}
 
     FileLocation(const std::string &filename, const std::string &function,
-                 const long line = -1,  const long col = -1) :
+                 const int32_t line = -1,  const int32_t col = -1) :
       filename(filename), function(function), line(line), col(col) {}
 
     virtual ~FileLocation() {}
@@ -87,13 +89,13 @@ namespace cb {
     std::string getFileLineColumn() const;
 
     /// @return -1 if no line was set the line number otherwise
-    long getLine() const {return line;}
-    void setLine(long line) {this->line = line;}
+    int32_t getLine() const {return line;}
+    void setLine(int32_t line) {this->line = line;}
     void incLine() {line++;}
 
     /// @return -1 of no column was set the column number otherwise
-    long getCol() const {return col;}
-    void setCol(long col) {this->col = col;}
+    int32_t getCol() const {return col;}
+    void setCol(int32_t col) {this->col = col;}
     void incCol() {col++;}
 
     /// @return True of nothing set

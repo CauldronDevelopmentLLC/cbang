@@ -46,7 +46,7 @@
 
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
-#include <cbang/event/PendingRequest.h>
+#include <cbang/event/OutgoingRequest.h>
 
 using namespace cb;
 using namespace cb::ACMEv2;
@@ -318,7 +318,7 @@ string Account::getProblemString(const JSON::ValuePtr &problem) const {
 }
 
 
-void Account::call(const string &url, unsigned method) {
+void Account::call(const string &url, Event::RequestMethod method) {
   client.call(getURL(url), method, this, &Account::responseHandler)->send();
 }
 
@@ -328,7 +328,7 @@ void Account::post(const string &url, const string &payload) {
   string data = getSignedRequest(uri, payload);
   nonce.clear(); // Nonce used
 
-  SmartPointer<Event::PendingRequest> pr =
+  SmartPointer<Event::OutgoingRequest> pr =
     client.call(uri, HTTP_POST, data, this, &Account::responseHandler);
 
   pr->outSet("Content-Type", "application/jose+json");
@@ -430,19 +430,19 @@ void Account::retry() {
 
 
 
-void Account::responseHandler(Event::Request *req, int err) {
-  if (!err && req)
+void Account::responseHandler(Event::Request &req) {
+  if (req.isOk())
     try {
-      if (req->inHas("Replay-Nonce")) nonce = req->inGet("Replay-Nonce");
+      if (req.inHas("Replay-Nonce")) nonce = req.inGet("Replay-Nonce");
 
       // Check if this was a nonce request
-      if (req->getMethod() == HTTP_HEAD) {
+      if (req.getMethod() == HTTP_HEAD) {
         next();
         return;
       }
 
-      if (req->inGet("Content-Type") == "application/problem+json") {
-        LOG_WARNING("Account: " << getProblemString(req->getInputJSON()));
+      if (req.inGet("Content-Type") == "application/problem+json") {
+        LOG_WARNING("Account: " << getProblemString(req.getInputJSON()));
         // TODO handle rate limits and Retry-After header
         retry();
         return;
@@ -451,19 +451,19 @@ void Account::responseHandler(Event::Request *req, int err) {
       switch (state) {
       case STATE_IDLE: return;
 
-      case STATE_GET_DIR: directory = req->getInputJSON(); break;
-      case STATE_REGISTER: kid = req->inGet("Location"); break;
+      case STATE_GET_DIR: directory = req.getInputJSON(); break;
+      case STATE_REGISTER: kid = req.inGet("Location"); break;
 
       case STATE_NEW_ORDER:
-        orderLink = req->inGet("Location");
-        order = req->getInputJSON();
+        orderLink = req.inGet("Location");
+        order = req.getInputJSON();
         currentAuth = 0;
         break;
 
-      case STATE_GET_AUTH: authorization = req->getInputJSON(); break;
+      case STATE_GET_AUTH: authorization = req.getInputJSON(); break;
 
       case STATE_CHALLENGE: {
-        string status = req->getInputJSON()->getString("status");
+        string status = req.getInputJSON()->getString("status");
 
         if (status == "valid") break;
         else if (status == "pending") retry();
@@ -475,7 +475,7 @@ void Account::responseHandler(Event::Request *req, int err) {
         // Fall through, finalize returns order
 
       case STATE_GET_ORDER: {
-        order = req->getInputJSON();
+        order = req.getInputJSON();
         string status = order->getString("status");
 
         if (status == "processing") {
@@ -491,7 +491,7 @@ void Account::responseHandler(Event::Request *req, int err) {
       }
 
       case STATE_GET_CERT: {
-        getCurrentKeyCert().updateChain(req->getInput());
+        getCurrentKeyCert().updateChain(req.getInput());
         nextKeyCert();
         return;
       }

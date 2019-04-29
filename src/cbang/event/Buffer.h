@@ -42,26 +42,27 @@ namespace cb {
   namespace Event {
     class Buffer {
       evbuffer *evb;
-      bool deallocate;
 
     public:
-      Buffer(const Buffer &o) : evb(o.evb), deallocate(false) {}
-      Buffer(evbuffer *evb, bool deallocate);
+      Buffer();
+      Buffer(evbuffer *evb);
+      Buffer(const Buffer &o) : Buffer(o.evb) {}
       Buffer(const char *data, unsigned length);
       Buffer(const char *s);
       Buffer(const std::string &s);
-      Buffer();
       ~Buffer();
 
+      Buffer &operator=(const Buffer &o);
+
       evbuffer *getBuffer() const {return evb;}
-      evbuffer *adopt() {deallocate = false; return evb;}
 
       unsigned getLength() const;
+
       const char *toCString() const;
       std::string toString() const;
       std::string hexdump() const;
 
-      void reset();
+      void freeze(bool enable, bool front);
       void clear();
       void expand(unsigned length);
       char *pullup(int length = -1);
@@ -70,9 +71,20 @@ namespace cb {
       unsigned copy(std::ostream &stream, unsigned length);
       unsigned copy(std::ostream &stream);
       void drain(unsigned length);
+      unsigned remove(Buffer &buf, unsigned length);
       unsigned remove(char *data, unsigned length);
       unsigned remove(std::ostream &stream, unsigned length);
       unsigned remove(std::ostream &stream);
+
+      typedef enum {
+        EOL_ANY,
+        EOL_CRLF,
+        EOL_CRLF_STRICT,
+        EOL_LF,
+        EOL_NULL
+      } eol_t;
+
+      std::string readLine(unsigned maxLength, eol_t eol = EOL_CRLF);
 
       void add(const Buffer &buf);
       void addRef(const Buffer &buf);

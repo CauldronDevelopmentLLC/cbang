@@ -30,27 +30,25 @@
 
 \******************************************************************************/
 
-#include "ResourceHTTPHandler.h"
-#include "Request.h"
+#ifndef CBANG_ENUM
+#ifndef CBANG_WS_OP_H
+#define CBANG_WS_OP_H
 
-#include <cbang/String.h>
+#define CBANG_ENUM_NAME WebsockOpCode
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 Event
+#define CBANG_ENUM_PATH cbang/event
+#define CBANG_ENUM_PREFIX 6
+#include <cbang/enum/MakeEnumeration.def>
 
-using namespace cb;
-using namespace cb::Event;
+#endif // CBANG_WS_OP_H
+#else // CBANG_ENUM
 
+CBANG_ENUM_VALUE(WS_OP_CONTINUE, 0x0)
+CBANG_ENUM_VALUE(WS_OP_TEXT,     0x1)
+CBANG_ENUM_VALUE(WS_OP_BINARY,   0x2)
+CBANG_ENUM_VALUE(WS_OP_CLOSE,    0x8)
+CBANG_ENUM_VALUE(WS_OP_PING,     0x9)
+CBANG_ENUM_VALUE(WS_OP_PONG,     0xa)
 
-bool ResourceHTTPHandler::operator()(Request &req) {
-  const Resource *res;
-
-  if (root.isDirectory()) res = root.find(req.getURI().getPath());
-  else res = &root;
-
-  if (!res || res->isDirectory()) return false;
-
-  req.reply(HTTP_OK, res->getData(), res->getLength());
-
-  if (!req.outHas("Cache-Control"))
-    req.outSet("Cache-Control", "max-age=" + String(timeout));
-
-  return true;
-}
+#endif // CBANG_ENUM

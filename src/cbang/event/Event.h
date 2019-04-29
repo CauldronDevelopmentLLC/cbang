@@ -53,7 +53,6 @@ namespace cb {
     protected:
       event *e;
       callback_t cb;
-      std::string logPrefix;
 
     public:
       Event(Base &base, int fd, unsigned events, callback_t cb);
@@ -63,9 +62,6 @@ namespace cb {
 
       event *getEvent() const {return e;}
       double getTimeout() const;
-
-      const std::string &getLogPrefix() const {return logPrefix;}
-      void setLogPrefix(const std::string &prefix) {logPrefix = prefix;}
 
       bool isPending(unsigned events = ~0) const;
       unsigned getEvents() const;

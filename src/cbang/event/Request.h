@@ -32,11 +32,13 @@
 
 #pragma once
 
-#include "RequestMethod.h"
-#include "HTTPStatus.h"
+#include "Enum.h"
+#include "Headers.h"
+#include "Buffer.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Version.h>
+#include <cbang/util/Base.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/net/URI.h>
 #include <cbang/net/Session.h>
@@ -46,8 +48,6 @@
 #include <iostream>
 #include <typeinfo>
 
-struct evhttp_request;
-
 
 namespace cb {
   class URI;
@@ -55,33 +55,41 @@ namespace cb {
   class SSL;
 
   namespace Event {
-    class Buffer;
-    class Headers;
     class Connection;
-    class PendingRequest;
 
-    class Request :
-      SmartPointer<Request>::SelfRef, public RequestMethod, public HTTPStatus {
+    class Request : protected SmartPointer<Request>::SelfRef, public Enum {
       friend class SelfRefCounter;
 
-    protected:
-      SmartPointer<evhttp_request>::Phony req;
-      bool deallocate;
+      Headers inputHeaders;
+      Headers outputHeaders;
 
-      uint64_t id;
+      Buffer inputBuffer;
+      Buffer outputBuffer;
+
+      RequestMethod method;
       URI originalURI;
       URI uri;
-      IPAddress clientIP;
+      Version version;
+      HTTPStatus responseCode;
+      std::string responseCodeLine;
+
+      SmartPointer<Connection> connection;
+      ConnectionError connError;
+
       SmartPointer<Session> session;
-      std::string user;
-      bool incoming;
-      bool finalized;
+      std::string user = "anonymous";
+
+      bool chunked = false;
+      bool replying = false;
+
+      uint64_t bytesRead = 0;
+      uint64_t bytesWritten = 0;
 
       JSON::Dict args;
 
     public:
-      Request(evhttp_request *req, bool deallocate = false);
-      Request(evhttp_request *req, const URI &uri, bool deallocate = false);
+      Request(RequestMethod method = RequestMethod(), const URI &uri = URI(),
+              const Version &version = Version(1, 1));
       virtual ~Request();
 
       template <class T>
@@ -91,14 +99,43 @@ namespace cb {
         return *ptr;
       }
 
-      evhttp_request *getRequest() const {return req.get();}
+      uint64_t getID() const;
 
-      bool hasConnection() const;
-      Connection getConnection() const;
+      const Headers &getInputHeaders() const {return inputHeaders;}
+      const Headers &getOutputHeaders() const {return outputHeaders;}
+      Headers &getInputHeaders() {return inputHeaders;}
+      Headers &getOutputHeaders() {return outputHeaders;}
 
-      uint64_t getID() const {return id;}
-      void setID(uint64_t id) {this->id = id;}
-      virtual std::string getLogPrefix() const;
+      const Buffer &getInputBuffer() const {return inputBuffer;}
+      const Buffer &getOutputBuffer() const {return outputBuffer;}
+      Buffer &getInputBuffer() {return inputBuffer;}
+      Buffer &getOutputBuffer() {return outputBuffer;}
+
+      RequestMethod getMethod() const {return method;}
+      void setMethod(RequestMethod method) {this->method = method;}
+
+      const URI &getOriginalURI() const {return originalURI;}
+      const URI &getURI() const {return uri;}
+      URI &getURI() {return uri;}
+      std::string getHost() const {return uri.getHost();}
+
+      const Version &getVersion() const {return version;}
+      void setVersion(const Version &version) {this->version = version;}
+
+      bool isOk() const {return responseCode == HTTP_OK && !connError;}
+      HTTPStatus getResponseCode() const {return responseCode;}
+      void setResponseCodeLine(const std::string &s) {responseCodeLine = s;}
+      const std::string &getResponseCodeLine() const {return responseCodeLine;}
+      std::string getResponseLine() const;
+      std::string getRequestLine() const;
+
+      bool hasConnection() const {return connection.isSet();}
+      Connection &getConnection() const {return *connection;}
+      void setConnection(const SmartPointer<Connection> &con)
+        {connection = con;}
+      bool isConnected() const;
+      ConnectionError getConnectionError() const {return connError;}
+      void setConnectionError(ConnectionError err) {connError = err;}
 
       const SmartPointer<Session> &getSession() const {return session;}
       void setSession(const SmartPointer<Session> &session)
@@ -110,14 +147,16 @@ namespace cb {
       const std::string &getUser() const;
       void setUser(const std::string &user);
 
-      void setIncoming(bool incoming) {this->incoming = incoming;}
-      bool isIncoming() const {return incoming;}
+      bool isChunked() const {return chunked;}
+      bool isReplying() const {return replying;}
 
-      bool isFinalized() const {return finalized;}
+      uint64_t getBytesRead() const {return bytesRead;}
+      uint64_t getBytesWritten() const {return bytesWritten;}
 
       bool isSecure() const;
       SSL getSSL() const;
 
+      virtual bool isWebsocket() const {return false;}
       virtual void resetOutput();
 
       virtual void insertArg(const std::string &arg)
@@ -137,85 +176,64 @@ namespace cb {
       virtual JSON::Dict &parseQueryArgs();
       virtual JSON::Dict &parseArgs();
 
-      virtual Version getVersion() const;
-      virtual std::string getHost() const;
-      virtual const URI &getOriginalURI() const {return originalURI;}
-      virtual const URI &getURI() const {return uri;}
-      virtual URI &getURI() {return uri;}
-      static URI getURI(evhttp_request *req);
-      virtual const IPAddress &getClientIP() const {return clientIP;}
-      virtual RequestMethod getMethod() const;
-      static RequestMethod getMethod(evhttp_request *req);
-      virtual HTTPStatus getResponseCode() const;
-      virtual std::string getResponseMessage() const;
-      virtual std::string getResponseLine() const;
+      const IPAddress &getClientIP() const;
 
-      virtual Headers getInputHeaders() const;
-      virtual Headers getOutputHeaders() const;
+      bool inHas(const std::string &name) const;
+      std::string inFind(const std::string &name) const;
+      std::string inGet(const std::string &name) const;
+      void inSet(const std::string &name, const std::string &value);
+      void inRemove(const std::string &name);
 
-      virtual bool inHas(const std::string &name) const;
-      virtual std::string inFind(const std::string &name) const;
-      virtual std::string inGet(const std::string &name) const;
-      virtual void inAdd(const std::string &name, const std::string &value);
-      virtual void inSet(const std::string &name, const std::string &value);
-      virtual void inRemove(const std::string &name);
+      bool outHas(const std::string &name) const;
+      std::string outFind(const std::string &name) const;
+      std::string outGet(const std::string &name) const;
+      void outSet(const std::string &name, const std::string &value);
+      void outRemove(const std::string &name);
 
-      virtual bool outHas(const std::string &name) const;
-      virtual std::string outFind(const std::string &name) const;
-      virtual std::string outGet(const std::string &name) const;
-      virtual void outAdd(const std::string &name, const std::string &value);
-      virtual void outSet(const std::string &name, const std::string &value);
-      virtual void outRemove(const std::string &name);
+      void setPersistent(bool x);
+      virtual void setCache(uint32_t age);
 
-      virtual void setPersistent(bool x);
-
-      virtual bool hasContentType() const;
-      virtual std::string getContentType() const;
-      virtual void setContentType(const std::string &contentType);
-      virtual void guessContentType();
+      bool hasContentType() const;
+      std::string getContentType() const;
+      void setContentType(const std::string &contentType);
+      void guessContentType();
 
       typedef enum {
         COMPRESS_NONE, COMPRESS_AUTO, COMPRESS_ZLIB, COMPRESS_GZIP,
         COMPRESS_BZIP2
       } compression_t;
 
-      virtual void outSetContentEncoding(compression_t compression);
-      virtual compression_t getRequestedCompression() const;
+      void outSetContentEncoding(compression_t compression);
+      compression_t getRequestedCompression() const;
 
-      virtual bool hasCookie(const std::string &name) const;
-      virtual std::string findCookie(const std::string &name) const;
-      virtual std::string getCookie(const std::string &name) const;
-      virtual void setCookie(const std::string &name, const std::string &value,
-                             const std::string &domain = std::string(),
-                             const std::string &path = std::string(),
-                             uint64_t expires = 0, uint64_t maxAge = 0,
-                             bool httpOnly = false, bool secure = false);
+      bool hasCookie(const std::string &name) const;
+      std::string findCookie(const std::string &name) const;
+      std::string getCookie(const std::string &name) const;
+      void setCookie(const std::string &name, const std::string &value,
+                     const std::string &domain = std::string(),
+                     const std::string &path = std::string(),
+                     uint64_t expires = 0, uint64_t maxAge = 0,
+                     bool httpOnly = false, bool secure = false);
 
-      virtual void setCache(uint32_t age);
+      std::string getInput() const;
+      std::string getOutput() const;
 
-      virtual std::string getInput() const;
-      virtual std::string getOutput() const;
-
-      virtual Buffer getInputBuffer() const;
-      virtual Buffer getOutputBuffer() const;
-
-      virtual SmartPointer<JSON::Value> getInputJSON() const;
-      virtual SmartPointer<JSON::Value> getJSONMessage() const;
-      virtual SmartPointer<JSON::Writer>
+      SmartPointer<JSON::Value> getInputJSON() const;
+      SmartPointer<JSON::Value> getJSONMessage() const;
+      SmartPointer<JSON::Writer>
       getJSONWriter(unsigned indent, bool compact,
                     compression_t compression = COMPRESS_AUTO);
-      virtual SmartPointer<JSON::Writer>
+      SmartPointer<JSON::Writer>
       getJSONWriter(compression_t compression = COMPRESS_AUTO);
-      virtual SmartPointer<JSON::Writer>
-      getJSONPWriter(const std::string &callback);
+      SmartPointer<JSON::Writer> getJSONPWriter(const std::string &callback);
 
-      virtual SmartPointer<std::istream> getInputStream() const;
-      virtual SmartPointer<std::ostream>
+      SmartPointer<std::istream> getInputStream() const;
+      SmartPointer<std::ostream>
       getOutputStream(compression_t compression = COMPRESS_AUTO);
 
-      virtual void sendError(int code);
-      virtual void sendError(int code, const std::string &message);
-      virtual void sendJSONError(int code, const std::string &message);
+      virtual void sendError(HTTPStatus code);
+      virtual void sendError(HTTPStatus code, const std::string &message);
+      virtual void sendJSONError(HTTPStatus code, const std::string &message);
       virtual void sendError(const Exception &e);
       virtual void sendError(const std::exception &e);
 
@@ -225,30 +243,45 @@ namespace cb {
       virtual void send(const std::string &s);
       virtual void sendFile(const std::string &path);
 
-      virtual void reply(int code = HTTP_OK);
+      virtual void reply(HTTPStatus code = HTTP_OK);
       virtual void reply(const Buffer &buf);
       virtual void reply(const char *data, unsigned length);
-      virtual void reply(int code, const Buffer &buf);
-      virtual void reply(int code, const char *data, unsigned length);
-      virtual void reply(int code, const std::string &s);
+      virtual void reply(HTTPStatus code, const char *data, unsigned length);
 
-      virtual void startChunked(int code = HTTP_OK);
+      template <typename T>
+      void reply(HTTPStatus code, const T &data) {send(data); reply(code);}
+
+      virtual void startChunked(HTTPStatus code = HTTP_OK);
       virtual void sendChunk(const Buffer &buf);
       virtual void sendChunk(const char *data, unsigned length);
       virtual void sendChunk(const std::string &s);
       virtual SmartPointer<JSON::Writer> getJSONChunkWriter();
       virtual void endChunked();
 
-      virtual void redirect(const URI &uri, int code = HTTP_TEMPORARY_REDIRECT);
+      virtual void redirect(const URI &uri,
+                            HTTPStatus code = HTTP_TEMPORARY_REDIRECT);
       virtual void cancel();
 
-      static const char *getErrorStr(int error);
+      // Callbacks
+      virtual void onHeaders() {}
+      virtual void onRequest();
+      virtual bool onContinue() {return true;}
+      virtual void onResponse(ConnectionError code) {}
 
-      virtual void freed();
+      // Used by Connection
+      bool mustHaveBody() const;
+      bool mayHaveBody() const;
+      bool needsClose() const;
+
+      static Version parseHTTPVersion(const std::string &s);
+      void parseResponseLine(const std::string &line);
+
+      void write();
 
     protected:
-      virtual void init();
-      virtual void finalize();
+      void writeResponse(Buffer &buf);
+      void writeRequest(Buffer &buf);
+      void writeHeaders(Buffer &buf);
     };
   }
 }

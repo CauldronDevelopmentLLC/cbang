@@ -30,27 +30,27 @@
 
 \******************************************************************************/
 
-#include "ResourceHTTPHandler.h"
-#include "Request.h"
+#ifndef CBANG_ENUM
+#ifndef CBANG_CONNECTION_ERROR_H
+#define CBANG_CONNECTION_ERROR_H
 
-#include <cbang/String.h>
+#define CBANG_ENUM_NAME ConnectionError
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 Event
+#define CBANG_ENUM_PATH cbang/event
+#define CBANG_ENUM_PREFIX 9
+#include <cbang/enum/MakeEnumeration.def>
 
-using namespace cb;
-using namespace cb::Event;
+#endif // CBANG_CONNECTION_ERROR_H
+#else // CBANG_ENUM
 
+CBANG_ENUM_DESC(CONN_ERR_OK,             "Ok")
+CBANG_ENUM_DESC(CONN_ERR_UNKNOWN,        "Unknown")
+CBANG_ENUM_DESC(CONN_ERR_TIMEOUT,        "Timeout")
+CBANG_ENUM_DESC(CONN_ERR_EOF,            "End of file")
+CBANG_ENUM_DESC(CONN_ERR_BUFFER_ERROR,   "Buffer error")
+CBANG_ENUM_DESC(CONN_ERR_REQUEST_CANCEL, "Request cancelled")
+CBANG_ENUM_DESC(CONN_ERR_CONNECT,        "Connect Failed")
+CBANG_ENUM_DESC(CONN_ERR_EXCEPTION,      "Exception during callback")
 
-bool ResourceHTTPHandler::operator()(Request &req) {
-  const Resource *res;
-
-  if (root.isDirectory()) res = root.find(req.getURI().getPath());
-  else res = &root;
-
-  if (!res || res->isDirectory()) return false;
-
-  req.reply(HTTP_OK, res->getData(), res->getLength());
-
-  if (!req.outHas("Cache-Control"))
-    req.outSet("Cache-Control", "max-age=" + String(timeout));
-
-  return true;
-}
+#endif // CBANG_ENUM_VALUE_DESC

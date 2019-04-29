@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "IPAddress.h"
+
 #include <cbang/util/StringMap.h>
 
 #include <string>
@@ -59,6 +61,7 @@ namespace cb {
     const std::string &getScheme() const {return scheme;}
     const std::string &getHost() const {return host;}
     unsigned getPort() const;
+    IPAddress getIPAddress() const {return IPAddress(getHost(), getPort());}
     const std::string &getPath() const {return path;}
     std::string getEscapedPath() const;
     const std::vector<std::string> &getPathSegments() const {return pathSegs;}

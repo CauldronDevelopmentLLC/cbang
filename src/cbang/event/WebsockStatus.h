@@ -30,27 +30,31 @@
 
 \******************************************************************************/
 
-#include "ResourceHTTPHandler.h"
-#include "Request.h"
+#ifndef CBANG_ENUM
+#ifndef CBANG_WS_STATUS_H
+#define CBANG_WS_STATUS_H
 
-#include <cbang/String.h>
+#define CBANG_ENUM_NAME WebsockStatus
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 Event
+#define CBANG_ENUM_PATH cbang/event
+#define CBANG_ENUM_PREFIX 10
+#include <cbang/enum/MakeEnumeration.def>
 
-using namespace cb;
-using namespace cb::Event;
+#endif // CBANG_WS_STATUS_H
+#else // CBANG_ENUM
 
+CBANG_ENUM_VALUE(WS_STATUS_NORMAL,       1000)
+CBANG_ENUM_VALUE(WS_STATUS_GOING_AWAY,   1001)
+CBANG_ENUM_VALUE(WS_STATUS_PROTOCOL,     1002)
+CBANG_ENUM_VALUE(WS_STATUS_UNACCEPTABLE, 1003)
+CBANG_ENUM_VALUE(WS_STATUS_NONE,         1005)
+CBANG_ENUM_VALUE(WS_STATUS_DIRTY_CLOSE,  1006)
+CBANG_ENUM_VALUE(WS_STATUS_INCONSISTENT, 1007)
+CBANG_ENUM_VALUE(WS_STATUS_VIOLATION,    1008)
+CBANG_ENUM_VALUE(WS_STATUS_TOO_BIG,      1009)
+CBANG_ENUM_VALUE(WS_STATUS_MISSING_EXTN, 1010)
+CBANG_ENUM_VALUE(WS_STATUS_UNEXPECTED,   1011)
+CBANG_ENUM_VALUE(WS_STATUS_TLS_FAILED,   1015)
 
-bool ResourceHTTPHandler::operator()(Request &req) {
-  const Resource *res;
-
-  if (root.isDirectory()) res = root.find(req.getURI().getPath());
-  else res = &root;
-
-  if (!res || res->isDirectory()) return false;
-
-  req.reply(HTTP_OK, res->getData(), res->getLength());
-
-  if (!req.outHas("Cache-Control"))
-    req.outSet("Cache-Control", "max-age=" + String(timeout));
-
-  return true;
-}
+#endif // CBANG_ENUM

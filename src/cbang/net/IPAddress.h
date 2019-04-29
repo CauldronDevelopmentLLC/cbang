@@ -38,6 +38,7 @@
 #include <vector>
 #include <ostream>
 
+
 namespace cb {
   /// Used for printing and comparing IP addresses
   class IPAddress {

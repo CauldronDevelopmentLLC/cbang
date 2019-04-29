@@ -30,74 +30,46 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "JSONWebsocket.h"
 
-#include "Socket.h"
-#include "Buffer.h"
-
-#include <cbang/SmartPointer.h>
-
-#include <string>
-
-struct bufferevent;
+#include <cbang/Catch.h>
+#include <cbang/iostream/VectorDevice.h>
 
 
-namespace cb {
-  class SSLContext;
-  class SSL;
-  class IPAddress;
+using namespace cb;
+using namespace cb::Event;
+using namespace std;
 
-  namespace Event {
-    class Base;
-    class DNSBase;
 
-    class BufferEvent : SmartPointer<BufferEvent>::SelfRef {
-      friend class SelfRefCounter;
+namespace {
+  struct JSONWriter : vector<char>, cb::VectorStream<>, public JSON::Writer {
+    SmartPointer<Websocket> ws;
 
-      bufferevent *bev;
+    JSONWriter(const SmartPointer<Websocket> &ws) :
+      cb::VectorStream<>((vector<char> &)*this),
+      JSON::Writer((ostream &)*this), ws(ws) {}
 
-      Buffer inputBuffer;
-      Buffer outputBuffer;
+    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
 
-    public:
-      BufferEvent(Base &base, bool incoming, socket_t fd = -1,
-                  const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~BufferEvent();
+    void close() {
+      JSON::Writer::close();
+      ws->send(data(), size());
+    }
+  };
+}
 
-      bufferevent *getBufferEvent() const {return bev;}
 
-      const Buffer &getInput() const {return inputBuffer;}
-      const Buffer &getOutput() const {return outputBuffer;}
-      Buffer &getInput() {return inputBuffer;}
-      Buffer &getOutput() {return outputBuffer;}
+void JSONWebsocket::send(const JSON::ValuePtr &value) {send(value->toString());}
 
-      void setFD(socket_t fd);
-      socket_t getFD() const;
 
-      void setPriority(int priority);
-      int getPriority() const;
+SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
+  return new JSONWriter(this);
+}
 
-      void setTimeouts(unsigned read, unsigned write);
 
-      bool hasSSL() const;
-      SSL getSSL() const;
-      void logSSLErrors();
-      std::string getSSLErrors();
+void JSONWebsocket::onMessage(const JSON::ValuePtr &msg) {if (cb) cb(msg);}
 
-      bool isWrapper() const;
 
-      void setRead(bool enabled, bool hard = false);
-      void setWrite(bool enabled, bool hard = false);
-
-      void setWatermark(bool read, size_t low, size_t high = 0);
-
-      void connect(DNSBase &dns, const IPAddress &peer);
-
-      virtual void readCB() {}
-      virtual void writeCB() {}
-      virtual void eventCB(short what) {}
-
-      static std::string getEventsString(short events);
-    };
-  }
+void JSONWebsocket::onMessage(const char *data, uint64_t length) {
+  onMessage(JSON::Reader::parse(InputSource(data, length)));
 }

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "PendingRequest.h"
+#include "OutgoingRequest.h"
 
 #include <cbang/SmartPointer.h>
 
@@ -56,10 +56,10 @@ namespace cb {
 
     public:
       template <class T> struct Callback {
-        typedef void (T::*member_t)(Request *, int);
+        typedef void (T::*member_t)(Request &);
       };
 
-      typedef PendingRequest::callback_t callback_t;
+      typedef OutgoingRequest::callback_t callback_t;
 
       Client(Base &base, DNSBase &dns);
       Client(Base &base, DNSBase &dns, const SmartPointer<SSLContext> &sslCtx);
@@ -72,37 +72,36 @@ namespace cb {
       int getPriority() const {return priority;}
       void setPriority(int priority) {this->priority = priority;}
 
-      SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, const char *data, unsigned length,
+      SmartPointer<OutgoingRequest>
+      call(const URI &uri, RequestMethod method, const char *data,
+           unsigned length, callback_t cb);
+
+      SmartPointer<OutgoingRequest>
+      call(const URI &uri, RequestMethod method, const std::string &data,
            callback_t cb);
 
-      SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, const std::string &data,
-           callback_t cb);
-
-      SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, callback_t cb);
+      SmartPointer<OutgoingRequest>
+      call(const URI &uri, RequestMethod method, callback_t cb);
 
 
       // Member callbacks
       template <class T>
       callback_t bind(T *obj, typename Callback<T>::member_t member) {
-        using namespace std::placeholders;
-        return std::bind(member, obj, _1, _2);
+        return std::bind(member, obj, std::placeholders::_1);
       }
 
-      template <class T> SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, const char *data, unsigned length,
-           T *obj, typename Callback<T>::member_t member)
+      template <class T> SmartPointer<OutgoingRequest>
+      call(const URI &uri, RequestMethod method, const char *data,
+           unsigned length, T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, data, length, bind(obj, member));}
 
-      template <class T> SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method, const std::string &data,
+      template <class T> SmartPointer<OutgoingRequest>
+      call(const URI &uri, RequestMethod method, const std::string &data,
            T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, data, bind(obj, member));}
 
-      template <class T> SmartPointer<PendingRequest>
-      call(const URI &uri, unsigned method,
+      template <class T> SmartPointer<OutgoingRequest>
+      call(const URI &uri, RequestMethod method,
            T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, bind(obj, member));}
     };

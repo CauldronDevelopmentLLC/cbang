@@ -42,8 +42,8 @@
 #include <cbang/Exception.h>
 
 #include <cbang/util/Singleton.h>
-
 #include <cbang/os/Mutex.h>
+
 
 #ifdef DEBUG_LEVEL
 #define DEFAULT_VERBOSITY DEBUG_LEVEL
@@ -115,7 +115,7 @@ namespace cb {
     domain_levels_t infoDomainLevels;
     domain_levels_t debugDomainLevels;
 
-#ifdef HAVE_DEBUGGER
+#ifdef HAVE_CBANG_BACKTRACE
     typedef std::set<std::string> domain_traces_t;
     domain_traces_t domainTraces;
 #endif
@@ -198,6 +198,10 @@ namespace cb {
 #define CBANG_LOG_DOMAIN __FILE__
 #endif
 
+#ifndef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX
+#endif
+
 // Log levels
 #define CBANG_LOG_RAW_LEVEL      cb::Logger::LEVEL_RAW
 #define CBANG_LOG_ERROR_LEVEL    cb::Logger::LEVEL_ERROR
@@ -242,10 +246,10 @@ namespace cb {
 // Log messages
 // The 'do {...} while (false)' loop lets this compile correctly:
 //   if (expr) CBANG_LOG(...); else ...
-#define CBANG_LOG(domain, level, msg)           \
-  do {                                          \
-    if (CBANG_LOG_ENABLED(domain, level))       \
-      *CBANG_LOG_STREAM(domain, level) << msg;  \
+#define CBANG_LOG(domain, level, msg)                           \
+  do {                                                          \
+    if (CBANG_LOG_ENABLED(domain, level))                       \
+      *CBANG_LOG_STREAM(domain, level) CBANG_LOG_PREFIX << msg;       \
   } while (false)
 
 #define CBANG_LOG_LEVEL(level, msg) CBANG_LOG(CBANG_LOG_DOMAIN, level, msg)

@@ -75,6 +75,7 @@ namespace cb {
     std::streamsize read(char *data, std::streamsize length, unsigned flags);
     void close();
     socket_t get() const {return socket;}
+    socket_t adopt();
 
   protected:
     void capture(const IPAddress &addr, bool incoming);

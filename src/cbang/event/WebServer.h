@@ -63,10 +63,9 @@ namespace cb {
       ports_t securePorts;
 
       bool logPrefix;
-      uint64_t nextID;
 
     public:
-      WebServer(Options &options, const Base &base,
+      WebServer(Options &options, Base &base,
                 const SmartPointer<SSLContext> &sslCtx = 0,
                 const SmartPointer<HTTPHandlerFactory> &factory =
                 new HTTPHandlerFactory);
@@ -82,9 +81,10 @@ namespace cb {
       virtual void shutdown();
 
       // From HTTPHandler
-      Request *createRequest(evhttp_request *req);
+      SmartPointer<Request> createRequest
+      (RequestMethod method, const URI &uri, const Version &version);
       bool handleRequest(Request &req);
-      void endRequest(Request *req);
+      void endRequest(Request &req);
 
       const SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
 
