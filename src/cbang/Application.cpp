@@ -431,7 +431,7 @@ void Application::evalOptions(const Context &ctx, Options &options) {
   bool defaults = false;
   bool all = false;
   vector<string> names;
-  cb::SmartPointer<JSON::Dict> dict = new JSON::Dict;
+  SmartPointer<JSON::Value> dict = new JSON::Dict;
 
   // Process args
   for (unsigned i = 1; i < ctx.args.size(); i++) {

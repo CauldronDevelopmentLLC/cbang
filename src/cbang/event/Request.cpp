@@ -94,6 +94,7 @@ namespace {
   struct JSONWriter :
     cb::Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
     Request &req;
+    bool closed = false;
 
     JSONWriter(Request &req, unsigned indent, bool compact,
                Request::compression_t compression) :
@@ -107,8 +108,10 @@ namespace {
     ostream &getStream() {return *SmartPointer<ostream>::get();}
 
     void close() {
+      if (closed) return;
+      closed = true;
       JSON::Writer::close();
-      SmartPointer<ostream>::release();
+      SmartPointer<ostream>::get()->flush();
       send(*this);
     }
 
@@ -177,7 +180,7 @@ SSL Request::getSSL() const {return connection->getSSL();}
 void Request::resetOutput() {getOutputBuffer().clear();}
 
 
-JSON::Dict &Request::parseJSONArgs() {
+JSON::Value &Request::parseJSONArgs() {
   Headers &hdrs = getInputHeaders();
 
   if (hdrs.hasContentType() &&
@@ -201,7 +204,7 @@ JSON::Dict &Request::parseJSONArgs() {
 }
 
 
-JSON::Dict &Request::parseQueryArgs() {
+JSON::Value &Request::parseQueryArgs() {
   const URI &uri = getURI();
   for (URI::const_iterator it = uri.begin(); it != uri.end(); it++)
     insertArg(it->first, it->second);
@@ -209,7 +212,7 @@ JSON::Dict &Request::parseQueryArgs() {
 }
 
 
-JSON::Dict &Request::parseArgs() {
+JSON::Value &Request::parseArgs() {
   parseJSONArgs();
   parseQueryArgs();
   return args;

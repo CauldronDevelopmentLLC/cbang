@@ -53,12 +53,18 @@ namespace cb {
 
       std::string pongPayload;
 
+      uint64_t msgSent = 0;
+      uint64_t msgReceived = 0;
+
     public:
       using Request::Request;
 
       bool isActive() const {return active;}
 
       void setCallback(const cb_t &cb) {this->cb = cb;}
+
+      uint64_t getMessagesSent() const {return msgSent;}
+      uint64_t getMessagesReceived() const {return msgReceived;}
 
       void send(const char *data, uint64_t length);
       void send(const std::string &s);

@@ -56,7 +56,7 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
     (*this)(req, msg, *writer);
 
     // Make sure JSON stream is complete
-    writer->close();
+    writer.release();
 
     // Send reply
     req.reply();

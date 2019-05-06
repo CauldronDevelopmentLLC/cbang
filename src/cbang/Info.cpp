@@ -167,19 +167,19 @@ void Info::write(XMLWriter &writer) const {
 }
 
 
-SmartPointer<JSON::List> Info::getJSONList() const {
-  SmartPointer<JSON::List> list = new JSON::List;
+SmartPointer<JSON::Value> Info::getJSONList() const {
+  SmartPointer<JSON::Value> list = new JSON::List;
 
   categories_t::const_iterator it;
   for (it = categories.begin(); it != categories.end(); it++) {
-    SmartPointer<JSON::List> category = new JSON::List;
+    SmartPointer<JSON::Value> category = new JSON::List;
     category->append((*it)->first);
     list->append(category);
 
     const category_t &cat = (*it)->second;
     category_t::const_iterator it2;
     for (it2 = cat.begin(); it2 != cat.end(); it2++) {
-      SmartPointer<JSON::List> entry = new JSON::List;
+      SmartPointer<JSON::Value> entry = new JSON::List;
       entry->append((*it2)->first);
       entry->append((*it2)->second);
       category->append(entry);

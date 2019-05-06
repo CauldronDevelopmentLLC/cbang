@@ -53,6 +53,8 @@ void Websocket::send(const char *data, uint64_t length) {
     length -= bytes;
     writeFrame(i ? WS_OP_CONTINUE : WS_OP_TEXT, !length, data + i, bytes);
   }
+
+  msgSent++;
 }
 
 
@@ -308,6 +310,7 @@ void Websocket::pong() {
 
 
 void Websocket::message(const char *data, uint64_t length) {
+  msgReceived++;
   TRY_CATCH_ERROR(return onMessage(data, length));
   close(WS_STATUS_UNACCEPTABLE, "Message rejected");
 }

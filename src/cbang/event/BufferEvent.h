@@ -84,8 +84,6 @@ namespace cb {
       void logSSLErrors();
       std::string getSSLErrors();
 
-      bool isWrapper() const;
-
       void setRead(bool enabled, bool hard = false);
       void setWrite(bool enabled, bool hard = false);
 
