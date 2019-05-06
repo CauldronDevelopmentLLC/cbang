@@ -39,31 +39,47 @@
 
 namespace cb {
   namespace JSON {
-    class List : public Value, public std::vector<ValuePtr> {
+    class List : public Value, protected std::vector<ValuePtr> {
       typedef std::vector<ValuePtr> Super_T;
 
-      bool simple;
+      bool simple = true;
 
     public:
-      List() : simple(true) {}
-
-      // From std::vector<ValuePtr>
-      using std::vector<ValuePtr>::operator[];
+      using Super_T::Super_T;
 
       // From Value
       ValueType getType() const {return JSON_LIST;}
       ValuePtr copy(bool deep = false) const;
       bool isSimple() const {return simple;}
-      using Value::getList;
-      List &getList() {return *this;}
-      const List &getList() const {return *this;}
-      unsigned size() const {return std::vector<ValuePtr>::size();}
-      const ValuePtr &get(unsigned i) const
-      {return std::vector<ValuePtr>::at(i);}
+
+      Value &getList() {return *this;}
+      const Value &getList() const {return *this;}
+
+      unsigned size() const {return Super_T::size();}
+
+      const ValuePtr &get(unsigned i) const;
+      const ValuePtr &operator[](unsigned i) const {return get(i);}
+
       void append(const ValuePtr &value);
-      using Value::append;
       void set(unsigned i, const ValuePtr &value);
+      void clear() {Super_T::clear();}
+      void erase(unsigned i);
+
+      void setParent(Value *parent, unsigned index)
+        {CBANG_TYPE_ERROR("Not an ObservableList");}
+
       void write(Sink &sink) const;
+
+      using Value::getList;
+      using Value::get;
+      using Value::append;
+      using Value::set;
+      using Value::insert;
+      using Value::erase;
+      using Value::empty;
+
+    protected:
+      void check(unsigned i) const;
     };
   }
 }

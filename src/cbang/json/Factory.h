@@ -44,22 +44,24 @@ namespace cb {
 
     class Factory {
     public:
-      static ValuePtr createDict();
-      static ValuePtr createList();
-      static ValuePtr createUndefined();
-      static ValuePtr createNull();
-      static ValuePtr createBoolean(bool value);
-      static ValuePtr create(double value);
-      static ValuePtr create(float value);
-      static ValuePtr create(int8_t value);
-      static ValuePtr create(uint8_t value);
-      static ValuePtr create(int16_t value);
-      static ValuePtr create(uint16_t value);
-      static ValuePtr create(int32_t value);
-      static ValuePtr create(uint32_t value);
-      static ValuePtr create(int64_t value);
-      static ValuePtr create(uint64_t value);
-      static ValuePtr create(const std::string &value);
+      virtual ~Factory() {}
+
+      virtual ValuePtr createDict() const;
+      virtual ValuePtr createList() const;
+      virtual ValuePtr createUndefined() const;
+      virtual ValuePtr createNull() const;
+      virtual ValuePtr createBoolean(bool value) const;
+      virtual ValuePtr create(double value) const;
+      virtual ValuePtr create(float value) const;
+      virtual ValuePtr create(int8_t value) const;
+      virtual ValuePtr create(uint8_t value) const;
+      virtual ValuePtr create(int16_t value) const;
+      virtual ValuePtr create(uint16_t value) const;
+      virtual ValuePtr create(int32_t value) const;
+      virtual ValuePtr create(uint32_t value) const;
+      virtual ValuePtr create(int64_t value) const;
+      virtual ValuePtr create(uint64_t value) const;
+      virtual ValuePtr create(const std::string &value) const;
     };
   }
 }

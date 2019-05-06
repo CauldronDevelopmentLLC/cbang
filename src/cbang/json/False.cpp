@@ -30,30 +30,8 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "False.h"
 
-#include "Value.h"
+using namespace cb::JSON;
 
-
-namespace cb {
-  namespace JSON {
-    class Boolean : public Value {
-      bool x;
-
-    public:
-      Boolean(bool x) : x(x) {}
-
-      bool getValue() const {return x;}
-      void setValue(bool x) {this->x = x;}
-
-      operator bool () const {return x;}
-
-      // From Value
-      ValueType getType() const {return JSON_BOOLEAN;}
-      ValuePtr copy(bool deep = false) const {return new Boolean(x);}
-      bool getBoolean() const {return getValue();}
-      void setBoolean(bool value) {x = value;}
-      void write(Sink &sink) const {sink.writeBoolean(x);}
-    };
-  }
-}
+False False::singleton;

@@ -46,7 +46,6 @@ namespace cb {
     public:
       String(const std::string &s = std::string()) : s(s) {}
 
-      void setValue(const std::string &s) {this->s = s;}
       std::string &getValue() {return s;}
       const std::string &getValue() const {return s;}
 
@@ -61,9 +60,7 @@ namespace cb {
       uint32_t getU32() const;
       int64_t getS64() const;
       uint64_t getU64() const;
-      std::string &getString() {return getValue();}
       const std::string &getString() const {return getValue();}
-      void set(const std::string &value) {s = value;}
       void write(Sink &sink) const {sink.write(s);}
     };
   }

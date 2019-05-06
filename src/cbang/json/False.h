@@ -34,51 +34,24 @@
 
 #include "Value.h"
 
-#include <cbang/util/OrderedDict.h>
-
 
 namespace cb {
   namespace JSON {
-    class Dict : public Value, protected OrderedDict<ValuePtr> {
-      typedef OrderedDict<ValuePtr> Super_T;
+    class False : public Value {
+      static False singleton;
 
-      bool simple;
+      False() {}
+      ~False() {}
 
     public:
-      Dict() : simple(true) {}
-
-      // From OrderedDict<ValuePtr>
-      using Super_T::empty;
-      using Super_T::has;
+      inline static False &instance() {return singleton;}
+      inline static ValuePtr instancePtr() {return ValuePtr::Phony(&singleton);}
 
       // From Value
-      ValueType getType() const {return JSON_DICT;}
-      ValuePtr copy(bool deep = false) const;
-      bool isSimple() const {return simple;}
-
-      using Value::getDict;
-      Dict &getDict() {return *this;}
-      const Dict &getDict() const {return *this;}
-
-      unsigned size() const {return Super_T::size();}
-      const std::string &keyAt(unsigned i) const
-      {return Super_T::keyAt(i);}
-      int indexOf(const std::string &key) const {return lookup(key);}
-      const ValuePtr &get(unsigned i) const
-      {return Super_T::get(i);}
-      const ValuePtr &get(const std::string &key) const
-      {return Super_T::get(key);}
-
-      unsigned insert(const std::string &key, const ValuePtr &value);
-      using Value::insert;
-
-      void clear() {Super_T::clear();}
-      void erase(unsigned i) {Super_T::erase(i);}
-      void erase(const std::string &key) {Super_T::erase(key);}
-
-      void setParent(Value *parent, unsigned index)
-        {CBANG_TYPE_ERROR("Not an ObservableDict");}
-      void write(Sink &sink) const;
+      ValueType getType() const {return JSON_BOOLEAN;}
+      ValuePtr copy(bool deep = false) const {return instancePtr();}
+      bool getBoolean() const {return false;}
+      void write(Sink &sink) const {sink.writeBoolean(false);}
     };
   }
 }

@@ -37,26 +37,33 @@
 #include "Undefined.h"
 #include "Null.h"
 #include "Number.h"
-#include "Boolean.h"
+#include "True.h"
+#include "False.h"
 #include "String.h"
 
 using namespace std;
 using namespace cb::JSON;
 
 
-ValuePtr Factory::createDict() {return new Dict;}
-ValuePtr Factory::createList() {return new List;}
-ValuePtr Factory::createUndefined() {return Undefined::instancePtr();}
-ValuePtr Factory::createNull() {return Null::instancePtr();}
-ValuePtr Factory::createBoolean(bool value) {return new Boolean(value);}
-ValuePtr Factory::create(double value) {return new Number(value);}
-ValuePtr Factory::create(float value) {return create((double)value);}
-ValuePtr Factory::create(int8_t value) {return create((int64_t)value);}
-ValuePtr Factory::create(uint8_t value) {return create((uint64_t)value);}
-ValuePtr Factory::create(int16_t value) {return create((int64_t)value);}
-ValuePtr Factory::create(uint16_t value) {return create((uint64_t)value);}
-ValuePtr Factory::create(int32_t value) {return create((int64_t)value);}
-ValuePtr Factory::create(uint32_t value) {return create((uint64_t)value);}
-ValuePtr Factory::create(int64_t value) {return new S64(value);}
-ValuePtr Factory::create(uint64_t value) {return new U64(value);}
-ValuePtr Factory::create(const string &value) {return new String(value);}
+ValuePtr Factory::createDict() const {return new Dict;}
+ValuePtr Factory::createList() const {return new List;}
+ValuePtr Factory::createUndefined() const {return Undefined::instancePtr();}
+ValuePtr Factory::createNull() const {return Null::instancePtr();}
+
+
+ValuePtr Factory::createBoolean(bool value) const {
+  return value ? True::instancePtr() : False::instancePtr();
+}
+
+
+ValuePtr Factory::create(double value) const {return new Number(value);}
+ValuePtr Factory::create(float value) const {return create((double)value);}
+ValuePtr Factory::create(int8_t value) const {return create((int64_t)value);}
+ValuePtr Factory::create(uint8_t value) const {return create((uint64_t)value);}
+ValuePtr Factory::create(int16_t value) const {return create((int64_t)value);}
+ValuePtr Factory::create(uint16_t value) const {return create((uint64_t)value);}
+ValuePtr Factory::create(int32_t value) const {return create((int64_t)value);}
+ValuePtr Factory::create(uint32_t value) const {return create((uint64_t)value);}
+ValuePtr Factory::create(int64_t value) const {return new S64(value);}
+ValuePtr Factory::create(uint64_t value) const {return new U64(value);}
+ValuePtr Factory::create(const string &value) const {return new String(value);}

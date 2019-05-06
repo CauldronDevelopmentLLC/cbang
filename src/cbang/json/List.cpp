@@ -43,7 +43,7 @@ using namespace cb::JSON;
 
 
 ValuePtr List::copy(bool deep) const {
-  ValuePtr c = new List;
+  ValuePtr c = createList();
 
   for (unsigned i = 0; i < size(); i++)
     c->append(deep ? at(i)->copy(true) : at(i));
@@ -52,9 +52,21 @@ ValuePtr List::copy(bool deep) const {
 }
 
 
+const ValuePtr &List::get(unsigned i) const {
+  check(i);
+  return Super_T::operator[](i);
+}
+
+
 void List::append(const ValuePtr &value) {
   if (value->isList() || value->isDict()) simple = false;
   push_back(value);
+}
+
+
+void List::erase(unsigned i) {
+  check(i);
+  Super_T::erase(begin() + i);
 }
 
 
@@ -72,6 +84,11 @@ void List::write(Sink &sink) const {
 
 
 void List::set(unsigned i, const ValuePtr &value) {
-  if (size() <= i) KEY_ERROR("Index " << i << " out of range " << size());
+  check(i);
   at(i) = value;
+}
+
+
+void List::check(unsigned i) const {
+  if (size() <= i) KEY_ERROR("Index " << i << " out of range " << size());
 }
