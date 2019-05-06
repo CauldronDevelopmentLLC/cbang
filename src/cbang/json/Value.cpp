@@ -70,6 +70,13 @@ void Value::append(int64_t value) {append(create(value));}
 void Value::append(uint64_t value) {append(create(value));}
 void Value::append(const string &value) {append(create(value));}
 
+
+void Value::appendFrom(const Value &value) {
+  for (unsigned i = 0; i < value.size(); i++)
+    append(value.get(i));
+}
+
+
 void Value::setDict(unsigned i) {set(i, createDict());}
 void Value::setList(unsigned i) {set(i, createList());}
 void Value::setUndefined(unsigned i) {set(i, createUndefined());}
@@ -80,43 +87,55 @@ void Value::set(unsigned i, int64_t value) {set(i, create(value));}
 void Value::set(unsigned i, uint64_t value) {set(i, create(value));}
 void Value::set(unsigned i, const string &value) {set(i, create(value));}
 
-void Value::insertDict(const string &key) {insert(key, createDict());}
-void Value::insertList(const string &key) {insert(key, createList());}
-void Value::insertUndefined(const string &key) {insert(key, createUndefined());}
-void Value::insertNull(const string &key) {insert(key, createNull());}
 
-
-void Value::insertBoolean(const string &key, bool value) {
-  insert(key, createBoolean(value));
+unsigned Value::insertDict(const string &key) {
+  return insert(key, createDict());
 }
 
 
-void Value::insert(const string &key, double value) {
-  insert(key, create(value));
+unsigned Value::insertList(const string &key) {
+  return insert(key, createList());
 }
 
 
-void Value::insert(const string &key, uint64_t value) {
-  insert(key, create(value));
+unsigned Value::insertUndefined(const string &key) {
+  return insert(key, createUndefined());
 }
 
 
-void Value::insert(const string &key, int64_t value) {
-  insert(key, create(value));
+unsigned Value::insertNull(const string &key)
+{return insert(key, createNull());}
+
+
+unsigned Value::insertBoolean(const string &key, bool value) {
+  return insert(key, createBoolean(value));
 }
 
 
-void Value::insert(const string &key, const string &value) {
-  insert(key, create(value));
+unsigned Value::insert(const string &key, double value) {
+  return insert(key, create(value));
+}
+
+
+unsigned Value::insert(const string &key, uint64_t value) {
+  return insert(key, create(value));
+}
+
+
+unsigned Value::insert(const string &key, int64_t value) {
+  return insert(key, create(value));
+}
+
+
+unsigned Value::insert(const string &key, const string &value) {
+  return insert(key, create(value));
 }
 
 
 void Value::merge(const Value &value) {
   // Merge lists
   if (isList() && value.isList()) {
-    for (unsigned i = 0; i < value.size(); i++)
-      append(value.get(i));
-
+    appendFrom(value);
     return;
   }
 

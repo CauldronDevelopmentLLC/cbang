@@ -42,7 +42,7 @@ using namespace cb::JSON;
 
 
 ValuePtr Dict::copy(bool deep) const {
-  ValuePtr c = new Dict;
+  ValuePtr c = createDict();
 
   for (unsigned i = 0; i < size(); i++)
     c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
@@ -51,9 +51,9 @@ ValuePtr Dict::copy(bool deep) const {
 }
 
 
-void Dict::insert(const string &key, const ValuePtr &value) {
+unsigned Dict::insert(const string &key, const ValuePtr &value) {
   if (value->isList() || value->isDict()) simple = false;
-  OrderedDict<ValuePtr>::insert(key, value);
+  return (unsigned)OrderedDict<ValuePtr>::insert(key, value);
 }
 
 

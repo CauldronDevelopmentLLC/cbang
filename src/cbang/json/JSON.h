@@ -33,7 +33,8 @@
 #pragma once
 
 #include "Null.h"
-#include "Boolean.h"
+#include "True.h"
+#include "False.h"
 #include "Number.h"
 #include "String.h"
 #include "List.h"
@@ -48,3 +49,4 @@
 #include "Integer.h"
 #include "Factory.h"
 #include "Serializable.h"
+#include "Observable.h"

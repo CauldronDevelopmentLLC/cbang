@@ -87,7 +87,6 @@ namespace cb {
     public:
       NumberValue(const T &value = 0) : value(value) {}
 
-      void setValue(const T &value) {this->value = value;}
       const T &getValue() const {return value;}
 
       operator const T &() const {return value;}
@@ -98,28 +97,26 @@ namespace cb {
       double getNumber() const {return value;}
 
 
-#define CBANG_GET_NUM(TYPE, SHORT, LONG)                                \
+#define CBANG_NUM_FUNCS(TYPE, SHORT, LONG)                              \
+      bool is##SHORT() const {return Num::InRange<TYPE>(value);}        \
+                                                                        \
       TYPE get##SHORT() const {                                         \
-        if (!Num::InRange<TYPE>(value))                                 \
-          CBANG_TYPE_ERROR("Value " << value << " is not a " #LONG); \
+        if (!is##SHORT())                                               \
+          CBANG_TYPE_ERROR("Value " << value << " is not a " #LONG);    \
                                                                         \
         return (TYPE)value;                                             \
       }
 
-      CBANG_GET_NUM(int8_t,   S8,   8-bit signed integer);
-      CBANG_GET_NUM(uint8_t,  U8,   8-bit unsigned integer);
-      CBANG_GET_NUM(int16_t,  S16, 16-bit signed integer);
-      CBANG_GET_NUM(uint16_t, U16, 16-bit unsigned integer);
-      CBANG_GET_NUM(int32_t,  S32, 32-bit signed integer);
-      CBANG_GET_NUM(uint32_t, U32, 32-bit unsigned integer);
-      CBANG_GET_NUM(int64_t,  S64, 64-bit signed integer);
-      CBANG_GET_NUM(uint64_t, U64, 64-bit unsigned integer);
+      CBANG_NUM_FUNCS(int8_t,   S8,   8-bit signed integer);
+      CBANG_NUM_FUNCS(uint8_t,  U8,   8-bit unsigned integer);
+      CBANG_NUM_FUNCS(int16_t,  S16, 16-bit signed integer);
+      CBANG_NUM_FUNCS(uint16_t, U16, 16-bit unsigned integer);
+      CBANG_NUM_FUNCS(int32_t,  S32, 32-bit signed integer);
+      CBANG_NUM_FUNCS(uint32_t, U32, 32-bit unsigned integer);
+      CBANG_NUM_FUNCS(int64_t,  S64, 64-bit signed integer);
+      CBANG_NUM_FUNCS(uint64_t, U64, 64-bit unsigned integer);
 
-#undef CBANG_GET_NUM
-
-      void set(double value)   {this->value = (T)value;}
-      void set(int64_t value)  {this->value = (T)value;}
-      void set(uint64_t value) {this->value = (T)value;}
+#undef CBANG_NUM_FUNCS
 
       void write(Sink &sink) const {sink.write(value);}
     };
