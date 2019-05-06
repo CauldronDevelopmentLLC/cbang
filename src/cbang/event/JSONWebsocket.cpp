@@ -59,7 +59,7 @@ namespace {
 }
 
 
-void JSONWebsocket::send(const JSON::ValuePtr &value) {send(value->toString());}
+void JSONWebsocket::send(const JSON::Value &value) {send(value.toString());}
 
 
 SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {

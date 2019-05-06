@@ -33,11 +33,7 @@
 #include "HTTP.h"
 #include "Base.h"
 #include "Request.h"
-#include "HTTPStatus.h"
-#include "Headers.h"
 #include "Event.h"
-#include "Buffer.h"
-#include "BufferEvent.h"
 #include "Connection.h"
 
 #include <cbang/Exception.h>

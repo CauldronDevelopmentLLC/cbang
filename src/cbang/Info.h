@@ -41,7 +41,7 @@
 
 
 namespace cb {
-  namespace JSON {class List; class Sink;}
+  namespace JSON {class Value; class Sink;}
 
   class XMLWriter;
 
@@ -92,7 +92,7 @@ namespace cb {
     std::ostream &print(std::ostream &stream, unsigned width = 80,
                         bool wrap = true) const;
     void write(XMLWriter &writer) const;
-    SmartPointer<JSON::List> getJSONList() const;
+    SmartPointer<JSON::Value> getJSONList() const;
     void write(JSON::Sink &sink) const;
   };
 

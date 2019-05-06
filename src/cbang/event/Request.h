@@ -163,8 +163,8 @@ namespace cb {
       {args.insert(String(args.size()), arg);}
       virtual void insertArg(const std::string &key, const std::string &arg)
       {args.insert(key, arg);}
-      virtual const JSON::Dict &getArgs() const {return args;}
-      virtual JSON::Dict &getArgs() {return args;}
+      virtual const JSON::Value &getArgs() const {return args;}
+      virtual JSON::Value &getArgs() {return args;}
       virtual const std::string &getArg(unsigned i) const
       {return args.getString(i);}
       virtual const std::string &getArg(const std::string &key) const
@@ -172,9 +172,9 @@ namespace cb {
       virtual std::string getArg(const std::string &key,
                                  const std::string &defaultVal) const
       {return args.getString(key, defaultVal);}
-      virtual JSON::Dict &parseJSONArgs();
-      virtual JSON::Dict &parseQueryArgs();
-      virtual JSON::Dict &parseArgs();
+      virtual JSON::Value &parseJSONArgs();
+      virtual JSON::Value &parseQueryArgs();
+      virtual JSON::Value &parseArgs();
 
       const IPAddress &getClientIP() const;
 

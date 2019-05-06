@@ -48,7 +48,7 @@ namespace cb {
 
       void setCallback(const cb_t &cb) {this->cb = cb;}
 
-      void send(const JSON::ValuePtr &msg);
+      void send(const JSON::Value &msg);
       SmartPointer<JSON::Writer> getJSONWriter();
 
       virtual void onMessage(const JSON::ValuePtr &msg);

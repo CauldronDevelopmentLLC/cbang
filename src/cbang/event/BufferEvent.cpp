@@ -185,9 +185,6 @@ string BufferEvent::getSSLErrors() {
 }
 
 
-bool BufferEvent::isWrapper() const {return bufferevent_get_underlying(bev);}
-
-
 void BufferEvent::setRead(bool enabled, bool hard) {
   if (!enabled && hard) bufferevent_disable_hard_(bev, EV_READ);
   else (enabled ? bufferevent_enable : bufferevent_disable)(bev, EV_READ);

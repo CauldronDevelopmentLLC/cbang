@@ -793,7 +793,7 @@ string DB::format(uint32_t value) {return String(value);}
 string DB::format(const string &value) const {return "'" + escape(value) + "'";}
 
 
-string DB::format(const string &s, const JSON::Dict &dict,
+string DB::format(const string &s, const JSON::Value &dict,
                   const string &defaultValue) const {
   return dict.format(s, defaultValue);
 }

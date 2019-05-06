@@ -454,7 +454,7 @@ namespace cb {
 
     // JSON
     cb::SmartPointer<cb::JSON::Value> getJSON() const {
-      SmartPointer<JSON::List> list = new JSON::List;
+      SmartPointer<JSON::Value> list = new JSON::List;
       for (unsigned i = 0; i < DIM; i++) list->append(data[i]);
       return list;
     }
@@ -462,7 +462,7 @@ namespace cb {
     void loadJSON(const cb::JSON::Value &value) {read(value);}
 
     void read(const cb::JSON::Value &value) {
-      const JSON::List &list = value.getList();
+      auto &list = value.getList();
 
       if (list.size() != DIM)
         CBANG_THROW("Vector<" << DIM << "> expected list of length " << DIM);

@@ -45,6 +45,7 @@ namespace cb {
     typedef T type_t;
     typedef std::vector<std::pair<KEY, type_t> > vector_t;
     typedef std::map<KEY, typename vector_t::size_type> dict_t;
+
     dict_t dict;
 
   public:
@@ -175,8 +176,18 @@ namespace cb {
     operator[](const KEY &key) const {return get(key);}
 
 
-    // NOTE: There is no erase() because it would not be constant time with out
-    // using std::list instead of std::vector but then get(size_type i) would
-    // no longer be constant time.
+    /// Note, erase() takes non-constant time
+    void erase(size_type i) {
+      dict.erase(keyAt(i));
+      vector_t::erase(vector_t::begin() + i);
+    }
+
+
+    /// Note, erase() takes non-constant time
+    void erase(const KEY &key) {
+      size_type i = indexOf(key);
+      dict.erase(key);
+      vector_t::erase(vector_t::begin() + i);
+    }
   };
 }
