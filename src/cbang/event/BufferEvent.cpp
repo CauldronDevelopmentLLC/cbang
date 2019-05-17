@@ -251,19 +251,16 @@ void BufferEvent::dnsCB(int err, const vector<IPAddress> &addrs) {
 
   if (err || addrs.empty()) return scheduleErrorCB(BUFFEREVENT_ERROR);
 
+  // Make sure we have an open socket
   if (socket.isNull()) socket = new Socket;
-  socket_t fd = socket->get();
-
-  if (fd < 0) {
+  if (!socket->isOpen()) {
     socket->open();
-    setSocket(socket);
-
-  } else socket->set(fd);
+    setFD(socket->get());
+  }
 
   try {
     IPAddress addr(addrs[0].getIP(), peerPort);
 
-    LOG_DEBUG(4, "Connecting to " << addr);
     socket->setBlocking(false);
     socket->connect(addr);
 

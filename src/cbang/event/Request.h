@@ -274,7 +274,7 @@ namespace cb {
       static Version parseHTTPVersion(const std::string &s);
       void parseResponseLine(const std::string &line);
 
-      void write();
+      virtual void write();
 
     protected:
       void writeResponse(Buffer &buf);
