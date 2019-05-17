@@ -37,25 +37,23 @@ using namespace cb::gv8;
 using namespace std;
 
 
-Context::Context() : context(v8::Context::New(0, v8::ObjectTemplate::New())) {}
+Context::Context() : context(v8::Context::New(Value::getIso())) {}
 
 
 Value Context::eval(const InputSource &src) {
-  v8::HandleScope handleScope;
+  v8::EscapableHandleScope handleScope(Value::getIso());
   Context::Scope ctxScope(*this);
 
   // Get script origin
   v8::Local<v8::String> origin;
   string filename = src.getName();
-  if (!filename.empty())
-    origin = v8::String::New(filename.c_str(), filename.length());
+  if (!filename.empty()) origin = Value::createString(filename);
 
   // Get script source
-  string s = src.toString();
-  v8::Local<v8::String> source = v8::String::New(s.c_str(), s.length());
+  v8::Local<v8::String> source = Value::createString(src.toString());
 
   // Compile
-  v8::TryCatch tryCatch;
+  v8::TryCatch tryCatch(Value::getIso());
   v8::Handle<v8::Script> script = v8::Script::Compile(source, origin);
   if (tryCatch.HasCaught()) translateException(tryCatch, false);
 
@@ -64,13 +62,13 @@ Value Context::eval(const InputSource &src) {
   if (tryCatch.HasCaught()) translateException(tryCatch, true);
 
   // Return result
-  return handleScope.Close(ret);
+  return handleScope.Escape(ret);
 }
 
 
 void Context::translateException(const v8::TryCatch &tryCatch,
                                  bool useStack) {
-  v8::HandleScope handleScope;
+  v8::HandleScope handleScope(Value::getIso());
 
   if (useStack && !tryCatch.StackTrace().IsEmpty())
     throw Exception(Value(tryCatch.StackTrace()).toString());

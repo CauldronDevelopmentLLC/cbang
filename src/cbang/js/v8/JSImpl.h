@@ -50,7 +50,16 @@ namespace cb {
     class Module;
 
     class JSImpl : public js::Impl {
-      v8::HandleScope globalScope;
+      v8::Isolate *isolate = 0;
+
+      struct Scope {
+        v8::Isolate::Scope isoScope;
+        v8::HandleScope globalScope;
+
+        Scope(v8::Isolate *iso) : isoScope(iso), globalScope(iso) {}
+      };
+
+      SmartPointer<Scope> scope;
       Context ctx;
 
       std::vector<SmartPointer<js::Callback> > callbacks;
@@ -59,6 +68,7 @@ namespace cb {
 
     public:
       JSImpl(js::Javascript &js);
+      ~JSImpl();
 
       static void init(int *argc = 0, char *argv[] = 0);
       static JSImpl &current();
