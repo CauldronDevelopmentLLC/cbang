@@ -33,6 +33,7 @@
 #pragma once
 
 #include "Request.h"
+#include "Event.h"
 
 #include <functional>
 
@@ -52,6 +53,8 @@ namespace cb {
       std::vector<char> wsMsg;
 
       std::string pongPayload;
+      SmartPointer<Event> pingEvent;
+      SmartPointer<Event> pongEvent;
 
       uint64_t msgSent = 0;
       uint64_t msgReceived = 0;
@@ -94,6 +97,8 @@ namespace cb {
       void writeFrame(WebsockOpCode opcode, bool finish,
                       const void *data, uint64_t len);
       void pong();
+      void schedulePong();
+      void schedulePing();
       void message(const char *data, uint64_t length);
     };
   }

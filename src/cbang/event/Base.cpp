@@ -61,22 +61,24 @@ void Base::initPriority(int num) {
 }
 
 
-SmartPointer<cb::Event::Event>
-Base::newEvent(callback_t cb, bool persistent) {
-  return new Event(*this, -1, persistent ? EVENT_PERSIST : 0, cb);
+int Base::getNumPriorities() const {
+  return event_base_get_npriorities(base);
 }
 
 
 SmartPointer<cb::Event::Event>
-Base::newEvent(socket_t fd, unsigned events, callback_t cb) {
-  return new Event(*this, fd, events, cb);
+Base::newEvent(callback_t cb, unsigned flags) {return newEvent(-1, cb, flags);}
+
+
+SmartPointer<cb::Event::Event>
+Base::newEvent(socket_t fd, callback_t cb, unsigned flags) {
+  return new Event(*this, fd, cb, flags);
 }
 
 
 SmartPointer<cb::Event::Event>
-Base::newSignal(int signal, callback_t cb, bool persistent) {
-  return
-    new Event(*this, signal, (persistent ? EVENT_PERSIST : 0) | EV_SIGNAL, cb);
+Base::newSignal(int signal, callback_t cb, unsigned flags) {
+  return newEvent((socket_t)signal, cb, flags | EV_SIGNAL);
 }
 
 

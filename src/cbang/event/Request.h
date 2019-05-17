@@ -57,9 +57,7 @@ namespace cb {
   namespace Event {
     class Connection;
 
-    class Request : protected SmartPointer<Request>::SelfRef, public Enum {
-      friend class SelfRefCounter;
-
+    class Request : virtual public RefCounted, public Enum {
       Headers inputHeaders;
       Headers outputHeaders;
 

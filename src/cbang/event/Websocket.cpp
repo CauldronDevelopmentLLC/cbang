@@ -69,6 +69,9 @@ void Websocket::close(WebsockStatus status, const std::string &msg) {
 
   if (!active) return; // Already closed
 
+  pingEvent.release();
+  pongEvent.release();
+
   uint16_t data = hton16(status);
   writeFrame(WS_OP_CLOSE, true, &data, 2);
 
@@ -105,7 +108,8 @@ bool Websocket::upgrade() {
     reply(HTTP_SWITCHING_PROTOCOLS);
     active = true; // Must be after above reply; See Connection::write()
 
-    // TODO Timeout out connection
+    // Start connection heartbeat
+    schedulePing();
 
     return true;
   } CATCH_ERROR;
@@ -226,14 +230,13 @@ bool Websocket::readBody(Buffer &input) {
   }
 
   case WS_OP_PING:
-    // TODO Schedule pong to aggregate backlogged pings
+    // Schedule pong to aggregate backlogged pings
     pongPayload = string(wsMsg.begin(), wsMsg.end());
-    pong();
+    schedulePong();
+    schedulePing();
     break;
 
-  case WS_OP_PONG:
-    // TODO Clear ping timeout
-    break;
+  case WS_OP_PONG: schedulePing(); break;
 
   default: close(WS_STATUS_PROTOCOL); break;
   }
@@ -309,8 +312,32 @@ void Websocket::pong() {
 }
 
 
+void Websocket::schedulePong() {
+  if (pongEvent.isNull()) {
+    auto cb = [this] () {pong();};
+    pongEvent = getConnection().getBase().newEvent(cb, EVENT_NO_SELF_REF);
+  }
+
+  if (pongEvent.isSet() && !pongEvent->isPending()) pongEvent->add(5);
+}
+
+
+void Websocket::schedulePing() {
+  if (pingEvent.isNull()) {
+    auto cb = [this] () {ping(); schedulePing();};
+    pingEvent = getConnection().getBase().newEvent(cb, EVENT_NO_SELF_REF);
+  }
+
+  if (pingEvent.isSet()) {
+    double timeout = getConnection().getReadTimeout();
+    pingEvent->add(timeout / 2);
+  }
+}
+
+
 void Websocket::message(const char *data, uint64_t length) {
   msgReceived++;
+  schedulePing();
   TRY_CATCH_ERROR(return onMessage(data, length));
   close(WS_STATUS_UNACCEPTABLE, "Message rejected");
 }

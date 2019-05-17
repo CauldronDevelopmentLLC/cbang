@@ -40,42 +40,129 @@
 
 
 namespace cb {
+  class RefCounted;
+
+
   /// This class is used by SmartPointer to count pointer references
   class RefCounter {
   protected:
     virtual ~RefCounter() {} // Prevent deallocation by others
 
   public:
+    typedef enum {
+      RC_NORMAL,
+      RC_PHONY,
+      RC_PROTECTED,
+    } type_t;
+
+    static bool staticIsProtected() {return false;}
+    virtual bool isProtected() const {return false;}
     virtual unsigned getCount() const = 0;
     virtual void incCount() = 0;
     virtual void decCount(const void *ptr) = 0;
-    virtual bool isSelfRef() const {return false;}
+
     void log(const char *name, unsigned count);
 
     static void raise(const std::string &msg);
+
+    static RefCounter *getRefPtr(const RefCounted *ref);
+    static RefCounter *getRefPtr(const void *ref) {return 0;}
+    void setRefPtr(const RefCounted *ref);
+    void setRefPtr(const void *ref) {}
+    void clearRefPtr(const RefCounted *ref);
+    void clearRefPtr(const void *ref) {}
   };
 
 
-  class SelfRefCounter : public RefCounter {
-  protected:
-    bool engaged;
+  class RefCounted {
+    RefCounter *counter = 0;
+    friend class RefCounter;
 
   public:
-    SelfRefCounter() : engaged(false) {}
+    unsigned getRefCount() const {return counter ? counter->getCount() : 0;}
+  };
 
-    bool isSelfRefEngaged() const {return engaged;}
-    void selfRef() {if (!engaged) {engaged = true; incCount();}}
-    void selfDeref() {if (engaged) {engaged = false; decCount(this);}}
+
+  template<typename T, class Dealloc_T = DeallocNew<T> >
+  class RefCounterImpl : public RefCounter {
+  protected:
+    unsigned count;
+
+  public:
+    RefCounterImpl(unsigned count = 0) : count(count) {}
+    static RefCounter *create() {return new RefCounterImpl;}
+
+    void release(const void *ptr) {
+      delete this;
+      if (ptr) Dealloc_T::dealloc((T *)ptr);
+    }
 
     // From RefCounter
-    bool isSelfRef() const {return true;}
+    unsigned getCount() const {return count;}
 
-    // Only SelfRefCounter should access SelfRef base classes.  These functions
-    // make it possible to access the SelfRefCounter base in a safe way.
-    static RefCounter *_get(SelfRefCounter *ptr) {return ptr;}
-    static RefCounter *_get(const void *) {return 0;}
-    template <class T>
-    static RefCounter *get(T *ptr) {return _get(ptr);}
+    void incCount() {
+      count++;
+#ifdef DEBUG
+      log(typeid(T).name(), count);
+#endif
+    }
+
+    void decCount(const void *ptr) {
+      if (!count) raise("Already zero!");
+#ifdef DEBUG
+      log(typeid(T).name(), count - 1);
+#endif
+      if (!--count) release(ptr);
+    }
+  };
+
+
+  template<typename T, class Dealloc_T = DeallocNew<T> >
+  class ProtectedRefCounterImpl :
+    public RefCounterImpl<T, Dealloc_T>, public Mutex {
+  protected:
+    typedef RefCounterImpl<T, Dealloc_T> Super_T;
+    using Super_T::count;
+
+  public:
+    ProtectedRefCounterImpl(unsigned count = 0) : Super_T(count) {}
+    static RefCounter *create() {return new ProtectedRefCounterImpl;}
+    static bool staticIsProtected() {return true;}
+
+    // From RefCounterImpl
+    bool isProtected() const {return true;}
+
+    unsigned getCount() const {
+      lock();
+      unsigned x = count;
+      unlock();
+      return x;
+    }
+
+    void incCount() {
+      lock();
+      count++;
+#ifdef DEBUG
+      Super_T::log(typeid(T).name(), count);
+#endif
+      unlock();
+    }
+
+    void decCount(const void *ptr) {
+      lock();
+
+      if (!count) {unlock(); Super_T::raise("Already zero!");}
+
+#ifdef DEBUG
+      Super_T::log(typeid(T).name(), count - 1);
+#endif
+
+      if (!--count) {
+        unlock();
+        Super_T::release(ptr);
+
+      } else unlock();
+    }
   };
 
 
@@ -90,75 +177,10 @@ namespace cb {
     unsigned getCount() const {return 1;}
     void incCount() {};
     void decCount(const void *ptr) {}
-  };
 
-
-  template<typename T, class Dealloc_T = DeallocNew<T>,
-           class Base_T = RefCounter>
-  class RefCounterImpl : public virtual Base_T {
-  protected:
-    unsigned count;
-
-  public:
-    RefCounterImpl(unsigned count = 0) : count(count) {}
-    static RefCounter *create() {return new RefCounterImpl;}
-
-    // From RefCounter
-    unsigned getCount() const {return count;}
-    void incCount() {
-      count++;
-#ifdef DEBUG
-      RefCounter::log(typeid(T).name(), count);
-#endif
-    }
-
-    void decCount(const void *ptr) {
-      if (!count) Base_T::raise("Already zero!");
-#ifdef DEBUG
-      RefCounter::log(typeid(T).name(), count - 1);
-#endif
-      if (!--count) release(ptr);
-    }
-
-    void release(const void *ptr) {
-      if (!Base_T::isSelfRef()) delete this; // Only deallocate once
-      if (ptr) Dealloc_T::dealloc((T *)ptr);
-    }
-  };
-
-
-  template<typename T, class Dealloc_T = DeallocNew<T>,
-           class Base_T = RefCounter>
-  class ProtectedRefCounterImpl :
-    public RefCounterImpl<T, Dealloc_T, Base_T>, public Mutex {
-  protected:
-    typedef RefCounterImpl<T, Dealloc_T, Base_T> Super_T;
-    using Super_T::count;
-
-  public:
-    ProtectedRefCounterImpl(unsigned count = 0) : Super_T(count) {}
-    static RefCounter *create() {return new ProtectedRefCounterImpl;}
-
-    // From RefCounterImpl
-    unsigned getCount() const {
-      lock();
-      unsigned x = count;
-      unlock();
-      return x;
-    }
-
-    void incCount() {lock(); count++; unlock();}
-
-    void decCount(const void *ptr) {
-      lock();
-
-      if (!count) {unlock(); Super_T::raise("Already zero!");}
-
-      if (!--count) {
-        unlock();
-        Super_T::release(ptr);
-
-      } else unlock();
-    }
+    static RefCounter *getRefPtr(const RefCounted *ref) {return 0;}
+    using RefCounter::getRefPtr;
+    void setRefPtr(const RefCounted *ref) {}
+    using RefCounter::setRefPtr;
   };
 }

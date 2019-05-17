@@ -40,6 +40,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/socket/Socket.h>
 
 using namespace std;
 using namespace cb;
@@ -52,7 +53,7 @@ using namespace cb::Event;
 
 OutgoingRequest::OutgoingRequest(Client &client, const URI &uri,
                                  RequestMethod method, callback_t cb) :
-  Connection(client.getBase(), false, uri.getIPAddress(), -1,
+  Connection(client.getBase(), false, uri.getIPAddress(), 0,
              uri.getScheme() == "https" ? client.getSSLContext() : 0),
   Request(method, uri), dns(client.getDNS()), cb(cb) {
   LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
@@ -96,7 +97,7 @@ void OutgoingRequest::onResponse(ConnectionError error) {
   }
 
   setConnectionError(error);
-  TRY_CATCH_ERROR(if (cb) cb(*this));
+  if (cb) TRY_CATCH_ERROR(cb(*this));
 
   setConnection(0); // Release self reference
 }

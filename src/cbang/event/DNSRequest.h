@@ -45,9 +45,7 @@ struct evdns_request;
 
 namespace cb {
   namespace Event {
-    class DNSRequest : SmartPointer<DNSRequest>::SelfRef {
-      friend class SelfRefCounter;
-
+    class DNSRequest : public RefCounted {
     public:
       typedef enum {
         DNS_ERR_NONE = 0,
@@ -72,6 +70,7 @@ namespace cb {
       evdns_request *req;
       callback_t cb;
       IPAddress source;
+      SmartPointer<DNSRequest> self;
 
     public:
       DNSRequest(evdns_base *dns, const std::string &name,

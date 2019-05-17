@@ -48,6 +48,7 @@
 namespace cb {
   class URI;
   class SSLContext;
+  class Socket;
 
   namespace Event {
     class Event;
@@ -57,9 +58,6 @@ namespace cb {
 
     class Connection : public BufferEvent, public Enum {
       Base &base;
-
-      static uint64_t nextID;
-      uint64_t id = ++nextID;
 
       typedef enum {
         STATE_DISCONNECTED,
@@ -90,10 +88,10 @@ namespace cb {
       uint32_t maxBodySize = std::numeric_limits<unsigned>::max();
       uint32_t maxHeaderSize = std::numeric_limits<unsigned>::max();
       double retryTimeout = 0;
-      unsigned maxRetries = 0;
+      unsigned maxRetries = 2;
       unsigned readTimeout = 50;
       unsigned writeTimeout = 50;
-      unsigned connectTimeout = 0;
+      unsigned connectTimeout = 50;
 
       bool detectClose = false;
       bool chunkedRequest = false;
@@ -104,12 +102,13 @@ namespace cb {
 
     public:
       Connection(Base &base, bool incoming, const IPAddress &peer,
-                 socket_t fd = -1, const SmartPointer<SSLContext> &sslCtx = 0);
+                 const SmartPointer<Socket> &socket = 0,
+                 const SmartPointer<SSLContext> &sslCtx = 0);
       virtual ~Connection();
 
+      Base &getBase() {return base;}
       virtual DNSBase &getDNS() {THROW("No DNSBase");}
 
-      uint64_t getID() const {return id;}
       bool isConnected() const;
       bool isIncoming() const {return incoming;}
 
@@ -191,18 +190,18 @@ namespace cb {
 
       // From BufferEvent
       using BufferEvent::setTimeouts;
-      using BufferEvent::setFD;
-      using BufferEvent::getFD;
+      using BufferEvent::setSocket;
+      using BufferEvent::getSocket;
       using BufferEvent::setRead;
-      using BufferEvent::setWrite;
-      using BufferEvent::setWatermark;
       using BufferEvent::getOutput;
       using BufferEvent::getInput;
       using BufferEvent::connect;
+      using BufferEvent::close;
 
+      void connectCB();
       void readCB();
       void writeCB();
-      void eventCB(short what);
+      void errorCB(short what, int err);
     };
   }
 }

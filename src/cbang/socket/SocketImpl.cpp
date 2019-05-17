@@ -37,6 +37,4 @@
 using namespace cb;
 
 
-Socket *SocketImpl::createSocket() {
-  return new Socket;
-}
+Socket *SocketImpl::createSocket() {return new Socket;}

@@ -78,7 +78,7 @@ namespace cb {
 
         QueuedTask(Base &base, int priority) :
           Task(priority),
-          event(base.newEvent(this, &QueuedTask<Data>::dequeue)) {}
+          event(base.newEvent(this, &QueuedTask<Data>::dequeue, 0)) {}
 
 
         virtual void process(Data) = 0;

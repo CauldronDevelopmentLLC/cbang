@@ -35,7 +35,6 @@
 #include <cbang/net/Swab.h>
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
-#include <cbang/debug/Debugger.h>
 
 #include <event2/dns.h>
 
@@ -55,20 +54,18 @@ namespace {
 
 DNSRequest::DNSRequest(evdns_base *dns, const string &name,
                        DNSRequest::callback_t cb, bool search) :
-  dns(dns), cb(cb) {
+  dns(dns), cb(cb), self(this) {
   req = evdns_base_resolve_ipv4
     (dns, name.c_str(), (search ? 0 : DNS_QUERY_NO_SEARCH), dns_cb, this);
 
   if (!req) THROW("DNS lookup failed");
 
   LOG_DEBUG(5, "DNS: resolving '" << name << "'");
-
-  SmartPointer<DNSRequest>::SelfRef::selfRef();
 }
 
 
 DNSRequest::DNSRequest(evdns_base *dns, uint32_t ip, DNSRequest::callback_t cb,
-                       bool search) : dns(dns), cb(cb) {
+                       bool search) : dns(dns), cb(cb), self(this) {
   struct in_addr addr = {hton32(ip)};
 
   req = evdns_base_resolve_reverse
@@ -77,50 +74,53 @@ DNSRequest::DNSRequest(evdns_base *dns, uint32_t ip, DNSRequest::callback_t cb,
   if (!req) THROW("DNS reverse lookup failed");
 
   LOG_DEBUG(5, "DNS: reversing " << IPAddress(ip));
-
-  SmartPointer<DNSRequest>::SelfRef::selfRef();
 }
 
 
-void DNSRequest::cancel() {evdns_cancel_request(dns, req);}
+void DNSRequest::cancel() {
+  cb = 0;
+  evdns_cancel_request(dns, req);
+}
 
 
 void DNSRequest::callback(int error, char type, int count, int ttl,
                           void *addresses) {
   LOG_DEBUG(5, "DNS: " << getErrorStr(error) << " " << (int)type
-            << " " << count << " " << ttl << "\n"
-            << Debugger::getStackTrace());
+            << " " << count << " " << ttl);
 
-  try {
-    // Get address results
-    vector<IPAddress> addrs;
-    if (error == DNS_ERR_NONE) {
-      if (type == DNS_IPv4_A) {
-        uint32_t *ips = (uint32_t *)addresses;
+  if (cb)
+    try {
+      // Get address results
+      vector<IPAddress> addrs;
+      if (error == DNS_ERR_NONE) {
+        if (type == DNS_IPv4_A) {
+          auto ips = (uint32_t *)addresses;
 
-        for (int i = 0; i < count; i++) {
-          addrs.push_back(IPAddress(hton32(ips[i])));
-          addrs.back().setHost(source.getHost());
+          for (int i = 0; i < count; i++) {
+            addrs.push_back(IPAddress(hton32(ips[i])));
+            addrs.back().setHost(source.getHost());
+          }
+
+        } else if (type == DNS_PTR) {
+          auto names = (const char **)addresses;
+
+          for (int i = 0; i < count; i++) {
+            addrs.push_back(IPAddress(names[i]));
+            addrs.back().setIP(source.getIP());
+          }
+
+        } else {
+          LOG_ERROR("Unsupported DNS response type " << type);
+          error = DNS_ERR_NOTIMPL;
         }
-
-      } else if (type == DNS_PTR) {
-        if (count) {
-          addrs.push_back(IPAddress(*(const char **)addresses));
-          addrs.back().setIP(source.getIP());
-        }
-
-      } else {
-        LOG_ERROR("Unsupported DNS response type " << type);
-        error = -1;
       }
-    }
 
-    // Calback
-    if (cb) cb(error, addrs, ttl);
+      // Calback
+      cb(error, addrs, ttl);
 
-  } CATCH_ERROR;
+    } CATCH_ERROR;
 
-  SmartPointer<DNSRequest>::SelfRef::selfDeref();
+  self.release();
 }
 
 

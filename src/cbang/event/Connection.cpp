@@ -54,7 +54,11 @@
 namespace cb {class SSLContext {};}
 #endif
 
-#include <event2/bufferevent.h>
+#ifdef _WIN32
+#define ERRNO_CONNECT_REFUSED WSAECONNREFUSED
+#else
+#define ERRNO_CONNECT_REFUSED ECONNREFUSED
+#endif
 
 using namespace std;
 using namespace cb;
@@ -62,15 +66,13 @@ using namespace cb::Event;
 
 
 #undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "CON" << id << ':'
-
-
-uint64_t Connection::nextID = 0;
+#define CBANG_LOG_PREFIX << "CON" << getID() << ':'
 
 
 Connection::Connection(Base &base, bool incoming, const IPAddress &peer,
-                       socket_t fd, const SmartPointer<SSLContext> &sslCtx) :
-  BufferEvent(base, incoming, fd, sslCtx), base(base),
+                       const SmartPointer<Socket> &socket,
+                       const SmartPointer<SSLContext> &sslCtx) :
+  BufferEvent(base, incoming, socket, sslCtx), base(base),
   state(incoming ? STATE_READING_FIRSTLINE : STATE_DISCONNECTED),
   incoming(incoming), peer(peer), startTime(Timer::now()), sslCtx(sslCtx) {
 
@@ -159,7 +161,6 @@ void Connection::write(Request &req, const Buffer &buf) {
   getOutput().add(buf);
 
   detectClose = false; // Stop detect close
-  setWrite(true);
 
   // Don't change state or disable read if active Websocket
   if (!req.isWebsocket()) {
@@ -202,6 +203,7 @@ void Connection::push(const SmartPointer<Request> &req) {
 
 
 SmartPointer<Request> Connection::pop() {
+  if (requests.empty()) THROW(__func__ << "() No requests");
   auto req = getRequest();
   requests.pop_front();
   return req;
@@ -240,9 +242,7 @@ void Connection::fail(ConnectionError error) {
 void Connection::reset() {
   LOG_DEBUG(4, __func__ << "()");
 
-  // Disable events
-  setRead(false);
-  setWrite(false, true);
+  close();
 
   // Clear any buffered data
   getOutput().clear();
@@ -309,13 +309,13 @@ void Connection::done() {
 
 
 void Connection::retry() {
-  LOG_DEBUG(4, __func__ << "()");
+  LOG_DEBUG(4, __func__ << "(" << retries << ")");
 
   reset();
 
   if (!maxRetries || retries < maxRetries) {
     if (retryEvent.isNull())
-      retryEvent = base.newEvent(this, &Connection::connect);
+      retryEvent = base.newEvent(this, &Connection::connect, 0);
 
     if (!retries++) retryTimeout = 2;
     else retryTimeout *= 2; // Backoff
@@ -340,15 +340,13 @@ void Connection::connect() {
     reset();
 
     // Open and bind new socket
-    Socket socket;
-    if (bind.getIP()) socket.bind(bind);
-    else socket.open();
-    socket.setBlocking(false);
-    setFD(socket.adopt());
+    SmartPointer<Socket> socket = new Socket;
+    if (bind.getIP()) socket->bind(bind);
+    else socket->open();
+    BufferEvent::setSocket(socket);
 
-    setTimeouts(0, connectTimeout);
+    setTimeouts(readTimeout, connectTimeout);
     setState(STATE_CONNECTING);
-    setWrite(true); // Enable write callback
 
     BufferEvent::connect(getDNS(), peer);
     return;
@@ -369,7 +367,6 @@ void Connection::websockReadHeader() {
   LOG_DEBUG(4, __func__ << "()");
 
   setRead(true);
-  setWrite(false);
   setState(STATE_WEBSOCK_HEADER);
 
   if (getWebsocket().readHeader(getInput())) websockReadBody();
@@ -392,7 +389,6 @@ void Connection::startRead() {
   LOG_DEBUG(4, __func__ << "()");
 
   // Start reading response
-  setWrite(false);
   setRead(true);
   setState(STATE_READING_FIRSTLINE);
 }
@@ -433,7 +429,8 @@ void Connection::readFirstLine() {
 
   } catch (const Exception &e) {
     LOG_ERROR(e.getMessage());
-    getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+    if (incoming) getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+    else fail(CONN_ERR_EXCEPTION);
   }
 }
 
@@ -450,7 +447,8 @@ bool Connection::tryReadHeader() {
 
   } catch (const Exception &e) {
     LOG_ERROR(e.getMessage());
-    getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+    if (incoming) getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+    else fail(CONN_ERR_EXCEPTION);
   }
 
   return false;
@@ -560,7 +558,6 @@ void Connection::getBody() {
       if (expect == "100-continue")
         try {
           if (req->onContinue()) {
-            setWrite(true);
             getOutput()
               .add("HTTP/" + version.toString() + " 100 Continue\r\n\r\n");
             return;
@@ -632,7 +629,7 @@ void Connection::readBody() {
 
   if (bytesToRead) {
     setRead(true); // Read more
-    if (0 < bytesToRead) setWatermark(true, bytesToRead);
+    if (0 < bytesToRead) setMinRead(bytesToRead);
 
   } else done();
 }
@@ -646,10 +643,24 @@ void Connection::readTrailer() {
 }
 
 
+void Connection::connectCB() {
+  if (state != STATE_CONNECTING)
+    THROW("Unexpected connect callback state=" << state);
+
+  LOG_DEBUG(3, "Connected to " << peer);
+  retries = 0; // Success
+  setState(STATE_IDLE);
+
+  // Set Read/Write timeouts
+  setTimeouts(readTimeout, writeTimeout);
+
+  // Start new requests
+  if (!requests.empty()) dispatch();
+}
+
+
 void Connection::readCB() {
   LOG_DEBUG(4, __func__ << "() bytes=" << getInput().getLength());
-
-  setWatermark(true, 0);
 
   try {
     switch (state) {
@@ -674,7 +685,7 @@ void Connection::readCB() {
 
 /// Invoked when data has been written
 void Connection::writeCB() {
-  LOG_DEBUG(4, __func__ << "() bytes=" << getInput().getLength());
+  LOG_DEBUG(4, __func__ << "() bytes=" << getOutput().getLength());
 
   try {
     switch (state) {
@@ -688,8 +699,6 @@ void Connection::writeCB() {
       break;
     default: THROW("Unexpected state " << state << " in write callback");
     }
-
-    setWrite(false); // Done writing
 
     if (state != STATE_WRITING) return;
 
@@ -720,50 +729,39 @@ void Connection::writeCB() {
 }
 
 
-void Connection::eventCB(short what) {
+void Connection::errorCB(short what, int err) {
   LOG_DEBUG(5, __func__ << "(" << BufferEvent::getEventsString(what) << ") "
             << getStateString(state));
 
-  if (state == STATE_DISCONNECTED) return;
+  switch (state) {
+  case STATE_DISCONNECTED: return;
 
-  if (state == STATE_CONNECTING) {
-    if (what & BEV_EVENT_CONNECTED) {
-      LOG_DEBUG(3, "Connected to " << peer);
-      retries = 0; // Success
-      setState(STATE_IDLE);
+  case STATE_CONNECTING:
+    LOG_DEBUG(3, "Connection failed for " << peer << " with "
+              << BufferEvent::getEventsString(what)
+              << ", System Error: " << SysError(err));
 
-      // Set Read/Write timeouts
-      setTimeouts(readTimeout, writeTimeout);
-
-      // Start new requests
-      if (!requests.empty()) dispatch();
-
-    } else {
-      LOG_DEBUG(3, "Connection failed for " << peer << " with "
-                << BufferEvent::getEventsString(what)
-                << ", System Error: " << SysError());
-
-#ifndef _WIN32
-      if (errno == ECONNREFUSED) return retry();
-#endif
-
-      if (what & BEV_EVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
-      else retry();
-    }
+    if (err == ERRNO_CONNECT_REFUSED) return free(CONN_ERR_CONNECT);
+    if (what & BUFFEREVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
+    else retry();
 
     return;
+
+  case STATE_WEBSOCK_HEADER: case STATE_WEBSOCK_BODY: pop(); break;
+
+  case STATE_READING_BODY:
+    if (!chunkedRequest && bytesToRead < 0 &&
+        what == (BUFFEREVENT_READING | BUFFEREVENT_EOF))
+      return done(); // Benign EOF on read
+
+  default: break;
   }
-
-  if (state == STATE_WEBSOCK_HEADER || state == STATE_WEBSOCK_BODY) pop();
-
-  if (state == STATE_READING_BODY && !chunkedRequest && bytesToRead < 0 &&
-      what == (BEV_EVENT_READING | BEV_EVENT_EOF))
-    return done(); // Benign EOF on read
 
   // When in close detect mode, a read error means the other side closed
   if (detectClose) {
     detectClose = false;
-    if (state != STATE_IDLE || incoming) THROW("Unexpected state " << state);
+    if (state != STATE_IDLE || incoming)
+      LOG_ERROR(__func__ << "() Unexpected detect close state " << state);
     reset();
 
     // Free if no more requests
@@ -771,7 +769,7 @@ void Connection::eventCB(short what) {
     return;
   }
 
-  if (what & BEV_EVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
-  else if (what & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) fail(CONN_ERR_EOF);
-  else if (what != BEV_EVENT_CONNECTED) fail(CONN_ERR_BUFFER_ERROR);
+  if (what & BUFFEREVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
+  else if (what & (BUFFEREVENT_EOF | BUFFEREVENT_ERROR)) fail(CONN_ERR_EOF);
+  else fail(CONN_ERR_BUFFER_ERROR);
 }

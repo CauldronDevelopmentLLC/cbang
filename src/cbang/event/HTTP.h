@@ -52,14 +52,13 @@ namespace cb {
     class Event;
     class Connection;
 
-    class HTTP : SmartPointer<HTTP>::SelfRef, public Enum {
-      friend class SelfRefCounter;
-
+    class HTTP : public RefCounted, public Enum {
       Base &base;
 
       SmartPointer<HTTPHandler> handler;
       SmartPointer<SSLContext> sslCtx;
       cb::SmartPointer<Event> expireEvent;
+      cb::SmartPointer<Event> acceptEvent;
 
       std::string defaultContentType = "text/html; charset=UTF-8";
       unsigned maxBodySize = std::numeric_limits<unsigned>::max();
