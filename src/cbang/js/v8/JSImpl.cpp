@@ -37,6 +37,8 @@
 #include <cbang/js/Javascript.h>
 #include <cbang/util/SmartFunctor.h>
 
+#include <libplatform/libplatform.h>
+
 using namespace cb::gv8;
 using namespace cb;
 using namespace std;
@@ -45,14 +47,39 @@ using namespace std;
 JSImpl *JSImpl::singleton = 0;
 
 
-JSImpl::JSImpl(js::Javascript &js) {
+namespace {
+  v8::Isolate *createAndEnter() {
+    v8::Isolate::CreateParams params;
+    params.array_buffer_allocator =
+      v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+    auto isolate = v8::Isolate::New(params);
+    isolate->Enter();
+    return isolate;
+  }
+}
+
+
+JSImpl::JSImpl(js::Javascript &js) :
+  isolate(createAndEnter()), scope(new Scope(isolate)) {
   if (singleton) THROW("There can be only one. . .");
   singleton = this;
 }
 
 
+JSImpl::~JSImpl() {
+  scope.release();
+
+  if (isolate) {
+    isolate->Exit();
+    isolate->Dispose();
+  }
+}
+
+
 void JSImpl::init(int *argc, char *argv[]) {
   if (argv) v8::V8::SetFlagsFromCommandLine(argc, argv, true);
+  v8::V8::InitializePlatform(v8::platform::CreateDefaultPlatform());
+  v8::V8::Initialize();
 }
 
 
@@ -71,4 +98,4 @@ SmartPointer<js::Scope> JSImpl::newScope() {
 }
 
 
-void JSImpl::interrupt() {v8::V8::TerminateExecution();}
+void JSImpl::interrupt() {isolate->TerminateExecution();}

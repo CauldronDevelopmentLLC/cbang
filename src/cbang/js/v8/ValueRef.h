@@ -41,8 +41,9 @@ namespace cb {
       v8::Persistent<v8::Value> ref;
 
     public:
-      ValueRef(const Value &value = Value()) :
-        Value(value), ref(v8::Persistent<v8::Value>::New(value.getV8Value())) {}
+      ValueRef(const Value &value = Value()) : Value(value) {
+        ref.Reset(v8::Isolate::GetCurrent(), value.getV8Value());
+      }
     };
   }
 }

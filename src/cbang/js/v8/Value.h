@@ -49,7 +49,7 @@ namespace cb {
       v8::Handle<v8::Value> value;
 
     public:
-      Value() : value(v8::Undefined()) {}
+      Value() : value(v8::Undefined(v8::Isolate::GetCurrent())) {}
       Value(const SmartPointer<js::Value> &value);
       Value(const js::Value &value);
       Value(const js::Function &func);
@@ -58,10 +58,14 @@ namespace cb {
       Value(const v8::Local<v8::Object> &value) : value(value) {}
       Value(const v8::Local<v8::Array> &value) : value(value) {}
       Value(const v8::Handle<v8::Value> &value);
-      explicit Value(bool x) : value(x ? v8::True() : v8::False()) {}
-      Value(double x) : value(v8::Number::New(x)) {}
-      Value(int32_t x) : value(v8::Int32::New(x)) {}
-      Value(uint32_t x) : value(v8::Uint32::New(x)) {}
+      Value(const v8::MaybeLocal<v8::Value> &value);
+      Value(const v8::MaybeLocal<v8::Array> &value);
+      explicit Value(bool x) : value(x ? v8::True(v8::Isolate::GetCurrent()) :
+                                     v8::False(v8::Isolate::GetCurrent())) {}
+      Value(double x) : value(v8::Number::New(v8::Isolate::GetCurrent(), x)) {}
+      Value(int32_t x) : value(v8::Int32::New(v8::Isolate::GetCurrent(), x)) {}
+      Value(uint32_t x) :
+        value(v8::Uint32::New(v8::Isolate::GetCurrent(), x)) {}
       Value(const char *s, int length = -1);
       Value(const std::string &s);
 
@@ -69,52 +73,56 @@ namespace cb {
 
       // Undefined
       void assertDefined() const
-      {if (isUndefined()) THROW("Value is undefined");}
+      {if (isUndefined()) CBANG_THROW("Value is undefined");}
       bool isUndefined() const {return value->IsUndefined();}
 
       // Null
       bool isNull() const {return value->IsNull();}
-      static Value createNull() {return v8::Null();}
+      static Value createNull() {return v8::Null(v8::Isolate::GetCurrent());}
 
       // Boolean
       void assertBoolean() const
-      {if (!isBoolean()) THROW("Value is not a boolean");}
+      {if (!isBoolean()) CBANG_THROW("Value is not a boolean");}
       bool isBoolean() const {return value->IsBoolean();}
       bool toBoolean() const {assertDefined(); return value->BooleanValue();}
 
       // Number
       void assertNumber() const
-      {if (!isNumber()) THROW("Value is not a number");}
+      {if (!isNumber()) CBANG_THROW("Value is not a number");}
       bool isNumber() const {return value->IsNumber();}
       double toNumber() const {assertDefined(); return value->NumberValue();}
       int toInteger() const {assertDefined(); return value->IntegerValue();}
 
       // Int32
       void assertInt32() const
-      {if (!isInt32()) THROW("Value is not a int32");}
+      {if (!isInt32()) CBANG_THROW("Value is not a int32");}
       bool isInt32() const {return value->IsInt32();}
       int32_t toInt32() const {assertDefined(); return value->Int32Value();}
 
       // Uint32
       void assertUint32() const
-      {if (!isUint32()) THROW("Value is not a uint32");}
+      {if (!isUint32()) CBANG_THROW("Value is not a uint32");}
       bool isUint32() const {return value->IsUint32();}
       uint32_t toUint32() const {assertDefined(); return value->Uint32Value();}
 
       // String
+      static v8::Local<v8::String> createString(const char *s, unsigned length);
+      static v8::Local<v8::String> createString(const std::string &s);
+      static v8::Local<v8::Symbol> createSymbol(const std::string &name);
       void assertString() const
-      {if (!isString()) THROW("Value is not a string");}
+      {if (!isString()) CBANG_THROW("Value is not a string");}
       bool isString() const {return value->IsString();}
       std::string toString() const;
 
       int utf8Length() const {return v8::String::Cast(*value)->Utf8Length();}
 
       // Object
-      static Value createObject() {return v8::Object::New();}
+      static Value createObject()
+      {return v8::Object::New(v8::Isolate::GetCurrent());}
       void assertObject() const
-      {if (!isObject()) THROW("Value is not a object");}
+      {if (!isObject()) CBANG_THROW("Value is not a object");}
       bool isObject() const {return value->IsObject();}
-      bool has(uint32_t index) const {return value->ToObject()->Has(index);}
+      bool has(uint32_t index) const;
       bool has(const std::string &key) const;
 
       SmartPointer<js::Value> get(int index) const;
@@ -125,8 +133,10 @@ namespace cb {
       void set(const std::string &key, const js::Value &value);
 
       // Array
-      static Value createArray(unsigned size = 0) {return v8::Array::New(size);}
-      void assertArray() const {if (!isArray()) THROW("Value is not a array");}
+      static Value createArray(unsigned size = 0)
+      {return v8::Array::New(v8::Isolate::GetCurrent(), size);}
+      void assertArray() const
+      {if (!isArray()) CBANG_THROW("Value is not a array");}
       bool isArray() const {return value->IsArray();}
       unsigned length() const;
 
@@ -142,6 +152,13 @@ namespace cb {
       // Accessors
       const v8::Handle<v8::Value> &getV8Value() const {return value;}
       v8::Handle<v8::Value> &getV8Value() {return value;}
+
+      // Static
+      static v8::Isolate *getIso() {return v8::Isolate::GetCurrent();}
+      static v8::Local<v8::Context> getCtx()
+        {return getIso()->GetCurrentContext();}
+
+       static void throwError(const std::string &msg);
     };
   }
 }

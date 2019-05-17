@@ -44,28 +44,23 @@ using namespace std;
 
 
 namespace {
-  v8::Handle<v8::Value> _callback(const v8::Arguments &argv) {
+  void _callback(const v8::FunctionCallbackInfo<v8::Value> &info) {
     js::Callback &cb =
-      *static_cast<js::Callback *>(v8::External::Cast(*argv.Data())->Value());
+      *static_cast<js::Callback *>(v8::External::Cast(*info.Data())->Value());
 
     try {
       // Convert args
-      Value args = Value::createArray(argv.Length());
-      for (int i = 0; i < argv.Length(); i++)
-        args.set(i, Value(argv[i]));
+      Value args = Value::createArray(info.Length());
+      for (int i = 0; i < info.Length(); i++)
+        args.set(i, Value(info[i]));
 
       // Call function
-      return cb.call(args).cast<Value>()->getV8Value();
+      auto ret = cb.call(args);
+      info.GetReturnValue().Set(ret.cast<Value>()->getV8Value());
 
-    } catch (const Exception &e) {
-      return v8::ThrowException(v8::String::New(SSTR(e).c_str()));
-
-    } catch (const std::exception &e) {
-      return v8::ThrowException(v8::String::New(e.what()));
-
-    } catch (...) {
-      return v8::ThrowException(v8::String::New("Unknown exception"));
-    }
+    } catch (const Exception &e) {Value::throwError(SSTR(e));}
+    catch (const std::exception &e) {Value::throwError(e.what());}
+    catch (...) {Value::throwError("Unknown exception");}
   }
 }
 
@@ -85,35 +80,59 @@ Value::Value(const js::Function &func) {
   SmartPointer<js::Callback> cb = func.getCallback();
   JSImpl::current().add(cb);
 
-  v8::Handle<v8::Value> data = v8::External::New((void *)cb.get());
+  v8::Handle<v8::Value> data =
+    v8::External::New(getIso(), (void *)cb.get());
   v8::Handle<v8::FunctionTemplate> tmpl =
-    v8::FunctionTemplate::New(&_callback, data);
+    v8::FunctionTemplate::New(getIso(), &_callback, data);
   value = tmpl->GetFunction();
 }
 
 
 Value::Value(const Value &value) {
-  if (value.getV8Value().IsEmpty()) this->value = v8::Undefined();
+  if (value.getV8Value().IsEmpty()) this->value = v8::Undefined(getIso());
   else this->value = value.getV8Value();
 }
 
 
 Value::Value(const v8::Handle<v8::Value> &value) {
-  if (value.IsEmpty()) this->value = v8::Undefined();
+  if (value.IsEmpty()) this->value = v8::Undefined(getIso());
   else this->value = value;
 }
 
 
-Value::Value(const char *s, int length) :
-  value(v8::String::New(s, length)) {}
+Value::Value(const v8::MaybeLocal<v8::Value> &value) {
+  if (!value.ToLocal(&this->value)) this->value = v8::Undefined(getIso());
+}
 
 
-Value::Value(const std::string &s) :
-  value(v8::String::New(s.data(), s.length())) {}
+Value::Value(const v8::MaybeLocal<v8::Array> &value) {
+  if (!value.ToLocal(&this->value)) this->value = v8::Undefined(getIso());
+}
+
+
+Value::Value(const char *s, int length) : value(createString(s, length)) {}
+Value::Value(const std::string &s) : value(createString(s)) {}
+
 
 
 SmartPointer<js::Value> Value::makePersistent() const {
   return new ValueRef(*this);
+}
+
+
+v8::Local<v8::String> Value::createString(const char *s, unsigned length) {
+  return v8::String::NewFromUtf8
+    (getIso(), s, v8::NewStringType::kNormal, length).ToLocalChecked();
+}
+
+
+v8::Local<v8::String> Value::createString(const string &s) {
+  return createString(s.c_str(), s.length());
+}
+
+
+v8::Local<v8::Symbol> Value::createSymbol(const string &name) {
+  return v8::Symbol::New(getIso(), createString(name));
 }
 
 
@@ -127,46 +146,51 @@ string Value::toString() const {
 }
 
 
+bool Value::has(uint32_t index) const {
+  return value->ToObject()->Has(getCtx(), index).ToChecked();
+}
+
+
 bool Value::has(const string &key) const {
-  return value->ToObject()->
-    Has(v8::String::NewSymbol(key.data(), key.length()));
+  return value->ToObject()->Has(getCtx(), createString(key)).ToChecked();
 }
 
 
 SmartPointer<js::Value> Value::get(int index) const {
-  return new Value(value->ToObject()->Get(index));
+  return new Value(value->ToObject()->Get(getCtx(), index));
 }
 
 
 SmartPointer<js::Value> Value::get(const string &key) const {
-  return new Value
-    (value->ToObject()->
-     Get(v8::String::NewSymbol(key.data(), key.length())));
+  return new Value(value->ToObject()->Get(getCtx(), createString(key)));
 }
 
 
 SmartPointer<js::Value> Value::getOwnPropertyNames() const {
-  return new Value(value->ToObject()->GetOwnPropertyNames());
+  return new Value(value->ToObject()->GetOwnPropertyNames(getCtx()));
 }
 
 
 void Value::set(int index, const js::Value &value) {
-  this->value->ToObject()->Set(index, Value(value).getV8Value());
+  v8::Maybe<bool> ret = this->value->ToObject()->
+    Set(getCtx(), index, Value(value).getV8Value());
+  if (ret.IsNothing() || !ret.ToChecked())
+    THROW("Set " << index << " failed");
 }
 
 
 void Value::set(const string &key, const js::Value &value) {
-  this->value->ToObject()->
-    Set(v8::String::NewSymbol(key.data(), key.length()),
-        Value(value).getV8Value());
+  v8::Maybe<bool> ret = this->value->ToObject()->
+    Set(getCtx(), createString(key), Value(value).getV8Value());
+  if (ret.IsNothing() || !ret.ToChecked())
+    THROW("Set " << key << " failed");
 }
 
 
 unsigned Value::length() const {
   if (isString()) return v8::String::Cast(*value)->Length();
   else if (isArray()) return v8::Array::Cast(*value)->Length();
-  else if (isObject())
-    return value->ToObject()->GetOwnPropertyNames()->Length();
+  else if (isObject()) return getOwnPropertyNames()->length();
   THROW("Value does not have length");
 }
 
@@ -206,12 +230,16 @@ string Value::getName() const {
 
 void Value::setName(const string &name) {
   if (!isFunction()) THROW("Value is not a function");
-  v8::Handle<v8::Function>::Cast(value)->
-    SetName(v8::String::NewSymbol(name.c_str(), name.length()));
+  v8::Handle<v8::Function>::Cast(value)->SetName(createString(name));
 }
 
 
 int Value::getScriptLineNumber() const {
   if (!isFunction()) THROW("Value is not a function");
   return v8::Handle<v8::Function>::Cast(value)->GetScriptLineNumber();
+}
+
+
+void Value::throwError(const string &msg) {
+  getIso()->ThrowException(v8::Exception::Error(createString(msg)));
 }
