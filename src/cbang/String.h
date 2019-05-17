@@ -98,7 +98,8 @@ namespace cb {
     static unsigned tokenize(const std::string &s,
                              std::vector<std::string> &tokens,
                              const std::string &delims = DEFAULT_DELIMS,
-                             bool allowEmpty = false);
+                             bool allowEmpty = false,
+                             unsigned maxTokens = ~0);
     static unsigned tokenizeLine(std::istream &stream,
                                  std::vector<std::string> &tokens,
                                  const std::string &delims = DEFAULT_DELIMS,

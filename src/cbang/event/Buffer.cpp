@@ -33,6 +33,7 @@
 #include "Buffer.h"
 
 #include <cbang/Exception.h>
+#include <cbang/Catch.h>
 #include <cbang/String.h>
 
 #include <event2/buffer.h>
@@ -55,6 +56,17 @@ extern "C" {
 }
 
 
+namespace {
+  void buffer_cb(struct evbuffer *buffer,
+                 const struct evbuffer_cb_info *info, void *arg) {
+    try {
+      ((Buffer *)arg)->
+        callback(info->n_added, info->n_deleted, info->orig_size);
+    } CATCH_ERROR;
+  }
+}
+
+
 Buffer::Buffer() : evb(evbuffer_new()) {
   if (!evb) THROW("Failed to create event buffer");
 }
@@ -72,7 +84,12 @@ Buffer::Buffer(const char *data, unsigned length) : Buffer() {
 
 Buffer::Buffer(const char *s) : Buffer() {add(s);}
 Buffer::Buffer(const string &s) : Buffer() {add(s);}
-Buffer::~Buffer() {if (evb) evbuffer_free(evb);}
+
+
+Buffer::~Buffer() {
+  if (evb && cbEntry) evbuffer_remove_cb(evb, buffer_cb, this);
+  if (evb) evbuffer_free(evb);
+}
 
 
 Buffer &Buffer::operator=(const Buffer &o) {
@@ -96,6 +113,23 @@ string Buffer::toString() const {return string(toCString(), getLength());}
 
 string Buffer::hexdump() const {
   return String::hexdump(toCString(), getLength());
+}
+
+
+void Buffer::setCallback(const callback_t &cb, unsigned flags) {
+  if (this->cb && cb) THROW("Callback already set");
+  this->cb = cb;
+
+  if (cbEntry) evbuffer_remove_cb(evb, buffer_cb, this);
+  if (cb) cbEntry = evbuffer_add_cb(evb, buffer_cb, this);
+  else cbEntry = 0;
+
+  if (flags && cbEntry) evbuffer_cb_set_flags(evb, cbEntry, flags);
+}
+
+
+void Buffer::setFlags(uint64_t flags) {
+  if (evbuffer_set_flags(evb, flags)) THROW("Failed to set flags");
 }
 
 
@@ -183,6 +217,34 @@ unsigned Buffer::remove(ostream &stream, unsigned length) {
 
 
 unsigned Buffer::remove(ostream &stream) {return remove(stream, getLength());}
+int Buffer::read(socket_t fd, int size) {return evbuffer_read(evb, fd, size);}
+
+
+int Buffer::write(socket_t fd, int size) {
+  return evbuffer_write_atmost(evb, fd, size);
+}
+
+
+void Buffer::peek(unsigned bytes, vector<iovec> &space) {
+  int n = evbuffer_peek(evb, bytes, 0, &space[0], space.size());
+  if (n < 0) THROW("Failed to peek");
+  if (n < (int)space.size()) space.resize(n);
+}
+
+
+void Buffer::reserve(unsigned bytes, vector<iovec> &space) {
+  int n = evbuffer_reserve_space(evb, bytes, &space[0], space.size());
+  if (n < 0) THROW("Failed to reserve space");
+  space.resize(n);
+}
+
+
+void Buffer::commit(vector<iovec> &space) {
+  evbuffer_commit_space(evb, &space[0], space.size());
+}
+
+
+void Buffer::commit(iovec &space) {evbuffer_commit_space(evb, &space, 1);}
 
 
 string Buffer::readLine(unsigned maxLength, eol_t eol) {
@@ -190,7 +252,7 @@ string Buffer::readLine(unsigned maxLength, eol_t eol) {
   size_t length = 0;
   SmartPointer<char>::Malloc line =
     evbuffer_readln(evb, &length, (evbuffer_eol_style)eol);
-  if (line.isNull()) THROW("Failed to read line from buffer");
+  if (line.isNull()) return string();
   return string(line.get(), length);
 }
 
@@ -243,4 +305,9 @@ void Buffer::prepend(const char *s) {prepend(s, strlen(s));}
 
 void Buffer::prepend(const string &s) {
   prepend(CBANG_CPP_TO_C_STR(s), s.length());
+}
+
+
+void Buffer::callback(int added, int deleted, int orig) {
+  if (cb) cb(added, deleted, orig);
 }

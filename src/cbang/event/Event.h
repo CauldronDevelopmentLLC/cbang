@@ -40,33 +40,41 @@ struct event;
 
 
 namespace cb {
+  struct EF : public Event::EventFlag {}; // Make flags more accessible
+
   namespace Event {
     class EventCallback;
 
-    class Event : SmartPointer<Event>::SelfRef, public EventFlag {
-      // Only SelfRefCounter should access the SelfRef base class.
-      friend class SelfRefCounter;
-
+    class Event : public RefCounted, public EventFlag {
     public:
       typedef Base::callback_t callback_t;
 
     protected:
       event *e;
       callback_t cb;
+      bool selfReferencing;
+      SmartPointer<Event> self;
 
     public:
-      Event(Base &base, int fd, unsigned events, callback_t cb);
-      Event(Base &base, int signal, callback_t cb);
-      Event(event *e, callback_t cb) : e(e), cb(cb) {}
+      Event(Base &base, socket_t fdOrSignal, callback_t cb, unsigned flags);
       virtual ~Event();
 
       event *getEvent() const {return e;}
+
+      callback_t getCallback() const {return cb;}
+      void setCallback(callback_t cb) {this->cb = cb;}
+
+      bool getSelfReferencing() const {return selfReferencing;}
+      void setSelfReferencing(bool enable);
+
       double getTimeout() const;
 
       bool isPending(unsigned events = ~0) const;
       unsigned getEvents() const;
       int getFD() const;
+
       void setPriority(int priority);
+      int getPriority() const;
 
       void assign(Base &base, int fd, unsigned events, callback_t cb);
       void renew(int fd, unsigned events);
@@ -78,6 +86,8 @@ namespace cb {
       void activate(int flags = EVENT_TIMEOUT);
 
       void call(int fd, short flags);
+
+      static std::string getEventsString(unsigned events);
 
       static void enableDebugMode();
       static void enableLogging(int level = 3);

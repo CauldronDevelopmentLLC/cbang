@@ -70,7 +70,7 @@ void HTTP::setMaxConnectionTTL(unsigned x) {
 
   if (maxConnectionTTL) {
     if (expireEvent.isNull())
-      expireEvent = base.newEvent(this, &HTTP::expireCB, true);
+      expireEvent = base.newEvent(this, &HTTP::expireCB);
 
     expireEvent->add(60); // Check once per minute
 
@@ -82,7 +82,7 @@ void HTTP::remove(Connection &con) {connections.remove(&con);}
 
 
 void HTTP::bind(const cb::IPAddress &addr) {
-  // TODO Support binding multiple addresses
+  // TODO Support binding multiple listener sockets
   if (this->socket.isSet()) THROW("Already bound");
 
   SmartPointer<Socket> socket = new Socket;
@@ -91,8 +91,10 @@ void HTTP::bind(const cb::IPAddress &addr) {
   socket->listen(128);
   socket_t fd = socket->get();
 
-  // TODO This event should be destroyed with the HTTP
-  base.newEvent(fd, EVENT_READ | EVENT_PERSIST, this, &HTTP::acceptCB)->add();
+  // This event will be destroyed with the HTTP
+  acceptEvent = base.newEvent(fd, this, &HTTP::acceptCB,
+                              EVENT_READ | EVENT_PERSIST | EVENT_NO_SELF_REF);
+  acceptEvent->add();
 
   this->socket = socket;
   boundAddr = addr;
@@ -160,13 +162,12 @@ void HTTP::expireCB() {
 void HTTP::acceptCB() {
   IPAddress peer;
   auto newSocket = socket->accept(&peer);
-  newSocket->setBlocking(false);
 
   LOG_DEBUG(4, "New connection from " << peer);
 
   // Create new Connection
   SmartPointer<Connection> con =
-    new Connection(base, true, peer, newSocket->adopt(), sslCtx);
+    new Connection(base, true, peer, newSocket, sslCtx);
 
   con->setHTTP(this);
   con->setMaxHeaderSize(maxHeaderSize);

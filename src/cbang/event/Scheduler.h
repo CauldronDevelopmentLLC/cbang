@@ -47,8 +47,8 @@ namespace cb {
 
       void schedule(void (T::*member)(), double secs = 0) {
         T *self = dynamic_cast<T *>(this);
-        if (!self) CBANG_THROW("Invalid use of Event::Scheduler");
-        base.newEvent(self, member)->add(secs);
+        if (!self || !member) CBANG_THROW("Invalid use of Event::Scheduler");
+        base.newEvent(self, member, 0)->add(secs);
       }
     };
   }

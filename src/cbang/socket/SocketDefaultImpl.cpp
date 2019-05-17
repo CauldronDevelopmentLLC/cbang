@@ -86,9 +86,7 @@ SocketDefaultImpl::SocketDefaultImpl(Socket *parent) :
 }
 
 
-bool SocketDefaultImpl::isOpen() const {
-  return socket != INVALID_SOCKET;
-}
+bool SocketDefaultImpl::isOpen() const {return socket != INVALID_SOCKET;}
 
 
 void SocketDefaultImpl::open() {
@@ -375,6 +373,12 @@ void SocketDefaultImpl::close() {
   in = out = 0; // Flush capture
 
   socket = INVALID_SOCKET;
+}
+
+
+void SocketDefaultImpl::set(socket_t socket) {
+  close();
+  this->socket = socket;
 }
 
 

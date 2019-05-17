@@ -66,27 +66,30 @@ namespace cb {
       struct event_base *getBase() const {return base;}
 
       void initPriority(int num);
+      int getNumPriorities() const;
 
-      SmartPointer<Event> newEvent(callback_t cb, bool persistent = false);
-      SmartPointer<Event> newEvent(socket_t fd, unsigned events, callback_t cb);
+      SmartPointer<Event> newEvent(callback_t cb,
+                                   unsigned flags = EVENT_PERSIST);
+      SmartPointer<Event> newEvent(socket_t fd, callback_t cb,
+                                   unsigned flags = EVENT_PERSIST);
       SmartPointer<Event> newSignal(int signal, callback_t cb,
-                                    bool persistent = false);
-
+                                    unsigned flags = EVENT_PERSIST);
 
       // Bare Callbacks
       callback_t bind(bare_callback_t cb)
       {return [cb] (Event &, int, unsigned) {cb();};}
 
-      SmartPointer<Event> newEvent(bare_callback_t cb, bool persistent = false)
-      {return newEvent(bind(cb), persistent);}
+      SmartPointer<Event> newEvent(bare_callback_t cb,
+                                   unsigned flags = EVENT_PERSIST)
+      {return newEvent(bind(cb), flags);}
 
       SmartPointer<Event>
-      newEvent(socket_t fd, unsigned events, bare_callback_t cb)
-      {return newEvent(fd, events, bind(cb));}
+      newEvent(socket_t fd, bare_callback_t cb, unsigned flags = EVENT_PERSIST)
+        {return newEvent(fd, bind(cb), flags);}
 
       SmartPointer<Event> newSignal(int signal, bare_callback_t cb,
-                                    bool persistent = false)
-      {return newSignal(signal, bind(cb), persistent);}
+                                    unsigned flags = EVENT_PERSIST)
+      {return newSignal(signal, bind(cb), flags);}
 
 
       // Member Callbacks
@@ -97,18 +100,20 @@ namespace cb {
       }
 
       template <class T> SmartPointer<Event> newEvent
-      (T *obj, typename Callback<T>::member_t member, bool persistent = false)
-      {return newEvent(bind(obj, member), persistent);}
+      (T *obj, typename Callback<T>::member_t member,
+       unsigned flags = EVENT_PERSIST)
+      {return newEvent(bind(obj, member), flags);}
 
       template <class T>
-      SmartPointer<Event> newEvent(socket_t fd, unsigned events, T *obj,
-                                   typename Callback<T>::member_t member)
-      {return newEvent(fd, events, bind(obj, member));}
+      SmartPointer<Event> newEvent(socket_t fd, T *obj,
+                                   typename Callback<T>::member_t member,
+                                   unsigned flags)
+        {return newEvent(fd, bind(obj, member), flags);}
 
       template <class T> SmartPointer<Event>
       newSignal(int signal, T *obj, typename Callback<T>::member_t member,
-                bool persistent = false)
-      {return newSignal(signal, bind(obj, member), persistent);}
+                unsigned flags = EVENT_PERSIST)
+      {return newSignal(signal, bind(obj, member), flags);}
 
 
       // Bare Member Callbacks
@@ -120,18 +125,19 @@ namespace cb {
       template <class T>
       SmartPointer<Event> newEvent
       (T *obj, typename Callback<T>::bare_member_t member,
-       bool persistent = false)
-      {return newEvent(bind(obj, member), persistent);}
+       unsigned flags = EVENT_PERSIST)
+      {return newEvent(bind(obj, member), flags);}
 
       template <class T>
-      SmartPointer<Event> newEvent(socket_t fd, unsigned events, T *obj,
-                                   typename Callback<T>::bare_member_t member)
-      {return newEvent(fd, events, bind(obj, member));}
+      SmartPointer<Event> newEvent(socket_t fd, T *obj,
+                                   typename Callback<T>::bare_member_t member,
+                                   unsigned flags)
+        {return newEvent(fd, bind(obj, member), flags);}
 
       template <class T> SmartPointer<Event> newSignal
       (int signal, T *obj, typename Callback<T>::bare_member_t member,
-       bool persistent = false)
-      {return newSignal(signal, bind(obj, member), persistent);}
+       unsigned flags = EVENT_PERSIST)
+      {return newSignal(signal, bind(obj, member), flags);}
 
 
       void dispatch();

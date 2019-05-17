@@ -32,16 +32,29 @@
 
 #pragma once
 
+#include "Socket.h"
+
 #include <string>
 #include <ostream>
 
+#include <functional>
+#include <vector>
+
 struct evbuffer;
+struct evbuffer_cb_entry;
+struct iovec;
 
 
 namespace cb {
   namespace Event {
     class Buffer {
+    public:
+      typedef std::function<void (int added, int deleted, int orig)> callback_t;
+
+    protected:
       evbuffer *evb;
+      callback_t cb;
+      evbuffer_cb_entry *cbEntry = 0;
 
     public:
       Buffer();
@@ -62,6 +75,10 @@ namespace cb {
       std::string toString() const;
       std::string hexdump() const;
 
+      callback_t getCallback() const {return cb;}
+      void setCallback(const callback_t &cb, unsigned flags = 0);
+
+      void setFlags(uint64_t flags);
       void freeze(bool enable, bool front);
       void clear();
       void expand(unsigned length);
@@ -84,6 +101,14 @@ namespace cb {
         EOL_NULL
       } eol_t;
 
+      int read(socket_t fd, int size);
+      int write(socket_t fd, int size = -1);
+
+      void peek(unsigned bytes, std::vector<iovec> &space);
+      void reserve(unsigned bytes, std::vector<iovec> &space);
+      void commit(std::vector<iovec> &space);
+      void commit(iovec &space);
+
       std::string readLine(unsigned maxLength, eol_t eol = EOL_CRLF);
 
       void add(const Buffer &buf);
@@ -97,6 +122,8 @@ namespace cb {
       void prepend(const char *data, unsigned length);
       void prepend(const char *s);
       void prepend(const std::string &s);
+
+      void callback(int added, int deleted, int orig);
     };
   }
 }

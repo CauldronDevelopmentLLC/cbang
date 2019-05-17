@@ -190,7 +190,7 @@ unsigned EventDB::getEventFlags() const {
 
 void EventDB::newEvent(Event::Base::callback_t cb) const {
   assertPending();
-  addEvent(*base.newEvent(getSocket(), getEventFlags(), cb));
+  addEvent(*base.newEvent(getSocket(), cb, getEventFlags()));
 }
 
 

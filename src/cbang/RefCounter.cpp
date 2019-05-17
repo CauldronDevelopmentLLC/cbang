@@ -62,10 +62,22 @@ void RefCounter::log(const char *name, unsigned count) {
 
   if (CBANG_LOG_ENABLED(domain, level))
     *CBANG_LOG_STREAM(domain, level)
-      << name << String::printf(" 0x%" PRIxPTR " ", (uintptr_t)this) << count;
+      << name << String::printf(" 0x%" PRIxPTR " ", (uintptr_t)this)
+      << (isProtected() ? "+ " : "- ") << count;
 
   if (demangled) free(demangled);
 }
 
 
 void RefCounter::raise(const string &msg) {REFERENCE_ERROR(msg);}
+RefCounter *RefCounter::getRefPtr(const RefCounted *ref) {return ref->counter;}
+
+
+void RefCounter::setRefPtr(const RefCounted *ref) {
+  const_cast<RefCounted *>(ref)->counter = this;
+}
+
+
+void RefCounter::clearRefPtr(const RefCounted *ref) {
+  const_cast<RefCounted *>(ref)->counter = 0;
+}

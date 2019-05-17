@@ -108,9 +108,6 @@ namespace cb {
     typedef T Type;
     typedef DeallocT Dealloc;
     typedef CounterT Counter;
-    typedef RefCounterImpl<T, DeallocT, SelfRefCounter> SelfRef;
-    typedef ProtectedRefCounterImpl<T, DeallocT, SelfRefCounter>
-    ProtectedSelfRef;
 
     typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl> Phony;
     typedef SmartPointer<T, DeallocMalloc> Malloc;
@@ -144,19 +141,32 @@ namespace cb {
      * more than once.  To create a copy of a smart pointer either use
      * the copy constructor or smart pointer assignment.
      *
-     * If the pointer has SmartPointer<T>::SelfRef as a base class, then
-     * it will become it's own reference counter.
+     * If the pointer has RefCounted as a base class, then it will store
+     * a pointer to it's own reference counter which can be reused by
+     * future SmartPointers.
      *
      * @param ptr The pointer to point to.
-     * @param refCounter The reference counter.
      */
     SmartPointer(T *_ptr = 0, RefCounter *_refCounter = 0) :
       refCounter(_refCounter), ptr(_ptr) {
-      if (ptr) {
-        if (!refCounter) refCounter = SelfRefCounter::get(ptr);
-        if (!refCounter) refCounter = CounterT::create();
-        refCounter->incCount();
+      if (!ptr) return;
+
+      // Get RefCounter from RefCounted
+      if (!refCounter) {
+        refCounter = CounterT::getRefPtr(ptr);
+
+        if (refCounter &&
+            CounterT::staticIsProtected() && !refCounter->isProtected())
+          referenceError("RefCounter protection mismatch");
       }
+
+      // Create new RefCounter
+      if (!refCounter) {
+        refCounter = CounterT::create();
+        refCounter->setRefPtr(ptr);
+      }
+
+      refCounter->incCount();
     }
 
     /**
@@ -344,10 +354,13 @@ namespace cb {
      * @return The value of the internal pointer.
      */
     T *adopt() {
-      if (refCounter && 1 < refCounter->getCount())
+      if (!ptr) return 0;
+
+      if (1 < refCounter->getCount())
         referenceError("Can't adopt pointer with multiple references!");
 
-      if (refCounter) refCounter->decCount(0);
+      refCounter->decCount(0);
+      refCounter->clearRefPtr(ptr);
       refCounter = 0;
 
       T *tmp = ptr;

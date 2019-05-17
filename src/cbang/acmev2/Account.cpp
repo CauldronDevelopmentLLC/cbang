@@ -408,7 +408,7 @@ void Account::next() {
 
 void Account::retry() {
   if (retries++ < maxRetries)
-    client.getBase().newEvent(this, &Account::next)->add(retryWait);
+    client.getBase().newEvent(this, &Account::next, 0)->add(retryWait);
 
   else
     switch (state) {

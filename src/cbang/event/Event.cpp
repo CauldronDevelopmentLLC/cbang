@@ -53,17 +53,10 @@ namespace {
 }
 
 
-Event::Event(Base &base, int fd, unsigned events, callback_t cb) :
-  e(event_new(base.getBase(), fd, events, event_cb, this)), cb(cb) {
-  LOG_DEBUG(5, "Created new event with fd=" << fd);
+Event::Event(Base &base, socket_t fdOrSignal, callback_t cb, unsigned flags) :
+  e(event_new(base.getBase(), fdOrSignal, flags & 0xff, event_cb, this)),
+  cb(cb), selfReferencing(!(flags & EVENT_NO_SELF_REF)) {
   if (!e) THROW("Failed to create event");
-}
-
-
-Event::Event(Base &base, int signal, callback_t cb) :
-  e(event_new(base.getBase(), signal, EV_SIGNAL, event_cb, this)), cb(cb) {
-  LOG_DEBUG(5, "Created new event with signal=" << signal);
-  if (!e) THROW("Failed to create signal event");
 }
 
 
@@ -73,8 +66,14 @@ Event::~Event() {
 }
 
 
-bool Event::isPending(unsigned events) const {
-  return event_pending(e, events, 0);
+void Event::setSelfReferencing(bool enable) {
+  selfReferencing = enable;
+
+  if (selfReferencing && isPending()) self = this;
+  else if (!selfReferencing && self.isSet()) {
+    if (getRefCount() < 2) THROW(__func__ << "() call would deallocate");
+    self.release();
+  }
 }
 
 
@@ -88,6 +87,11 @@ double Event::getTimeout() const {
 }
 
 
+bool Event::isPending(unsigned events) const {
+  return event_pending(e, events, 0);
+}
+
+
 unsigned Event::getEvents() const {return event_get_events(e);}
 int Event::getFD() const {return event_get_fd(e);}
 
@@ -95,6 +99,9 @@ int Event::getFD() const {return event_get_fd(e);}
 void Event::setPriority(int priority) {
   if (event_priority_set(e, priority)) THROW("Failed to set event priority");
 }
+
+
+int Event::getPriority() const {return event_get_priority(e);}
 
 
 void Event::assign(Base &base, int fd, unsigned events, callback_t cb) {
@@ -119,43 +126,56 @@ void Event::renew(int signal) {
 void Event::add(double t) {
   struct timeval tv = Timer::toTimeVal(t);
   event_add(e, &tv);
-  SmartPointer<Event>::SelfRef::selfRef();
+  if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
 
 
 void Event::add() {
   event_add(e, 0);
-  SmartPointer<Event>::SelfRef::selfRef();
+  if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
 
 
 void Event::readd() {
   struct timeval tv = e->ev_timeout;
   event_add(e, &tv);
-  SmartPointer<Event>::SelfRef::selfRef();
+  if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
 
 
 void Event::del() {
+  if (self.isSet() && getRefCount() < 2)
+    THROW(__func__ << "() call would deallocate");
   event_del(e);
-  SmartPointer<Event>::SelfRef::selfDeref();
+  self.release();
 }
 
 
 void Event::activate(int flags) {
   event_active(e, flags, 0);
-  SmartPointer<Event>::SelfRef::selfRef();
+  if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
 
 
 void Event::call(int fd, short flags) {
+  LOG_DEBUG(0 <= fd ? 5 : 6, "Event callback fd=" << fd << " flags=" << flags);
   SmartPointer<Event> _ = this; // Don't deallocate while in callback
-
-  LOG_DEBUG(5, "Event callback fd=" << fd << " flags=" << flags);
-
   TRY_CATCH_ERROR(cb(*this, fd, flags));
+  if (!isPending()) self.release();
+}
 
-  if (!isPending()) SmartPointer<Event>::SelfRef::selfDeref();
+
+string Event::getEventsString(unsigned events) {
+  vector<string> parts;
+
+  if (events & EVENT_TIMEOUT) parts.push_back("TIMEOUT");
+  if (events & EVENT_READ)    parts.push_back("READ");
+  if (events & EVENT_WRITE)   parts.push_back("WRITE");
+  if (events & EVENT_SIGNAL)  parts.push_back("SIGNAL");
+  if (events & EVENT_PERSIST) parts.push_back("PERSIST");
+  if (events & EVENT_ET)      parts.push_back("ET");
+
+  return String::join(parts, "|");
 }
 
 

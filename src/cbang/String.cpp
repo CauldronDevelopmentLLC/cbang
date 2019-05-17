@@ -134,11 +134,18 @@ string String::vprintf(const char *format, va_list ap) {
 
 
 unsigned String::tokenize(const string &s, vector<string> &tokens,
-                          const string &delims, bool allowEmpty) {
+                          const string &delims, bool allowEmpty,
+                          unsigned maxTokens) {
   size_t i = 0;
   unsigned count = 0;
 
   while (true) {
+    if (count == maxTokens - 1) {
+      tokens.push_back(s.substr(i));
+      count++;
+      break;
+    }
+
     size_t lastEnd = i;
     if ((i = s.find_first_not_of(delims, i)) == string::npos) i = s.length();
 

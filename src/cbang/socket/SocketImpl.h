@@ -79,6 +79,7 @@ namespace cb {
                                  unsigned flags) = 0;
     virtual void close() = 0;
     virtual socket_t get() const = 0;
+    virtual void set(socket_t socket) = 0;
     virtual socket_t adopt() = 0;
   };
 }

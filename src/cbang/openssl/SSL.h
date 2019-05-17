@@ -87,7 +87,7 @@ namespace cb {
 
     static unsigned long idCallback();
     static void lockingCallback(int mode, int n, const char *file, int line);
-    static int passwordCallback(char *buf, int num, int rwglags, void *data);
+    static int passwordCallback(char *buf, int num, int rwflags, void *data);
 
     static void flushErrors();
     static unsigned getError();

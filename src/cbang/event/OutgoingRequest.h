@@ -63,11 +63,6 @@ namespace cb {
       using Request::send;
       void send();
 
-      // Disambiguate RefCounter
-      unsigned getCount() const {return Request::getCount();}
-      void incCount() {Request::incCount();}
-      void decCount(const void *ptr) {Request::decCount(ptr);}
-
       // From Connection
       DNSBase &getDNS() {return dns;}
 

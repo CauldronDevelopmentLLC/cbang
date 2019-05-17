@@ -712,11 +712,9 @@ Version Request::parseHTTPVersion(const string &s) {
 
 void Request::parseResponseLine(const string &line) {
   vector<string> parts;
-  String::tokenize(line, parts, " ");
+  String::tokenize(line, parts, " ", false, 3);
 
-  if (parts.size() < 2 || 3 < parts.size())
-    THROW("Invalid HTTP response line: " << line);
-
+  if (parts.size() < 2) THROW("Invalid HTTP response line: " << line);
   version = parseHTTPVersion(parts[0]);
 
   responseCode = HTTPStatus::parse(parts[1]);
