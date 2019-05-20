@@ -79,8 +79,7 @@ uint32_t String::getU32() const {
   char *end = 0;
   unsigned long v = strtoul(s.c_str(), &end, 0);
 
-  if (errno || v < -numeric_limits<uint32_t>::max() ||
-      numeric_limits<uint32_t>::max() < v || (end && *end))
+  if (errno || numeric_limits<uint32_t>::max() < v || (end && *end))
     TYPE_ERROR("Not an unsigned 32-bit number");
 
   return (uint32_t)v;
@@ -105,8 +104,7 @@ uint64_t String::getU64() const {
   char *end = 0;
   unsigned long long v = strtoull(s.c_str(), &end, 0);
 
-  if (errno || v < -numeric_limits<uint64_t>::max() ||
-      numeric_limits<uint64_t>::max() < v || (end && *end))
+  if (errno || numeric_limits<uint64_t>::max() < v || (end && *end))
     TYPE_ERROR("Not an unsigned 64-bit number");
 
   return (uint64_t)v;
