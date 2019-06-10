@@ -88,6 +88,9 @@ string SessionManager::generateID(const IPAddress &ip) {
 
 bool SessionManager::isExpired(const Session &session) const {
   uint64_t now = Time::now();
+  uint64_t timeout = session.getU64("timeout", this->timeout);
+  uint64_t lifetime = session.getU64("lifetime", this->lifetime);
+
   return (timeout && session.getLastUsed() + timeout < now) ||
     (lifetime && session.getCreationTime() + lifetime < now);
 }

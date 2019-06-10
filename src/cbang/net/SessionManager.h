@@ -58,7 +58,14 @@ namespace cb {
 
     void addOptions(Options &options);
 
+    uint64_t getLifetime() const {return lifetime;}
+    void setLifetime(uint64_t lifetime) {this->lifetime = lifetime;}
+
+    uint64_t getTimeout() const {return timeout;}
+    void setTimeout(uint64_t timeout) {this->timeout = timeout;}
+
     const std::string &getSessionCookie() const {return cookie;}
+    void setSessionCookie(const std::string &cookie) {this->cookie = cookie;}
 
     std::string generateID(const IPAddress &ip);
 
