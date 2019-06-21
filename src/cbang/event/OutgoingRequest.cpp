@@ -41,6 +41,7 @@
 #include <cbang/os/SysError.h>
 #include <cbang/openssl/SSLContext.h>
 #include <cbang/socket/Socket.h>
+#include <cbang/time/Timer.h>
 
 using namespace std;
 using namespace cb;
@@ -63,6 +64,12 @@ OutgoingRequest::OutgoingRequest(Client &client, const URI &uri,
 OutgoingRequest::~OutgoingRequest() {}
 
 
+void OutgoingRequest::setProgressCallback(progress_cb_t cb, double delay) {
+  progressCB = cb;
+  progressDelay = delay;
+}
+
+
 void OutgoingRequest::send() {
   // Set output headers
   if (!outHas("Host")) outSet("Host", getURI().getHost());
@@ -78,6 +85,17 @@ void OutgoingRequest::send() {
 
   // Do it
   Connection::makeRequest(*this);
+}
+
+
+void OutgoingRequest::onProgress(unsigned bytes, int total) {
+  double now = Timer::now();
+
+  if (progressCB && ((int)bytes == total || lastProgress + progressDelay < now))
+    try {
+      progressCB(bytes, total);
+      lastProgress = now;
+    } CATCH_ERROR;
 }
 
 

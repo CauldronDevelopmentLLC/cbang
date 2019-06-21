@@ -50,15 +50,21 @@ namespace cb {
     class OutgoingRequest : public Connection, public Request {
     public:
       typedef std::function<void (Request &)> callback_t;
+      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
 
     protected:
       DNSBase &dns;
       callback_t cb;
+      double lastProgress = 0;
+      double progressDelay;
+      progress_cb_t progressCB;
 
     public:
       OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
                       callback_t cb);
       ~OutgoingRequest();
+
+      void setProgressCallback(progress_cb_t cb, double delay = 0.25);
 
       using Request::send;
       void send();
@@ -68,6 +74,7 @@ namespace cb {
 
       // From Request
       void onRequest() {}
+      void onProgress(unsigned bytes, int total);
       void onResponse(ConnectionError error);
     };
 
