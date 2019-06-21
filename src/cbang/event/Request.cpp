@@ -93,20 +93,22 @@ namespace {
 
   struct JSONWriter :
     cb::Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
-    Request &req;
+    SmartPointer<Request> req;
     bool closed = false;
 
-    JSONWriter(Request &req, unsigned indent, bool compact,
+    JSONWriter(const SmartPointer<Request> &req, unsigned indent, bool compact,
                Request::compression_t compression) :
       SmartPointer<ostream>(compressBufferStream(*this, compression)),
       JSON::Writer(*SmartPointer<ostream>::get(), indent, compact), req(req) {
-      req.outSetContentEncoding(compression);
+      req->outSetContentEncoding(compression);
     }
 
     ~JSONWriter() {TRY_CATCH_ERROR(close(););}
 
     ostream &getStream() {return *SmartPointer<ostream>::get();}
+    unsigned getID() {return req->getID();}
 
+    // From JSON::NullSink
     void close() {
       if (closed) return;
       closed = true;
@@ -115,7 +117,7 @@ namespace {
       send(*this);
     }
 
-    virtual void send(cb::Event::Buffer &buffer) {req.send(buffer);}
+    virtual void send(cb::Event::Buffer &buffer) {req->send(buffer);}
   };
 }
 
@@ -464,7 +466,7 @@ Request::getJSONWriter(unsigned indent, bool compact,
   resetOutput();
   setContentType("application/json");
 
-  return new JSONWriter(*this, indent, compact, compression);
+  return new JSONWriter(this, indent, compact, compression);
 }
 
 
@@ -475,7 +477,7 @@ SmartPointer<JSON::Writer> Request::getJSONWriter(compression_t compression) {
 
 SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
   struct Writer : public JSONWriter {
-    Writer(Request &req, const string &callback) :
+    Writer(const SmartPointer<Request> &req, const string &callback) :
       JSONWriter(req, 0, true, COMPRESS_NONE) {
       getStream() << callback << '(';
     }
@@ -490,7 +492,7 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
   resetOutput();
   setContentType("application/javascript");
 
-  return new Writer(*this, callback);
+  return new Writer(this, callback);
 }
 
 
@@ -629,6 +631,9 @@ void Request::startChunked(HTTPStatus code) {
 void Request::sendChunk(const cb::Event::Buffer &buf) {
   if (!chunked) THROW("Not chunked");
 
+  LOG_DEBUG(4, "Sending " << buf.getLength() << " byte chunk");
+  bool empty = !buf.getLength(); // Must be before add() below
+
   Buffer out;
   out.add(String::printf("%x\r\n", buf.getLength()));
   out.add(buf);
@@ -636,7 +641,7 @@ void Request::sendChunk(const cb::Event::Buffer &buf) {
 
   connection->write(*this, out);
 
-  if (!buf.getLength()) chunked = false; // Last chunk is empty
+  if (empty) chunked = false; // Last chunk is empty
 }
 
 
@@ -645,18 +650,19 @@ void Request::sendChunk(const char *data, unsigned length) {
 }
 
 
-void Request::sendChunk(const string &s) {sendChunk(Buffer(s));}
-
-
 SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
   struct Writer : public JSONWriter {
-    Writer(Request &req) : JSONWriter(req, 0, true, COMPRESS_NONE) {}
+    Writer(const SmartPointer<Request> &req) :
+      JSONWriter(req, 0, true, COMPRESS_NONE) {}
+
+    // NOTE, destructor must be duplicated so virtual function call works
+    ~Writer() {TRY_CATCH_ERROR(close(););}
 
     // From JSONWriter
-    void send(Buffer &buffer) {req.sendChunk(buffer);}
+    void send(Buffer &buffer) {req->sendChunk(buffer);}
   };
 
-  return new Writer(*this);
+  return new Writer(this);
 }
 
 
