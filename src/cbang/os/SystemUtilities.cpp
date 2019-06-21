@@ -534,6 +534,9 @@ namespace cb {
 
 
     void rmtree(const string &path) {
+      if (!exists(path)) return;
+      if (!isDirectory(path)) {unlink(path); return;}
+
       DirectoryWalker walker(path, ".*", ~0, true);
 
       while (walker.hasNext()) {
