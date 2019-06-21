@@ -252,7 +252,6 @@ namespace cb {
       virtual void startChunked(HTTPStatus code = HTTP_OK);
       virtual void sendChunk(const Buffer &buf);
       virtual void sendChunk(const char *data, unsigned length);
-      virtual void sendChunk(const std::string &s);
       virtual SmartPointer<JSON::Writer> getJSONChunkWriter();
       virtual void endChunked();
 
@@ -264,7 +263,9 @@ namespace cb {
       virtual void onHeaders() {}
       virtual void onRequest();
       virtual bool onContinue() {return true;}
+      virtual void onProgress(unsigned bytes, int total) {}
       virtual void onResponse(ConnectionError code) {}
+      virtual void onComplete() {}
 
       // Used by Connection
       bool mustHaveBody() const;
