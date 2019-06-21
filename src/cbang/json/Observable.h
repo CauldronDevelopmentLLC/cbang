@@ -116,6 +116,8 @@ namespace cb {
       void erase(unsigned i) {
         T::get(i)->clearParentRef();
         T::erase(i);
+        for (unsigned j = i; j < T::size(); j++)
+          T::get(j)->decParentRef();
         notify(i);
       }
 
@@ -132,6 +134,9 @@ namespace cb {
         this->parent = parent;
         this->index = index;
       }
+
+
+      void decParentRef() {index--;}
 
 
       void notify(std::list<ValuePtr> &change) {
