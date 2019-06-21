@@ -139,23 +139,22 @@ unsigned String::tokenize(const string &s, vector<string> &tokens,
   size_t i = 0;
   unsigned count = 0;
 
-  while (true) {
+  while (i < s.length()) {
     if (count == maxTokens - 1) {
       tokens.push_back(s.substr(i));
       count++;
       break;
     }
 
-    size_t lastEnd = i;
-    if ((i = s.find_first_not_of(delims, i)) == string::npos) i = s.length();
-
-    if (allowEmpty)
-      for (size_t j = lastEnd + 1; j < i; j++) {
+    if (delims.find(s[i]) != string::npos) {
+      if (allowEmpty) {
         tokens.push_back(string());
         count++;
       }
 
-    if (i == s.length()) return count;
+      i++;
+      continue;
+    }
 
     size_t end = s.find_first_of(delims, i);
     if (end == string::npos) end = s.length();
@@ -163,7 +162,7 @@ unsigned String::tokenize(const string &s, vector<string> &tokens,
     tokens.push_back(s.substr(i, end - i));
     count++;
 
-    i = end;
+    i = end + 1;
   }
 
   return count;
