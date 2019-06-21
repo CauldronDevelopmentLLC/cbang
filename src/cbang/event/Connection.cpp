@@ -206,6 +206,7 @@ SmartPointer<Request> Connection::pop() {
   if (requests.empty()) THROW(__func__ << "() No requests");
   auto req = getRequest();
   requests.pop_front();
+  TRY_CATCH_ERROR(req->onComplete());
   return req;
 }
 
@@ -513,6 +514,7 @@ void Connection::getBody() {
   setState(STATE_READING_BODY);
   bytesToRead = -1;
   bodySize = 0;
+  contentLength = -1;
   auto req = getRequest();
 
   string xferEnc = String::toLower(req->inFind("Transfer-Encoding"));
@@ -537,6 +539,7 @@ void Connection::getBody() {
     } else {
       try {
         bytesToRead = String::parseU32(contentLength);
+        this->contentLength = bytesToRead;
       } catch (const Exception &e) {
         return req->sendError(HTTP_BAD_REQUEST, "Invalid Content-Length");
       }
@@ -627,9 +630,12 @@ void Connection::readBody() {
     buf.remove(req->getInputBuffer(), bytes);
   }
 
+  // Report progress
+  TRY_CATCH_ERROR(req->onProgress(bodySize, contentLength));
+
   if (bytesToRead) {
     setRead(true); // Read more
-    if (0 < bytesToRead) setMinRead(bytesToRead);
+    if (0 < bytesToRead) setMinRead(min((int64_t)1 << 14, bytesToRead));
 
   } else done();
 }

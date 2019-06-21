@@ -99,6 +99,7 @@ namespace cb {
       uint32_t headerSize = 0;
       uint32_t bodySize = 0;
       int64_t bytesToRead = 0;
+      int contentLength = 0;
 
     public:
       Connection(Base &base, bool incoming, const IPAddress &peer,
