@@ -74,9 +74,7 @@ BacktraceDebugger::BacktraceDebugger() :
 BacktraceDebugger::~BacktraceDebugger() {}
 
 
-bool BacktraceDebugger::supported() {
-  return true;
-}
+bool BacktraceDebugger::supported() {return true;}
 
 
 bool BacktraceDebugger::getStackTrace(StackTrace &trace) {
@@ -234,7 +232,5 @@ void BacktraceDebugger::release() {
 
 
 #else // HAVE_CBANG_BACKTRACE
-bool cb::BacktraceDebugger::supported() {
-  return false;
-}
+bool cb::BacktraceDebugger::supported() {return false;}
 #endif // HAVE_CBANG_BACKTRACE
