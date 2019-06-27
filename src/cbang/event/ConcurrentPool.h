@@ -48,7 +48,7 @@ namespace cb {
   namespace Event {
     class ConcurrentPool : protected ThreadPool, protected Condition {
     public:
-      class Task {
+      class Task : public ProtectedRefCounterImpl<Task> {
         int priority;
         Exception e;
         bool failed;
@@ -72,7 +72,7 @@ namespace cb {
 
 
       template <typename Data>
-      struct QueuedTask : public Task, public Mutex {
+      struct QueuedTask : public Task {
         std::queue<Data> queue;
         SmartPointer<Event> event;
 
