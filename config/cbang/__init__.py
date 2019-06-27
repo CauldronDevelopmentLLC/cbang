@@ -23,6 +23,7 @@ def configure_deps(conf, local = True, with_openssl = True):
         if conf.CBCheckCXXHeader('leveldb/db.h'):
             env.CBDefine('HAVE_LEVELDB')
 
+    env.AppendUnique(prefer_dynamic = ['mariadbclient'])
     if conf.CBCheckCHeader('mysql/mysql.h') and \
             (conf.CBCheckLib('mariadbclient') or
              conf.CBCheckLib('mysqlclient')) and \
