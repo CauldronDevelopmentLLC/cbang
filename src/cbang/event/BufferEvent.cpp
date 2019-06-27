@@ -231,9 +231,18 @@ void BufferEvent::close()  {
 void BufferEvent::connect(DNSBase &dns, const IPAddress &peer) {
   LOG_DEBUG(4, __func__ << "()");
 
+  // Save peer port
+  peerPort = peer.getPort();
+
+  // Skip DNS lookup if we already have an IP
+  if (peer.getIP()) {
+    vector<IPAddress> ip;
+    ip.push_back(peer);
+    return dnsCB(0, ip);
+  }
+
   // Must be before DNS call because it may callback immediately
   state = STATE_DNS_LOOKUP;
-  peerPort = peer.getPort();
   updateEvents();
 
   // Start async DNS lookup
