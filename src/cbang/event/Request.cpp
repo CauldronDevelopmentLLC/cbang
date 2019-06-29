@@ -114,6 +114,7 @@ namespace {
       closed = true;
       JSON::Writer::close();
       SmartPointer<ostream>::get()->flush();
+      if (!getLength()) req->outRemove("Content-Type");
       send(*this);
     }
 
