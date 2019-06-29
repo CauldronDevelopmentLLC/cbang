@@ -57,9 +57,12 @@ Debugger &Debugger::instance() {
   SmartLock l(&lock);
 
   if (!singleton) {
+#ifdef HAVE_CBANG_BACKTRACE
     if (!getenv("DISABLE_DEBUGGER") && BacktraceDebugger::supported())
       singleton = new BacktraceDebugger();
-    else singleton = new Debugger(); // Null debugger
+    else
+#endif // HAVE_CBANG_BACKTRACE
+      singleton = new Debugger(); // Null debugger
 
     SingletonDealloc::instance().add(singleton);
   }
