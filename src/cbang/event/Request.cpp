@@ -681,7 +681,7 @@ void Request::cancel() {connection->cancelRequest(*this);}
 
 
 void Request::onRequest() {
-  LOG_INFO(1, "< " << getRequestLine());
+  LOG_INFO(1, "< " << getClientIP() << ' ' << getRequestLine());
   LOG_DEBUG(5, inputHeaders << '\n');
   LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
 
