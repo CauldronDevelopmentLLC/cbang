@@ -252,6 +252,20 @@ string Certificate::getExtension(const string &name,
 }
 
 
+bool Certificate::extensionHas(const string &name, const string &value,
+                               const string &delims) {
+  if (!hasExtension(name)) return false;
+
+  vector<string> values;
+  String::tokenize(getExtension(name), values);
+
+  for (unsigned i = 0; i < values.size(); i++)
+    if (values[i] == value) return true;
+
+  return false;
+}
+
+
 void Certificate::addExtension(const string &name, const string &value,
                                CertificateContext *ctx) {
   X509_EXTENSION *ext =

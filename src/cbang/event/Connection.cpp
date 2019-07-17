@@ -407,7 +407,7 @@ void Connection::newRequest(const string &line) {
   URI uri = parts[1];
   Version version = Request::parseHTTPVersion(parts[2]);
 
-  push(http->createRequest(method, uri, version));
+  push(http->createRequest(*this, method, uri, version));
 }
 
 

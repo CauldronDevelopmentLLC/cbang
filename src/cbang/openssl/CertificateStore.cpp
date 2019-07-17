@@ -35,6 +35,7 @@
 #include "SSL.h"
 #include "Certificate.h"
 #include "CertificateStoreContext.h"
+#include "CertificateChain.h"
 #include "CRL.h"
 
 #include <openssl/x509_vfy.h>
@@ -86,6 +87,13 @@ void CertificateStore::add(const CRL &crl) {
 
 
 void CertificateStore::verify(const Certificate &cert) const {
-  CertificateStoreContext ctx(*this, cert);
-  ctx.verify();
+  CertificateStoreContext(*this, cert).verify();
+}
+
+
+void CertificateStore::verify(const Certificate &cert,
+                              const Certificate &inter) const {
+  CertificateChain chain;
+  chain.add(inter);
+  CertificateStoreContext(store, cert, chain).verify();
 }

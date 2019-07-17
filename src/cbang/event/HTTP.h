@@ -109,7 +109,8 @@ namespace cb {
       void bind(const IPAddress &addr);
 
       SmartPointer<Request> createRequest
-      (RequestMethod method, const URI &uri, const Version &version);
+      (Connection &con, RequestMethod method, const URI &uri,
+       const Version &version);
       void handleRequest(Request &req);
 
       static bool dispatch(HTTPHandler &handler, Request &req);

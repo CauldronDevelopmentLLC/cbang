@@ -63,35 +63,43 @@ For licensing information please see the files LICENSE and COPYING.
 
 
 # Prerequisites
-## General
+## Required
   - A modern C++ compiler: GNU C++, Intel C++, MSVS
   - SCons      http://scons.org/
   - openssl    http://www.openssl.org/ (optional)
-  - ChakraCore https://github.com/Microsoft/ChakraCore/ (optional)
-  - V8         https://developers.google.com/v8/ (optional)
-  - mariadb    https://mariadb.org/ (optional)
 
-## Debug mode only
-
-  - libbfd    ftp://ftp.gnu.org/old-gnu/Manuals/bfd-2.9.1/html_mono/bfd.html
-  - libiberty https://gcc.gnu.org/onlinedocs/libiberty/
-
-## Windows only
+### Windows only
   - Winsock
 
-## OS-X only
+### OS-X only
   - IOKit
   - CoreFoundation
 
-## POSIX/Linux only
+### POSIX/Linux only
   - pthreads
-  - libbfd (For debug mode only)
 
+## Optional
+The following add optional features to C!.
+
+  - ChakraCore https://github.com/Microsoft/ChakraCore/
+  - V8         https://developers.google.com/v8/
+  - mariadb    https://mariadb.org/
+  - LevelDB    https://github.com/google/leveldb
+  - Snappy     http://google.github.io/snappy/
+
+## Debug mode
+The following are required for debug builds.
+
+  - libbfd    ftp://ftp.gnu.org/old-gnu/Manuals/bfd-2.9.1/html_mono/bfd.html
+  - libiberty https://gcc.gnu.org/onlinedocs/libiberty/
+  - libbfd (Posix only)
+
+## Debian/Ubuntu install
 On Debian based systems the prerequisites can be installed with the following
 command line:
 
-    sudo apt-get install scons build-essential libssl-dev binutils-dev \
-      libiberty-dev libmariadbclient-dev git
+    sudo apt-get install -y scons build-essential libssl-dev binutils-dev \
+      libiberty-dev libmariadb-dev-compat libleveldb-dev libsnappy-dev git
 
 Unfortunately, at this time, there is no ChakraCore package for Debian.  See
 the build instructions below.

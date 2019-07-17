@@ -749,7 +749,7 @@ void Request::writeResponse(cb::Event::Buffer &buf) {
     if (1 <= version.getMinor() && !outHas("Date"))
       outSet("Date", Time("%a, %d %b %Y %H:%M:%S GMT"));
 
-    // if the protocol is 1.0 and connection was keep-alive add keep-alive
+    // If the protocol is 1.0 and connection was keep-alive add keep-alive
     bool keepAlive = inputHeaders.connectionKeepAlive();
     if (!version.getMinor() && keepAlive) outSet("Connection", "keep-alive");
 

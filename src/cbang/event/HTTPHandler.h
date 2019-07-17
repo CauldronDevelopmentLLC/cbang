@@ -40,10 +40,13 @@
 
 namespace cb {
   namespace Event {
+    class Connection;
+
     struct HTTPHandler {
       virtual ~HTTPHandler() {}
       virtual SmartPointer<Request> createRequest
-      (RequestMethod method, const URI &uri, const Version &version) = 0;
+      (Connection &con, RequestMethod method, const URI &uri,
+       const Version &version) = 0;
       virtual bool handleRequest(Request &req) = 0;
       virtual void endRequest(Request &req) = 0;
     };
