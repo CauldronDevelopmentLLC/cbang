@@ -80,9 +80,13 @@ namespace cb {
       virtual bool allow(Request &req) const;
       virtual void shutdown();
 
+      virtual SmartPointer<Request> createRequest
+      (RequestMethod method, const URI &uri, const Version &version);
+
       // From HTTPHandler
       SmartPointer<Request> createRequest
-      (RequestMethod method, const URI &uri, const Version &version);
+      (Connection &con, RequestMethod method, const URI &uri,
+       const Version &version);
       bool handleRequest(Request &req);
       void endRequest(Request &req);
 

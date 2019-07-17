@@ -55,5 +55,6 @@ namespace cb {
     void add(const CRL &crl);
 
     void verify(const Certificate &cert) const;
+    void verify(const Certificate &cert, const Certificate &inter) const;
   };
 }

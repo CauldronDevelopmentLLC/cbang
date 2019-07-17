@@ -102,8 +102,9 @@ void HTTP::bind(const cb::IPAddress &addr) {
 
 
 cb::SmartPointer<Request> HTTP::createRequest
-(RequestMethod method, const URI &uri, const Version &version) {
-  return handler->createRequest(method, uri, version);
+(Connection &con, RequestMethod method, const URI &uri,
+ const Version &version) {
+  return handler->createRequest(con, method, uri, version);
 }
 
 

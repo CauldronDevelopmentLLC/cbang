@@ -447,8 +447,7 @@ namespace cb {
 
     bool isReal() const {
       for (unsigned i = 0; i < DIM; i++)
-        if (cb::Math::isnan(data[i]) || cb::Math::isinf(data[i]))
-          return false;
+        if (!cb::Math::isfinite(data[i])) return false;
       return true;
     }
 

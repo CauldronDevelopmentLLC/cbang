@@ -34,6 +34,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
+#include <cbang/String.h>
 #include <cbang/iostream/Serializable.h>
 
 #include <iostream>
@@ -85,6 +86,8 @@ namespace cb {
     std::string getExtension(const std::string &name) const;
     std::string getExtension(const std::string &name,
                              const std::string &defaultValue) const;
+    bool extensionHas(const std::string &name, const std::string &value,
+                      const std::string &delims = String::DEFAULT_DELIMS);
     void addExtension(const std::string &name, const std::string &value,
                       CertificateContext *ctx = 0);
     static void addExtensionAlias(const std::string &alias,

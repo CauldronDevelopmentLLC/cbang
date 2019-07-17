@@ -183,6 +183,11 @@ cb::SmartPointer<Request> WebServer::createRequest
 }
 
 
+cb::SmartPointer<Request> WebServer::createRequest
+(Connection &con, RequestMethod method, const URI &uri,
+ const Version &version) {return createRequest(method, uri, version);}
+
+
 bool WebServer::handleRequest(Request &req) {
   if (logPrefix)
     Logger::instance().setThreadPrefix(String::printf("#%lld", req.getID()));
