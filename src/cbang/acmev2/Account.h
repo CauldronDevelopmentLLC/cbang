@@ -47,23 +47,25 @@
 namespace cb {
   class Options;
 
+  namespace Event {class HTTPHandlerGroup;}
+
   namespace ACMEv2 {
+    static std::string letsencrypt_base =
+      "https://acme-v02.api.letsencrypt.org";
+    static std::string letsencrypt_staging =
+      "https://acme-staging-v02.api.letsencrypt.org";
+
+
     class Account : public Event::RequestMethod::Enum {
       Event::Client &client;
       KeyPair key;
 
-      std::string uriBase;
+      std::string uriBase = letsencrypt_staging;
       std::string emails;
 
-      double retryWait;
-      int maxRetries;
-      double renewPeriod;
-
-      std::string certOrg;
-      std::string certUnit;
-      std::string certLocation;
-      std::string certState;
-      std::string certCountry;
+      double retryWait = 5;
+      int maxRetries = 5;
+      double renewPeriod = 15;
 
       typedef enum {
         STATE_IDLE,
@@ -76,11 +78,11 @@ namespace cb {
         STATE_GET_ORDER,
         STATE_GET_CERT,
       } state_t;
-      state_t state;
+      state_t state = STATE_IDLE;
 
-      int retries;
+      int retries = 0;
 
-      unsigned currentKeyCert;
+      unsigned currentKeyCert = 0;
       std::vector<SmartPointer<KeyCert> > keyCerts;
 
       JSON::ValuePtr directory;
@@ -89,13 +91,24 @@ namespace cb {
 
       std::string orderLink;
       JSON::ValuePtr order;
-      unsigned currentAuth;
+      unsigned currentAuth = 0;
       JSON::ValuePtr authorization;
 
       std::string challengeToken;
 
     public:
-      Account(Event::Client &client, const KeyPair &key);
+      typedef std::function<void (KeyCert &)> listener_t;
+
+    protected:
+      std::vector<listener_t> listeners;
+
+      SmartPointer<Event::Event> retryEvent;
+
+    public:
+      Account(Event::Client &client);
+
+      const KeyPair &getKey() const {return key;}
+      void setKey(const KeyPair &key) {this->key = key;}
 
       void setURIBase(const std::string &uriBase) {this->uriBase = uriBase;}
       void setContactEmails(const std::string &emails) {this->emails = emails;}
@@ -104,7 +117,16 @@ namespace cb {
       void setRenewPeriod(double renewPeriod) {this->renewPeriod = renewPeriod;}
 
       void addOptions(Options &options);
-      void addKeyCert(const SmartPointer<KeyCert> &keyCert);
+      void simpleInit(const KeyPair &key, const KeyPair &clientKey,
+                      const std::string &domains,
+                      const std::string &clientChain,
+                      Event::HTTPHandlerGroup &group, listener_t cb,
+                      unsigned updateRate = 60);
+      void addListener(listener_t listener);
+      void addHandler(Event::HTTPHandlerGroup &group);
+      bool needsRenewal(const KeyCert &keyCert) const;
+      unsigned certsReadyForRenewal() const;
+      void add(const SmartPointer<KeyCert> &keyCert);
       void update();
       bool matchChallengePath(const std::string &path) const;
 
@@ -122,8 +144,9 @@ namespace cb {
                                    const std::string &payload) const;
       std::string getNewAcctPayload() const;
       std::string getNewOrderPayload() const;
-      std::string getCheckChallengePayload() const;
       std::string getFinalizePayload() const;
+
+      bool challengeRequest(Event::Request &req);
 
     protected:
       std::string getProblemString(const JSON::ValuePtr &problem) const;

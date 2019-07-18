@@ -32,24 +32,52 @@
 
 #include "KeyCert.h"
 
+#include <cbang/String.h>
 #include <cbang/openssl/Certificate.h>
+#include <cbang/openssl/CSR.h>
 
+using namespace cb;
 using namespace cb::ACMEv2;
 using namespace std;
 
 
-void KeyCert::updateChain(const string &pem) {
-  chain.clear();
-  chain.parse(pem);
-
-  for (unsigned i = 0; i < listeners.size(); i++)
-    listeners[i](*this);
+KeyCert::KeyCert(const string &domains, const KeyPair &key,
+                 const CertificateChain &chain) :
+  key(key), chain(chain) {
+  String::tokenize(domains, this->domains);
 }
 
 
-void KeyCert::addListener(listener_t listener) {listeners.push_back(listener);}
-
-
 bool KeyCert::expiredIn(unsigned secs) const {
-  return !hasCert() || chain.get(0).expiredIn(secs);
+  // Expired if certificate empty, expired or does not match key
+  if (!hasCert() || chain.get(0).expiredIn(secs) ||
+      !chain.get(0).getPublicKey()->match(key)) return true;
+
+  // Check cert applies to all domains
+  auto cert = chain.get(0);
+  for (unsigned i = 0; i < domains.size(); i++)
+    if (!cert.checkHost(domains[i])) return true;
+
+  return false;
+}
+
+
+SmartPointer<CSR> KeyCert::makeCSR() const {
+  if (domains.empty()) THROW("No domains set");
+
+  SmartPointer<CSR> csr = new CSR;
+  csr->addNameEntry("CN", domains[0]);
+
+  string subjectAltName;
+
+  for (unsigned i = 0; i < domains.size(); i++) {
+    if (1 < i) subjectAltName += ", ";
+    subjectAltName += "DNS:" + domains[i];
+  }
+
+  csr->addExtension("subjectAltName", subjectAltName);
+
+  csr->sign(key, "sha256");
+
+  return csr;
 }
