@@ -41,57 +41,91 @@
 #include <cbang/json/BufferWriter.h>
 
 #include <cbang/openssl/Digest.h>
-#include <cbang/openssl/KeyContext.h>
 #include <cbang/openssl/CSR.h>
 
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
+#include <cbang/event/Request.h>
 #include <cbang/event/OutgoingRequest.h>
+#include <cbang/event/HTTPHandlerGroup.h>
 
 using namespace cb;
 using namespace cb::ACMEv2;
 using namespace std;
 
 
-Account::Account(Event::Client &client, const KeyPair &key) :
-  client(client), key(key),
-  uriBase("https://acme-staging-v02.api.letsencrypt.org"), retryWait(5),
-  maxRetries(5), renewPeriod(15), state(STATE_IDLE), retries(0),
-  currentKeyCert(0), currentAuth(0) {}
+Account::Account(Event::Client &client) :
+  client(client),
+  retryEvent(client.getBase().newEvent(this, &Account::next, 0)) {}
 
 
 void Account::addOptions(Options &options) {
   options.pushCategory("ACME v2");
-  options.addTarget("acmev2-base-uri", uriBase, "The ACME v2 URI base.");
-  options.addTarget("acmev2-contact-emails", emails, "Space separated list of "
+  options.addTarget("acmev2-base", uriBase, "The ACME v2 URI base.");
+  options.addTarget("acmev2-emails", emails, "Space separated list of "
                     "certificate contact emails."
                     )->setType(Option::STRINGS_TYPE);
-  options.addTarget("acmev2-max-retries", maxRetries, "Maximum number of times "
+  options.addTarget("acmev2-retries", maxRetries, "Maximum number of times "
                     "to retry an operation before giving up.");
   options.addTarget("acmev2-retry-wait", retryWait, "The time in seconds to "
                     "wait between retries.");
   options.addTarget("acmev2-renewal-period", renewPeriod, "Renew certificates "
                     "this many days before expiration.");
-  options.addTarget("acmev2-cert-org", certOrg, "Certificate organization.");
-  options.addTarget("acmev2-cert-unit", certUnit,
-                    "Certificate organizational unit.");
-  options.addTarget("acmev2-cert-location", certLocation,
-                    "Certificate city or town.");
-  options.addTarget("acmev2-cert-state", certState,
-                    "Certificate state or province.");
-  options.addTarget("acmev2-cert-country", certCountry,
-                    "Certificate two-letter ISO country code.");
   options.popCategory();
 }
 
 
-void Account::addKeyCert(const SmartPointer<KeyCert> &keyCert) {
+void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
+                         const string &domains, const string &clientChain,
+                         Event::HTTPHandlerGroup &group, listener_t cb,
+                         unsigned updateRate) {
+  SmartPointer<ACMEv2::KeyCert> keyCert = new KeyCert(domains, clientKey);
+  if (!clientChain.empty()) keyCert->getChain().parse(clientChain);
+
+  if (cb) addListener(cb);
+  setKey(key);
+  addHandler(group);
+  add(keyCert);
+
+  // Check for renewals at updateRate starting now
+  auto e = client.getBase().newEvent(this, &Account::update);
+  e->add(updateRate);
+  e->activate();
+}
+
+
+void Account::addListener(listener_t listener) {listeners.push_back(listener);}
+
+
+void Account::addHandler(Event::HTTPHandlerGroup &group) {
+  group.addMember(Event::RequestMethod::HTTP_GET,
+                  "^/\\.well-known/acme-challenge/.*", this,
+                  &Account::challengeRequest);
+}
+
+
+bool Account::needsRenewal(const KeyCert &keyCert) const {
+  return keyCert.expiredIn(renewPeriod * Time::SEC_PER_DAY);
+}
+
+
+unsigned Account::certsReadyForRenewal() const {
+  unsigned count = 0;
+
+  for (unsigned i = 0; i < keyCerts.size(); i++)
+    count += needsRenewal(*keyCerts[i]) ? 1 : 0;
+
+  return count;
+}
+
+
+void Account::add(const SmartPointer<KeyCert> &keyCert) {
   keyCerts.push_back(keyCert);
 }
 
 
 void Account::update() {
-  if (state != STATE_IDLE) return;
+  if (state != STATE_IDLE || !certsReadyForRenewal()) return;
 
   if (directory.isNull()) state = STATE_GET_DIR;
   else if (kid.empty()) state = STATE_REGISTER;
@@ -110,7 +144,7 @@ void Account::update() {
 bool Account::matchChallengePath(const string &path) const {
   const string prefix = "/.well-known/acme-challenge/";
 
-  return state == STATE_CHALLENGE && String::startsWith(path, prefix) &&
+  return String::startsWith(path, prefix) &&
     challengeToken == path.substr(prefix.length());
 }
 
@@ -152,8 +186,9 @@ void Account::writeJWK(JSON::Sink &sink) const {
   sink.beginDict();
 
   if (key.isRSA()) {
-    sink.insert("kty", "RSA");
+    // Insert order matters
     sink.insert("e", URLBase64().encode(key.getRSA().getE().toBinString()));
+    sink.insert("kty", "RSA");
     sink.insert("n", URLBase64().encode(key.getRSA().getN().toBinString()));
 
   } else THROW("Unsupported key type");
@@ -171,7 +206,7 @@ string Account::getProtected(const URI &uri) const {
   writer.beginDict();
   writer.insert("alg", "RS256");
 
-  if (kid.empty()) writer.insert("kid", kid);
+  if (!kid.empty()) writer.insert("kid", kid);
   else {
     writer.beginInsert("jwk");
     writeJWK(writer);
@@ -181,6 +216,7 @@ string Account::getProtected(const URI &uri) const {
   writer.insert("nonce", nonce);
   writer.insert("url", uri.toString());
   writer.endDict();
+  writer.flush();
 
   return writer.toString();
 }
@@ -189,10 +225,8 @@ string Account::getProtected(const URI &uri) const {
 string Account::getSignedRequest(const URI &uri, const string &payload) const {
   string protected64 = URLBase64().encode(getProtected(uri));
   string payload64 = URLBase64().encode(payload);
-
-  KeyContext ctx(key);
-  ctx.setSignatureMD("sha256");
-  string signed64 = URLBase64().encode(ctx.sign(protected64 + "." + payload64));
+  string signed64 =
+    URLBase64().encode(key.signSHA256(protected64 + "." + payload64));
 
   JSON::BufferWriter writer(0, true);
 
@@ -201,6 +235,7 @@ string Account::getSignedRequest(const URI &uri, const string &payload) const {
   writer.insert("payload", payload64);
   writer.insert("signature", signed64);
   writer.endDict();
+  writer.flush();
 
   return writer.toString();
 }
@@ -223,6 +258,7 @@ string Account::getNewAcctPayload() const {
   }
 
   writer.endDict();
+  writer.flush();
 
   return writer.toString();
 }
@@ -244,57 +280,34 @@ string Account::getNewOrderPayload() const {
 
   writer.endList();
   writer.endDict();
-
-  return writer.toString();
-}
-
-
-string Account::getCheckChallengePayload() const {
-  JSON::BufferWriter writer(0, true);
-
-  writer.beginDict();
-  writer.insert("resource", "challenge");
-  writer.insert("keyAuthorization", getKeyAuthorization());
-  writer.endDict();
+  writer.flush();
 
   return writer.toString();
 }
 
 
 string Account::getFinalizePayload() const {
-  CSR csr;
-  const vector<string> &domains = getCurrentDomains();
-
-  if (domains.empty()) THROW("No domains set");
-
-  csr.addNameEntry("CN", domains[0]);
-
-  if (!certOrg.empty())      csr.addNameEntry("O",  certOrg);
-  if (!certUnit.empty())     csr.addNameEntry("OU", certUnit);
-  if (!certLocation.empty()) csr.addNameEntry("L",  certLocation);
-  if (!certState.empty())    csr.addNameEntry("ST", certState);
-  if (!certCountry.empty())  csr.addNameEntry("C",  certCountry);
-
-  if (1 < domains.size()) {
-    string subjectAltName;
-
-    for (unsigned i = 1; i < domains.size(); i++) {
-      if (1 < i) subjectAltName += ", ";
-      subjectAltName += "DNS:" + domains[i];
-    }
-
-    csr.addExtension("subjectAltName", subjectAltName);
-  }
-
-  csr.sign(getCurrentKeyCert().getKey(), "sha256");
+  auto csr = getCurrentKeyCert().makeCSR();
 
   JSON::BufferWriter writer(0, true);
 
   writer.beginDict();
-  writer.insert("csr", URLBase64().encode(csr.toDER()));
+  writer.insert("csr", URLBase64().encode(csr->toDER()));
   writer.endDict();
+  writer.flush();
 
   return writer.toString();
+}
+
+
+bool Account::challengeRequest(Event::Request &req) {
+  if (matchChallengePath(req.getURI().getPath())) {
+    req.reply(getKeyAuthorization());
+    if (retryEvent->isPending()) retryEvent->activate();
+    return true;
+  }
+
+  return false;
 }
 
 
@@ -327,6 +340,8 @@ void Account::post(const string &url, const string &payload) {
   URI uri = getURL(url);
   string data = getSignedRequest(uri, payload);
   nonce.clear(); // Nonce used
+
+  LOG_DEBUG(5, "Posting " << data);
 
   SmartPointer<Event::OutgoingRequest> pr =
     client.call(uri, HTTP_POST, data, this, &Account::responseHandler);
@@ -365,7 +380,7 @@ void Account::next() {
 
   case STATE_NEW_ORDER:
     for (; currentKeyCert < keyCerts.size(); currentKeyCert++)
-      if (getCurrentKeyCert().expiredIn(renewPeriod * Time::SEC_PER_DAY)) {
+      if (needsRenewal(getCurrentKeyCert())) {
         post("newOrder", getNewOrderPayload());
         return;
       }
@@ -374,24 +389,26 @@ void Account::next() {
     break;
 
   case STATE_GET_AUTH: {
-    JSON::ValuePtr authz = order->get("authorizations");
-    if (currentAuth < authz->size()) get(authz->getString(currentAuth));
+    auto &authz = *order->get("authorizations");
+    if (currentAuth < authz.size()) get(authz.getString(currentAuth));
     else nextKeyCert();
     break;
   }
 
   case STATE_CHALLENGE: {
-    JSON::ValuePtr challenges = order->get("challenges");
+    auto &challenges = *authorization->get("challenges");
 
-    for (unsigned i = 0; i < challenges->size(); i++)
-      if (challenges->get(i)->getString("type", "") == "http-01") {
-        JSON::ValuePtr challenge = challenges->get(i);
-        string uri = challenge->getString("uri");
-        challengeToken = challenge->getString("token");
+    for (unsigned i = 0; i < challenges.size(); i++) {
+      auto &challenge = *challenges.get(i);
 
-        post(uri, getCheckChallengePayload());
+      if (challenge.getString("type", "") == "http-01") {
+        string uri = challenge.getString("url");
+        challengeToken = challenge.getString("token");
+
+        post(uri, "{}");
         break;
       }
+    }
 
     break;
   }
@@ -407,9 +424,7 @@ void Account::next() {
 
 
 void Account::retry() {
-  if (retries++ < maxRetries)
-    client.getBase().newEvent(this, &Account::next, 0)->add(retryWait);
-
+  if (retries++ < maxRetries) retryEvent->add(retryWait);
   else
     switch (state) {
     case STATE_NEW_ORDER:
@@ -431,8 +446,10 @@ void Account::retry() {
 
 
 void Account::responseHandler(Event::Request &req) {
-  if (req.isOk())
-    try {
+  if (!req.isOk()) LOG_ERROR(req.getInput());
+  else try {
+      LOG_DEBUG(5, "state=" << state << " response=" << req.getInput());
+
       if (req.inHas("Replay-Nonce")) nonce = req.inGet("Replay-Nonce");
 
       // Check if this was a nonce request
@@ -460,14 +477,42 @@ void Account::responseHandler(Event::Request &req) {
         currentAuth = 0;
         break;
 
-      case STATE_GET_AUTH: authorization = req.getInputJSON(); break;
+      case STATE_GET_AUTH: {
+        authorization = req.getInputJSON();
+        string status = authorization->getString("status");
+
+        if (status == "pending") break;
+        if (status == "processing") return retry();
+        if (status == "valid") {
+          state = STATE_FINALIZE;
+          return next();
+        }
+
+        // status == invalid or revoked
+        auto &challenges = *authorization->get("challenges");
+
+        for (unsigned i = 0; i < challenges.size(); i++) {
+          auto &ch = *challenges.get(i);
+
+          if (ch.getString("type", "") == "http-01") {
+            if (ch.has("error")) LOG_ERROR(ch.selectString("error.detail"));
+            else LOG_ERROR(ch);
+            break;
+          }
+        }
+
+        return nextAuth();
+      }
 
       case STATE_CHALLENGE: {
         string status = req.getInputJSON()->getString("status");
 
         if (status == "valid") break;
-        else if (status == "pending") retry();
-        else nextAuth();
+        if (status == "pending") {
+          state = STATE_GET_AUTH;
+          retry();
+
+        } else nextAuth();
         return;
       }
 
@@ -478,20 +523,22 @@ void Account::responseHandler(Event::Request &req) {
         order = req.getInputJSON();
         string status = order->getString("status");
 
-        if (status == "processing") {
-          retry();
-          return;
-
-        } else if (status != "valid") {
-          nextAuth();
-          return;
-        }
+        if (status == "processing") return retry();
+        if (status != "valid") return nextAuth();
 
         break;
       }
 
       case STATE_GET_CERT: {
-        getCurrentKeyCert().updateChain(req.getInput());
+        auto &keyCert = getCurrentKeyCert();
+        auto &chain = keyCert.getChain();
+
+        chain.clear();
+        chain.parse(req.getInput());
+
+        for (unsigned i = 0; i < listeners.size(); i++)
+          TRY_CATCH_ERROR(listeners[i](keyCert));
+
         nextKeyCert();
         return;
       }

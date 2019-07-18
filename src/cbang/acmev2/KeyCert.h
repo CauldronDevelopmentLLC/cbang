@@ -39,6 +39,8 @@
 
 
 namespace cb {
+  class CSR;
+
   namespace ACMEv2 {
     class KeyCert {
       KeyPair key;
@@ -46,27 +48,21 @@ namespace cb {
       std::vector<std::string> domains;
 
     public:
-      typedef std::function<void (KeyCert &)> listener_t;
-
-    protected:
-      std::vector<listener_t> listeners;
-
-    public:
-      KeyCert(const std::string &domain, const KeyPair &key,
-              const CertificateChain &chain = CertificateChain()) :
-        key(key), chain(chain) {addDomain(domain);}
+      KeyCert(const std::string &domains, const KeyPair &key,
+              const CertificateChain &chain = CertificateChain());
+      virtual ~KeyCert() {}
 
       const KeyPair &getKey() const {return key;}
       CertificateChain &getChain() {return chain;}
-      void updateChain(const std::string &pem);
+      const CertificateChain &getChain() const {return chain;}
 
       void addDomain(const std::string &domain) {domains.push_back(domain);}
       const std::vector<std::string> &getDomains() const {return domains;}
 
-      void addListener(listener_t listener);
-
       bool hasCert() const {return chain.size();}
       bool expiredIn(unsigned secs) const;
+
+      virtual SmartPointer<CSR> makeCSR() const;
     };
   }
 }
