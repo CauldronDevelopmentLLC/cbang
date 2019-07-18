@@ -91,9 +91,9 @@ string Base64::encode(const char *_s, unsigned length) const {
 
     result += encode(63 & (a >> 2));
     result += encode(63 & (a << 4 | b >> 4));
-    if (pad && padding == 2) result += pad;
+    if (padding == 2) {if (pad) result += pad;}
     else result += encode(63 & (b << 2 | c >> 6));
-    if (pad && padding) result += pad;
+    if (padding) {if (pad) result += pad;}
     else result += encode(63 & c);
 
     if (s != end && width) {
