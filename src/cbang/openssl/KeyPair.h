@@ -63,6 +63,8 @@ namespace cb {
     KeyPair();
     ~KeyPair();
 
+    const KeyPair &operator=(const KeyPair &o);
+
     EVP_PKEY *getEVP_PKEY() const {return key;}
     void setEVP_PKEY(EVP_PKEY *key) {this->key = key;}
 

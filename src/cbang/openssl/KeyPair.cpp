@@ -84,7 +84,9 @@ namespace {
 }
 
 
-KeyPair::KeyPair(const KeyPair &o) : key(o.key) {EVP_PKEY_up_ref(key);}
+KeyPair::KeyPair(const KeyPair &o) : key(o.key) {
+  if (key) EVP_PKEY_up_ref(key);
+}
 
 
 KeyPair::KeyPair() {
@@ -106,6 +108,14 @@ KeyPair::KeyPair(const string &key, mac_key_t type, ENGINE *e) {
 KeyPair::~KeyPair() {if (key) EVP_PKEY_free(key);}
 
 
+const KeyPair &KeyPair::operator=(const KeyPair &o) {
+  if (key) EVP_PKEY_free(key);
+  key = o.key;
+  if (key) EVP_PKEY_up_ref(key);
+  return *this;
+}
+
+
 bool KeyPair::isValid() const {return EVP_PKEY_get0(key);}
 bool KeyPair::isRSA() const {return EVP_PKEY_base_id(key) == EVP_PKEY_RSA;}
 bool KeyPair::isDSA() const {return EVP_PKEY_base_id(key) == EVP_PKEY_DSA;}
@@ -114,7 +124,7 @@ bool KeyPair::isEC() const {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
 
 
 cb::RSA KeyPair::getRSA() const {
-  if (!isRSA()) THROW("Not and RSA key");
+  if (!isRSA()) THROW("Not an RSA key");
   return EVP_PKEY_get0_RSA(key);
 }
 

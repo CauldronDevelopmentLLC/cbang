@@ -44,6 +44,7 @@ namespace cb {
   class SSL;
   class KeyPair;
   class Certificate;
+  class CertificateChain;
   class CRL;
 
   class SSLContext {
@@ -68,7 +69,9 @@ namespace cb {
 
     void useCertificate(const Certificate &cert);
     void addExtraChainCertificate(const Certificate &cert);
+    void clearExtraChainCertificates();
     void useCertificateChainFile(const std::string &filename);
+    void useCertificateChain(const CertificateChain &chain);
     void usePrivateKey(const KeyPair &key);
     void usePrivateKey(const InputSource &source);
 

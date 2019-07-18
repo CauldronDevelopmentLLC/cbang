@@ -169,7 +169,8 @@ void KeyContext::setSignatureMD(const string &digest) {
   if (!md) THROW("Unrecognized message digest '" << digest << "'");
 
   if (EVP_PKEY_CTX_set_signature_md(ctx, md) <= 0)
-    THROW("Failed to set signature message digest: " << SSL::getErrorStr());
+    THROW("Failed to set signature message digest to '" << digest << "': "
+          << SSL::getErrorStr());
 }
 
 
