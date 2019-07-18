@@ -141,6 +141,11 @@ uint64_t Request::getID() const {
 }
 
 
+bool Request::isOk() const {
+  return 200 <= responseCode && responseCode < 300 && !connError;
+}
+
+
 string Request::getResponseLine() const {
   return SSTR("HTTP/" << version << ' ' << (int)responseCode << ' '
               << (responseCodeLine.empty() ?
