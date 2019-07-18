@@ -129,6 +129,12 @@ bool Option::isDefault() const {
 }
 
 
+void Option::setDepreciated() {
+  flags |= DEPRECIATED_FLAG;
+  clearDefault();
+}
+
+
 bool Option::isHidden() const {
   return isDepreciated() || name.empty() || name[0] == '_';
 }

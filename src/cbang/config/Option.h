@@ -131,7 +131,7 @@ namespace cb {
     bool isPlural() const {return type >= STRINGS_TYPE;}
     void setCommandLine() {flags |= COMMAND_LINE_FLAG;}
     bool isCommandLine() const {return flags & COMMAND_LINE_FLAG;}
-    void setDepreciated() {flags |= DEPRECIATED_FLAG;}
+    void setDepreciated();
     bool isDepreciated() const {return flags & DEPRECIATED_FLAG;}
     bool isHidden() const;
 
