@@ -154,13 +154,6 @@ void WebServer::init() {
         sslCtx->usePrivateKey(priKeyFile);
       else LOG_WARNING("Private key file not found " << priKeyFile);
     }
-
-    // CRL
-    if (options["crl-file"].hasValue()) {
-      string crlFile = options["crl-file"];
-      if (SystemUtilities::exists(crlFile)) sslCtx->addCRL(crlFile);
-      else LOG_WARNING("Certificate Relocation List not found " << crlFile);
-    }
   }
 #endif // HAVE_OPENSSL
 }
