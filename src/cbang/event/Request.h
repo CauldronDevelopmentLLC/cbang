@@ -120,7 +120,7 @@ namespace cb {
       const Version &getVersion() const {return version;}
       void setVersion(const Version &version) {this->version = version;}
 
-      bool isOk() const {return responseCode == HTTP_OK && !connError;}
+      bool isOk() const;
       HTTPStatus getResponseCode() const {return responseCode;}
       void setResponseCodeLine(const std::string &s) {responseCodeLine = s;}
       const std::string &getResponseCodeLine() const {return responseCodeLine;}

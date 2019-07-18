@@ -64,6 +64,7 @@ Client::call(const URI &uri, RequestMethod method, const char *data,
 
   if (data) req->getOutputBuffer().add(data, length);
   if (0 <= priority) req->setPriority(priority);
+  // TODO bind outgoing IP
 
   return req;
 }
