@@ -63,6 +63,7 @@ namespace cb {
       template <typename T, typename M>
       std::string toString(T obj, M member) {
         (*obj.*member)(*this);
+        flush();
         return toString();
       }
     };
