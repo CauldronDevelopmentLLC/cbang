@@ -68,7 +68,15 @@ CertificateChain::CertificateChain(X509_CHAIN *chain) : chain(chain) {
 }
 
 
-CertificateChain::~CertificateChain() {clear();}
+CertificateChain::CertificateChain(const string &pem) :
+  chain(sk_X509_new_null()) {
+  parse(pem);
+}
+
+
+CertificateChain::~CertificateChain() {
+  sk_X509_pop_free(chain, X509_free);
+}
 
 
 CertificateChain &CertificateChain::operator=(const CertificateChain &o) {
@@ -83,7 +91,9 @@ unsigned CertificateChain::size() const {return sk_X509_num(chain);}
 
 Certificate CertificateChain::get(unsigned i) const {
   if (size() <= i) THROW("Invalid certificate chain index " << i);
-  return Certificate(sk_X509_value(chain, i));
+  auto cert = sk_X509_value(chain, i);
+  X509_up_ref(cert);
+  return Certificate(cert);
 }
 
 
@@ -93,7 +103,10 @@ void CertificateChain::add(const Certificate &cert) {
 }
 
 
-void CertificateChain::clear() {sk_X509_pop_free(chain, X509_free);}
+void CertificateChain::clear() {
+  sk_X509_pop_free(chain, X509_free);
+  chain = sk_X509_new_null();
+}
 
 
 void CertificateChain::read(istream &stream) {

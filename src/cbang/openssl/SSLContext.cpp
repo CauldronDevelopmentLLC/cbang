@@ -36,6 +36,7 @@
 #include "BIStream.h"
 #include "KeyPair.h"
 #include "Certificate.h"
+#include "CertificateChain.h"
 #include "CRL.h"
 
 #include <cbang/Exception.h>
@@ -134,10 +135,29 @@ void SSLContext::addExtraChainCertificate(const Certificate &cert) {
 }
 
 
+void SSLContext::clearExtraChainCertificates() {
+  if (!SSL_CTX_clear_extra_chain_certs(ctx))
+    THROW("Failed to clear extra chain certificates: "
+          << cb::SSL::getErrorStr());
+}
+
+
 void SSLContext::useCertificateChainFile(const string &filename) {
   if (!(SSL_CTX_use_certificate_chain_file(ctx, filename.c_str())))
     THROW("Failed to load certificate chain file '" << filename
            << "': " << cb::SSL::getErrorStr());
+}
+
+
+void SSLContext::useCertificateChain(const CertificateChain &chain) {
+  if (!chain.size()) THROW("Empty certificate chain");
+
+  clearExtraChainCertificates();
+
+  for (unsigned i = 1; i < chain.size(); i++)
+    addExtraChainCertificate(chain.get(i));
+
+  useCertificate(chain.get(0));
 }
 
 

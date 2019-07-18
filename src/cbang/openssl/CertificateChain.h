@@ -48,6 +48,7 @@ namespace cb {
   public:
     CertificateChain(const CertificateChain &o);
     CertificateChain(X509_CHAIN *chain = 0);
+    CertificateChain(const std::string &pem);
     ~CertificateChain();
 
     CertificateChain &operator=(const CertificateChain &o);
