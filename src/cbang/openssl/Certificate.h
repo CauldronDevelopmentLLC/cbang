@@ -93,6 +93,8 @@ namespace cb {
     static void addExtensionAlias(const std::string &alias,
                                   const std::string &name);
 
+    bool checkHost(const std::string &hostname) const;
+    bool checkEmail(const std::string &email) const;
     bool issued(const Certificate &o) const;
 
     void sign(const KeyPair &key, const std::string &digest = "sha256") const;
