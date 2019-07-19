@@ -66,17 +66,9 @@ SmartPointer<CSR> KeyCert::makeCSR() const {
   if (domains.empty()) THROW("No domains set");
 
   SmartPointer<CSR> csr = new CSR;
+
   csr->addNameEntry("CN", domains[0]);
-
-  string subjectAltName;
-
-  for (unsigned i = 0; i < domains.size(); i++) {
-    if (1 < i) subjectAltName += ", ";
-    subjectAltName += "DNS:" + domains[i];
-  }
-
-  csr->addExtension("subjectAltName", subjectAltName);
-
+  csr->addExtension("subjectAltName", "DNS:" + String::join(domains, ", DNS:"));
   csr->sign(key, "sha256");
 
   return csr;

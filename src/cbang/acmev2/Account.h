@@ -121,7 +121,7 @@ namespace cb {
                       const std::string &domains,
                       const std::string &clientChain,
                       Event::HTTPHandlerGroup &group, listener_t cb,
-                      unsigned updateRate = 60);
+                      unsigned updateRate = 60 * 5);
       void addListener(listener_t listener);
       void addHandler(Event::HTTPHandlerGroup &group);
       bool needsRenewal(const KeyCert &keyCert) const;
@@ -149,17 +149,18 @@ namespace cb {
       bool challengeRequest(Event::Request &req);
 
     protected:
-      std::string getProblemString(const JSON::ValuePtr &problem) const;
+      std::string getProblemString(const JSON::Value &problem) const;
 
       void call(const std::string &url, Event::RequestMethod method);
       void head(const std::string &url) {call(url, HTTP_HEAD);}
       void get(const std::string &url) {call(url, HTTP_GET);}
       void post(const std::string &url, const std::string &payload);
 
+      void error(const std::string &msg, const JSON::Value &json) const;
       void nextKeyCert();
       void nextAuth();
       void next();
-      void retry();
+      void retry(Event::Request &req);
       void responseHandler(Event::Request &req);
     };
   }

@@ -40,6 +40,9 @@
 #include <cbang/log/Logger.h>
 #include <cbang/json/BufferWriter.h>
 
+#include <cbang/time/Timer.h>
+#include <cbang/time/HumanTime.h>
+
 #include <cbang/openssl/Digest.h>
 #include <cbang/openssl/CSR.h>
 
@@ -105,7 +108,8 @@ void Account::addHandler(Event::HTTPHandlerGroup &group) {
 
 
 bool Account::needsRenewal(const KeyCert &keyCert) const {
-  return keyCert.expiredIn(renewPeriod * Time::SEC_PER_DAY);
+  return keyCert.expiredIn(renewPeriod * Time::SEC_PER_DAY) &&
+    keyCert.getWaitUntil() < Time::now();
 }
 
 
@@ -113,7 +117,7 @@ unsigned Account::certsReadyForRenewal() const {
   unsigned count = 0;
 
   for (unsigned i = 0; i < keyCerts.size(); i++)
-    count += needsRenewal(*keyCerts[i]) ? 1 : 0;
+    if (needsRenewal(*keyCerts[i])) count++;
 
   return count;
 }
@@ -311,20 +315,20 @@ bool Account::challengeRequest(Event::Request &req) {
 }
 
 
-string Account::getProblemString(const JSON::ValuePtr &problem) const {
-  string s = problem->getString("type");
+string Account::getProblemString(const JSON::Value &problem) const {
+  string s = problem.getString("type");
 
-  if (problem->hasDict("identifier")) {
-    JSON::ValuePtr _id = problem->get("identifier");
-    s += " id: " + _id->getString("type") + " " + _id->getString("value");
+  if (problem.hasDict("identifier")) {
+    auto &id = *problem.get("identifier");
+    s += " id: " + id.getString("type") + " " + id.getString("value");
   }
 
-  s += " " + problem->getString("detail");
+  s += " " + problem.getString("detail");
 
-  if (problem->hasList("subproblems")) {
-    JSON::ValuePtr list = problem->get("subproblems");
-    for (unsigned i = 0; i < list->size(); i++)
-      s += "\n  " + getProblemString(list->get(i));
+  if (problem.hasList("subproblems")) {
+    auto &list = *problem.get("subproblems");
+    for (unsigned i = 0; i < list.size(); i++)
+      s += "\n  " + getProblemString(*list.get(i));
   }
 
   return s;
@@ -351,6 +355,13 @@ void Account::post(const string &url, const string &payload) {
 }
 
 
+void Account::error(const string &msg, const JSON::Value &json) const {
+  string err = json.hasDict("error") ?
+    getProblemString(*json.get("error")) : json.toString();
+  LOG_ERROR(msg << ": " << err);
+}
+
+
 void Account::nextKeyCert() {
   currentKeyCert++;
   state = STATE_NEW_ORDER;
@@ -359,8 +370,9 @@ void Account::nextKeyCert() {
 
 
 void Account::nextAuth() {
-  currentAuth++;
-  state = STATE_GET_AUTH;
+  auto &auths = *order->get("authorizations");
+  if (++currentAuth < auths.size()) state = STATE_GET_AUTH;
+  else state = STATE_FINALIZE;
   next();
 }
 
@@ -389,8 +401,8 @@ void Account::next() {
     break;
 
   case STATE_GET_AUTH: {
-    auto &authz = *order->get("authorizations");
-    if (currentAuth < authz.size()) get(authz.getString(currentAuth));
+    auto &auths = *order->get("authorizations");
+    if (currentAuth < auths.size()) get(auths.getString(currentAuth));
     else nextKeyCert();
     break;
   }
@@ -423,23 +435,32 @@ void Account::next() {
 }
 
 
-void Account::retry() {
-  if (retries++ < maxRetries) retryEvent->add(retryWait);
-  else
-    switch (state) {
-    case STATE_NEW_ORDER:
-    case STATE_GET_AUTH:
-      nextKeyCert();
-      break;
+void Account::retry(Event::Request &req) {
+  double delay = retryWait;
 
-    case STATE_CHALLENGE:
-    case STATE_FINALIZE:
-    case STATE_GET_ORDER:
-    case STATE_GET_CERT:
-      nextAuth();
-      break;
+  // Check for rate limit
+  if (req.inHas("Retry-After")) {
+    string s = req.inGet("Retry-After");
 
-    default: state = STATE_IDLE; break; // Give up
+    try {
+      delay = String::parseDouble(s);
+    } catch (...) {
+      try {
+        delay = Time::parse(s, Time::httpFormat) - Time::now();
+      } catch (...) {
+        LOG_ERROR("Failed to parse HTTP header Retry-After: " << s);
+      }
+    }
+
+    if (delay < retryWait) delay = retryWait;
+  }
+
+  LOG_DEBUG(3, "Retrying certificate operation in " << HumanTime(delay));
+
+  if (retries++ < maxRetries) retryEvent->add(delay);
+  else {
+    getCurrentKeyCert().setWaitUntil(Time::now() + delay);
+    nextKeyCert();
   }
 }
 
@@ -459,9 +480,8 @@ void Account::responseHandler(Event::Request &req) {
       }
 
       if (req.inGet("Content-Type") == "application/problem+json") {
-        LOG_WARNING("Account: " << getProblemString(req.getInputJSON()));
-        // TODO handle rate limits and Retry-After header
-        retry();
+        LOG_WARNING("Account: " << getProblemString(*req.getInputJSON()));
+        retry(req);
         return;
       }
 
@@ -482,11 +502,8 @@ void Account::responseHandler(Event::Request &req) {
         string status = authorization->getString("status");
 
         if (status == "pending") break;
-        if (status == "processing") return retry();
-        if (status == "valid") {
-          state = STATE_FINALIZE;
-          return next();
-        }
+        if (status == "processing") return retry(req);
+        if (status == "valid") return nextAuth();
 
         // status == invalid or revoked
         auto &challenges = *authorization->get("challenges");
@@ -495,24 +512,24 @@ void Account::responseHandler(Event::Request &req) {
           auto &ch = *challenges.get(i);
 
           if (ch.getString("type", "") == "http-01") {
-            if (ch.has("error")) LOG_ERROR(ch.selectString("error.detail"));
-            else LOG_ERROR(ch);
+            error("Failed to complete certificate challenge", ch);
             break;
           }
         }
 
-        return nextAuth();
+        return nextKeyCert();
       }
 
       case STATE_CHALLENGE: {
         string status = req.getInputJSON()->getString("status");
 
-        if (status == "valid") break;
-        if (status == "pending") {
-          state = STATE_GET_AUTH;
-          retry();
+        if (status == "valid") nextAuth();
 
-        } else nextAuth();
+        else if (status == "pending") {
+          state = STATE_GET_AUTH;
+          retry(req);
+
+        } else nextKeyCert();
         return;
       }
 
@@ -523,10 +540,11 @@ void Account::responseHandler(Event::Request &req) {
         order = req.getInputJSON();
         string status = order->getString("status");
 
-        if (status == "processing") return retry();
-        if (status != "valid") return nextAuth();
+        if (status == "processing") return retry(req);
+        if (status == "valid") break;
 
-        break;
+        error("Unexpected certificate order status", *order);
+        return nextKeyCert();
       }
 
       case STATE_GET_CERT: {
@@ -551,5 +569,5 @@ void Account::responseHandler(Event::Request &req) {
 
     } CATCH_ERROR;
 
-  retry();
+  retry(req);
 }

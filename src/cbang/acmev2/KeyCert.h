@@ -46,6 +46,7 @@ namespace cb {
       KeyPair key;
       CertificateChain chain;
       std::vector<std::string> domains;
+      double waitUntil = 0;
 
     public:
       KeyCert(const std::string &domains, const KeyPair &key,
@@ -58,6 +59,9 @@ namespace cb {
 
       void addDomain(const std::string &domain) {domains.push_back(domain);}
       const std::vector<std::string> &getDomains() const {return domains;}
+
+      double getWaitUntil() const {return waitUntil;}
+      void setWaitUntil(double waitUntil) {this->waitUntil = waitUntil;}
 
       bool hasCert() const {return chain.size();}
       bool expiredIn(unsigned secs) const;
