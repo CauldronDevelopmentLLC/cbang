@@ -49,6 +49,8 @@ namespace cb {
     virtual ~RefCounter() {} // Prevent deallocation by others
 
   public:
+    static constexpr bool enableLogging = false;
+
     typedef enum {
       RC_NORMAL,
       RC_PHONY,
