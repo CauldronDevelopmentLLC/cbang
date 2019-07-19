@@ -83,11 +83,10 @@ IPAddress::IPAddress(const string &host, uint16_t port) :
 }
 
 
-const string &IPAddress::getHost() const {
+string IPAddress::getHost() const {
   if (host.empty())
-    const_cast<IPAddress *>(this)->host =
-      String::printf("%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xff,
-                     (ip >> 8) & 0xff, ip & 0xff);
+    return String::printf("%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xff,
+                          (ip >> 8) & 0xff, ip & 0xff);
 
   return host;
 }
