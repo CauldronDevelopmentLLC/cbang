@@ -177,10 +177,7 @@ namespace cb {
 
 
     /// Note, erase() takes non-constant time
-    void erase(size_type i) {
-      dict.erase(keyAt(i));
-      vector_t::erase(vector_t::begin() + i);
-    }
+    void erase(size_type i) {erase(keyAt(i));}
 
 
     /// Note, erase() takes non-constant time
@@ -188,6 +185,9 @@ namespace cb {
       size_type i = indexOf(key);
       dict.erase(key);
       vector_t::erase(vector_t::begin() + i);
+
+      for (auto it = dict.begin(); it != dict.end(); it++)
+        if (i < it->second) it->second--;
     }
   };
 }
