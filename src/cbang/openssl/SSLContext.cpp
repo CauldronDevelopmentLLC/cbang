@@ -267,3 +267,7 @@ void SSLContext::setCheckCRL(bool x) {
   X509_STORE_set1_param(store, param);
   X509_VERIFY_PARAM_free(param);
 }
+
+
+long SSLContext::getOptions() const {return SSL_CTX_get_options(ctx);}
+void SSLContext::setOptions(long options) {SSL_CTX_set_options(ctx, options);}
