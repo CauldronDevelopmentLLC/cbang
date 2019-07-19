@@ -63,6 +63,7 @@ namespace cb {
 
     virtual URI getRedirectURL(const std::string &path,
                                const std::string &state) const;
+    virtual bool isForgery(const URI &uri, const std::string &state) const;
     virtual URI getVerifyURL(const URI &uri, const std::string &state) const;
     virtual URI getProfileURL(const std::string &token) const;
 
