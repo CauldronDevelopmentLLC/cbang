@@ -289,14 +289,13 @@ void Request::setPersistent(bool x) {
 
 
 void Request::setCache(uint32_t age) {
-  const char *format = "%a, %d %b %Y %H:%M:%S GMT";
-  string now = Time(format).toString();
+  string now = Time(Time::httpFormat).toString();
 
   outSet("Date", now);
 
   if (age) {
     outSet("Cache-Control", "max-age=" + String(age));
-    outSet("Expires", Time(Time::now() + age, format).toString());
+    outSet("Expires", Time(Time::now() + age, Time::httpFormat).toString());
 
   } else {
     outSet("Cache-Control", "max-age=0, no-cache, no-store");
