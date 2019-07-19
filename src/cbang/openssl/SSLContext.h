@@ -90,5 +90,8 @@ namespace cb {
 
     void setVerifyDepth(unsigned depth);
     void setCheckCRL(bool x = true);
+
+    long getOptions() const;
+    void setOptions(long options);
   };
 }
