@@ -48,6 +48,8 @@ RefCounterPhonyImpl RefCounterPhonyImpl::singleton;
 
 
 void RefCounter::log(const char *name, unsigned count) {
+  if (!enableLogging) return;
+
   static bool entered = false;
   if (entered) return;
   SmartToggle toggle(entered);
