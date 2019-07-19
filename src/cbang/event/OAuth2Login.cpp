@@ -77,8 +77,7 @@ bool OAuth2Login::requestToken(Request &req, const string &state,
               << (uri.has("state") ? uri.get("state") : "<null>")
               << " server state=" << state);
 
-    req.redirect(redirectURI);
-    return true;
+    return false;
   }
 
   URI verifyURL = getOAuth2()->getVerifyURL(uri, state);
