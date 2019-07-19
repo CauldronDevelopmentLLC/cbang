@@ -100,11 +100,10 @@ bool HTTPOAuth2LoginHandler::operator()(Request &req) {
 
   } else if (session->hasGroup("authenticated")) return false; // Logged in
 
-  if (req.getURI().has("state")) {
-    OAuth2Login::requestToken
-      (req, session->getID(), session->getString("redirect_uri", ""));
+  if (req.getURI().has("state") &&
+      OAuth2Login::requestToken
+      (req, session->getID(), session->getString("redirect_uri", "")))
     return true;
-  }
 
   URI redirectURI =
     getOAuth2()->getRedirectURL(req.getURI().getPath(), session->getID());
