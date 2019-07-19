@@ -96,16 +96,13 @@ URI OAuth2::getRedirectURL(const string &path, const string &state) const {
 }
 
 
-URI OAuth2::getVerifyURL(const URI &uri, const string &state) const {
+bool OAuth2::isForgery(const URI &uri, const string &state) const {
   // Check that SID matches state (Confirm anti-forgery state token)
-  if (!uri.has("code") || !uri.has("state") || uri.get("state") != state) {
-    LOG_DEBUG(3, "Failed anti-forgery check: uri code="
-              << (uri.has("code") ? uri.get("code") : "<null>") << " uri state="
-              << (uri.has("state") ? uri.get("state") : "<null>")
-              << " server state=" << state);
-    THROWC("Failed anti-forgery check", Event::HTTPStatus::HTTP_UNAUTHORIZED);
-  }
+  return !uri.has("code") || !uri.has("state") || uri.get("state") != state;
+}
 
+
+URI OAuth2::getVerifyURL(const URI &uri, const string &state) const {
   // Check config
   validateOption(clientID, "client-id");
   validateOption(clientSecret, "client-secret");

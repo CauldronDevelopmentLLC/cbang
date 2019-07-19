@@ -35,11 +35,12 @@
 #include "OutgoingRequest.h"
 #include "Client.h"
 
+#include <cbang/Catch.h>
 #include <cbang/auth/OAuth2.h>
 #include <cbang/net/URI.h>
 #include <cbang/json/Value.h>
-#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
+#include <cbang/event/HTTPStatus.h>
 
 using namespace std;
 using namespace cb::Event;
@@ -69,7 +70,18 @@ bool OAuth2Login::requestToken(Request &req, const string &state,
       verifyToken(req, _req.getInput());
     };
 
-  URI verifyURL = getOAuth2()->getVerifyURL(req.getURI(), state);
+  auto &uri = req.getURI();
+  if (getOAuth2()->isForgery(uri, state)) {
+    LOG_DEBUG(3, "Failed anti-forgery check: uri code="
+              << (uri.has("code") ? uri.get("code") : "<null>") << " uri state="
+              << (uri.has("state") ? uri.get("state") : "<null>")
+              << " server state=" << state);
+
+    req.redirect(redirectURI);
+    return true;
+  }
+
+  URI verifyURL = getOAuth2()->getVerifyURL(uri, state);
 
   // Override redirect URI
   if (!redirectURI.empty()) verifyURL.set("redirect_uri", redirectURI);
