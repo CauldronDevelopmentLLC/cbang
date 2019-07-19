@@ -176,11 +176,11 @@ namespace cb {
     operator[](const KEY &key) const {return get(key);}
 
 
-    /// Note, erase() takes non-constant time
+    /// Note, erase() takes linear time
     void erase(size_type i) {erase(keyAt(i));}
 
 
-    /// Note, erase() takes non-constant time
+    /// Note, erase() takes linear time
     void erase(const KEY &key) {
       size_type i = indexOf(key);
       dict.erase(key);

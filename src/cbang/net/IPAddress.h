@@ -53,7 +53,7 @@ namespace cb {
     IPAddress(const std::string &host, uint16_t port);
 
     void setHost(const std::string &host) {this->host = host;}
-    const std::string &getHost() const;
+    std::string getHost() const;
     bool hasHost() const;
     void lookupHost();
 
