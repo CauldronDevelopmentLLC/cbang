@@ -48,16 +48,17 @@ namespace cb {
     uint64_t time;
 
   public:
-    static const char *defaultFormat;
+    static constexpr const char *iso8601Format = "%Y-%m-%dT%H:%M:%SZ";
+    static constexpr const char *httpFormat    = "%a, %d %b %Y %H:%M:%S GMT";
 
-    static const unsigned SEC_PER_MIN;
-    static const unsigned SEC_PER_HOUR;
-    static const unsigned SEC_PER_DAY;
-    static const unsigned SEC_PER_YEAR;
+    static const unsigned SEC_PER_MIN  = 60;
+    static const unsigned SEC_PER_HOUR = Time::SEC_PER_MIN  * 60;
+    static const unsigned SEC_PER_DAY  = Time::SEC_PER_HOUR * 24;
+    static const unsigned SEC_PER_YEAR = Time::SEC_PER_DAY  * 365;
 
     /// @param time In seconds since Janary 1st, 1970
     Time(uint64_t time = ~(uint64_t)0,
-         const std::string &format = defaultFormat);
+         const std::string &format = iso8601Format);
     Time(const std::string &format);
 
     std::string toString() const;
@@ -72,7 +73,7 @@ namespace cb {
     bool operator>=(const Time &o) const {return time >= o.time;}
 
     static Time parse(const std::string &s,
-                      const std::string &format = defaultFormat);
+                      const std::string &format = iso8601Format);
 
     /// Get current time in seconds since Janary 1st, 1970.
     static uint64_t now();

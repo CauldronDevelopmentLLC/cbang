@@ -51,14 +51,6 @@ namespace {
 }
 
 
-const unsigned Time::SEC_PER_MIN  = 60;
-const unsigned Time::SEC_PER_HOUR = Time::SEC_PER_MIN  * 60;
-const unsigned Time::SEC_PER_DAY  = Time::SEC_PER_HOUR * 24;
-const unsigned Time::SEC_PER_YEAR = Time::SEC_PER_DAY  * 365;
-
-const char *Time::defaultFormat = "%Y-%m-%dT%H:%M:%SZ"; // ISO 8601
-
-
 Time::Time(uint64_t time, const string &format) :
   format(format), time(time == ~(uint64_t)0 ? now() : time) {
 }
