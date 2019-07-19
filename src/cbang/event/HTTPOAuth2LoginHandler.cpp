@@ -114,7 +114,9 @@ bool HTTPOAuth2LoginHandler::operator()(Request &req) {
     string uri = args.getString("redirect_uri");
     redirectURI.set("redirect_uri", uri);
     session->insert("redirect_uri", uri);
-  }
+
+  } else if (session->hasString("redirect_uri"))
+    redirectURI.set("redirect_uri", session->getString("redirect_uri"));
 
   req.redirect(redirectURI);
 
