@@ -98,7 +98,8 @@ SmartPointer<cb::SSL> SSLContext::createSSL(BIO *bio) {
 
 void SSLContext::setCipherList(const string &list) {
   if (!SSL_CTX_set_cipher_list(ctx, list.c_str()))
-    THROW("Failed to set cipher list to: " << list);
+    THROW("Failed to set cipher list to: " << list
+          << ": " << cb::SSL::getErrorStr());
 }
 
 
@@ -205,7 +206,8 @@ void SSLContext::addTrustedCA(BIO *bio) {
 
 void SSLContext::loadVerifyLocationsFile(const string &path) {
   if (!SSL_CTX_load_verify_locations(ctx, path.c_str(), 0))
-    THROW("Failed to load verify locations file '" << path << "'");
+    THROW("Failed to load verify locations file '" << path << "': "
+          << cb::SSL::getErrorStr());
 }
 
 
