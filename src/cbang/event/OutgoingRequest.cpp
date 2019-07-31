@@ -101,7 +101,7 @@ void OutgoingRequest::onProgress(unsigned bytes, int total) {
 
 void OutgoingRequest::onResponse(ConnectionError error) {
   if (error) {
-    LOG_ERROR("< " << error);
+    LOG_ERROR("< " getPeer() << ' ' << error);
 
     string sslErrors = getSSLErrors();
     if (!sslErrors.empty()) sslErrors = " SSL:" + sslErrors;
@@ -109,7 +109,7 @@ void OutgoingRequest::onResponse(ConnectionError error) {
     LOG_DEBUG(4, "SYS:" << SysError() << sslErrors);
 
   } else {
-    LOG_INFO(1, "< " << getResponseLine());
+    LOG_INFO(1, "< " << getPeer() << ' ' << getResponseLine());
     LOG_DEBUG(5, getInputHeaders() << '\n');
     LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
   }
