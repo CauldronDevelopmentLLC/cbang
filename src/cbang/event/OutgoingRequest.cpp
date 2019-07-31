@@ -101,7 +101,7 @@ void OutgoingRequest::onProgress(unsigned bytes, int total) {
 
 void OutgoingRequest::onResponse(ConnectionError error) {
   if (error) {
-    LOG_ERROR("< " getPeer() << ' ' << error);
+    LOG_ERROR("< " << getPeer() << ' ' << error);
 
     string sslErrors = getSSLErrors();
     if (!sslErrors.empty()) sslErrors = " SSL:" + sslErrors;
