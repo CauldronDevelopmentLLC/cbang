@@ -79,9 +79,9 @@ void Writer::write(double value) {
   NullSink::write(value);
 
   // These values are parsed correctly by both Python and Javascript
-  if (isnan(value)) stream << "\"NaN\"";
-  else if (isinf(value) && 0 < value) stream << "\"Infinity\"";
-  else if (isinf(value) && value < 0) stream << "\"-Infinity\"";
+  if (std::isnan(value)) stream << "\"NaN\"";
+  else if (std::isinf(value) && 0 < value) stream << "\"Infinity\"";
+  else if (std::isinf(value) && value < 0) stream << "\"-Infinity\"";
   else stream << cb::String(value);
 }
 
