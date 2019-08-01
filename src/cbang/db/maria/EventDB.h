@@ -89,7 +89,7 @@ namespace cb {
                    const std::string &socketName = std::string(),
                    flags_t flags = FLAG_NONE) {
         using namespace std::placeholders;
-        connect(std::bind(member, obj), host, user, password, dbName, port,
+        connect(std::bind(member, obj, _1), host, user, password, dbName, port,
                 socketName, flags);
       }
 
