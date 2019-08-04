@@ -33,13 +33,16 @@
 #pragma once
 
 #include <cbang/StdTypes.h>
+#include <cbang/Exception.h>
 
 #include <string>
 #include <vector>
 #include <istream>
 #include <sstream>
+#include <functional>
 
 #include <stdarg.h>
+
 
 namespace cb {
   /// Used for convenient conversion of basic data types to and from std::string
@@ -204,29 +207,11 @@ namespace cb {
                                  const std::string &replace);
 
     // Formatting
-    class FormatCB {
-    public:
-      virtual ~FormatCB() {}
+    typedef std::function<std::string (char type, int index,
+                                       const std::string &name)> format_cb_t;
+    std::string format(format_cb_t cb);
 
-      virtual std::string
-      operator()(char type, int index, const std::string &name) const = 0;
-    };
-
-
-    class DefaultFormatCB : public FormatCB {
-      std::string defaultValue;
-
-    public:
-      DefaultFormatCB(const std::string &defaultValue) :
-        defaultValue(defaultValue) {}
-
-      std::string operator()(char type, int index,
-                             const std::string &name) const {
-        return defaultValue;
-      }
-    };
-
-    std::string format(const FormatCB &cb);
+    static std::string makeFormatString(char type, const std::string &name);
   };
 }
 

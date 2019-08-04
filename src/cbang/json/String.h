@@ -53,6 +53,7 @@ namespace cb {
 
       // From Value
       ValueType getType() const {return JSON_STRING;}
+      bool isString() const {return true;}
       ValuePtr copy(bool deep = false) const {return new String(s);}
       bool getBoolean() const {return cb::String::parseBool(getString());}
       double getNumber() const;

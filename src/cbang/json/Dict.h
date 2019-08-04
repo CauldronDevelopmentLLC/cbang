@@ -53,6 +53,7 @@ namespace cb {
 
       // From Value
       ValueType getType() const {return JSON_DICT;}
+      bool isDict() const {return true;}
       ValuePtr copy(bool deep = false) const;
       bool isSimple() const {return simple;}
 
@@ -79,6 +80,9 @@ namespace cb {
       void setParent(Value *parent, unsigned index)
         {CBANG_TYPE_ERROR("Not an ObservableDict");}
       void write(Sink &sink) const;
+
+      void visitChildren(const_visitor_t visitor, bool depthFirst = true) const;
+      void visitChildren(visitor_t visitor, bool depthFirst = true);
     };
   }
 }
