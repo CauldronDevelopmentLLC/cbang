@@ -49,6 +49,7 @@ namespace cb {
 
       // From Value
       ValueType getType() const {return JSON_BOOLEAN;}
+      bool isBoolean() const {return true;}
       ValuePtr copy(bool deep = false) const {return instancePtr();}
       bool getBoolean() const {return true;}
       void write(Sink &sink) const {sink.writeBoolean(true);}

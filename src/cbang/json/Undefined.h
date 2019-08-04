@@ -49,7 +49,9 @@ namespace cb {
 
       // From Value
       ValueType getType() const {return JSON_UNDEFINED;}
+      bool isUndefined() const {return true;}
       ValuePtr copy(bool deep = false) const {return instancePtr();}
+      const Value &getUndefined() const {return *this;}
       bool canWrite(Sink &sink) const {return false;}
       void write(Sink &sink) const {}
     };

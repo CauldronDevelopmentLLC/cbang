@@ -30,63 +30,22 @@
 
 \******************************************************************************/
 
-#include "Dict.h"
 
-#include <cbang/Exception.h>
-#include <cbang/String.h>
+CBANG_JSON_VT(Undefined, const Value &);
+CBANG_JSON_VT(Null,      const Value &);
+CBANG_JSON_VT(Boolean,   bool);
+CBANG_JSON_VT(Number,    double);
+CBANG_JSON_VT(String,    const std::string &);
+CBANG_JSON_VT(List,      const Value &);
+CBANG_JSON_VT(Dict,      const Value &);
 
-#include <cctype>
+CBANG_JSON_VT(S8,        int8_t);
+CBANG_JSON_VT(U8,        uint8_t);
+CBANG_JSON_VT(S16,       int16_t);
+CBANG_JSON_VT(U16,       uint16_t);
+CBANG_JSON_VT(S32,       int32_t);
+CBANG_JSON_VT(U32,       uint32_t);
+CBANG_JSON_VT(S64,       int64_t);
+CBANG_JSON_VT(U64,       uint64_t);
 
-using namespace std;
-using namespace cb::JSON;
-
-
-ValuePtr Dict::copy(bool deep) const {
-  ValuePtr c = createDict();
-
-  for (unsigned i = 0; i < size(); i++)
-    c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
-
-  return c;
-}
-
-
-unsigned Dict::insert(const string &key, const ValuePtr &value) {
-  if (value->isList() || value->isDict()) simple = false;
-  return (unsigned)OrderedDict<ValuePtr>::insert(key, value);
-}
-
-
-void Dict::write(Sink &sink) const {
-  sink.beginDict(isSimple());
-
-  for (const_iterator it = begin(); it != end(); it++) {
-    if (!it->second->canWrite(sink)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
-  }
-
-  sink.endDict();
-}
-
-
-void Dict::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
-}
-
-
-void Dict::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
-}
+#undef CBANG_JSON_VT

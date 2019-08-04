@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "Value.h"
+#include "Path.h"
 
 #include <sstream>
 #include <limits>
@@ -40,34 +41,33 @@ using namespace cb;
 using namespace cb::JSON;
 
 
-ValuePtr Value::select(const string &path) const {
-  vector<string> parts;
-  String::tokenize(path, parts, ".");
-
-  unsigned i;
-  ValuePtr value;
-
-  try {
-    for (i = 0; i < parts.size(); i++)
-      value = i ? value->get(parts[i]) : get(parts[i]);
-
-    return value;
-
-  } catch (const Exception &e) {
-    parts.resize(i + 1);
-    THROWC("At JSON path " << String::join(parts, "."), e);
-  }
+ConstValuePtr Value::select(const string &path) const {
+  return Path(path).select(*this);
 }
 
 
-void Value::appendDict() {append(createDict());}
-void Value::appendList() {append(createList());}
-void Value::appendUndefined() {append(createUndefined());}
-void Value::appendNull() {append(createNull());}
-void Value::appendBoolean(bool value) {append(createBoolean(value));}
-void Value::append(double value) {append(create(value));}
-void Value::append(int64_t value) {append(create(value));}
-void Value::append(uint64_t value) {append(create(value));}
+ConstValuePtr Value::select(const string &path,
+                            const ConstValuePtr &defaultValue) const {
+  return Path(path).select(*this, defaultValue);
+}
+
+
+ValuePtr Value::select(const string &path) {return Path(path).select(*this);}
+
+
+ValuePtr Value::select(const string &path, const ValuePtr &defaultValue) {
+  return Path(path).select(*this, defaultValue);
+}
+
+
+void Value::appendDict()                {append(createDict());}
+void Value::appendList()                {append(createList());}
+void Value::appendUndefined()           {append(createUndefined());}
+void Value::appendNull()                {append(createNull());}
+void Value::appendBoolean(bool value)   {append(createBoolean(value));}
+void Value::append(double value)        {append(create(value));}
+void Value::append(int64_t value)       {append(create(value));}
+void Value::append(uint64_t value)      {append(create(value));}
 void Value::append(const string &value) {append(create(value));}
 
 
@@ -77,14 +77,14 @@ void Value::appendFrom(const Value &value) {
 }
 
 
-void Value::setDict(unsigned i) {set(i, createDict());}
-void Value::setList(unsigned i) {set(i, createList());}
-void Value::setUndefined(unsigned i) {set(i, createUndefined());}
-void Value::setNull(unsigned i) {set(i, createNull());}
-void Value::setBoolean(unsigned i, bool value) {set(i, createBoolean(value));}
-void Value::set(unsigned i, double value) {set(i, create(value));}
-void Value::set(unsigned i, int64_t value) {set(i, create(value));}
-void Value::set(unsigned i, uint64_t value) {set(i, create(value));}
+void Value::setDict(unsigned i)                  {set(i, createDict());}
+void Value::setList(unsigned i)                  {set(i, createList());}
+void Value::setUndefined(unsigned i)             {set(i, createUndefined());}
+void Value::setNull(unsigned i)                  {set(i, createNull());}
+void Value::setBoolean(unsigned i, bool value)   {set(i, createBoolean(value));}
+void Value::set(unsigned i, double value)        {set(i, create(value));}
+void Value::set(unsigned i, int64_t value)       {set(i, create(value));}
+void Value::set(unsigned i, uint64_t value)      {set(i, create(value));}
 void Value::set(unsigned i, const string &value) {set(i, create(value));}
 
 
@@ -103,8 +103,9 @@ unsigned Value::insertUndefined(const string &key) {
 }
 
 
-unsigned Value::insertNull(const string &key)
-{return insert(key, createNull());}
+unsigned Value::insertNull(const string &key) {
+  return insert(key, createNull());
+}
 
 
 unsigned Value::insertBoolean(const string &key, bool value) {
@@ -165,11 +166,12 @@ void Value::merge(const Value &value) {
 
 string Value::format(char type) const {
   switch (type) {
-    case 'b': return String(getBoolean());
-    case 'f': return String(getNumber());
-    case 'i': return String(getS32());
-    case 'u': return String(getU32());
-    case 's': return "\"" + String::escapeC(asString()) + "\"";
+  case 'b': return String(getBoolean());
+  case 'f': return String(getNumber());
+  case 'i': return String(getS32());
+  case 'u': return String(getU32());
+  case 's': return asString();
+  case 'S': return "\"" + String::escapeC(asString()) + "\"";
   }
 
   THROW("Unsupported format type specifier '"
@@ -178,36 +180,36 @@ string Value::format(char type) const {
 
 
 string Value::format(char type, int index, const string &name,
-                     const String::FormatCB &cb) const {
+                     const string &defaultValue) const {
   if (index < 0) {
     if (has(name)) return get(name)->format(type);
   } else if ((unsigned)index < size()) return get(index)->format(type);
 
-  return cb(type, index, name);
-}
-
-
-string Value::format(const string &s, const String::FormatCB &cb) const {
-  class FormatCB : public String::FormatCB {
-    const Value &value;
-    const String::FormatCB &cb;
-
-  public:
-    FormatCB(const Value &value, const String::FormatCB &cb) :
-      value(value), cb(cb) {}
-
-
-    string operator()(char type, int index, const string &name) const {
-      return value.format(type, index, name, cb);
-    }
-  };
-
-  return String(s).format(FormatCB(*this, cb));
+  return defaultValue;
 }
 
 
 string Value::format(const string &s, const string &defaultValue) const {
-  return format(s, String::DefaultFormatCB(defaultValue));
+  auto cb =
+    [&] (char type, int index, const string &name) {
+      return format(type, index, name, defaultValue);
+    };
+
+  return String(s).format(cb);
+}
+
+
+void Value::visit(const_visitor_t visitor, bool depthFirst) const {
+  if (!depthFirst) visitor(*this, 0, 0);
+  visitChildren(visitor, depthFirst);
+  if (depthFirst) visitor(*this, 0, 0);
+}
+
+
+void Value::visit(visitor_t visitor, bool depthFirst) {
+  if (!depthFirst) visitor(*this, 0, 0);
+  visitChildren(visitor, depthFirst);
+  if (depthFirst) visitor(*this, 0, 0);
 }
 
 

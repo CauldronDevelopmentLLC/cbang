@@ -839,7 +839,7 @@ string String::transcode(const string &s, const string &search,
 }
 
 
-string String::format(const FormatCB &cb) {
+string String::format(format_cb_t cb) {
   string result;
   result.reserve(length());
 
@@ -857,7 +857,7 @@ string String::format(const FormatCB &cb) {
         string name;
         while (it2 != end() && *it2 != ')') name.push_back(*it2++);
 
-        if (it2 != end() && ++it2 != end()) {
+        if (it2 != end() && ++it2 != end() && !name.empty()) {
           result.append(cb(*it2, -1, name));
           it = it2;
           continue;
@@ -878,4 +878,10 @@ string String::format(const FormatCB &cb) {
   }
 
   return result;
+}
+
+
+string String::makeFormatString(char type, const string &name) {
+  if (name.empty()) return "%" + string(1, type);
+  return "%(" + name + ")" + string(1, type);
 }

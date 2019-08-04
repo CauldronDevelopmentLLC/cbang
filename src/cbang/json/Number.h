@@ -93,6 +93,7 @@ namespace cb {
 
       // From Value
       ValueType getType() const {return JSON_NUMBER;}
+      bool isNumber() const {return true;}
       ValuePtr copy(bool deep = false) const {return new NumberValue<T>(value);}
       double getNumber() const {return value;}
 

@@ -89,6 +89,28 @@ void List::set(unsigned i, const ValuePtr &value) {
 }
 
 
+void List::visitChildren(const_visitor_t visitor, bool depthFirst) const {
+  for (unsigned i = 0; i < size(); i++) {
+    const Value &child = *get(i);
+
+    if (depthFirst) child.visitChildren(visitor, depthFirst);
+    visitor(child, this, i);
+    if (!depthFirst) child.visitChildren(visitor, depthFirst);
+  }
+}
+
+
+void List::visitChildren(visitor_t visitor, bool depthFirst) {
+  for (unsigned i = 0; i < size(); i++) {
+    Value &child = *get(i);
+
+    if (depthFirst) child.visitChildren(visitor, depthFirst);
+    visitor(child, this, i);
+    if (!depthFirst) child.visitChildren(visitor, depthFirst);
+  }
+}
+
+
 void List::check(unsigned i) const {
   if (size() <= i) KEY_ERROR("Index " << i << " out of range " << size());
 }

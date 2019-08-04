@@ -49,7 +49,9 @@ namespace cb {
 
       // From Value
       ValueType getType() const {return JSON_NULL;}
+      bool isNull() const {return true;}
       ValuePtr copy(bool deep = false) const {return instancePtr();}
+      const Value &getNull() const {return *this;}
       void write(Sink &sink) const {sink.writeNull();}
     };
   }

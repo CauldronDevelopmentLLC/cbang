@@ -35,11 +35,14 @@
 #include "ValueType.h"
 #include "Factory.h"
 #include "Writer.h"
+#include "Path.h"
 
+#include <cbang/SmartPointer.h>
 #include <cbang/Errors.h>
 
 #include <ostream>
 #include <list>
+#include <functional>
 
 
 namespace cb {
@@ -47,33 +50,17 @@ namespace cb {
     class Value;
     class Sink;
 
-    class Value : public Factory, public ValueType::Enum {
+    class Value :
+      virtual public RefCounted, public Factory, public ValueType::Enum {
     public:
       virtual ~Value() {}
 
       virtual ValueType getType() const = 0;
-      virtual ValuePtr copy(bool deep = false) const = 0;
-      virtual bool canWrite(Sink &sink) const {return true;}
+
+#define CBANG_JSON_VT(NAME, TYPE) virtual bool is##NAME() const {return false;}
+#include "ValueTypes.def"
 
       virtual bool isSimple() const {return true;}
-
-      bool isUndefined() const {return getType() == JSON_UNDEFINED;}
-      bool isNull()      const {return getType() == JSON_NULL;}
-      bool isBoolean()   const {return getType() == JSON_BOOLEAN;}
-      bool isNumber()    const {return getType() == JSON_NUMBER;}
-      bool isString()    const {return getType() == JSON_STRING;}
-      bool isList()      const {return getType() == JSON_LIST;}
-      bool isDict()      const {return getType() == JSON_DICT;}
-
-      virtual bool isS8()  const {return false;}
-      virtual bool isU8()  const {return false;}
-      virtual bool isS16() const {return false;}
-      virtual bool isU16() const {return false;}
-      virtual bool isS32() const {return false;}
-      virtual bool isU32() const {return false;}
-      virtual bool isS64() const {return false;}
-      virtual bool isU64() const {return false;}
-
       template <typename T> bool is() {return dynamic_cast<T *>(this);}
 
       template <typename T> T &cast() {
@@ -88,60 +75,31 @@ namespace cb {
         return *ptr;
       }
 
-      ValuePtr select(const std::string &path) const;
+      virtual ValuePtr copy(bool deep = false) const = 0;
+      virtual bool canWrite(Sink &sink) const {return true;}
 
-#define CBANG_JSON_SELECT(NAME, TYPE)                               \
-      TYPE select##NAME(const std::string &path) const {            \
-        ValuePtr value = select(path);                              \
-        try {                                                       \
-          return value->get##NAME();                                \
-        } catch (const Exception &e) {                              \
-          CBANG_THROWC("At JSON path " << path, e);                 \
-        }                                                           \
-      }                                                             \
-      TYPE select##NAME(const std::string &path,                    \
-                        TYPE defaultValue) const {                  \
-        try {                                                       \
-          return select##NAME(path);                                \
-        } catch (...) {return defaultValue;}                        \
+      ConstValuePtr select(const std::string &path) const;
+      ConstValuePtr select(const std::string &path,
+                           const ConstValuePtr &defaultValue) const;
+      ValuePtr select(const std::string &path);
+      ValuePtr select(const std::string &path, const ValuePtr &defaultValue);
+
+#define CBANG_JSON_VT(NAME, TYPE)                                       \
+      TYPE select##NAME(const std::string &path) const {                \
+        return Path(path).select##NAME(*this);                          \
+      }                                                                 \
+                                                                        \
+                                                                        \
+      TYPE select##NAME(const std::string &path,                        \
+                        TYPE defaultValue) const {                      \
+        return Path(path).select##NAME(*this, defaultValue);            \
       }
+#include "ValueTypes.def"
 
-      CBANG_JSON_SELECT(Boolean, bool);
-      CBANG_JSON_SELECT(Number,  double);
-      CBANG_JSON_SELECT(String,  const std::string &);
-      CBANG_JSON_SELECT(List,    Value &);
-      CBANG_JSON_SELECT(Dict,    Value &);
 
-      CBANG_JSON_SELECT(S8,      int8_t);
-      CBANG_JSON_SELECT(U8,      uint8_t);
-      CBANG_JSON_SELECT(S16,     int16_t);
-      CBANG_JSON_SELECT(U16,     uint16_t);
-      CBANG_JSON_SELECT(S32,     int32_t);
-      CBANG_JSON_SELECT(U32,     uint32_t);
-      CBANG_JSON_SELECT(S64,     int64_t);
-      CBANG_JSON_SELECT(U64,     uint64_t);
-
-#undef CBANG_JSON_SELECT
-
-#define CBANG_JSON_GET(NAME, TYPE)                                      \
+#define CBANG_JSON_VT(NAME, TYPE)                                       \
       virtual TYPE get##NAME() const {CBANG_TYPE_ERROR("Not a " #NAME);}
-
-      CBANG_JSON_GET(Boolean, bool);
-      CBANG_JSON_GET(Number,  double);
-      CBANG_JSON_GET(String,  const std::string &);
-      CBANG_JSON_GET(List,    const Value &);
-      CBANG_JSON_GET(Dict,    const Value &);
-
-      CBANG_JSON_GET(S8,      int8_t);
-      CBANG_JSON_GET(U8,      uint8_t);
-      CBANG_JSON_GET(S16,     int16_t);
-      CBANG_JSON_GET(U16,     uint16_t);
-      CBANG_JSON_GET(S32,     int32_t);
-      CBANG_JSON_GET(U32,     uint32_t);
-      CBANG_JSON_GET(S64,     int64_t);
-      CBANG_JSON_GET(U64,     uint64_t);
-
-#undef CBANG_JSON_GET
+#include "ValueTypes.def"
 
       virtual Value &getList() {CBANG_TYPE_ERROR("Not a List");}
       virtual Value &getDict() {CBANG_TYPE_ERROR("Not a Dict");}
@@ -173,23 +131,14 @@ namespace cb {
       // List accessors
       virtual const ValuePtr &get(unsigned i) const
         {CBANG_TYPE_ERROR("Not a List or Dict");}
-      bool getBoolean(unsigned i) const {return get(i)->getBoolean();}
-      double getNumber(unsigned i) const {return get(i)->getNumber();}
-      int8_t getS8(unsigned i) const {return get(i)->getS8();}
-      uint8_t getU8(unsigned i) const {return get(i)->getU8();}
-      int16_t getS16(unsigned i) const {return get(i)->getS16();}
-      uint16_t getU16(unsigned i) const {return get(i)->getU16();}
-      int32_t getS32(unsigned i) const {return get(i)->getS32();}
-      uint32_t getU32(unsigned i) const {return get(i)->getU32();}
-      int64_t getS64(unsigned i) const {return get(i)->getS64();}
-      uint64_t getU64(unsigned i) const {return get(i)->getU64();}
-      const std::string &getString(unsigned i) const
-      {return get(i)->getString();}
-      std::string getAsString(unsigned i) const {return get(i)->asString();}
+
+#define CBANG_JSON_VT(NAME, TYPE)               \
+      TYPE get##NAME(unsigned i) const {return get(i)->get##NAME();}
+#include "ValueTypes.def"
+
       Value &getList(unsigned i) {return get(i)->getList();}
-      const Value &getList(unsigned i) const {return get(i)->getList();}
       Value &getDict(unsigned i) {return get(i)->getDict();}
-      const Value &getDict(unsigned i) const {return get(i)->getDict();}
+      std::string getAsString(unsigned i) const {return get(i)->asString();}
 
       // List setters
       virtual void set(unsigned i, const ValuePtr &value)
@@ -200,16 +149,17 @@ namespace cb {
       void setNull(unsigned i);
       void setBoolean(unsigned i, bool value);
       void set(unsigned i, double value);
-      void set(unsigned i, float value) {set(i, (double)value);}
-      void set(unsigned i, int8_t value) {set(i, (int16_t)value);}
-      void set(unsigned i, uint8_t value) {set(i, (uint16_t)value);}
-      void set(unsigned i, int16_t value) {set(i, (int32_t)value);}
+      void set(unsigned i, float value)    {set(i, (double)value);}
+      void set(unsigned i, int8_t value)   {set(i, (int16_t)value);}
+      void set(unsigned i, uint8_t value)  {set(i, (uint16_t)value);}
+      void set(unsigned i, int16_t value)  {set(i, (int32_t)value);}
       void set(unsigned i, uint16_t value) {set(i, (uint32_t)value);}
-      void set(unsigned i, int32_t value) {set(i, (int64_t)value);}
+      void set(unsigned i, int32_t value)  {set(i, (int64_t)value);}
       void set(unsigned i, uint32_t value) {set(i, (uint64_t)value);}
       void set(unsigned i, int64_t value);
       void set(unsigned i, uint64_t value);
       void set(unsigned i, const std::string &value);
+
       virtual void clear() {CBANG_TYPE_ERROR("Not a List or Dict");}
       virtual void erase(unsigned i) {CBANG_TYPE_ERROR("Not a List or Dict");}
 
@@ -220,54 +170,20 @@ namespace cb {
       virtual int indexOf(const std::string &key) const
         {CBANG_TYPE_ERROR("Not a Dict");}
 
-#define CBANG_JSON_INDEX_OF(TYPE)                                       \
-      int indexOf##TYPE(const std::string &key) const {                 \
+#define CBANG_JSON_VT(NAME, TYPE)                                       \
+      int indexOf##NAME(const std::string &key) const {                 \
         int index = indexOf(key);                                       \
-        return (index != -1 && get(index)->is##TYPE()) ? index : -1;    \
+        return (index != -1 && get(index)->is##NAME()) ? index : -1;    \
       }
-
-      CBANG_JSON_INDEX_OF(Null);
-      CBANG_JSON_INDEX_OF(Boolean);
-      CBANG_JSON_INDEX_OF(Number);
-      CBANG_JSON_INDEX_OF(String);
-      CBANG_JSON_INDEX_OF(List);
-      CBANG_JSON_INDEX_OF(Dict);
-
-      CBANG_JSON_INDEX_OF(S8);
-      CBANG_JSON_INDEX_OF(U8);
-      CBANG_JSON_INDEX_OF(S16);
-      CBANG_JSON_INDEX_OF(U16);
-      CBANG_JSON_INDEX_OF(S32);
-      CBANG_JSON_INDEX_OF(U32);
-      CBANG_JSON_INDEX_OF(S64);
-      CBANG_JSON_INDEX_OF(U64);
-
-#undef CBANG_JSON_INDEX_OF
+#include "ValueTypes.def"
 
       bool has(const std::string &key) const {return indexOf(key) != -1;}
 
-#define CBANG_JSON_HAS_KEY(TYPE)                                \
-      bool has##TYPE(const std::string &key) const {            \
-        return indexOf##TYPE(key) != -1;                        \
+#define CBANG_JSON_VT(NAME, TYPE)                               \
+      bool has##NAME(const std::string &key) const {            \
+        return indexOf##NAME(key) != -1;                        \
       }
-
-      CBANG_JSON_HAS_KEY(Null);
-      CBANG_JSON_HAS_KEY(Boolean);
-      CBANG_JSON_HAS_KEY(Number);
-      CBANG_JSON_HAS_KEY(String);
-      CBANG_JSON_HAS_KEY(List);
-      CBANG_JSON_HAS_KEY(Dict);
-
-      CBANG_JSON_HAS_KEY(S8);
-      CBANG_JSON_HAS_KEY(U8);
-      CBANG_JSON_HAS_KEY(S16);
-      CBANG_JSON_HAS_KEY(U16);
-      CBANG_JSON_HAS_KEY(S32);
-      CBANG_JSON_HAS_KEY(U32);
-      CBANG_JSON_HAS_KEY(S64);
-      CBANG_JSON_HAS_KEY(U64);
-
-#undef CBANG_JSON_HAS_KEY
+#include "ValueTypes.def"
 
       virtual const ValuePtr &get(const std::string &key) const
         {CBANG_TYPE_ERROR("Not a Dict");}
@@ -297,60 +213,30 @@ namespace cb {
       unsigned insert(const std::string &key, uint64_t value);
       unsigned insert(const std::string &key, int64_t value);
       unsigned insert(const std::string &key, const std::string &value);
+
       virtual void erase(const std::string &key)
         {CBANG_TYPE_ERROR("Not a Dict");}
       void merge(const Value &value);
 
       // Dict accessors
-#define CBANG_JSON_GET(NAME, TYPE)                              \
+#define CBANG_JSON_VT(NAME, TYPE)                               \
       TYPE get##NAME(const std::string &key) const {            \
         return get(key)->get##NAME();                           \
       }
+#include "ValueTypes.def"
 
-      CBANG_JSON_GET(Boolean, bool);
-      CBANG_JSON_GET(Number,  double);
-      CBANG_JSON_GET(String,  const std::string &);
-      CBANG_JSON_GET(List,    const Value &);
-      CBANG_JSON_GET(Dict,    const Value &);
-
-      CBANG_JSON_GET(S8,      int8_t);
-      CBANG_JSON_GET(U8,      uint8_t);
-      CBANG_JSON_GET(S16,     int16_t);
-      CBANG_JSON_GET(U16,     uint16_t);
-      CBANG_JSON_GET(S32,     int32_t);
-      CBANG_JSON_GET(U32,     uint32_t);
-      CBANG_JSON_GET(S64,     int64_t);
-      CBANG_JSON_GET(U64,     uint64_t);
-
-#undef CBANG_JSON_GET
-
-      std::string getAsString(const std::string &key) const
-      {return get(key)->asString();}
       Value &getList(const std::string &key) {return get(key)->getList();}
       Value &getDict(const std::string &key) {return get(key)->getDict();}
+      std::string getAsString(const std::string &key) const
+      {return get(key)->asString();}
 
       // Dict accessors with defaults
-#define CBANG_JSON_GET_DEFAULT(NAME, TYPE)                              \
-      TYPE get##NAME(const std::string &key,                            \
-                     const TYPE &defaultValue) const {                  \
+#define CBANG_JSON_VT(NAME, TYPE)                                       \
+      TYPE get##NAME(const std::string &key, TYPE defaultValue) const { \
         int index = indexOf##NAME(key);                                 \
         return index == -1 ? defaultValue : get(index)->get##NAME();    \
       }
-
-      CBANG_JSON_GET_DEFAULT(Boolean, bool);
-      CBANG_JSON_GET_DEFAULT(Number,  double);
-      CBANG_JSON_GET_DEFAULT(String,  std::string);
-
-      CBANG_JSON_GET_DEFAULT(S8,      int8_t);
-      CBANG_JSON_GET_DEFAULT(U8,      uint8_t);
-      CBANG_JSON_GET_DEFAULT(S16,     int16_t);
-      CBANG_JSON_GET_DEFAULT(U16,     uint16_t);
-      CBANG_JSON_GET_DEFAULT(S32,     int32_t);
-      CBANG_JSON_GET_DEFAULT(U32,     uint32_t);
-      CBANG_JSON_GET_DEFAULT(S64,     int64_t);
-      CBANG_JSON_GET_DEFAULT(U64,     uint64_t);
-
-#undef CBANG_JSON_GET_DEFAULT
+#include "ValueTypes.def"
 
       const ValuePtr &get(const std::string &key,
                           const ValuePtr &defaultValue) const {
@@ -374,11 +260,22 @@ namespace cb {
       // Formatting
       std::string format(char type) const;
       std::string format(char type, int index, const std::string &name,
-                         const String::FormatCB &cb) const;
-      std::string format(const std::string &s,
-                         const String::FormatCB &cb) const;
+                         const std::string &defaultValue = "") const;
       std::string format(const std::string &s,
                          const std::string &defaultValue = "") const;
+
+      // Visitor
+      typedef std::function<void (const Value &value, const Value *parent,
+                                  unsigned index)> const_visitor_t;
+      typedef std::function<void (Value &value, Value *parent, unsigned index)>
+      visitor_t;
+
+      void visit(const_visitor_t visitor, bool depthFirst = true) const;
+      void visit(visitor_t visitor, bool depthFirst = true);
+
+      virtual void visitChildren
+      (const_visitor_t visitor, bool depthFirst = true) const {}
+      virtual void visitChildren(visitor_t visitor, bool depthFirst = true) {}
 
       // Operators
       const ValuePtr &operator[](unsigned i) const {return get(i);}

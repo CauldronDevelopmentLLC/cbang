@@ -30,63 +30,36 @@
 
 \******************************************************************************/
 
-#include "Dict.h"
+#pragma once
 
-#include <cbang/Exception.h>
-#include <cbang/String.h>
+#include "Factory.h"
 
-#include <cctype>
-
-using namespace std;
-using namespace cb::JSON;
+#include <functional>
 
 
-ValuePtr Dict::copy(bool deep) const {
-  ValuePtr c = createDict();
+namespace cb {
+  namespace JSON {
+    class Path {
+      std::string path;
+      std::vector<std::string> parts;
 
-  for (unsigned i = 0; i < size(); i++)
-    c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
+    public:
+      Path(const std::string &path);
 
-  return c;
-}
+      typedef std::function <ConstValuePtr (const std::string &path)> fail_cb_t;
 
+      ConstValuePtr select(const Value &value, fail_cb_t fail_cb = 0) const;
+      ConstValuePtr select(const Value &value,
+                           const ConstValuePtr &defaultValue) const;
 
-unsigned Dict::insert(const string &key, const ValuePtr &value) {
-  if (value->isList() || value->isDict()) simple = false;
-  return (unsigned)OrderedDict<ValuePtr>::insert(key, value);
-}
-
-
-void Dict::write(Sink &sink) const {
-  sink.beginDict(isSimple());
-
-  for (const_iterator it = begin(); it != end(); it++) {
-    if (!it->second->canWrite(sink)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
-  }
-
-  sink.endDict();
-}
+      ValuePtr select(Value &value, fail_cb_t fail_cb = 0) const;
+      ValuePtr select(Value &value, const ValuePtr &defaultValue) const;
 
 
-void Dict::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
-}
-
-
-void Dict::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
+#define CBANG_JSON_VT(NAME, TYPE)                                       \
+      TYPE select##NAME(const Value &value) const;                      \
+      TYPE select##NAME(const Value &value, TYPE defaultValue) const;
+#include "ValueTypes.def"
+   };
   }
 }
