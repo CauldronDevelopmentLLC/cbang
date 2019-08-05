@@ -43,6 +43,7 @@ Session::Session(const string &id, const IPAddress &ip) {
   setCreationTime(Time::now());
   setLastUsed(Time::now());
   setIP(ip.getIP());
+  insertDict("group");
 }
 
 
@@ -73,26 +74,16 @@ void Session::matchIP(const IPAddress &ip) const {
 
 
 bool Session::hasGroup(const string &group) const {
-  return groups.find(group) != groups.end();
+  return get("group")->getBoolean(group, false);
 }
 
 
 void Session::addGroup(const string &group) {
-  if (hasGroup(group)) return;
-  if (!hasList("groups")) insertList("groups");
-  get("groups")->append(group);
-  groups.insert(group);
+  get("group")->insertBoolean(group, true);
 }
 
 
 void Session::read(const JSON::Value &value) {
   for (unsigned i = 0; i < value.size(); i++)
     insert(value.keyAt(i), value.get(i));
-
-  groups.clear();
-  if (hasList("groups")) {
-    JSON::ValuePtr list = get("groups");
-    for (unsigned i = 0; i < list->size(); i++)
-      groups.insert(list->getString(i));
-  }
 }
