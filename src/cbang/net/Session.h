@@ -44,9 +44,6 @@
 
 namespace cb {
   class Session : public JSON::Dict {
-    typedef std::set<std::string> groups_t;
-    groups_t groups;
-
   public:
     Session(const JSON::Value &value) {read(value);}
     Session(const std::string &id, const IPAddress &ip);
@@ -69,9 +66,6 @@ namespace cb {
     void setIP(const IPAddress &ip) {insert("ip", ip.toString());}
     void matchIP(const IPAddress &ip) const;
 
-    typedef groups_t::const_iterator group_iterator;
-    group_iterator groupsBegin() const {return groups.begin();}
-    group_iterator groupsEnd() const {return groups.end();}
     bool hasGroup(const std::string &group) const;
     void addGroup(const std::string &group);
 

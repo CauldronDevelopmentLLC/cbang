@@ -78,11 +78,13 @@ bool HTTPAccessHandler::operator()(Request &req) {
     allow = userAllow(user);
     deny = userDeny(user);
 
-    for (Session::group_iterator it = session->groupsBegin();
-         it != session->groupsEnd(); it++) {
-      if (!allow) allow = groupAllow(*it);
-      if (!deny) deny = groupDeny(*it);
-    }
+    auto &groups = *session->get("group");
+    for (unsigned i = 0; i < groups.size(); i++)
+      if (groups.getBoolean(i)) {
+        string group = groups.keyAt(i);
+        if (!allow) allow = groupAllow(group);
+        if (!deny) deny = groupDeny(group);
+      }
   }
 
   LOG_INFO(allow ? 5 : 3, "allow(" << req.getURI().getPath() << ", "
