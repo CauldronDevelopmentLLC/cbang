@@ -42,20 +42,23 @@ using namespace cb::JSON;
 
 Path::Path(const string &path) : path(path) {
   String::tokenize(path, parts, ".");
+  if (path.empty()) THROW("JSON Path cannot be empty");
 }
 
 
 ConstValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
-  ConstValuePtr ptr = &value;
+  ConstValuePtr ptr; // Cannot create pointer to passed value
   unsigned i;
 
   for (i = 0; i < parts.size(); i++) {
-    if (!ptr->isDict()) break;
+    const Value &v = i ? *ptr : value;
 
-    int index = ptr->indexOf(parts[i]);
+    if (!v.isDict()) break;
+
+    int index = v.indexOf(parts[i]);
     if (index == -1) break;
 
-    ptr = ptr->get(index);
+    ptr = v.get(index);
   }
 
   if (i == parts.size()) return ptr;

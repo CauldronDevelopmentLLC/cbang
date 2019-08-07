@@ -109,7 +109,7 @@ bool HTTPOAuth2LoginHandler::operator()(Request &req) {
     getOAuth2()->getRedirectURL(req.getURI().getPath(), session->getID());
 
   // Allow caller to override redirect URI
-  JSON::Value &args = req.parseArgs();
+  JSON::Value &args = *req.parseArgs();
   if (args.hasString("redirect_uri")) {
     string uri = args.getString("redirect_uri");
     redirectURI.set("redirect_uri", uri);

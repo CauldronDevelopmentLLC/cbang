@@ -87,7 +87,7 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
 
     if (names.find(i + 1) != names.end())
       req.insertArg(names.at(i + 1), results[i]);
-    else req.insertArg(results[i]);
+    else req.appendArg(results[i]);
   }
 
   // Replace path

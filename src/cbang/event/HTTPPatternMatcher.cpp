@@ -45,7 +45,7 @@ bool HTTPPatternMatcher::operator()(Request &req) {
   if (child.isNull()) return true;
 
   for (unsigned i = 1; i < m.size(); i++)
-    req.insertArg(m[1]);
+    req.appendArg(m[1]);
 
   if (replace.empty()) return (*child)(req);
 

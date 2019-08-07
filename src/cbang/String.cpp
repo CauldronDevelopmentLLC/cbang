@@ -858,15 +858,33 @@ string String::format(format_cb_t cb) {
         while (it2 != end() && *it2 != ')') name.push_back(*it2++);
 
         if (it2 != end() && ++it2 != end() && !name.empty()) {
-          result.append(cb(*it2, -1, name));
-          it = it2;
-          continue;
+          bool matched = true;
+          string s = cb(*it2, -1, name, matched);
+
+          if (matched) {
+            result.append(s);
+            it = it2;
+            continue;
+          }
         }
+
+        result.push_back('%');
         break;
       }
 
-      case '%': it++; break;
-      default: result.append(cb(*it++, index++, "")); continue;
+      case '%': break;
+
+      default: {
+        bool matched = true;
+        string s = cb(*it, index++, "", matched);
+
+        if (matched) {
+          result.append(s);
+          continue;
+        }
+
+        result.push_back('%');
+      }
       }
 
     } else if (*it == '%') {
@@ -876,6 +894,8 @@ string String::format(format_cb_t cb) {
 
     result.push_back(*it);
   }
+
+  if (escape) result.push_back('%');
 
   return result;
 }

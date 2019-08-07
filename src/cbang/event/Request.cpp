@@ -128,7 +128,8 @@ namespace {
 
 
 Request::Request(RequestMethod method, const URI &uri, const Version &version) :
-  method(method), originalURI(uri), uri(uri), version(version) {
+  method(method), originalURI(uri), uri(uri), version(version),
+  args(new JSON::Dict) {
   LOG_DEBUG(4, "created");
 }
 
@@ -188,7 +189,7 @@ SSL Request::getSSL() const {return connection->getSSL();}
 void Request::resetOutput() {getOutputBuffer().clear();}
 
 
-JSON::Value &Request::parseJSONArgs() {
+const JSON::ValuePtr &Request::parseJSONArgs() {
   Headers &hdrs = getInputHeaders();
 
   if (hdrs.hasContentType() &&
@@ -201,8 +202,7 @@ JSON::Value &Request::parseJSONArgs() {
 
       // Find start of dict & parse keys into request args
       if (reader.next() == '{') {
-        JSON::ValuePtr argsPtr = JSON::ValuePtr::Phony(&args);
-        JSON::Builder builder(argsPtr);
+        JSON::Builder builder(args);
         reader.parseDict(builder);
       }
     }
@@ -212,7 +212,7 @@ JSON::Value &Request::parseJSONArgs() {
 }
 
 
-JSON::Value &Request::parseQueryArgs() {
+const JSON::ValuePtr &Request::parseQueryArgs() {
   const URI &uri = getURI();
   for (URI::const_iterator it = uri.begin(); it != uri.end(); it++)
     insertArg(it->first, it->second);
@@ -220,7 +220,7 @@ JSON::Value &Request::parseQueryArgs() {
 }
 
 
-JSON::Value &Request::parseArgs() {
+const JSON::ValuePtr &Request::parseArgs() {
   parseJSONArgs();
   parseQueryArgs();
   return args;
