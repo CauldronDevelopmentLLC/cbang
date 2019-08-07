@@ -158,8 +158,10 @@ void Option::unset() {
 
 
 void Option::set(const string &value) {
-  if (isDepreciated())
-    THROW("Option '" << name << "' has been depreciated: " << help);
+  if (isDepreciated()) {
+    LOG_WARNING("Option '" << name << "' has been depreciated: " << help);
+    return;
+  }
   if (isSet() && this->value == value) return;
 
   uint32_t oldFlags = flags;
