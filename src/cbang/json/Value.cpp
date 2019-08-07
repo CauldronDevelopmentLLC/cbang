@@ -180,20 +180,32 @@ string Value::format(char type) const {
 
 
 string Value::format(char type, int index, const string &name,
-                     const string &defaultValue) const {
+                     bool &matched) const {
   if (index < 0) {
     if (has(name)) return get(name)->format(type);
     if (type == 'b') return String(false);
   } else if ((unsigned)index < size()) return get(index)->format(type);
 
-  return defaultValue;
+  matched = false;
+  return "";
 }
 
 
 string Value::format(const string &s, const string &defaultValue) const {
   auto cb =
-    [&] (char type, int index, const string &name) {
-      return format(type, index, name, defaultValue);
+    [&] (char type, int index, const string &name, bool &matched) {
+      string result = format(type, index, name, matched);
+      return matched ? result : defaultValue;
+    };
+
+  return String(s).format(cb);
+}
+
+
+string Value::format(const string &s) const {
+  auto cb =
+    [&] (char type, int index, const string &name, bool &matched) {
+      return format(type, index, name, matched);
     };
 
   return String(s).format(cb);

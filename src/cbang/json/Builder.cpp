@@ -63,6 +63,7 @@ void Builder::beginList(bool simple) {add(createList());}
 
 
 void Builder::beginAppend() {
+  if (stack.empty() || !stack.back()->isList()) TYPE_ERROR("Not a List");
   assertNotPending();
   appendNext = true;
 }
@@ -86,6 +87,7 @@ bool Builder::has(const string &key) const {
 
 
 void Builder::beginInsert(const string &key) {
+  if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
   assertNotPending();
   nextKey = key;
 }

@@ -1,0 +1,8 @@
+---
+- &LEFT { x: 0, y: 2 }
+- &BIG { r: 10 }
+- &SMALL { r: 1 }
+
+- 
+  x: 1
+  << : [ *BIG, *LEFT, *SMALL ]

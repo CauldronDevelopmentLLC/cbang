@@ -260,9 +260,10 @@ namespace cb {
       // Formatting
       std::string format(char type) const;
       std::string format(char type, int index, const std::string &name,
-                         const std::string &defaultValue = "") const;
+                         bool &matched) const;
       std::string format(const std::string &s,
-                         const std::string &defaultValue = "") const;
+                         const std::string &defaultValue) const;
+      std::string format(const std::string &s) const;
 
       // Visitor
       typedef std::function<void (const Value &value, const Value *parent,

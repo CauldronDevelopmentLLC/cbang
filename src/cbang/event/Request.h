@@ -42,7 +42,8 @@
 #include <cbang/net/IPAddress.h>
 #include <cbang/net/URI.h>
 #include <cbang/net/Session.h>
-#include <cbang/json/JSON.h>
+#include <cbang/json/Value.h>
+#include <cbang/json/Writer.h>
 
 #include <string>
 #include <iostream>
@@ -83,7 +84,7 @@ namespace cb {
       uint64_t bytesRead = 0;
       uint64_t bytesWritten = 0;
 
-      JSON::Dict args;
+      JSON::ValuePtr args;
 
     public:
       Request(RequestMethod method = RequestMethod(), const URI &uri = URI(),
@@ -157,22 +158,22 @@ namespace cb {
       virtual bool isWebsocket() const {return false;}
       virtual void resetOutput();
 
-      virtual void insertArg(const std::string &arg)
-      {args.insert(String(args.size()), arg);}
+      virtual void appendArg(const std::string &arg)
+      {args->insert(String(args->size()), arg);}
       virtual void insertArg(const std::string &key, const std::string &arg)
-      {args.insert(key, arg);}
-      virtual const JSON::Value &getArgs() const {return args;}
-      virtual JSON::Value &getArgs() {return args;}
+      {args->insert(key, arg);}
+      virtual const JSON::ValuePtr &getArgs() const {return args;}
+      virtual JSON::ValuePtr &getArgs() {return args;}
       virtual const std::string &getArg(unsigned i) const
-      {return args.getString(i);}
+      {return args->getString(i);}
       virtual const std::string &getArg(const std::string &key) const
-      {return args.getString(key);}
+      {return args->getString(key);}
       virtual std::string getArg(const std::string &key,
                                  const std::string &defaultVal) const
-      {return args.getString(key, defaultVal);}
-      virtual JSON::Value &parseJSONArgs();
-      virtual JSON::Value &parseQueryArgs();
-      virtual JSON::Value &parseArgs();
+      {return args->getString(key, defaultVal);}
+      virtual const JSON::ValuePtr &parseJSONArgs();
+      virtual const JSON::ValuePtr &parseQueryArgs();
+      virtual const JSON::ValuePtr &parseArgs();
 
       const IPAddress &getClientIP() const;
 

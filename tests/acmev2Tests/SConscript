@@ -1,0 +1,8 @@
+Import('*')
+
+# Local includes
+env.Append(CPPPATH = ['#'])
+
+prog = env.Program('acmev2tool', 'acmev2tool.cpp');
+
+Return('prog')

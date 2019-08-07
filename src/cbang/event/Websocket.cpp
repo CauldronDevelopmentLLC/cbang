@@ -38,6 +38,8 @@
 #include <cbang/openssl/Digest.h>
 #include <cbang/util/Random.h>
 
+#include <cstring> // memcpy()
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;

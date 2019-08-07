@@ -33,6 +33,9 @@
 #include "YAMLReader.h"
 
 #include "Builder.h"
+#include "TeeSink.h"
+#include "YAMLMergeSink.h"
+#include "Dict.h"
 
 #include <cbang/Math.h>
 #include <cbang/io/StringInputSource.h>
@@ -124,14 +127,91 @@ YAMLReader::YAMLReader(const InputSource &src) :
 
 
 void YAMLReader::parse(Sink &sink) {
-  vector<yaml_event_type_t> stack;
+  struct Frame {
+    yaml_event_type_t event;
+    string anchor;
+
+    Frame(yaml_event_type_t event, const string &anchor = string()) :
+      event(event), anchor(anchor) {}
+  };
+
+  vector<Frame> stack;
+  JSON::Dict anchors;
   yaml_event_t event;
   bool haveKey = false;
+  SmartPointer<Sink> target = SmartPointer<Sink>::Phony(&sink);
+
+  auto close_merge =
+    [&] () {
+      if (target.isInstance<YAMLMergeSink>()) {
+        auto sink = target.cast<YAMLMergeSink>();
+        if (!sink->getDepth()) target = sink->getTarget();
+      }
+    };
+
+  auto close_anchor =
+    [&] () {
+      if (!stack.back().anchor.empty()) {
+        auto tee = target.cast<TeeSink>();
+        auto builder = tee->getRight().cast<Builder>();
+        anchors.insert(stack.back().anchor, builder->getRoot());
+        target = tee->getLeft();
+      }
+    };
 
   while (true) {
     pri->parse(event);
 
     LOG_DEBUG(5, "YAML: " << _yaml_event_type_str(event.type));
+
+    // Handle anchors & tags
+    yaml_char_t *_anchor = 0;
+    yaml_char_t *_tag = 0;
+    switch (event.type) {
+    case YAML_SEQUENCE_START_EVENT:
+      _anchor = event.data.sequence_start.anchor;
+      _tag = event.data.sequence_start.tag;
+      break;
+
+    case YAML_MAPPING_START_EVENT:
+      _anchor = event.data.mapping_start.anchor;
+      _tag = event.data.mapping_start.tag;
+      break;
+
+    case YAML_SCALAR_EVENT:
+      _anchor = event.data.scalar.anchor;
+      _tag = event.data.scalar.tag;
+      break;
+
+    default: break;
+    }
+
+    string tag;
+    if (_tag) {
+      tag = (const char *)_tag;
+      LOG_DEBUG(5, "YAML: scalar tag=" << tag);
+    }
+
+    string anchor;
+    if (_anchor) anchor = (const char *)_anchor;
+
+    Frame *frame = stack.empty() ? 0 : &stack.back();
+
+    // Begin append
+    if (frame && frame->event == YAML_SEQUENCE_START_EVENT)
+      switch (event.type) {
+      case YAML_SEQUENCE_START_EVENT:
+      case YAML_MAPPING_START_EVENT:
+      case YAML_SCALAR_EVENT:
+      case YAML_ALIAS_EVENT:
+        target->beginAppend();
+        break;
+
+      default: break;
+      }
+
+    // Must be after begin append
+    if (!anchor.empty()) target = new TeeSink(target, new Builder);
 
     switch (event.type) {
     case YAML_NO_EVENT: PARSE_ERROR("YAML No event");
@@ -143,97 +223,123 @@ void YAMLReader::parse(Sink &sink) {
     case YAML_DOCUMENT_END_EVENT: yaml_event_delete(&event); return;
 
     case YAML_SEQUENCE_START_EVENT:
-      if (!stack.empty() && stack.back() == YAML_SEQUENCE_START_EVENT)
-        sink.beginAppend();
-      sink.beginList();
-      stack.push_back(event.type);
+      target->beginList();
+      stack.push_back(Frame(event.type, anchor));
       haveKey = false;
       break;
 
     case YAML_SEQUENCE_END_EVENT:
-      if (stack.empty() || stack.back() != YAML_SEQUENCE_START_EVENT)
+      if (!frame || frame->event != YAML_SEQUENCE_START_EVENT)
         PARSE_ERROR("Invalid YAML end sequence");
+
+      target->endList();
+      close_anchor();
       stack.pop_back();
-      sink.endList();
       break;
 
     case YAML_MAPPING_START_EVENT:
-      if (!stack.empty() && stack.back() == YAML_SEQUENCE_START_EVENT)
-        sink.beginAppend();
-      sink.beginDict();
-      stack.push_back(event.type);
+      target->beginDict();
+      stack.push_back(Frame(event.type, anchor));
       haveKey = false;
       break;
 
     case YAML_MAPPING_END_EVENT:
-      if (stack.empty() || stack.back() != YAML_MAPPING_START_EVENT)
+      if (!frame || frame->event != YAML_MAPPING_START_EVENT)
         PARSE_ERROR("Invalid YAML end mapping");
+
+      target->endDict();
+      close_anchor();
       stack.pop_back();
-      sink.endDict();
       break;
 
-    case YAML_ALIAS_EVENT: break; // Ignored
+    case YAML_ALIAS_EVENT: {
+      string anchor = (const char *)event.data.alias.anchor;
+      int i = anchors.indexOf(anchor);
+      if (i == -1) PARSE_ERROR("Invalid anchor '" << anchor << "'");
+
+      anchors.get(i)->write(*target);
+      haveKey = false;
+      break;
+    }
 
     case YAML_SCALAR_EVENT: {
       string value = string((const char *)event.data.scalar.value,
                             event.data.scalar.length);
 
-      if (!stack.empty()) {
-        if (stack.back() == YAML_SEQUENCE_START_EVENT) sink.beginAppend();
+      if (anchors.size() && value.find('%') != string::npos)
+        value = anchors.format(value);
 
-        else if (!haveKey) {
-          sink.beginInsert(value);
+      if (frame && frame->event == YAML_MAPPING_START_EVENT && !haveKey) {
+        // Handle special merge key but allow it to be quoted
+        if (value == "<<" && !event.data.scalar.quoted_implicit) {
+          target = new YAMLMergeSink(target);
+
+          if (tag != "!include") {
+            yaml_event_delete(&event);
+            continue;
+          }
+
+        } else {
+          // Mapping key
+          if (target->has(value))
+            PARSE_ERROR("Key '" << value << "' already in mapping");
+          target->beginInsert(value);
           haveKey = true;
           yaml_event_delete(&event);
           continue;
-
-        } else haveKey = false;
+        }
       }
 
-      string tag = event.data.scalar.tag ?
-        string((const char *)event.data.scalar.tag) : "";
-
-      LOG_DEBUG(5, "YAML: tag=" << tag);
-
       if (!tag.empty() && !event.data.scalar.plain_implicit) {
-        if (tag == YAML_INT_TAG) sink.write(String::parseS64(value));
+        if (tag == YAML_INT_TAG) target->write(String::parseS64(value));
         else if (tag == YAML_FLOAT_TAG)
-          sink.write(String::parseDouble(value));
+          target->write(String::parseDouble(value));
         else if (tag == YAML_BOOL_TAG)
-          sink.writeBoolean(String::parseBool(value));
-        else if (tag == YAML_NULL_TAG) sink.writeNull();
-        else if (tag == "!include")
-          YAMLReader(SystemUtilities::absolute(src.getName(), value))
-            .parse(sink);
-        else sink.write(value);
+          target->writeBoolean(String::parseBool(value));
+        else if (tag == YAML_NULL_TAG) target->writeNull();
+
+        else if (tag == "!include") {
+          YAMLReader reader(SystemUtilities::absolute(src.getName(), value));
+          reader.parse(*target);
+
+        } else target->write(value);
 
       } else {
         // Resolve implicit tags
-        if (event.data.scalar.quoted_implicit) sink.write(value);
-        else if (nullRE.match(value)) sink.writeNull();
+        if (event.data.scalar.quoted_implicit) target->write(value);
+        else if (nullRE.match(value)) target->writeNull();
         else if (boolRE.match(value))
-          sink.writeBoolean(String::parseBool(value));
+          target->writeBoolean(String::parseBool(value));
 
         else if (intRE.match(value)) {
-          if (value[0] == '-') sink.write(String::parseS64(value));
-          else sink.write(String::parseU64(value));
+          if (value[0] == '-') target->write(String::parseS64(value));
+          else target->write(String::parseU64(value));
 
         } else if (floatRE.match(value))
-          sink.write(String::parseDouble(value));
+          target->write(String::parseDouble(value));
 
         else if (infRE.match(value)) {
-          if (value[0] == '-') sink.write(-INFINITY);
-          else sink.write(INFINITY);
+          if (value[0] == '-') target->write(-INFINITY);
+          else target->write(INFINITY);
 
-        } else if (nanRE.match(value)) sink.write(NAN);
+        } else if (nanRE.match(value)) target->write(NAN);
 
-        else sink.write(value);
+        else target->write(value);
       }
 
+      // Close scaler anchor
+      if (!anchor.empty()) {
+        auto tee = target.cast<TeeSink>();
+        auto builder = tee->getRight().cast<Builder>();
+        anchors.insert(anchor, builder->getRoot());
+        target = tee->getLeft();
+      }
       break;
     }
     }
 
+    close_merge();
+    haveKey = false;
     yaml_event_delete(&event);
   }
 }

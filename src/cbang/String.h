@@ -207,8 +207,10 @@ namespace cb {
                                  const std::string &replace);
 
     // Formatting
-    typedef std::function<std::string (char type, int index,
-                                       const std::string &name)> format_cb_t;
+    typedef std::function
+    <std::string (char type, int index, const std::string &name, bool &matched)>
+    format_cb_t;
+
     std::string format(format_cb_t cb);
 
     static std::string makeFormatString(char type, const std::string &name);
