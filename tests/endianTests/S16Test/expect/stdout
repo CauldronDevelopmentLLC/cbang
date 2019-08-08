@@ -1,0 +1,6 @@
+-24237 = 0xffffffffffffa153 -> swap64(-24237) = 0x53a1ffffffffffff ->  (int64_t)swap64(swap64(-24237)) = 0xffffffffffffa153 = -24237
+-24237 = 0xffffffffffffa153 -> swap64(-24237) = 0x53a1ffffffffffff ->  (int32_t)swap64(swap64(-24237)) = 0xffffffffffffa153 = -24237
+-24237 = 0xffffffffffffa153 -> swap64(-24237) = 0x53a1ffffffffffff ->  (int16_t)swap64(swap64(-24237)) = 0xffffffffffffa153 = -24237
+-24237 = 0xffffffffffffa153 -> swap32(-24237) = 0x0000000053a1ffff ->  (int32_t)swap32(swap32(-24237)) = 0x00000000ffffa153 = -24237
+-24237 = 0xffffffffffffa153 -> swap32(-24237) = 0x0000000053a1ffff ->  (int16_t)swap32(swap32(-24237)) = 0x00000000ffffa153 = -24237
+-24237 = 0xffffffffffffa153 -> swap16(-24237) = 0x00000000000053a1 ->  (int16_t)swap16(swap16(-24237)) = 0x000000000000a153 = -24237

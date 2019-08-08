@@ -46,18 +46,23 @@
 #include <endian.h>
 #endif
 
-
+#if 0
 #define CBANG_SWAP16(OUT, IN)                                           \
-  inline OUT swap16(IN x) {return ((OUT)x << 8) | ((OUT)x >> 8);}
+  inline OUT swap16(IN x) {                                             \
+    return (((uint16_t)x & (uint16_t)0xff) << 8) |                      \
+      (((uint16_t)x & (uint16_t)0xff00U) >> 8);                         \
+  }
 
 #define CBANG_SWAP32(OUT, IN)                                           \
   inline OUT swap32(IN x) {                                             \
-    return ((OUT)swap16(x) << 16) | swap16((OUT)x >> 16);               \
+    return (swap16((uint32_t)x & (uint32_t)0xffffUL) << 16) |           \
+      (swap16((uint32_t)x & (uint32_t)0xffff0000UL) >> 16);             \
   }
 
 #define CBANG_SWAP64(OUT, IN)                                           \
   inline OUT swap64(IN x) {                                             \
-    return ((OUT)swap32(x) << 32) | swap32((OUT)x >> 32);               \
+    return (swap32((uint64_t)x & (uint64_t)0xffffffffULL) << 32) |      \
+      (swap32((uint64_t)x & (uint64_t)0xffffffff00000000ULL) >> 32);    \
   }
 
 CBANG_SWAP16(uint16_t, uint8_t);
@@ -90,9 +95,46 @@ CBANG_SWAP64(int64_t,  int64_t);
 #undef CBANG_SWAP16
 #undef CBANG_SWAP32
 #undef CBANG_SWAP64
+#endif
+
+#include <limits>
+
+template<typename T>
+uint16_t swap16(T _x) {
+  uint16_t x;
+
+  if (std::numeric_limits<T>::is_signed) x = (int16_t)_x;
+  else x = _x;
+
+  return (x << 8) | (x >> 8);
+}
+
+
+template<typename T>
+uint32_t swap32(T _x) {
+  uint32_t x;
+
+  if (std::numeric_limits<T>::is_signed) x = (int32_t)_x;
+  else x = _x;
+
+  return ((uint32_t)swap16(x) << 16) | swap16(x >> 16);
+}
+
+
+template<typename T>
+uint64_t swap64(T _x) {
+  uint64_t x;
+
+  if (std::numeric_limits<T>::is_signed) x = (int64_t)_x;
+  else x = _x;
+
+  return ((uint64_t)swap32(x) << 32) | swap32(x >> 32);
+}
+
 
 // TODO Should also swap the 64-bit parts.  Bug inherited from COSM.
 inline uint128_t swap128(uint128_t x) {return uint128_t(x.lo, x.hi);}
+
 
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define hton16(x)  swap16(x)
