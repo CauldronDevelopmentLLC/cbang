@@ -1,0 +1,3 @@
+-1411656312 = 0xffffffffabdbd588 -> swap64(-1411656312) = 0x88d5dbabffffffff ->  (int64_t)swap64(swap64(-1411656312)) = 0xffffffffabdbd588 = -1411656312
+-1411656312 = 0xffffffffabdbd588 -> swap64(-1411656312) = 0x88d5dbabffffffff ->  (int32_t)swap64(swap64(-1411656312)) = 0xffffffffabdbd588 = -1411656312
+-1411656312 = 0xffffffffabdbd588 -> swap32(-1411656312) = 0x0000000088d5dbab ->  (int32_t)swap32(swap32(-1411656312)) = 0x00000000abdbd588 = -1411656312
