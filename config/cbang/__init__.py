@@ -15,7 +15,6 @@ def configure_deps(conf, local = True, with_openssl = True):
     conf.CBConfig('bzip2', not local)
     conf.CBConfig('XML', not local)
     conf.CBConfig('sqlite3', not local)
-    if conf.CBConfig('event', False): conf.CBConfig('re2', not local)
     conf.CBConfig('libyaml', not local)
 
     if conf.CBCheckLib('leveldb') and conf.CBCheckLib('snappy'):
@@ -39,6 +38,8 @@ def configure_deps(conf, local = True, with_openssl = True):
             and not conf.CBCheckFunc('clock_gettime'):
         conf.CBRequireLib('rt')
         conf.CBRequireFunc('clock_gettime')
+
+    if conf.CBConfig('event', False): conf.CBConfig('re2', not local)
 
     if with_openssl: conf.CBConfig('openssl', False, version = '1.0.0')
     conf.CBConfig('chakra', False)
