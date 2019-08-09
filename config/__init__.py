@@ -277,7 +277,7 @@ def on_config_finish(conf):
 updated_csig = set()
 
 
-def decider_hack(dep, target, prev_ni):
+def decider_hack(dep, target, prev_ni, *args, **kwargs):
     from SCons.Util import MD5signature
 
     #print('%s ?= %s %s' % (dep, target, prev_ni.csig))

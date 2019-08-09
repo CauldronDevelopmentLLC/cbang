@@ -39,6 +39,7 @@ def configure_deps(conf, local = True, with_openssl = True):
         conf.CBRequireLib('rt')
         conf.CBRequireFunc('clock_gettime')
 
+    # Must be after 'rt'
     if conf.CBConfig('event', False): conf.CBConfig('re2', not local)
 
     if with_openssl: conf.CBConfig('openssl', False, version = '1.0.0')
