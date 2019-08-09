@@ -32,6 +32,8 @@
 
 #pragma once
 
+/// Based on https://tools.ietf.org/html/draft-ietf-acme-acme-09
+
 #include "KeyCert.h"
 
 #include <cbang/event/Client.h>
@@ -54,7 +56,6 @@ namespace cb {
       "https://acme-v02.api.letsencrypt.org";
     static std::string letsencrypt_staging =
       "https://acme-staging-v02.api.letsencrypt.org";
-
 
     class Account : public Event::RequestMethod::Enum {
       Event::Client &client;
