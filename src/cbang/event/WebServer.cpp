@@ -183,7 +183,7 @@ cb::SmartPointer<Request> WebServer::createRequest
 
 bool WebServer::handleRequest(Request &req) {
   if (logPrefix)
-    Logger::instance().setThreadPrefix(String::printf("#%lld", req.getID()));
+    Logger::instance().setThreadPrefix(String::printf("REQ%lld:", req.getID()));
 
   if (!allow(req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
 

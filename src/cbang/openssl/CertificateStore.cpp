@@ -95,5 +95,5 @@ void CertificateStore::verify(const Certificate &cert,
                               const Certificate &inter) const {
   CertificateChain chain;
   chain.add(inter);
-  CertificateStoreContext(store, cert, chain).verify();
+  CertificateStoreContext(*this, cert, chain).verify();
 }

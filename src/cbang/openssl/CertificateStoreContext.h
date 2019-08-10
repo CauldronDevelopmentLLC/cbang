@@ -32,18 +32,22 @@
 
 #pragma once
 
+#include "Certificate.h"
+#include "CertificateStore.h"
+#include "CertificateChain.h"
+
 #include <time.h>
 
 typedef struct x509_store_ctx_st X509_STORE_CTX;
 
 
 namespace cb {
-  class Certificate;
-  class CertificateStore;
-  class CertificateChain;
-
   class CertificateStoreContext {
     X509_STORE_CTX *ctx;
+
+    CertificateStore store;
+    Certificate cert;
+    CertificateChain chain;
 
     CertificateStoreContext(const CertificateStoreContext &o) {}
     CertificateStoreContext &operator=(const CertificateStoreContext &o)
