@@ -126,9 +126,15 @@ bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
     req.sendError(HTTPStatus::HTTP_NOT_FOUND);
 
   } catch (cb::Exception &e) {
-    if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
-    LOG_DEBUG(3, e);
-    req.sendError(e);
+    if (400 <= e.getCode() && e.getCode() < 600) {
+      LOG_WARNING(e.getMessage());
+      req.reply((HTTPStatus::enum_t)e.getCode());
+
+    } else {
+      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
+      LOG_DEBUG(3, e);
+      req.sendError(e);
+    }
 
   } catch (std::exception &e) {
     LOG_ERROR(e.what());

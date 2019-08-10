@@ -52,22 +52,13 @@ CertificateStoreContext::CertificateStoreContext(X509_STORE_CTX *ctx) :
 
 CertificateStoreContext::CertificateStoreContext(const CertificateStore &store,
                                                  const Certificate &cert) :
-  ctx(X509_STORE_CTX_new()) {
-  if (!X509_STORE_CTX_init(ctx, store.getX509_STORE(), cert.getX509(), 0))
-    THROW("Failed to create certificate store context: "
-           << SSL::getErrorStr());
-}
+  ctx(X509_STORE_CTX_new()), store(store), cert(cert) {}
 
 
 CertificateStoreContext::
 CertificateStoreContext(const CertificateStore &store, const Certificate &cert,
                         const CertificateChain &chain) :
-  ctx(X509_STORE_CTX_new()) {
-  if (!X509_STORE_CTX_init(ctx, store.getX509_STORE(), cert.getX509(),
-                           chain.getX509_CHAIN()))
-    THROW("Failed to create certificate store context: "
-           << SSL::getErrorStr());
-}
+  ctx(X509_STORE_CTX_new()), store(store), cert(cert), chain(chain) {}
 
 
 CertificateStoreContext::~CertificateStoreContext() {
@@ -76,12 +67,12 @@ CertificateStoreContext::~CertificateStoreContext() {
 
 
 void CertificateStoreContext::set(const Certificate &cert) {
-  X509_STORE_CTX_set_cert(ctx, cert.getX509());
+  this->cert = cert;
 }
 
 
 void CertificateStoreContext::set(const CertificateChain &chain) {
-  X509_STORE_CTX_set_chain(ctx, chain.getX509_CHAIN());
+  this->chain = chain;
 }
 
 
@@ -172,7 +163,14 @@ void CertificateStoreContext::setTime(unsigned long flags, time_t t) {
 
 
 void CertificateStoreContext::verify() const {
+  if (!X509_STORE_CTX_init(ctx, store.getX509_STORE(), cert.getX509(),
+                           chain.getX509_CHAIN()))
+    THROW("Failed to create certificate store context: "
+          << SSL::getErrorStr());
+
   if (!X509_verify_cert(ctx))
     THROW("Failed to verify certificate: " << getErrorString(getError())
-           << ": " << SSL::getErrorStr());
+          << ": " << SSL::getErrorStr());
+
+  X509_STORE_CTX_cleanup(ctx);
 }
