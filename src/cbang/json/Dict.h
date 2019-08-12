@@ -61,6 +61,7 @@ namespace cb {
       Dict &getDict() {return *this;}
       const Dict &getDict() const {return *this;}
 
+      bool toBoolean() const {return size();}
       unsigned size() const {return Super_T::size();}
       const std::string &keyAt(unsigned i) const
       {return Super_T::keyAt(i);}

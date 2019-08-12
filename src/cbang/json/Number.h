@@ -119,6 +119,7 @@ namespace cb {
 
 #undef CBANG_NUM_FUNCS
 
+      bool toBoolean() const {return value;}
       void write(Sink &sink) const {sink.write(value);}
     };
 
