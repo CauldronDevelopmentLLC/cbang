@@ -104,6 +104,7 @@ namespace cb {
       virtual Value &getList() {CBANG_TYPE_ERROR("Not a List");}
       virtual Value &getDict() {CBANG_TYPE_ERROR("Not a Dict");}
 
+      virtual bool toBoolean() const {return false;}
       virtual unsigned size() const {CBANG_TYPE_ERROR("Not a List or Dict");}
       bool empty() const {return !size();}
 
@@ -284,6 +285,7 @@ namespace cb {
         {return get(key);}
 
       virtual void write(Sink &sink) const = 0;
+
       std::string toString(unsigned indent = 0, bool compact = false) const;
       std::string asString() const;
     };

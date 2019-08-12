@@ -56,6 +56,7 @@ namespace cb {
       Value &getList() {return *this;}
       const Value &getList() const {return *this;}
 
+      bool toBoolean() const {return size();}
       unsigned size() const {return Super_T::size();}
 
       const ValuePtr &get(unsigned i) const;

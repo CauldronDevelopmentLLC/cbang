@@ -61,6 +61,7 @@ namespace cb {
       uint32_t getU32() const;
       int64_t getS64() const;
       uint64_t getU64() const;
+      bool toBoolean() const {return getBoolean();}
       const std::string &getString() const {return getValue();}
       void write(Sink &sink) const {sink.write(s);}
     };

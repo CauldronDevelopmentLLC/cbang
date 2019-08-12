@@ -52,6 +52,7 @@ namespace cb {
       bool isBoolean() const {return true;}
       ValuePtr copy(bool deep = false) const {return instancePtr();}
       bool getBoolean() const {return false;}
+      bool toBoolean() const {return false;}
       void write(Sink &sink) const {sink.writeBoolean(false);}
     };
   }
