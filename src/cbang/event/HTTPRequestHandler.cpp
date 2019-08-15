@@ -62,7 +62,9 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
     req.reply();
 
   } catch (const Exception &e) {
-    LOG_ERROR(e);
+    if (400 <= e.getCode() && e.getCode() < 600) LOG_WARNING(e.getMessage());
+    else LOG_ERROR(e);
+
     req.setContentType("application/json");
     req.sendError(e);
   }
