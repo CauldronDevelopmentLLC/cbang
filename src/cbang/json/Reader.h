@@ -58,6 +58,8 @@ namespace cb {
       ValuePtr parse();
       static ValuePtr parse(const InputSource &src);
       static ValuePtr parseString(const std::string &s);
+      static void parse(const InputSource &src, Sink &sink);
+      static void parseString(const std::string &s, Sink &sink);
 
       unsigned getLine() const {return line;}
       unsigned getColumn() const {return column;}
