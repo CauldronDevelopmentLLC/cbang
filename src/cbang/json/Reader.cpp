@@ -104,6 +104,16 @@ SmartPointer<Value> Reader::parseString(const string &s) {
 }
 
 
+void Reader::parse(const InputSource &src, Sink &sink) {
+  Reader(src).parse(sink);
+}
+
+
+void Reader::parseString(const string &s, Sink &sink) {
+  parse(StringInputSource(s), sink);
+}
+
+
 char Reader::get() {
   char c = stream.get();
 
