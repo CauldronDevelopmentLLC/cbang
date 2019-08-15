@@ -127,7 +127,8 @@ bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
 
   } catch (cb::Exception &e) {
     if (400 <= e.getCode() && e.getCode() < 600) {
-      LOG_WARNING(e.getMessage());
+      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientIP() << ':'
+                  << e.getMessage());
       req.reply((HTTPStatus::enum_t)e.getCode());
 
     } else {
