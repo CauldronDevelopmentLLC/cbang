@@ -33,6 +33,7 @@
 #include <cbang/net/Base64.h>
 
 #include <cbang/Catch.h>
+#include <cbang/os/SystemUtilities.h>
 
 #include <iostream>
 
@@ -41,17 +42,24 @@ using namespace cb;
 
 
 int usage(const char *name) {
-  cerr << "Usage: " << name << " <-d | -e> <string>" << endl;
+  cerr << "Usage: " << name << " <-d | -e | -u | -U> [<string>]" << endl;
   return 1;
 }
 
 
 int main(int argc, char *argv[]) {
   try {
-    if (argc != 3) return usage(argv[0]);
+    string input;
+    if (argc == 2) input = SystemUtilities::read(cin);
+    else if (argc == 3) input = argv[2];
+    else return usage(argv[0]);
 
-    if (string("-d") == argv[1]) cout << Base64().decode(argv[2]) << endl;
-    else if (string("-e") == argv[1]) cout << Base64().encode(argv[2]) << endl;
+    if (string("-d") == argv[1]) cout << Base64().decode(input) << endl;
+    else if (string("-e") == argv[1]) cout << Base64().encode(input) << endl;
+    else if (string("-u") == argv[1])
+      cout << URLBase64().encode(input) << endl;
+    else if (string("-U") == argv[1])
+      cout << URLBase64().decode(input) << endl;
     else return usage(argv[0]);
 
     return 0;
