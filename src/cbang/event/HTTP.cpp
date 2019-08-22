@@ -128,11 +128,11 @@ bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
   } catch (cb::Exception &e) {
     if (400 <= e.getCode() && e.getCode() < 600) {
       LOG_WARNING("REQ" << req.getID() << ':' << req.getClientIP() << ':'
-                  << e.getMessage());
+                  << e.getMessages());
       req.reply((HTTPStatus::enum_t)e.getCode());
 
     } else {
-      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessage());
+      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessages());
       LOG_DEBUG(3, e);
       req.sendError(e);
     }

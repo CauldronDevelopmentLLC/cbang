@@ -233,6 +233,7 @@ namespace cb {
       virtual void sendError(HTTPStatus code);
       virtual void sendError(HTTPStatus code, const std::string &message);
       virtual void sendJSONError(HTTPStatus code, const std::string &message);
+      virtual void sendError(HTTPStatus code, const Exception &e);
       virtual void sendError(const Exception &e);
       virtual void sendError(const std::exception &e);
 

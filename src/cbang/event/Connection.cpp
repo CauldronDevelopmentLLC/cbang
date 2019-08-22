@@ -429,8 +429,8 @@ void Connection::readFirstLine() {
     readHeader();
 
   } catch (const Exception &e) {
-    LOG_ERROR(e.getMessage());
-    if (incoming) getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+    LOG_ERROR(e.getMessages());
+    if (incoming) getRequest()->sendError(HTTP_BAD_REQUEST, e);
     else fail(CONN_ERR_EXCEPTION);
   }
 }
@@ -447,8 +447,8 @@ bool Connection::tryReadHeader() {
     return done;
 
   } catch (const Exception &e) {
-    LOG_ERROR(e.getMessage());
-    if (incoming) getRequest()->sendError(HTTP_BAD_REQUEST, e.getMessage());
+    LOG_ERROR(e.getMessages());
+    if (incoming) getRequest()->sendError(HTTP_BAD_REQUEST, e);
     else fail(CONN_ERR_EXCEPTION);
   }
 
