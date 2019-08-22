@@ -540,10 +540,7 @@ void Request::sendError(HTTPStatus code, const string &msg) {
 }
 
 
-void Request::sendError(const Exception &e) {
-  HTTPStatus code = (HTTPStatus::enum_t)e.getTopCode();
-  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
-
+void Request::sendError(HTTPStatus code, const Exception &e) {
   if (getContentType() == "application/json") {
     auto writer = getJSONWriter();
 
@@ -556,6 +553,13 @@ void Request::sendError(const Exception &e) {
     reply(code);
 
   } else sendError(code, e.getMessages());
+}
+
+
+void Request::sendError(const Exception &e) {
+  HTTPStatus code = (HTTPStatus::enum_t)e.getTopCode();
+  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
+  sendError(code, e);
 }
 
 
