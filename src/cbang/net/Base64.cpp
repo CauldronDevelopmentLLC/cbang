@@ -41,6 +41,15 @@ using namespace std;
 using namespace cb;
 
 
+namespace {
+  char next(string::const_iterator &it, string::const_iterator end) {
+    char c = *it++;
+    while (it != end && isspace(*it)) it++;
+    return c;
+  }
+}
+
+
 const char *Base64::encodeTable =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -72,14 +81,34 @@ string Base64::encode(const string &s) const {
 string Base64::encode(const char *_s, unsigned length) const {
   const uint8_t *s = (uint8_t *)_s;
   const uint8_t *end = s + length;
-  string result;
-  unsigned size = length / 3 * 4 + 4; // Not exact
-  if (width) size += (size / width) * 2;
-  result.reserve(size);
 
-  unsigned col = 0;
+  struct Result : public string {
+    unsigned col = 0;
+    unsigned width;
+
+    Result(unsigned length, unsigned width) : width(width) {
+      unsigned size = length / 3 * 4 + 4; // Not exact
+      if (width) size += (size / width) * 2;
+      reserve(size);
+    }
+
+    void append(char c) {
+      if (width) {
+        if (col == width) {
+          col = 0;
+          string::append("\r\n");
+
+        } else col++;
+      }
+
+      string::append(1, c);
+    }
+  };
+
+  Result result(length, width);
   int padding = 0;
   uint8_t a, b, c;
+
   while (s != end) {
     a = *s++;
     if (s == end) {c = b = 0; padding = 2;}
@@ -89,20 +118,12 @@ string Base64::encode(const char *_s, unsigned length) const {
       else c = *s++;
     }
 
-    result += encode(63 & (a >> 2));
-    result += encode(63 & (a << 4 | b >> 4));
-    if (padding == 2) {if (pad) result += pad;}
-    else result += encode(63 & (b << 2 | c >> 6));
-    if (padding) {if (pad) result += pad;}
-    else result += encode(63 & c);
-
-    if (s != end && width) {
-      col += 4;
-      if (col == width) {
-        col = 0;
-        result += "\r\n";
-      }
-    }
+    result.append(encode(63 & (a >> 2)));
+    result.append(encode(63 & (a << 4 | b >> 4)));
+    if (padding == 2) {if (pad) result.append(pad);}
+    else result.append(encode(63 & (b << 2 | c >> 6)));
+    if (padding) {if (pad) result.append(pad);}
+    else result.append(encode(63 & c));
   }
 
   return result;
@@ -122,7 +143,7 @@ string Base64::decode(const string &s) const {
     char y = it == s.end() ? -2 : decode(next(it, s.end()));
     char z = it == s.end() ? -2 : decode(next(it, s.end()));
 
-    if (w == -2 || x == -2 || w == -1 || x == -1 || y == -1 || z == -1)
+    if (w == -1 || w == -2 || x == -1 || x == -2 || y == -1 || z == -1)
       THROW("Invalid Base64 data at " << (it - s.begin()));
 
     result += (char)(w << 2 | x >> 4);
@@ -136,11 +157,8 @@ string Base64::decode(const string &s) const {
 }
 
 
-char Base64::next(string::const_iterator &it,
-                  string::const_iterator end) {
-  char c = *it++;
-  while (it != end && isspace(*it)) it++;
-  return c;
+string Base64::decode(const char *s, unsigned length) const {
+  return decode(string(s, length));
 }
 
 
