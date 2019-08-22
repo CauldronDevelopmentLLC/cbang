@@ -54,10 +54,9 @@ namespace cb {
     std::string encode(const std::string &s) const;
     std::string encode(const char *s, unsigned length) const;
     std::string decode(const std::string &s) const;
+    std::string decode(const char *s, unsigned length) const;
 
   protected:
-    static char next(std::string::const_iterator &it,
-                     std::string::const_iterator end);
     char encode(int x) const;
     int decode(char x) const;
   };
