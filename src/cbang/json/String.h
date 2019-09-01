@@ -55,14 +55,14 @@ namespace cb {
       ValueType getType() const {return JSON_STRING;}
       bool isString() const {return true;}
       ValuePtr copy(bool deep = false) const {return new String(s);}
-      bool getBoolean() const {return cb::String::parseBool(getString());}
+      bool getBoolean() const;
       double getNumber() const;
       int32_t getS32() const;
       uint32_t getU32() const;
       int64_t getS64() const;
       uint64_t getU64() const;
       bool toBoolean() const {return getBoolean();}
-      const std::string &getString() const {return getValue();}
+      const std::string &getString() const {return s;}
       void write(Sink &sink) const {sink.write(s);}
     };
   }

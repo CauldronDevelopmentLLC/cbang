@@ -34,6 +34,7 @@
 #include "Value.h"
 
 #include <cbang/String.h>
+#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb;
@@ -53,11 +54,16 @@ ConstValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
   for (i = 0; i < parts.size(); i++) {
     const Value &v = i ? *ptr : value;
 
-    if (!v.isDict()) break;
+    int index = -1;
 
-    int index = v.indexOf(parts[i]);
-    if (index == -1) break;
+    if (v.isList())
+      try {
+        index = String::parseU32(parts[i], true);
+      } catch (const Exception &e) {}
 
+    else if (v.isDict()) index = v.indexOf(parts[i]);
+
+    if (index == -1 || (int)v.size() <= index) break;
     ptr = v.get(index);
   }
 

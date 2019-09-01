@@ -113,20 +113,21 @@ namespace cb {
     static bool isInteger(const std::string &s);
     static bool isNumber(const std::string &s);
 
-    static uint8_t parseU8(const std::string &s);
-    static int8_t parseS8(const std::string &s);
-    static uint16_t parseU16(const std::string &s);
-    static int16_t parseS16(const std::string &s);
-    static uint32_t parseU32(const std::string &s);
-    static int32_t parseS32(const std::string &s);
-    static uint64_t parseU64(const std::string &s);
-    static int64_t parseS64(const std::string &s);
-    static uint128_t parseU128(const std::string &s);
-    static double parseDouble(const std::string &s);
-    static float parseFloat(const std::string &s);
-    static bool parseBool(const std::string &s);
+    static uint8_t parseU8(const std::string &s, bool full = false);
+    static int8_t parseS8(const std::string &s, bool full = false);
+    static uint16_t parseU16(const std::string &s, bool full = false);
+    static int16_t parseS16(const std::string &s, bool full = false);
+    static uint32_t parseU32(const std::string &s, bool full = false);
+    static int32_t parseS32(const std::string &s, bool full = false);
+    static uint64_t parseU64(const std::string &s, bool full = false);
+    static int64_t parseS64(const std::string &s, bool full = false);
+    static uint128_t parseU128(const std::string &s, bool full = false);
+    static double parseDouble(const std::string &s, bool full = false);
+    static float parseFloat(const std::string &s, bool full = false);
+    static bool parseBool(const std::string &s, bool full = false);
 
-    template <typename T> static T parse(const std::string &s);
+    template <typename T> static T parse(const std::string &s,
+                                         bool full = false);
 
     static std::string trimLeft(const std::string &s,
                                 const std::string &delims = DEFAULT_DELIMS);
