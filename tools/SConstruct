@@ -1,0 +1,23 @@
+import os
+
+env = Environment(ENV = os.environ,
+                  TARGET_ARCH = os.environ.get('TARGET_ARCH', 'x86'))
+env.Tool('config', toolpath = [Dir('#/..')])
+env.CBLoadTools('compiler cbang', paths = [str(Dir('#/..'))])
+conf = env.CBConfigure()
+
+# Build Info
+env.CBLoadTool('build_info')
+env.Replace(BUILD_INFO_NS = 'cb::BuildInfo')
+
+# Configure
+if not env.GetOption('clean'):
+    conf.CBConfig('compiler')
+    conf.CBConfig('cbang')
+    env.CBDefine('USING_CBANG') # Using CBANG macro namespace
+
+conf.Finish()
+
+# Tools
+for tool in ['acmev2', 'request']:
+  Default(env.Program(tool, tool + '.cpp'))

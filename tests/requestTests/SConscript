@@ -1,8 +1,0 @@
-Import('*')
-
-# Local includes
-env.Append(CPPPATH = ['#'])
-
-prog = env.Program('request', 'request.cpp');
-
-Return('prog')
