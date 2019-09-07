@@ -93,6 +93,19 @@ namespace cb {
                 socketName, flags);
       }
 
+      void ping(callback_t cb);
+      template <class T>
+      void ping(T *obj, typename Callback<T>::member_t member) {
+        using namespace std::placeholders;
+        ping(std::bind(member, obj, _1));
+      }
+
+      void close(callback_t cb);
+      template <class T>
+      void close(T *obj, typename Callback<T>::member_t member) {
+        using namespace std::placeholders;
+        close(std::bind(member, obj, _1));
+      }
 
       void query(callback_t cb, const std::string &s,
                  const SmartPointer<const JSON::Value> &dict = 0);
