@@ -141,6 +141,8 @@ namespace cb {
                      unsigned port = 3306,
                      const std::string &socketName = std::string(),
                      flags_t flags = FLAG_DEFAULTS);
+      bool ping();
+      bool pingNB();
       void close();
       bool closeNB();
       void use(const std::string &db);
@@ -268,6 +270,7 @@ namespace cb {
       // Continue non-blocking calls
       bool closeContinue(unsigned ready);
       bool connectContinue(unsigned ready);
+      bool pingContinue(unsigned ready);
       bool useContinue(unsigned ready);
       bool queryContinue(unsigned ready);
       bool storeResultContinue(unsigned ready);

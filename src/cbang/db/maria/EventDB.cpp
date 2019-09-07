@@ -211,12 +211,12 @@ void EventDB::callback(callback_t cb) {
   auto response =
     [this, cb] (Event::Event &e, int fd, unsigned flags) {
       try {
-        if (continueNB(event_flags_to_db_ready(flags))) {
+        if (continueNB(event_flags_to_db_ready(flags)))
           TRY_CATCH_ERROR(cb(EventDB::EVENTDB_DONE));
-        } else addEvent(e);
+        else addEvent(e);
 
       } catch (const Exception &e) {
-        cb(EventDB::EVENTDB_ERROR);
+        TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));
       }
     };
 
@@ -227,9 +227,36 @@ void EventDB::callback(callback_t cb) {
 void EventDB::connect(callback_t cb, const string &host, const string &user,
                       const string &password, const string &dbName,
                       unsigned port, const string &socketName, flags_t flags) {
-  if (connectNB(host, user, password, dbName, port, socketName, flags))
-    cb(EVENTDB_DONE);
-  else callback(cb);
+  try {
+    if (connectNB(host, user, password, dbName, port, socketName, flags))
+      TRY_CATCH_ERROR(cb(EVENTDB_DONE));
+    else callback(cb);
+
+  } catch (const Exception &e) {
+    TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));
+  }
+}
+
+
+void EventDB::ping(callback_t cb) {
+  try {
+    if (pingNB()) TRY_CATCH_ERROR(cb(EVENTDB_DONE));
+    else callback(cb);
+
+  } catch (const Exception &e) {
+    TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));
+  }
+}
+
+
+void EventDB::close(callback_t cb) {
+  try {
+    if (closeNB()) TRY_CATCH_ERROR(cb(EVENTDB_DONE));
+    else callback(cb);
+
+  } catch (const Exception &e) {
+    TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));
+  }
 }
 
 

@@ -201,6 +201,24 @@ bool DB::connectNB(const string &host, const string &user,
 }
 
 
+bool DB::ping() {return !mysql_ping(db);}
+
+
+bool DB::pingNB() {
+  int ret = 0;
+  status = mysql_ping_start(&ret, db);
+
+  if (status) {
+    continueFunc = &DB::pingContinue;
+    return false;
+  }
+
+  connected = !ret;
+
+  return true;
+}
+
+
 void DB::close() {
   if (!connected) return;
 
@@ -838,6 +856,19 @@ bool DB::connectContinue(unsigned ready) {
 
   if (!db) RAISE_DB_ERROR("Failed to connect");
   connected = true;
+
+  return true;
+}
+
+
+bool DB::pingContinue(unsigned ready) {
+  LOG_DEBUG(5, __func__ << "()");
+
+  int ret = 0;
+  status = mysql_ping_cont(&ret, db, ready);
+  if (status) return false;
+
+  connected = !ret;
 
   return true;
 }
