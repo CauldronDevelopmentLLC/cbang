@@ -224,7 +224,7 @@ void DB::close() {
 
   if (db) {
     mysql_close(db);
-    db = 0;
+    db = mysql_init(0);
   }
   connected = false;
 }
@@ -243,7 +243,7 @@ bool DB::closeNB() {
     return false;
   }
 
-  db = 0;
+  db = mysql_init(0);
   connected = false;
   return true;
 }
@@ -841,7 +841,7 @@ bool DB::closeContinue(unsigned ready) {
   status = mysql_close_cont(db, ready);
   if (status) return false;
 
-  db = 0;
+  db = mysql_init(0);
   connected = false;
   return true;
 }
