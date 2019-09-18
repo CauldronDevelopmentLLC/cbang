@@ -32,18 +32,12 @@
 
 #include "File.h"
 
-//#include "Win32File.h"
 #include "UnixFile.h"
 
 using namespace std;
 using namespace cb;
 
-SmartPointer<FileFactoryBase> FileDevice::factory =
-//#ifdef _WIN32
-//  new FileFactory<Win32File>;
-//#else
-  new FileFactory<UnixFile>;
-//#endif
+SmartPointer<FileFactoryBase> FileDevice::factory = new FileFactory<UnixFile>;
 
 
 FileDevice::FileDevice(const string &path, ios::openmode mode, int perm) {

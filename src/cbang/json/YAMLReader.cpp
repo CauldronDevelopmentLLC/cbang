@@ -145,7 +145,10 @@ void YAMLReader::parse(Sink &sink) {
     [&] () {
       if (target.isInstance<YAMLMergeSink>()) {
         auto sink = target.cast<YAMLMergeSink>();
-        if (!sink->getDepth()) target = sink->getTarget();
+        if (!sink->getDepth()) {
+          target = sink->getTarget();
+          LOG_DEBUG(5, "YAML: merge closed");
+        }
       }
     };
 
@@ -156,6 +159,7 @@ void YAMLReader::parse(Sink &sink) {
         auto builder = tee->getRight().cast<Builder>();
         anchors.insert(stack.back().anchor, builder->getRoot());
         target = tee->getLeft();
+        LOG_DEBUG(5, "YAML: anchor '" << stack.back().anchor << "' closed");
       }
     };
 
@@ -193,7 +197,10 @@ void YAMLReader::parse(Sink &sink) {
     }
 
     string anchor;
-    if (_anchor) anchor = (const char *)_anchor;
+    if (_anchor) {
+      anchor = (const char *)_anchor;
+      LOG_DEBUG(5, "YAML: anchor=" << anchor);
+    }
 
     Frame *frame = stack.empty() ? 0 : &stack.back();
 
@@ -215,11 +222,11 @@ void YAMLReader::parse(Sink &sink) {
 
     switch (event.type) {
     case YAML_NO_EVENT: PARSE_ERROR("YAML No event");
-    case YAML_STREAM_START_EVENT: break;
+    case YAML_STREAM_START_EVENT: yaml_event_delete(&event); continue;
 
     case YAML_STREAM_END_EVENT: yaml_event_delete(&event); return;
 
-    case YAML_DOCUMENT_START_EVENT: break;
+    case YAML_DOCUMENT_START_EVENT: yaml_event_delete(&event); continue;
     case YAML_DOCUMENT_END_EVENT: yaml_event_delete(&event); return;
 
     case YAML_SEQUENCE_START_EVENT:
@@ -273,11 +280,10 @@ void YAMLReader::parse(Sink &sink) {
         // Handle special merge key but allow it to be quoted
         if (value == "<<" && !event.data.scalar.quoted_implicit) {
           target = new YAMLMergeSink(target);
-
-          if (tag != "!include") {
-            yaml_event_delete(&event);
-            continue;
-          }
+          LOG_DEBUG(5, "YAML: merge");
+          haveKey = true;
+          yaml_event_delete(&event);
+          continue;
 
         } else {
           // Mapping key
@@ -299,7 +305,9 @@ void YAMLReader::parse(Sink &sink) {
         else if (tag == YAML_NULL_TAG) target->writeNull();
 
         else if (tag == "!include") {
-          YAMLReader reader(SystemUtilities::absolute(src.getName(), value));
+          string path = SystemUtilities::absolute(src.getName(), value);
+          LOG_DEBUG(5, "YAML: !include " << path);
+          YAMLReader reader(path);
           reader.parse(*target);
 
         } else target->write(value);

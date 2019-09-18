@@ -120,41 +120,49 @@ void YAMLMergeSink::write(const string &value) {
 
 
 void YAMLMergeSink::beginList(bool simple) {
-  if (getDepth()) target->beginList(simple);
-  else list = true;
-  NullSink::beginList(simple);
+  if (getDepth()) ProxySink::beginList(simple);
+  else {
+    list = true;
+    NullSink::beginList(simple);
+  }
 }
 
 
 void YAMLMergeSink::beginAppend() {
-  if (getDepth() != 1) target->beginAppend();
-  NullSink::beginAppend();
+  if (getDepth() != 1) ProxySink::beginAppend();
+  else NullSink::beginAppend();
 }
 
 
 void YAMLMergeSink::endList() {
-  NullSink::endList();
-  if (getDepth()) target->endList();
-  else list = false;
+  if (2 < getDepth()) ProxySink::endList();
+  else {
+    list = false;
+    NullSink::endList();
+  }
 }
 
 
 void YAMLMergeSink::beginDict(bool simple) {
-  if (!inRoot()) target->beginDict(simple);
-  NullSink::beginDict(simple);
+  if (inRoot()) NullSink::beginDict(simple);
+  else ProxySink::beginDict(simple);
 }
 
 
+bool YAMLMergeSink::has(const string &key) const {
+  return inRootDict() ? NullSink::has(key) : ProxySink::has(key);
+}
+
 void YAMLMergeSink::beginInsert(const string &key) {
   // Ignore items already in the target
-  if (inRootDict()) setTarget(has(key) ? 0 : target);
+  if (inRootDict()) setTarget(ProxySink::has(key) ? 0 : target);
   ProxySink::beginInsert(key);
 }
 
 
 void YAMLMergeSink::endDict() {
-  NullSink::endDict();
-  if (!inRoot()) target->endDict();
+  if (getDepth() == 1 || (getDepth() == 2 && list)) NullSink::endDict();
+  else ProxySink::endDict();
 }
 
 
