@@ -120,6 +120,7 @@ namespace cb {
 
       // From DB
       using DB::connect;
+      using DB::close;
       using DB::query;
     };
   }

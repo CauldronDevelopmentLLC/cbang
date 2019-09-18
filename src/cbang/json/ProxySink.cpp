@@ -129,7 +129,7 @@ void ProxySink::endList() {
 
 void ProxySink::beginDict(bool simple) {
   NullSink::beginDict(simple);
-  target->beginDict(simple);
+  if (target.isSet()) target->beginDict(simple);
 }
 
 

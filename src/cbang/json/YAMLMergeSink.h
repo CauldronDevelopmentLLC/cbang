@@ -71,6 +71,7 @@ namespace cb {
 
       // Dict functions
       void beginDict(bool simple);
+      bool has(const std::string &key) const;
       void beginInsert(const std::string &key);
       void endDict();
 
