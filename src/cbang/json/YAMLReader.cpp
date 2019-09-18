@@ -91,23 +91,33 @@ namespace {
 class YAMLReader::Private {
 public:
   yaml_parser_t parser;
+  string name;
 
 
-  Private(istream &stream) {
+  Private(const InputSource &src) : name(src.getName()) {
     if (!yaml_parser_initialize(&parser))
       THROW("Failed to initialize YAML parser");
 
-    yaml_parser_set_input(&parser, _yaml_read_handler, &stream);
+    yaml_parser_set_input(&parser, _yaml_read_handler, &src.getStream());
   }
 
 
   ~Private() {yaml_parser_delete(&parser);}
 
 
+  FileLocation location(const yaml_mark_t &mark) const {
+    return FileLocation(name, mark.line, mark.column);
+  }
+
+
+  FileLocation location() const {return location(parser.mark);}
+
+
   void parse(yaml_event_t &event) {
     if (!yaml_parser_parse(&parser, &event))
-      PARSE_ERROR("Parser error " << parser.error << ": "
-                       << parser.problem);
+      throw ParseError
+        (SSTR("YAML: " << parser.problem), parser.error,
+         location(parser.problem_mark));
   }
 };
 
@@ -123,10 +133,58 @@ Regex YAMLReader::nanRE("\\.(([Nn]an)|(NAN))");
 
 
 YAMLReader::YAMLReader(const InputSource &src) :
-  src(src), pri(new Private(src.getStream())) {}
+  src(src), pri(new Private(src)) {}
 
 
 void YAMLReader::parse(Sink &sink) {
+  try {
+    _parse(sink);
+
+  } catch (const Exception &e) {
+    if (dynamic_cast<const ParseError *>(&e)) throw;
+    throw ParseError(SSTR("YAML: " << e.getMessage()), e.getCode(),
+                     pri->location());
+  }
+}
+
+
+ValuePtr YAMLReader::parse() {
+  Builder builder;
+  parse(builder);
+  return builder.getRoot();
+}
+
+
+SmartPointer<Value> YAMLReader::parse(const InputSource &src) {
+  return YAMLReader(src).parse();
+}
+
+
+SmartPointer<Value> YAMLReader::parseString(const string &s) {
+  return parse(StringInputSource(s));
+}
+
+
+void YAMLReader::parse(docs_t &docs) {
+  while (true) {
+    ValuePtr doc = parse();
+    if (doc.isNull()) break;
+    docs.push_back(doc);
+  }
+}
+
+
+void YAMLReader::parse(const InputSource &src, docs_t &docs) {
+  YAMLReader(src).parse(docs);
+}
+
+
+void YAMLReader::parseString(const string &s, docs_t &docs) {
+  parse(StringInputSource(s), docs);
+}
+
+
+void YAMLReader::_parse(Sink &sink) {
   struct Frame {
     yaml_event_type_t event;
     string anchor;
@@ -355,40 +413,4 @@ void YAMLReader::parse(Sink &sink) {
     haveKey = false;
     yaml_event_delete(&event);
   }
-}
-
-
-ValuePtr YAMLReader::parse() {
-  Builder builder;
-  parse(builder);
-  return builder.getRoot();
-}
-
-
-SmartPointer<Value> YAMLReader::parse(const InputSource &src) {
-  return YAMLReader(src).parse();
-}
-
-
-SmartPointer<Value> YAMLReader::parseString(const string &s) {
-  return parse(StringInputSource(s));
-}
-
-
-void YAMLReader::parse(docs_t &docs) {
-  while (true) {
-    ValuePtr doc = parse();
-    if (doc.isNull()) break;
-    docs.push_back(doc);
-  }
-}
-
-
-void YAMLReader::parse(const InputSource &src, docs_t &docs) {
-  YAMLReader(src).parse(docs);
-}
-
-
-void YAMLReader::parseString(const string &s, docs_t &docs) {
-  parse(StringInputSource(s), docs);
 }

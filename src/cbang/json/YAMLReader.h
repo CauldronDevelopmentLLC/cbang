@@ -71,6 +71,9 @@ namespace cb {
       void parse(docs_t &docs);
       static void parse(const InputSource &src, docs_t &docs);
       static void parseString(const std::string &s, docs_t &docs);
+
+    private:
+      void _parse(Sink &sink);
     };
   }
 }
