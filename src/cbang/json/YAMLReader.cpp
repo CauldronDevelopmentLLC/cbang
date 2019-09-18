@@ -304,7 +304,12 @@ void YAMLReader::parse(Sink &sink) {
           target->writeBoolean(String::parseBool(value));
         else if (tag == YAML_NULL_TAG) target->writeNull();
 
-        else if (tag == "!include") {
+        else if (tag == "!include-raw") {
+          string path = SystemUtilities::absolute(src.getName(), value);
+          LOG_DEBUG(5, "YAML: !include-raw " << path);
+          target->write(SystemUtilities::read(path));
+
+        } else if (tag == "!include") {
           string path = SystemUtilities::absolute(src.getName(), value);
           LOG_DEBUG(5, "YAML: !include " << path);
           YAMLReader reader(path);
