@@ -45,13 +45,13 @@ using namespace cb;
 using namespace cb::Event;
 
 
-void Websocket::send(const char *data, uint64_t length) {
+void Websocket::send(const char *data, unsigned length) {
   if (!active) return Request::send(data, length);
 
   const unsigned frameSize = 0xffff;
 
-  for (uint64_t i = 0; length; i += frameSize) {
-    uint64_t bytes = frameSize < length ? frameSize : length;
+  for (unsigned i = 0; length; i += frameSize) {
+    unsigned bytes = frameSize < length ? frameSize : length;
     length -= bytes;
     writeFrame(i ? WS_OP_CONTINUE : WS_OP_TEXT, !length, data + i, bytes);
   }

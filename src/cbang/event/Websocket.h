@@ -69,7 +69,7 @@ namespace cb {
       uint64_t getMessagesSent() const {return msgSent;}
       uint64_t getMessagesReceived() const {return msgReceived;}
 
-      void send(const char *data, uint64_t length);
+      void send(const char *data, unsigned length);
       void send(const std::string &s);
       void send(const char *s) {send(std::string(s));}
 
