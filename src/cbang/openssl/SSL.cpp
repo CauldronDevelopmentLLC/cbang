@@ -272,24 +272,10 @@ int cb::SSL::passwordCallback(char *buf, int num, int rwflags, void *data) {
 }
 
 
-void cb::SSL::flushErrors() {
-  while (getError()) continue;
-}
-
-
-unsigned cb::SSL::getError() {
-  return ERR_get_error();
-}
-
-
-unsigned cb::SSL::peekError() {
-  return ERR_peek_error();
-}
-
-
-unsigned cb::SSL::peekLastError() {
-  return ERR_peek_last_error();
-}
+void cb::SSL::flushErrors() {while (getError()) continue;}
+unsigned cb::SSL::getError() {return ERR_get_error();}
+unsigned cb::SSL::peekError() {return ERR_peek_error();}
+unsigned cb::SSL::peekLastError() {return ERR_peek_last_error();}
 
 
 string cb::SSL::getErrorStr(unsigned err) {
@@ -313,16 +299,16 @@ string cb::SSL::getErrorStr(unsigned err) {
 
 const char *cb::SSL::getSSLErrorStr(int err) {
   switch (err) {
-  case SSL_ERROR_NONE: return "ERROR_NONE";
-  case SSL_ERROR_SSL: return "ERROR_SSL";
-  case SSL_ERROR_WANT_READ: return "ERROR_WANT_READ";
-  case SSL_ERROR_WANT_WRITE: return "ERROR_WANT_WRITE";
-  case SSL_ERROR_WANT_X509_LOOKUP: return "ERROR_WANT_X509_LOOKUP";
-  case SSL_ERROR_SYSCALL: return "ERROR_SYSCALL";
-  case SSL_ERROR_ZERO_RETURN: return "ERROR_ZERO_RETURN";
-  case SSL_ERROR_WANT_CONNECT: return "ERROR_WANT_CONNECT";
-  case SSL_ERROR_WANT_ACCEPT: return "ERROR_WANT_ACCEPT";
-  default: return "UNKNOWN SSL ERROR";
+  case SSL_ERROR_NONE:             return "OK";
+  case SSL_ERROR_SSL:              return "SSL";
+  case SSL_ERROR_WANT_READ:        return "Want read";
+  case SSL_ERROR_WANT_WRITE:       return "Want write";
+  case SSL_ERROR_WANT_X509_LOOKUP: return "Want X509 lookup";
+  case SSL_ERROR_SYSCALL:          return "Syscall";
+  case SSL_ERROR_ZERO_RETURN:      return "Zero return";
+  case SSL_ERROR_WANT_CONNECT:     return "Want connect";
+  case SSL_ERROR_WANT_ACCEPT:      return "Want accept";
+  default:                         return "Unknown";
   }
 }
 

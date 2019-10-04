@@ -296,6 +296,7 @@ void BufferEvent::errorCB() {
   pendingError = 0;
 
   TRY_CATCH_ERROR(errorCB(what, err));
+  logSSLErrors();
 }
 
 
@@ -485,6 +486,7 @@ void BufferEvent::sslError(unsigned event, int ret) {
     break;
 
   default:
+    LOG_ERROR(SSL::getErrorStr(SSL::peekError()));
     sslClosed(event, err, ret);
     break;
   }
