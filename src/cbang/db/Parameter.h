@@ -51,13 +51,17 @@ namespace cb {
       const char *getName() const;
 
       void bind(const Blob &x) const;
-      void bind(bool x) const;
-      void bind(double x) const;
-      void bind(float x) const {bind((double)x);}
-      void bind(int64_t x) const;
+      void bind(bool x)     const;
+      void bind(double x)   const;
+      void bind(float x)    const {bind((double)x);}
+      void bind(int64_t x)  const;
       void bind(uint64_t x) const {bind((int64_t)x);}
-      void bind(int32_t x) const {bind((int64_t)x);}
+      void bind(int32_t x)  const {bind((int64_t)x);}
       void bind(uint32_t x) const {bind((int64_t)x);}
+      void bind(int16_t x)  const {bind((int64_t)x);}
+      void bind(uint16_t x) const {bind((int64_t)x);}
+      void bind(int8_t x)   const {bind((int64_t)x);}
+      void bind(uint8_t x)  const {bind((int64_t)x);}
       void bind(const std::string &x) const;
       void bind() const;
 

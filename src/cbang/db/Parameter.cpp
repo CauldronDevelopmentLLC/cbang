@@ -89,5 +89,5 @@ void Parameter::bind() const {
 
 void Parameter::error(const string &msg, int err) const {
   THROW(msg << ": in parameter '" << getName() << "' (" << i << "): "
-         << Database::errorMsg(err));
+        << Database::errorMsg(err));
 }

@@ -47,9 +47,17 @@ using namespace cb::DB;
 
 
 string TableDef::getEscapedName(const string &name) {
-  vector<string> parts;
-  String::tokenize(name, parts, ".");
-  return "\"" + String::join(parts, "\".\"") + "\"";
+  return "\"" + name + "\"";
+}
+
+
+string TableDef::getEscapedDBName(const string &dbName) {
+  return dbName.empty() ? string() : (getEscapedName(dbName) + ".");
+}
+
+
+string TableDef::getEscapedName(const string &dbName, const string &name) {
+  return getEscapedDBName(dbName) + getEscapedName(name);
 }
 
 
@@ -90,13 +98,16 @@ void TableDef::create(Database &db) const {
 
 
 void TableDef::rebuild(Database &db, const columnRemap_t &_columnRemap) const {
-  string escName = getEscapedName();
-
   // Parse existing structure
   string result;
-  if (!db.execute(string("SELECT sql FROM sqlite_master WHERE name=") +
-                  escName + " AND type=\"table\"", result))
-    THROW("Failed to read " << name << " table structure");
+  {
+    string sql = SSTR(
+      "SELECT sql FROM " << getEscapedDBName() << "sqlite_master WHERE name=\""
+      << name << "\" AND type=\"table\"");
+
+    if (!db.execute(sql, result))
+      THROW("Failed to read " << name << " table structure");
+  }
 
   {
     size_t start = result.find('(');
@@ -124,6 +135,7 @@ void TableDef::rebuild(Database &db, const columnRemap_t &_columnRemap) const {
   }
 
   // Create SQL copy command
+  string escName = getEscapedName();
   string sql = "INSERT INTO " + escName + " SELECT ";
 
   for (iterator it = begin(); it != end(); it++) {
@@ -140,11 +152,12 @@ void TableDef::rebuild(Database &db, const columnRemap_t &_columnRemap) const {
     } else sql += string("\"") + it2->second + "\"";
   }
 
-  string tmpName = getEscapedName(name + "_Tmp");
+  string tmpName = getEscapedName(dbName, name + "_Tmp");
   sql += " FROM " + tmpName;
 
   // Move table to tmp
-  db.execute("ALTER TABLE " + escName + " RENAME TO " + tmpName);
+  db.execute("ALTER TABLE " + escName + " RENAME TO " +
+             getEscapedName(name + "_Tmp"));
 
   // Recreate table using new definition
   create(db);
