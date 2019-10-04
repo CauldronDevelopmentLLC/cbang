@@ -46,6 +46,7 @@ namespace cb {
     class Database;
 
     class TableDef {
+      std::string dbName;
       std::string name;
       std::string constraints;
 
@@ -61,7 +62,14 @@ namespace cb {
         name(name), constraints(constraints) {}
 
       static std::string getEscapedName(const std::string &name);
-      std::string getEscapedName() const {return getEscapedName(name);}
+      static std::string getEscapedDBName(const std::string &dbName);
+      static std::string getEscapedName(const std::string &dbName,
+                                        const std::string &name);
+      std::string getEscapedDBName() const {return getEscapedDBName(dbName);}
+      std::string getEscapedName() const {return getEscapedName(dbName, name);}
+
+      const std::string &getDBName() const {return dbName;}
+      void setDBName(const std::string &dbName) {this->dbName = dbName;}
 
       const std::string &getName() const {return name;}
       void setName(const std::string &name) {this->name = name;}
