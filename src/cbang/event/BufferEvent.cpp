@@ -468,9 +468,10 @@ void BufferEvent::sslClosed(unsigned when, int code, int ret) {
 
 
 void BufferEvent::sslError(unsigned event, int ret) {
-  LOG_DEBUG(4, __func__ << "(" << getEventsString(event) << ", " << ret << ")");
-
   int err = SSL_get_error(ssl, ret);
+
+  LOG_DEBUG(4, __func__ << "(" << getEventsString(event) << ", " << ret
+            << ") err=" << err);
 
   switch (err) {
   case SSL_ERROR_WANT_READ:
