@@ -52,6 +52,10 @@
 #include <openssl/ssl.h>
 #endif // HAVE_OPENSSL
 
+#ifdef HAVE_VALGRIND
+#include <valgrind/memcheck.h>
+#endif
+
 #include <string.h> // For memset()
 
 #define EVBUFFER_CB_NODEFER 2
@@ -507,6 +511,10 @@ void BufferEvent::sslRead() {
     LOG_DEBUG(4, __func__ << "SSL try read " << sslLastRead << " ret=" << ret);
 
     if (0 < ret) {
+#ifdef VALGRIND_MAKE_MEM_DEFINED
+      (void)VALGRIND_MAKE_MEM_DEFINED(space[0].iov_base, ret);
+#endif
+
       LOG_DEBUG(4, "SSL read " << ret);
       sslLastRead = 0;
       bytesRead += ret;
