@@ -81,7 +81,7 @@ void Writer::write(double value) {
   if (std::isnan(value)) stream << "\"NaN\"";
   else if (std::isinf(value) && 0 < value) stream << "\"Infinity\"";
   else if (std::isinf(value) && value < 0) stream << "\"-Infinity\"";
-  else stream << cb::String(value);
+  else stream << cb::String(value, precision);
 }
 
 

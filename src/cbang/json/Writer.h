@@ -45,13 +45,16 @@ namespace cb {
       unsigned initLevel;
       unsigned level;
       bool compact;
+      int precision;
 
       bool simple = false;
       bool first = true;
 
     public:
-      Writer(std::ostream &stream, unsigned indent = 0, bool compact = false)
-        : stream(stream), initLevel(indent), level(indent), compact(compact) {}
+      Writer(std::ostream &stream, unsigned indent = 0, bool compact = false,
+        int precision = 6)
+        : stream(stream), initLevel(indent), level(indent), compact(compact),
+          precision(precision) {}
 
       // From NullSink
       void close();

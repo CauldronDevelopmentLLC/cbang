@@ -45,8 +45,9 @@ namespace cb {
       VectorStream<char> stream;
 
     public:
-      BufferWriter(unsigned indent = 0, bool compact = false) :
-        Writer(stream, indent, compact), stream(buffer) {}
+      BufferWriter(unsigned indent = 0, bool compact = false,
+                   int precision = 6) :
+        Writer(stream, indent, compact, precision), stream(buffer) {}
 
 #ifdef _WIN32
       const char *data() const {return &buffer[0];}
