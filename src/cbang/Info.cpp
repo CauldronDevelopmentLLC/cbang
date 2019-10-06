@@ -167,39 +167,36 @@ void Info::write(XMLWriter &writer) const {
 }
 
 
-SmartPointer<JSON::Value> Info::getJSONList() const {
-  SmartPointer<JSON::Value> list = new JSON::List;
+void Info::writeList(JSON::Sink &sink) const {
+  sink.beginList();
 
-  categories_t::const_iterator it;
-  for (it = categories.begin(); it != categories.end(); it++) {
-    SmartPointer<JSON::Value> category = new JSON::List;
-    category->append((*it)->first);
-    list->append(category);
+  for (auto it = categories.begin(); it != categories.end(); it++) {
+    sink.appendList();
+    sink.append((*it)->first);
 
-    const category_t &cat = (*it)->second;
-    category_t::const_iterator it2;
-    for (it2 = cat.begin(); it2 != cat.end(); it2++) {
-      SmartPointer<JSON::Value> entry = new JSON::List;
-      entry->append((*it2)->first);
-      entry->append((*it2)->second);
-      category->append(entry);
+    const auto &cat = (*it)->second;
+    for (auto it2 = cat.begin(); it2 != cat.end(); it2++) {
+      sink.appendList();
+      sink.append((*it2)->first);
+      sink.append((*it2)->second);
+      sink.endList();
     }
+
+    sink.endList();
   }
 
-  return list;
+  sink.endList();
 }
 
 
 void Info::write(JSON::Sink &sink) const {
   sink.beginDict();
 
-  categories_t::const_iterator it;
-  for (it = categories.begin(); it != categories.end(); it++) {
+  for (auto it = categories.begin(); it != categories.end(); it++) {
     sink.insertDict((*it)->first);
 
-    const category_t &cat = (*it)->second;
-    category_t::const_iterator it2;
-    for (it2 = cat.begin(); it2 != cat.end(); it2++)
+    const auto &cat = (*it)->second;
+    for (auto it2 = cat.begin(); it2 != cat.end(); it2++)
       sink.insert((*it2)->first, (*it2)->second);
 
     sink.endDict();

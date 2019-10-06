@@ -44,7 +44,6 @@
 #include "Writer.h"
 #include "Builder.h"
 #include "NullSink.h"
-#include "Format.h"
 #include "BufferWriter.h"
 #include "Integer.h"
 #include "Factory.h"

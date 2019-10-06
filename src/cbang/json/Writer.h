@@ -40,43 +40,18 @@
 namespace cb {
   namespace JSON {
     class Writer : public NullSink {
-      /***
-       * The differences between JSON (Javascript Object Notation) mode and
-       * Python mode are as follows:
-       *
-       *                       |  JSON                |  Python
-       *-----------------------------------------------------------------
-       * Boolean Literals      |  'true' & 'false'    |  'True' & 'False'
-       * Empty set literal     |  'null'              |  'None'
-       * Trailing comma        |  not allowed         |  allowed
-       * Single quoted strings |  not allowed         |  allowed
-       * Unquoted names        |  not allowed         |  allowed
-       *
-       * Python also allows other forms of escaped strings.
-       * Also note that Javascript is more permissive than JSON.
-       * See http://www.json.org/ for more info.
-       */
-
-    public:
-      typedef enum {
-        JSON_MODE,
-        PYTHON_MODE,
-      } output_mode_t;
-
     protected:
       std::ostream &stream;
       unsigned initLevel;
       unsigned level;
       bool compact;
-      bool simple;
-      output_mode_t mode;
-      bool first;
+
+      bool simple = false;
+      bool first = true;
 
     public:
-      Writer(std::ostream &stream, unsigned indent = 0, bool compact = false,
-             output_mode_t mode = JSON_MODE)
-        : stream(stream), initLevel(indent), level(indent), compact(compact),
-          simple(false), mode(mode), first(true) {}
+      Writer(std::ostream &stream, unsigned indent = 0, bool compact = false)
+        : stream(stream), initLevel(indent), level(indent), compact(compact) {}
 
       // From NullSink
       void close();
@@ -96,7 +71,8 @@ namespace cb {
       void beginInsert(const std::string &key);
       void endDict();
 
-      static std::string escape(const std::string &s, bool python = false);
+      static std::string escape(const std::string &s,
+                                const char *fmt = "\\u%04x");
 
     protected:
       void indent() const {stream << std::string(level * 2, ' ');}
