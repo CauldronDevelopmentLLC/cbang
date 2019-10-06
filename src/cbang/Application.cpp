@@ -48,8 +48,7 @@
 
 #include <cbang/log/Logger.h>
 #include <cbang/config/Option.h>
-#include <cbang/pyon/Message.h>
-#include <cbang/json/Dict.h>
+#include <cbang/json/Writer.h>
 #include <cbang/xml/XMLWriter.h>
 #include <cbang/socket/SocketDebugger.h>
 #include <cbang/script/MemberFunctor.h>
@@ -191,7 +190,7 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
       add(new MF("get-info", this, &A::evalGetInfo, 2, 2,
                  "Print application information", "<category> <key>"));
       add(new MF("info", this, &A::evalInfo, 0, 0,
-                 "Print application information in PyON format"));
+                 "Print application information in JSON format"));
     }
     add(new MF("options", this, &A::evalOptions, 0, ~0,
                "List or set options with their values.\n"
@@ -208,7 +207,7 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
                "value.  If instead a name argument is followed immediately by "
                "a '!' then the option will be reset to its default value.\n"
                "Options which are set or reset will also be listed.\n"
-               "Options are listed as a PyON format dictionary."
+               "Options are listed as a JSON format dictionary."
                "[-d | -a] | [<name>[! | =<value>]]..."));
     add(new MF("shutdown", this, &A::evalShutdown, 0, 0,
                "Shutdown the application"));
@@ -407,7 +406,8 @@ void Application::evalGetInfo(const Context &ctx) {
 
 
 void Application::evalInfo(const Context &ctx) {
-  ctx.stream << PyON::Message("info", Info::instance().getJSONList());
+  JSON::Writer writer(ctx.stream);
+  Info::instance().writeList(writer);
 }
 
 
@@ -431,7 +431,6 @@ void Application::evalOptions(const Context &ctx, Options &options) {
   bool defaults = false;
   bool all = false;
   vector<string> names;
-  SmartPointer<JSON::Value> dict = new JSON::Dict;
 
   // Process args
   for (unsigned i = 1; i < ctx.args.size(); i++) {
@@ -443,6 +442,9 @@ void Application::evalOptions(const Context &ctx, Options &options) {
   std::set<string> added;
 
   if (names.empty()) names.push_back("*");
+
+  JSON::Writer writer(ctx.stream);
+  writer.beginDict();
 
   for (unsigned i = 0; i < names.size(); i++) {
     string name = names[i];
@@ -459,10 +461,10 @@ void Application::evalOptions(const Context &ctx, Options &options) {
         if (added.find(option.getName()) != added.end()) continue;
         added.insert(option.getName());
 
-        // Add to dictionary
+        // Output
         if (option.hasValue())
-          dict->insert(option.getName(), option.toString());
-        else dict->insertNull(option.getName());
+          writer.insert(option.getName(), option.toString());
+        else writer.insertNull(option.getName());
       }
 
     } else {
@@ -485,18 +487,17 @@ void Application::evalOptions(const Context &ctx, Options &options) {
 
       added.insert(name);
       if (options.has(name)) {
-        // Add to dictionary
+        // Output
         Option &option = options[name];
         if (option.hasValue())
-          dict->insert(option.getName(), option.toString());
-        else dict->insertNull(option.getName());
+          writer.insert(option.getName(), option.toString());
+        else writer.insertNull(option.getName());
       }
       // TODO else report error
     }
   }
 
-  // Output
-  if (!dict->empty()) ctx.stream << PyON::Message(ctx.args[0], dict);
+  writer.endDict();
 }
 
 

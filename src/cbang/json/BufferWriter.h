@@ -45,9 +45,8 @@ namespace cb {
       VectorStream<char> stream;
 
     public:
-      BufferWriter(unsigned indent = 0, bool compact = false,
-                   output_mode_t mode = Writer::JSON_MODE) :
-        Writer(stream, indent, compact, mode), stream(buffer) {}
+      BufferWriter(unsigned indent = 0, bool compact = false) :
+        Writer(stream, indent, compact), stream(buffer) {}
 
 #ifdef _WIN32
       const char *data() const {return &buffer[0];}

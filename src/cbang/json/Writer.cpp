@@ -64,14 +64,13 @@ void Writer::reset() {
 
 void Writer::writeNull() {
   NullSink::writeNull();
-  stream << (mode == PYTHON_MODE ? "None" : "null");
+  stream << "null";
 }
 
 
 void Writer::writeBoolean(bool value) {
   NullSink::writeBoolean(value);
-  stream << (mode == PYTHON_MODE ?
-             (value ? "True" : "False") : (value ? "true" : "false"));
+  stream << (value ? "true" : "false");
 }
 
 
@@ -100,7 +99,7 @@ void Writer::write(int64_t value) {
 
 void Writer::write(const string &value) {
   NullSink::write(value);
-  stream << '"' << escape(value, mode == PYTHON_MODE) << '"';
+  stream << '"' << escape(value) << '"';
 }
 
 
@@ -193,13 +192,13 @@ void Writer::endDict() {
 
 
 namespace {
-  string encodeChar(unsigned char c, bool python) {
-    return cb::String::printf(python ? "\\x%02x": "\\u%04x", (unsigned)c);
+  string encodeChar(unsigned char c, const char *fmt) {
+    return cb::String::printf(fmt, (unsigned)c);
   }
 }
 
 
-string Writer::escape(const string &s, bool python) {
+string Writer::escape(const string &s, const char *fmt) {
   string result;
   result.reserve(s.length());
 
@@ -207,7 +206,7 @@ string Writer::escape(const string &s, bool python) {
     unsigned char c = *it;
 
     switch (c) {
-    case 0: result.append(encodeChar(0, python)); break;
+    case 0: result.append(encodeChar(0, fmt)); break;
     case '\\': result.append("\\\\"); break;
     case '\"': result.append("\\\""); break;
     case '\b': result.append("\\b"); break;
@@ -236,7 +235,7 @@ string Writer::escape(const string &s, bool python) {
         else if ((c & 0xf8) == 0xf0) width = 3;
         else {
           // Invalid or non-standard UTF-8 code width, escape it
-          result.append(encodeChar(c, python));
+          result.append(encodeChar(c, fmt));
           break;
         }
 
@@ -255,11 +254,11 @@ string Writer::escape(const string &s, bool python) {
           code = (code << 6) | (*it2 & 0x3f);
         }
 
-        if (!valid) result.append(encodeChar(*it, python)); // Encode character
+        if (!valid) result.append(encodeChar(*it, fmt)); // Encode character
         else {
-          if (!python && (0x2000 <= code || code <= 0x2100))
+          if (0x2000 <= code || code <= 0x2100)
             // Always encode Javascript line separators
-            result.append(String::printf("\\u%04x", code));
+            result.append(encodeChar(code, fmt));
 
           else result.append(it, it2); // Otherwise, pass valid UTF-8
 
@@ -267,7 +266,7 @@ string Writer::escape(const string &s, bool python) {
         }
 
       } else if (iscntrl(c)) // Always encode control characters
-        result.append(encodeChar(c, python));
+        result.append(encodeChar(c, fmt));
 
       else result.push_back(c); // Pass normal characters
       break;

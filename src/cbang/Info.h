@@ -92,7 +92,7 @@ namespace cb {
     std::ostream &print(std::ostream &stream, unsigned width = 80,
                         bool wrap = true) const;
     void write(XMLWriter &writer) const;
-    SmartPointer<JSON::Value> getJSONList() const;
+    void writeList(JSON::Sink &sink) const;
     void write(JSON::Sink &sink) const;
   };
 

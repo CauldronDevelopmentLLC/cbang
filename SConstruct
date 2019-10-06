@@ -66,7 +66,7 @@ for lib in 'zlib bzip2 sqlite3 expat boost libevent re2 libyaml'.split():
 
 # Source
 subdirs = [
-    '', 'script', 'xml', 'util', 'debug', 'config', 'pyon', 'os', 'http',
+    '', 'script', 'xml', 'util', 'debug', 'config', 'os', 'http',
     'struct', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
     'socket', 'tar', 'io', 'geom', 'parse', 'json', 'db',
     'auth', 'js', 'gpu', 'pci']
