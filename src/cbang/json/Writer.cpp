@@ -56,8 +56,7 @@ void Writer::close() {
 void Writer::reset() {
   NullSink::reset();
   stream.flush();
-  level = initLevel;
-  simple = false;
+  simple.clear();
   first = true;
 }
 
@@ -105,9 +104,8 @@ void Writer::write(const string &value) {
 
 void Writer::beginList(bool simple) {
   NullSink::beginList(simple);
-  this->simple = simple;
+  this->simple.push_back(simple);
   stream << '[';
-  level++;
   first = true;
 }
 
@@ -118,10 +116,10 @@ void Writer::beginAppend() {
   if (first) first = false;
   else {
     stream << ',';
-    if (simple && !compact) stream << ' ';
+    if (simple.back() && !compact) stream << ' ';
   }
 
-  if (!compact && !simple) {
+  if (!compact && !simple.back()) {
     stream << '\n';
     indent();
   }
@@ -130,9 +128,8 @@ void Writer::beginAppend() {
 
 void Writer::endList() {
   NullSink::endList();
-  level--;
 
-  if (!(compact || simple) && !first) {
+  if (!(compact || simple.back()) && !first) {
     stream << '\n';
     indent();
   }
@@ -140,15 +137,14 @@ void Writer::endList() {
   stream << ']';
 
   first = false;
-  simple = false;
+  simple.pop_back();
 }
 
 
 void Writer::beginDict(bool simple) {
   NullSink::beginDict(simple);
-  this->simple = simple;
+  this->simple.push_back(simple);
   stream << '{';
-  level++;
   first = true;
 }
 
@@ -158,10 +154,10 @@ void Writer::beginInsert(const string &key) {
   if (first) first = false;
   else {
     stream << ',';
-    if (simple && !compact) stream << ' ';
+    if (simple.back() && !compact) stream << ' ';
   }
 
-  if (!simple && !compact) {
+  if (!simple.back() && !compact) {
     stream << '\n';
     indent();
   }
@@ -177,9 +173,8 @@ void Writer::beginInsert(const string &key) {
 
 void Writer::endDict() {
   NullSink::endDict();
-  level--;
 
-  if (!(simple || compact) && !first) {
+  if (!(simple.back() || compact) && !first) {
     stream << '\n';
     indent();
   }
@@ -187,7 +182,7 @@ void Writer::endDict() {
   stream << '}';
 
   first = false;
-  simple = false;
+  simple.pop_back();
 }
 
 
@@ -274,4 +269,9 @@ string Writer::escape(const string &s, const char *fmt) {
   }
 
   return result;
+}
+
+
+void Writer::indent() const {
+  stream << string((getDepth() + indentStart) * indentSpace, ' ');
 }

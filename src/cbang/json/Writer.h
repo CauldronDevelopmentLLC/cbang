@@ -34,6 +34,7 @@
 
 #include "NullSink.h"
 
+#include <vector>
 #include <ostream>
 
 
@@ -42,19 +43,32 @@ namespace cb {
     class Writer : public NullSink {
     protected:
       std::ostream &stream;
-      unsigned initLevel;
-      unsigned level;
+
+      unsigned indentSpace;
+      unsigned indentStart;
       bool compact;
       int precision;
 
-      bool simple = false;
+      std::vector<bool> simple;
       bool first = true;
 
     public:
-      Writer(std::ostream &stream, unsigned indent = 0, bool compact = false,
-        int precision = 6)
-        : stream(stream), initLevel(indent), level(indent), compact(compact),
-          precision(precision) {}
+      Writer(std::ostream &stream, unsigned indentStart = 0,
+             bool compact = false, unsigned indentSpace = 2, int precision = 6)
+        : stream(stream), indentSpace(indentSpace), indentStart(indentStart),
+          compact(compact), precision(precision) {}
+
+      unsigned getIndentSpace() const {return indentSpace;}
+      void setIndentSpace(unsigned x) {indentSpace = x;}
+
+      unsigned getIndentStart() const {return indentStart;}
+      void setIndentStart(unsigned x) {indentStart = x;}
+
+      bool getCompact() const {return compact;}
+      void setCompact(bool x) {compact = x;}
+
+      int getPrecision() const {return precision;}
+      void setPrecision(int x) {precision = x;}
 
       // From NullSink
       void close();
@@ -78,7 +92,7 @@ namespace cb {
                                 const char *fmt = "\\u%04x");
 
     protected:
-      void indent() const {stream << std::string(level * 2, ' ');}
+      void indent() const;
     };
   }
 }
