@@ -445,7 +445,7 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
 
 
 SmartPointer<JSON::Value> Request::getJSONMessage() const {
-  Headers hdrs = getInputHeaders();
+  const Headers &hdrs = getInputHeaders();
 
   if (hdrs.hasContentType() &&
       String::startsWith(hdrs.getContentType(), "application/json"))
