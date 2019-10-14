@@ -52,7 +52,7 @@ struct Directory::private_t {
 
 
 Directory::Directory(const string &path) {
-  if (!fs::is_directory(p->path)) THROW("Not a directory '" << p->path << "'");
+  if (!fs::is_directory(path)) THROW("Not a directory '" << path << "'");
   p = new private_t(path);
 }
 
