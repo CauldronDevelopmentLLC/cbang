@@ -208,6 +208,10 @@ namespace cb {
     }
 
 
+    Matrix<ROWS, COLS, T> operator*=(const T &x) {
+      return *this = *this * x;
+    }
+
     template <unsigned OROWS>
     Matrix<ROWS, OROWS, T> operator*(const Matrix<OROWS, COLS, T> &o) const {
       Matrix<ROWS, OROWS, T> result;
@@ -246,6 +250,17 @@ namespace cb {
         for (unsigned col = 0; col < COLS; col++)
           result[row] += data[row][col] * v[col];
       }
+
+      return result;
+    }
+
+
+    Matrix<ROWS, COLS, T> operator*(const T &x) const {
+      Matrix<ROWS, COLS, T> result;
+
+      for (unsigned row = 0; row < ROWS; row++)
+        for (unsigned col = 0; col < COLS; col++)
+          result[row][col] = data[row][col] * x;
 
       return result;
     }
