@@ -40,7 +40,7 @@ def configure(conf, version = None):
 
         if env['PLATFORM'] == 'win32' or int(env.get('cross_mingw', 0)):
             if not conf.CBCheckLib('ws2_32'): conf.CBRequireLib('wsock32')
-            for lib in ['advapi32', 'gdi32', 'user32']:
+            for lib in ['advapi32', 'gdi32', 'user32', 'crypt32']:
                 conf.CBRequireLib(lib)
 
         if version is not None:
