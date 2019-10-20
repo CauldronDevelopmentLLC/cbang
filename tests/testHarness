@@ -196,7 +196,7 @@ def execute_proc(command, timeout, **kwargs):
   try:
     # Check for .exe, needed in Windows cross compiled environments on Linux
     command = split_cmd_line(command)
-    if not os.path.exists(command[0]) and os.path.exists(command[0] + '.exe'):
+    if not os.path.isfile(command[0]) and os.path.isfile(command[0] + '.exe'):
       command[0] += '.exe'
 
     start = time.time()
