@@ -57,6 +57,7 @@
 #include <string.h>
 
 #include <sstream>
+#include <algorithm> // std::min()
 
 using namespace cb;
 using namespace std;
@@ -73,7 +74,7 @@ namespace {
     try {
       string pw = (*(PasswordCallback *)cb)(rwflag, (unsigned)size);
 
-      int length = min(size, (int)pw.length());
+      int length = std::min(size, (int)pw.length());
       memcpy(buf, pw.c_str(), length);
       return length;
 
