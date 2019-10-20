@@ -49,10 +49,10 @@ using namespace std;
     cout << X << " = "                                                  \
          << String::printf("0x%016llx", X) << " -> "                    \
          << #SWAP "(" << X << ") = "                                    \
-         << String::printf("0x%016llx", SWAP(X)) << " -> "              \
+         << String::printf("0x%016llx", (uint64_t)SWAP(X)) << " -> "    \
          << setw(10) << "(" #TYPE ")"                                   \
          << #SWAP "(" #SWAP "(" << X << ")) = "                         \
-         << String::printf("0x%016llx", SWAP(SWAP(X))) << " = "         \
+         << String::printf("0x%016llx", (uint64_t)SWAP(SWAP(X))) << " = " \
          << (TYPE)SWAP(SWAP(X)) << endl;
 
 
