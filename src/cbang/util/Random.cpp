@@ -41,13 +41,7 @@
 using namespace cb;
 
 
-Random::Random(Inaccessible) {
-  // On systems with /dev/urandom the generator is automatically seeded
-
-#if defined(_WIN32) && defined(HAVE_OPENSSL)
-  RAND_screen();
-#endif
-}
+Random::Random(Inaccessible) {}
 
 
 void Random::addEntropy(const void *buffer, uint32_t bytes, double entropy) {
