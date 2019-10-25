@@ -195,7 +195,9 @@ string Value::format(const string &s, const string &defaultValue) const {
   auto cb =
     [&] (char type, int index, const string &name, bool &matched) {
       string result = format(type, index, name, matched);
-      return matched ? result : defaultValue;
+      if (matched) return result;
+      matched = true;
+      return defaultValue;
     };
 
   return String(s).format(cb);
