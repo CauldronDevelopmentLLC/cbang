@@ -429,7 +429,7 @@ def configure(conf, cstd = 'c99'):
 
 
     # Don't link unneeded dynamic libs
-    if compiler_mode == 'gnu':
+    if compiler == 'gnu':
         env.PrependUnique(LINKFLAGS = ['-Wl,--as-needed'])
 
 
