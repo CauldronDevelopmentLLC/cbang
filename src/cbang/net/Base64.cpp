@@ -35,6 +35,7 @@
 #include <cbang/Exception.h>
 
 #include <locale>
+#include <utility> // std::move()
 
 
 using namespace std;
@@ -126,7 +127,7 @@ string Base64::encode(const char *_s, unsigned length) const {
     else result.append(encode(63 & c));
   }
 
-  return result;
+  return move(result);
 }
 
 
