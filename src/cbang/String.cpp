@@ -592,7 +592,7 @@ string String::hexdump(const char *data, unsigned size) {
     case '\t': chars.append("\\t"); break;
     case '\v': chars.append("\\v"); break;
     default:
-      if (isprint(data[i])) {
+      if (0x19 < data[i] && data[i] < 0x7f) {
         chars.append(1, ' ');
         chars.append(1, data[i]);
 
@@ -662,7 +662,7 @@ void String::escapeC(string &result, int c) {
     case '\t': result.append("\\t"); break;
     case '\v': result.append("\\v"); break;
     default:
-      if (!isprint(c)) {
+      if (c < 0x20 || 0x7e < c) { // Non-printable
         uint32_t x = c;
         if (x <= 0xffff) result.append(printf("\\x%02x", x));
         else if (x <= 0xffffffff) result.append(printf("\\u%04x", x));
