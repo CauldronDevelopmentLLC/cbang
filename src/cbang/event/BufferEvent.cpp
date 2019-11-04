@@ -127,7 +127,9 @@ BufferEvent::BufferEvent(cb::Event::Base &base, bool incoming,
 BufferEvent::~BufferEvent() {
   LOG_DEBUG(4, __func__ << "()");
   close();
+#ifdef HAVE_OPENSSL
   if (ssl) SSL_free(ssl);
+#endif // HAVE_OPENSSL
 }
 
 
@@ -405,8 +407,10 @@ void BufferEvent::sockReadCB(unsigned events) {
   case STATE_SOCK_READY:     sockRead();      break;
   case STATE_SSL_HANDSHAKE:  sslHandshake();  break;
   case STATE_SSL_READY:
+#ifdef HAVE_OPENSSL
     if (sslWant == SSL_ERROR_WANT_WRITE) sslWrite();
     else sslRead();
+#endif // HAVE_OPENSSL
     break;
   }
 
@@ -433,8 +437,10 @@ void BufferEvent::sockWriteCB(unsigned events) {
   case STATE_SOCK_READY:     sockWrite();    break;
   case STATE_SSL_HANDSHAKE:  sslHandshake(); break;
   case STATE_SSL_READY:
+#ifdef HAVE_OPENSSL
     if (sslWant == SSL_ERROR_WANT_READ) sslRead();
     else sslWrite();
+#endif // HAVE_OPENSSL
     break;
   }
 
@@ -443,6 +449,7 @@ void BufferEvent::sockWriteCB(unsigned events) {
 
 
 void BufferEvent::sslClosed(unsigned when, int code, int ret) {
+#ifdef HAVE_OPENSSL
   LOG_DEBUG(4, __func__ << "(" << when << ", " << code << ", " << ret << ")");
 
   unsigned event = BUFFEREVENT_ERROR;
@@ -465,10 +472,12 @@ void BufferEvent::sslClosed(unsigned when, int code, int ret) {
 
   // when is BUFFEREVENT_{READING|WRITING}
   scheduleErrorCB(event | when);
+#endif // HAVE_OPENSSL
 }
 
 
 void BufferEvent::sslError(unsigned event, int ret) {
+#ifdef HAVE_OPENSSL
   int err = SSL_get_error(ssl, ret);
 
   LOG_DEBUG(4, __func__ << "(" << getEventsString(event) << ", " << ret
@@ -490,10 +499,12 @@ void BufferEvent::sslError(unsigned event, int ret) {
     sslClosed(event, err, ret);
     break;
   }
+#endif // HAVE_OPENSSL
 }
 
 
 void BufferEvent::sslRead() {
+#ifdef HAVE_OPENSSL
   LOG_DEBUG(4, __func__ << "()");
 
   sslWant = 0;
@@ -534,10 +545,12 @@ void BufferEvent::sslRead() {
   }
 
   if (bytesRead) scheduleReadCB();
+#endif // HAVE_OPENSSL
 }
 
 
 void BufferEvent::sslWrite() {
+#ifdef HAVE_OPENSSL
   LOG_DEBUG(4, __func__ << "()");
 
   sslWant = 0;
@@ -569,10 +582,12 @@ void BufferEvent::sslWrite() {
     if (!outputBuffer.getLength() && !errorCBEvent->isPending())
       writeCBEvent->activate();
   }
+#endif // HAVE_OPENSSL
 }
 
 
 void BufferEvent::sslHandshake() {
+#ifdef HAVE_OPENSSL
   LOG_DEBUG(4, __func__ << "()");
 
   sslWant = 0;
@@ -583,6 +598,7 @@ void BufferEvent::sslHandshake() {
     state = STATE_SSL_READY;
 
   } else sslError(BUFFEREVENT_READING, ret);
+#endif // HAVE_OPENSSL
 }
 
 
@@ -604,10 +620,12 @@ void BufferEvent::setFD(socket_t fd) {
     writeEvent->setPriority(priority);
   }
 
+#ifdef HAVE_OPENSSL
   if (ssl) {
     BIO *bio = BIO_new_socket(fd, 0);
     SSL_set_bio(ssl, bio, bio);
   }
+#endif // HAVE_OPENSSL
 }
 
 
@@ -627,6 +645,7 @@ void BufferEvent::disableEvents(unsigned events) {
 
 
 void BufferEvent::updateEventsSSLWant() {
+#ifdef HAVE_OPENSSL
   switch (sslWant) {
   case SSL_ERROR_WANT_READ:
     enableEvents(EVENT_READ);
@@ -638,6 +657,7 @@ void BufferEvent::updateEventsSSLWant() {
     enableEvents(EVENT_WRITE);
     break;
   }
+#endif // HAVE_OPENSSL
 }
 
 
