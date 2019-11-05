@@ -34,6 +34,7 @@
 #include "HTTP.h"
 #include "Request.h"
 
+#include <cbang/config.h>
 #include <cbang/config/Options.h>
 #include <cbang/log/Logger.h>
 #include <cbang/config/Options.h>

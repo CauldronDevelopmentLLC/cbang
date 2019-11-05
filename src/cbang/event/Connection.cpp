@@ -38,6 +38,7 @@
 #include "Event.h"
 #include "Websocket.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
 

@@ -34,16 +34,24 @@
 
 #include "Winsock.h"
 #include "SocketDefaultImpl.h"
-#include "SocketSSLImpl.h"
 #include "SocketDebugImpl.h"
 #include "SocketDebugger.h"
 #include "SocketSet.h"
 
+#ifdef HAVE_OPENSSL
+#include "SocketSSLImpl.h"
+#endif
+
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/Zap.h>
 #include <cbang/String.h>
-#include <cbang/openssl/SSL.h>
+
+#ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
+#else
+namespace cb {class SSLContext {};}
+#endif
 
 #include <cbang/log/Logger.h>
 #include <cbang/time/Timer.h>

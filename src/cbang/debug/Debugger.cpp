@@ -30,10 +30,10 @@
 
 \******************************************************************************/
 
-#include <cbang/debug/Debugger.h>
+#include "Debugger.h"
+#include "BacktraceDebugger.h"
 
-#include <cbang/debug/BacktraceDebugger.h>
-
+#include <cbang/config.h>
 #include <cbang/util/Singleton.h>
 #include <cbang/util/SmartLock.h>
 

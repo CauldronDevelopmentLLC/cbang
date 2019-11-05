@@ -34,6 +34,7 @@
 
 #include "LogDevice.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 
@@ -60,6 +61,12 @@ namespace io = boost::iostreams;
 
 using namespace std;
 using namespace cb;
+
+#ifdef CBANG_DEBUG_LEVEL
+#define DEFAULT_VERBOSITY CBANG_DEBUG_LEVEL
+#else
+#define DEFAULT_VERBOSITY 1
+#endif
 
 
 Logger::Logger(Inaccessible) :

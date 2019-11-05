@@ -32,8 +32,8 @@
 
 #pragma once
 
+#include <cbang/config.h>
 #include <cbang/util/Singleton.h>
-
 #include <cbang/net/IPAddress.h>
 
 #include <string>

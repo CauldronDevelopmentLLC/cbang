@@ -36,6 +36,7 @@
 #include "Context.h"
 #include "Handler.h"
 
+#include <cbang/config.h>
 #include <cbang/Zap.h>
 #include <cbang/String.h>
 

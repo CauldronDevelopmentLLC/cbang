@@ -32,6 +32,7 @@
 
 #include "XMLAdapter.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 
 #include <cbang/os/SystemUtilities.h>

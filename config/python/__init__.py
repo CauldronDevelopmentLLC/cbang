@@ -17,7 +17,7 @@ def try_config(conf, command):
 
     if conf.CheckHeader('Python.h') and conf.CheckFunc('Py_Initialize'):
         env.ParseConfig(command)
-        env.CBDefine('HAVE_PYTHON');
+        env.CBConfigDef('HAVE_PYTHON');
         env.Prepend(LIBS = ['util', 'm', 'dl', 'z'])
 
         return True

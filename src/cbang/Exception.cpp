@@ -33,6 +33,8 @@
 #include "Exception.h"
 #include "String.h"
 
+#include <cbang/config.h>
+
 #include <iomanip>
 
 #include <cbang/debug/Debugger.h>

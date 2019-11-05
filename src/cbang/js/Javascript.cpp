@@ -34,6 +34,8 @@
 
 #include "Value.h"
 
+#include <cbang/config.h>
+
 #ifdef HAVE_V8
 #include <cbang/js/v8/JSImpl.h>
 #endif

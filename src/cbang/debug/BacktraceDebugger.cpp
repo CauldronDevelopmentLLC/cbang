@@ -32,6 +32,8 @@
 
 #include "BacktraceDebugger.h"
 
+#include <cbang/config.h>
+
 #ifdef HAVE_CBANG_BACKTRACE
 
 #include <cbang/String.h>

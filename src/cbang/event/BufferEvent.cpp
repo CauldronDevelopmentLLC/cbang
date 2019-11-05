@@ -35,6 +35,7 @@
 #include "Event.h"
 #include "DNSBase.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>

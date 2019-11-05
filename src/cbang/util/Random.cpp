@@ -32,6 +32,8 @@
 
 #include "Random.h"
 
+#include <cbang/config.h>
+
 #ifdef HAVE_OPENSSL
 #include <openssl/rand.h>
 #else

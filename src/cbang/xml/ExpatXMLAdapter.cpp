@@ -30,6 +30,8 @@
 
 \******************************************************************************/
 
+#include <cbang/config.h>
+
 #ifdef HAVE_EXPAT
 #include "ExpatXMLAdapter.h"
 

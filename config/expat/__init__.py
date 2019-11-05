@@ -15,7 +15,7 @@ def configure(conf):
 
     else: conf.CBRequireLib('expat')
 
-    env.CBDefine('HAVE_EXPAT')
+    env.CBConfigDef('HAVE_EXPAT')
 
 
 def generate(env):

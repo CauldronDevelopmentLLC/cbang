@@ -37,6 +37,7 @@
 #include "Header.h"
 #include "Transaction.h"
 
+#include <cbang/config.h>
 #include <cbang/config/Options.h>
 
 #include <cbang/net/Base64.h>

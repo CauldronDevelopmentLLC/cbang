@@ -26,7 +26,7 @@ def configure(conf):
                 conf.CBRequireLib('v8_base.x64')
             else: conf.CBRequireLib('v8_base.ia32')
 
-    conf.env.CBDefine('HAVE_V8')
+    conf.env.CBConfigDef('HAVE_V8')
 
 
 def generate(env):

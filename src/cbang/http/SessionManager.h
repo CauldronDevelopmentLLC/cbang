@@ -35,6 +35,7 @@
 #include "SessionFactory.h"
 #include "SessionsTable.h"
 
+#include <cbang/config.h>
 #include <cbang/os/Mutex.h>
 
 #include <map>
