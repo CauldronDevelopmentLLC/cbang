@@ -427,6 +427,9 @@ def configure(conf, cstd = 'c99'):
         if compiler_mode == 'gnu' and env['PLATFORM'] != 'darwin':
             env.AppendUnique(LINKFLAGS = ['-static'])
 
+    elif env.get('mostly_static', False) and compiler == 'gnu':
+        env.AppendUnique(LINKFLAGS = ['-static-libstdc++', '-static-libgcc'])
+
 
     # Don't link unneeded dynamic libs
     if compiler == 'gnu':
