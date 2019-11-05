@@ -30,9 +30,6 @@
 
 \******************************************************************************/
 
-#include <cbang/config.h>
-
-#ifdef HAVE_EXPAT
 #include "ExpatXMLAdapter.h"
 
 #include <expat.h>
@@ -144,5 +141,3 @@ void ExpatXMLAdapter::text(ExpatXMLAdapter *adapter,
     adapter->setError(e);
   }
 }
-
-#endif // HAVE_EXPAT
