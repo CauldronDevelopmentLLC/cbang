@@ -16,11 +16,7 @@ def configure_deps(conf, local = True, with_openssl = True):
     conf.CBConfig('XML', not local)
     conf.CBConfig('sqlite3', not local)
     conf.CBConfig('libyaml', not local)
-
-    if conf.CBCheckLib('leveldb') and conf.CBCheckLib('snappy'):
-        conf.CBCheckHome('leveldb')
-        if conf.CBCheckCXXHeader('leveldb/db.h'):
-            env.CBConfigDef('HAVE_LEVELDB')
+    conf.CBConfig('leveldb', False)
 
     env.AppendUnique(prefer_dynamic = ['mariadbclient'])
     if conf.CBCheckCHeader('mysql/mysql.h') and \
@@ -106,7 +102,7 @@ def generate(env):
         ('debug_level', 'Set log debug level', 1))
 
     env.CBLoadTools('''sqlite3 openssl pthreads valgrind osx zlib bzip2
-        XML chakra v8 event re2 libyaml'''.split(), GetHome() + '/..')
+        XML chakra v8 event re2 libyaml leveldb'''.split(), GetHome() + '/..')
 
 
 def exists(env):

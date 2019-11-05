@@ -131,24 +131,21 @@ conf.AddTest('CheckRun', CheckRun)
 
 # event-config.h
 defs = {}
-functions = '''accept4 arc4random arc4random_buf clock_gettime epoll_create1
-  epoll_ctl fcntl getaddrinfo getegid geteuid gethostbyname_r getifaddrs
-  getnameinfo getprotobynumber getservbyname gettimeofday inet_ntop inet_pton
-  issetugid kqueue mach_absolute_time mmap nanosleep pipe pipe2 poll port_create
-  putenv select sendfile setenv setrlimit sigaction signal splice strlcpy strsep
-  strtok_r strtoll sysctl eventfd timerfd_create umask unsetenv usleep vasprintf
+functions = '''accept4 arc4random arc4random_buf clock_gettime epoll
+  epoll_create1 eventfd getaddrinfo getegid geteuid getifaddrs getprotobynumber
+  getservbyname gettimeofday inet_ntop inet_pton issetugid kqueue
+  mach_absolute_time mmap nanosleep pipe pipe2 poll select sendfile sigaction
+  strlcpy strtok_r strtoll sysctl timerfd_create usleep vasprintf
 '''
-headers = '''arpa/inet.h dlfcn.h fcntl.h ifaddrs.h inttypes.h mach/mach_time.h
-  memory.h netdb.h netinet/in6.h netinet/in.h netinet/tcp.h poll.h port.h
-  stdarg.h stddef.h stdint.h stdlib.h strings.h sys/devpoll.h sys/epoll.h
-  sys/eventfd.h sys/event.h sys/ioctl.h sys/mman.h sys/param.h sys/queue.h
-  sys/resource.h sys/select.h sys/sendfile.h sys/socket.h sys/stat.h
-  sys/sysctl.h sys/time.h sys/types.h sys/uio.h sys/wait.h unistd.h zlib.h
+headers = '''arpa/inet.h fcntl.h ifaddrs.h inttypes.h mach/mach_time.h
+  netdb.h netinet/in6.h netinet/in.h netinet/tcp.h stdarg.h stddef.h stdint.h
+  stdlib.h sys/eventfd.h sys/ioctl.h sys/mman.h sys/queue.h
+  sys/select.h sys/sendfile.h sys/socket.h sys/stat.h sys/sysctl.h sys/time.h
+  sys/timerfd.h sys/types.h sys/uio.h unistd.h
 '''
 decls = '''CTL_KERN KERN_ARND KERN_RANDOM RANDOM_UUID'''
-structs = 'addrinfo in6_addr sockaddr_in6 sockaddr_storage so_linger'
-sizeof = ['int', 'long', 'long long', 'off_t', 'short', 'size_t',
-          'void *']
+structs = 'addrinfo in6_addr sockaddr_in6 sockaddr_storage'
+sizeof = ['int', 'long', 'long long', 'off_t', 'short', 'size_t', 'void *']
 
 gethostbyname_r_3_arg_src = '''
   #define _BSD_SOURCE
@@ -234,7 +231,7 @@ def get_event_config_defs():
     if conf.CheckDecl('TAILQ_FOREACH', ['sys/queue.h']):
         defs['HAVE_TAILQFOREACH'] = '1'
 
-    for decl in 'timeradd timerclear timercmp timerisset'.split():
+    for decl in 'timeradd timerclear timerisset'.split():
         if conf.CheckDecl(decl, ['sys/time.h']):
             defs['HAVE_' + decl] = '1'
 
