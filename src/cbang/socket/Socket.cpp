@@ -38,16 +38,18 @@
 #include "SocketDebugger.h"
 #include "SocketSet.h"
 
+#include <cbang/config.h>
+
 #ifdef HAVE_OPENSSL
 #include "SocketSSLImpl.h"
 #endif
 
-#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/Zap.h>
 #include <cbang/String.h>
 
 #ifdef HAVE_OPENSSL
+#include <cbang/openssl/SSL.h>
 #include <cbang/openssl/SSLContext.h>
 #else
 namespace cb {class SSLContext {};}
