@@ -38,15 +38,12 @@
 #include <cbang/os/SystemUtilities.h>
 
 #include "ExpatXMLAdapter.h"
-#include "GLibXMLAdapter.h"
 
 using namespace std;
 using namespace cb;
 
 
-void XMLAdapter::pushHandler(XMLHandler *handler) {
-  handlers.push_back(handler);
-}
+void XMLAdapter::pushHandler(XMLHandler *handler) {handlers.push_back(handler);}
 
 
 void XMLAdapter::popHandler() {
@@ -70,12 +67,4 @@ void XMLAdapter::read(const string &filename) {
 }
 
 
-XMLAdapter *XMLAdapter::create() {
-#ifdef HAVE_EXPAT
-  return new ExpatXMLAdapter();
-#elif HAVE_GLIB
-  return new GLibXMLAdapter();
-#else
-#error "No XML parser"
-#endif
-}
+XMLAdapter *XMLAdapter::create() {return new ExpatXMLAdapter();}

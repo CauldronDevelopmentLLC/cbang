@@ -54,22 +54,10 @@
 #endif  /* not defined XMLCALL */
 
 
-#if !defined(XML_STATIC) && !defined(XMLIMPORT)
-#ifndef XML_BUILDING_EXPAT
-/* using Expat from an application */
-
-#ifdef XML_USE_MSC_EXTENSIONS
-#define XMLIMPORT __declspec(dllimport)
+#ifdef XMLIMPORT
+#undef XMLIMPORT
 #endif
-
-#endif
-#endif  /* not defined XML_STATIC */
-
-
-/* If we didn't define it above, define it away: */
-#ifndef XMLIMPORT
 #define XMLIMPORT
-#endif
 
 
 #define XMLPARSEAPI(type) XMLIMPORT type XMLCALL
@@ -97,7 +85,7 @@ typedef char XML_LChar;
 
 #ifdef XML_LARGE_SIZE  /* Use large integers for file/stream positions. */
 #if defined(XML_USE_MSC_EXTENSIONS) && _MSC_VER < 1400
-typedef __int64 XML_Index; 
+typedef __int64 XML_Index;
 typedef unsigned __int64 XML_Size;
 #else
 typedef long long XML_Index;
