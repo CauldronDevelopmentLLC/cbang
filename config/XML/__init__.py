@@ -2,20 +2,7 @@ import sys
 from SCons.Script import *
 
 
-def configure(conf):
-    env = conf.env
-
-    # libexpat
-    if conf.CBConfig('expat'): return True
-
-    else: # Glib 2.0
-        env.ParseConfig('pkg-config --cflags --libs glib-2.0')
-        env.ParseConfig('pkg-config --cflags --libs gthread-2.0')
-        if conf.CBCheckHeader('glib.h'):
-            env.CBConfigDef('HAVE_GLIB')
-            return True
-
-    return False
+def configure(conf): return conf.CBConfig('expat')
 
 
 def generate(env):
@@ -23,5 +10,4 @@ def generate(env):
     env.CBLoadTool('expat')
 
 
-def exists():
-    return 1
+def exists(): return 1
