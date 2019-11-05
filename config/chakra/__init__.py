@@ -24,7 +24,7 @@ def configure(conf):
 
     conf.CBRequireFunc('JsCreateRuntime')
 
-    conf.env.CBDefine('HAVE_CHAKRA')
+    conf.env.CBConfigDef('HAVE_CHAKRA')
 
 
 def generate(env):

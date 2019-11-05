@@ -32,11 +32,12 @@
 
 #include "SessionManager.h"
 
+#include <cbang/config.h>
 #include <cbang/config/Options.h>
 #include <cbang/util/Random.h>
 #include <cbang/json/JSON.h>
 
-#if HAVE_OPENSSL
+#ifdef HAVE_OPENSSL
 #include <cbang/openssl/Digest.h>
 #endif
 

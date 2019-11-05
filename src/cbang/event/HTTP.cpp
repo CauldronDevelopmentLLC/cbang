@@ -36,6 +36,7 @@
 #include "Event.h"
 #include "Connection.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>

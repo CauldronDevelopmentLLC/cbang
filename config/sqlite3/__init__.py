@@ -15,7 +15,7 @@ def configure(conf):
     conf.CBRequireHeader('sqlite3.h')
     conf.CBRequireFunc('sqlite3_backup_init')
 
-    env.CBDefine('HAVE_LIBSQLITE')
+    env.CBConfigDef('HAVE_LIBSQLITE')
 
 
 def generate(env):

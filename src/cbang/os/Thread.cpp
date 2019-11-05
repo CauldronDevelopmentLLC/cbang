@@ -36,6 +36,7 @@
 #include "SysError.h"
 #include "SystemUtilities.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 
 #include <cbang/Catch.h>

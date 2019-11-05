@@ -30,8 +30,11 @@
 
 \******************************************************************************/
 
-#ifdef HAVE_LEVELDB
 #pragma once
+
+#include <cbang/config.h>
+
+#ifdef HAVE_LEVELDB
 
 #include <cbang/SmartPointer.h>
 

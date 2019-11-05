@@ -36,6 +36,7 @@
 #include "Cookie.h"
 #include "WebContext.h"
 
+#include <cbang/config.h>
 #include <cbang/String.h>
 #include <cbang/util/SmartLock.h>
 #include <cbang/config/Options.h>
@@ -45,7 +46,7 @@
 #include <cbang/db/LevelDB.h>
 #include <cbang/log/Logger.h>
 
-#if HAVE_OPENSSL
+#ifdef HAVE_OPENSSL
 #include <cbang/openssl/Digest.h>
 #else
 #include <cbang/util/Random.h>

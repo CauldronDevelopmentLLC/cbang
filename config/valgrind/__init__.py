@@ -8,7 +8,7 @@ def configure(conf):
             conf.CBCheckHeader('valgrind/drd.h') and \
             conf.CBCheckHeader('valgrind/helgrind.h') and \
             conf.CBCheckHeader('valgrind/memcheck.h'):
-        env.CBDefine('HAVE_VALGRIND')
+        env.CBConfigDef('HAVE_VALGRIND')
 
 
 def generate(env):

@@ -33,6 +33,8 @@
 #include "Client.h"
 #include "Buffer.h"
 
+#include <cbang/config.h>
+
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
 #else

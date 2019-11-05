@@ -34,6 +34,7 @@
 
 #include "SessionManager.h"
 
+#include <cbang/config.h>
 #include <cbang/log/Logger.h>
 #include <cbang/util/ACLSet.h>
 

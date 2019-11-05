@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include <cbang/config.h>
 #include <cbang/SmartPointer.h>
 
 #include <boost/iostreams/categories.hpp>

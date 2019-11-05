@@ -5,7 +5,7 @@ def configure(conf):
     conf.CBCheckHome('pthreads')
     conf.CBRequireHeader('pthread.h')
     conf.CBRequireLib('pthread')
-    conf.env.CBDefine('HAVE_PTHREADS')
+    conf.env.CBConfigDef('HAVE_PTHREADS')
 
 
 def generate(env):

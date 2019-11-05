@@ -86,6 +86,11 @@ for dir in subdirs:
 
 conf.Finish()
 
+
+# Create config header
+if not COMMAND_LINE_TARGETS: env.CBWriteConfigDef('include/cbang/config.h')
+
+
 # Build in 'build'
 import re
 VariantDir('build', 'src', duplicate = False)

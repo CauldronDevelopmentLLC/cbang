@@ -36,6 +36,7 @@
 #include "Context.h"
 #include "Handler.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 
 #include <cbang/config/Options.h>

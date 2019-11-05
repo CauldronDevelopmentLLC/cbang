@@ -12,7 +12,7 @@ def configure(conf):
         env.ParseConfig('pkg-config --cflags --libs glib-2.0')
         env.ParseConfig('pkg-config --cflags --libs gthread-2.0')
         if conf.CBCheckHeader('glib.h'):
-            env.CBDefine('HAVE_GLIB')
+            env.CBConfigDef('HAVE_GLIB')
             return True
 
     return False

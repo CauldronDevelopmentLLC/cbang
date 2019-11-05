@@ -20,14 +20,14 @@ def configure_deps(conf, local = True, with_openssl = True):
     if conf.CBCheckLib('leveldb') and conf.CBCheckLib('snappy'):
         conf.CBCheckHome('leveldb')
         if conf.CBCheckCXXHeader('leveldb/db.h'):
-            env.CBDefine('HAVE_LEVELDB')
+            env.CBConfigDef('HAVE_LEVELDB')
 
     env.AppendUnique(prefer_dynamic = ['mariadbclient'])
     if conf.CBCheckCHeader('mysql/mysql.h') and \
             (conf.CBCheckLib('mariadbclient') or
              conf.CBCheckLib('mysqlclient')) and \
             conf.CBCheckFunc('mysql_real_connect_start'):
-        env.CBDefine('HAVE_MARIADB')
+        env.CBConfigDef('HAVE_MARIADB')
         env.cb_enabled.add('mariadb')
 
     # Boost
@@ -68,13 +68,13 @@ def configure_deps(conf, local = True, with_openssl = True):
         if conf.CBCheckCHeader('execinfo.h') and \
                 conf.CBCheckCHeader('bfd.h') and \
                 conf.CBCheckLib('iberty') and conf.CBCheckLib('bfd'):
-            env.CBDefine('HAVE_CBANG_BACKTRACE')
+            env.CBConfigDef('HAVE_CBANG_BACKTRACE')
 
         elif env.get('backtrace_debugger', 0):
             raise SCons.Errors.StopError(
                 'execinfo.h, bfd.h and libbfd needed for backtrace_debuger')
 
-        env.CBDefine('DEBUG_LEVEL=' + str(env.get('debug_level', 1)))
+        env.CBDefine('CBANG_DEBUG_LEVEL=' + str(env.get('debug_level', 1)))
 
 
 def configure(conf):
@@ -85,8 +85,11 @@ def configure(conf):
                                 home + '/src/boost'])
     env.AppendUnique(LIBPATH = [home + '/lib'])
 
+    with open(home + '/include/cbang/config.h', 'r') as f:
+        with_openssl = f.read().find('#define HAVE_OPENSSL') != -1
+
     if not env.CBConfigEnabled('cbang-deps'):
-        conf.CBConfig('cbang-deps', local = False)
+        conf.CBConfig('cbang-deps', local = False, with_openssl = with_openssl)
 
     conf.CBRequireLib('cbang-boost')
     conf.CBRequireLib('cbang')

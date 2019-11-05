@@ -36,6 +36,7 @@
 #include "BStream.h"
 #include "Certificate.h"
 
+#include <cbang/config.h>
 #include <cbang/os/Mutex.h>
 #include <cbang/os/Thread.h>
 

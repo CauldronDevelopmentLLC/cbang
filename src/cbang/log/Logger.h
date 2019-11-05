@@ -45,12 +45,6 @@
 #include <cbang/os/Mutex.h>
 
 
-#ifdef DEBUG_LEVEL
-#define DEFAULT_VERBOSITY DEBUG_LEVEL
-#else
-#define DEFAULT_VERBOSITY 1
-#endif
-
 namespace cb {
   class Option;
   class Options;
@@ -115,10 +109,8 @@ namespace cb {
     domain_levels_t infoDomainLevels;
     domain_levels_t debugDomainLevels;
 
-#ifdef HAVE_CBANG_BACKTRACE
     typedef std::set<std::string> domain_traces_t;
     domain_traces_t domainTraces;
-#endif
 
     uint64_t lastDate;
 
