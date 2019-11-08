@@ -37,20 +37,9 @@
 
 namespace cb {
 #ifdef _WIN32
-#ifdef _WIN64
-  typedef int64_t socket_t;
-#else
-  typedef int32_t socket_t;
-#endif
-
+  typedef intptr_t socket_t;
 #elif __MINGW32__
-
-#ifdef _WIN64
-  typedef uint64_t socket_t;
-#else
-  typedef uint32_t socket_t;
-#endif
-
+  typedef uintptr_t socket_t;
 #else
   typedef int socket_t;
 #endif

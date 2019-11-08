@@ -32,11 +32,11 @@
 
 #pragma once
 
-#include "Socket.h"
 #include "EventFlag.h"
 #include "Buffer.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/socket/SocketType.h>
 
 #include <string>
 

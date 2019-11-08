@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "Socket.h"
+#include <cbang/socket/SocketType.h>
 
 #include <string>
 #include <ostream>
