@@ -4,7 +4,9 @@ env = env.Clone()
 
 if not env.GetOption('clean'):
     env.Append(CPPPATH = ['#/src/re2/src'])
-    env.Append(CXXFLAGS = ['-Wno-class-memaccess', '-Wno-parentheses'])
+
+    if env.get('compiler_mode') == 'gnu':
+        env.Append(CXXFLAGS = ['-Wno-class-memaccess', '-Wno-parentheses'])
 
 # Build lib
 src = Glob('src/re2/*.cc') + Glob('src/util/*.cc')
