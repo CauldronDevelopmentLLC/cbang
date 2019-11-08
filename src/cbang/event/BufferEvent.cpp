@@ -353,7 +353,7 @@ void BufferEvent::sockConnect() {
   int err = 0;
   unsigned elen = sizeof(err);
 
-  if (getsockopt(getFD(), SOL_SOCKET, SO_ERROR, (void *)&err, &elen) < 0)
+  if (getsockopt(getFD(), SOL_SOCKET, SO_ERROR, (char *)&err, &elen) < 0)
     return scheduleErrorCB(BUFFEREVENT_ERROR);
 
   if (err) {
