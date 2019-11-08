@@ -32,6 +32,9 @@
 
 #pragma once
 
+#include <stdint.h>
+
+
 namespace cb {
   namespace Event {
 #ifdef _WIN32
