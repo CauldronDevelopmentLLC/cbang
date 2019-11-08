@@ -46,7 +46,8 @@ using namespace std;
 using namespace cb::Event;
 
 
-OAuth2Login::OAuth2Login(Client &client, const SmartPointer<OAuth2> &oauth2) :
+OAuth2Login::OAuth2Login(Client &client,
+                         const cb::SmartPointer<cb::OAuth2> &oauth2) :
   client(client), oauth2(oauth2) {}
 OAuth2Login::~OAuth2Login() {}
 

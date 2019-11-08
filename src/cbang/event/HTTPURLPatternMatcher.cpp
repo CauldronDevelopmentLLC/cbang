@@ -39,7 +39,7 @@ using namespace cb::Event;
 
 
 HTTPURLPatternMatcher::HTTPURLPatternMatcher
-(const string &pattern, const SmartPointer<HTTPRequestHandler> &child) :
+(const string &pattern, const cb::SmartPointer<HTTPRequestHandler> &child) :
   HTTPRE2PatternMatcher(toRE2Pattern(pattern), "", child) {}
 
 

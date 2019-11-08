@@ -67,7 +67,7 @@ WebServer::WebServer(cb::Options &options, Base &base,
 WebServer::~WebServer() {}
 
 
-void WebServer::addOptions(Options &options) {
+void WebServer::addOptions(cb::Options &options) {
   SmartPointer<Option> opt;
   options.pushCategory("HTTP Server");
 
@@ -172,14 +172,14 @@ void WebServer::shutdown() {
 
 
 cb::SmartPointer<Request> WebServer::createRequest
-(RequestMethod method, const URI &uri, const Version &version) {
+(RequestMethod method, const cb::URI &uri, const cb::Version &version) {
   return new Request(method, uri, version);
 }
 
 
 cb::SmartPointer<Request> WebServer::createRequest
-(Connection &con, RequestMethod method, const URI &uri,
- const Version &version) {return createRequest(method, uri, version);}
+(Connection &con, RequestMethod method, const cb::URI &uri,
+ const cb::Version &version) {return createRequest(method, uri, version);}
 
 
 bool WebServer::handleRequest(Request &req) {
@@ -215,8 +215,8 @@ void WebServer::setMaxConnectionTTL(unsigned x) {
 }
 
 
-void WebServer::allow(const IPAddress &addr) {ipFilter.allow(addr);}
-void WebServer::deny(const IPAddress &addr) {ipFilter.deny(addr);}
+void WebServer::allow(const cb::IPAddress &addr) {ipFilter.allow(addr);}
+void WebServer::deny(const cb::IPAddress &addr) {ipFilter.deny(addr);}
 
 
 void WebServer::addListenPort(const cb::IPAddress &addr) {

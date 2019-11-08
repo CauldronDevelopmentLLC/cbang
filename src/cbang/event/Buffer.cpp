@@ -217,10 +217,14 @@ unsigned Buffer::remove(ostream &stream, unsigned length) {
 
 
 unsigned Buffer::remove(ostream &stream) {return remove(stream, getLength());}
-int Buffer::read(socket_t fd, int size) {return evbuffer_read(evb, fd, size);}
 
 
-int Buffer::write(socket_t fd, int size) {
+int Buffer::read(cb::socket_t fd, int size) {
+  return evbuffer_read(evb, fd, size);
+}
+
+
+int Buffer::write(cb::socket_t fd, int size) {
   return evbuffer_write_atmost(evb, fd, size);
 }
 

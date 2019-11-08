@@ -53,7 +53,7 @@ using namespace std;
 using namespace cb::Event;
 
 
-HTTP::HTTP(Base &base, const SmartPointer<HTTPHandler> &handler,
+HTTP::HTTP(cb::Event::Base &base, const cb::SmartPointer<HTTPHandler> &handler,
            const cb::SmartPointer<cb::SSLContext> &sslCtx) :
   base(base), handler(handler), sslCtx(sslCtx) {
 
@@ -103,8 +103,8 @@ void HTTP::bind(const cb::IPAddress &addr) {
 
 
 cb::SmartPointer<Request> HTTP::createRequest
-(Connection &con, RequestMethod method, const URI &uri,
- const Version &version) {
+(Connection &con, RequestMethod method, const cb::URI &uri,
+ const cb::Version &version) {
   return handler->createRequest(con, method, uri, version);
 }
 
