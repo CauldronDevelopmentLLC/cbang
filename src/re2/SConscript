@@ -8,6 +8,8 @@ if not env.GetOption('clean'):
     if env.get('compiler_mode') == 'gnu':
         env.Append(CXXFLAGS = ['-Wno-class-memaccess', '-Wno-parentheses'])
 
+    if env['PLATFORM'] == 'win32': env.CBDefine('NOMINMAX')
+
 # Build lib
 src = Glob('src/re2/*.cc') + Glob('src/util/*.cc')
 lib = env.Library('#/lib/re2', src)
