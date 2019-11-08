@@ -33,9 +33,9 @@
 #pragma once
 
 #include "EventFlag.h"
-#include "Socket.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/socket/SocketType.h>
 
 #include <functional>
 

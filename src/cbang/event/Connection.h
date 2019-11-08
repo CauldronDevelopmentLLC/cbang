@@ -35,10 +35,10 @@
 #include "Request.h"
 #include "BufferEvent.h"
 #include "Enum.h"
-#include "Socket.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/net/IPAddress.h>
+#include <cbang/socket/SocketType.h>
 
 #include <limits>
 #include <list>
