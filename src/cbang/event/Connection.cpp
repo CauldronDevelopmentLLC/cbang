@@ -56,6 +56,8 @@ namespace cb {class SSLContext {};}
 #endif
 
 #ifdef _WIN32
+#include <cbang/socket/Winsock.h>
+
 #define ERRNO_CONNECT_REFUSED WSAECONNREFUSED
 #else
 #define ERRNO_CONNECT_REFUSED ECONNREFUSED
@@ -70,7 +72,8 @@ using namespace cb::Event;
 #define CBANG_LOG_PREFIX << "CON" << getID() << ':'
 
 
-Connection::Connection(Base &base, bool incoming, const IPAddress &peer,
+Connection::Connection(cb::Event::Base &base, bool incoming,
+                       const IPAddress &peer,
                        const SmartPointer<Socket> &socket,
                        const SmartPointer<SSLContext> &sslCtx) :
   BufferEvent(base, incoming, socket, sslCtx), base(base),
@@ -155,7 +158,7 @@ void Connection::cancelRequest(Request &req) {
 }
 
 
-void Connection::write(Request &req, const Buffer &buf) {
+void Connection::write(Request &req, const cb::Event::Buffer &buf) {
   LOG_DEBUG(4, __func__ << "() bytes=" << buf.getLength());
   checkActiveRequest(req);
 

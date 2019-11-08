@@ -66,6 +66,8 @@
 #define ERR_CONNECT_RETRIABLE(e)                                        \
   (ERR_RW_RETRIABLE(e) || (e) == WSAEINPROGRESS || (e) == WSAEINVAL)
 
+typedef int socklen_t;
+
 #else // _WIN32
 #define ERR_CONNECT_RETRIABLE(e) ((e) == EINTR || (e) == EINPROGRESS)
 #define ERR_RW_RETRIABLE(e)                             \
@@ -351,7 +353,7 @@ void BufferEvent::sockConnect() {
   LOG_DEBUG(4, __func__ << "()");
 
   int err = 0;
-  unsigned elen = sizeof(err);
+  socklen_t elen = sizeof(err);
 
   if (getsockopt(getFD(), SOL_SOCKET, SO_ERROR, (char *)&err, &elen) < 0)
     return scheduleErrorCB(BUFFEREVENT_ERROR);
@@ -694,7 +696,7 @@ void BufferEvent::updateEvents() {
 }
 
 
-SmartPointer<Event::Event>
+SmartPointer<cb::Event::Event>
 BufferEvent::newEvent(socket_t fd, unsigned event, int priority,
                       void (BufferEvent::*member)(unsigned)) {
   auto cb =
@@ -710,7 +712,7 @@ BufferEvent::newEvent(socket_t fd, unsigned event, int priority,
 }
 
 
-SmartPointer<Event::Event>
+SmartPointer<cb::Event::Event>
 BufferEvent::newEvent(void (BufferEvent::*member)()) {
   auto cb =
     [this, member] () {

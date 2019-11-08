@@ -53,7 +53,8 @@ namespace {
 }
 
 
-Event::Event(Base &base, socket_t fdOrSignal, callback_t cb, unsigned flags) :
+Event::Event(Base &base, cb::socket_t fdOrSignal, callback_t cb,
+             unsigned flags) :
   e(event_new(base.getBase(), fdOrSignal, flags & 0xff, event_cb, this)),
   cb(cb), selfReferencing(!(flags & EVENT_NO_SELF_REF)) {
   if (!e) THROW("Failed to create event");
