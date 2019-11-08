@@ -26,6 +26,8 @@
 #include "event2/event-config.h"
 #include "evconfig-private.h"
 
+#if defined(EVENT__HAVE_PTHREADS) || defined(EVENT_IN_DOXYGEN_)
+
 /* With glibc we need to define _GNU_SOURCE to get PTHREAD_MUTEX_RECURSIVE.
  * This comes from evconfig-private.h
  */
@@ -189,3 +191,5 @@ evthread_use_pthreads(void)
 	evthread_set_id_callback(evthread_posix_get_id);
 	return 0;
 }
+
+#endif // defined(EVENT__HAVE_PTHREADS) || defined(EVENT_IN_DOXYGEN_)
