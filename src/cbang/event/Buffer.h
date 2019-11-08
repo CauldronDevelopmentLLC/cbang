@@ -42,7 +42,14 @@
 
 struct evbuffer;
 struct evbuffer_cb_entry;
+
+#ifdef _WIN32
+struct evbuffer_iovec;
+typedef struct evbuffer_iovec iovec;
+
+#else
 struct iovec;
+#endif
 
 
 namespace cb {
