@@ -155,7 +155,7 @@ bool HTTP::dispatch(HTTPHandler &handler, Request &req) {
 
 void HTTP::expireCB() {
   double now = Timer::now();
-  unsigned count;
+  unsigned count = 0;
 
   for (auto it = connections.begin(); it != connections.end();)
     if (maxConnectionTTL < now - (*it)->getStartTime()) {
