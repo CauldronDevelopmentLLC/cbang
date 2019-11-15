@@ -285,15 +285,18 @@ namespace cb {
         {return get(key);}
 
       virtual void write(Sink &sink) const = 0;
+      void write(std::ostream &stream, unsigned indentStart = 0,
+                 bool compact = false, unsigned indentSpace = 2,
+                 int precision = 6) const;
 
-      std::string toString(unsigned indent = 0, bool compact = false) const;
+      std::string toString(unsigned indentStart = 0, bool compact = false,
+                           unsigned indentSpace = 2, int precision = 6) const;
       std::string asString() const;
     };
 
     static inline
     std::ostream &operator<<(std::ostream &stream, const Value &value) {
-      Writer writer(stream);
-      value.write(writer);
+      value.write(stream);
       return stream;
     }
   }

@@ -228,10 +228,17 @@ void Value::visit(visitor_t visitor, bool depthFirst) {
 }
 
 
-string Value::toString(unsigned indent, bool compact) const {
-  ostringstream str;
-  Writer writer(str, indent, compact);
+void Value::write(ostream &stream, unsigned indentStart, bool compact,
+                  unsigned indentSpace, int precision) const {
+  Writer writer(stream, indentStart, compact, indentSpace, precision);
   write(writer);
+}
+
+
+string Value::toString(unsigned indentStart, bool compact, unsigned indentSpace,
+                       int precision) const {
+  ostringstream str;
+  write(str, indentStart, compact, indentSpace, precision);
   str << flush;
   return str.str();
 }
