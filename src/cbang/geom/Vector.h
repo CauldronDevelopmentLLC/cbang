@@ -174,6 +174,13 @@ namespace cb {
     }
 
 
+    T sum() const {
+      T result = 0;
+      for (unsigned i = 0; i < DIM; i++) result += data[i];
+      return result;
+    }
+
+
     T lengthSquared() const {
       T result = 0;
       for (unsigned i = 0; i < DIM; i++) result += data[i] * data[i];

@@ -58,11 +58,21 @@ namespace cb {
           this->data[row][col] = data[row][col];
     }
 
+
     void toIdentity() {
       for (unsigned row = 0; row < ROWS; row++)
         for (unsigned col = 0; col < COLS; col++)
           data[row][col] = row == col ? 1 : 0;
     }
+
+    bool isIdentity() const {
+      for (unsigned row = 0; row < ROWS; row++)
+        for (unsigned col = 0; col < COLS; col++)
+          if (data[row][col] != (row == col ? 1 : 0)) return false;
+
+      return true;
+    }
+
 
     void inverse() {
       if (ROWS != COLS) CBANG_THROW("Cannot invert a non-square Matrix");
