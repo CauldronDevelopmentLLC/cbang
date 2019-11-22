@@ -200,10 +200,12 @@ Version SystemInfo::getOSVersion() const {
 #elif defined(__APPLE__)
   SInt32 major;
   SInt32 minor;
-  Gestalt(gestaltSystemVersionMajor, &major);
-  Gestalt(gestaltSystemVersionMinor, &minor);
+  SInt32 release;
+  Gestalt(gestaltSystemVersionMajor,  &major);
+  Gestalt(gestaltSystemVersionMinor,  &minor);
+  Gestalt(gestaltSystemVersionBugFix, &release);
 
-  return Version((uint8_t)major, (uint8_t)minor);
+  return Version((uint8_t)major, (uint8_t)minor, (uint8_t)release);
 
 #else
   struct utsname i;
