@@ -51,9 +51,7 @@ typedef int socklen_t;  // Unix socket length
 #define MSG_DONTWAIT 0
 #define MSG_NOSIGNAL 0
 #define SHUT_RDWR 2
-#ifndef EINPROGRESS
-#define EINPROGRESS WSAEWOULDBLOCK
-#endif
+#define SOCKET_INPROGRESS WSAEWOULDBLOCK
 
 #else // _WIN32
 #include <sys/socket.h>
@@ -65,6 +63,7 @@ typedef int socklen_t;  // Unix socket length
 
 #define INVALID_SOCKET -1        // WinSock invalid socket
 #define SOCKET_ERROR   -1        // Basic WinSock error
+#define SOCKET_INPROGRESS EINPROGRESS
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -276,7 +275,7 @@ void SocketDefaultImpl::connect(const IPAddress &ip) {
 
     SysError::clear();
     if (::connect((socket_t)socket, (struct sockaddr *)&sin, sizeof(sin)) == -1)
-      if (SysError::get() != EINPROGRESS)
+      if (SysError::get() != SOCKET_INPROGRESS)
         THROW("Failed to connect to " << ip << ": " << SysError());
 
     connected = true;
