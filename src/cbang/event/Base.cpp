@@ -37,6 +37,7 @@
 #include <event2/event.h>
 
 #include <cbang/Exception.h>
+#include <cbang/socket/Socket.h>
 
 using namespace cb::Event;
 using namespace cb;
@@ -46,6 +47,8 @@ bool Base::_threadsEnabled = false;
 
 
 Base::Base(bool withThreads) {
+  Socket::initialize(); // Windows needs this
+
   if (withThreads) enableThreads();
   base = event_base_new();
   if (!base) THROW("Failed to create event base");
