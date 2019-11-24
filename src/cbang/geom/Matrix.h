@@ -201,17 +201,17 @@ namespace cb {
       if (ROWS != COLS)
         THROW("Cannot do an inplace transpose of a non-square matrix");
 
-      for (unsigned row = 0; row < ROWS / 2; row++)
-        for (unsigned col = 0; col < COLS / 2; col++)
-          if (row != col) std::swap(data[row][col], data[col][row]);
+      for (unsigned row = 0; row < ROWS; row++)
+        for (unsigned col = row + 1; col < COLS; col++)
+          std::swap(data[row][col], data[col][row]);
     }
 
 
     Matrix<COLS, ROWS, T> transpose() const {
       Matrix<COLS, ROWS, T> result;
 
-      for (unsigned row = 0; row < ROWS / 2; row++)
-        for (unsigned col = 0; col < COLS / 2; col++)
+      for (unsigned row = 0; row < ROWS; row++)
+        for (unsigned col = 0; col < COLS; col++)
           result[col][row] = data[row][col];
 
       return result;
