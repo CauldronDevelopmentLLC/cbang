@@ -448,12 +448,8 @@ namespace cb {
 
       LOG_DEBUG(4, "Removing directory '" << path << "'");
 
-      try {
-        if (withChildren) rmtree(path);
-        else fs::remove(path);
-      } catch (const fs::filesystem_error &e) {
-        THROW("Failed to remove directory '" << path << "': " << e.what());
-      }
+      if (withChildren) rmtree(path);
+      else unlink(path);
     }
 
 
