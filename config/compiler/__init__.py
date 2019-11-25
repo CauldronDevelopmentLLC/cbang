@@ -293,7 +293,10 @@ def configure(conf, cstd = 'c99'):
     else:
         if compiler_mode == 'gnu':
             # Don't add debug info and enable dead code removal
-            env.AppendUnique(LINKFLAGS = ['-Wl,-s', '-Wl,-x'])
+            env.AppendUnique(LINKFLAGS =
+                             ['-Wl,-s', '-Wl,-x', '-Wl,--gc-sections'])
+            env.AppendUnique(CCFLAGS =
+                             ['-ffunction-sections', '-fdata-sections'])
 
         env.CBDefine('NDEBUG')
 
