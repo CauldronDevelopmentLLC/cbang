@@ -1,9 +1,10 @@
 #!/bin/bash -e
 
-VERSION=1.69.0
+VERSION=1.71.0
 NAME=boost_$(echo $VERSION | tr . _)
 PKG=$NAME.7z
-URL=https://sf.net/projects/boost/files/boost/$VERSION/$PKG
+URL=https://dl.bintray.com/boostorg/release/$VERSION/source/$PKG
+#URL=https://sf.net/projects/boost/files/boost/$VERSION/$PKG
 BCP=./$NAME/dist/bin/bcp
 
 # Get boost
