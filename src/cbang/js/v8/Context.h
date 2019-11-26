@@ -64,7 +64,7 @@ namespace cb {
         }
       };
 
-      Context();
+      Context(v8::Isolate *iso);
 
       Value getGlobal() {return v8::Handle<v8::Value>(context->Global());}
 
