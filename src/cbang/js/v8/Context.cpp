@@ -32,12 +32,14 @@
 
 #include "Context.h"
 
+#include <cbang/js/JSInterrupted.h>
+
 using namespace cb;
 using namespace cb::gv8;
 using namespace std;
 
 
-Context::Context() : context(v8::Context::New(Value::getIso())) {}
+Context::Context(v8::Isolate *iso) : context(v8::Context::New(iso)) {}
 
 
 Value Context::eval(const InputSource &src) {
@@ -66,14 +68,13 @@ Value Context::eval(const InputSource &src) {
 }
 
 
-void Context::translateException(const v8::TryCatch &tryCatch,
-                                 bool useStack) {
+void Context::translateException(const v8::TryCatch &tryCatch, bool useStack) {
   v8::HandleScope handleScope(Value::getIso());
 
   if (useStack && !tryCatch.StackTrace().IsEmpty())
     throw Exception(Value(tryCatch.StackTrace()).toString());
 
-  if (tryCatch.Exception()->IsNull()) throw Exception("Interrupted");
+  if (tryCatch.Exception()->IsNull()) throw cb::js::JSInterrupted();
 
   string msg = Value(tryCatch.Exception()).toString();
 

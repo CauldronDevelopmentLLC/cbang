@@ -32,55 +32,14 @@
 
 #pragma once
 
-#include "ValueRef.h"
-#include "Context.h"
-
-#include <cbang/SmartPointer.h>
-#include <cbang/js/Impl.h>
-#include <cbang/js/Callback.h>
-
-#include <vector>
-#include <map>
+#include <cbang/Exception.h>
 
 
 namespace cb {
-  namespace js {class Javascript;}
-
-  namespace gv8 {
-    class Module;
-
-    class JSImpl : public js::Impl {
-      v8::Isolate *isolate = 0;
-
-      struct Scope {
-        v8::Locker lock;
-        v8::Isolate::Scope isoScope;
-        v8::HandleScope globalScope;
-
-        Scope(v8::Isolate *iso) : lock(iso), isoScope(iso), globalScope(iso) {}
-      };
-
-      SmartPointer<Scope> scope;
-      SmartPointer<Context> ctx;
-
-      std::vector<SmartPointer<js::Callback> > callbacks;
-
-      static JSImpl *singleton;
-
+  namespace js {
+    class JSInterrupted : public cb::Exception {
     public:
-      JSImpl(js::Javascript &js);
-      ~JSImpl();
-
-      static void init(int *argc = 0, char *argv[] = 0);
-      static JSImpl &current();
-
-      void add(const SmartPointer<js::Callback> &cb) {callbacks.push_back(cb);}
-
-      // From js::Impl
-      SmartPointer<js::Factory> getFactory();
-      SmartPointer<js::Scope> enterScope();
-      SmartPointer<js::Scope> newScope();
-      void interrupt();
+      JSInterrupted() : Exception("Javascript Interrupted") {}
     };
   }
 }

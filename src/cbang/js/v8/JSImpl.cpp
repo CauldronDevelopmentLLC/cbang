@@ -47,32 +47,25 @@ using namespace std;
 JSImpl *JSImpl::singleton = 0;
 
 
-namespace {
-  v8::Isolate *createAndEnter() {
-    v8::Isolate::CreateParams params;
-    params.array_buffer_allocator =
-      v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-    auto isolate = v8::Isolate::New(params);
-    isolate->Enter();
-    return isolate;
-  }
-}
-
-
-JSImpl::JSImpl(js::Javascript &js) :
-  isolate(createAndEnter()), scope(new Scope(isolate)) {
+JSImpl::JSImpl(js::Javascript &js) {
   if (singleton) THROW("There can be only one. . .");
   singleton = this;
+
+  v8::Isolate::CreateParams params;
+  params.array_buffer_allocator =
+    v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+  isolate = v8::Isolate::New(params);
+
+  scope = new Scope(isolate);
+  ctx = new Context(isolate);
 }
 
 
 JSImpl::~JSImpl() {
+  ctx.release();
   scope.release();
-
-  if (isolate) {
-    isolate->Exit();
-    isolate->Dispose();
-  }
+  isolate->Dispose();
+  singleton = 0;
 }
 
 
@@ -94,7 +87,7 @@ SmartPointer<js::Scope> JSImpl::enterScope() {return new Context::Scope(ctx);}
 
 
 SmartPointer<js::Scope> JSImpl::newScope() {
-  return new Context::Scope(new Context);
+  return new Context::Scope(new Context(isolate));
 }
 
 
