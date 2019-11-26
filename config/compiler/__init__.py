@@ -291,10 +291,11 @@ def configure(conf, cstd = 'c99'):
                 env.AppendUnique(CCFLAGS = ['/arch:IA32'])
 
     else:
-        if compiler_mode == 'gnu':
-            # Don't add debug info and enable dead code removal
-            env.AppendUnique(LINKFLAGS =
-                             ['-Wl,-s', '-Wl,-x', '-Wl,--gc-sections'])
+        if compiler_mode == 'gnu': # Strip symbols
+            env.AppendUnique(LINKFLAGS = ['-Wl,-s', '-Wl,-x'])
+
+        if compiler == 'gnu': # Enable dead code removal
+            env.AppendUnique(LINKFLAGS = ['-Wl,--gc-sections'])
             env.AppendUnique(CCFLAGS =
                              ['-ffunction-sections', '-fdata-sections'])
 
