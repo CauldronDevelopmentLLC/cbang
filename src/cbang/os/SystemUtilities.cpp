@@ -399,6 +399,9 @@ namespace cb {
     }
 
 
+    string getPathPrefix() {return dirname(dirname(getExecutablePath()));}
+
+
     string findInPath(const string &path, const string &name) {
       if (basename(name) != name) THROW("Invalid name '" << name << "'");
 
