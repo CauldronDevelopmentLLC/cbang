@@ -85,6 +85,7 @@ namespace cb {
     std::string joinPath(const std::vector<std::string> &parts);
     std::string joinPaths(const std::vector<std::string> &paths);
     std::string getExecutablePath();
+    std::string getPathPrefix();
     std::string findInPath(const std::string &path, const std::string &name);
 
     // Directory
