@@ -69,9 +69,9 @@ bool HTTPAccessHandler::operator()(Request &req) {
   bool deny;
 
   if (session.isNull()) {
-    user = "@unauthenticted";
+    user  = "@unauthenticted";
     allow = groupAllow("unauthenticted");
-    deny = groupDeny("unauthenticted");
+    deny  = groupDeny("unauthenticted");
 
   } else {
 
@@ -85,6 +85,9 @@ bool HTTPAccessHandler::operator()(Request &req) {
         if (!allow) allow = groupAllow(group);
         if (!deny) deny = groupDeny(group);
       }
+
+    if (!allow) allow = groupAllow("authenticated");
+    if (!deny)   deny = groupDeny("authenticated");
   }
 
   LOG_INFO(allow ? 5 : 3, "allow(" << req.getURI().getPath() << ", "
