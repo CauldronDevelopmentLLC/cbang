@@ -2,15 +2,12 @@ Source: cbang
 Maintainer: Joseph Coffland <joseph@cauldrondevelopment.com>
 Section: libs
 Priority: optional
-Standards-Version: 3.9.2
+Standards-Version: 4.4.1
 Homepage: http://cbang.org/
-Vcs-Svn: svn://cauldrondevelopment.com/svn/cbang/trunk/cbang
-Vcs-Browser: https://cauldrondevelopment.com/svn/cbang/trunk/cbang
-Build-Depends: debhelper (>= 8), cdbs, libexpat1-dev,
+Build-Depends: debhelper (>= 11), cdbs, scons, libexpat1-dev,
  libssl-dev, libsqlite3-dev, libboost-iostreams-dev (>= 1.40.0),
  libboost-filesystem-dev (>= 1.40.0), libboost-system-dev (>= 1.40.0),
  libboost-regex-dev (>= 1.40.0)
-
 
 Package: libcbang0-dev
 Provides: libcbang-dev
@@ -43,7 +40,6 @@ Description: C! development files
  be any sort of grand unifying system for C++ application development.
  However, I hope you find many parts of the library useful in your C++
  development projects.
-
 
 Package: libcbang0
 Architecture: any
