@@ -1,5 +1,5 @@
-cbang (1.3.2-1) unstable; urgency=low
+cbang (1.3.3-1) unstable; urgency=low
 
-  * Initial release. (Closes: #MAGICNUMBER)
+  * Initial release. (Closes: #949344)
 
  -- Joseph Coffland <joseph@cauldrondevelopment.com>  Fri, 13 Jan 2012 16:25:58 -0800
