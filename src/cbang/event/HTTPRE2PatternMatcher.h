@@ -36,15 +36,15 @@
 
 #include <set>
 
-#include <re2/re2.h>
-
 
 namespace cb {
   namespace Event {
     class Request;
 
     class HTTPRE2PatternMatcher : public HTTPRequestHandler {
-      RE2 regex;
+      struct Private;
+
+      SmartPointer<Private> pri;
       std::string replace;
       SmartPointer<HTTPRequestHandler> child;
       std::set<std::string> args;
@@ -54,7 +54,6 @@ namespace cb {
                             const std::string &replace,
                             const SmartPointer<HTTPRequestHandler> &child);
 
-      const RE2 &getRegex() const {return regex;}
       const std::set<std::string> &getArgs() const {return args;}
 
       // From HTTPRequestHandler
