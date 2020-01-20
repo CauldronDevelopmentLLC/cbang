@@ -1,15 +1,11 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: C!
+Upstream-Name: cbang
 Upstream-Contact: Joseph Coffland <joseph@cauldrondevelopment.com>
-Source: https://cauldrondevelopment.com/svn/cbang/trunk/cbang
-
-Files: src/libevent/*
-Copyright: fill
-License: fill
- fill-full-license-text
+Source: https://github.com/CauldronDevelopmentLLC/cbang
 
 Files: *
-Copyright: 2003-2019 Cauldron Development LLC, Stanford University
+Copyright: 2003-2020 Cauldron Development LLC
+           2003-2014 Stanford University
 License: GPL-2+
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -28,3 +24,174 @@ License: GPL-2+
  can be found at `/usr/share/common-licenses/GPL-2'.
  .
  A special exception to the GPL is granted for linking with openssl.
+
+Files: src/libevent/*
+Copyright: 2002-2007 Niels Provos <provos@citi.umich.edu>
+           2007-2012 Niels Provos and Nick Mathewson
+License:
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+ 3. The name of the author may not be used to endorse or promote products
+    derived from this software without specific prior written permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: src/bzip2/*
+Copyright: 1996-2010 Julian R Seward <jseward@bzip.org>
+License: BSD-variant
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+ .
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+ .
+ 2. The origin of this software must not be misrepresented; you must
+    not claim that you wrote the original software.  If you use this
+    software in a product, an acknowledgment in the product
+    documentation would be appreciated but is not required.
+ .
+ 3. Altered source versions must be plainly marked as such, and must
+    not be misrepresented as being the original software.
+ .
+ 4. The name of the author may not be used to endorse or promote
+    products derived from this software without specific prior written
+    permission.
+ .
+ THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS
+ OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+ DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Files: src/expat/*
+Copyright:
+ Copyright (C) 1998-2000 Thai Open Source Software Center Ltd and Clark Cooper
+ Copyright (C) 2001-2017 Expat maintainers
+License: MIT
+
+Files: src/libyaml/*
+Copyright: 2006, Kirill Simonov <xi@resolvent.net>
+License: Expat
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ “Software”), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+
+Files: src/re2/*
+Copyright: 2002-2018, Google Inc.,
+           2014,      Samsung Electronics,
+           2010-2016, Stefano Rivera <stefanor@debian.org>
+License: BSD-3-google
+
+Files: src/re2/src/util/utf.h src/re2/src/util/rune.cc
+Copyright: 2002, Lucent Technologies
+License: Lucent
+ Permission to use, copy, modify, and distribute this software for any purpose
+ without fee is hereby granted, provided that this entire notice is included in
+ all copies of any software which is or includes a copy or modification of this
+ software and in all copies of the supporting documentation for such software.
+ .
+ THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
+ WARRANTY.  IN PARTICULAR, NEITHER THE AUTHORS NOR LUCENT TECHNOLOGIES MAKE ANY
+ REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY OF THIS
+ SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
+
+Files: src/sqlite3/*
+Copyright: D. Richard Hipp <drh@hwaci.com>
+License: public-domain
+ The files listed have been put on the public domain by the sqlite3
+ contributors.
+
+Files: src/zlib/*
+Copyright: 1995-2013 Jean-loup Gailly and Mark Adler
+License: Zlib
+
+Files: src/boost/*
+Copyright: Boost project contributors
+License: BSL-1.0
+Comment:
+ For a few files it is difficult or impossible to establish an actual
+ copyright holder; most of such files carry little to no creative
+ content, so the mere fact that they are covered by copyright
+ protection is not obvious. Most probably all such files can safely be
+ considered under the Boost Software License.
+
+Files: src/boost/libs/iostreams/*
+Copyright: Jonathan Turkanis
+License: BSL-1.0
+
+Files:
+ src/boost/libs/filesystem/*
+ src/boost/libs/system/*
+Copyright: Beman Dawes
+License: BSL-1.0
+
+Files:
+ src/boost/libs/iostreams/src/bzip2.cpp
+ src/boost/libs/iostreams/src/file_descriptor.cpp
+ src/boost/libs/iostreams/src/gzip.cpp
+ src/boost/libs/iostreams/src/zlib.cpp
+Copyright:
+ CodeRage LLC
+ Jonathan Turkanis
+License: BSL-1.0
+
+Files: src/boost/libs/iostreams/src/mapped_file.cpp
+Copyright:
+ Craig Henderson
+ Jonathan Graehl
+ Jonathan Turkanis
+ Jorge Lodos
+License: BSL-1.0
+
+Files: src/boost/libs/regex/*
+Copyright: John Maddock
+License: BSL-1.0
+
+Files: src/boost/libs/filesystem/src/utf8_codecvt_facet.cpp
+Copyright: Vladimir Prus
+License: BSL-1.0
+
+Files: src/boost/libs/filesystem/src/operations.cpp
+Copyright:
+ Beman Dawes
+ Dietmar Kuehl
+License: BSL-1.0
