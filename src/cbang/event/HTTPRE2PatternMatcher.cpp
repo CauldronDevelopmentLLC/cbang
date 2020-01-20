@@ -39,19 +39,28 @@
 
 #include <vector>
 
+#include <re2/re2.h>
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
+struct HTTPRE2PatternMatcher::Private {
+  RE2 regex;
+  Private(const string &s) : regex(s) {}
+};
+
+
 HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
 (const string &search, const string &replace,
  const SmartPointer<HTTPRequestHandler> &child) :
-  regex(search), replace(replace), child(child) {
-  if (regex.error_code()) THROW("Failed to compile RE2: " << regex.error());
+  pri(new Private(search)), replace(replace), child(child) {
+  if (pri->regex.error_code())
+    THROW("Failed to compile RE2: " << pri->regex.error());
 
   // Regex args
-  const map<int, string> &names = regex.CapturingGroupNames();
+  const map<int, string> &names = pri->regex.CapturingGroupNames();
   map<int, string>::const_iterator it;
   for (it = names.begin(); it != names.end(); it++)
     if (!it->second.empty()) args.insert(it->second);
@@ -59,7 +68,7 @@ HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
 
 
 bool HTTPRE2PatternMatcher::operator()(Request &req) {
-  int n = regex.NumberOfCapturingGroups();
+  int n = pri->regex.NumberOfCapturingGroups();
   vector<RE2::Arg> args(n);
   vector<RE2::Arg *> argPtrs(n);
   vector<string> results(n);
@@ -73,15 +82,15 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
   // Attempt match
   URI &uri = req.getURI();
   string path = uri.getEscapedPath();
-  if (!RE2::FullMatchN(path, regex, argPtrs.data(), n))
+  if (!RE2::FullMatchN(path, pri->regex, argPtrs.data(), n))
     return false;
 
-  LOG_DEBUG(5, path << " matched " << regex.pattern());
+  LOG_DEBUG(5, path << " matched " << pri->regex.pattern());
 
   if (child.isNull()) return true;
 
   // Store results
-  const map<int, string> &names = regex.CapturingGroupNames();
+  const map<int, string> &names = pri->regex.CapturingGroupNames();
   for (int i = 0; i < n; i++) {
     if (results[i].empty()) continue;
 
@@ -92,7 +101,7 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
 
   // Replace path
   RestoreURIPath restoreURIPath(uri);
-  if (!replace.empty() && RE2::Replace(&path, regex, replace))
+  if (!replace.empty() && RE2::Replace(&path, pri->regex, replace))
     uri.setPath(path);
 
   // Call child
