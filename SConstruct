@@ -4,6 +4,7 @@ import os
 version = '0.0.1'
 libversion = '0'
 
+
 # Setup
 env = Environment(ENV = os.environ,
                   TARGET_ARCH = os.environ.get('TARGET_ARCH', 'x86'))
@@ -19,27 +20,13 @@ env.CBAddVariables(
     BoolVariable('with_openssl', 'Build with OpenSSL support', True),
     ('force_local', 'List of 3rd party libs to be built locally', ''),
     ('disable_local', 'List of 3rd party libs not to be built locally', ''))
-env.CBLoadTools('dist packager compiler cbang build_info resources')
+env.CBLoadTools('packager compiler cbang build_info resources')
 conf = env.CBConfigure()
+
 
 # Build Info
 env.Replace(BUILD_INFO_NS = 'cb::BuildInfo')
 env.Replace(RESOURCES_NS = 'cb')
-
-
-# Dist
-if 'dist' in COMMAND_LINE_TARGETS:
-    env.__setitem__('dist_build', '')
-
-    # Only files checked in to Subversion
-    lines = os.popen('svn status -v').readlines()
-    lines = filter(lambda l: len(l) and l[0] in 'MA ', lines)
-    files = map(lambda l: l.split()[-1], lines)
-    files = list(filter(lambda f: not os.path.isdir(f), files))
-
-    tar = env.TarBZ2Dist('libcbang' + libversion, files)
-    Alias('dist', tar)
-    Return()
 
 
 # Configure
@@ -49,8 +36,10 @@ if not env.GetOption('clean'):
     env.CBDefine('USING_CBANG') # Using CBANG macro namespace
     if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
 
+
 # Local includes
 env.Append(CPPPATH = ['#/include', '#/src', '#/src/boost'])
+
 
 # Build third-party libs
 force_local = env.get('force_local', '')
@@ -63,6 +52,7 @@ for lib in 'zlib bzip2 sqlite3 expat boost libevent re2 libyaml'.split():
     if not env.CBConfigEnabled(lib) or lib in force_local:
         Default(SConscript('src/%s/SConscript' % lib,
                            variant_dir = 'build/' + lib))
+
 
 # Source
 subdirs = [
