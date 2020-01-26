@@ -9,7 +9,7 @@ include /usr/share/cdbs/1/rules/debhelper.mk
 
 LIBPKGNAME = libcbang0
 #SONAME = "$(DEB_UPSTREAM_VERSION)"
-DEB_SCONS_OPTIONS = sharedlib=1 ccache=1 -j 8
+DEB_SCONS_OPTIONS = sharedlib=1 -j8
 DEB_SCONS_INSTALL_OPTIONS += prefix="$(cdbs_curdestdir)/usr"
 DEB_DH_MAKESHLIBS_ARGS = -- -c4
 

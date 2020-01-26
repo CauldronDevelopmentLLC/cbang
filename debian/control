@@ -29,10 +29,6 @@ Description: C! development files
  reusable code.  C! also encourages exception based error handling,
  and light use of C++ templates and C preprocesor macros.
  .
- C! "leans" on the venerable boost library but also reimplements
- several boost APIs which are considered by the author to be too
- template heavy, less readable or overly complicated in boost.
- .
  The code was developed on an as needed basis and was never intended to
  be any sort of grand unifying system for C++ application development.
  However, I hope you find many parts of the library useful in your C++
@@ -56,10 +52,6 @@ Description: C! is a collection of cross-platform C++ utility libraries
  C!'s philosophy is to create clean, simple, readable, modular and
  reusable code.  C! also encourages exception based error handling,
  and light use of C++ templates and C preprocesor macros.
- .
- C! "leans" on the venerable boost library but also reimplements
- several boost APIs which are considered by the author to be too
- template heavy, less readable or overly complicated in boost.
  .
  The code was developed on an as needed basis and was never intended to
  be any sort of grand unifying system for C++ application development.
