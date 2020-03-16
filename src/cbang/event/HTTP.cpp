@@ -89,7 +89,7 @@ void HTTP::bind(const cb::IPAddress &addr) {
   SmartPointer<Socket> socket = new Socket;
   socket->setReuseAddr(true);
   socket->bind(addr);
-  socket->listen(128);
+  socket->listen(connectionBacklog);
   socket_t fd = socket->get();
 
   // This event will be destroyed with the HTTP

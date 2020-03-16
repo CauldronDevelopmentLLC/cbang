@@ -102,6 +102,7 @@ namespace cb {
       void setEventPriority(int priority);
       void setMaxConnections(unsigned x);
       void setMaxConnectionTTL(unsigned x);
+      void setConnectionBacklog(unsigned x);
 
       void allow(const IPAddress &addr);
       void deny(const IPAddress &addr);

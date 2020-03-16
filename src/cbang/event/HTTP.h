@@ -65,6 +65,7 @@ namespace cb {
       unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
       unsigned maxConnections = std::numeric_limits<unsigned>::max();
       unsigned maxConnectionTTL = 0;
+      unsigned connectionBacklog = 128;
       int readTimeout = 50;
       int writeTimeout = 50;
       int priority = -1;
@@ -99,6 +100,9 @@ namespace cb {
 
       unsigned getMaxConnectionTTL() const {return maxConnectionTTL;}
       void setMaxConnectionTTL(unsigned x);
+
+      unsigned getConnectionBacklog() const {return connectionBacklog;}
+      void setConnectionBacklog(unsigned x) {connectionBacklog = x;}
 
       int getEventPriority() const {return priority;}
       void setEventPriority(int priority) {this->priority = priority;}

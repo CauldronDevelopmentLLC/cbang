@@ -89,6 +89,8 @@ void WebServer::addOptions(cb::Options &options) {
               "headers.");
   options.add("http-server-timeout", "Maximum time in seconds before an http "
               "request times out.");
+  options.add("http-connection-backlog", "Size of the connection backlog "
+              "queue.  Once this is full connections are rejected.");
 
   options.popCategory();
 
@@ -118,11 +120,6 @@ void WebServer::init() {
   ipFilter.allow(options["allow"]);
   ipFilter.deny(options["deny"]);
 
-  // Configure ports
-  Option::strings_t addresses = options["http-addresses"].toStrings();
-  for (unsigned i = 0; i < addresses.size(); i++)
-    addListenPort(addresses[i]);
-
   // Configure HTTP
   if (options["http-max-body-size"].hasValue())
     setMaxBodySize(options["http-max-body-size"].toInteger());
@@ -130,6 +127,13 @@ void WebServer::init() {
     setMaxHeadersSize(options["http-max-headers-size"].toInteger());
   if (options["http-server-timeout"].hasValue())
     setTimeout(options["http-server-timeout"].toInteger());
+  if (options["http-connection-backlog"].hasValue())
+    setConnectionBacklog(options["http-connection-backlog"].toInteger());
+
+  // Configure ports
+  Option::strings_t addresses = options["http-addresses"].toStrings();
+  for (unsigned i = 0; i < addresses.size(); i++)
+    addListenPort(addresses[i]);
 
 #ifdef HAVE_OPENSSL
   // SSL
@@ -212,6 +216,12 @@ void WebServer::setMaxConnections(unsigned x) {
 void WebServer::setMaxConnectionTTL(unsigned x) {
   http->setMaxConnectionTTL(x);
   if (!https.isNull()) http->setMaxConnectionTTL(x);
+}
+
+
+void WebServer::setConnectionBacklog(unsigned x) {
+  http->setConnectionBacklog(x);
+  if (!https.isNull()) http->setConnectionBacklog(x);
 }
 
 
