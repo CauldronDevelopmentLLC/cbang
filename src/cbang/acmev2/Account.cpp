@@ -59,7 +59,8 @@ using namespace std;
 
 Account::Account(Event::Client &client) :
   client(client),
-  retryEvent(client.getBase().newEvent(this, &Account::next, 0)) {}
+  retryEvent(client.getBase()
+             .newEvent(this, &Account::next, EF::EVENT_NO_SELF_REF)) {}
 
 
 void Account::addOptions(Options &options) {
