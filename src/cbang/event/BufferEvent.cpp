@@ -41,15 +41,14 @@
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
 #include <cbang/socket/Socket.h>
+#include <cbang/openssl/SSL.h>
+#include <cbang/openssl/SSLContext.h>
 
 #include <event2/util.h>
 #include <event2/event.h>
 #include <event2/buffer.h>
 
 #ifdef HAVE_OPENSSL
-#include <cbang/openssl/SSL.h>
-#include <cbang/openssl/SSLContext.h>
-
 #include <openssl/ssl.h>
 #endif // HAVE_OPENSSL
 

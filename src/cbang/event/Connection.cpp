@@ -48,12 +48,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/socket/Socket.h>
 #include <cbang/os/SysError.h>
-
-#ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
-#else
-namespace cb {class SSLContext {};}
-#endif
 
 #ifdef _WIN32
 #include <cbang/socket/Winsock.h>

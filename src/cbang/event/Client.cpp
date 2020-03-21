@@ -34,12 +34,7 @@
 #include "Buffer.h"
 
 #include <cbang/config.h>
-
-#ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
-#else
-namespace cb {class SSLContext {};}
-#endif
 
 using namespace std;
 using namespace cb;

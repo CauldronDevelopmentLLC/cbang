@@ -48,12 +48,8 @@
 #include <cbang/Zap.h>
 #include <cbang/String.h>
 
-#ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSL.h>
 #include <cbang/openssl/SSLContext.h>
-#else
-namespace cb {class SSLContext {};}
-#endif
 
 #include <cbang/log/Logger.h>
 #include <cbang/time/Timer.h>
