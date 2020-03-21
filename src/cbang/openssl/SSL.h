@@ -32,11 +32,13 @@
 
 #pragma once
 
+#include <cbang/config.h>
 #include <cbang/SmartPointer.h>
 
 #include <string>
 #include <vector>
 
+#ifdef HAVE_OPENSSL
 typedef struct ssl_st _SSL;
 typedef struct ssl_ctx_st SSL_CTX;
 typedef struct bio_st BIO;
@@ -113,3 +115,7 @@ namespace cb {
     bool checkWants();
   };
 }
+
+#else // HAVE_OPENSSL
+namespace cb {class SSL {};}
+#endif // HAVE_OPENSSL

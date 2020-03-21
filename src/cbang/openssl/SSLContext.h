@@ -32,10 +32,12 @@
 
 #pragma once
 
+#include <cbang/config.h>
 #include <cbang/io/InputSource.h>
 
 #include <string>
 
+#ifdef HAVE_OPENSSL
 typedef struct ssl_ctx_st SSL_CTX;
 typedef struct x509_store_st X509_STORE;
 typedef struct bio_st BIO;
@@ -95,3 +97,7 @@ namespace cb {
     void setOptions(long options);
   };
 }
+
+#else // HAVE_OPENSSL
+namespace cb {class SSLContext {};}
+#endif // HAVE_OPENSSL

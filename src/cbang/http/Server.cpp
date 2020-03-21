@@ -51,12 +51,7 @@
 #include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
 #include <cbang/Catch.h>
-
-#ifdef HAVE_OPENSSL
 #include <cbang/openssl/SSLContext.h>
-#else
-namespace cb {class SSLContext {};}
-#endif
 
 using namespace std;
 using namespace cb;
