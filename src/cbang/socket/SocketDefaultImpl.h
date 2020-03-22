@@ -63,6 +63,7 @@ namespace cb {
     void setKeepAlive(bool keepAlive);
     void setSendBuffer(int size);
     void setReceiveBuffer(int size);
+    void setReceiveLowWater(int size);
     void setSendTimeout(double timeout);
     void setReceiveTimeout(double timeout);
     void open();

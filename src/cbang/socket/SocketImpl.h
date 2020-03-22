@@ -66,6 +66,7 @@ namespace cb {
     virtual void setKeepAlive(bool keepAlive) {}
     virtual void setSendBuffer(int size) {}
     virtual void setReceiveBuffer(int size) {}
+    virtual void setReceiveLowWater(int size) {}
     virtual void setSendTimeout(double timeout) {}
     virtual void setReceiveTimeout(double timeout) {}
     virtual void open() = 0;
