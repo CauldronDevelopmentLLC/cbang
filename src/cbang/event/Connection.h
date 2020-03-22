@@ -49,6 +49,7 @@ namespace cb {
   class URI;
   class SSLContext;
   class Socket;
+  class RateSet;
 
   namespace Event {
     class Event;
@@ -100,6 +101,8 @@ namespace cb {
       uint32_t bodySize = 0;
       int64_t bytesToRead = 0;
       int contentLength = 0;
+
+      SmartPointer<RateSet> stats;
 
     public:
       Connection(Base &base, bool incoming, const IPAddress &peer,
@@ -153,6 +156,9 @@ namespace cb {
 
       uint32_t getHeaderSize() const {return headerSize;}
       uint32_t getBodySize() const {return bodySize;}
+
+      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+      const SmartPointer<RateSet> &getStats() const {return stats;}
 
       void sendServiceUnavailable();
       void makeRequest(Request &req);

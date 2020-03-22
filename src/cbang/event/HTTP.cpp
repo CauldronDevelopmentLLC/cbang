@@ -201,6 +201,7 @@ void HTTP::acceptCB() {
   if (0 <= priority) con->setPriority(priority);
   con->setReadTimeout(readTimeout);
   con->setWriteTimeout(writeTimeout);
+  con->setStats(stats);
 
   connections.push_back(con);
   if (stats.isSet()) stats->event("accepted");
