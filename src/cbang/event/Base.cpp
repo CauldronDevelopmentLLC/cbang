@@ -46,12 +46,13 @@ using namespace cb;
 bool Base::_threadsEnabled = false;
 
 
-Base::Base(bool withThreads) {
+Base::Base(bool withThreads, int priorities) {
   Socket::initialize(); // Windows needs this
 
   if (withThreads) enableThreads();
   base = event_base_new();
   if (!base) THROW("Failed to create event base");
+  if (0 < priorities) initPriority(priorities);
 }
 
 
