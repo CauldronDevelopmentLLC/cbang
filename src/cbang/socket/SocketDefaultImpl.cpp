@@ -168,6 +168,15 @@ void SocketDefaultImpl::setReceiveBuffer(int size) {
 }
 
 
+void SocketDefaultImpl::setReceiveLowWater(int size) {
+  if (!isOpen()) open();
+
+  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_RCVLOWAT, (char *)&size,
+                 sizeof(size)))
+    THROW("Could not set receive low water to " << size << ": " << SysError());
+}
+
+
 void SocketDefaultImpl::setSendTimeout(double timeout) {
   if (!isOpen()) open();
 

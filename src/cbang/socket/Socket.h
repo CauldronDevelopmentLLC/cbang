@@ -90,6 +90,7 @@ namespace cb {
     virtual void setKeepAlive(bool keepAlive) {impl->setKeepAlive(keepAlive);}
     virtual void setSendBuffer(int size) {impl->setSendBuffer(size);}
     virtual void setReceiveBuffer(int size) {impl->setReceiveBuffer(size);}
+    virtual void setReceiveLowWater(int size) {impl->setReceiveLowWater(size);}
     virtual void setReceiveTimeout(double timeout)
     {impl->setReceiveTimeout(timeout);}
     virtual void setSendTimeout(double timeout) {impl->setSendTimeout(timeout);}
