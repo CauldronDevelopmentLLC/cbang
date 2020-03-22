@@ -81,10 +81,10 @@ namespace cb {
 
 
     void event(double value = 1, uint64_t now = Time::now()) {
-      unsigned bucket = now / period;
+      unsigned time = now / period;
 
       if (last) {
-        unsigned delta = bucket - last;
+        unsigned delta = time - last;
 
         // Advance, clearing any expired buckets along the way
         for (unsigned i = 0; i < delta && i < buckets.size(); i++) {
@@ -95,7 +95,7 @@ namespace cb {
       }
 
       buckets[head] += value; // Sum event
-      last = bucket;
+      last = time;
     }
   };
 }
