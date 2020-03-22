@@ -40,6 +40,7 @@
 #include <cbang/config/Options.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/util/RateSet.h>
 
 using namespace std;
 using namespace cb::Event;
@@ -217,6 +218,17 @@ void WebServer::setMaxConnectionTTL(unsigned x) {
 void WebServer::setConnectionBacklog(unsigned x) {
   http->setConnectionBacklog(x);
   if (!https.isNull()) http->setConnectionBacklog(x);
+}
+
+
+void WebServer::setStats(const SmartPointer<RateSet> &stats) {
+  http->setStats(stats);
+  if (https.isSet()) https->setStats(stats);
+}
+
+
+const cb::SmartPointer<cb::RateSet> &WebServer::getStats() const {
+  return http->getStats();
 }
 
 

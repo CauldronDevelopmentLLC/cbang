@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2020, Cauldron Development LLC
+                Copyright (c) 2003-2019, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -32,70 +32,64 @@
 
 #pragma once
 
-#include <cbang/time/Time.h>
+#include "Rate.h"
 
-#include <vector>
+#include <cbang/Exception.h>
+#include <cbang/json/Serializable.h>
+
+#include <string>
+#include <map>
 
 
 namespace cb {
-  class Rate {
-  public:
-    std::vector<double> buckets;
+  class RateSet : public JSON::Serializable {
+    const unsigned size;
     const unsigned period;
 
-    unsigned last;
-    unsigned head;
-    unsigned fill;
+    typedef std::map<const std::string, Rate> rates_t;
+    rates_t rates;
 
   public:
-    Rate(unsigned size = 60 * 5, unsigned period = 1) :
-      buckets(size), period(period) {reset();}
+    RateSet(unsigned size = 60 * 5, unsigned period = 1) :
+      size(size), period(period) {}
+
+
+    Rate &getRate(const std::string &key) {
+      return rates.insert(rates_t::value_type(key, Rate(size, period)))
+        .first->second;
+    }
+
+
+    const Rate &getRate(const std::string &key) const {
+      auto it = rates.find(key);
+      if (it == rates.end()) CBANG_THROW("Rate '" << key << "' not in set");
+      return it->second;
+    }
 
 
     void reset() {
-      last = head = 0;
-      fill = 1;
-      buckets[0] = 0;
+      for (auto it = rates.begin(); it != rates.end(); it++)
+        it->second.reset();
     }
 
 
-    double get(uint64_t now = Time::now()) const {
-      if (!last) return 0; // No events
-      unsigned delta = now / period - last;
-      if (buckets.size() <= delta) return 0; // Too long since last event
-
-      // Accounting for the delta ignore buckets which are too old
-      unsigned maxFill = buckets.size() - delta;
-      unsigned fill = maxFill < this->fill ? maxFill : this->fill;
-
-      if (fill < 2) return 0; // Need at least two buckets
-
-      // Count up the buckets
-      double count = 0;
-      for (unsigned i = 0; i < fill; i++)
-        count += buckets[(head + buckets.size() - i) % buckets.size()];
-
-      // Divide by the total time
-      return count / ((fill + delta) * period);
+    double get(const std::string &key, uint64_t now = Time::now()) const {
+      return getRate(key).get(now);
     }
 
 
-    void event(double value = 1, uint64_t now = Time::now()) {
-      unsigned bucket = now / period;
+    void event(const std::string &key, double value = 1,
+               uint64_t now = Time::now()) {
+      getRate(key).event(value, now);
+    }
 
-      if (last) {
-        unsigned delta = bucket - last;
 
-        // Advance, clearing any expired buckets along the way
-        for (unsigned i = 0; i < delta && i < buckets.size(); i++) {
-          if (fill < buckets.size()) fill++;
-          if (++head == buckets.size()) head = 0;
-          buckets[head] = 0;
-        }
-      }
-
-      buckets[head] += value; // Sum event
-      last = bucket;
+    // From JSON::Serializable
+    void write(JSON::Sink &sink) const {
+      sink.beginDict();
+      for (auto it = rates.begin(); it != rates.end(); it++)
+        sink.insert(it->first, it->second.get());
+      sink.endDict();
     }
   };
 }

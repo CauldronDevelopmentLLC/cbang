@@ -41,6 +41,7 @@
 namespace cb {
   class SSLContext;
   class Options;
+  class RateSet;
 
   namespace Event {
     class Base;
@@ -103,6 +104,9 @@ namespace cb {
       void setMaxConnections(unsigned x);
       void setMaxConnectionTTL(unsigned x);
       void setConnectionBacklog(unsigned x);
+
+      void setStats(const SmartPointer<RateSet> &stats);
+      const SmartPointer<RateSet> &getStats() const;
 
       void allow(const IPAddress &addr);
       void deny(const IPAddress &addr);

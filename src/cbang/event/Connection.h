@@ -203,6 +203,9 @@ namespace cb {
       void readCB();
       void writeCB();
       void errorCB(short what, int err);
+
+      void received(unsigned bytes);
+      void sent(unsigned bytes);
     };
   }
 }

@@ -49,6 +49,7 @@
 #include <cbang/socket/Socket.h>
 #include <cbang/os/SysError.h>
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/util/RateSet.h>
 
 #ifdef _WIN32
 #include <cbang/socket/Winsock.h>
@@ -205,6 +206,8 @@ SmartPointer<Request> Connection::pop() {
   if (requests.empty()) THROW(__func__ << "() No requests");
   auto req = getRequest();
   requests.pop_front();
+  if (http.isSet() && http->getStats().isSet())
+    http->getStats()->event(req->getResponseCode().toString());
   TRY_CATCH_ERROR(req->onComplete());
   return req;
 }
@@ -777,4 +780,16 @@ void Connection::errorCB(short what, int err) {
   if (what & BUFFEREVENT_TIMEOUT) fail(CONN_ERR_TIMEOUT);
   else if (what & (BUFFEREVENT_EOF | BUFFEREVENT_ERROR)) fail(CONN_ERR_EOF);
   else fail(CONN_ERR_BUFFER_ERROR);
+}
+
+
+void Connection::received(unsigned bytes) {
+  if (http.isSet() && http->getStats().isSet())
+    http->getStats()->event("received", bytes);
+}
+
+
+void Connection::sent(unsigned bytes) {
+  if (http.isSet() && http->getStats().isSet())
+    http->getStats()->event("sent", bytes);
 }

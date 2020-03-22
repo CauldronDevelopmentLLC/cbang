@@ -153,6 +153,10 @@ namespace cb {
 
       void dnsCB(int err, const std::vector<IPAddress> &addrs);
 
+    protected:
+      virtual void received(unsigned bytes) {}
+      virtual void sent(unsigned bytes) {}
+
     private:
       void errorCB();
       void scheduleErrorCB(int flags, int err = 0);
