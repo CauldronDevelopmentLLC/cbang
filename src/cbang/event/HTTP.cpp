@@ -87,7 +87,10 @@ void HTTP::setEventPriority(int priority) {
 }
 
 
-void HTTP::remove(Connection &con) {connections.remove(&con);}
+void HTTP::remove(Connection &con) {
+  connections.remove(&con);
+  acceptEvent->add();
+}
 
 
 void HTTP::bind(const cb::IPAddress &addr) {
@@ -180,6 +183,9 @@ void HTTP::expireCB() {
 
 
 void HTTP::acceptCB() {
+  if (maxConnections && maxConnections <= connections.size())
+    return acceptEvent->del();
+
   IPAddress peer;
   auto newSocket = socket->accept(&peer);
 
@@ -197,14 +203,6 @@ void HTTP::acceptCB() {
   con->setWriteTimeout(writeTimeout);
 
   connections.push_back(con);
-
-  // Send "service unavailable" at connection limit
-  if (maxConnections && maxConnections < connections.size()) {
-    if (stats.isSet()) stats->event("rejected");
-    con->sendServiceUnavailable();
-
-  } else {
-    if (stats.isSet()) stats->event("accepted");
-    con->acceptRequest();
-  }
+  if (stats.isSet()) stats->event("accepted");
+  con->acceptRequest();
 }
