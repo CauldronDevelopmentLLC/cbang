@@ -206,8 +206,7 @@ SmartPointer<Request> Connection::pop() {
   if (requests.empty()) THROW(__func__ << "() No requests");
   auto req = getRequest();
   requests.pop_front();
-  if (http.isSet() && http->getStats().isSet())
-    http->getStats()->event(req->getResponseCode().toString());
+  if (stats.isSet()) stats->event(req->getResponseCode().toString());
   TRY_CATCH_ERROR(req->onComplete());
   return req;
 }
@@ -784,12 +783,10 @@ void Connection::errorCB(short what, int err) {
 
 
 void Connection::received(unsigned bytes) {
-  if (http.isSet() && http->getStats().isSet())
-    http->getStats()->event("received", bytes);
+  if (stats.isSet()) stats->event("received", bytes);
 }
 
 
 void Connection::sent(unsigned bytes) {
-  if (http.isSet() && http->getStats().isSet())
-    http->getStats()->event("sent", bytes);
+  if (stats.isSet()) stats->event("sent", bytes);
 }
