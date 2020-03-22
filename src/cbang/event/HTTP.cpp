@@ -69,9 +69,21 @@ void HTTP::setMaxConnectionTTL(unsigned x) {
     if (expireEvent.isNull())
       expireEvent = base.newEvent(this, &HTTP::expireCB);
 
+    expireEvent->setPriority(0 < priority ? priority - 1 : priority);
     expireEvent->add(60); // Check once per minute
 
   } else if (expireEvent->isPending()) expireEvent->del();
+}
+
+
+void HTTP::setEventPriority(int priority) {
+  this->priority = priority;
+
+  if (0 <= priority) {
+    int p = 0 < priority ? priority - 1 : priority;
+    if (expireEvent.isSet()) expireEvent->setPriority(p);
+    if (acceptEvent.isSet()) acceptEvent->setPriority(p);
+  }
 }
 
 
@@ -91,6 +103,8 @@ void HTTP::bind(const cb::IPAddress &addr) {
   // This event will be destroyed with the HTTP
   acceptEvent = base.newEvent(fd, this, &HTTP::acceptCB,
                               EVENT_READ | EVENT_PERSIST | EVENT_NO_SELF_REF);
+  if (0 <= priority)
+    acceptEvent->setPriority(0 < priority ? priority - 1 : priority);
   acceptEvent->add();
 
   this->socket = socket;
