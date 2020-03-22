@@ -107,7 +107,7 @@ namespace cb {
       void setConnectionBacklog(unsigned x) {connectionBacklog = x;}
 
       int getEventPriority() const {return priority;}
-      void setEventPriority(int priority) {this->priority = priority;}
+      void setEventPriority(int priority);
 
       unsigned getConnectionCount() const {return connections.size();}
       void remove(Connection &con);
