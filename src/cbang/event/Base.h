@@ -60,7 +60,7 @@ namespace cb {
       typedef std::function<void (Event &, int, unsigned)> callback_t;
       typedef std::function<void ()> bare_callback_t;
 
-      Base(bool withThreads = false);
+      Base(bool withThreads = false, int priorities = -1);
       ~Base();
 
       struct event_base *getBase() const {return base;}
