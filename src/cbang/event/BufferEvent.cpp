@@ -333,7 +333,10 @@ void BufferEvent::sockRead() {
 
   int ret = inputBuffer.read(getFD(), 1e6);
 
-  if (0 < ret) return scheduleReadCB(); // Read callback
+  if (0 < ret) {
+    received(ret);
+    return scheduleReadCB(); // Read callback
+  }
 
   int err = SysError::get();
   int flags = BUFFEREVENT_READING;
@@ -384,6 +387,8 @@ void BufferEvent::sockWrite() {
 
     return scheduleErrorCB(flags);
   }
+
+  sent(ret);
 
   // Invoke the user callback if buffer drained
   if (!outputBuffer.getLength()) writeCBEvent->activate();
@@ -532,6 +537,7 @@ void BufferEvent::sslRead() {
 #endif
 
       LOG_DEBUG(4, "SSL read " << ret);
+      received(ret);
       sslLastRead = 0;
       bytesRead += ret;
       bytes -= ret;
@@ -570,6 +576,7 @@ void BufferEvent::sslWrite() {
     int ret = SSL_write(ssl, space[i].iov_base, sslLastWrite);
 
     if (0 < ret) {
+      sent(ret);
       bytesWritten += ret;
       sslLastWrite = 0;
 

@@ -46,6 +46,7 @@ namespace cb {
   class SSLContext;
   class IPAddress;
   class Socket;
+  class RateSet;
 
   namespace Event {
     class Base;
@@ -73,6 +74,7 @@ namespace cb {
       IPAddress boundAddr;
       SmartPointer<Socket> socket;
       std::list<SmartPointer<Connection> > connections;
+      SmartPointer<RateSet> stats;
 
     public:
       HTTP(Base &base, const SmartPointer<HTTPHandler> &handler,
@@ -109,6 +111,9 @@ namespace cb {
 
       unsigned getConnectionCount() const {return connections.size();}
       void remove(Connection &con);
+
+      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+      const SmartPointer<RateSet> &getStats() const {return stats;}
 
       void bind(const IPAddress &addr);
 

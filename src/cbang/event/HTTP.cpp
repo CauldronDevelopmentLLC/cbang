@@ -43,6 +43,7 @@
 #include <cbang/time/Timer.h>
 #include <cbang/socket/Socket.h>
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/util/RateSet.h>
 
 using namespace std;
 using namespace cb::Event;
@@ -155,6 +156,7 @@ void HTTP::expireCB() {
   for (auto it = connections.begin(); it != connections.end();)
     if (maxConnectionTTL < now - (*it)->getStartTime()) {
       it = connections.erase(it);
+      if (stats.isSet()) stats->event("timedout");
       count++;
 
     } else it++;
@@ -183,8 +185,12 @@ void HTTP::acceptCB() {
   connections.push_back(con);
 
   // Send "service unavailable" at connection limit
-  if (maxConnections && maxConnections < connections.size())
+  if (maxConnections && maxConnections < connections.size()) {
+    if (stats.isSet()) stats->event("rejected");
     con->sendServiceUnavailable();
 
-  else con->acceptRequest();
+  } else {
+    if (stats.isSet()) stats->event("accepted");
+    con->acceptRequest();
+  }
 }
