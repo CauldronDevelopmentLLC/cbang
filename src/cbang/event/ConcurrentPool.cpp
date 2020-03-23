@@ -91,7 +91,7 @@ void ConcurrentPool::run() {
   SmartLock lock(this);
 
   while (!Thread::current().shouldShutdown()) {
-    Condition::wait();
+    if (ready.empty()) Condition::wait();
     if (Thread::current().shouldShutdown()) break;
 
     // Get Task from ready queue
