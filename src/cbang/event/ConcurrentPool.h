@@ -164,6 +164,8 @@ namespace cb {
       ConcurrentPool(Base &base, unsigned size);
       ~ConcurrentPool();
 
+      void setEventPriority(int priority) {event->setPriority(priority);}
+
       unsigned getNumReady() const;
       unsigned getNumCompleted() const;
 
