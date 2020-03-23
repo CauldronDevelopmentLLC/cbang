@@ -162,6 +162,7 @@ namespace cb {
       typedef std::priority_queue<SmartPointer<Task>,
                                   std::vector<SmartPointer<Task> >,
                                   TaskPtrCompare> queue_t;
+      unsigned active = 0;
       queue_t ready;
       queue_t completed;
 
@@ -172,6 +173,7 @@ namespace cb {
       void setEventPriority(int priority) {event->setPriority(priority);}
 
       unsigned getNumReady() const;
+      unsigned getNumActive() const;
       unsigned getNumCompleted() const;
 
       void submit(const SmartPointer<Task> &task);

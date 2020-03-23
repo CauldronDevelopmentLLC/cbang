@@ -62,6 +62,12 @@ unsigned ConcurrentPool::getNumReady() const {
 }
 
 
+unsigned ConcurrentPool::getNumActive() const {
+  SmartLock lock(this);
+  return active;
+}
+
+
 unsigned ConcurrentPool::getNumCompleted() const {
   SmartLock lock(this);
   return completed.size();
@@ -98,6 +104,7 @@ void ConcurrentPool::run() {
     if (ready.empty()) continue;
     SmartPointer<Task> task = ready.top();
     ready.pop();
+    active++;
 
     {
       SmartUnlock unlock(this);
@@ -119,7 +126,8 @@ void ConcurrentPool::run() {
 
     // Put Task in completed queue
     completed.push(task);
-    event->activate();
+    if (!event->isPending()) event->activate();
+    active--;
   }
 }
 
