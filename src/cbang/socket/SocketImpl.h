@@ -38,6 +38,8 @@
 #include <cbang/net/IPAddress.h>
 
 #include <ios>
+#include <climits>
+
 
 namespace cb {
   class Socket;
@@ -69,6 +71,8 @@ namespace cb {
     virtual void setReceiveLowWater(int size) {}
     virtual void setSendTimeout(double timeout) {}
     virtual void setReceiveTimeout(double timeout) {}
+    virtual void setReceiveBuf(int size = INT_MAX) {}
+    virtual void setSendBuf(int size = INT_MAX) {}
     virtual void open() = 0;
     virtual void bind(const IPAddress &ip) = 0;
     virtual void listen(int backlog) = 0;
