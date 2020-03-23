@@ -66,6 +66,8 @@ namespace cb {
     void setReceiveLowWater(int size);
     void setSendTimeout(double timeout);
     void setReceiveTimeout(double timeout);
+    void setReceiveBuf(int size);
+    void setSendBuf(int size);
     void open();
     void bind(const IPAddress &ip);
     void listen(int backlog);

@@ -208,6 +208,20 @@ void SocketDefaultImpl::setReceiveTimeout(double timeout) {
 }
 
 
+void SocketDefaultImpl::setReceiveBuf(int size) {
+  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_RCVBUF, &size,
+                 sizeof(int)) == -1)
+    THROW("Could not set receive buffer size " << size << ": " << SysError());
+}
+
+
+void SocketDefaultImpl::setSendBuf(int size) {
+  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_SNDBUF, &size,
+                 sizeof(int)) == -1)
+    THROW("Could not set receive buffer size " << size << ": " << SysError());
+}
+
+
 void SocketDefaultImpl::bind(const IPAddress &ip) {
   if (!isOpen()) open();
 
