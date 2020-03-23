@@ -248,11 +248,11 @@ def get_event_config_defs():
 
     if conf.CheckStructMember('sockaddr_storage', 'ss_family',
                               ['sys/socket.h']):
-        defs['EVENT__HAVE_STRUCT_SOCKADDR_STORAGE_SS_FAMILY'] = '1'
+        defs['HAVE_STRUCT_SOCKADDR_STORAGE_SS_FAMILY'] = '1'
 
     if conf.CheckStructMember('sockaddr_storage', '__ss_family',
                               ['sys/socket.h']):
-        defs['EVENT__HAVE_STRUCT_SOCKADDR_STORAGE___SS_FAMILY'] = '1'
+        defs['HAVE_STRUCT_SOCKADDR_STORAGE___SS_FAMILY'] = '1'
 
 
     # Types
@@ -321,6 +321,7 @@ config = None
 if env['PLATFORM'] != 'win32':
     defs = get_event_config_defs()
     config = env.LibEventConfig('#/include/event2/event-config.h', [])
+    env.AlwaysBuild(config)
 
 
 # Warnings
