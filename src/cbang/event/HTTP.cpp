@@ -191,8 +191,6 @@ void HTTP::acceptCB() {
 
   LOG_DEBUG(4, "New connection from " << peer);
 
-  newSocket->setReceiveLowWater(65536);
-
   // Create new Connection
   SmartPointer<Connection> con =
     new Connection(base, true, peer, newSocket, sslCtx);
