@@ -55,6 +55,7 @@ namespace cb {
       CREATE_PROCESS_GROUP    = 1 << 8,
       W32_HIDE_WINDOW         = 1 << 9,
       W32_WAIT_FOR_INPUT_IDLE = 1 << 10,
+      MAX_PIPE_SIZE           = 1 << 11,
       };
 
   protected:
