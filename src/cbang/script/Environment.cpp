@@ -55,8 +55,8 @@ Environment::Environment(const Environment &env) :
 Environment::Environment(const string &name, Handler *parent) :
   parent(parent ? parent : &StdLibrary::instance()), name(name) {
   typedef MemberFunctor<Environment> MF;
-  add(new MF("help", this, &Environment::evalHelp, 0, 1));
-  add(new MF("set", this, &Environment::evalSet, 2, 2));
+  add(new MF("help",  this, &Environment::evalHelp,  0, 1));
+  add(new MF("set",   this, &Environment::evalSet,   2, 2));
   add(new MF("unset", this, &Environment::evalUnset, 1, 1));
 }
 

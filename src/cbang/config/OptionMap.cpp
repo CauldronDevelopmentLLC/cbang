@@ -36,11 +36,8 @@
 
 #include <cbang/log/Logger.h>
 
-#include <cbang/script/StdLibrary.h>
-
 using namespace std;
 using namespace cb;
-using namespace cb::Script;
 
 
 void OptionMap::add(SmartPointer<Option> option) {
@@ -84,16 +81,6 @@ void OptionMap::set(const string &name, const string &value, bool setDefault) {
 
     option.set(value);
   }
-}
-
-
-bool OptionMap::eval(const Context &ctx) {
-  if (!has(ctx.args[0])) return StdLibrary::instance().eval(ctx);
-
-  const SmartPointer<Option> &option = get(ctx.args[0]);
-  if (option->hasValue()) ctx.handler.eval(ctx, option->toString());
-
-  return true;
 }
 
 
