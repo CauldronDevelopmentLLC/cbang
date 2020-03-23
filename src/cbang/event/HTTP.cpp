@@ -191,6 +191,7 @@ void HTTP::acceptCB() {
 
   LOG_DEBUG(4, "New connection from " << peer);
 
+  // Maximize socket buffers
   newSocket->setReceiveBuf();
   newSocket->setSendBuf();
 
