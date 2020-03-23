@@ -67,6 +67,8 @@ namespace cb {
 
       void initPriority(int num);
       int getNumPriorities() const;
+      int getNumEvents() const;
+      int getNumActiveEvents() const;
 
       SmartPointer<Event> newEvent(callback_t cb,
                                    unsigned flags = EVENT_PERSIST);
