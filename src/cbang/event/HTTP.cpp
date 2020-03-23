@@ -204,6 +204,5 @@ void HTTP::acceptCB() {
   con->setStats(stats);
 
   connections.push_back(con);
-  if (stats.isSet()) stats->event("accepted");
   con->acceptRequest();
 }

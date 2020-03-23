@@ -157,7 +157,7 @@ namespace cb {
       uint32_t getHeaderSize() const {return headerSize;}
       uint32_t getBodySize() const {return bodySize;}
 
-      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+      void setStats(const SmartPointer<RateSet> &stats);
       const SmartPointer<RateSet> &getStats() const {return stats;}
 
       void sendServiceUnavailable();

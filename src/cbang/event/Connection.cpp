@@ -116,6 +116,12 @@ Websocket &Connection::getWebsocket() const {
 }
 
 
+void Connection::setStats(const SmartPointer<RateSet> &stats) {
+  this->stats = stats;
+  stats->event(incoming ? "incoming" : "outgoing");
+}
+
+
 void Connection::sendServiceUnavailable() {
   LOG_DEBUG(4, __func__ << "()");
 
@@ -783,10 +789,10 @@ void Connection::errorCB(short what, int err) {
 
 
 void Connection::received(unsigned bytes) {
-  if (stats.isSet()) stats->event("received", bytes);
+  if (stats.isSet()) stats->event("receiving", bytes);
 }
 
 
 void Connection::sent(unsigned bytes) {
-  if (stats.isSet()) stats->event("sent", bytes);
+  if (stats.isSet()) stats->event("sending", bytes);
 }
