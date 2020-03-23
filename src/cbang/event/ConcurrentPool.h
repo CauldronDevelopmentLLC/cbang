@@ -164,6 +164,9 @@ namespace cb {
       ConcurrentPool(Base &base, unsigned size);
       ~ConcurrentPool();
 
+      unsigned getNumReady() const;
+      unsigned getNumCompleted() const;
+
       void submit(const SmartPointer<Task> &task);
 
       template <typename Data>

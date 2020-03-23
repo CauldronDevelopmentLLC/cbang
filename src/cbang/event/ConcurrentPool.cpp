@@ -56,6 +56,18 @@ ConcurrentPool::ConcurrentPool(cb::Event::Base &base, unsigned size) :
 ConcurrentPool::~ConcurrentPool() {}
 
 
+unsigned ConcurrentPool::getNumReady() const {
+  SmartLock lock(this);
+  return ready.size();
+}
+
+
+unsigned ConcurrentPool::getNumCompleted() const {
+  SmartLock lock(this);
+  return completed.size();
+}
+
+
 void ConcurrentPool::submit(const SmartPointer<Task> &task) {
   SmartLock lock(this);
   ready.push(task);
