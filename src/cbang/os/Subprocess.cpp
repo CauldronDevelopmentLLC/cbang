@@ -38,6 +38,7 @@
 #include "SystemInfo.h"
 
 #include <cbang/Exception.h>
+#include <cbang/Catch.h>
 #include <cbang/String.h>
 #include <cbang/Zap.h>
 
@@ -110,6 +111,10 @@ namespace {
     }
 
 
+    int getParentHandle() const {return handles[toChild ? 1 : 0];}
+    int getChildHandle() const {return handles[toChild ? 0 : 1];}
+
+
     void create() {
 #ifdef _WIN32
       // Setup security attributes for pipe inheritance
@@ -138,10 +143,10 @@ namespace {
 #ifndef _WIN32
     void inChildProc(int target = -1) {
       // Close parent end
-      ::close(handles[toChild ? 1 : 0]);
+      ::close(getParentHandle());
 
       // Move to target
-      if (target != -1 && dup2(handles[toChild ? 0 : 1], target) != target)
+      if (target != -1 && dup2(getChildHandle(), target) != target)
         perror("Moving file descriptor");
     }
 #endif
@@ -463,6 +468,22 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
   if (flags & REDIR_STDERR) p->pipes[2].openStream();
   for (unsigned i = 3; i < p->pipes.size(); i++)
     p->pipes[i].openStream();
+
+#ifndef _WIN32
+  // Max pipe size
+  try {
+    if (flags & MAX_PIPE_SIZE &&
+        SystemUtilities::exists("/proc/sys/fs/pipe-max-size")) {
+      string num = SystemUtilities::read("/proc/sys/fs/pipe-max-size");
+      uint32_t size = String::parseU32(num);
+
+      for (unsigned i = 0; i < p->pipes.size(); i++)
+        if (p->pipes[i].stream.isSet())
+          if (fcntl(p->pipes[i].getParentHandle(), F_SETPIPE_SZ, size) == -1)
+            LOG_WARNING("Failed to set pipe " << i << " size to " << size);
+    }
+  } CATCH_ERROR;
+#endif
 
   // Close pipe child ends
   closePipes();
