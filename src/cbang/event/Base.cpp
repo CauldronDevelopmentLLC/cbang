@@ -70,6 +70,16 @@ int Base::getNumPriorities() const {
 }
 
 
+int Base::getNumEvents() const {
+  return event_base_get_num_events(base, EVENT_BASE_COUNT_ADDED);
+}
+
+
+int Base::getNumActiveEvents() const {
+  return event_base_get_num_events(base, EVENT_BASE_COUNT_ACTIVE);
+}
+
+
 SmartPointer<cb::Event::Event>
 Base::newEvent(callback_t cb, unsigned flags) {return newEvent(-1, cb, flags);}
 
