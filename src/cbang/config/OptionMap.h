@@ -43,13 +43,12 @@
 #include <cbang/xml/XMLHandlerFactory.h>
 #include <cbang/xml/XMLFileTracker.h>
 
-#include <cbang/script/Handler.h>
 
 namespace cb {
   class Option;
 
   /// A base class for configuration option handling
-  class OptionMap : public XMLHandler, public Script::Handler {
+  class OptionMap : public XMLHandler {
     XMLFileTracker fileTracker;
 
     std::string xmlValue;
@@ -118,10 +117,6 @@ namespace cb {
     {return get(key);}
     virtual const SmartPointer<Option> &get(const std::string &key) const = 0;
     virtual void alias(const std::string &name, const std::string &alias) = 0;
-
-    // From Script::Handler
-    using Script::Handler::eval;
-    bool eval(const Script::Context &ctx);
 
     // From XMLHandler
     void pushFile(const std::string &filename) {fileTracker.pushFile(filename);}
