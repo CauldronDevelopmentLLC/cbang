@@ -40,6 +40,8 @@ using namespace std;
 using namespace cb;
 
 
+#define TAR_BUFFER_SIZE (4096 * 1024)
+
 const char Tar::zero_block[512] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -118,11 +120,11 @@ unsigned Tar::writeFile(const string &filename, ostream &dst, const char *data,
 
 unsigned Tar::writeFileData(std::ostream &dst, std::istream &src,
                             streamsize size) {
-  char buf[4096];
+  char buf[TAR_BUFFER_SIZE];
   streamsize n;
 
   while (true) {
-    src.read(buf, 4096);
+    src.read(buf, TAR_BUFFER_SIZE);
     n = src.gcount();
     if (n) dst.write(buf, n);
     else break;
@@ -171,13 +173,13 @@ unsigned Tar::writeFooter(ostream &dst) {
 
 
 void Tar::readFile(ostream &dst, istream &src) {
-  char buf[4096];
+  char buf[TAR_BUFFER_SIZE];
   streamsize size = getSize();
   streamsize padding = compute_padding(size);
   streamsize n;
 
   while (size) {
-    src.read(buf, min((int)size, 4096));
+    src.read(buf, min((int)size, TAR_BUFFER_SIZE));
     if (!(n = src.gcount())) THROW("Error reading tar file");
 
     size -= n;
