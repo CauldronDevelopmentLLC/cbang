@@ -39,6 +39,7 @@
 #include <cbang/os/Condition.h>
 #include <cbang/util/SmartLock.h>
 #include <cbang/util/SmartUnlock.h>
+#include <cbang/time/Time.h>
 
 #include <queue>
 #include <functional>
@@ -50,11 +51,12 @@ namespace cb {
     public:
       class Task : public ProtectedRefCounterImpl<Task> {
         int priority;
+        uint64_t ts = Time::now();
         Exception e;
-        bool failed;
+        bool failed = false;
 
       public:
-        Task(int priority) : priority(priority), failed(false) {}
+        Task(int priority) : priority(priority) {}
         virtual ~Task() {}
 
         bool getFailed() const {return failed;}
@@ -67,7 +69,10 @@ namespace cb {
         virtual void error(const Exception &e) {}
         virtual void complete() {}
 
-        bool operator<(const Task &o) const {return priority < o.priority;}
+        bool operator<(const Task &o) const {
+          if (priority == o.priority) return ts < o.ts;
+          return priority < o.priority;
+        }
       };
 
 
