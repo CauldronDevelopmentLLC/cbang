@@ -38,6 +38,7 @@
 #include <cbang/socket/SocketType.h>
 
 #include <functional>
+#include <map>
 
 struct event_base;
 
@@ -69,6 +70,7 @@ namespace cb {
       int getNumPriorities() const;
       int getNumEvents() const;
       int getNumActiveEvents() const;
+      void countActiveEventsByPriority(std::map<int, unsigned> &counts) const;
 
       SmartPointer<Event> newEvent(callback_t cb,
                                    unsigned flags = EVENT_PERSIST);

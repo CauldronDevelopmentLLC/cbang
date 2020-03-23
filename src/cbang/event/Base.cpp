@@ -35,6 +35,7 @@
 
 #include <event2/thread.h>
 #include <event2/event.h>
+#include <event2/event_struct.h>
 
 #include <cbang/Exception.h>
 #include <cbang/socket/Socket.h>
@@ -42,6 +43,19 @@
 using namespace cb::Event;
 using namespace cb;
 
+
+namespace {
+  extern "C" int count_events_by_priority
+  (const struct event_base *base, const struct event *event, void *arg) {
+    if (!(event->ev_evcallback.evcb_flags &
+          (EVLIST_ACTIVE | EVLIST_ACTIVE_LATER))) return 0;
+
+    std::map<int, unsigned> &counts = *(std::map<int, unsigned> *)arg;
+    int priority = event_get_priority(event);
+    counts.insert(std::pair<int, unsigned>(priority, 0)).first->second++;
+    return 0;
+  }
+}
 
 bool Base::_threadsEnabled = false;
 
@@ -77,6 +91,11 @@ int Base::getNumEvents() const {
 
 int Base::getNumActiveEvents() const {
   return event_base_get_num_events(base, EVENT_BASE_COUNT_ACTIVE);
+}
+
+
+void Base::countActiveEventsByPriority(std::map<int, unsigned> &counts) const {
+  event_base_foreach_event(base, count_events_by_priority, &counts);
 }
 
 
