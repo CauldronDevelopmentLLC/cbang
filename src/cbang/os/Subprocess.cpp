@@ -400,7 +400,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       args.push_back((char *)_args[i].c_str());
     args.push_back(0); // Sentinal
 
-    p->pid = vfork();
+    if (flags & USE_VFORK) p->pid = vfork();
+    else p->pid = fork();
 
     if (!p->pid) { // Child
       // Process group
