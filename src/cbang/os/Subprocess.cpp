@@ -470,7 +470,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
   for (unsigned i = 3; i < p->pipes.size(); i++)
     p->pipes[i].openStream();
 
-#ifndef _WIN32
+#ifdef F_SETPIPE_SZ
   // Max pipe size
   try {
     if (flags & MAX_PIPE_SIZE &&
@@ -484,7 +484,11 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
             LOG_WARNING("Failed to set pipe " << i << " size to " << size);
     }
   } CATCH_ERROR;
-#endif
+
+#else // F_SETPIPE_SZ
+  if (flags & MAX_PIPE_SIZE)
+    LOG_WARNING("Subprocess MAX_PIPE_SIZE not supported");
+#endif // F_SETPIPE_SZ
 
   // Close pipe child ends
   closePipes();
