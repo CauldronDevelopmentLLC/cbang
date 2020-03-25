@@ -36,6 +36,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/json/Serializable.h>
+#include <cbang/json/Sink.h>
 
 #include <string>
 #include <map>

@@ -621,7 +621,7 @@ void BufferEvent::setFD(socket_t fd) {
 
   close();
 
-  readEvent  = newEvent(fd, EVENT_READ, priority, &BufferEvent::sockReadCB);
+  readEvent  = newEvent(fd, EVENT_READ,  priority, &BufferEvent::sockReadCB);
   writeEvent = newEvent(fd, EVENT_WRITE, priority, &BufferEvent::sockWriteCB);
 
   if (0 <= priority) {
