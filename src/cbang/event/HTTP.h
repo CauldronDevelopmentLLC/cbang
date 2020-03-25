@@ -73,7 +73,8 @@ namespace cb {
 
       IPAddress boundAddr;
       SmartPointer<Socket> socket;
-      std::list<SmartPointer<Connection> > connections;
+      typedef std::list<SmartPointer<Connection> > connections_t;
+      connections_t connections;
       SmartPointer<RateSet> stats;
 
     public:
@@ -111,6 +112,10 @@ namespace cb {
 
       unsigned getConnectionCount() const {return connections.size();}
       void remove(Connection &con);
+
+      typedef connections_t::const_iterator iterator;
+      iterator begin() const {return connections.begin();}
+      iterator end() const {return connections.end();}
 
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
       const SmartPointer<RateSet> &getStats() const {return stats;}

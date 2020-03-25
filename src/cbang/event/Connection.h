@@ -39,6 +39,8 @@
 #include <cbang/SmartPointer.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/socket/SocketType.h>
+#include <cbang/time/Time.h>
+#include <cbang/util/Rate.h>
 
 #include <limits>
 #include <list>
@@ -74,6 +76,7 @@ namespace cb {
       } state_t;
 
       state_t state;
+      uint64_t start = Time::now();
       bool incoming;
       IPAddress peer;
       IPAddress bind;
@@ -86,21 +89,24 @@ namespace cb {
       std::list<SmartPointer<Request> > requests;
 
       std::string defaultContentType = "text/html; charset=UTF-8";
-      uint32_t maxBodySize = std::numeric_limits<unsigned>::max();
-      uint32_t maxHeaderSize = std::numeric_limits<unsigned>::max();
-      double retryTimeout = 0;
-      unsigned maxRetries = 2;
-      unsigned readTimeout = 50;
-      unsigned writeTimeout = 50;
+      uint32_t maxBodySize    = std::numeric_limits<unsigned>::max();
+      uint32_t maxHeaderSize  = std::numeric_limits<unsigned>::max();
+      double retryTimeout     = 0;
+      unsigned maxRetries     = 2;
+      unsigned readTimeout    = 50;
+      unsigned writeTimeout   = 50;
       unsigned connectTimeout = 50;
 
-      bool detectClose = false;
+      bool detectClose    = false;
       bool chunkedRequest = false;
 
       uint32_t headerSize = 0;
-      uint32_t bodySize = 0;
+      uint32_t bodySize   = 0;
       int64_t bytesToRead = 0;
-      int contentLength = 0;
+      int contentLength   = 0;
+
+      Rate rateIn  = 60;
+      Rate rateOut = 60;
 
       SmartPointer<RateSet> stats;
 
@@ -112,6 +118,9 @@ namespace cb {
 
       Base &getBase() {return base;}
       virtual DNSBase &getDNS() {THROW("No DNSBase");}
+
+      const char *getStateString() const {return getStateString(state);}
+      uint64_t getStart() const {return start;}
 
       bool isConnected() const;
       bool isIncoming() const {return incoming;}
@@ -155,7 +164,12 @@ namespace cb {
       unsigned getConnectTimeout() const {return connectTimeout;}
 
       uint32_t getHeaderSize() const {return headerSize;}
-      uint32_t getBodySize() const {return bodySize;}
+      uint32_t getBodySize() const   {return bodySize;}
+
+      uint64_t getBytesIn() const  {return rateIn.getTotal();}
+      uint64_t getBytesOut() const {return rateOut.getTotal();}
+      double getRateIn() const  {return rateIn.get();}
+      double getRateOut() const {return rateOut.get();}
 
       void setStats(const SmartPointer<RateSet> &stats);
       const SmartPointer<RateSet> &getStats() const {return stats;}
