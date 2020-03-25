@@ -74,6 +74,11 @@ namespace cb {
     }
 
 
+    bool has(const std::string &key) const {
+      return rates.find(key) != rates.end();
+    }
+
+
     double get(const std::string &key, uint64_t now = Time::now()) const {
       return getRate(key).get(now);
     }
