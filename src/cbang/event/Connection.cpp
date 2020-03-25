@@ -118,7 +118,7 @@ Websocket &Connection::getWebsocket() const {
 
 void Connection::setStats(const SmartPointer<RateSet> &stats) {
   this->stats = stats;
-  stats->event(incoming ? "incoming" : "outgoing");
+  if (stats.isSet()) stats->event(incoming ? "incoming" : "outgoing");
 }
 
 
