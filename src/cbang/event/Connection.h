@@ -166,6 +166,8 @@ namespace cb {
       uint32_t getHeaderSize() const {return headerSize;}
       uint32_t getBodySize() const   {return bodySize;}
 
+      int getContentLength() const {return contentLength;}
+
       uint64_t getBytesIn() const  {return rateIn.getTotal();}
       uint64_t getBytesOut() const {return rateOut.getTotal();}
       double getRateIn() const  {return rateIn.get();}
