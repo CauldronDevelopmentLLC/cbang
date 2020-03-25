@@ -119,6 +119,7 @@ namespace cb {
       Base &getBase() {return base;}
       virtual DNSBase &getDNS() {THROW("No DNSBase");}
 
+      bool isWriting() const {return state == STATE_WRITING;}
       const char *getStateString() const {return getStateString(state);}
       uint64_t getStart() const {return start;}
 
@@ -136,6 +137,7 @@ namespace cb {
       const SmartPointer<HTTP> &getHTTP() const {return http;}
       void setHTTP(const SmartPointer<HTTP> &http) {this->http = http;}
 
+      bool hasRequest() const {return !requests.empty();}
       const SmartPointer<Request> &getRequest() const;
       void checkActiveRequest(Request &req) const;
       bool isWebsocket() const;
