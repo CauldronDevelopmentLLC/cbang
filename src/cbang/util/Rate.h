@@ -42,6 +42,7 @@ namespace cb {
   public:
     std::vector<double> buckets;
     const unsigned period;
+    double total;
 
     unsigned last;
     unsigned head;
@@ -53,10 +54,13 @@ namespace cb {
 
 
     void reset() {
-      last = head = 0;
+      total = last = head = 0;
       fill = 1;
       buckets[0] = 0;
     }
+
+
+    double getTotal() const {return total;}
 
 
     double get(uint64_t now = Time::now()) const {
@@ -95,6 +99,7 @@ namespace cb {
       }
 
       buckets[head] += value; // Sum event
+      total += value;
       last = time;
     }
   };

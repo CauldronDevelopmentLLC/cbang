@@ -189,6 +189,11 @@ void HTTP::acceptCB() {
   IPAddress peer;
   auto newSocket = socket->accept(&peer);
 
+  if (newSocket.isNull()) {
+    LOG_ERROR("Failed to accept new socket");
+    return;
+  }
+
   LOG_DEBUG(4, "New connection from " << peer);
 
   // Maximize socket buffers

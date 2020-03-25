@@ -789,10 +789,12 @@ void Connection::errorCB(short what, int err) {
 
 
 void Connection::received(unsigned bytes) {
+  rateIn.event(bytes);
   if (stats.isSet()) stats->event("receiving", bytes);
 }
 
 
 void Connection::sent(unsigned bytes) {
+  rateOut.event(bytes);
   if (stats.isSet()) stats->event("sending", bytes);
 }
