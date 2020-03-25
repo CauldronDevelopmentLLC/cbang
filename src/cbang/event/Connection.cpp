@@ -172,6 +172,7 @@ void Connection::write(Request &req, const cb::Event::Buffer &buf) {
   if (!req.isWebsocket()) {
     setRead(false);
     setState(STATE_WRITING);
+    contentLength = getOutput().getLength();
   }
 }
 
