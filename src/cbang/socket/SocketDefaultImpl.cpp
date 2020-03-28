@@ -209,14 +209,14 @@ void SocketDefaultImpl::setReceiveTimeout(double timeout) {
 
 
 void SocketDefaultImpl::setReceiveBuf(int size) {
-  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_RCVBUF, &size,
+  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_RCVBUF, (char *)&size,
                  sizeof(int)) == -1)
     THROW("Could not set receive buffer size " << size << ": " << SysError());
 }
 
 
 void SocketDefaultImpl::setSendBuf(int size) {
-  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_SNDBUF, &size,
+  if (setsockopt((socket_t)socket, SOL_SOCKET, SO_SNDBUF, (char *)&size,
                  sizeof(int)) == -1)
     THROW("Could not set receive buffer size " << size << ": " << SysError());
 }

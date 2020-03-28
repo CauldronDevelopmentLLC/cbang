@@ -92,16 +92,17 @@ namespace {
 #endif
 
 
+#ifdef _WIN32
+  typedef HANDLE pipe_handle_t;
+#else
+  typedef int pipe_handle_t;
+#endif
+
+
   struct Pipe {
     bool toChild;
-
-#ifdef _WIN32
-    HANDLE handles[2];
-#else
-    int handles[2];
-#endif
+    pipe_handle_t handles[2];
     bool closeHandles[2];
-
     SmartPointer<iostream> stream;
 
 
@@ -111,8 +112,8 @@ namespace {
     }
 
 
-    int getParentHandle() const {return handles[toChild ? 1 : 0];}
-    int getChildHandle() const {return handles[toChild ? 0 : 1];}
+    pipe_handle_t getParentHandle() const {return handles[toChild ? 1 : 0];}
+    pipe_handle_t getChildHandle() const {return handles[toChild ? 0 : 1];}
 
 
     void create() {
