@@ -221,7 +221,7 @@ void WebServer::setConnectionBacklog(unsigned x) {
 }
 
 
-void WebServer::setStats(const SmartPointer<RateSet> &stats) {
+void WebServer::setStats(const cb::SmartPointer<cb::RateSet> &stats) {
   http->setStats(stats);
   if (https.isSet()) https->setStats(stats);
 }
