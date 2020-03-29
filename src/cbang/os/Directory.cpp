@@ -51,7 +51,7 @@ struct Directory::private_t {
 };
 
 
-Directory::Directory(const string &path) {
+Directory::Directory(const string &path) : dirPath(path) {
   if (!fs::is_directory(path)) THROW("Not a directory '" << path << "'");
   p = new private_t(path);
 }
@@ -62,13 +62,16 @@ Directory::operator bool() const {return p->it != fs::directory_iterator();}
 void Directory::next() {p->it++;}
 
 
-const string Directory::getFilename() const {
+string Directory::getFilename() const {
 #if BOOST_FILESYSTEM_VERSION < 3
   return p->it->path().filename();
 #else
   return p->it->path().filename().string();
 #endif
 }
+
+
+string Directory::getPath() const {return dirPath + "/" + getFilename();}
 
 
 bool Directory::isSubdirectory() const {

@@ -41,6 +41,7 @@ namespace cb {
   class Directory {
     struct private_t;
     SmartPointer<private_t> p;
+    std::string dirPath;
 
   public:
     Directory(const std::string &path);
@@ -49,7 +50,8 @@ namespace cb {
     operator bool () const;
     void next();
 
-    const std::string getFilename() const;
+    std::string getFilename() const;
+    std::string getPath() const;
     bool isSubdirectory() const;
   };
 }
