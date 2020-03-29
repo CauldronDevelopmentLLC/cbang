@@ -183,8 +183,10 @@ void HTTP::expireCB() {
 
 
 void HTTP::acceptCB() {
-  if (maxConnections && maxConnections <= connections.size())
-    return acceptEvent->del();
+  if (maxConnections && maxConnections <= connections.size()) {
+    handler->evict(connections);
+    if (maxConnections <= connections.size()) return acceptEvent->del();
+  }
 
   IPAddress peer;
   auto newSocket = socket->accept(&peer);
