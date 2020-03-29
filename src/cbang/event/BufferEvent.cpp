@@ -502,7 +502,7 @@ void BufferEvent::sslError(unsigned event, int ret) {
     break;
 
   default:
-    LOG_ERROR(SSL::getErrorStr(SSL::peekError()));
+    LOG_ERROR("SSL error: " << SSL::getErrorStr(err));
     sslClosed(event, err, ret);
     break;
   }
