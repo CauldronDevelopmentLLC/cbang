@@ -174,6 +174,10 @@ namespace cb {
       uint64_t getBytesOut() const {return rateOut.getTotal();}
       double getRateIn() const  {return rateIn.get();}
       double getRateOut() const {return rateOut.get();}
+      double getRate() const;
+      unsigned getBytesRemaining() const;
+      double getEstimatedTime() const;
+      double getProgress() const;
 
       void setStats(const SmartPointer<RateSet> &stats);
       const SmartPointer<RateSet> &getStats() const {return stats;}

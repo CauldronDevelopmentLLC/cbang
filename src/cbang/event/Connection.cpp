@@ -59,6 +59,8 @@
 #define ERRNO_CONNECT_REFUSED ECONNREFUSED
 #endif
 
+#include <limits>
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
@@ -113,6 +115,29 @@ bool Connection::isWebsocket() const {
 
 Websocket &Connection::getWebsocket() const {
   return *getRequest().cast<Websocket>();
+}
+
+
+double Connection::getRate() const {
+  return isWriting() ? getRateOut() : getRateIn();
+}
+
+
+unsigned Connection::getBytesRemaining() const {
+  return isWriting() ? getOutput().getLength() : bytesToRead;
+}
+
+
+double Connection::getEstimatedTime() const {
+  return getRate() ? getBytesRemaining() / getRate() :
+    numeric_limits<double>::infinity();
+}
+
+
+double Connection::getProgress() const {
+  int remaining = getBytesRemaining();
+  if (!contentLength || contentLength < remaining) return 0;
+  return 1 - remaining / contentLength;
 }
 
 
