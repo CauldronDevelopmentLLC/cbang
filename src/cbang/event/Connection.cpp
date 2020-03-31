@@ -124,7 +124,8 @@ double Connection::getRate() const {
 
 
 unsigned Connection::getBytesRemaining() const {
-  return isWriting() ? getOutput().getLength() : bytesToRead;
+  if (isWriting()) return getOutput().getLength();
+  return contentLength ? (contentLength - getInput().getLength()) : 0;
 }
 
 

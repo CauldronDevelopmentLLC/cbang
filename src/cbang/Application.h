@@ -68,7 +68,6 @@ namespace cb {
       FEATURE_DEBUGGING,
       FEATURE_INFO,
       FEATURE_PRINT_INFO,
-      FEATURE_SCRIPT_SERVER,
       FEATURE_SIGNAL_HANDLER,
       FEATURE_LAST,
     };
@@ -131,14 +130,8 @@ namespace cb {
 
     virtual void writeConfig(std::ostream &stream, uint32_t flags = 0) const;
 
-    virtual void evalShutdown(const Script::Context &ctx);
     virtual void evalUptime(const Script::Context &ctx);
-    virtual void evalGetInfo(const Script::Context &ctx);
-    virtual void evalInfo(const Script::Context &ctx);
     virtual void evalOption(const Script::Context &ctx);
-    virtual void evalOptions(const Script::Context &ctx);
-    virtual void evalOptions(const Script::Context &ctx, Options &options);
-    virtual void evalSave(const Script::Context &ctx);
 
   protected:
     // Command line actions

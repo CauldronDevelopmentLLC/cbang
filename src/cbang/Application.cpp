@@ -123,20 +123,6 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     options.popCategory();
   }
 
-  if (hasFeature(FEATURE_CONFIG_FILE) && hasFeature(FEATURE_SCRIPT_SERVER)) {
-    options.pushCategory("Configuration");
-    options.addTarget("config-rotate", configRotate, "Rotate the "
-                      "configuration file to a backup when saving would "
-                      "overwrite the previous configuration.");
-    options.addTarget("config-rotate-dir", configRotateDir,
-                      "Put rotated configs in this directory.");
-    options.addTarget("config-rotate-max", configRotateMax, "The maximum "
-                      "number of rotated configuration files to keep.  A "
-                      "value of zero will keep all configuration file "
-                      "backups.");
-    options.popCategory();
-  }
-
   logger.addOptions(options);
 
   // Command line
@@ -184,40 +170,6 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
              "Print application uptime"));
   add(new MF("option", this, &A::evalOption, 1, 2,
              "Get or set a configuration option", "<name> [value]"));
-
-  if (hasFeature(FEATURE_SCRIPT_SERVER)) {
-    if (hasFeature(FEATURE_INFO)) {
-      add(new MF("get-info", this, &A::evalGetInfo, 2, 2,
-                 "Print application information", "<category> <key>"));
-      add(new MF("info", this, &A::evalInfo, 0, 0,
-                 "Print application information in JSON format"));
-    }
-    add(new MF("options", this, &A::evalOptions, 0, ~0,
-               "List or set options with their values.\n"
-               "If no name arguments are given then all options with "
-               "non-default values will be listed.  If the '-d' argument is "
-               "given then even defaulted options will be listed.  If the "
-               "'-a' option is given then unset options will also be listed.  "
-               "Otherwise, if option names are provided only those options "
-               "will be listed.\n"
-               "The special name '*' lists all options which have not yet been "
-               "listed and is affected by the '-d' and '-a' options.\n"
-               "If a name argument is followed directly by an equal sign then "
-               "the rest of the arugment will be used to set the option's "
-               "value.  If instead a name argument is followed immediately by "
-               "a '!' then the option will be reset to its default value.\n"
-               "Options which are set or reset will also be listed.\n"
-               "Options are listed as a JSON format dictionary."
-               "[-d | -a] | [<name>[! | =<value>]]..."));
-    add(new MF("shutdown", this, &A::evalShutdown, 0, 0,
-               "Shutdown the application"));
-    add(new MF("save", this, &A::evalSave, 0, 1,
-               "Save the configuration either to the specified file or to the "
-               "file the configuration was last loaded from.", "[file]"));
-
-    if (hasFeature(FEATURE_DEBUGGING))
-      SocketDebugger::instance().addCommands(*this);
-  }
 
   // Load licenses
   const Resource *licenses = resource0.find("licenses");
@@ -390,24 +342,8 @@ void Application::writeConfig(ostream &stream, uint32_t flags) const {
 }
 
 
-void Application::evalShutdown(const Context &ctx) {
-  requestExit();
-}
-
-
 void Application::evalUptime(const Context &ctx) {
   ctx.stream << HumanTime((uint64_t)getUptime());
-}
-
-
-void Application::evalGetInfo(const Context &ctx) {
-  ctx.stream << Info::instance().get(ctx.args[1], ctx.args[2]);
-}
-
-
-void Application::evalInfo(const Context &ctx) {
-  JSON::Writer writer(ctx.stream);
-  Info::instance().writeList(writer);
 }
 
 
@@ -419,91 +355,6 @@ void Application::evalOption(const Script::Context &ctx) {
     else if (options[name].hasValue()) ctx.stream << options[name];
 
   } else THROW("Invalid option '" << name << "'");
-}
-
-
-void Application::evalOptions(const Context &ctx) {
-  evalOptions(ctx, options);
-}
-
-
-void Application::evalOptions(const Context &ctx, Options &options) {
-  bool defaults = false;
-  bool all = false;
-  vector<string> names;
-
-  // Process args
-  for (unsigned i = 1; i < ctx.args.size(); i++) {
-    if (ctx.args[i] == "-d") defaults = true;
-    else if (ctx.args[i] == "-a") all = true;
-    else names.push_back(ctx.args[i]);
-  }
-
-  std::set<string> added;
-
-  if (names.empty()) names.push_back("*");
-
-  JSON::Writer writer(ctx.stream);
-  writer.beginDict();
-
-  for (unsigned i = 0; i < names.size(); i++) {
-    string name = names[i];
-
-    if (name == "*") {
-      Options::const_iterator it;
-      for (it = options.begin(); it != options.end(); it++) {
-        Option &option = *it->second;
-
-        if (!all && !option.isSet() && (!defaults || !option.hasValue()))
-          continue;
-
-        // Avoid duplicates
-        if (added.find(option.getName()) != added.end()) continue;
-        added.insert(option.getName());
-
-        // Output
-        if (option.hasValue())
-          writer.insert(option.getName(), option.toString());
-        else writer.insertNull(option.getName());
-      }
-
-    } else {
-      size_t equal = name.find('=');
-
-      // Set
-      if (equal != string::npos) {
-        string value = name.substr(equal + 1);
-        name = name.substr(0, equal);
-
-        options.localize(name)->set(value);
-        // TODO validate value for Option type
-      }
-
-      // Reset
-      if (name.length() && name[name.length() - 1] == '!') {
-        name = name.substr(0, name.length() - 1);
-        if (options.local(name)) options[name].reset();
-      }
-
-      added.insert(name);
-      if (options.has(name)) {
-        // Output
-        Option &option = options[name];
-        if (option.hasValue())
-          writer.insert(option.getName(), option.toString());
-        else writer.insertNull(option.getName());
-      }
-      // TODO else report error
-    }
-  }
-
-  writer.endDict();
-}
-
-
-void Application::evalSave(const Script::Context &ctx) {
-  if (ctx.args.size() == 2) saveConfig(ctx.args[1]);
-  else saveConfig();
 }
 
 
