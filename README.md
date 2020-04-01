@@ -1,6 +1,8 @@
 C! (a.k.a. C-Bang)
 ==================
 
+[![Build Status](https://travis-ci.org/CauldronDevelopmentLLC/cbang.svg?branch=master)](https://travis-ci.org/CauldronDevelopmentLLC/cbang)
+
 The C! or cbang library is a collection of C++ utility libraries
 developed over the course of +15 years and several major C++
 application development projects.  It should compile and run on
