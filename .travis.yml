@@ -1,0 +1,35 @@
+sudo: false
+dist: bionic
+language: cpp
+compiler:
+  - gcc
+python:
+  - "3.8"
+
+cache: ccache
+
+addons:
+  apt:
+    update: true
+    packages:
+      - scons
+      - build-essential
+      - libssl-dev
+      - binutils-dev
+      - libiberty-dev
+      - libmariadb-dev-compat
+      - libleveldb-dev
+      - libsnappy-dev
+      - git
+
+jobs:
+  include:
+    - stage: Build
+      script:
+        - scons
+    - stage: Test
+      script:
+        - scons
+        - cd tests
+        - scons
+        - ./testHarness
