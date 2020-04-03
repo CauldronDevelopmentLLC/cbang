@@ -415,7 +415,7 @@ def configure(conf, cstd = 'c99'):
 
     # Link flags
     if compiler_mode == 'msvc' and not optimize:
-        env.AppendUnique(LINKFLAGS = ['/INCREMENTAL'])
+        env.AppendUnique(LINKFLAGS = ['/INCREMENTAL:NO'])
 
     if compiler_mode == 'msvc' or int(env.get('cross_mingw', 0)):
         if env.get('compiler_mode') == 'gnu':
