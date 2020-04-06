@@ -40,7 +40,12 @@ using namespace std;
 using namespace cb;
 
 
+#ifdef _WIN32
+// Windows chokes with the 4MiB buffer on the stack
+#define TAR_BUFFER_SIZE 4096
+#else
 #define TAR_BUFFER_SIZE (4096 * 1024)
+#endif
 
 const char Tar::zero_block[512] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
