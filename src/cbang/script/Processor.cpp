@@ -136,7 +136,7 @@ void Processor::run(Handler &handler, Socket &socket) {
         out << "ERROR: " << e << '\n';
       }
 
-      Handler::eval(ctx, "$(eval $prompt)");
+      if (!quit) Handler::eval(ctx, "$(eval $prompt)");
     }
   }
 
@@ -144,6 +144,4 @@ void Processor::run(Handler &handler, Socket &socket) {
 }
 
 
-void Processor::exit(const Context &ctx) {
-  quit = true;
-}
+void Processor::exit(const Context &ctx) {quit = true;}

@@ -69,13 +69,13 @@ Option::Option(const string &name, const string &help,
 
 const string Option::getTypeString() const {
   switch (type) {
-  case BOOLEAN_TYPE: return "boolean";
-  case STRING_TYPE: return "string";
-  case INTEGER_TYPE: return "integer";
-  case DOUBLE_TYPE: return "double";
-  case STRINGS_TYPE: return "string ...";
+  case BOOLEAN_TYPE:  return "boolean";
+  case STRING_TYPE:   return "string";
+  case INTEGER_TYPE:  return "integer";
+  case DOUBLE_TYPE:   return "double";
+  case STRINGS_TYPE:  return "string ...";
   case INTEGERS_TYPE: return "integer ...";
-  case DOUBLES_TYPE: return "double ...";
+  case DOUBLES_TYPE:  return "double ...";
   default: THROW("Invalid type " << type);
   }
 }
@@ -135,8 +135,14 @@ void Option::setDepreciated() {
 }
 
 
+void Option::setReadOnly(bool set) {
+  if (set) flags |= READ_ONLY_FLAG;
+  else flags &= ~READ_ONLY_FLAG;
+}
+
+
 bool Option::isHidden() const {
-  return isDepreciated() || name.empty() || name[0] == '_';
+  return isDepreciated() || isReadOnly() || name.empty() || name[0] == '_';
 }
 
 
@@ -158,6 +164,7 @@ void Option::unset() {
 
 
 void Option::set(const string &value) {
+  if (isReadOnly()) THROW("Option '" << name << "' is read only");
   if (isDepreciated()) {
     LOG_WARNING("Option '" << name << "' has been depreciated: " << help);
     return;
@@ -196,19 +203,9 @@ void Option::set(const string &value) {
 }
 
 
-void Option::set(int64_t value) {
-  set(String(value));
-}
-
-
-void Option::set(double value) {
-  set(String(value));
-}
-
-
-void Option::set(bool value) {
-  set(String(value));
-}
+void Option::set(int64_t value) {set(String(value));}
+void Option::set(double value) {set(String(value));}
+void Option::set(bool value) {set(String(value));}
 
 
 void Option::set(const strings_t &values) {
@@ -253,24 +250,10 @@ void Option::append(const string &value) {
 }
 
 
-void Option::append(int64_t value) {
-  append(String(value));
-}
-
-
-void Option::append(double value) {
-  append(String(value));
-}
-
-
-bool Option::hasValue() const {
-  return isSet() || hasDefault();
-}
-
-
-bool Option::toBoolean() const {
-  return parseBoolean(toString());
-}
+void Option::append(int64_t value) {append(String(value));}
+void Option::append(double value) {append(String(value));}
+bool Option::hasValue() const {return isSet() || hasDefault();}
+bool Option::toBoolean() const {return parseBoolean(toString());}
 
 
 const string &Option::toString() const {
@@ -281,14 +264,8 @@ const string &Option::toString() const {
 }
 
 
-int64_t Option::toInteger() const {
-  return parseInteger(toString());
-}
-
-
-double Option::toDouble() const {
-  return parseDouble(toString());
-}
+int64_t Option::toInteger() const {return parseInteger(toString());}
+double Option::toDouble() const {return parseDouble(toString());}
 
 
 Option::strings_t Option::toStrings(const string &delims) const {

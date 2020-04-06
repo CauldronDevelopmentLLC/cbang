@@ -76,6 +76,7 @@ namespace cb {
       OBSCURED_FLAG     = 1 << 3,
       COMMAND_LINE_FLAG = 1 << 4,
       DEPRECIATED_FLAG  = 1 << 5,
+      READ_ONLY_FLAG    = 1 << 6,
     } flags_t;
 
   protected:
@@ -133,6 +134,8 @@ namespace cb {
     bool isCommandLine() const {return flags & COMMAND_LINE_FLAG;}
     void setDepreciated();
     bool isDepreciated() const {return flags & DEPRECIATED_FLAG;}
+    void setReadOnly(bool set = true);
+    bool isReadOnly() const {return flags & READ_ONLY_FLAG;}
     bool isHidden() const;
 
     const std::string &getHelp() const {return help;}
