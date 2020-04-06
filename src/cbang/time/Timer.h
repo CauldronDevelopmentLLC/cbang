@@ -37,10 +37,12 @@
 #undef min
 #endif // _WIN32
 
-
+#if defined(__GLIBC__)
 struct timeval;
 struct timespec;
-
+#else
+#include <sys/time.h>
+#endif
 
 namespace cb {
   /// Time events or access current system time

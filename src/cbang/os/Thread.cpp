@@ -214,7 +214,7 @@ void Thread::kill(int signal) {
 void Thread::yield() {
 #ifdef _WIN32
   SwitchToThread();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || !defined(__GLIBC__)
   sched_yield();
 #else
   pthread_yield();

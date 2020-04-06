@@ -56,7 +56,7 @@ using namespace cb;
 #define strtoull(p, e, b) _strtoui64(p, e, b)
 #define strtof(p, e) (float)strtod(p, e)
 #define vsnprintf _vsnprintf
-#define __va_copy(x, y) (x = y)
+#define va_copy(x, y) (x = y)
 #endif
 
 const string String::DEFAULT_DELIMS = " \t\n\r";
@@ -116,7 +116,7 @@ string String::printf(const char *format, ...) {
 
 string String::vprintf(const char *format, va_list ap) {
   va_list copy;
-  __va_copy(copy, ap);
+  va_copy(copy, ap);
 
   int length = vsnprintf(0, 0, format, copy);
   va_end(copy);
