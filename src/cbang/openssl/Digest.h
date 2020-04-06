@@ -41,7 +41,9 @@
 
 #include <openssl/opensslv.h>
 
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
+#if defined(LIBRESSL_VERSION_NUMBER)
+#include <openssl/evp.h>
+#elif OPENSSL_VERSION_NUMBER < 0x1010000fL
 typedef struct env_md_st EVP_MD;
 typedef struct env_md_ctx_st EVP_MD_CTX;
 #else
