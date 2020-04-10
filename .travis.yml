@@ -21,15 +21,45 @@ addons:
       - libleveldb-dev
       - libsnappy-dev
       - git
+  homebrew:
+    update: true
+    packages:
+      - scons
+      - binutils
+      - mariadb
+      - leveldb
+      - snappy
 
 jobs:
   include:
     - stage: Build
-      script:
+      os: linux
+      dist: bionic
+      script: &build
         - scons
+    - stage: Build
+      os: linux
+      dist: bionic
+      arch: arm64
+      script: *build
+    - stage: Build
+      os: osx
+      osx_image: xcode11.3
+      script: *build
     - stage: Test
-      script:
+      os: linux
+      dist: bionic
+      script: &test
         - scons
         - cd tests
         - scons
         - ./testHarness
+    - stage: Test
+      os: linux
+      dist: bionic
+      arch: arm64
+      script: *test
+    - stage: Test
+      os: osx
+      osx_image: xcode11.3
+      script: *test
