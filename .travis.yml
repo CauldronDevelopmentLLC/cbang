@@ -2,7 +2,7 @@ sudo: false
 dist: bionic
 language: cpp
 compiler:
-  - gcc
+  - clang
 python:
   - "3.8"
 
@@ -44,8 +44,12 @@ jobs:
       script: *build
     - stage: Build
       os: osx
-      osx_image: xcode11.3
-      script: *build
+      script:
+        - scons -H
+        - scons
+    # - stage: Build
+    #   os: windows
+    #   script: *build
     - stage: Test
       os: linux
       dist: bionic
@@ -61,5 +65,7 @@ jobs:
       script: *test
     - stage: Test
       os: osx
-      osx_image: xcode11.3
       script: *test
+    # - stage: Test
+    #   os: windows
+    #   script: *test
