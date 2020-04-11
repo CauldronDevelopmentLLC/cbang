@@ -175,7 +175,7 @@ void Info::writeList(JSON::Sink &sink) const {
     const auto &cat = (*it)->second;
     for (auto it2 = cat.begin(); it2 != cat.end(); it2++) {
       if ((*it2)->second.empty()) continue;
-      sink.appendList();
+      sink.appendList(true);
       sink.append((*it2)->first);
       sink.append((*it2)->second);
       sink.endList();
