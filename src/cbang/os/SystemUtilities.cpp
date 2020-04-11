@@ -822,7 +822,13 @@ namespace cb {
 
 #else
       errno = 0;
-      return ::kill((pid_t)pid, 0) != -1 && errno != ESRCH;
+      if (::kill((pid_t)pid, 0) == -1) {
+        if (errno == ESRCH) return false;
+        LOG_ERROR("Failed to check if process " << pid << " is alive: "
+                  << SysError());
+      }
+
+      return true;
 #endif
     }
 
