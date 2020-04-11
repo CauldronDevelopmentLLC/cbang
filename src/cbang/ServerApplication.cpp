@@ -104,23 +104,14 @@ bool ServerApplication::_hasFeature(int feature) {
 }
 
 
-int ServerApplication::init(int argc, char *argv[]) {
-  int ret = Application::init(argc, argv);
-  if (ret == -1) return -1;
-
-  if (!hasFeature(FEATURE_SERVER)) return ret;
+void ServerApplication::afterCommandLineParse() {
+  if (!hasFeature(FEATURE_SERVER)) return;
 
   if (!options["child"].toBoolean()) {
 #ifndef _WIN32
-    if (options["fork"].toBoolean()) {
-      // Note, all threads must be stopped before daemonize() forks and
-      // SignalManager runs in a thread.
-      if (hasFeature(FEATURE_SIGNAL_HANDLER))
-        SignalManager::instance().setEnabled(false);
+    if (options["fork"].toBoolean())
+      // Note no threads should be started before daemonize() forks
       SystemUtilities::daemonize();
-      if (hasFeature(FEATURE_SIGNAL_HANDLER))
-        SignalManager::instance().setEnabled(true);
-    }
 #endif
 
     if (options["pid"].toBoolean() || options["pid-file"].isSet()) {
@@ -166,6 +157,14 @@ int ServerApplication::init(int argc, char *argv[]) {
     }
   }
 #endif
+}
+
+
+int ServerApplication::init(int argc, char *argv[]) {
+  int ret = Application::init(argc, argv);
+  if (ret == -1) return -1;
+
+  if (!hasFeature(FEATURE_SERVER)) return ret;
 
   if (!options["child"].toBoolean() && options["respawn"].toBoolean()) {
 #ifndef _WIN32
