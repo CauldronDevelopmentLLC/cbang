@@ -149,6 +149,7 @@ void Info::write(XMLWriter &writer) const {
 
     category_t::const_iterator it2;
     for (it2 = cat.begin(); it2 != cat.end(); it2++) {
+      if ((*it2)->second.empty()) continue;
       writer.startElement("tr");
       writer.startElement("th");
       writer.text((*it2)->first);
@@ -173,6 +174,7 @@ void Info::writeList(JSON::Sink &sink) const {
 
     const auto &cat = (*it)->second;
     for (auto it2 = cat.begin(); it2 != cat.end(); it2++) {
+      if ((*it2)->second.empty()) continue;
       sink.appendList();
       sink.append((*it2)->first);
       sink.append((*it2)->second);
