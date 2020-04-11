@@ -47,14 +47,13 @@ using namespace cb;
 
 
 Info::category_t &Info::add(const string &category, bool prepend) {
-  pair<categories_t::map_iterator, bool> insert =
+  auto result =
     categories.insert(categories_t::value_type(category, category_t()));
+  category_t &cat = result.first->second;
 
-  category_t &cat = insert.first->second;
-
-  if (insert.second) {
-    if (prepend) categories.push_front(&*insert.first);
-    else categories.push_back(&*insert.first);
+  if (result.second) {
+    if (prepend) categories.push_front(&*result.first);
+    else categories.push_back(&*result.first);
   }
 
   return cat;
@@ -64,15 +63,13 @@ Info::category_t &Info::add(const string &category, bool prepend) {
 void Info::add(const string &category, const string &key, const string &value,
                bool prepend) {
   category_t &cat = add(category, prepend);
+  auto result = cat.insert(category_t::value_type(key, value));
 
-  pair<category_t::map_iterator, bool> insert2 =
-    cat.insert(category_t::value_type(key, value));
+  if (result.second) {
+    if (prepend) cat.push_front(&*result.first);
+    else cat.push_back(&*result.first);
 
-  if (insert2.second) {
-    if (prepend) cat.push_front(&*insert2.first);
-    else cat.push_back(&*insert2.first);
-
-  } else insert2.first->second = value;
+  } else result.first->second = value;
 
   if (maxKeyLength < key.length()) maxKeyLength = key.length();
 }
