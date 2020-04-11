@@ -822,7 +822,7 @@ namespace cb {
 
 #else
       errno = 0;
-      return kill((pid_t)pid, 0) != -1 && errno != ESRCH;
+      return ::kill((pid_t)pid, 0) != -1 && errno != ESRCH;
 #endif
     }
 
