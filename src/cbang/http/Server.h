@@ -89,6 +89,7 @@ namespace cb {
       bool getQueueConnections() const {return queueConnections;}
       void setQueueConnections(bool x) {queueConnections = x;}
       unsigned getMaxRequestLength() const {return maxRequestLength;}
+      IPAddressFilter &getIPFilter() {return ipFilter;}
 
       void addHandler(Handler *handler) {handlers.push_back(handler);}
       Handler *match(Connection *con);
