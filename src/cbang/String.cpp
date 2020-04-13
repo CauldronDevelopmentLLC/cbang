@@ -650,7 +650,29 @@ string String::escapeRE(const string &s) {
 }
 
 
-void String::escapeC(string &result, int c) {
+string String::escapeMySQL(const string &s) {
+  string result;
+  result.reserve(s.length());
+
+  for (string::const_iterator it = s.begin(); it != s.end(); it++)
+    switch (*it) {
+    case 0:    result.append("\\0");  break;
+    case '\'': result.append("\\'");  break;
+    case '\"': result.append("\\\""); break;
+    case '\b': result.append("\\b");  break;
+    case '\n': result.append("\\n");  break;
+    case '\r': result.append("\\r");  break;
+    case '\t': result.append("\\t");  break;
+    case 26:   result.append("\\Z");  break;
+    case '\\': result.append("\\\\"); break;
+    default: result.push_back(*it);   break;
+    }
+
+  return result;
+}
+
+
+void String::escapeC(string &result, char c) {
     switch (c) {
     case '\"': result.append("\\\""); break;
     case '\\': result.append("\\\\"); break;
@@ -661,20 +683,21 @@ void String::escapeC(string &result, int c) {
     case '\r': result.append("\\r"); break;
     case '\t': result.append("\\t"); break;
     case '\v': result.append("\\v"); break;
-    default:
-      if (c < 0x20 || 0x7e < c) { // Non-printable
-        uint32_t x = c;
-        if (x <= 0xffff) result.append(printf("\\x%02x", x));
-        else if (x <= 0xffffffff) result.append(printf("\\u%04x", x));
-        else result.append(printf("\\U%08x", x));
+    default: {
+      uint8_t x = c;
+
+      if (x < 0x20 || 0x7e < x) { // Non-printable
+        if (x <= 0xff) result.append(printf("\\x%02x", x));
+        else result.append(printf("\\u%04x", x));
 
       } else result.push_back(c);
       break;
     }
+    }
 }
 
 
-string String::escapeC(int c) {
+string String::escapeC(char c) {
   string result;
   escapeC(result, c);
   return result;
