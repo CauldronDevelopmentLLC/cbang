@@ -245,6 +245,8 @@ void CommandLine::usage(ostream &stream, const string &name) const {
 
 
 int CommandLine::licenseAction() {
+  if (licenseText.empty()) cout << "Unspecified" << endl;
+
   for (unsigned i = 0; i < licenseText.size(); i++)
     cout << licenseText[i] << endl << endl;
 
