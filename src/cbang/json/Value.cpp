@@ -171,7 +171,7 @@ string Value::format(char type) const {
   case 'i': return String(getS32());
   case 'u': return String(getU32());
   case 's': return asString();
-  case 'S': return "\"" + String::escapeC(asString()) + "\"";
+  case 'S': return "\"" + String::escapeMySQL(asString()) + "\"";
   }
 
   THROW("Unsupported format type specifier '"
