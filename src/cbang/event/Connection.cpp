@@ -669,7 +669,7 @@ void Connection::readBody() {
 
   if (bytesToRead) {
     setRead(true); // Read more
-    if (0 < bytesToRead) setMinRead(min((int64_t)1 << 14, bytesToRead));
+    if (0 < bytesToRead) setMinRead(min((int64_t)1 << 17, bytesToRead));
 
   } else done();
 }
