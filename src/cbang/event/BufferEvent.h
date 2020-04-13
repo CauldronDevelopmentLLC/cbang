@@ -68,11 +68,6 @@ namespace cb {
 
       SmartPointer<Event> readEvent;
       SmartPointer<Event> writeEvent;
-
-      SmartPointer<Event> connectCBEvent;
-      SmartPointer<Event> writeCBEvent;
-      SmartPointer<Event> readCBEvent;
-      SmartPointer<Event> errorCBEvent;
       SmartPointer<DNSRequest> dnsReq;
 
       unsigned readTimeout = 50;
@@ -99,8 +94,6 @@ namespace cb {
       size_t sslLastWrite = 0;
       size_t sslLastRead = 0;
 
-      short pendingErrorFlags = 0;
-      int pendingError = 0;
       std::vector<int> sslErrors;
 
     public:
@@ -158,9 +151,8 @@ namespace cb {
       virtual void sent(unsigned bytes) {}
 
     private:
-      void errorCB();
-      void scheduleErrorCB(int flags, int err = 0);
-      void scheduleReadCB();
+      void doErrorCB(int flags, int err = 0);
+      void doReadCB();
       void outputBufferCB(int added, int deleted, int orig);
 
       void sockRead();

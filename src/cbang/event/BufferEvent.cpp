@@ -91,11 +91,6 @@ BufferEvent::BufferEvent(cb::Event::Base &base, bool incoming,
   base(base) {
   LOG_DEBUG(4, __func__ << "()");
 
-  connectCBEvent = newEvent(&BufferEvent::connectCB);
-  writeCBEvent   = newEvent(&BufferEvent::writeCB);
-  readCBEvent    = newEvent(&BufferEvent::readCB);
-  errorCBEvent   = newEvent(&BufferEvent::errorCB);
-
   if (sslCtx.isNull()) {
     outputBuffer.setFlags(EVBUFFER_FLAG_DRAINS_TO_FD);
     state = incoming ? STATE_SOCK_READY : STATE_IDLE;
@@ -146,17 +141,14 @@ const SmartPointer<Socket> &BufferEvent::getSocket() const {return socket;}
 
 
 
-int BufferEvent::getPriority() const {return readCBEvent->getPriority();}
+int BufferEvent::getPriority() const {
+  return readEvent.isSet() ? readEvent->getPriority() : 0;
+}
 
 
 void BufferEvent::setPriority(int priority) {
   if (readEvent.isSet()) readEvent->setPriority(priority);
   if (writeEvent.isSet()) writeEvent->setPriority(priority);
-
-  connectCBEvent->setPriority(priority);
-  writeCBEvent->setPriority(priority);
-  readCBEvent->setPriority(priority);
-  errorCBEvent->setPriority(priority);
 }
 
 
@@ -266,7 +258,7 @@ void BufferEvent::dnsCB(int err, const vector<IPAddress> &addrs) {
 
   dnsReq.release();
 
-  if (err || addrs.empty()) return scheduleErrorCB(BUFFEREVENT_ERROR);
+  if (err || addrs.empty()) return doErrorCB(BUFFEREVENT_ERROR);
 
   // Make sure we have an open socket
   if (socket.isNull()) socket = new Socket;
@@ -286,38 +278,24 @@ void BufferEvent::dnsCB(int err, const vector<IPAddress> &addrs) {
     return;
   } CATCH_WARNING;
 
-  scheduleErrorCB(BUFFEREVENT_ERROR);
+  doErrorCB(BUFFEREVENT_ERROR);
 }
 
 
-void BufferEvent::errorCB() {
-  LOG_DEBUG(4, __func__ << "(" << getEventsString(pendingErrorFlags) << ")");
+void BufferEvent::doErrorCB(int flags, int err) {
+  LOG_DEBUG(4, __func__ << "(" << getEventsString(flags) << ")");
+  close();
+  state = STATE_FAILED;
 
-  short what = pendingErrorFlags;
-  int err = pendingError;
-
-  pendingErrorFlags = 0;
-  pendingError = 0;
-
-  TRY_CATCH_ERROR(errorCB(what, err));
+  TRY_CATCH_ERROR(errorCB(flags, err ? err : SysError::get()));
   logSSLErrors();
 }
 
 
-void BufferEvent::scheduleErrorCB(int flags, int err) {
-  LOG_DEBUG(4, __func__ << "(" << getEventsString(flags) << ")");
-  close();
-  state = STATE_FAILED;
-  pendingError = err ? err : SysError::get();
-  pendingErrorFlags |= flags;
-  errorCBEvent->activate();
-}
-
-
-void BufferEvent::scheduleReadCB() {
+void BufferEvent::doReadCB() {
   if (inputBuffer.getLength() < minRead || state == STATE_FAILED) return;
   minRead = 0;
-  readCBEvent->activate();
+  readCB();
 }
 
 
@@ -335,7 +313,7 @@ void BufferEvent::sockRead() {
 
   if (0 < ret) {
     received(ret);
-    return scheduleReadCB(); // Read callback
+    return doReadCB(); // Read callback
   }
 
   int err = SysError::get();
@@ -347,7 +325,7 @@ void BufferEvent::sockRead() {
     flags |= BUFFEREVENT_ERROR;
   }
 
-  scheduleErrorCB(flags);
+  doErrorCB(flags);
 }
 
 
@@ -358,15 +336,15 @@ void BufferEvent::sockConnect() {
   socklen_t elen = sizeof(err);
 
   if (getsockopt(getFD(), SOL_SOCKET, SO_ERROR, (char *)&err, &elen) < 0)
-    return scheduleErrorCB(BUFFEREVENT_ERROR);
+    return doErrorCB(BUFFEREVENT_ERROR);
 
   if (err) {
     if (ERR_CONNECT_RETRIABLE(err)) return;
-    return scheduleErrorCB(BUFFEREVENT_ERROR, err);
+    return doErrorCB(BUFFEREVENT_ERROR, err);
   }
 
-  connectCBEvent->activate();
   state = ssl ? STATE_SSL_HANDSHAKE : STATE_SOCK_READY;
+  connectCB();
 }
 
 
@@ -385,13 +363,13 @@ void BufferEvent::sockWrite() {
       flags |= BUFFEREVENT_ERROR;
     }
 
-    return scheduleErrorCB(flags);
+    return doErrorCB(flags);
   }
 
   sent(ret);
 
   // Invoke the user callback if buffer drained
-  if (!outputBuffer.getLength()) writeCBEvent->activate();
+  if (!outputBuffer.getLength()) writeCB();
 }
 
 
@@ -401,7 +379,7 @@ void BufferEvent::sockReadCB(unsigned events) {
   SmartPointer<BufferEvent> self = this; // Don't deallocate during callback
 
   if (events == EVENT_TIMEOUT)
-    return scheduleErrorCB(BUFFEREVENT_READING | BUFFEREVENT_TIMEOUT);
+    return doErrorCB(BUFFEREVENT_READING | BUFFEREVENT_TIMEOUT);
 
   switch (state) {
   case STATE_FAILED:
@@ -431,7 +409,7 @@ void BufferEvent::sockWriteCB(unsigned events) {
   SmartPointer<BufferEvent> self = this; // Don't deallocate during callback
 
   if (events == EVENT_TIMEOUT)
-    return scheduleErrorCB(BUFFEREVENT_WRITING | BUFFEREVENT_TIMEOUT);
+    return doErrorCB(BUFFEREVENT_WRITING | BUFFEREVENT_TIMEOUT);
 
   switch (state) {
   case STATE_FAILED:
@@ -478,7 +456,7 @@ void BufferEvent::sslClosed(unsigned when, int code, int ret) {
   while ((err = SSL::getError())) sslErrors.push_back(err);
 
   // when is BUFFEREVENT_{READING|WRITING}
-  scheduleErrorCB(event | when);
+  doErrorCB(event | when);
 #endif // HAVE_OPENSSL
 }
 
@@ -523,7 +501,7 @@ void BufferEvent::sslRead() {
     if (space.empty()) {
       space.resize(2);
       inputBuffer.reserve(bytes, space);
-      if (space.empty()) return scheduleErrorCB(BUFFEREVENT_ERROR);
+      if (space.empty()) return doErrorCB(BUFFEREVENT_ERROR);
     }
 
     sslLastRead = min(bytes, space[0].iov_len);
@@ -552,7 +530,7 @@ void BufferEvent::sslRead() {
     }
   }
 
-  if (bytesRead) scheduleReadCB();
+  if (bytesRead) doReadCB();
 #endif // HAVE_OPENSSL
 }
 
@@ -588,8 +566,7 @@ void BufferEvent::sslWrite() {
 
   if (bytesWritten) {
     outputBuffer.drain(bytesWritten);
-    if (!outputBuffer.getLength() && !errorCBEvent->isPending())
-      writeCBEvent->activate();
+    if (!outputBuffer.getLength() && state != STATE_FAILED) writeCB();
   }
 #endif // HAVE_OPENSSL
 }
