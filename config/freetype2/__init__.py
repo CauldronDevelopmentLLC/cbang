@@ -24,7 +24,7 @@ def configure(conf):
 
     conf.CBRequireCHeader('ft2build.h')
     conf.CBRequireLib('freetype')
-    conf.CBConfig('zlib')
+    conf.CBConfig('ZLib')
     conf.CBCheckLib('png')
 
     return True
@@ -32,7 +32,7 @@ def configure(conf):
 
 def generate(env):
     env.CBAddConfigTest('freetype2', configure)
-    env.CBLoadTools('osx zlib')
+    env.CBLoadTools('osx ZLib')
 
 
 def exists():

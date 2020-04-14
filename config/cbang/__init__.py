@@ -11,7 +11,7 @@ def GetHome():
 def configure_deps(conf, local = True, with_openssl = True):
     env = conf.env
 
-    conf.CBConfig('zlib', not local)
+    conf.CBConfig('ZLib', not local)
     conf.CBConfig('bzip2', not local)
     conf.CBConfig('XML', not local)
     conf.CBConfig('sqlite3', not local)
@@ -101,7 +101,7 @@ def generate(env):
         BoolVariable('backtrace_debugger', 'Enable backtrace debugger', 0),
         ('debug_level', 'Set log debug level', 1))
 
-    env.CBLoadTools('''sqlite3 openssl pthreads valgrind osx zlib bzip2
+    env.CBLoadTools('''sqlite3 openssl pthreads valgrind osx ZLib bzip2
         XML chakra v8 event re2 libyaml leveldb'''.split(), GetHome() + '/..')
 
 
