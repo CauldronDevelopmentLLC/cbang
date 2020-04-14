@@ -9,7 +9,7 @@ def configure(conf):
 
 
 def generate(env):
-    env.CBAddConfigTest('zlib', configure)
+    env.CBAddConfigTest('ZLib', configure)
 
 
 def exists():
