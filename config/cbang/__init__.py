@@ -38,7 +38,7 @@ def configure_deps(conf, local = True, with_openssl = True):
     # Must be after 'rt'
     if conf.CBConfig('event', False): conf.CBConfig('re2', not local)
 
-    if with_openssl: conf.CBConfig('openssl', False, version = '1.0.0')
+    if with_openssl: conf.CBConfig('openssl', False, version = '1.1.0')
     conf.CBConfig('chakra', False)
     conf.CBConfig('v8', False)
 
