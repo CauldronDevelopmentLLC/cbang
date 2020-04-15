@@ -136,15 +136,6 @@ void WebHandler::buildResponse(HTTP::Context *_ctx) {
 
   Connection &con = ctx->getConnection();
 
-  // Check request method
-  Request &request = con.getRequest();
-  switch (request.getMethod()) {
-    case RequestMethod::HTTP_GET:
-    case RequestMethod::HTTP_POST:
-      break;
-  default: return; // We only handle GET and POST
-  }
-
   try {
     if (!allow(*ctx)) errorPage(*ctx, StatusCode::HTTP_UNAUTHORIZED);
     else {
