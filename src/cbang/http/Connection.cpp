@@ -280,7 +280,8 @@ bool Connection::read() {
       readBuf.shiftToFront();
       return true;
 
-    case RequestMethod::HTTP_POST: {
+    case RequestMethod::HTTP_POST:
+    case RequestMethod::HTTP_PUT: {
       // Check Content-Length
       if (!request.has("Content-Length")) {
         LOG_WARNING("Request missing Content-Length");
@@ -309,7 +310,7 @@ bool Connection::read() {
         readBuf.clear();
       }
 
-      if (!contentLength) return true;  // Empty POST
+      if (!contentLength) return true;  // Empty
       break;
     }
 
@@ -327,8 +328,8 @@ bool Connection::read() {
   }
 
   if (dataBuf.isFull()) {
-    LOG_INFO(1, *this << " POST " << contentLength << " bytes "
-             << request.getURI());
+    LOG_INFO(1, *this << ' ' << request.getMethod() << ' ' << contentLength
+             << " bytes " << request.getURI());
     return true;
   }
 
