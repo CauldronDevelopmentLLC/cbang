@@ -269,17 +269,17 @@ double Option::toDouble() const {return parseDouble(toString());}
 
 
 Option::strings_t Option::toStrings(const string &delims) const {
-  return parseStrings(toString());
+  return parseStrings(toString(), delims);
 }
 
 
 Option::integers_t Option::toIntegers(const string &delims) const {
-  return parseIntegers(toString());
+  return parseIntegers(toString(), delims);
 }
 
 
 Option::doubles_t Option::toDoubles(const string &delims) const {
-  return parseDoubles(toString());
+  return parseDoubles(toString(), delims);
 }
 
 
