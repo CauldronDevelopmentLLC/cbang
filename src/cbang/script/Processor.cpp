@@ -105,7 +105,7 @@ void Processor::run(Handler &handler, Socket &socket) {
     fill += bytes;
 
     // Parse lines
-    while (fill) {
+    while (!quit && fill) {
       string line;
       unsigned i;
 
