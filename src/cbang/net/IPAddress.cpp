@@ -59,8 +59,12 @@ using namespace std;
 using namespace cb;
 
 
-IPAddress::IPAddress(const string &host) :
-  host(host), ip(0), port(portFromString(host)) {
+IPAddress::IPAddress(uint32_t ip, uint16_t port) :
+  host(ipToString(ip)), ip(ip), port(port) {}
+
+
+IPAddress::IPAddress(const string &host, uint16_t port) :
+  host(host), ip(ipFromString(host)), port(port ? port : portFromString(host)) {
 
   Socket::initialize(); // Windows needs this
 
@@ -71,45 +75,22 @@ IPAddress::IPAddress(const string &host) :
 }
 
 
-IPAddress::IPAddress(const string &host, uint16_t port) :
-  host(host), ip(0), port(port) {
-
-  Socket::initialize(); // Windows needs this
-
-  if (host.find(":") != string::npos)
-    THROW("Address '" << host << "' already has port.");
-
-  if (this->host == "0") this->host = "0.0.0.0"; // OSX needs this
-}
-
-
-string IPAddress::getHost() const {
-  if (host.empty())
-    return String::printf("%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xff,
-                          (ip >> 8) & 0xff, ip & 0xff);
-
-  return host;
-}
-
-
 bool IPAddress::hasHost() const {
-  return !host.empty() &&
-    host.find_first_not_of("1234567890. \t\n\r") != string::npos;
+  return host.find_first_not_of("1234567890. \t\n\r") != string::npos;
 }
 
 
 void IPAddress::lookupHost() {host = hostFromIP(*this);}
 
 
-uint32_t IPAddress::getIP() const {
-  if (!ip && !host.empty())
-    const_cast<IPAddress *>(this)->ip = ipFromString(host);
-  return ip;
+string IPAddress::toString() const {
+  return getHost() + (getPort() ? String::printf(":%d", getPort()) : string());
 }
 
 
-string IPAddress::toString() const {
-  return getHost() + (getPort() ? String::printf(":%d", getPort()) : string());
+string IPAddress::ipToString(uint32_t ip) {
+  return String::printf("%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xff,
+                        (ip >> 8) & 0xff, ip & 0xff);
 }
 
 
@@ -154,7 +135,9 @@ unsigned IPAddress::ipsFromString(const string &host, vector<IPAddress> &addrs,
   for (info = res; info && (!max || count < max); info = info->ai_next) {
     if (!info->ai_addr) continue;
     uint32_t ip = ntohl(((struct sockaddr_in *)info->ai_addr)->sin_addr.s_addr);
-    addrs.push_back(IPAddress(ip, port));
+    IPAddress addr(ip, port);
+    addr.host = hostname;
+    addrs.push_back(addr);
     count++;
   }
 
