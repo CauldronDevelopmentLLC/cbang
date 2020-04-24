@@ -43,28 +43,26 @@ namespace cb {
   /// Used for printing and comparing IP addresses
   class IPAddress {
     std::string host;
-    uint32_t ip; // Host byte order
-    uint16_t port;
+    uint32_t ip = 0; // Host byte order
+    uint16_t port = 0;
 
   public:
-    IPAddress() : ip(0), port(0) {}
-    IPAddress(uint32_t ip, uint16_t port = 0) : ip(ip), port(port) {}
-    IPAddress(const std::string &host);
-    IPAddress(const std::string &host, uint16_t port);
+    IPAddress(uint32_t ip = 0, uint16_t port = 0);
+    IPAddress(const std::string &host, uint16_t port = 0);
 
     void setHost(const std::string &host) {this->host = host;}
-    std::string getHost() const;
+    const std::string &getHost() const {return host;}
     bool hasHost() const;
     void lookupHost();
 
     void setIP(uint32_t ip) {this->ip = ip;}
-    uint32_t getIP() const;
+    uint32_t getIP() const {return ip;}
 
     void setPort(uint16_t port) {this->port = port;}
     uint16_t getPort() const {return port;}
 
     std::string toString() const;
-    std::string getIPString() const {return IPAddress(ip).toString();}
+    std::string getIPString() const {return ipToString(ip);}
     operator std::string () const {return toString();}
     operator uint32_t () const {return getIP();}
 
@@ -79,6 +77,7 @@ namespace cb {
     {return getIP() == a.getIP() && getPort() == a.getPort();}
     bool operator!=(const IPAddress &a) const {return !(*this == a);}
 
+    static std::string ipToString(uint32_t ip);
     static uint32_t ipFromString(const std::string &host);
     static unsigned ipsFromString(const std::string &host,
                                   std::vector<IPAddress> &addrs,
