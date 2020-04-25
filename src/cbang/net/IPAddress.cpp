@@ -71,7 +71,7 @@ IPAddress::IPAddress(const string &host, uint16_t port) :
   size_t ptr = host.find(":");
   if (ptr != string::npos) this->host = host.substr(0, ptr);
 
-  if (this->host == "0") this->host = "0.0.0.0"; // OSX needs this
+  if (this->host == "0") this->host = "0.0.0.0"; // OSX & Windows need this
 }
 
 
@@ -117,6 +117,8 @@ unsigned IPAddress::ipsFromString(const string &host, vector<IPAddress> &addrs,
     port = String::parseU16(host.substr(ptr + 1));
 
   } else hostname = host;
+
+  if (hostname == "0") hostname = "0.0.0.0";
 
   struct addrinfo hints;
   struct addrinfo *res = 0;
