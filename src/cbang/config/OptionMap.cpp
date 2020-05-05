@@ -89,11 +89,9 @@ void OptionMap::startElement(const string &name, const XMLAttributes &attrs) {
 
   XMLAttributes::const_iterator it = attrs.find("v");
   if (it == attrs.end()) it = attrs.find("value");
+  xmlValueSet = it != attrs.end();
 
-  if (it != attrs.end()) {
-    set(name, it->second, setDefault);
-    xmlValueSet = true;
-  }
+  if (xmlValueSet) set(name, it->second, setDefault);
 
   xmlValue = "";
 }
@@ -103,8 +101,9 @@ void OptionMap::endElement(const string &name) {
   xmlValue = String::trim(xmlValue);
 
   if (xmlValue.empty()) {
-    // Empty option, assume boolean
-    if (!xmlValueSet) set(name, "true");
+    // If value not set and type is boolean, set true
+    if (!xmlValueSet && has(name) &&
+        get(name)->getType() == Option::BOOLEAN_TYPE) set(name, "true");
 
   } else set(name, xmlValue, setDefault);
 }
