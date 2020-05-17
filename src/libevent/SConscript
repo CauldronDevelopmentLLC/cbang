@@ -52,9 +52,9 @@ def CheckDecl(ctx, decl, includes = None):
             src = '#include <%s>\n%s' % (inc, src)
 
     ctx.Message('Checking for decl ' + decl + '... ')
-    ret = ctx.TryRun(src + '\n', '.c')
-    ctx.Result(ret[0])
-    return ret[0]
+    ret = ctx.TryCompile(src + '\n', '.c')
+    ctx.Result(ret)
+    return ret
 
 conf.AddTest('CheckDecl', CheckDecl)
 
@@ -68,9 +68,9 @@ def CheckStruct(ctx, struct, includes = None):
             src = '#include <%s>\n%s' % (inc, src)
 
     ctx.Message('Checking for struct ' + struct + '... ')
-    ret = ctx.TryRun(src + '\n', '.c')
-    ctx.Result(ret[0])
-    return ret[0]
+    ret = ctx.TryCompile(src + '\n', '.c')
+    ctx.Result(ret)
+    return ret
 
 conf.AddTest('CheckStruct', CheckStruct)
 
@@ -88,9 +88,9 @@ def CheckType(ctx, type, includes = None, defs = None):
             src = '#define %s\n%s' % (d, src)
 
     ctx.Message('Checking for type ' + type + '... ')
-    ret = ctx.TryRun(src + '\n', '.c')
-    ctx.Result(ret[0])
-    return ret[0]
+    ret = ctx.TryCompile(src + '\n', '.c')
+    ctx.Result(ret)
+    return ret
 
 conf.AddTest('CheckType', CheckType)
 
@@ -112,9 +112,9 @@ def CheckStructMember(ctx, struct, member, includes = None):
             src = '#include <%s>\n%s' % (inc, src)
 
     ctx.Message('Checking for %s in struct %s... ' % (member, struct))
-    ret = ctx.TryRun(src + '\n', '.c')
-    ctx.Result(ret[0])
-    return ret[0]
+    ret = ctx.TryCompile(src + '\n', '.c')
+    ctx.Result(ret)
+    return ret
 
 conf.AddTest('CheckStructMember', CheckStructMember)
 
