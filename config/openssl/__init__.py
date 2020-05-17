@@ -9,17 +9,19 @@ def check_version(context, version):
     src = '''
     #include <openssl/opensslv.h>
     int main() {
-        return (OPENSSL_VERSION_NUMBER >= '''
+        int  a[(OPENSSL_VERSION_NUMBER >= '''
     src += '(' + version[0] + ' >> 28)'
     if 1 < len(version):
         src += ' + (' + version[1] + ' >> 20)'
     if 2 < len(version):
         src += ' + (' + version[2] + ' >> 12)'
-    src += ''') ? 0 : 1;
+    src += ''')];
+        a[0] = 0;
+        return 0;
     }
     '''
 
-    ret = context.TryRun(src, '.cpp')[0]
+    ret = context.TryCompile(src, '.cpp')
 
     context.Result(ret)
     return ret
