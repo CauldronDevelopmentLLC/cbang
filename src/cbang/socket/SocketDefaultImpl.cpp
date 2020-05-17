@@ -55,6 +55,7 @@ typedef int socklen_t;  // Unix socket length
 
 #else // _WIN32
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
