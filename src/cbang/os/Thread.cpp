@@ -55,9 +55,9 @@
 #include <errno.h>
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || (defined(__linux__) && !defined(__GLIBC__))
 #include <sched.h>
-#endif // __APPLE__
+#endif
 
 #ifdef HAVE_VALGRIND
 #include <valgrind/drd.h>
@@ -214,7 +214,7 @@ void Thread::kill(int signal) {
 void Thread::yield() {
 #ifdef _WIN32
   SwitchToThread();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || (defined(__linux__) && !defined(__GLIBC__))
   sched_yield();
 #else
   pthread_yield();
