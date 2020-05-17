@@ -127,15 +127,6 @@ def CheckCompileCxx(ctx, msg, src):
 
 conf.AddTest('CheckCompileCxx', CheckCompileCxx)
 
-# General compile and run check
-def CheckRun(ctx, msg, src):
-    ctx.Message('Checking for %s... ' % msg)
-    ret = ctx.TryRun(src + '\n', '.c')
-    ctx.Result(ret[0])
-    return ret[0]
-
-conf.AddTest('CheckRun', CheckRun)
-
 
 # event-config.h
 defs = {}
