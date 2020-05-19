@@ -308,7 +308,7 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(CCFLAGS = ['-O3', '-funroll-loops'])
 
         elif compiler_mode == 'msvc':
-            env.AppendUnique(CCFLAGS = ['/Ox'])
+            env.AppendUnique(CCFLAGS = ['/O2', '/Ob3', '/Zc:throwingNew'])
             if compiler == 'intel' and not globalopt:
                 env.AppendUnique(LINKFLAGS = ['/Qnoipo'])
 
