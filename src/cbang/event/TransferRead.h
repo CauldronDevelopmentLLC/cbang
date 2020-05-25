@@ -32,25 +32,28 @@
 
 #pragma once
 
-#include "HTTPRequestHandler.h"
-#include "Connection.h"
+#include "Transfer.h"
+#include "Transport.h"
+#include "ConnectionError.h"
 
-#include <cbang/util/Version.h>
-#include <cbang/net/URI.h>
+#include <functional>
 
 
 namespace cb {
   namespace Event {
-    struct HTTPHandler {
-      typedef std::list<SmartPointer<Connection> > connections_t;
+    class TransferRead : public Transfer {
+      Buffer buffer;
+      std::string until;
 
-      virtual ~HTTPHandler() {}
-      virtual SmartPointer<Request> createRequest
-      (Connection &con, RequestMethod method, const URI &uri,
-       const Version &version) = 0;
-      virtual bool handleRequest(Request &req) = 0;
-      virtual void endRequest(Request &req) = 0;
-      virtual void evict(connections_t &connections) {}
+    public:
+      TransferRead(cb_t cb, const Buffer &buffer, unsigned length,
+                   const std::string &until = std::string());
+
+      // From Transfer
+      int transfer(Transport &transport);
+
+    protected:
+      void checkFinished();
     };
   }
 }

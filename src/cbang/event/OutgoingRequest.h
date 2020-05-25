@@ -33,7 +33,6 @@
 #pragma once
 
 #include "Request.h"
-#include "Connection.h"
 
 #include <cbang/SmartPointer.h>
 
@@ -46,14 +45,15 @@ namespace cb {
   namespace Event {
     class Client;
     class HTTPHandler;
+    class HTTPConnOut;
 
-    class OutgoingRequest : public Connection, public Request {
+    class OutgoingRequest : public Request {
     public:
       typedef std::function<void (Request &)> callback_t;
       typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
 
     protected:
-      DNSBase &dns;
+      Client &client;
       callback_t cb;
       double lastProgress = 0;
       double progressDelay;
@@ -64,16 +64,20 @@ namespace cb {
                       callback_t cb);
       ~OutgoingRequest();
 
+      HTTPConnOut &getConnection();
+      const HTTPConnOut &getConnection() const;
+
+      void setPriority(int priority);
+      int getPriority() const;
+
       void setProgressCallback(progress_cb_t cb, double delay = 0.25);
+
+      void connect(std::function<void (bool)> cb);
 
       using Request::send;
       void send();
 
-      // From Connection
-      DNSBase &getDNS() {return dns;}
-
       // From Request
-      void onRequest() {}
       void onProgress(unsigned bytes, int total);
       void onResponse(ConnectionError error);
     };

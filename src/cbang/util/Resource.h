@@ -51,17 +51,17 @@ namespace cb {
     // Directory methods
     virtual bool isDirectory() const {return false;}
     virtual const Resource *find(const std::string &path) const
-    {CBANG_THROW(__func__ << "() not supported by resource");}
+    {CBANG_THROW(CBANG_FUNC << "() not supported by resource");}
     virtual const Resource *getChild(unsigned i) const
-    {CBANG_THROW(__func__ << "() not supported by resource");}
+    {CBANG_THROW(CBANG_FUNC << "() not supported by resource");}
 
     // File methods
     virtual const char *getData() const
-    {CBANG_THROW(__func__ << "() not supported by resource");}
+    {CBANG_THROW(CBANG_FUNC << "() not supported by resource");}
     virtual unsigned getLength() const
-    {CBANG_THROW(__func__ << "() not supported by resource");}
+    {CBANG_THROW(CBANG_FUNC << "() not supported by resource");}
     virtual std::string toString() const
-    {CBANG_THROW(__func__ << "() not supported by resource");}
+    {CBANG_THROW(CBANG_FUNC << "() not supported by resource");}
 
     const Resource &get(const std::string &path) const;
   };

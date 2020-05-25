@@ -49,7 +49,10 @@
 namespace cb {
   class Options;
 
-  namespace Event {class HTTPHandlerGroup;}
+  namespace Event {
+    class Event;
+    class HTTPHandlerGroup;
+  }
 
   namespace ACMEv2 {
     static std::string letsencrypt_base =

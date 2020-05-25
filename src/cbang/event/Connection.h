@@ -32,208 +32,52 @@
 
 #pragma once
 
-#include "Request.h"
-#include "BufferEvent.h"
+#include "FD.h"
 #include "Enum.h"
 
-#include <cbang/SmartPointer.h>
 #include <cbang/net/IPAddress.h>
-#include <cbang/socket/SocketType.h>
 #include <cbang/time/Time.h>
-#include <cbang/util/Rate.h>
+#include <cbang/util/RateSet.h>
 
-#include <limits>
-#include <list>
-#include <vector>
+#include <functional>
 
 
 namespace cb {
-  class URI;
-  class SSLContext;
   class Socket;
-  class RateSet;
 
   namespace Event {
-    class Event;
-    class HTTP;
-    class Request;
-    class Websocket;
+    class DNSBase;
+    class Server;
 
-    class Connection : public BufferEvent, public Enum {
-      Base &base;
-
-      typedef enum {
-        STATE_DISCONNECTED,
-        STATE_CONNECTING,
-        STATE_IDLE,
-        STATE_READING_FIRSTLINE,
-        STATE_READING_HEADERS,
-        STATE_READING_BODY,
-        STATE_READING_TRAILER,
-        STATE_WEBSOCK_HEADER,
-        STATE_WEBSOCK_BODY,
-        STATE_WRITING,
-      } state_t;
-
-      state_t state;
-      uint64_t start = Time::now();
-      bool incoming;
+    class Connection : public FD, public Enum {
+      SmartPointer<Socket> socket;
       IPAddress peer;
-      IPAddress bind;
-      double startTime;
-      SmartPointer<HTTP> http;
-      SmartPointer<SSLContext> sslCtx;
 
-      unsigned retries = 0;
-      SmartPointer<Event> retryEvent;
-      std::list<SmartPointer<Request> > requests;
-
-      std::string defaultContentType = "text/html; charset=UTF-8";
-      uint32_t maxBodySize    = std::numeric_limits<unsigned>::max();
-      uint32_t maxHeaderSize  = std::numeric_limits<unsigned>::max();
-      double retryTimeout     = 0;
-      unsigned maxRetries     = 2;
-      unsigned readTimeout    = 50;
-      unsigned writeTimeout   = 50;
-      unsigned connectTimeout = 50;
-
-      bool detectClose    = false;
-      bool chunkedRequest = false;
-
-      uint32_t headerSize = 0;
-      uint32_t bodySize   = 0;
-      int64_t bytesToRead = 0;
-      int contentLength   = 0;
-
-      Rate rateIn  = 60;
-      Rate rateOut = 60;
+      static uint64_t nextID;
+      uint64_t id = ++nextID;
 
       SmartPointer<RateSet> stats;
 
     public:
-      Connection(Base &base, bool incoming, const IPAddress &peer,
-                 const SmartPointer<Socket> &socket = 0,
-                 const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~Connection();
+      Connection(Base &base);
+      ~Connection();
 
-      Base &getBase() {return base;}
-      virtual DNSBase &getDNS() {THROW("No DNSBase");}
+      const SmartPointer<Socket> &getSocket() {return socket;}
+      void setSocket(const SmartPointer<Socket> &socket);
 
-      bool isWriting() const {return state == STATE_WRITING;}
-      const char *getStateString() const {return getStateString(state);}
-      uint64_t getStart() const {return start;}
+      void setPeer(const IPAddress &peer) {this->peer = peer;}
+      const IPAddress &getPeer() const {return peer;}
+
+      uint64_t getID() const {return id;}
+
+      const SmartPointer<RateSet> &getStats() const {return stats;}
+      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
       bool isConnected() const;
-      bool isIncoming() const {return incoming;}
-
-      const cb::IPAddress &getPeer() const {return peer;}
-      void setPeer(const cb::IPAddress &peer) {this->peer = peer;}
-
-      const cb::IPAddress &getLocalAddress() const {return bind;}
-      void setLocalAddress(const cb::IPAddress &bind) {this->bind = bind;}
-
-      double getStartTime() const {return startTime;}
-
-      const SmartPointer<HTTP> &getHTTP() const {return http;}
-      void setHTTP(const SmartPointer<HTTP> &http) {this->http = http;}
-
-      bool hasRequest() const {return !requests.empty();}
-      const SmartPointer<Request> &getRequest() const;
-      void checkActiveRequest(Request &req) const;
-      bool isWebsocket() const;
-      Websocket &getWebsocket() const;
-
-      const std::string &getDefaultContentType() const
-        {return defaultContentType;}
-      void setDefaultContentType(const std::string &s) {defaultContentType = s;}
-
-      void setMaxBodySize(uint32_t size) {maxBodySize = size;}
-      uint32_t getMaxBodySize() const {return maxBodySize;}
-
-      void setMaxHeaderSize(uint32_t size) {maxHeaderSize = size;}
-      uint32_t getMaxHeaderSize() const {return maxHeaderSize;}
-
-      void setMaxRetries(unsigned retries) {maxRetries = retries;}
-      unsigned getMaxRetries() const {return maxRetries;}
-
-      void setReadTimeout(unsigned t) {readTimeout = t;}
-      unsigned getReadTimeout() const {return readTimeout;}
-
-      void setWriteTimeout(unsigned t) {writeTimeout = t;}
-      unsigned getWriteTimeout() const {return writeTimeout;}
-
-      void setConnectTimeout(unsigned t) {connectTimeout = t;}
-      unsigned getConnectTimeout() const {return connectTimeout;}
-
-      uint32_t getHeaderSize() const {return headerSize;}
-      uint32_t getBodySize() const   {return bodySize;}
-
-      int getContentLength() const {return contentLength;}
-
-      uint64_t getBytesIn() const  {return rateIn.getTotal();}
-      uint64_t getBytesOut() const {return rateOut.getTotal();}
-      double getRateIn() const  {return rateIn.get();}
-      double getRateOut() const {return rateOut.get();}
-      double getRate() const;
-      unsigned getBytesRemaining() const;
-      double getEstimatedTime() const;
-      double getProgress() const;
-
-      void setStats(const SmartPointer<RateSet> &stats);
-      const SmartPointer<RateSet> &getStats() const {return stats;}
-
-      void sendServiceUnavailable();
-      void makeRequest(Request &req);
-      void acceptRequest();
-      void cancelRequest(Request &req);
-      void write(Request &req, const Buffer &buf);
-
-    protected:
-      static const char *getStateString(state_t state);
-      void setState(state_t state);
-
-      void push(const SmartPointer<Request> &req);
-      SmartPointer<Request> pop();
-
-      void free(ConnectionError error);
-      void fail(ConnectionError error);
-      void reset();
-      void dispatch();
-      void done();
-      void retry();
-      void connect();
-
-      void websockClose(WebsockStatus status, const std::string &msg = "");
-      void websockReadHeader();
-      void websockReadBody();
-
-      void startRead();
-      void newRequest(const std::string &line);
-      void readFirstLine();
-      bool tryReadHeader();
-      void headersCallback();
-      void readHeader();
-      void getBody();
-      void readBody();
-      void readTrailer();
-
-      // From BufferEvent
-      using BufferEvent::setTimeouts;
-      using BufferEvent::setSocket;
-      using BufferEvent::getSocket;
-      using BufferEvent::setRead;
-      using BufferEvent::getOutput;
-      using BufferEvent::getInput;
-      using BufferEvent::connect;
-      using BufferEvent::close;
-
-      void connectCB();
-      void readCB();
-      void writeCB();
-      void errorCB(short what, int err);
-
-      void received(unsigned bytes);
-      void sent(unsigned bytes);
+      void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
+                  const SmartPointer<SSL> &ssl);
+      void connect(DNSBase &dns, const IPAddress &peer, const IPAddress &bind,
+                   std::function<void (bool)> cb);
     };
   }
 }

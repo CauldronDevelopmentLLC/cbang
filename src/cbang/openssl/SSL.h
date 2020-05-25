@@ -74,6 +74,10 @@ namespace cb {
     _SSL *getSSL() const {return ssl;}
     void setBIO(BIO *bio);
 
+    void setFD(int fd);
+    void setReadFD(int fd);
+    void setWriteFD(int fd);
+
     bool wantsRead() const;
     bool wantsWrite() const;
 

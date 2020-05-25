@@ -30,49 +30,77 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Port.h"
+#include "Server.h"
+#include "Event.h"
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include <cbang/socket/Socket.h>
+#include <cbang/log/Logger.h>
+#include <cbang/os/SysError.h>
 
-#include <ostream>
-
-
-namespace cb {
-  namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
-    public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
-
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
-
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
-    };
+using namespace cb::Event;
+using namespace cb;
+using namespace std;
 
 
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
+Port::Port(Server &server, const IPAddress addr,
+           const SmartPointer<SSLContext> &sslCtx, int priority) :
+  server(server), addr(addr), sslCtx(sslCtx), priority(priority) {}
+
+
+Port::~Port() {}
+
+
+void Port::setPriority(int priority) {
+  this->priority = priority;
+  if (event.isSet()) event->setPriority(priority);
+}
+
+
+void Port::open() {
+  socket = new Socket;
+  socket->setReuseAddr(true);
+  socket->bind(addr);
+  socket->listen(server.getConnectionBacklog());
+  socket_t fd = socket->get();
+
+  event = server.getBase().newEvent
+    (fd, this, &Port::accept, EVENT_READ | EVENT_PERSIST | EVENT_NO_SELF_REF);
+  if (0 <= priority) event->setPriority(priority);
+  event->add();
+}
+
+
+void Port::close() {
+  event->del();
+  event.release();
+  socket.release();
+}
+
+
+void Port::activate() {event->add();}
+
+
+void Port::accept() {
+  if (server.getMaxConnections() <= server.getConnectionCount())
+    return event->del();
+
+  IPAddress peer;
+  auto newSocket = socket->accept(&peer);
+
+  if (newSocket.isNull())
+    LOG_ERROR("Failed to accept new socket: " << SysError());
+
+  else {
+    SmartPointer<SSL> ssl;
+#ifdef HAVE_OPENSSL
+    if (sslCtx.isSet()) {
+      ssl = sslCtx->createSSL();
+      ssl->setFD(newSocket->get());
+      ssl->accept();
     }
+#endif // HAVE_OPENSSL
+
+    server.accept(peer, newSocket, ssl);
   }
 }

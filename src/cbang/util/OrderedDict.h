@@ -40,11 +40,12 @@
 
 
 namespace cb {
-  template <typename T, typename KEY = std::string>
+  template <typename T, typename KEY = std::string,
+            typename COMPARE = std::less<KEY> >
   class OrderedDict : protected std::vector<std::pair<KEY, T> > {
     typedef T type_t;
     typedef std::vector<std::pair<KEY, type_t> > vector_t;
-    typedef std::map<KEY, typename vector_t::size_type> dict_t;
+    typedef std::map<KEY, typename vector_t::size_type, COMPARE> dict_t;
 
     dict_t dict;
 

@@ -35,6 +35,7 @@
 #include "OutgoingRequest.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/RateSet.h>
 
 #include <map>
 #include <functional>
@@ -53,6 +54,8 @@ namespace cb {
       DNSBase &dns;
       SmartPointer<SSLContext> sslCtx;
       int priority;
+      IPAddress bindAddr;
+      SmartPointer<RateSet> stats;
 
     public:
       template <class T> struct Callback {
@@ -71,6 +74,12 @@ namespace cb {
 
       int getPriority() const {return priority;}
       void setPriority(int priority) {this->priority = priority;}
+
+      const IPAddress &getBindAddress() const {return bindAddr;}
+      void setBindAddress(const IPAddress &bind) {this->bindAddr = bind;}
+
+      const SmartPointer<RateSet> &getStats() const {return stats;}
+      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
       SmartPointer<OutgoingRequest>
       call(const URI &uri, RequestMethod method, const char *data,

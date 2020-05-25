@@ -53,13 +53,13 @@ using namespace cb::MariaDB;
 DB::DB(st_mysql *db) :
   db(db ? db : mysql_init(0)), res(0), nonBlocking(false), connected(false),
   stored(false), status(0), continueFunc(0) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
   if (!this->db) RAISE_DB_ERROR("Failed to create MariaDB");
 }
 
 
 DB::~DB() {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
   if (db) mysql_close(db);
 }
 
@@ -179,7 +179,7 @@ void DB::connect(const string &host, const string &user, const string &password,
 bool DB::connectNB(const string &host, const string &user,
                    const string &password, const string &dbName, unsigned port,
                    const string &socketName, flags_t flags) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertNotPending();
   assertNonBlocking();
@@ -231,7 +231,7 @@ void DB::close() {
 
 
 bool DB::closeNB() {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertConnected();
   assertNotPending();
@@ -259,7 +259,7 @@ void DB::use(const string &dbName) {
 
 
 bool DB::useNB(const string &dbName) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertConnected();
   assertNotPending();
@@ -296,7 +296,7 @@ bool DB::queryNB(const string &s) {
   int ret = 0;
   status = mysql_real_query_start(&ret, db, CPP_TO_C_STR(s), s.length());
 
-  LOG_DEBUG(5, __func__ << "() status=" << status << " ret=" << ret);
+  LOG_DEBUG(5, CBANG_FUNC << "() status=" << status << " ret=" << ret);
 
   if (status) {
     continueFunc = &DB::queryContinue;
@@ -344,7 +344,7 @@ void DB::storeResult() {
 
 
 bool DB::storeResultNB() {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertConnected();
   assertNotPending();
@@ -380,7 +380,7 @@ bool DB::nextResult() {
 
 
 bool DB::nextResultNB() {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertConnected();
   assertNotHaveResult();
@@ -417,7 +417,7 @@ void DB::freeResult() {
 
 
 bool DB::freeResultNB() {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertNotPending();
   assertNonBlocking();
@@ -461,7 +461,7 @@ bool DB::fetchRow() {
 
 
 bool DB::fetchRowNB() {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertNotPending();
   assertNonBlocking();
@@ -763,7 +763,7 @@ void DB::assertInFieldRange(unsigned i) const {
 
 
 bool DB::continueNB(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertPending();
   if (!continueFunc) RAISE_ERROR("Continue function not set");
@@ -836,7 +836,7 @@ bool DB::threadSafe() {return mysql_thread_safe();}
 
 
 bool DB::closeContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   status = mysql_close_cont(db, ready);
   if (status) return false;
@@ -848,7 +848,7 @@ bool DB::closeContinue(unsigned ready) {
 
 
 bool DB::connectContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   MYSQL *db = 0;
   status = mysql_real_connect_cont(&db, this->db, ready);
@@ -862,7 +862,7 @@ bool DB::connectContinue(unsigned ready) {
 
 
 bool DB::pingContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   int ret = 0;
   status = mysql_ping_cont(&ret, db, ready);
@@ -875,7 +875,7 @@ bool DB::pingContinue(unsigned ready) {
 
 
 bool DB::useContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   int ret = 0;
   status = mysql_select_db_cont(&ret, this->db, ready);
@@ -891,7 +891,7 @@ bool DB::queryContinue(unsigned ready) {
   int ret = 0;
   status = mysql_real_query_cont(&ret, this->db, ready);
 
-  LOG_DEBUG(5, __func__ << "() ready=" << ready << " status=" << status
+  LOG_DEBUG(5, CBANG_FUNC << "() ready=" << ready << " status=" << status
             << " ret=" << ret);
 
   if (status) return false;
@@ -902,7 +902,7 @@ bool DB::queryContinue(unsigned ready) {
 
 
 bool DB::storeResultContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   status = mysql_store_result_cont(&res, this->db, ready);
   if (status) return false;
@@ -915,7 +915,7 @@ bool DB::storeResultContinue(unsigned ready) {
 
 
 bool DB::nextResultContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   int ret = 0;
   status = mysql_next_result_cont(&ret, this->db, ready);
@@ -929,7 +929,7 @@ bool DB::nextResultContinue(unsigned ready) {
 
 
 bool DB::freeResultContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   status = mysql_free_result_cont(res, ready);
   if (status) return false;
@@ -941,7 +941,7 @@ bool DB::freeResultContinue(unsigned ready) {
 
 
 bool DB::fetchRowContinue(unsigned ready) {
-  LOG_DEBUG(5, __func__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   MYSQL_ROW row = 0;
   status = mysql_fetch_row_cont(&row, res, ready);

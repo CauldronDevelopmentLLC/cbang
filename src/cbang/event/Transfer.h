@@ -32,47 +32,39 @@
 
 #pragma once
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include "Transport.h"
 
-#include <ostream>
+#include <cbang/util/Progress.h>
+
+#include <functional>
 
 
 namespace cb {
   namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
+    class Transfer {
     public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
+      typedef std::function<void (bool)> cb_t;
 
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
+    protected:
+      cb_t cb;
+      unsigned length;
+      bool finished = false;
+      Progress progress;
 
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
+    public:
+      Transfer(cb_t cb, unsigned length = 0) : cb(cb), length(length) {
+        progress.setSize(length);
+      }
+
+      virtual ~Transfer() {}
+
+      unsigned getLength() const {return length;}
+      bool isFinished() {return finished;}
+
+      Progress &getProgress() {return progress;}
+
+      virtual int transfer(Transport &transport) {finished = true; return 0;}
+      virtual void complete(bool success) {if (cb) cb(success);}
     };
-
-
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
   }
 }

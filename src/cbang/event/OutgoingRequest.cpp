@@ -34,6 +34,7 @@
 #include "Client.h"
 #include "Buffer.h"
 #include "Headers.h"
+#include "HTTPConnOut.h"
 
 #include <cbang/String.h>
 #include <cbang/Catch.h>
@@ -50,24 +51,56 @@ using namespace cb::Event;
 
 
 #undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "OUT" << Connection::getID() << ':'
+#define CBANG_LOG_PREFIX << "OUT" << getID() << ':'
 
 
 OutgoingRequest::OutgoingRequest(Client &client, const URI &uri,
                                  RequestMethod method, callback_t cb) :
-  Connection(client.getBase(), false, uri.getIPAddress(), 0,
-             uri.getScheme() == "https" ? client.getSSLContext() : 0),
-  Request(method, uri), dns(client.getDNS()), cb(cb) {
+  Request(method, uri), client(client), cb(cb) {
   LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
+
+  // Create connection
+  setConnection(new HTTPConnOut(client));
 }
 
 
 OutgoingRequest::~OutgoingRequest() {}
 
 
+HTTPConnOut &OutgoingRequest::getConnection() {
+  return *Request::getConnection().cast<HTTPConnOut>();
+}
+
+
+const HTTPConnOut &OutgoingRequest::getConnection() const {
+  return *Request::getConnection().cast<HTTPConnOut>();
+}
+
+
+void OutgoingRequest::setPriority(int priority) {
+  getConnection().setPriority(priority);
+}
+
+
+int OutgoingRequest::getPriority() const {
+  return getConnection().getPriority();
+}
+
+
 void OutgoingRequest::setProgressCallback(progress_cb_t cb, double delay) {
   progressCB = cb;
   progressDelay = delay;
+}
+
+
+void OutgoingRequest::connect(std::function<void (bool)> cb) {
+  if (getConnection().isConnected()) {
+    if (cb) cb(true);
+    return;
+  }
+
+  getConnection().connect(client.getDNS(), getURI().getIPAddress(),
+                          client.getBindAddress(), cb);
 }
 
 
@@ -85,7 +118,11 @@ void OutgoingRequest::send() {
   LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
 
   // Do it
-  Connection::makeRequest(*this);
+  SmartPointer<Request> req = this; // Keep the request alive
+  connect([this, req] (bool success) {
+            if (success) getConnection().makeRequest(this);
+            else if (cb) cb(*this);
+          });
 }
 
 
@@ -102,21 +139,19 @@ void OutgoingRequest::onProgress(unsigned bytes, int total) {
 
 void OutgoingRequest::onResponse(ConnectionError error) {
   if (error) {
-    LOG_ERROR("< " << getPeer() << ' ' << error);
+    LOG_ERROR("< " << getConnection().getPeer() << ' ' << error);
 
-    string sslErrors = getSSLErrors();
-    if (!sslErrors.empty()) sslErrors = " SSL:" + sslErrors;
+    //string sslErrors = getSSLErrors(); TODO
+    //if (!sslErrors.empty()) sslErrors = " SSL:" + sslErrors;
 
-    LOG_DEBUG(4, "SYS:" << SysError() << sslErrors);
+    //LOG_DEBUG(4, "SYS:" << SysError() << sslErrors);
 
   } else {
-    LOG_INFO(1, "< " << getPeer() << ' ' << getResponseLine());
+    LOG_INFO(1, "< " << getConnection().getPeer() << ' ' << getResponseLine());
     LOG_DEBUG(5, getInputHeaders() << '\n');
     LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
   }
 
   setConnectionError(error);
   if (cb) TRY_CATCH_ERROR(cb(*this));
-
-  setConnection(0); // Release self reference
 }

@@ -32,47 +32,41 @@
 
 #pragma once
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include "Server.h"
 
-#include <ostream>
+#include <cbang/net/URI.h>
+#include <cbang/util/Version.h>
 
 
 namespace cb {
   namespace Event {
-    class Buffer;
+    class Request;
+    class HTTPConn;
 
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
+    class HTTPServer : public Server {
+      unsigned maxBodySize = std::numeric_limits<unsigned>::max();
+      unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
 
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
     public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
+      HTTPServer(Base &base);
 
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
+      unsigned getMaxBodySize() const {return maxBodySize;}
+      void setMaxBodySize(unsigned size) {maxBodySize = size;}
 
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
+      unsigned getMaxHeadersSize() const {return maxHeaderSize;}
+      void setMaxHeadersSize(unsigned size) {maxHeaderSize = size;}
+
+      virtual SmartPointer<Request>
+      createRequest(RequestMethod method, const URI &uri,
+                    const Version &version);
+      virtual bool handleRequest(const SmartPointer<Request> &req) = 0;
+      virtual void endRequest(const SmartPointer<Request> &req) {}
+
+      void dispatch(const SmartPointer<Request> &req);
+
+      // From Server
+      SmartPointer<Connection> createConnection();
+      void onConnect(const SmartPointer<Connection> &conn);
     };
-
-
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
   }
 }

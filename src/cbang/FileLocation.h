@@ -122,10 +122,23 @@ namespace cb {
     fl.print(stream);
     return stream;
   }
+
+
+  static inline std::string functionName(const std::string &fsig) {
+    size_t p = fsig.find('(');
+    size_t s = fsig.find_last_of(' ', p);
+    size_t start = s == std::string::npos ? 0 : (s + 1);
+    size_t end = p == std::string::npos ? fsig.length() : p;
+
+    return fsig.substr(start, end - start);
+  }
 }
 
+
+#define CBANG_FUNC cb::functionName(__PRETTY_FUNCTION__)
+
 #ifdef DEBUG
-#define CBANG_FILE_LOCATION cb::FileLocation(__FILE__, __func__, __LINE__, -1)
+#define CBANG_FILE_LOCATION cb::FileLocation(__FILE__, CBANG_FUNC, __LINE__, -1)
 
 #else // DEBUG
 #define CBANG_FILE_LOCATION cb::FileLocation()

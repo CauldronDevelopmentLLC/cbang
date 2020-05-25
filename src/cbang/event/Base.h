@@ -46,11 +46,14 @@ struct event_base;
 namespace cb {
   namespace Event {
     class Event;
+    class FDPool;
 
     class Base : public EventFlag {
       static bool _threadsEnabled;
 
       event_base *base;
+
+      SmartPointer<FDPool> pool;
 
     public:
       template <class T> struct Callback {
@@ -65,6 +68,8 @@ namespace cb {
       ~Base();
 
       struct event_base *getBase() const {return base;}
+
+      FDPool &getPool();
 
       void initPriority(int num);
       int getNumPriorities() const;

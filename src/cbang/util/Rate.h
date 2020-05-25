@@ -49,8 +49,8 @@ namespace cb {
     unsigned fill;
 
   public:
-    Rate(unsigned size = 60 * 5, unsigned period = 1) :
-      buckets(size), period(period) {reset();}
+    Rate(unsigned buckets = 60 * 5, unsigned period = 1) :
+      buckets(buckets), period(period) {reset();}
 
 
     void reset() {

@@ -32,47 +32,25 @@
 
 #pragma once
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include "Buffer.h"
 
-#include <ostream>
+#include <cbang/openssl/SSL.h>
 
 
 namespace cb {
   namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
+    class Transport {
     public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
+      Transport() {}
+      virtual ~Transport() {}
 
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
+      virtual bool wantsRead() const {return false;}
+      virtual bool wantsWrite() const {return false;}
+      virtual int read(Buffer &buffer, unsigned length) = 0;
+      virtual int write(Buffer &buffer, unsigned length) = 0;
 
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
+      static Transport *make(int fd);
+      static Transport *make(const SmartPointer<SSL> &ssl);
     };
-
-
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
   }
 }

@@ -366,7 +366,7 @@ bool ACLSet::allowNoCache(const string &_path, const string &user) const {
 
   // Find ACL
   for (string path = _path; !path.empty(); path = parentPath(path)) {
-    LOG_DEBUG(5, __func__ << '(' << path << ", " << user << ')');
+    LOG_DEBUG(5, CBANG_FUNC << '(' << path << ", " << user << ')');
 
     acls_t::const_iterator it = acls.find(path);
     if (it != acls.end()) {
@@ -400,7 +400,7 @@ bool ACLSet::allowGroupNoCache(const string &_path, const string &group) const {
 
   // Find ACL
   for (string path = _path; !path.empty(); path = parentPath(path)) {
-    LOG_DEBUG(5, __func__ << '(' << path << ", @" << group << ')');
+    LOG_DEBUG(5, CBANG_FUNC << '(' << path << ", @" << group << ')');
 
     acls_t::const_iterator it = acls.find(path);
     if (it != acls.end()) {

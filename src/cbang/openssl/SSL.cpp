@@ -104,6 +104,23 @@ cb::SSL::~SSL() {if (ssl) SSL_free(ssl);}
 
 
 void cb::SSL::setBIO(BIO *bio) {SSL_set_bio(ssl, bio, bio);}
+
+
+void cb::SSL::setFD(int fd) {
+  if (!SSL_set_fd(ssl, fd)) THROW("Failed to set SSL FD to " << fd);
+}
+
+
+void cb::SSL::setReadFD(int fd) {
+  if (!SSL_set_rfd(ssl, fd)) THROW("Failed to set SSL read FD to " << fd);
+}
+
+
+void cb::SSL::setWriteFD(int fd) {
+  if (!SSL_set_wfd(ssl, fd)) THROW("Failed to set SSL write FD to " << fd);
+}
+
+
 bool cb::SSL::wantsRead()  const {return lastErr == SSL_ERROR_WANT_READ;}
 bool cb::SSL::wantsWrite() const {return lastErr == SSL_ERROR_WANT_WRITE;}
 
@@ -159,7 +176,7 @@ void cb::SSL::setAcceptState()  {SSL_set_accept_state(ssl);}
 
 
 void cb::SSL::connect() {
-  LOG_DEBUG(5, "cb::SSL::connect()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   lastErr = 0;
   int ret = SSL_connect(ssl);
@@ -179,7 +196,7 @@ void cb::SSL::connect() {
 
 
 void cb::SSL::accept() {
-  LOG_DEBUG(5, "cb::SSL::accept()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 
   // Limit renegotiation to prevent DOS attack
   handshakes = 0;
@@ -196,6 +213,8 @@ void cb::SSL::accept() {
     lastErr = SSL_get_error(ssl, ret);
     if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE) {
       state = WANTS_ACCEPT;
+      LOG_DEBUG(5, CBANG_FUNC << "() wants "
+                << (lastErr == SSL_ERROR_WANT_READ ? "read" : "write"));
       return;
     }
   }
@@ -214,7 +233,7 @@ void cb::SSL::accept() {
 
 void cb::SSL::shutdown() {
   SSL_shutdown(ssl);
-  LOG_DEBUG(5, "cb::SSL::shutdown() " << getErrorStr());
+  LOG_DEBUG(5, CBANG_FUNC << "() " << getErrorStr());
 
   flushErrors(); // Ignore errors
 }
@@ -224,7 +243,7 @@ unsigned cb::SSL::getPending() const {return SSL_pending(ssl);}
 
 
 int cb::SSL::read(char *data, unsigned size) {
-  LOG_DEBUG(5, "cb::SSL::read(" << size << ')');
+  LOG_DEBUG(5, CBANG_FUNC << "(size=" << size << ')');
 
   lastErr = 0;
   checkHandshakes();
@@ -236,15 +255,18 @@ int cb::SSL::read(char *data, unsigned size) {
     if (SSL_get_shutdown(ssl) == SSL_RECEIVED_SHUTDOWN) return -1;
 
     lastErr = SSL_get_error(ssl, ret);
-    if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE)
+    if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE) {
+      LOG_DEBUG(5, CBANG_FUNC << "() wants "
+                << (lastErr == SSL_ERROR_WANT_READ ? "read" : "write"));
       return 0;
+    }
 
     string errMsg = getFullSSLErrorStr(ret);
-    LOG_DEBUG(5, "cb::SSL::read() " << errMsg);
+    LOG_DEBUG(5, CBANG_FUNC << "() " << errMsg);
     THROW("SSL read failed: " << errMsg);
   }
 
-  LOG_DEBUG(5, "cb::SSL::read()=" << ret);
+  LOG_DEBUG(5, CBANG_FUNC << "()=" << ret);
 
 #ifdef VALGRIND_MAKE_MEM_DEFINED
   (void)VALGRIND_MAKE_MEM_DEFINED(data, ret);
@@ -255,7 +277,7 @@ int cb::SSL::read(char *data, unsigned size) {
 
 
 unsigned cb::SSL::write(const char *data, unsigned size) {
-  LOG_DEBUG(5, "cb::SSL::write(" << size << ')');
+  LOG_DEBUG(5, CBANG_FUNC << "(size=" << size << ')');
 
   lastErr = 0;
   checkHandshakes();
@@ -269,7 +291,7 @@ unsigned cb::SSL::write(const char *data, unsigned size) {
     THROW("SSL write failed: " << getFullSSLErrorStr(ret));
   }
 
-  LOG_DEBUG(5, "cb::SSL::write()=" << ret);
+  LOG_DEBUG(5, CBANG_FUNC << "()=" << ret);
   return (unsigned)ret;
 }
 

@@ -31,7 +31,7 @@
 \******************************************************************************/
 
 #include "Websocket.h"
-#include "Connection.h"
+#include "HTTPConn.h"
 
 #include <cbang/Catch.h>
 #include <cbang/net/Swab.h>
@@ -70,7 +70,7 @@ void Websocket::send(const string &s) {
 
 
 void Websocket::close(WebsockStatus status, const std::string &msg) {
-  LOG_DEBUG(4, __func__ << '(' << status << ", " << msg << ')');
+  LOG_DEBUG(4, CBANG_FUNC << '(' << status << ", " << msg << ')');
 
   if (!active) return; // Already closed
 
@@ -170,7 +170,7 @@ bool Websocket::readHeader(Buffer &input) {
   case WS_OP_BINARY:
   case WS_OP_CONTINUE: {
     // Check total message size
-    auto maxBodySize = getConnection().getMaxBodySize();
+    auto maxBodySize = getConnection()->getMaxBodySize();
     if (maxBodySize && maxBodySize < wsMsg.size() + bytesToRead) {
       close(WS_STATUS_TOO_BIG);
       return false;
@@ -200,7 +200,7 @@ bool Websocket::readHeader(Buffer &input) {
 
 
 bool Websocket::readBody(Buffer &input) {
-  LOG_DEBUG(4, __func__ << "() bytesToRead=" << bytesToRead
+  LOG_DEBUG(4, CBANG_FUNC << "() bytesToRead=" << bytesToRead
             << " inBuf=" << input.getLength());
 
   if (input.getLength() < bytesToRead) return false; // Wait for more
@@ -262,7 +262,7 @@ void Websocket::onMessage(const char *data, uint64_t length) {
 
 void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
                            const void *data, uint64_t len) {
-  LOG_DEBUG(4, __func__ << '(' << opcode << ", " << finish << ", " << len
+  LOG_DEBUG(4, CBANG_FUNC << '(' << opcode << ", " << finish << ", " << len
             << ')');
 
   if (!active) THROW("Not active");
@@ -288,7 +288,7 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
   }
 
   // Create mask
-  bool maskData = !getConnection().isIncoming();
+  bool maskData = !getConnection()->isIncoming();
   if (maskData) {
     header[1] &= 1 << 7; // Set mask bit
 
@@ -311,7 +311,12 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
       ptr[i] ^= mask[i & 3];
   }
 
-  getConnection().write(*this, out);
+  auto cb =
+    [] (unsigned status) {
+      // TODO close connection if write fails
+    };
+
+  getConnection()->write(cb, out);
 }
 
 
@@ -324,7 +329,7 @@ void Websocket::pong() {
 void Websocket::schedulePong() {
   if (pongEvent.isNull()) {
     auto cb = [this] () {pong();};
-    pongEvent = getConnection().getBase().newEvent(cb, EVENT_NO_SELF_REF);
+    pongEvent = getConnection()->getBase().newEvent(cb, EVENT_NO_SELF_REF);
   }
 
   if (pongEvent.isSet() && !pongEvent->isPending()) pongEvent->add(5);
@@ -334,11 +339,11 @@ void Websocket::schedulePong() {
 void Websocket::schedulePing() {
   if (pingEvent.isNull()) {
     auto cb = [this] () {ping(); schedulePing();};
-    pingEvent = getConnection().getBase().newEvent(cb, EVENT_NO_SELF_REF);
+    pingEvent = getConnection()->getBase().newEvent(cb, EVENT_NO_SELF_REF);
   }
 
   if (pingEvent.isSet()) {
-    double timeout = getConnection().getReadTimeout();
+    double timeout = getConnection()->getReadTimeout();
     pingEvent->add(timeout / 2);
   }
 }

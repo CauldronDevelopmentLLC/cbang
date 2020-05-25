@@ -30,49 +30,63 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "HTTPServer.h"
+#include "HTTPConnIn.h"
+#include "Request.h"
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include <cbang/Catch.h>
+#include <cbang/log/Logger.h>
 
-#include <ostream>
-
-
-namespace cb {
-  namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
-    public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
-
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
-
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
-    };
+using namespace cb::Event;
+using namespace cb;
+using namespace std;
 
 
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
+HTTPServer::HTTPServer(Base &base) : Server(base) {}
+
+
+SmartPointer<Request>
+HTTPServer::createRequest(RequestMethod method, const URI &uri,
+                          const Version &version) {
+  return new Request(method, uri, version);
+}
+
+
+void HTTPServer::dispatch(const SmartPointer<Request> &req) {
+  try {
+    if (!handleRequest(req)) req->sendError(HTTPStatus::HTTP_NOT_FOUND);
+
+  } catch (cb::Exception &e) {
+    if (400 <= e.getCode() && e.getCode() < 600) {
+      LOG_WARNING("REQ" << req->getID() << ':' << req->getClientIP() << ':'
+                  << e.getMessages());
+      req->reply((HTTPStatus::enum_t)e.getCode());
+
+    } else {
+      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessages());
+      LOG_DEBUG(3, e);
+      req->sendError(e);
     }
+
+  } catch (std::exception &e) {
+    LOG_ERROR(e.what());
+    req->sendError(e);
+
+  } catch (...) {
+    LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
+              .getDescription());
+    req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
   }
+
+  TRY_CATCH_ERROR(endRequest(req));
+}
+
+
+SmartPointer<Connection> HTTPServer::createConnection() {
+  return new HTTPConnIn(*this);
+}
+
+
+void HTTPServer::onConnect(const SmartPointer<Connection> &conn) {
+  conn.cast<HTTPConnIn>()->readHeader();
 }

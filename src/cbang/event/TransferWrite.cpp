@@ -30,49 +30,32 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "TransferWrite.h"
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include <cbang/log/Logger.h>
 
-#include <ostream>
-
-
-namespace cb {
-  namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
-    public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
-
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
-
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
-    };
+using namespace cb::Event;
+using namespace cb;
 
 
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
+TransferWrite::TransferWrite(cb_t cb, const Buffer &buffer) :
+  Transfer(cb, buffer.getLength()), buffer(buffer) {checkFinished();}
+
+
+int TransferWrite::transfer(Transport &transport) {
+  int ret = transport.write(buffer, buffer.getLength());
+  LOG_DEBUG(4, CBANG_FUNC << "() ret=" << ret);
+
+  if (ret < 0) finished = true;
+  else {
+    checkFinished();
+    progress.event(ret);
   }
+
+  return ret;
+}
+
+
+void TransferWrite::checkFinished() {
+  if (!buffer.getLength()) finished = true;
 }

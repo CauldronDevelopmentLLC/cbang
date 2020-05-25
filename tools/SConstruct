@@ -19,5 +19,5 @@ if not env.GetOption('clean'):
 conf.Finish()
 
 # Tools
-for tool in ['acmev2', 'request']:
+for tool in ['acmev2', 'request', 'server', 'httpserver', 'httpclient']:
   Default(env.Program(tool, tool + '.cpp'))
