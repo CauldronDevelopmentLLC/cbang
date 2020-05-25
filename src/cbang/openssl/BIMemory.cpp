@@ -37,21 +37,13 @@
 #include <string.h>
 
 #include <openssl/bio.h>
-#include <openssl/opensslv.h>
 
 using namespace std;
 using namespace cb;
 
 
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-#define BIO_set_flags(b, val) b->flags |= val
-#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
-
-
 BIMemory::BIMemory(const char *data, uint64_t length) :
-  data(data), length(length), readPos(0) {
-  BIO_set_flags(bio, BIO_FLAGS_READ);
-}
+  data(data), length(length), readPos(0) {setFlags(BIO_FLAGS_READ);}
 
 
 int BIMemory::read(char *buf, int length) {
