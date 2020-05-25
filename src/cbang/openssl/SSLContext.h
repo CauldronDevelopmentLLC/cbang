@@ -59,7 +59,7 @@ namespace cb {
     SSL_CTX *getCTX() const {return ctx;}
     X509_STORE *getStore() const;
 
-    SmartPointer<SSL> createSSL(BIO *bio);
+    SmartPointer<SSL> createSSL(BIO *bio = 0);
 
     void setCipherList(const std::string &list);
 

@@ -51,26 +51,31 @@ namespace cb {
 
   class SSL {
     _SSL *ssl;
-    bool renegotiateLimited;
-    int handshakes;
-    bool deallocate;
+    unsigned handshakes = 0;
 
     static bool initialized;
     static Mutex *locks;
+    static unsigned maxHandshakes;
 
     enum {
       PROCEED,
       WANTS_ACCEPT,
       WANTS_CONNECT,
-    } state;
+    } state = PROCEED;
+
+    int lastErr = 0;
 
   public:
-    SSL(_SSL *ssl, bool deallocate = false);
+    SSL(_SSL *ssl);
+    SSL(const SSL &ssl);
     SSL(SSL_CTX *ctx, BIO *bio = 0);
     ~SSL();
 
     _SSL *getSSL() const {return ssl;}
     void setBIO(BIO *bio);
+
+    bool wantsRead() const;
+    bool wantsWrite() const;
 
     void setCipherList(const std::string &list);
 
@@ -80,12 +85,18 @@ namespace cb {
     SmartPointer<Certificate> getPeerCertificate() const;
     void setTLSExtHostname(const std::string &hostname);
 
+    void setConnectState();
+    void setAcceptState();
+
     void connect();
     void accept();
     void shutdown();
 
     int read(char *data, unsigned size);
     unsigned write(const char *data, unsigned size);
+
+    static unsigned getMaxHandshakes() {return maxHandshakes;}
+    static void setMaxHandshakes(unsigned n) {maxHandshakes = n;}
 
     static unsigned long idCallback();
     static void lockingCallback(int mode, int n, const char *file, int line);
@@ -113,6 +124,7 @@ namespace cb {
   protected:
     void checkHandshakes();
     bool checkWants();
+    void checkError(int ret);
   };
 }
 
