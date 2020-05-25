@@ -237,7 +237,7 @@ void Buffer::peek(unsigned bytes, vector<iovec> &space) {
 
 
 void Buffer::peek(unsigned bytes, iovec &space) {
-  if (evbuffer_peek(evb, bytes, 0, &space, 1) != 1)
+  if (evbuffer_peek(evb, bytes, 0, &space, 1) < 1)
     THROW("Failed to peek");
 }
 

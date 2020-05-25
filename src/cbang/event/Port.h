@@ -32,47 +32,45 @@
 
 #pragma once
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include "Enum.h"
 
-#include <ostream>
+#include <cbang/SmartPointer.h>
+#include <cbang/net/IPAddress.h>
+#include <cbang/openssl/SSLContext.h>
 
 
 namespace cb {
+  class Socket;
+
   namespace Event {
-    class Buffer;
+    class Server;
+    class Event;
 
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
+    class Port : public Enum {
+      Server &server;
+      IPAddress addr;
+      SmartPointer<SSLContext> sslCtx;
+      int priority;
 
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
+      SmartPointer<Socket> socket;
+      SmartPointer<Event> event;
+
     public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
+      Port(Server &server, const IPAddress addr,
+           const SmartPointer<SSLContext> &sslCtx, int priority);
+      ~Port();
 
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
+      const IPAddress &getAddr() const {return addr;}
+      bool isSecure() const {return sslCtx.isSet();}
 
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
+      int getPriority() const {return priority;}
+      void setPriority(int priority);
+
+      void open();
+      void close();
+
+      void activate();
+      void accept();
     };
-
-
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
   }
 }

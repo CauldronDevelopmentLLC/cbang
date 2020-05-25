@@ -52,5 +52,6 @@ CBANG_ENUM_DESC(CONN_ERR_BUFFER_ERROR,   "Buffer error")
 CBANG_ENUM_DESC(CONN_ERR_REQUEST_CANCEL, "Request cancelled")
 CBANG_ENUM_DESC(CONN_ERR_CONNECT,        "Connect Failed")
 CBANG_ENUM_DESC(CONN_ERR_EXCEPTION,      "Exception during callback")
+CBANG_ENUM_DESC(CONN_ERR_BAD_RESPONSE,   "Invalid response")
 
 #endif // CBANG_ENUM_VALUE_DESC

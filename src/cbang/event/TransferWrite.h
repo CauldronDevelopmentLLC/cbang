@@ -32,47 +32,22 @@
 
 #pragma once
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
-
-#include <ostream>
+#include "Transfer.h"
 
 
 namespace cb {
   namespace Event {
-    class Buffer;
+    class TransferWrite : public Transfer {
+      Buffer buffer;
 
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
     public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
+      TransferWrite(cb_t cb, const Buffer &buffer);
 
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
+      // From Transfer
+      int transfer(Transport &transport);
 
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
+    protected:
+      void checkFinished();
     };
-
-
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
   }
 }

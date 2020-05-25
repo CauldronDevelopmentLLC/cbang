@@ -27,11 +27,12 @@
                   For information regarding this software email:
                                  Joseph Coffland
                           joseph@cauldrondevelopment.com
-
+s
 \******************************************************************************/
 
 #include "Client.h"
 #include "Buffer.h"
+#include "HTTPConnOut.h"
 
 #include <cbang/config.h>
 #include <cbang/openssl/SSLContext.h>
@@ -61,7 +62,9 @@ Client::call(const URI &uri, RequestMethod method, const char *data,
 
   if (data) req->getOutputBuffer().add(data, length);
   if (0 <= priority) req->setPriority(priority);
-  // TODO bind outgoing IP
+  req->getConnection().setStats(stats);
+
+  if (stats.isSet()) stats->event("outgoing");
 
   return req;
 }

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "HTTPHandler.h"
+#include "HTTPServer.h"
 #include "HTTPHandlerGroup.h"
 
 #include <cbang/net/IPAddressFilter.h>
@@ -41,29 +41,20 @@
 namespace cb {
   class SSLContext;
   class Options;
-  class RateSet;
 
   namespace Event {
     class Base;
     class HTTP;
     class Request;
 
-    class WebServer : public HTTPHandlerGroup, public HTTPHandler {
+    class WebServer : public HTTPHandlerGroup, public HTTPServer {
       Options &options;
       SmartPointer<SSLContext> sslCtx;
 
-      SmartPointer<HTTP> http;
-      SmartPointer<HTTP> https;
-
-      bool initialized;
+      bool logPrefix = false;
+      int priority = -1;
 
       IPAddressFilter ipFilter;
-
-      typedef std::vector<IPAddress> ports_t;
-      ports_t ports;
-      ports_t securePorts;
-
-      bool logPrefix;
 
     public:
       WebServer(Options &options, Base &base,
@@ -74,50 +65,29 @@ namespace cb {
 
       void addOptions(Options &options);
 
+      const SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
+
       bool getLogPrefix() const {return logPrefix;}
       void setLogPrefix(bool logPrefix) {this->logPrefix = logPrefix;}
 
+      int getEventPriority() const {return priority;}
+      void setEventPriority(int priority) {this->priority = priority;}
+
       virtual void init();
       virtual bool allow(Request &req) const;
-      virtual void shutdown();
 
-      virtual SmartPointer<Request> createRequest
-      (RequestMethod method, const URI &uri, const Version &version);
-
-      // From HTTPHandler
+      // From HTTPServer
       SmartPointer<Request> createRequest
-      (Connection &con, RequestMethod method, const URI &uri,
-       const Version &version);
-      bool handleRequest(Request &req);
-      void endRequest(Request &req);
-
-      const SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
-
-      const SmartPointer<HTTP> &getHTTP() const {return http;}
-      const SmartPointer<HTTP> &getHTTPS() const {return https;}
+      (RequestMethod method, const URI &uri, const Version &version);
+      bool handleRequest(const SmartPointer<Request> &req);
+      void endRequest(const SmartPointer<Request> &req);
 
       void addListenPort(const IPAddress &addr);
-      unsigned getNumListenPorts() const {return ports.size();}
-      const IPAddress &getListenPort(unsigned i) const {return ports.at(i);}
-
-      void setEventPriority(int priority);
-      void setMaxConnections(unsigned x);
-      void setMaxConnectionTTL(unsigned x);
-      void setConnectionBacklog(unsigned x);
-
-      void setStats(const SmartPointer<RateSet> &stats);
-      const SmartPointer<RateSet> &getStats() const;
+      void addSecureListenPort(const IPAddress &addr);
 
       void allow(const IPAddress &addr);
       void deny(const IPAddress &addr);
 
-      void addSecureListenPort(const IPAddress &addr);
-      unsigned getNumSecureListenPorts() const {return securePorts.size();}
-      const IPAddress &getSecureListenPort(unsigned i) const
-      {return securePorts.at(i);}
-
-      void setMaxBodySize(unsigned size);
-      void setMaxHeadersSize(unsigned size);
       void setTimeout(int timeout);
     };
   }

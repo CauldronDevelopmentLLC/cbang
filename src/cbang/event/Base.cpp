@@ -32,6 +32,7 @@
 
 #include "Base.h"
 #include "Event.h"
+#include "FDPool.h"
 
 #include <event2/thread.h>
 #include <event2/event.h>
@@ -71,6 +72,12 @@ Base::Base(bool withThreads, int priorities) {
 
 
 Base::~Base() {if (base) event_base_free(base);}
+
+
+FDPool &Base::getPool() {
+  if (pool.isNull()) pool = FDPool::create(*this);
+  return *pool;
+}
 
 
 void Base::initPriority(int num) {

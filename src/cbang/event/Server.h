@@ -32,65 +32,45 @@
 
 #pragma once
 
-#include "HTTPHandler.h"
-#include "Enum.h"
+#include "Connection.h"
+#include "Port.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/net/IPAddress.h>
+#include <cbang/openssl/SSLContext.h>
 
 #include <list>
 #include <limits>
 
 
 namespace cb {
-  class SSLContext;
-  class IPAddress;
   class Socket;
-  class RateSet;
 
   namespace Event {
-    class Base;
-    class Event;
-    class Connection;
-
-    class HTTP : public RefCounted, public Enum {
+    class Server : public Enum {
       Base &base;
 
-      SmartPointer<HTTPHandler> handler;
-      SmartPointer<SSLContext> sslCtx;
-      cb::SmartPointer<Event> expireEvent;
-      cb::SmartPointer<Event> acceptEvent;
+      typedef std::list<SmartPointer<Port> > ports_t;
+      ports_t ports;
 
-      std::string defaultContentType = "text/html; charset=UTF-8";
-      unsigned maxBodySize = std::numeric_limits<unsigned>::max();
-      unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
+      typedef std::list<SmartPointer<Connection> > connections_t;
+      connections_t connections;
+
+      int readTimeout = 50;
+      int writeTimeout = 50;
       unsigned maxConnections = std::numeric_limits<unsigned>::max();
       unsigned maxConnectionTTL = 0;
       unsigned connectionBacklog = 128;
-      int readTimeout = 50;
-      int writeTimeout = 50;
-      int priority = -1;
 
-      IPAddress boundAddr;
-      SmartPointer<Socket> socket;
-      typedef std::list<SmartPointer<Connection> > connections_t;
-      connections_t connections;
       SmartPointer<RateSet> stats;
 
     public:
-      HTTP(Base &base, const SmartPointer<HTTPHandler> &handler,
-           const SmartPointer<SSLContext> &sslCtx = 0);
-      ~HTTP();
+      Server(Base &base);
+      virtual ~Server() {}
 
-      const std::string &getDefaultContentType() const
-        {return defaultContentType;}
-      void setDefaultContentType(const std::string &s) {defaultContentType = s;}
+      Base &getBase() {return base;}
 
-      unsigned getMaxBodySize() const {return maxBodySize;}
-      void setMaxBodySize(unsigned size) {maxBodySize = size;}
-
-      unsigned getMaxHeadersSize() const {return maxHeaderSize;}
-      void setMaxHeadersSize(unsigned size) {maxHeaderSize = size;}
+      const ports_t &getPorts() const {return ports;}
+      const connections_t &getConnections() const {return connections;}
 
       int getReadTimeout() const {return readTimeout;}
       void setReadTimeout(unsigned t) {readTimeout = t;}
@@ -102,36 +82,29 @@ namespace cb {
       void setMaxConnections(unsigned x) {maxConnections = x;}
 
       unsigned getMaxConnectionTTL() const {return maxConnectionTTL;}
-      void setMaxConnectionTTL(unsigned x);
+      void setMaxConnectionTTL(unsigned x) {maxConnectionTTL = x;}
 
       unsigned getConnectionBacklog() const {return connectionBacklog;}
       void setConnectionBacklog(unsigned x) {connectionBacklog = x;}
 
-      int getEventPriority() const {return priority;}
-      void setEventPriority(int priority);
+      const SmartPointer<RateSet> &getStats() const {return stats;}
+      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+
+      double getReadRate() const;
+      double getWriteRate() const;
 
       unsigned getConnectionCount() const {return connections.size();}
-      void remove(Connection &con);
 
-      typedef connections_t::const_iterator iterator;
-      iterator begin() const {return connections.begin();}
-      iterator end() const {return connections.end();}
+      void bind(const IPAddress &addr,
+                const SmartPointer<SSLContext> &sslCtx = 0, int priority = -1);
+      void shutdown();
 
-      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
-      const SmartPointer<RateSet> &getStats() const {return stats;}
+      void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
+                  const SmartPointer<SSL> &ssl);
+      void remove(const SmartPointer<Connection> &conn);
 
-      void bind(const IPAddress &addr);
-
-      SmartPointer<Request> createRequest
-      (Connection &con, RequestMethod method, const URI &uri,
-       const Version &version);
-      void handleRequest(Request &req);
-
-      static bool dispatch(HTTPHandler &handler, Request &req);
-
-    protected:
-      void expireCB();
-      void acceptCB();
+      virtual SmartPointer<Connection> createConnection();
+      virtual void onConnect(const SmartPointer<Connection> &conn) = 0;
     };
   }
 }

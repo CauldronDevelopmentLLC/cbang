@@ -30,49 +30,60 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "TransportSSL.h"
+#ifdef HAVE_OPENSSL
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include <cbang/openssl/SSL.h>
+#include <cbang/log/Logger.h>
 
-#include <ostream>
+#ifdef HAVE_VALGRIND
+#include <valgrind/memcheck.h>
+#endif
 
+#include <event2/util.h>
 
-namespace cb {
-  namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
-    public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
-
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
-
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
-    };
+using namespace cb::Event;
+using namespace cb;
+using namespace std;
 
 
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
+TransportSSL::TransportSSL(const SmartPointer<SSL> &ssl) : ssl(ssl) {}
+
+
+int TransportSSL::read(Buffer &buffer, unsigned length) {
+  if (!length) return 0;
+
+  iovec space;
+  buffer.reserve(length, space);
+  if (!space.iov_len) return -1;
+
+  unsigned bytes = min(length, (unsigned)space.iov_len);
+  int ret = ssl->read((char *)space.iov_base, bytes);
+
+  if (0 < ret) {
+#ifdef VALGRIND_MAKE_MEM_DEFINED
+    (void)VALGRIND_MAKE_MEM_DEFINED(space.iov_base, ret);
+#endif
+
+    space.iov_len = ret;
+    buffer.commit(space);
   }
+
+  return ret;
 }
+
+
+int TransportSSL::write(Buffer &buffer, unsigned length) {
+  if (!length) return 0;
+
+  iovec space;
+  buffer.peek(length, space);
+  if (!space.iov_len) return -1; // No data
+
+  int ret = ssl->write((char *)space.iov_base, space.iov_len);
+  if (0 < ret) buffer.drain(ret);
+
+  return ret;
+}
+
+#endif // HAVE_OPENSSL

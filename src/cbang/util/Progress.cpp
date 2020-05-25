@@ -30,49 +30,18 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Progress.h"
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
-
-#include <ostream>
+using namespace cb;
 
 
-namespace cb {
-  namespace Event {
-    class Buffer;
-
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
-    public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
-
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
-
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
-    };
+uint64_t Progress::getETA() const {
+  double remaining = (1 - getProgress()) * size;
+  return end + remaining / getRate();
+}
 
 
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
-  }
+double Progress::getProgress() const {
+  double progress = getTotal() / size;
+  return progress < 0 ? 0 : (1 < progress ? 1 : progress);
 }

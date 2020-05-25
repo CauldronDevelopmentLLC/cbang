@@ -32,9 +32,8 @@
 
 #include "Request.h"
 #include "BufferDevice.h"
-#include "Connection.h"
+#include "HTTPConn.h"
 #include "Event.h"
-#include "HTTP.h"
 
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
@@ -156,7 +155,7 @@ string Request::getRequestLine() const {
 
 
 bool Request::isConnected() const {
-  return hasConnection() && getConnection().isConnected();
+  return hasConnection() && getConnection()->isConnected();
 }
 
 
@@ -177,11 +176,11 @@ void Request::setUser(const string &user) {
 
 
 bool Request::isSecure() const {
-  return connection.isSet() && connection->hasSSL();
+  return connection.isSet() && connection->getSSL().isSet();
 }
 
 
-SSL Request::getSSL() const {return connection->getSSL();}
+SSL Request::getSSL() const {return *connection->getSSL();}
 void Request::resetOutput() {getOutputBuffer().clear();}
 
 
@@ -271,6 +270,12 @@ void Request::outSet(const string &name, const string &value) {
 
 void Request::outRemove(const string &name) {
   getOutputHeaders().remove(name);
+}
+
+
+bool Request::isPersistent() const {
+  bool keepAlive = inputHeaders.connectionKeepAlive();
+  return (Version(1, 1) <= version || keepAlive) && !needsClose();
 }
 
 
@@ -601,7 +606,6 @@ void Request::sendFile(const string &path) {getOutputBuffer().addFile(path);}
 
 void Request::reply(HTTPStatus code) {
   if (replying) THROW("Request already replying");
-  replying = true;
 
   if (code) responseCode = code;
   else responseCode = HTTP_INTERNAL_SERVER_ERROR;
@@ -611,6 +615,7 @@ void Request::reply(HTTPStatus code) {
   LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
 
   write();
+  replying = true;
 }
 
 
@@ -646,16 +651,16 @@ void Request::sendChunk(const cb::Event::Buffer &buf) {
   if (!chunked) THROW("Not chunked");
 
   LOG_DEBUG(4, "Sending " << buf.getLength() << " byte chunk");
-  bool empty = !buf.getLength(); // Must be before add() below
+
+  // Check for final empty chunk.  Must be before add() below
+  if (!buf.getLength()) chunked = false;
 
   Buffer out;
   out.add(String::printf("%x\r\n", buf.getLength()));
   out.add(buf);
   out.add("\r\n");
 
-  connection->write(*this, out);
-
-  if (empty) chunked = false; // Last chunk is empty
+  connection->writeRequest(this, out, chunked);
 }
 
 
@@ -687,23 +692,6 @@ void Request::redirect(const URI &uri, HTTPStatus code) {
   outSet("Location", uri);
   outSet("Content-Length", "0");
   reply(code, "", 0);
-}
-
-
-void Request::cancel() {connection->cancelRequest(*this);}
-
-
-void Request::onRequest() {
-  LOG_INFO(1, "< " << getClientIP() << ' ' << getRequestLine());
-  LOG_DEBUG(5, inputHeaders << '\n');
-  LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
-
-  if (connection.isSet()) {
-    bytesRead = connection->getHeaderSize() + connection->getBodySize();
-
-    if (connection->getHTTP().isSet())
-      connection->getHTTP()->handleRequest(*this);
-  }
 }
 
 
@@ -751,7 +739,7 @@ void Request::write() {
   if (outputBuffer.getLength()) out.add(outputBuffer);
 
   bytesWritten += out.getLength();
-  connection->write(*this, out);
+  connection->writeRequest(this, out, chunked);
 }
 
 
@@ -772,14 +760,7 @@ void Request::writeResponse(cb::Event::Buffer &buf) {
   }
 
   // Add Content-Type
-  if (mustHaveBody() && !hasContentType()) {
-    guessContentType();
-
-    if (!hasContentType()) {
-      auto &type = connection->getDefaultContentType();
-      if (!type.empty()) outSet("Content-Type", type);
-    }
-  }
+  if (mustHaveBody() && !hasContentType()) guessContentType();
 
   // If request asked for close, send close
   if (inputHeaders.needsClose()) outSet("Connection", "close");

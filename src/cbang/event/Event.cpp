@@ -62,7 +62,7 @@ Event::Event(Base &base, cb::socket_t fdOrSignal, callback_t cb,
 
 
 Event::~Event() {
-  LOG_DEBUG(6, __func__ << "() " << Debugger::getStackTrace());
+  LOG_DEBUG(6, CBANG_FUNC << "() " << Debugger::getStackTrace());
   if (e) event_free(e);
 }
 
@@ -72,7 +72,7 @@ void Event::setSelfReferencing(bool enable) {
 
   if (selfReferencing && isPending()) self = this;
   else if (!selfReferencing && self.isSet()) {
-    if (getRefCount() < 2) THROW(__func__ << "() call would deallocate");
+    if (getRefCount() < 2) THROW(CBANG_FUNC << "() call would deallocate");
     self.release();
   }
 }
@@ -146,7 +146,7 @@ void Event::readd() {
 
 void Event::del() {
   if (self.isSet() && getRefCount() < 2)
-    THROW(__func__ << "() call would deallocate");
+    THROW(CBANG_FUNC << "() call would deallocate");
   event_del(e);
   self.release();
 }

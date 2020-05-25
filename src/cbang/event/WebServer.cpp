@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "WebServer.h"
-#include "HTTP.h"
 #include "Request.h"
 
 #include <cbang/config.h>
@@ -40,7 +39,6 @@
 #include <cbang/config/Options.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/openssl/SSLContext.h>
-#include <cbang/util/RateSet.h>
 
 using namespace std;
 using namespace cb::Event;
@@ -49,13 +47,8 @@ using namespace cb::Event;
 WebServer::WebServer(cb::Options &options, Base &base,
                      const cb::SmartPointer<cb::SSLContext> &sslCtx,
                      const cb::SmartPointer<HTTPHandlerFactory> &factory) :
-  HTTPHandlerGroup(factory), options(options), sslCtx(sslCtx),
-  initialized(false), logPrefix(false) {
-
-  SmartPointer<HTTPHandler>::Phony handler(this);
-  http = new HTTP(base, handler);
-  if (sslCtx.isSet()) https = new HTTP(base, handler, sslCtx);
-
+  HTTPHandlerGroup(factory), HTTPServer(base), options(options),
+  sslCtx(sslCtx) {
   addOptions(options);
 }
 
@@ -90,7 +83,7 @@ void WebServer::addOptions(cb::Options &options) {
 
   options.popCategory();
 
-  if (https.isSet()) {
+  if (sslCtx.isSet()) {
     options.pushCategory("HTTP Server SSL");
     opt = options.add("https-addresses", "A space separated list of secure "
                       "server address and port pairs to listen on in the form "
@@ -109,9 +102,6 @@ void WebServer::addOptions(cb::Options &options) {
 
 
 void WebServer::init() {
-  if (initialized) return;
-  initialized = true;
-
   // IP filters
   ipFilter.allow(options["allow"]);
   ipFilter.deny(options["deny"]);
@@ -133,7 +123,7 @@ void WebServer::init() {
 
 #ifdef HAVE_OPENSSL
   // SSL
-  if (!https.isNull()) {
+  if (sslCtx.isSet()) {
     // Configure secure ports
     addresses = options["https-addresses"].toStrings();
     for (unsigned i = 0; i < addresses.size(); i++)
@@ -165,70 +155,26 @@ bool WebServer::allow(Request &req) const {
 }
 
 
-void WebServer::shutdown() {
-  http.release();
-  https.release();
-}
-
-
 cb::SmartPointer<Request> WebServer::createRequest
 (RequestMethod method, const cb::URI &uri, const cb::Version &version) {
   return new Request(method, uri, version);
 }
 
 
-cb::SmartPointer<Request> WebServer::createRequest
-(Connection &con, RequestMethod method, const cb::URI &uri,
- const cb::Version &version) {return createRequest(method, uri, version);}
+bool WebServer::handleRequest(const SmartPointer<Request> &req) {
+  if (logPrefix) {
+    string prefix = String::printf("REQ%lld:", req->getID());
+    Logger::instance().setThreadPrefix(prefix);
+  }
 
+  if (!allow(*req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
 
-bool WebServer::handleRequest(Request &req) {
-  if (logPrefix)
-    Logger::instance().setThreadPrefix(String::printf("REQ%lld:", req.getID()));
-
-  if (!allow(req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
-
-  return HTTPHandlerGroup::operator()(req);
+  return HTTPHandlerGroup::operator()(*req);
 }
 
 
-void WebServer::endRequest(Request &req) {
+void WebServer::endRequest(const SmartPointer<Request> &req) {
   if (logPrefix) Logger::instance().setThreadPrefix("");
-}
-
-
-void WebServer::setEventPriority(int priority) {
-  http->setEventPriority(priority);
-  if (!https.isNull()) http->setEventPriority(priority);
-}
-
-
-void WebServer::setMaxConnections(unsigned x) {
-  http->setMaxConnections(x);
-  if (!https.isNull()) http->setMaxConnections(x);
-}
-
-
-void WebServer::setMaxConnectionTTL(unsigned x) {
-  http->setMaxConnectionTTL(x);
-  if (!https.isNull()) http->setMaxConnectionTTL(x);
-}
-
-
-void WebServer::setConnectionBacklog(unsigned x) {
-  http->setConnectionBacklog(x);
-  if (!https.isNull()) http->setConnectionBacklog(x);
-}
-
-
-void WebServer::setStats(const cb::SmartPointer<cb::RateSet> &stats) {
-  http->setStats(stats);
-  if (https.isSet()) https->setStats(stats);
-}
-
-
-const cb::SmartPointer<cb::RateSet> &WebServer::getStats() const {
-  return http->getStats();
 }
 
 
@@ -238,36 +184,17 @@ void WebServer::deny(const cb::IPAddress &addr) {ipFilter.deny(addr);}
 
 void WebServer::addListenPort(const cb::IPAddress &addr) {
   LOG_INFO(1, "Listening for HTTP on " << addr);
-  http->bind(addr);
-  ports.push_back(addr);
+  bind(addr, 0, priority);
 }
 
 
 void WebServer::addSecureListenPort(const cb::IPAddress &addr) {
   LOG_INFO(1, "Listening for HTTPS on " << addr);
-  https->bind(addr);
-  securePorts.push_back(addr);
-}
-
-
-void WebServer::setMaxBodySize(unsigned size) {
-  http->setMaxBodySize(size);
-  if (!https.isNull()) https->setMaxBodySize(size);
-}
-
-
-void WebServer::setMaxHeadersSize(unsigned size) {
-  http->setMaxHeadersSize(size);
-  if (!https.isNull()) https->setMaxHeadersSize(size);
+  bind(addr, sslCtx, priority);
 }
 
 
 void WebServer::setTimeout(int timeout) {
-  http->setReadTimeout(timeout);
-  http->setWriteTimeout(timeout);
-
-  if (https.isSet()) {
-    https->setReadTimeout(timeout);
-    https->setWriteTimeout(timeout);
-  }
+  setReadTimeout(timeout);
+  setWriteTimeout(timeout);
 }

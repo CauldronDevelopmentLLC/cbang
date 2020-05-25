@@ -32,47 +32,59 @@
 
 #pragma once
 
-#include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
+#include "Connection.h"
+#include "Buffer.h"
 
-#include <ostream>
+#include <limits>
+#include <list>
+#include <functional>
 
 
 namespace cb {
   namespace Event {
-    class Buffer;
+    class HTTPServer;
+    class Request;
 
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
+    class HTTPConn : public Connection {
+    protected:
+      unsigned maxBodySize = std::numeric_limits<unsigned>::max();
+      unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
 
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
+      Buffer input;
+
+    private:
+      std::list<SmartPointer<Request> > requests;
+
     public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
+      HTTPConn(Base &base);
+      virtual ~HTTPConn() {}
 
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
+      unsigned getMaxBodySize() const {return maxBodySize;}
+      void setMaxBodySize(unsigned size) {maxBodySize = size;}
 
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
+      unsigned getMaxHeaderSize() const {return maxHeaderSize;}
+      void setMaxHeaderSize(unsigned size) {maxHeaderSize = size;}
+
+      unsigned getNumRequests() const {return requests.size();}
+
+      virtual bool isIncoming() const = 0;
+      virtual void writeRequest(const SmartPointer<Request> &req,
+                                Buffer buffer, bool hasMore = false) = 0;
+
+      void readChunks(const SmartPointer<Request> &req,
+                      std::function<void (bool)> cb);
+
+    protected:
+      void readChunk(const SmartPointer<Request> &req, uint32_t size,
+                     std::function<void (bool)> cb);
+      void readChunkTrailer(const SmartPointer<Request> &req,
+                            std::function<void (bool)> cb);
+
+      void checkActive(const SmartPointer<Request> &req);
+      const SmartPointer<Request> &getRequest();
+      void flush(std::function<void (const SmartPointer<Request> &req)> cb);
+      void push(const SmartPointer<Request> &req);
+      void pop();
     };
-
-
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
   }
 }

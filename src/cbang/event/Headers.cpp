@@ -70,6 +70,7 @@ void Headers::guessContentType(const std::string &ext) {
   HTTP::ContentTypes::const_iterator it =
     HTTP::ContentTypes::instance().find(String::toLower(ext));
   if (it != HTTP::ContentTypes::instance().end()) setContentType(it->second);
+  else setContentType("text/html; charset=UTF-8");
 }
 
 

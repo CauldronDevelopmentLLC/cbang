@@ -30,49 +30,65 @@
 
 \******************************************************************************/
 
-#pragma once
-
+#include <cbang/Catch.h>
 #include <cbang/String.h>
-#include <cbang/util/OrderedDict.h>
 
-#include <ostream>
+#include <cbang/event/Base.h>
+#include <cbang/event/DNSBase.h>
+#include <cbang/event/Client.h>
 
+#include <cbang/config/CommandLine.h>
+#include <cbang/openssl/SSLContext.h>
+#include <cbang/log/Logger.h>
 
-namespace cb {
-  namespace Event {
-    class Buffer;
+#include <signal.h>
 
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
-    public:
-      std::string find(const std::string &key) const;
-      void set(const std::string &key, const std::string &value)
-        {insert(key, value);}
-      void remove(const std::string &key);
-      bool keyContains(const std::string &key, const std::string &value) const;
-
-      bool hasContentType() const {return has("Content-Type");}
-      std::string getContentType() const;
-      void setContentType(const std::string &contentType);
-      void guessContentType(const std::string &ext);
-      bool needsClose() const;
-      bool connectionKeepAlive() const;
-
-      bool parse(Buffer &buf, unsigned maxSize = 0);
-      void write(std::ostream &stream) const;
-    };
+using namespace std;
+using namespace cb;
 
 
-    inline static
-    std::ostream &operator<<(std::ostream &stream, const Headers &h) {
-      h.write(stream);
-      return stream;
-    }
-  }
+int main(int argc, char *argv[]) {
+  try {
+    string bind = "";
+    string certFile;
+    string priFile;
+    string url = "http://www.google.com/";
+
+    CommandLine cmdLine;
+    Logger::instance().addOptions(cmdLine);
+    Logger::instance().setLogHeader(false);
+
+    cmdLine.addTarget("bind", bind, "Outgoing IP address", 'b');
+    cmdLine.addTarget("url", url, "Request URl", 'u');
+    cmdLine.add("method", "Request method")->setDefault("GET");
+    cmdLine.parse(argc, argv);
+
+    SmartPointer<SSLContext> sslCtx;
+    if (String::toLower(URI(url).getScheme()) == "https")
+      sslCtx = new SSLContext;
+
+    Event::RequestMethod method =
+      Event::RequestMethod::parse(cmdLine["--method"]);
+
+    ::signal(SIGPIPE, SIG_IGN);
+
+    Event::Base base(true);
+    Event::DNSBase dnsBase(base);
+    Event::Client client(base, dnsBase, sslCtx);
+
+    auto cb =
+      [&base] (Event::Request &req) {
+        LOG_INFO(1, req.getInputHeaders() << '\n' << req.getInput());
+        base.loopExit();
+      };
+
+    auto req = client.call(url, method, cb);
+    req->send();
+
+    base.dispatch();
+
+    return 0;
+  } CATCH_ERROR;
+
+  return 1;
 }
