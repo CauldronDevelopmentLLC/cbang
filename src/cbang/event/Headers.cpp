@@ -84,7 +84,8 @@ bool Headers::parse(Buffer &buf, unsigned maxSize) {
   unsigned bytes = 0;
 
   while (buf.getLength()) {
-    string line = buf.readLine(maxSize ? maxSize - bytes : 0);
+    string line;
+    if (!buf.readLine(line, maxSize ? maxSize - bytes : 0)) return false;
 
     // Last header
     if (line.empty()) return true;

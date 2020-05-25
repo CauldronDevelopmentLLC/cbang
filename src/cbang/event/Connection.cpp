@@ -449,8 +449,8 @@ void Connection::readFirstLine() {
   LOG_DEBUG(4, __func__ << "()");
 
   try {
-    string line = getInput().readLine(maxHeaderSize);
-    if (line.empty()) return; // Need more data
+    string line;
+    if (!getInput().readLine(line, maxHeaderSize)) return; // Need more data
 
     if (maxHeaderSize && maxHeaderSize < line.length())
       return getRequest()->sendError(HTTP_BAD_REQUEST, "Header too long");
@@ -620,7 +620,8 @@ void Connection::readBody() {
     while (buf.getLength()) {
       if (bytesToRead < 0) {
         // Read chunk size
-        string size = buf.readLine(12);
+        string size;
+        buf.readLine(size, 12);
 
         // Last chunk on a new line?
         if (size.empty()) continue;
