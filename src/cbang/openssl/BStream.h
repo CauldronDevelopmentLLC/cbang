@@ -45,6 +45,9 @@ namespace cb {
 
     BIO *getBIO() const {return bio;}
 
+    void setFlags(int flags);
+    void clearFlags(int flags);
+
     virtual int write(const char *buf, int length);
     virtual int read(char *buf, int length);
     virtual int puts(const char *str);
