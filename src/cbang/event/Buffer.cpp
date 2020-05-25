@@ -236,10 +236,24 @@ void Buffer::peek(unsigned bytes, vector<iovec> &space) {
 }
 
 
+void Buffer::peek(unsigned bytes, iovec &space) {
+  if (evbuffer_peek(evb, bytes, 0, &space, 1) != 1)
+    THROW("Failed to peek");
+}
+
+
 void Buffer::reserve(unsigned bytes, vector<iovec> &space) {
   int n = evbuffer_reserve_space(evb, bytes, &space[0], space.size());
   if (n < 0) THROW("Failed to reserve space");
   space.resize(n);
+}
+
+
+void Buffer::reserve(unsigned bytes, iovec &space) {
+  size_t len = evbuffer_get_contiguous_space(evb);
+
+  if (evbuffer_reserve_space(evb, min(len, (size_t)bytes), &space, 1) != 1)
+    THROW("Failed to reserve space");
 }
 
 
@@ -251,13 +265,17 @@ void Buffer::commit(vector<iovec> &space) {
 void Buffer::commit(iovec &space) {evbuffer_commit_space(evb, &space, 1);}
 
 
-string Buffer::readLine(unsigned maxLength, eol_t eol) {
-  // TODO Don't read more then maxLength
-  size_t length = 0;
-  SmartPointer<char>::Malloc line =
-    evbuffer_readln(evb, &length, (evbuffer_eol_style)eol);
-  if (line.isNull()) return string();
-  return string(line.get(), length);
+bool Buffer::readLine(std::string &s, unsigned maxLength, const string &eol) {
+  int index = indexOf(eol);
+  if (index < 0 || (maxLength && maxLength < (unsigned)index)) return false;
+
+  ostringstream str;
+  remove(str, index);
+  s = str.str();
+
+  drain(eol.length());
+
+  return true;
 }
 
 
@@ -314,4 +332,10 @@ void Buffer::prepend(const string &s) {
 
 void Buffer::callback(int added, int deleted, int orig) {
   if (cb) cb(added, deleted, orig);
+}
+
+
+int Buffer::indexOf(const std::string &s) const {
+  struct evbuffer_ptr ptr = evbuffer_search(evb, s.c_str(), s.length(), 0);
+  return ptr.pos;
 }

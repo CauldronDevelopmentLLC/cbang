@@ -100,23 +100,18 @@ namespace cb {
       unsigned remove(std::ostream &stream, unsigned length);
       unsigned remove(std::ostream &stream);
 
-      typedef enum {
-        EOL_ANY,
-        EOL_CRLF,
-        EOL_CRLF_STRICT,
-        EOL_LF,
-        EOL_NULL
-      } eol_t;
-
       int read(socket_t fd, int size);
       int write(socket_t fd, int size = -1);
 
       void peek(unsigned bytes, std::vector<iovec> &space);
+      void peek(unsigned bytes, iovec &space);
       void reserve(unsigned bytes, std::vector<iovec> &space);
+      void reserve(unsigned bytes, iovec &space);
       void commit(std::vector<iovec> &space);
       void commit(iovec &space);
 
-      std::string readLine(unsigned maxLength, eol_t eol = EOL_CRLF);
+      bool readLine(std::string &s, unsigned maxLength = 0,
+                    const std::string &eol = "\r\n");
 
       void add(const Buffer &buf);
       void addRef(const Buffer &buf);
@@ -131,6 +126,8 @@ namespace cb {
       void prepend(const std::string &s);
 
       void callback(int added, int deleted, int orig);
+
+      int indexOf(const std::string &s) const;
     };
   }
 }
