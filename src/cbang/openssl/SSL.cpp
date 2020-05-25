@@ -70,21 +70,29 @@
 using namespace std;
 using namespace cb;
 
+namespace {
+  extern "C" void ssl_info_callback(const ::SSL *ssl, int where, int ret) {
+    ((cb::SSL *)SSL_get_app_data(ssl))->infoCallback(where, ret);
+  }
+}
+
+
 
 bool cb::SSL::initialized = false;
 Mutex *cb::SSL::locks = 0;
+unsigned cb::SSL::maxHandshakes = 3;
 
 
-cb::SSL::SSL(_SSL *ssl, bool deallocate) :
-  ssl(ssl), renegotiateLimited(false), handshakes(0), deallocate(deallocate),
-  state(PROCEED) {
+cb::SSL::SSL(_SSL *ssl) : ssl(ssl) {
+  if (ssl) SSL_up_ref(ssl);
   init();
 }
 
 
-cb::SSL::SSL(SSL_CTX *ctx, BIO *bio) :
-  ssl(0), renegotiateLimited(false), handshakes(0), deallocate(true),
-  state(PROCEED) {
+cb::SSL::SSL(const SSL &ssl) : SSL(ssl.ssl) {}
+
+
+cb::SSL::SSL(SSL_CTX *ctx, BIO *bio) {
   init();
   ssl = SSL_new(ctx);
   if (!ssl) THROW("Failed to create new SSL");
@@ -92,17 +100,12 @@ cb::SSL::SSL(SSL_CTX *ctx, BIO *bio) :
 }
 
 
-cb::SSL::~SSL() {
-  if (ssl && deallocate) {
-    SSL_free(ssl);
-    ssl = 0;
-  }
-}
+cb::SSL::~SSL() {if (ssl) SSL_free(ssl);}
 
 
-void cb::SSL::setBIO(BIO *bio) {
-  SSL_set_bio(ssl, bio, bio);
-}
+void cb::SSL::setBIO(BIO *bio) {SSL_set_bio(ssl, bio, bio);}
+bool cb::SSL::wantsRead()  const {return lastErr == SSL_ERROR_WANT_READ;}
+bool cb::SSL::wantsWrite() const {return lastErr == SSL_ERROR_WANT_WRITE;}
 
 
 void cb::SSL::setCipherList(const string &list) {
@@ -151,13 +154,19 @@ void cb::SSL::setTLSExtHostname(const string &hostname) {
 }
 
 
+void cb::SSL::setConnectState() {SSL_set_connect_state(ssl);}
+void cb::SSL::setAcceptState()  {SSL_set_accept_state(ssl);}
+
+
 void cb::SSL::connect() {
   LOG_DEBUG(5, "cb::SSL::connect()");
+
+  lastErr = 0;
   int ret = SSL_connect(ssl);
 
   if (ret == -1) {
-    int err = SSL_get_error(ssl, ret);
-    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+    lastErr = SSL_get_error(ssl, ret);
+    if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE) {
       state = WANTS_CONNECT;
       return;
     }
@@ -171,12 +180,21 @@ void cb::SSL::connect() {
 
 void cb::SSL::accept() {
   LOG_DEBUG(5, "cb::SSL::accept()");
-  limitRenegotiation();
+
+  // Limit renegotiation to prevent DOS attack
+  handshakes = 0;
+  void *ptr = SSL_get_app_data(ssl);
+  if (!ptr) {
+    SSL_set_app_data(ssl, (char *)this);
+    SSL_set_info_callback(ssl, ssl_info_callback);
+  }
+
+  lastErr = 0;
   int ret = SSL_accept(ssl);
 
   if (ret == -1) {
-    int err = SSL_get_error(ssl, ret);
-    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+    lastErr = SSL_get_error(ssl, ret);
+    if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE) {
       state = WANTS_ACCEPT;
       return;
     }
@@ -205,6 +223,7 @@ void cb::SSL::shutdown() {
 int cb::SSL::read(char *data, unsigned size) {
   LOG_DEBUG(5, "cb::SSL::read(" << size << ')');
 
+  lastErr = 0;
   checkHandshakes();
   if (!checkWants() || !size) return 0;
 
@@ -213,8 +232,9 @@ int cb::SSL::read(char *data, unsigned size) {
     // Detect End of Stream
     if (SSL_get_shutdown(ssl) == SSL_RECEIVED_SHUTDOWN) return -1;
 
-    int err = SSL_get_error(ssl, ret);
-    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) return 0;
+    lastErr = SSL_get_error(ssl, ret);
+    if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE)
+      return 0;
 
     string errMsg = getFullSSLErrorStr(ret);
     LOG_DEBUG(5, "cb::SSL::read() " << errMsg);
@@ -234,13 +254,15 @@ int cb::SSL::read(char *data, unsigned size) {
 unsigned cb::SSL::write(const char *data, unsigned size) {
   LOG_DEBUG(5, "cb::SSL::write(" << size << ')');
 
+  lastErr = 0;
   checkHandshakes();
   if (!checkWants() || !size) return 0;
 
   int ret = SSL_write(ssl, data, size);
   if (ret <= 0) {
-    int err = SSL_get_error(ssl, ret);
-    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) return 0;
+    lastErr = SSL_get_error(ssl, ret);
+    if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE)
+      return 0;
     THROW("SSL write failed: " << getFullSSLErrorStr(ret));
   }
 
@@ -371,37 +393,15 @@ void cb::SSL::infoCallback(int where, int ret) {
 }
 
 
-namespace {
-  extern "C" void ssl_info_callback(const ::SSL *ssl, int where, int ret) {
-    ((cb::SSL *)SSL_get_app_data(ssl))->infoCallback(where, ret);
-  }
-}
-
-
-void cb::SSL::limitRenegotiation() {
-  handshakes = 0;
-
-  if (renegotiateLimited) return;
-  renegotiateLimited = true;
-
-  void *ptr = SSL_get_app_data(ssl);
-  if (!ptr) SSL_set_app_data(ssl, (char *)this);
-  else if (ptr != this)
-    THROW("SSL app data already set.  Cannot renegotiate limit.");
-
-  SSL_set_info_callback(ssl, ssl_info_callback);
-}
-
-
 void cb::SSL::checkHandshakes() {
-  if (3 < handshakes)
+  if (maxHandshakes < handshakes)
     THROW("Potential Client-Initiated Renegotiation DOS attack detected");
 }
 
 
 bool cb::SSL::checkWants() {
   switch (state) {
-  case WANTS_ACCEPT: accept(); break;
+  case WANTS_ACCEPT:  accept();  break;
   case WANTS_CONNECT: connect(); break;
   default: break;
   }
