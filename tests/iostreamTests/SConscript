@@ -3,6 +3,7 @@ Import('*')
 # Local includes
 env.Append(CPPPATH = ['#'])
 
-prog = env.Program('bfencdec', ['bfencdec.cpp']);
+p1 = env.Program('bfencdec', ['bfencdec.cpp']);
+p2 = env.Program('compress', ['compress.cpp']);
 
-Return('prog')
+Return('p1 p2')
