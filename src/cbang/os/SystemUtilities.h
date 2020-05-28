@@ -115,9 +115,11 @@ namespace cb {
     open(const std::string &filename,
          std::ios::openmode mode = std::ios::in | std::ios::out,
          int perm = 0644);
-    SmartPointer<std::istream> iopen(const std::string &filename);
+    SmartPointer<std::istream> iopen(const std::string &filename,
+                                     bool autoCompression = false);
     SmartPointer<std::ostream>
-    oopen(const std::string &filename, int perm = 0644);
+    oopen(const std::string &filename, int perm = 0644,
+          bool autoCompression = false);
     std::string read(std::istream &stream, uint64_t length = ~0);
     std::string read(const std::string &filename, uint64_t length = ~0);
     void truncate(const std::string &path, unsigned long length);

@@ -1,0 +1,3 @@
+{
+  "command": "%(suite-dir)s/compress test.bz2 test.txt"
+}

@@ -95,11 +95,16 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filter/bzip2.hpp>
+
 using namespace std;
 using namespace cb;
 using namespace cb::SystemUtilities;
 
 namespace fs = boost::filesystem;
+namespace io = boost::iostreams;
 
 
 namespace cb {
@@ -1041,24 +1046,74 @@ namespace cb {
     }
 
 
-    SmartPointer<istream> iopen(const string &filename) {
+    SmartPointer<istream> iopen(const string &filename, bool autoCompression) {
       SysError::clear();
       try {
-        return new File(filename, ios::in);
+        SmartPointer<istream> file = new File(filename, ios::in);
+
+        if (autoCompression) {
+          bool gzip = String::endsWith(filename, ".gz");
+          bool bzip2 = String::endsWith(filename, ".bz2");
+
+          if (gzip || bzip2) {
+            class IStream : public io::filtering_istream {
+              SmartPointer<istream> s;
+            public:
+              IStream(const SmartPointer<istream> &s) : s(s) {}
+            };
+
+            SmartPointer<IStream> s = new IStream(file);
+
+            if (gzip) s->push(io::gzip_decompressor());
+            if (bzip2) s->push(io::bzip2_decompressor());
+
+            s->push(*file);
+
+            return s;
+          }
+        }
+
+        return file;
 
       } catch (const exception &e) {
         THROW("Failed to open '" << filename << "': " << e.what()
-               << ": " << SysError());
+              << ": " << SysError());
       }
     }
 
 
-    SmartPointer<ostream> oopen(const string &filename, int perm) {
+    SmartPointer<ostream> oopen(const string &filename, int perm,
+                                bool autoCompression) {
       ensureDirectory(dirname(filename));
 
       SysError::clear();
       try {
-        return new File(filename, ios::out, perm);
+        SmartPointer<ostream> file = new File(filename, ios::out, perm);
+
+        if (autoCompression) {
+          bool gzip = String::endsWith(filename, ".gz");
+          bool bzip2 = String::endsWith(filename, ".bz2");
+
+          if (gzip || bzip2) {
+            class OStream : public io::filtering_ostream {
+              SmartPointer<ostream> s;
+            public:
+              OStream(const SmartPointer<ostream> &s) : s(s) {}
+              ~OStream() {reset();}
+            };
+
+            SmartPointer<OStream> s = new OStream(file);
+
+            if (gzip) s->push(io::gzip_compressor());
+            if (bzip2) s->push(io::bzip2_compressor());
+
+            s->push(*file);
+
+            return s;
+          }
+        }
+
+        return file;
 
       } catch (const exception &e) {
         THROW("Failed to open '" << filename << "': " << e.what()
@@ -1068,7 +1123,6 @@ namespace cb {
 
 
     string read(std::istream &stream, uint64_t length) {
-      // Read
       ostringstream str;
       cp(stream, str, length);
 
