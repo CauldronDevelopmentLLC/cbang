@@ -382,7 +382,7 @@ def sign_flat_package(target, source, env):
     x, ext = os.path.splitext(source)
     if not (os.path.isfile(source) and ext in ('.pkg', '.mpkg')):
         raise Exception('unable to sign; not a flat package: ' + source)
-    cmd = ['productsign', '--sign', sign]
+    cmd = ['productsign','--timestamp', '--sign', sign]
     if keychain:
         cmd += ['--keychain', keychain]
     cmd += [source, target]
@@ -401,7 +401,7 @@ def sign_or_copy_product_pkg(target, source, env):
 def sign_application(target, env):
     keychain = env.get('sign_keychain')
     sign = env.get('sign_id_app')
-    cmd = ['codesign', '-f']
+    cmd = ['codesign', '-f', '--timestamp','--options', 'runtime']
     try:
       ver = tuple([int(x) for x in platform.mac_ver()[0].split('.')])
       # all bundles in an app must also be signed on 10.7+
@@ -425,7 +425,7 @@ def sign_executable(target, env):
     keychain = env.get('sign_keychain')
     sign = env.get('sign_id_app')
     prefix = env.get('sign_prefix')
-    cmd = ['codesign', '-f']
+    cmd = ['codesign', '-f', '--timestamp', '--options', 'runtime']
     if keychain:
         cmd += ['--keychain', keychain]
     if prefix:
