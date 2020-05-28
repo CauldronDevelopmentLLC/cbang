@@ -481,6 +481,17 @@ def configure(conf, cstd = 'c99'):
             '$SOURCES $_LIBDIRFLAGS $_LIBFLAGS $_FRAMEWORKPATH ' + \
             '$_FRAMEWORKS $FRAMEWORKSFLAGS'
 
+    # Both gcc and clang treat signedness of char depending on target platform.
+    # For Intel x86 and x86_64, it's a signed type by default.
+    # For ARM (including AArch64), it's an unsigned type by default.
+    # There are several places in the code, where 'char' implicitly assumed to
+    # be a signed type. The simplest way to avoid problems in such a case is to
+    # ask the compiler to treat the 'char" as a signed type regardless of target
+    # platform.
+    if compiler_mode == 'gnu':
+        env.Append(CFLAGS   = ['-fsigned-char'])
+        env.Append(CXXFLAGS = ['-fsigned-char'])
+
     # User flags (Must be last)
     if ccflags: env.Append(CCFLAGS = ccflags.split())
     if cxxflags: env.Append(CXXFLAGS = cxxflags.split())
