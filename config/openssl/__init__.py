@@ -6,15 +6,14 @@ def check_version(context, version):
     context.Message("Checking for openssl version >= %s..." % version)
 
     version = version.split('.')
-    src = '#include <openssl/opensslv.h>\nint main() {\nreturn ('
-    src += version[0] + '<= (OPENSSL_VERSION_NUMBER >> 28)'
-    if 1 < len(version):
-        src += ' && ' + version[1] + \
-               '<= ((OPENSSL_VERSION_NUMBER >> 20) & 0xf)'
-    if 2 < len(version):
-        src += ' && ' + version[2] + \
-               '<= ((OPENSSL_VERSION_NUMBER >> 12) & 0xf)'
-    src += ') ? 0 : 1;}\n'
+    src = '''
+      #include <openssl/opensslv.h>
+      int main() {
+        int v = (%s << 28) + (%s << 20) + (%s << 12);
+        return OPENSSL_VERSION_NUMBER < v;
+      }
+    ''' % (version[0], version[1] if 1 < len(version) else 0,
+           version[2] if 2 < len(version) else 0)
 
     ret = context.TryRun(src, '.cpp')[0]
 
