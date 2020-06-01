@@ -6,15 +6,17 @@ def check_version(context, version):
     context.Message("Checking for openssl version >= %s..." % version)
 
     version = version.split('.')
+    version += [0] * (3 - len(version))
+
     src = '''
       #include <openssl/opensslv.h>
       int main() {
-        int array[1 - 2 * (OPENSSL_VERSION_NUMBER < (%s << 28) + (%s << 20) + (%s << 12))];
-        array[0] = 0;
-        return *array;
+        const unsigned v = (%s << 28) + (%s << 20) + (%s << 12);
+        int a[1 - 2 * (OPENSSL_VERSION_NUMBER < v)];
+        a[0] = 0;
+        return a[0];
       }
-    ''' % (version[0], version[1] if 1 < len(version) else 0,
-           version[2] if 2 < len(version) else 0)
+    ''' % tuple(version)
 
     ret = context.TryCompile(src, '.cpp')
 
