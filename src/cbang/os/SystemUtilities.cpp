@@ -1046,25 +1046,26 @@ namespace cb {
     }
 
 
+    class IStream : public io::filtering_istream {
+      SmartPointer<istream> s;
+    public:
+      IStream(const SmartPointer<istream> &s) : s(s) {}
+    };
+
+
     SmartPointer<istream> iopen(const string &filename, bool autoCompression) {
       SysError::clear();
       try {
         SmartPointer<istream> file = new File(filename, ios::in);
 
         if (autoCompression) {
-          bool gzip = String::endsWith(filename, ".gz");
+          bool gzip  = String::endsWith(filename, ".gz");
           bool bzip2 = String::endsWith(filename, ".bz2");
 
           if (gzip || bzip2) {
-            class IStream : public io::filtering_istream {
-              SmartPointer<istream> s;
-            public:
-              IStream(const SmartPointer<istream> &s) : s(s) {}
-            };
-
             SmartPointer<IStream> s = new IStream(file);
 
-            if (gzip) s->push(io::gzip_decompressor());
+            if (gzip)  s->push(io::gzip_decompressor());
             if (bzip2) s->push(io::bzip2_decompressor());
 
             s->push(*file);
@@ -1082,6 +1083,14 @@ namespace cb {
     }
 
 
+    class OStream : public io::filtering_ostream {
+      SmartPointer<ostream> s;
+    public:
+      OStream(const SmartPointer<ostream> &s) : s(s) {}
+      ~OStream() {reset();}
+    };
+
+
     SmartPointer<ostream> oopen(const string &filename, int perm,
                                 bool autoCompression) {
       ensureDirectory(dirname(filename));
@@ -1091,20 +1100,13 @@ namespace cb {
         SmartPointer<ostream> file = new File(filename, ios::out, perm);
 
         if (autoCompression) {
-          bool gzip = String::endsWith(filename, ".gz");
+          bool gzip  = String::endsWith(filename, ".gz");
           bool bzip2 = String::endsWith(filename, ".bz2");
 
           if (gzip || bzip2) {
-            class OStream : public io::filtering_ostream {
-              SmartPointer<ostream> s;
-            public:
-              OStream(const SmartPointer<ostream> &s) : s(s) {}
-              ~OStream() {reset();}
-            };
-
             SmartPointer<OStream> s = new OStream(file);
 
-            if (gzip) s->push(io::gzip_compressor());
+            if (gzip)  s->push(io::gzip_compressor());
             if (bzip2) s->push(io::bzip2_compressor());
 
             s->push(*file);
