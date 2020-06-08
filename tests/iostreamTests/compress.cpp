@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    auto in = SystemUtilities::iopen(argv[1], true);
+    auto in  = SystemUtilities::iopen(argv[1], true);
     auto out = SystemUtilities::oopen(argv[2], 0644, true);
 
     SystemUtilities::cp(*in, *out);
