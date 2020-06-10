@@ -1,3 +1,5 @@
+import sys
+
 Import('*')
 env = env.Clone()
 
@@ -30,7 +32,11 @@ def CheckSizeOf(ctx, type, defaults, includes = None):
 
     ctx.Message('Checking size of %s ... ' % type)
 
-    for sz in defaults + range(1, 16):
+    sizes = range(1, 16)
+    # In Python 3, explicit conversion to the list required
+    if sys.version_info[0] >= 3:
+        sizes = list(sizes)
+    for sz in defaults + sizes:
         if ctx.TryCompile(src % (type, sz), '.c'):
             ctx.Result(str(sz))
             return sz
