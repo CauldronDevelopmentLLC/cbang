@@ -30,7 +30,7 @@ def CheckSizeOf(ctx, type, defaults, includes = None):
 
     ctx.Message('Checking size of %s ... ' % type)
 
-    for sz in defaults + range(1, 16):
+    for sz in defaults + list(range(1, 16)):
         if ctx.TryCompile(src % (type, sz), '.c'):
             ctx.Result(str(sz))
             return sz
