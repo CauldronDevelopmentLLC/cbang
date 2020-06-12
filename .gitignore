@@ -17,6 +17,7 @@
 # Windows Compiled files
 *.exe
 *.pdb
+*.ilk
 
 # Compiled Python
 *.pyc
