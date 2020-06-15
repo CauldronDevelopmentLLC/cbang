@@ -1047,16 +1047,16 @@ namespace cb {
 
 
     class IStream : public io::filtering_istream {
-      SmartPointer<istream> s;
+      SmartPointer<File> file;
     public:
-      IStream(const SmartPointer<istream> &s) : s(s) {}
+      IStream(const SmartPointer<File> &file) : file(file) {}
     };
 
 
     SmartPointer<istream> iopen(const string &filename, bool autoCompression) {
       SysError::clear();
       try {
-        SmartPointer<istream> file = new File(filename, ios::in);
+        SmartPointer<File> file = new File(filename, ios::in);
 
         if (autoCompression) {
           bool gzip  = String::endsWith(filename, ".gz");
@@ -1084,9 +1084,9 @@ namespace cb {
 
 
     class OStream : public io::filtering_ostream {
-      SmartPointer<ostream> s;
+      SmartPointer<File> file;
     public:
-      OStream(const SmartPointer<ostream> &s) : s(s) {}
+      OStream(const SmartPointer<File> &file) : file(file) {}
       ~OStream() {reset();}
     };
 
@@ -1097,7 +1097,7 @@ namespace cb {
 
       SysError::clear();
       try {
-        SmartPointer<ostream> file = new File(filename, ios::out, perm);
+        SmartPointer<File> file = new File(filename, ios::out, perm);
 
         if (autoCompression) {
           bool gzip  = String::endsWith(filename, ".gz");
