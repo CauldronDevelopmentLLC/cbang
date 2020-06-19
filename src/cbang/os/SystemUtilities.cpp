@@ -1050,6 +1050,7 @@ namespace cb {
       SmartPointer<File> file;
     public:
       IStream(const SmartPointer<File> &file) : file(file) {}
+      ~IStream() {reset();}
     };
 
 
