@@ -34,6 +34,8 @@
 
 #include "TarHeader.h"
 
+#include <cbang/SmartPointer.h>
+
 #include <string>
 #include <iostream>
 
@@ -41,8 +43,10 @@ namespace cb {
   class Tar : public TarHeader {
   public:
     static const char zero_block[512];
+    unsigned bufferSize;
+    SmartPointer<char>::Array buf;
 
-    Tar() {}
+    Tar(unsigned bufferSize = 1024 * 1024);
 
     /// NOTE: Automatically calls writeHeader()
     unsigned writeFile(const std::string &filename, std::ostream &dst,

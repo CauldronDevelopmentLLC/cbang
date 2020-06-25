@@ -40,13 +40,6 @@ using namespace std;
 using namespace cb;
 
 
-#ifdef _WIN32
-// Windows chokes with the 4MiB buffer on the stack
-#define TAR_BUFFER_SIZE 4096
-#else
-#define TAR_BUFFER_SIZE (4096 * 1024)
-#endif
-
 const char Tar::zero_block[512] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -90,6 +83,11 @@ namespace {
 }
 
 
+
+Tar::Tar(unsigned bufferSize) :
+  bufferSize(bufferSize), buf(new char[bufferSize]) {}
+
+
 unsigned Tar::writeFile(const string &filename, ostream &dst, istream &src,
                         uint32_t mode) {
   // Get stream size
@@ -125,13 +123,12 @@ unsigned Tar::writeFile(const string &filename, ostream &dst, const char *data,
 
 unsigned Tar::writeFileData(std::ostream &dst, std::istream &src,
                             streamsize size) {
-  char buf[TAR_BUFFER_SIZE];
   streamsize n;
 
   while (true) {
-    src.read(buf, TAR_BUFFER_SIZE);
+    src.read(buf.get(), bufferSize);
     n = src.gcount();
-    if (n) dst.write(buf, n);
+    if (n) dst.write(buf.get(), n);
     else break;
   }
 
@@ -178,18 +175,17 @@ unsigned Tar::writeFooter(ostream &dst) {
 
 
 void Tar::readFile(ostream &dst, istream &src) {
-  char buf[TAR_BUFFER_SIZE];
   streamsize size = getSize();
   streamsize padding = compute_padding(size);
   streamsize n;
 
   while (size) {
-    src.read(buf, min((int)size, TAR_BUFFER_SIZE));
+    src.read(buf.get(), min((unsigned)size, bufferSize));
     if (!(n = src.gcount())) THROW("Error reading tar file");
 
     size -= n;
 
-    dst.write(buf, n);
+    dst.write(buf.get(), n);
     if (dst.fail()) THROW(string("Failed to write '") + getFilename() + "'");
   }
 
