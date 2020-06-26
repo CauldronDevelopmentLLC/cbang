@@ -49,7 +49,7 @@ namespace cb {
   namespace Event {
     class ConcurrentPool : protected ThreadPool, protected Condition {
     public:
-      class Task : public ProtectedRefCounterImpl<Task> {
+      class Task {
         int priority;
         uint64_t ts = Time::now();
         Exception e;
@@ -176,7 +176,7 @@ namespace cb {
       unsigned getNumActive() const;
       unsigned getNumCompleted() const;
 
-      void submit(const SmartPointer<Task> &task);
+      void submit(const SmartPointer<Task>::Protected &task);
 
       template <typename Data>
       void submit(int priority, typename TaskFunctions<Data>::run_cb_t run,
