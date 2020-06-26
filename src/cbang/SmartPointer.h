@@ -161,11 +161,7 @@ namespace cb {
       }
 
       // Create new RefCounter
-      if (!refCounter) {
-        refCounter = CounterT::create();
-        refCounter->setRefPtr(ptr);
-      }
-
+      if (!refCounter) refCounter = CounterT::create(ptr);
       refCounter->incCount();
     }
 
@@ -337,13 +333,12 @@ namespace cb {
      * smart pointer points will be deleted.
      */
     void release() {
-      T *_ptr = ptr;
       RefCounter *_refCounter = refCounter;
 
       ptr = 0;
       refCounter = 0;
 
-      if (_refCounter) _refCounter->decCount(_ptr);
+      if (_refCounter) _refCounter->decCount();
     }
 
     /**
@@ -356,11 +351,7 @@ namespace cb {
     T *adopt() {
       if (!ptr) return 0;
 
-      if (1 < refCounter->getCount())
-        referenceError("Can't adopt pointer with multiple references!");
-
-      refCounter->decCount(0);
-      refCounter->clearRefPtr(ptr);
+      refCounter->adopted();
       refCounter = 0;
 
       T *tmp = ptr;

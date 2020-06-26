@@ -61,7 +61,8 @@ namespace cb {
     virtual bool isProtected() const {return false;}
     virtual unsigned getCount() const = 0;
     virtual void incCount() = 0;
-    virtual void decCount(const void *ptr) = 0;
+    virtual void decCount() = 0;
+    virtual void adopted() = 0;
 
     void log(const char *name, unsigned count);
 
@@ -88,15 +89,17 @@ namespace cb {
   template<typename T, class Dealloc_T = DeallocNew<T> >
   class RefCounterImpl : public RefCounter {
   protected:
-    unsigned count;
+    T *ptr;
+    unsigned count = 0;
 
   public:
-    RefCounterImpl(unsigned count = 0) : count(count) {}
-    static RefCounter *create() {return new RefCounterImpl;}
+    RefCounterImpl(T *ptr) : ptr(ptr) {setRefPtr(ptr);}
+    static RefCounter *create(T *ptr) {return new RefCounterImpl(ptr);}
 
-    void release(const void *ptr) {
+    void release() {
+      T *_ptr = ptr;
       delete this;
-      if (ptr) Dealloc_T::dealloc((T *)ptr);
+      if (_ptr) Dealloc_T::dealloc(_ptr);
     }
 
     // From RefCounter
@@ -109,12 +112,19 @@ namespace cb {
 #endif
     }
 
-    void decCount(const void *ptr) {
+    void decCount() {
       if (!count) raise("Already zero!");
 #ifdef DEBUG
       log(typeid(T).name(), count - 1);
 #endif
-      if (!--count) release(ptr);
+      if (!--count) release();
+    }
+
+    void adopted() {
+      if (1 < getCount())
+        raise("Can't adopt pointer with multiple references!");
+      clearRefPtr(ptr);
+      delete this;
     }
   };
 
@@ -127,8 +137,8 @@ namespace cb {
     using Super_T::count;
 
   public:
-    ProtectedRefCounterImpl(unsigned count = 0) : Super_T(count) {}
-    static RefCounter *create() {return new ProtectedRefCounterImpl;}
+    ProtectedRefCounterImpl(T *ptr) : Super_T(ptr) {}
+    static RefCounter *create(T *ptr) {return new ProtectedRefCounterImpl(ptr);}
     static bool staticIsProtected() {return true;}
 
     // From RefCounterImpl
@@ -150,7 +160,7 @@ namespace cb {
       unlock();
     }
 
-    void decCount(const void *ptr) {
+    void decCount() {
       lock();
 
       if (!count) {unlock(); Super_T::raise("Already zero!");}
@@ -161,7 +171,7 @@ namespace cb {
 
       if (!--count) {
         unlock();
-        Super_T::release(ptr);
+        Super_T::release();
 
       } else unlock();
     }
@@ -173,12 +183,13 @@ namespace cb {
     RefCounterPhonyImpl() {}
 
   public:
-    static RefCounter *create() {return &singleton;}
+    static RefCounter *create(void *ptr) {return &singleton;}
 
     // From RefCounter
     unsigned getCount() const {return 1;}
-    void incCount() {};
-    void decCount(const void *ptr) {}
+    void incCount() {}
+    void decCount() {}
+    void adopted() {}
 
     static RefCounter *getRefPtr(const RefCounted *ref) {return 0;}
     using RefCounter::getRefPtr;
