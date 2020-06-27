@@ -85,6 +85,8 @@ def build_function(target, source, env):
         # Description
         write_spec_text_section(f, env, 'description', 'description')
 
+        f.write('%define strip ' + env.get('STRIP', 'strip') + '\n\n')
+
         # Scripts
         for script in ['prep', 'build', 'install', 'clean', 'pre', 'post',
                        'preun', 'postun', 'verifyscript']:

@@ -44,6 +44,7 @@ def configure(conf, cstd = 'c99'):
     cc = env.get('cc', '').strip()
     cxx = env.get('cxx', '').strip()
     ranlib = env.get('ranlib', '').strip()
+    strip = env.get('strip', '').strip()
     debug = int(env.get('debug'))
     optimize = int(env.get('optimize'))
     if optimize == -1: optimize = not debug
@@ -135,6 +136,7 @@ def configure(conf, cstd = 'c99'):
             env.Replace(CC = 'i586-mingw32msvc-gcc')
             env.Replace(CXX = 'i586-mingw32msvc-g++')
             env.Replace(RANLIB = 'i586-mingw32msvc-ranlib')
+            env.Replace(STRIP = 'i586-mingw32msvc-strip')
             env.Replace(PROGSUFFIX = '.exe')
             compiler_mode = 'gnu'
 
@@ -174,6 +176,7 @@ def configure(conf, cstd = 'c99'):
     if cc: env.Replace(CC = cc)
     if cxx: env.Replace(CXX = cxx)
     if ranlib: env.Replace(RANLIB = ranlib)
+    if strip: env.Replace(STRIP = strip)
 
     env.__setitem__('compiler', compiler)
     env.__setitem__('compiler_mode', compiler_mode)
@@ -595,6 +598,7 @@ def generate(env):
         ('cc', 'Set C compiler executable', ''),
         ('cxx', 'Set C++ compiler executable', ''),
         ('ranlib', 'Set ranlib executable', ''),
+        ('strip', 'Set strip executable', ''),
         ('optimize', 'Enable or disable optimizations', -1),
         ('globalopt', 'Enable or disable global optimizations', 0),
         ('mach', 'Set machine instruction set', ''),
