@@ -96,9 +96,6 @@ void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
   socket->setReceiveBuf();
   socket->setSendBuf();
 
-  // Non-blocking
-  socket->setBlocking(false);
-
   if (stats.isSet()) stats->event("incoming");
 
   auto conn = createConnection();
