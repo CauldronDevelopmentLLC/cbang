@@ -90,10 +90,16 @@ FDPoolEPoll::FDPoolEPoll(Base &base) :
 FDPoolEPoll::~FDPoolEPoll() {
   join();
   if (fd != -1) close(fd);
+
+  destructing = true;
+  pool.clear();
+  removeQ.clear();
 }
 
 
 void FDPoolEPoll::add(FD &fd) {
+  if (destructing) return;
+
   struct epoll_event ev;
   memset(&ev, 0, sizeof(ev));
   ev.events = 0;
@@ -110,6 +116,8 @@ void FDPoolEPoll::add(FD &fd) {
 
 
 void FDPoolEPoll::update(FD &fd, unsigned events) {
+  if (destructing) return;
+
   struct epoll_event ev;
   memset(&ev, 0, sizeof(ev));
   ev.events = fd_to_epoll_events(events);
@@ -121,6 +129,8 @@ void FDPoolEPoll::update(FD &fd, unsigned events) {
 
 
 void FDPoolEPoll::remove(FD &fd) {
+  if (destructing) return;
+
   // May already be removed if FD was closed
   epoll_ctl(this->fd, EPOLL_CTL_DEL, fd.getFD(), 0);
 

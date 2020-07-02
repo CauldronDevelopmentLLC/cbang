@@ -51,6 +51,7 @@ namespace cb {
     class Base;
 
     class FDPoolEPoll : public FDPool, public Thread, public Mutex {
+      bool destructing = false;
       int fd = -1;
 
       SmartPointer<Event> event;
