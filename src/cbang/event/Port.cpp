@@ -92,6 +92,9 @@ void Port::accept() {
     LOG_ERROR("Failed to accept new socket: " << SysError());
 
   else {
+    // Non-blocking
+    newSocket->setBlocking(false);
+
     SmartPointer<SSL> ssl;
 #ifdef HAVE_OPENSSL
     if (sslCtx.isSet()) {
