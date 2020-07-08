@@ -78,6 +78,6 @@ namespace cb {
       void write(JSON::Sink &sink) const;
     };
 
-    typedef SmartPointer<Session>::Protected SessionPtr;
+    typedef SmartPointer<Session> SessionPtr;
   }
 }

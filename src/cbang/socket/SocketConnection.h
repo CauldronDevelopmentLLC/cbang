@@ -71,5 +71,5 @@ namespace cb {
     virtual bool isFinished() const = 0;
   };
 
-  typedef SmartPointer<SocketConnection>::Protected SocketConnectionPtr;
+  typedef SmartPointer<SocketConnection> SocketConnectionPtr;
 }

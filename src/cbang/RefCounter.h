@@ -34,9 +34,8 @@
 
 #include "Deallocators.h"
 
-#include <cbang/os/Mutex.h>
-
-#include <typeinfo>
+#include <atomic>
+#include <string>
 
 
 namespace cb {
@@ -49,22 +48,10 @@ namespace cb {
     virtual ~RefCounter() {} // Prevent deallocation by others
 
   public:
-    static constexpr bool enableLogging = false;
-
-    typedef enum {
-      RC_NORMAL,
-      RC_PHONY,
-      RC_PROTECTED,
-    } type_t;
-
-    static bool staticIsProtected() {return false;}
-    virtual bool isProtected() const {return false;}
     virtual unsigned getCount() const = 0;
     virtual void incCount() = 0;
     virtual void decCount() = 0;
     virtual void adopted() = 0;
-
-    void log(const char *name, unsigned count);
 
     static void raise(const std::string &msg);
 
@@ -90,10 +77,10 @@ namespace cb {
   class RefCounterImpl : public RefCounter {
   protected:
     T *ptr;
-    unsigned count = 0;
+    std::atomic<unsigned> count;
 
   public:
-    RefCounterImpl(T *ptr) : ptr(ptr) {setRefPtr(ptr);}
+    RefCounterImpl(T *ptr) : ptr(ptr), count(0) {setRefPtr(ptr);}
     static RefCounter *create(T *ptr) {return new RefCounterImpl(ptr);}
 
     void release() {
@@ -104,20 +91,17 @@ namespace cb {
 
     // From RefCounter
     unsigned getCount() const {return count;}
-
-    void incCount() {
-      count++;
-#ifdef DEBUG
-      log(typeid(T).name(), count);
-#endif
-    }
+    void incCount() {count++;}
 
     void decCount() {
-      if (!count) raise("Already zero!");
-#ifdef DEBUG
-      log(typeid(T).name(), count - 1);
-#endif
-      if (!--count) release();
+      unsigned c = count;
+
+      if (!c) raise("Already zero!");
+
+      while (!count.compare_exchange_weak(c, c - 1))
+        if (!c) raise("Already zero!");
+
+      if (c == 1) release();
     }
 
     void adopted() {
@@ -125,55 +109,6 @@ namespace cb {
         raise("Can't adopt pointer with multiple references!");
       clearRefPtr(ptr);
       delete this;
-    }
-  };
-
-
-  template<typename T, class Dealloc_T = DeallocNew<T> >
-  class ProtectedRefCounterImpl :
-    public RefCounterImpl<T, Dealloc_T>, public Mutex {
-  protected:
-    typedef RefCounterImpl<T, Dealloc_T> Super_T;
-    using Super_T::count;
-
-  public:
-    ProtectedRefCounterImpl(T *ptr) : Super_T(ptr) {}
-    static RefCounter *create(T *ptr) {return new ProtectedRefCounterImpl(ptr);}
-    static bool staticIsProtected() {return true;}
-
-    // From RefCounterImpl
-    bool isProtected() const {return true;}
-
-    unsigned getCount() const {
-      lock();
-      unsigned x = count;
-      unlock();
-      return x;
-    }
-
-    void incCount() {
-      lock();
-      count++;
-#ifdef DEBUG
-      Super_T::log(typeid(T).name(), count);
-#endif
-      unlock();
-    }
-
-    void decCount() {
-      lock();
-
-      if (!count) {unlock(); Super_T::raise("Already zero!");}
-
-#ifdef DEBUG
-      Super_T::log(typeid(T).name(), count - 1);
-#endif
-
-      if (!--count) {
-        unlock();
-        Super_T::release();
-
-      } else unlock();
     }
   };
 
