@@ -102,6 +102,8 @@ namespace cb {
     void rmtree(const std::string &path);
 
     // File
+    unsigned getMaxFiles();
+    void setMaxFiles(unsigned files);
     uint64_t getFileSize(const std::string &filename);
     uint64_t getModificationTime(const std::string &filename);
     bool unlink(const std::string &filename);

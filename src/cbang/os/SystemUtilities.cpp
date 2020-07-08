@@ -552,6 +552,39 @@ namespace cb {
     }
 
 
+    /// Check maximum number of open files
+    unsigned getMaxFiles() {
+#ifdef _WIN32
+      THROW(CBANG_FUNC "() not supported on Windows");
+
+#else
+      struct rlimit rlim;
+      if (getrlimit(RLIMIT_NOFILE, &rlim))
+        THROW("Failed to get open file limit");
+
+      return rlim.rlim_cur == RLIM_INFINITY ?
+        numeric_limits<unsigned>::max() : rlim.rlim_cur;
+#endif
+    }
+
+
+    void setMaxFiles(unsigned files) {
+#ifdef _WIN32
+      THROW(CBANG_FUNC "() not supported on Windows");
+
+#else
+      struct rlimit rlim;
+      if (getrlimit(RLIMIT_NOFILE, &rlim))
+        THROW("Failed to get open file limit");
+
+      rlim.rlim_cur = std::min(rlim.rlim_max, (rlim_t)files);
+
+      if (setrlimit(RLIMIT_NOFILE, &rlim))
+        THROW("Failed to set open file limit");
+#endif
+    }
+
+
     uint64_t getFileSize(const string &filename) {
       if (!exists(filename))
         THROW("Error accessing file '" << filename << "'");
