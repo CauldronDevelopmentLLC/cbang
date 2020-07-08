@@ -46,10 +46,6 @@
 
 #include <signal.h>
 
-#ifndef _WIN32
-#include <sys/resource.h>
-#endif
-
 using namespace cb;
 using namespace cb;
 using namespace std;
@@ -124,23 +120,18 @@ void ServerApplication::afterCommandLineParse() {
 #ifndef _WIN32
   if (hasFeature(FEATURE_CHECK_OPEN_FILE_LIMIT)) {
     // Check maximum number of open files
-    struct rlimit rlim;
     unsigned noFilesRec = 10000;
-    if (getrlimit(RLIMIT_NOFILE, &rlim) == 0 &&
-        rlim.rlim_cur != RLIM_INFINITY) {
-      // Set to maximum
-      if (rlim.rlim_cur != rlim.rlim_max) {
-        rlim.rlim_cur = rlim.rlim_max;
-        setrlimit(RLIMIT_NOFILE, &rlim);
-        getrlimit(RLIMIT_NOFILE, &rlim);
-      }
-
-      if (rlim.rlim_cur != RLIM_INFINITY && rlim.rlim_cur < noFilesRec)
-        LOG_WARNING("Open file limit of " << rlim.rlim_cur
-                    << " is less than recommended value of " << noFilesRec
-                    << ", you can increase this value in "
-                    "'/etc/security/limits.conf'");
+    unsigned noFiles = SystemUtilities::getMaxFiles();
+    if (noFiles < noFilesRec) {
+      SystemUtilities::setMaxFiles(noFilesRec);
+      noFiles = SystemUtilities::getMaxFiles();
     }
+
+    if (noFiles < noFilesRec)
+      LOG_WARNING("Open file limit of " << noFiles
+                  << " is less than recommended value of " << noFilesRec
+                  << ", you can increase this value in "
+                  "'/etc/security/limits.conf'");
   }
 
   // Set group and user.
