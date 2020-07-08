@@ -126,12 +126,12 @@ namespace cb {
       Progress getReadProgress() const;
       Progress getWriteProgress() const;
 
-      void read(const SmartPointer<Transfer>::Protected transfer);
+      void read(const SmartPointer<Transfer> transfer);
       void read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
                 const std::string &until = std::string());
       void canRead(Transfer::cb_t cb);
 
-      void write(const SmartPointer<Transfer>::Protected transfer);
+      void write(const SmartPointer<Transfer> transfer);
       void write(Transfer::cb_t cb, const Buffer &buffer);
       void canWrite(Transfer::cb_t cb);
 
