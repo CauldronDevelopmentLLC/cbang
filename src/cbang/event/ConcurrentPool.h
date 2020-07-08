@@ -176,7 +176,7 @@ namespace cb {
       unsigned getNumActive() const;
       unsigned getNumCompleted() const;
 
-      void submit(const SmartPointer<Task>::Protected &task);
+      void submit(const SmartPointer<Task> &task);
 
       template <typename Data>
       void submit(int priority, typename TaskFunctions<Data>::run_cb_t run,

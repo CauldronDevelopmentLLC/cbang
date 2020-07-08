@@ -40,8 +40,7 @@
 
 namespace cb {
   /**
-   * This is an implementation of a smart pointer.  It is ONLY THREAD
-   * SAFE IF you create a protected smart pointer.
+   * This is a thread-safe implementation of a smart pointer.
    *
    * You can use a SmartPointer on a dynamically allocated instance
    * of a class A like this:
@@ -72,16 +71,10 @@ namespace cb {
    * deallocators can be created to handle other resources. The managed
    * resources need not even be memory.
    *
-   * Note that you cannot access non-protected SmartPointers to the
-   * same data from different threads.  Even if you make a new copy of
-   * the SmartPointer.  This is because the copies will still share the
-   * same RefCounter.  However, non-protected SmartPointers are faster.
-   *
-   * Protected SmartPointers are only protected in the sense that
-   * multiple threads can safely access different copies of the same
-   * SmartPointer concurrently.  Accessing the data pointed to by the
-   * SmartPointer from multiple threads safely requires futher
-   * synchronization.
+   * SmartPointers are only thread safe in the sense that multiple threads
+   * can safely access different copies of the same SmartPointer
+   * concurrently.  Accessing the data pointed to by the SmartPointer
+   * from multiple threads safely requires futher synchronization.
    *
    * See http://ootips.org/yonat/4dev/smart-pointers.html for more
    * information about smart pointers and why to use them.
@@ -112,14 +105,6 @@ namespace cb {
     typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl> Phony;
     typedef SmartPointer<T, DeallocMalloc> Malloc;
     typedef SmartPointer<T, DeallocArray<T> > Array;
-    typedef SmartPointer<T, DeallocNew<T>,
-                         ProtectedRefCounterImpl<T, DeallocNew<T> > > Protected;
-    typedef SmartPointer<T, DeallocMalloc,
-                         ProtectedRefCounterImpl<T, DeallocMalloc> >
-    ProtectedMalloc;
-    typedef SmartPointer<T, DeallocArray<T>,
-                         ProtectedRefCounterImpl<T, DeallocArray<T> > >
-    ProtectedArray;
 
     /**
      * The copy constructor.  If the smart pointer being copied
@@ -152,13 +137,7 @@ namespace cb {
       if (!ptr) return;
 
       // Get RefCounter from RefCounted
-      if (!refCounter) {
-        refCounter = CounterT::getRefPtr(ptr);
-
-        if (refCounter &&
-            CounterT::staticIsProtected() && !refCounter->isProtected())
-          referenceError("RefCounter protection mismatch");
-      }
+      if (!refCounter) refCounter = CounterT::getRefPtr(ptr);
 
       // Create new RefCounter
       if (!refCounter) refCounter = CounterT::create(ptr);

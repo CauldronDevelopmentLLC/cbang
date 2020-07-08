@@ -74,7 +74,7 @@ unsigned ConcurrentPool::getNumCompleted() const {
 }
 
 
-void ConcurrentPool::submit(const SmartPointer<Task>::Protected &task) {
+void ConcurrentPool::submit(const SmartPointer<Task> &task) {
   SmartLock lock(this);
   ready.push(task);
   Condition::signal();
