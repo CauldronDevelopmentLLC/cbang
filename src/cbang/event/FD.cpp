@@ -116,7 +116,7 @@ Progress FD::getWriteProgress() const {
 }
 
 
-void FD::read(const SmartPointer<Transfer>::Protected transfer) {
+void FD::read(const SmartPointer<Transfer> transfer) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << transfer->getLength());
 
   SmartLock lock(this);
@@ -144,7 +144,7 @@ void FD::read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
 void FD::canRead(Transfer::cb_t cb) {read(new Transfer(cb));}
 
 
-void FD::write(const SmartPointer<Transfer>::Protected transfer) {
+void FD::write(const SmartPointer<Transfer> transfer) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << transfer->getLength());
 
   SmartLock lock(this);
