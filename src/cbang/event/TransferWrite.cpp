@@ -32,6 +32,7 @@
 
 #include "TransferWrite.h"
 
+#include <cbang/Catch.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 
@@ -66,14 +67,18 @@ int TransferWrite::write(Buffer &buffer, unsigned length) {
 
 #ifdef HAVE_OPENSSL
   if (ssl.isSet()) {
-    iovec space;
-    buffer.peek(length, space);
-    if (!space.iov_len) return -1; // No data
+    try {
+      iovec space;
+      buffer.peek(length, space);
+      if (!space.iov_len) return -1; // No data
 
-    int ret = ssl->write((char *)space.iov_base, space.iov_len);
-    if (0 < ret) buffer.drain(ret);
+      int ret = ssl->write((char *)space.iov_base, space.iov_len);
+      if (0 < ret) buffer.drain(ret);
 
-    return ret;
+      return ret;
+
+    } CATCH_ERROR;
+    return -1;
   }
 #endif // HAVE_OPENSSL
 
