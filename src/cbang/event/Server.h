@@ -90,9 +90,6 @@ namespace cb {
       const SmartPointer<RateSet> &getStats() const {return stats;}
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
-      double getReadRate() const;
-      double getWriteRate() const;
-
       unsigned getConnectionCount() const {return connections.size();}
 
       void bind(const IPAddress &addr,

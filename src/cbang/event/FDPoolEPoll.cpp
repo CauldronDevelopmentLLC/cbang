@@ -381,8 +381,15 @@ void FDPoolEPoll::processResults() {
     auto &p = progressQ.top();
 
     switch (p.cmd) {
-    case CMD_READ_PROGRESS:  readProgress[p.fd].event(p.value, p.time);  break;
-    case CMD_WRITE_PROGRESS: writeProgress[p.fd].event(p.value, p.time); break;
+    case CMD_READ_PROGRESS:
+      readRate.event(p.value, p.time);
+      readProgress[p.fd].event(p.value, p.time);
+      break;
+
+    case CMD_WRITE_PROGRESS:
+      writeRate.event(p.value, p.time);
+      writeProgress[p.fd].event(p.value, p.time);
+      break;
 
     case CMD_READ_SIZE:
       readProgress[p.fd] = Progress(60 * 5, 1, p.value, p.time, p.time);

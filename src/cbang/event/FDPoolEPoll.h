@@ -149,6 +149,8 @@ namespace cb {
       typedef std::map<int, Progress> progress_t;
       progress_t readProgress;
       progress_t writeProgress;
+      Rate readRate = 60;
+      Rate writeRate = 60;
       SPSCQueue<ProgressEvent> progressQ;
 
     public:
@@ -161,6 +163,8 @@ namespace cb {
       int getEventPriority() const;
 
       // From FDPool
+      const Rate &getReadRate() const {return readRate;}
+      const Rate &getWriteRate() const {return writeRate;}
       Progress getReadProgress(int fd) const;
       Progress getWriteProgress(int fd) const;
       void read(const SmartPointer<Transfer> &t);
