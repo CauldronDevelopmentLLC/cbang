@@ -35,6 +35,7 @@
 #include "FD.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/Progress.h>
 
 
 namespace cb {
@@ -50,9 +51,11 @@ namespace cb {
 
       static SmartPointer<FDPool> create(Base &base);
 
-      virtual void add(FD &fd) = 0;
-      virtual void update(FD &fd, unsigned events) = 0;
-      virtual void remove(FD &fd) = 0;
+      virtual Progress getReadProgress(int fd) const = 0;
+      virtual Progress getWriteProgress(int fd) const = 0;
+      virtual void read(const SmartPointer<Transfer> &t) = 0;
+      virtual void write(const SmartPointer<Transfer> &t) = 0;
+      virtual void flush(int fd) = 0;
     };
   }
 }

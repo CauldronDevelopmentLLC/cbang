@@ -67,9 +67,6 @@ namespace cb {
       HTTPConnOut &getConnection();
       const HTTPConnOut &getConnection() const;
 
-      void setPriority(int priority);
-      int getPriority() const;
-
       void setProgressCallback(progress_cb_t cb, double delay = 0.25);
 
       void connect(std::function<void (bool)> cb);

@@ -30,24 +30,65 @@
 
 \******************************************************************************/
 
-#include "TransportSocket.h"
+#pragma once
 
-using namespace cb::Event;
-using namespace cb;
+#include <cbang/Exception.h>
 
-
-TransportSocket::TransportSocket(int fd) : fd(fd) {}
+#include <atomic>
 
 
-int TransportSocket::read(Buffer &buffer, unsigned length) {
-  if (!length) return 0;
-  int ret = buffer.read(fd, length);
-  return ret <= 0 ? -1 : ret;
-}
+namespace cb {
+  /// A lockless Single Producer Single Consumer queue.
+  /// See https://www.drdobbs.com/210604448?pgno=2
+  template <typename T>
+  class SPSCQueue {
+    struct Node {
+      T value;
+      Node *next = 0;
+
+      Node(T value = T()) : value(value) {}
+    };
+
+    std::atomic<Node *> head;
+    std::atomic<Node *> tail;
+    std::atomic<unsigned> count;
+
+    // Prevent copying
+    SPSCQueue(const SPSCQueue &) {}
+    SPSCQueue &operator=(const SPSCQueue &) {}
+
+  public:
+    SPSCQueue() : count(0) {head = tail = new Node;}
+    ~SPSCQueue() {clear(); delete head;}
 
 
-int TransportSocket::write(Buffer &buffer, unsigned length) {
-  if (!length) return 0;
-  int ret = buffer.write(fd, length);
-  return ret <= 0 ? -1 : ret;
+    bool empty() const {return head == tail;}
+    unsigned size() const {return count;}
+
+
+    void push(const T &value) {
+      (*tail).next = new Node(value);
+      tail = (*tail).next;
+      count++;
+    }
+
+
+    T &top() {
+      if (empty()) CBANG_THROW("Queue empty");
+      return (*head).next->value;
+    }
+
+
+    void pop() {
+      if (empty()) CBANG_THROW("Queue empty");
+      Node *n = head;
+      head = (*head).next;
+      count--;
+      (*head).value = T();
+      delete n;
+    }
+
+
+    void clear() {while (!empty()) pop();}
+  };
 }

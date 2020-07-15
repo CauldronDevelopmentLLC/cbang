@@ -39,9 +39,9 @@
 
 namespace cb {
   class Rate {
-  public:
+  protected:
     std::vector<double> buckets;
-    const unsigned period;
+    unsigned period;
     double total;
 
     unsigned last;

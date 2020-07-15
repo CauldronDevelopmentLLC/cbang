@@ -33,6 +33,7 @@
 #pragma once
 
 #include "Transfer.h"
+#include "Buffer.h"
 
 
 namespace cb {
@@ -41,12 +42,14 @@ namespace cb {
       Buffer buffer;
 
     public:
-      TransferWrite(cb_t cb, const Buffer &buffer);
+      TransferWrite(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
+                    const Buffer &buffer);
 
       // From Transfer
-      int transfer(Transport &transport);
+      int transfer();
 
     protected:
+      int write(Buffer &buffer, unsigned length);
       void checkFinished();
     };
   }

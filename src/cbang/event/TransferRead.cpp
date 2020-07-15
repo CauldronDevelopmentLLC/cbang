@@ -32,31 +32,67 @@
 
 #include "TransferRead.h"
 
+#include <cbang/String.h>
+#include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
+
+#ifdef HAVE_VALGRIND
+#include <valgrind/memcheck.h>
+#endif
+
+#include <event2/util.h>
 
 using namespace cb::Event;
 using namespace std;
 
 
-TransferRead::TransferRead(cb_t cb, const Buffer &buffer, unsigned length,
+TransferRead::TransferRead(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
+                           const Buffer &buffer, unsigned length,
                            const string &until) :
-  Transfer(cb, length), buffer(buffer), until(until) {checkFinished();}
+  Transfer(fd, ssl, cb, length), buffer(buffer), until(until) {checkFinished();}
 
 
 
-int TransferRead::transfer(Transport &transport) {
-  int ret = transport.read(buffer, length - buffer.getLength());
+int TransferRead::transfer() {
+  int ret = read(buffer, length - buffer.getLength());
   LOG_DEBUG(4, CBANG_FUNC << "() ret=" << ret
             << " length=" << buffer.getLength());
   LOG_DEBUG(5, String::hexdump(buffer.toString()));
 
   if (ret < 0) finished = true;
-  else {
-    checkFinished();
-    progress.event(ret);
-  }
+  else checkFinished();
 
   return ret;
+}
+
+
+int TransferRead::read(Buffer &buffer, unsigned length) {
+  if (!length) return 0;
+
+#ifdef HAVE_OPENSSL
+  if (ssl.isSet()) {
+    iovec space;
+    buffer.reserve(length, space);
+    if (!space.iov_len) return -1;
+
+    unsigned bytes = min(length, (unsigned)space.iov_len);
+    int ret = ssl->read((char *)space.iov_base, bytes);
+
+    if (0 < ret) {
+#ifdef VALGRIND_MAKE_MEM_DEFINED
+      (void)VALGRIND_MAKE_MEM_DEFINED(space.iov_base, ret);
+#endif
+
+      space.iov_len = ret;
+      buffer.commit(space);
+    }
+
+    return ret;
+  }
+#endif // HAVE_OPENSSL
+
+  int ret = buffer.read(fd, length);
+  return ret <= 0 ? -1 : ret;
 }
 
 
@@ -64,6 +100,8 @@ void TransferRead::checkFinished() {
   if (finished) return;
 
   unsigned bytesRead = buffer.getLength();
-  if (length <= bytesRead) finished = true;
-  if (!until.empty() && buffer.indexOf(until) != -1) finished = true;
+  if (length <= bytesRead || (!until.empty() && buffer.indexOf(until) != -1)) {
+    finished = success = true;
+    length = bytesRead;
+  }
 }

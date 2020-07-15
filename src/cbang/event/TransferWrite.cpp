@@ -32,30 +32,56 @@
 
 #include "TransferWrite.h"
 
+#include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
+
+#ifdef HAVE_VALGRIND
+#include <valgrind/memcheck.h>
+#endif
+
+#include <event2/util.h>
 
 using namespace cb::Event;
 using namespace cb;
 
 
-TransferWrite::TransferWrite(cb_t cb, const Buffer &buffer) :
-  Transfer(cb, buffer.getLength()), buffer(buffer) {checkFinished();}
+TransferWrite::TransferWrite(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
+                             const Buffer &buffer) :
+  Transfer(fd, ssl, cb, buffer.getLength()), buffer(buffer) {checkFinished();}
 
 
-int TransferWrite::transfer(Transport &transport) {
-  int ret = transport.write(buffer, buffer.getLength());
+int TransferWrite::transfer() {
+  int ret = write(buffer, buffer.getLength());
   LOG_DEBUG(4, CBANG_FUNC << "() ret=" << ret);
 
   if (ret < 0) finished = true;
-  else {
-    checkFinished();
-    progress.event(ret);
-  }
+  else checkFinished();
 
   return ret;
 }
 
 
+int TransferWrite::write(Buffer &buffer, unsigned length) {
+  if (!length) return 0;
+
+#ifdef HAVE_OPENSSL
+  if (ssl.isSet()) {
+    iovec space;
+    buffer.peek(length, space);
+    if (!space.iov_len) return -1; // No data
+
+    int ret = ssl->write((char *)space.iov_base, space.iov_len);
+    if (0 < ret) buffer.drain(ret);
+
+    return ret;
+  }
+#endif // HAVE_OPENSSL
+
+  int ret = buffer.write(fd, length);
+  return ret <= 0 ? -1 : ret;
+}
+
+
 void TransferWrite::checkFinished() {
-  if (!buffer.getLength()) finished = true;
+  if (!buffer.getLength()) finished = success = true;
 }

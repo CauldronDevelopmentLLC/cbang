@@ -34,11 +34,10 @@
 
 #include "Base.h"
 #include "Event.h"
-#include "Transport.h"
 #include "Transfer.h"
+#include "Buffer.h"
 
 #include <cbang/StdTypes.h>
-#include <cbang/os/Mutex.h>
 #include <cbang/util/Progress.h>
 
 #include <queue>
@@ -50,38 +49,19 @@ namespace cb {
     class Base;
     class FDPool;
 
-    class FD : public RefCounted, protected Mutex {
+    class FD : public RefCounted {
       Base &base;
       int fd;
       SmartPointer<SSL> ssl;
-      SmartPointer<Transport> transport;
 
       SmartPointer<Event> completeEvent;
-      SmartPointer<Event> timeoutEvent;
-
-      bool inPool            = false;
-      unsigned lastEvents    = 0;
 
       unsigned readTimeout   = 0;
       unsigned writeTimeout  = 0;
-      uint64_t lastRead      = 0;
-      uint64_t lastWrite     = 0;
       Progress readProgress  = 60;
       Progress writeProgress = 60;
 
-      std::function<void ()> onComplete;
-
-      typedef std::queue<SmartPointer<Transfer> > queue_t;
-      queue_t readQ;
-      queue_t writeQ;
-      queue_t completeQ;
-
-      bool readTimedout   = false;
-      bool writeTimedout  = false;
-      bool readClosed     = false;
-      bool writeClosed    = false;
-      bool readWantsWrite = false;
-      bool writeWantsRead = false;
+      std::function<void ()> onClose;
 
     public:
       enum {
@@ -103,25 +83,14 @@ namespace cb {
       void setSSL(const SmartPointer<SSL> ssl) {this->ssl = ssl;}
       const SmartPointer<SSL> getSSL() const {return ssl;}
 
-      void setPriority(int priority);
-      int getPriority() const;
-
       unsigned getReadTimeout() const {return readTimeout;}
       void setReadTimeout(unsigned timeout);
-      bool isReadTimedout() const {return readTimedout;}
 
       unsigned getWriteTimeout() const {return writeTimeout;}
       void setWriteTimeout(unsigned timeout);
-      bool isWriteTimedout() const {return writeTimedout;}
 
-      bool isTimedout() const {return readTimedout || writeTimedout;}
-
-      std::function<void ()> getOnComplete() const {return onComplete;}
-      void setOnComplete(std::function<void ()> cb) {onComplete = cb;}
-
-      bool isClosed() const {return readClosed && writeClosed;}
-      bool isReadClosed() const {return readClosed;}
-      bool isWriteClosed() const {return writeClosed;}
+      std::function<void ()> getOnClose() const {return onClose;}
+      void setOnClose(std::function<void ()> cb) {onClose = cb;}
 
       Progress getReadProgress() const;
       Progress getWriteProgress() const;
@@ -136,28 +105,6 @@ namespace cb {
       void canWrite(Transfer::cb_t cb);
 
       void close();
-      void transfer(unsigned events);
-
-    protected:
-      void flush(queue_t &q, bool success);
-      int transfer(queue_t &q);
-      void read(unsigned events);
-      void write(unsigned events);
-
-      bool readTimeoutValid() const;
-      bool writeTimeoutValid() const;
-
-      static std::string eventsToString(unsigned events);
-      unsigned getEvents() const;
-      void updateEvents();
-      void updateTimeout();
-      void update();
-
-      void complete();
-      void timeout();
-
-      void poolRemove();
-      void poolAdd();
     };
   }
 }

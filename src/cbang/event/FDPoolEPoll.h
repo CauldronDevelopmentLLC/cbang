@@ -39,42 +39,143 @@
 #include "FDPool.h"
 
 #include <cbang/os/Thread.h>
-#include <cbang/os/Mutex.h>
+#include <cbang/util/SPSCQueue.h>
 
-#include <list>
 #include <map>
-#include <algorithm>
+#include <set>
+#include <queue>
 
 
 namespace cb {
   namespace Event {
     class Base;
 
-    class FDPoolEPoll : public FDPool, public Thread, public Mutex {
-      bool destructing = false;
+    class FDPoolEPoll : public FDPool, public Thread {
       int fd = -1;
 
       SmartPointer<Event> event;
 
-      typedef std::map<int, SmartPointer<FD> > pool_t;
+      typedef enum {
+        CMD_READ,
+        CMD_WRITE,
+        CMD_FLUSH,
+        CMD_FLUSHED,
+        CMD_COMPLETE,
+        CMD_READ_PROGRESS,
+        CMD_WRITE_PROGRESS,
+        CMD_READ_SIZE,
+        CMD_WRITE_SIZE,
+        CMD_READ_FINISHED,
+        CMD_WRITE_FINISHED,
+      } cmd_t;
+
+      struct ProgressEvent {
+        cmd_t cmd;
+        int fd;
+        uint64_t time;
+        int value;
+      };
+
+      struct Command {
+        cmd_t cmd;
+        int fd;
+        SmartPointer<Transfer> tran;
+      };
+
+      struct Timeout {
+        uint64_t time;
+        bool read;
+        int fd;
+
+        bool operator<(const Timeout &o) const {return o.time < time;}
+      };
+
+      class FDRec;
+
+      class FDQueue : public std::queue<SmartPointer<Transfer> > {
+        FDRec &fdr;
+        bool read;
+        bool closed = false;
+        uint64_t last = 0;
+        bool newTransfer = true;
+
+      public:
+        FDQueue(FDRec &fdr, bool read) : fdr(fdr), read(read) {}
+
+        bool isClosed() const {return closed;}
+        bool wantsRead() const;
+        bool wantsWrite() const;
+        uint64_t getTimeout() const;
+        uint64_t getNextTimeout() const;
+        void updateTimeout(bool wasActive, bool nowActive);
+        void timeout(uint64_t now);
+        void transfer(unsigned events);
+        void flush();
+        void add(const SmartPointer<Transfer> &tran);
+
+      protected:
+        void pop();
+      };
+
+      class FDRec {
+        FDPoolEPoll &pool;
+        int fd = -1;
+        unsigned events = 0;
+        FDQueue readQ;
+        FDQueue writeQ;
+
+      public:
+        FDRec(FDPoolEPoll &pool, int fd);
+
+        FDPoolEPoll &getPool() {return pool;}
+        int getFD() const {return fd;}
+
+        void timeout(uint64_t now);
+        unsigned getEvents() const;
+        void update();
+        void transfer(unsigned events);
+        void flush();
+        void process(cmd_t cmd, const SmartPointer<Transfer> &tran);
+      };
+
+      SPSCQueue<Command> cmds;
+      SPSCQueue<Command> results;
+      std::priority_queue<Timeout> timeoutQ;
+      std::set<int> flushing;
+
+      typedef std::map<int, SmartPointer<FDRec> > pool_t;
       pool_t pool;
 
-      typedef std::pair<uint32_t, SmartPointer<FD> > remove_t;
-      std::list<remove_t> removeQ;
-      bool sync = false;
-      uint32_t count = 0;
+      typedef std::map<int, Progress> progress_t;
+      progress_t readProgress;
+      progress_t writeProgress;
+      SPSCQueue<ProgressEvent> progressQ;
 
     public:
       FDPoolEPoll(Base &base);
       ~FDPoolEPoll();
 
+      int getFD() const {return fd;}
+
+      void setEventPriority(int priority);
+      int getEventPriority() const;
+
       // From FDPool
-      void add(FD &fd);
-      void update(FD &fd, unsigned events);
-      void remove(FD &fd);
+      Progress getReadProgress(int fd) const;
+      Progress getWriteProgress(int fd) const;
+      void read(const SmartPointer<Transfer> &t);
+      void write(const SmartPointer<Transfer> &t);
+      void flush(int fd);
+
+      void queueTimeout(uint64_t time, bool read, int fd);
+      void queueComplete(const SmartPointer<Transfer> &t);
+      void queueFlushed(int fd);
+      void queueProgress(cmd_t cmd, int fd, uint64_t time, int value);
 
     protected:
-      void doRemove();
+      void queueCommand(cmd_t cmd, int fd, const SmartPointer<Transfer> &tran);
+      FDRec &getFD(int fd);
+      void processResults();
 
       // From Thread
       void run();
