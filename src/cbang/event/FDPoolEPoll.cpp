@@ -222,6 +222,9 @@ void FDPoolEPoll::FDRec::flush() {
 
 void FDPoolEPoll::FDRec::process(cmd_t cmd,
                                  const SmartPointer<Transfer> &tran) {
+  if ((cmd == CMD_READ || cmd == CMD_WRITE) && tran->isFinished())
+    return pool.queueComplete(tran);
+
   switch (cmd) {
   case CMD_READ:  readQ.add(tran);  break;
   case CMD_WRITE: writeQ.add(tran); break;
@@ -334,8 +337,7 @@ void FDPoolEPoll::queueProgress(cmd_t cmd, int fd, uint64_t time, int value) {
 
 void FDPoolEPoll::queueCommand(cmd_t cmd, int fd,
                                const SmartPointer<Transfer> &tran) {
-  if (tran.isSet() && tran->isFinished()) queueComplete(tran);
-  else cmds.push({cmd, fd, tran});
+  cmds.push({cmd, fd, tran});
 }
 
 
