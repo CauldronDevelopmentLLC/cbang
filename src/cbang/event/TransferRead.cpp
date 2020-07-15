@@ -33,6 +33,7 @@
 #include "TransferRead.h"
 
 #include <cbang/String.h>
+#include <cbang/Catch.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 
@@ -71,23 +72,27 @@ int TransferRead::read(Buffer &buffer, unsigned length) {
 
 #ifdef HAVE_OPENSSL
   if (ssl.isSet()) {
-    iovec space;
-    buffer.reserve(length, space);
-    if (!space.iov_len) return -1;
+    try {
+      iovec space;
+      buffer.reserve(length, space);
+      if (!space.iov_len) return -1;
 
-    unsigned bytes = min(length, (unsigned)space.iov_len);
-    int ret = ssl->read((char *)space.iov_base, bytes);
+      unsigned bytes = min(length, (unsigned)space.iov_len);
+      int ret = ssl->read((char *)space.iov_base, bytes);
 
-    if (0 < ret) {
+      if (0 < ret) {
 #ifdef VALGRIND_MAKE_MEM_DEFINED
-      (void)VALGRIND_MAKE_MEM_DEFINED(space.iov_base, ret);
+        (void)VALGRIND_MAKE_MEM_DEFINED(space.iov_base, ret);
 #endif
 
-      space.iov_len = ret;
-      buffer.commit(space);
-    }
+        space.iov_len = ret;
+        buffer.commit(space);
+      }
 
-    return ret;
+      return ret;
+
+    } CATCH_ERROR;
+    return -1;
   }
 #endif // HAVE_OPENSSL
 
