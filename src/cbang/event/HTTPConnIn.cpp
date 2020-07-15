@@ -200,6 +200,7 @@ void HTTPConnIn::checkChunked(const SmartPointer<Request> &req) {
         return close();
       }
 
+      if (contentLength) input.remove(req->getInputBuffer(), contentLength);
       addRequest(req);
     };
 
@@ -212,15 +213,14 @@ void HTTPConnIn::processRequest(const SmartPointer<Request> &req) {
   LOG_DEBUG(5, req->getInputHeaders() << '\n');
   LOG_DEBUG(6, input.hexdump() << '\n');
 
-  req->getInputBuffer().add(input);
   server.dispatch(req);
 }
 
 
 void HTTPConnIn::addRequest(const SmartPointer<Request> &req) {
-  if (req->isPersistent()) readHeader();
   push(req);
   if (getNumRequests() == 1) processRequest(req);
+  if (req->isPersistent()) readHeader();
 }
 
 
