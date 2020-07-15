@@ -77,16 +77,6 @@ const HTTPConnOut &OutgoingRequest::getConnection() const {
 }
 
 
-void OutgoingRequest::setPriority(int priority) {
-  getConnection().setPriority(priority);
-}
-
-
-int OutgoingRequest::getPriority() const {
-  return getConnection().getPriority();
-}
-
-
 void OutgoingRequest::setProgressCallback(progress_cb_t cb, double delay) {
   progressCB = cb;
   progressDelay = delay;

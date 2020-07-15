@@ -105,13 +105,12 @@ void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
   conn->setWriteTimeout(writeTimeout);
   conn->setStats(stats);
 
-  auto cb = conn->getOnComplete();
-  conn->setOnComplete([this, conn, cb] () mutable {
-                        if (cb) cb();
-                        remove(conn);
-                        if (conn->isTimedout()) stats->event("timedout");
-                        conn.release();
-                      });
+  auto cb = conn->getOnClose();
+  conn->setOnClose([this, conn, cb] () mutable {
+                     if (cb) cb();
+                     remove(conn);
+                     conn.release();
+                   });
 
   connections.push_back(conn);
 

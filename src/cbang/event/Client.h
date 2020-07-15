@@ -36,6 +36,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/RateSet.h>
+#include <cbang/openssl/SSLContext.h>
 
 #include <map>
 #include <functional>
@@ -43,7 +44,6 @@
 
 namespace cb {
   class URI;
-  class SSLContext;
 
   namespace Event {
     class Base;
@@ -53,7 +53,6 @@ namespace cb {
       Base &base;
       DNSBase &dns;
       SmartPointer<SSLContext> sslCtx;
-      int priority;
       IPAddress bindAddr;
       SmartPointer<RateSet> stats;
 
@@ -64,16 +63,13 @@ namespace cb {
 
       typedef OutgoingRequest::callback_t callback_t;
 
-      Client(Base &base, DNSBase &dns);
-      Client(Base &base, DNSBase &dns, const SmartPointer<SSLContext> &sslCtx);
+      Client(Base &base, DNSBase &dns,
+             const SmartPointer<SSLContext> &sslCtx = 0);
       ~Client();
 
       Base &getBase() {return base;}
       DNSBase &getDNS() {return dns;}
       const cb::SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
-
-      int getPriority() const {return priority;}
-      void setPriority(int priority) {this->priority = priority;}
 
       const IPAddress &getBindAddress() const {return bindAddr;}
       void setBindAddress(const IPAddress &bind) {this->bindAddr = bind;}

@@ -37,7 +37,7 @@ using namespace cb;
 
 uint64_t Progress::getETA() const {
   double remaining = (1 - getProgress()) * size;
-  return end + remaining / getRate();
+  return remaining ? remaining / getRate() : 0;
 }
 
 

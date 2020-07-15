@@ -33,8 +33,7 @@
 #pragma once
 
 #include "Transfer.h"
-#include "Transport.h"
-#include "ConnectionError.h"
+#include "Buffer.h"
 
 #include <functional>
 
@@ -46,13 +45,15 @@ namespace cb {
       std::string until;
 
     public:
-      TransferRead(cb_t cb, const Buffer &buffer, unsigned length,
+      TransferRead(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
+                   const Buffer &buffer, unsigned length,
                    const std::string &until = std::string());
 
       // From Transfer
-      int transfer(Transport &transport);
+      int transfer();
 
     protected:
+      int read(Buffer &buffer, unsigned length);
       void checkFinished();
     };
   }

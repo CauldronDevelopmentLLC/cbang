@@ -85,7 +85,7 @@ void HTTPConnIn::readHeader() {
       if (maxHeaderSize && maxHeaderSize <= input.getLength())
         error(HTTP_BAD_REQUEST, "Header too large");
 
-      else if (!success || isReadClosed()) close();
+      else if (!success) close();
       else processHeader();
     };
 

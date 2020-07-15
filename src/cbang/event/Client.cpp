@@ -35,20 +35,15 @@ s
 #include "HTTPConnOut.h"
 
 #include <cbang/config.h>
-#include <cbang/openssl/SSLContext.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
-Client::Client(cb::Event::Base &base, DNSBase &dns) :
-  base(base), dns(dns), priority(-1) {}
-
-
 Client::Client(cb::Event::Base &base, DNSBase &dns,
                const SmartPointer<SSLContext> &sslCtx) :
-  base(base), dns(dns), sslCtx(sslCtx), priority(-1) {}
+  base(base), dns(dns), sslCtx(sslCtx) {}
 
 
 Client::~Client() {}
@@ -61,7 +56,6 @@ Client::call(const URI &uri, RequestMethod method, const char *data,
     new OutgoingRequest(*this, uri, method, cb);
 
   if (data) req->getOutputBuffer().add(data, length);
-  if (0 <= priority) req->setPriority(priority);
   req->getConnection().setStats(stats);
 
   if (stats.isSet()) stats->event("outgoing");
