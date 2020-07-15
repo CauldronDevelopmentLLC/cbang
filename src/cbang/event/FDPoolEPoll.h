@@ -141,7 +141,7 @@ namespace cb {
       SPSCQueue<Command> cmds;
       SPSCQueue<Command> results;
       std::priority_queue<Timeout> timeoutQ;
-      std::set<int> flushing;
+      std::map<int, std::function<void ()> > flushing;
 
       typedef std::map<int, SmartPointer<FDRec> > pool_t;
       pool_t pool;
@@ -165,7 +165,7 @@ namespace cb {
       Progress getWriteProgress(int fd) const;
       void read(const SmartPointer<Transfer> &t);
       void write(const SmartPointer<Transfer> &t);
-      void flush(int fd);
+      void flush(int fd, std::function <void ()> cb);
 
       void queueTimeout(uint64_t time, bool read, int fd);
       void queueComplete(const SmartPointer<Transfer> &t);

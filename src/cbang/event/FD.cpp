@@ -55,7 +55,12 @@ FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
 }
 
 
-FD::~FD () {if (fd != -1) base.getPool().flush(fd);}
+FD::~FD () {
+  if (fd != -1) {
+    int fd = this->fd;
+    base.getPool().flush(fd, [fd] () {::close(fd);});
+  }
+}
 
 
 void FD::setFD(int fd) {
@@ -113,10 +118,15 @@ void FD::close() {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
   if (fd != -1) {
-    base.getPool().flush(fd); // Must be before ::close(fd)
-    ::close(fd);
-    fd = -1;
-  }
+    int fd = this->fd;
+    this->fd = -1;
 
-  if (onClose) onClose();
+    auto cb =
+      [this, fd] () {
+        ::close(fd);
+        if (onClose) onClose();
+      };
+
+    base.getPool().flush(fd, cb);
+  }
 }

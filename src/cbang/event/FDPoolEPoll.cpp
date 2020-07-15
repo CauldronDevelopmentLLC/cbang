@@ -303,11 +303,11 @@ void FDPoolEPoll::write(const SmartPointer<Transfer> &t) {
 }
 
 
-void FDPoolEPoll::flush(int fd) {
+void FDPoolEPoll::flush(int fd, std::function <void ()> cb) {
   if (fd < 0) THROW("Invalid fd " << fd);
   if (flushing.find(fd) != flushing.end())
     THROW("FD " << fd << " already flushing");
-  flushing.insert(fd);
+  flushing[fd] = cb;
   queueCommand(CMD_FLUSH, fd, 0);
 }
 
@@ -354,9 +354,17 @@ void FDPoolEPoll::processResults() {
     auto &cmd = results.top();
 
     switch (cmd.cmd) {
-    case CMD_FLUSHED:
-      flushing.erase(cmd.fd);
+    case CMD_FLUSHED: {
+      auto it = flushing.find(cmd.fd);
+      if (it != flushing.end()) {
+        if (it->second) it->second();
+        flushing.erase(it);
+      }
+
+      readProgress.erase(cmd.fd);
+      writeProgress.erase(cmd.fd);
       break;
+    }
 
     case CMD_COMPLETE:
       if (flushing.find(cmd.fd) == flushing.end())
