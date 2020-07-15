@@ -53,6 +53,8 @@ namespace cb {
 
       static SmartPointer<FDPool> create(Base &base);
 
+      virtual const Rate &getReadRate() const = 0;
+      virtual const Rate &getWriteRate() const = 0;
       virtual Progress getReadProgress(int fd) const = 0;
       virtual Progress getWriteProgress(int fd) const = 0;
       virtual void read(const SmartPointer<Transfer> &t) = 0;

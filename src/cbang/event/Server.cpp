@@ -50,28 +50,6 @@ Server::Server(Base &base) : base(base) {
 }
 
 
-double Server::getReadRate() const {
-  double rate = 0;
-  uint32_t now = Time::now();
-
-  for (auto it = connections.begin(); it != connections.end(); it++)
-    rate += (*it)->getReadProgress().get(now);
-
-  return rate;
-}
-
-
-double Server::getWriteRate() const {
-  double rate = 0;
-  uint32_t now = Time::now();
-
-  for (auto it = connections.begin(); it != connections.end(); it++)
-    rate += (*it)->getWriteProgress().get(now);
-
-  return rate;
-}
-
-
 void Server::bind(const IPAddress &addr, const SmartPointer<SSLContext> &sslCtx,
                   int priority) {
   LOG_DEBUG(4, "Binding " << (sslCtx.isSet() ? "ssl " : "") << addr);
