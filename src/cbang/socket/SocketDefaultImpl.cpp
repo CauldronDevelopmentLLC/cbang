@@ -257,15 +257,16 @@ void SocketDefaultImpl::listen(int backlog) {
 SmartPointer<Socket> SocketDefaultImpl::accept(IPAddress *ip) {
   if (!isOpen()) open();
 
-  SmartPointer<Socket> a = createSocket();
-  SocketDefaultImpl *aSock = dynamic_cast<SocketDefaultImpl *>(a->getImpl());
-
   struct sockaddr_in addr;
   socklen_t len = sizeof(addr);
 
-  if ((aSock->socket =
-       ::accept((socket_t)socket, (struct sockaddr *)&addr, &len)) !=
-      INVALID_SOCKET) {
+  socket_t s = ::accept((socket_t)socket, (struct sockaddr *)&addr, &len);
+
+  if (s != INVALID_SOCKET) {
+    SmartPointer<Socket> a = createSocket();
+    SocketDefaultImpl *aSock = dynamic_cast<SocketDefaultImpl *>(a->getImpl());
+    aSock->socket = s;
+
     IPAddress inAddr = ntohl(addr.sin_addr.s_addr);
     inAddr.setPort(ntohs(addr.sin_port));
 

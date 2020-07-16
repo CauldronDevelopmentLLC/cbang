@@ -62,6 +62,7 @@ void Port::open() {
   socket->setReuseAddr(true);
   socket->bind(addr);
   socket->listen(server.getConnectionBacklog());
+  socket->setBlocking(false);
   socket_t fd = socket->get();
 
   event = server.getBase().newEvent
@@ -82,16 +83,14 @@ void Port::activate() {event->add();}
 
 
 void Port::accept() {
-  if (server.getMaxConnections() <= server.getConnectionCount())
-    return event->del();
+  while (true) {
+    if (server.getMaxConnections() <= server.getConnectionCount())
+      return event->del();
 
-  IPAddress peer;
-  auto newSocket = socket->accept(&peer);
+    IPAddress peer;
+    auto newSocket = socket->accept(&peer);
+    if (newSocket.isNull()) return;
 
-  if (newSocket.isNull())
-    LOG_ERROR("Failed to accept new socket: " << SysError());
-
-  else {
     // Non-blocking
     newSocket->setBlocking(false);
 
