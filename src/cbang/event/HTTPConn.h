@@ -52,7 +52,6 @@ namespace cb {
 
       Buffer input;
 
-    private:
       std::list<SmartPointer<Request> > requests;
 
     public:
@@ -82,9 +81,11 @@ namespace cb {
 
       void checkActive(const SmartPointer<Request> &req);
       const SmartPointer<Request> &getRequest();
-      void flush(std::function<void (const SmartPointer<Request> &req)> cb);
       void push(const SmartPointer<Request> &req);
       void pop();
+
+      // From FD
+      void close();
     };
   }
 }

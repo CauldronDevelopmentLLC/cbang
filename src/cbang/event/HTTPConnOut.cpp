@@ -81,8 +81,16 @@ void HTTPConnOut::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
 
 void HTTPConnOut::fail(ConnectionError err, const string &msg) {
   LOG_WARNING(msg);
+
+  auto requests = this->requests;
+  this->requests.clear();
+
+  while (requests.size()) {
+    TRY_CATCH_ERROR(requests.front()->onResponse(err));
+    requests.pop_front();
+  }
+
   close();
-  flush([err] (const SmartPointer<Request> &req) {req->onResponse(err);});
 }
 
 

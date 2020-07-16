@@ -123,7 +123,7 @@ void FD::close() {
     this->fd = -1;
 
     auto cb =
-      [this, fd, onClose] () {
+      [fd, onClose] () {
         ::close(fd);
         if (onClose) onClose();
       };
