@@ -96,8 +96,15 @@ int TransferRead::read(Buffer &buffer, unsigned length) {
   }
 #endif // HAVE_OPENSSL
 
-  int ret = buffer.read(fd, length);
-  return ret <= 0 ? -1 : ret;
+  int bytes = 0;
+
+  while (true) {
+    if (!length) return bytes;
+    int ret = buffer.read(fd, length);
+    if (ret <= 0) return bytes ? bytes : -1;
+    length -= ret;
+    bytes += ret;
+  }
 }
 
 
