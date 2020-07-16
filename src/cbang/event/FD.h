@@ -100,7 +100,7 @@ namespace cb {
       void write(Transfer::cb_t cb, const Buffer &buffer);
       void canWrite(Transfer::cb_t cb);
 
-      void close();
+      virtual void close();
     };
   }
 }

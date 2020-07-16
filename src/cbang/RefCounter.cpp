@@ -33,6 +33,12 @@
 #include "RefCounter.h"
 #include "Errors.h"
 
+#include <cbang/String.h>
+#include <cbang/log/Logger.h>
+#include <cbang/debug/Debugger.h>
+
+#include <stdarg.h>
+
 using namespace cb;
 using namespace std;
 
@@ -51,4 +57,15 @@ void RefCounter::setRefPtr(const RefCounted *ref) {
 
 void RefCounter::clearRefPtr(const RefCounted *ref) {
   const_cast<RefCounted *>(ref)->counter = 0;
+}
+
+
+void RefCounter::log(unsigned level, const char *fmt, ...) {
+  if (!level) return;
+
+  va_list ap;
+  va_start(ap, fmt);
+  LOG_DEBUG(level, this << ' ' << String::vprintf(fmt, ap) << '\n'
+            << Debugger::getStackTrace());
+  va_end(ap);
 }

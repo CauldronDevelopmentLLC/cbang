@@ -82,16 +82,16 @@ void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
   conn->setStats(stats);
-  conn->setTTL(maxConnectionTTL);
+  if (maxConnectionTTL) conn->setTTL(maxConnectionTTL);
 
   auto cb = conn->getOnClose();
   conn->setOnClose([this, conn, cb] () mutable {
                      if (cb) cb();
                      remove(conn);
-                     conn.release();
+                     conn->setOnClose(0);
                    });
 
-  connections.push_back(conn);
+  connections.insert(conn);
 
   TRY_CATCH_ERROR(onConnect(conn));
 }
@@ -100,7 +100,7 @@ void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
 void Server::remove(const SmartPointer<Connection> &conn) {
   LOG_DEBUG(4, "Connection ended");
 
-  connections.remove(conn);
+  connections.erase(conn);
 
   for (auto it = ports.begin(); it != ports.end(); it++)
     (*it)->activate();

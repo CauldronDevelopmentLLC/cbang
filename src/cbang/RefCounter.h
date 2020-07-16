@@ -61,6 +61,8 @@ namespace cb {
     void setRefPtr(const void *ref) {}
     void clearRefPtr(const RefCounted *ref);
     void clearRefPtr(const void *ref) {}
+
+    void log(unsigned level, const char *fmt, ...);
   };
 
 
@@ -80,6 +82,8 @@ namespace cb {
     std::atomic<unsigned> count;
 
   public:
+    static unsigned trace;
+
     RefCounterImpl(T *ptr) : ptr(ptr), count(0) {setRefPtr(ptr);}
     static RefCounter *create(T *ptr) {return new RefCounterImpl(ptr);}
 
@@ -87,11 +91,20 @@ namespace cb {
       T *_ptr = ptr;
       delete this;
       if (_ptr) Dealloc_T::dealloc(_ptr);
+      log(trace, "release()");
     }
 
     // From RefCounter
     unsigned getCount() const {return count;}
-    void incCount() {count++;}
+
+    void incCount() {
+      unsigned c = count;
+
+      while (!count.compare_exchange_weak(c, c + 1))
+        continue;
+
+      log(trace, "incCount() count=%d", c + 1);
+    }
 
     void decCount() {
       unsigned c = count;
@@ -100,6 +113,8 @@ namespace cb {
 
       while (!count.compare_exchange_weak(c, c - 1))
         if (!c) raise("Already zero!");
+
+      log(trace, "decCount() count=%d", c - 1);
 
       if (c == 1) release();
     }
@@ -111,6 +126,10 @@ namespace cb {
       delete this;
     }
   };
+
+
+  template<typename T, class Dealloc_T>
+  unsigned RefCounterImpl<T, Dealloc_T>::trace = 0;
 
 
   class RefCounterPhonyImpl : public RefCounter {

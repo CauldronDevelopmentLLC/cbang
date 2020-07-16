@@ -39,6 +39,7 @@
 #include <cbang/openssl/SSLContext.h>
 
 #include <list>
+#include <set>
 #include <limits>
 
 
@@ -52,7 +53,7 @@ namespace cb {
       typedef std::list<SmartPointer<Port> > ports_t;
       ports_t ports;
 
-      typedef std::list<SmartPointer<Connection> > connections_t;
+      typedef std::set<SmartPointer<Connection> > connections_t;
       connections_t connections;
 
       int readTimeout = 50;

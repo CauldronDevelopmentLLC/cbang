@@ -146,17 +146,6 @@ const SmartPointer<Request> &HTTPConn::getRequest() {
 }
 
 
-void HTTPConn::flush(function<void (const SmartPointer<Request> &req)> cb) {
-  auto requests = this->requests;
-  this->requests.clear();
-
-  while (requests.size()) {
-    if (cb) TRY_CATCH_ERROR(cb(requests.front()));
-    pop();
-  }
-}
-
-
 void HTTPConn::push(const SmartPointer<Request> &req) {
   requests.push_back(req);
 }
@@ -166,4 +155,10 @@ void HTTPConn::pop() {
   if (requests.empty()) THROW("No requests");
   requests.front()->onComplete();
   requests.pop_front();
+}
+
+
+void HTTPConn::close() {
+  requests.clear();
+  Connection::close();
 }
