@@ -118,11 +118,12 @@ void FD::close() {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
   if (fd != -1) {
+    auto onClose = this->onClose;
     int fd = this->fd;
     this->fd = -1;
 
     auto cb =
-      [this, fd] () {
+      [this, fd, onClose] () {
         ::close(fd);
         if (onClose) onClose();
       };
