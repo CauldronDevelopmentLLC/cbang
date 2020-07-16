@@ -49,7 +49,9 @@ using namespace std;
 uint64_t Connection::nextID = 0;
 
 
-Connection::Connection(Base &base) : FD(base) {
+Connection::Connection(Base &base) :
+  FD(base), timeout(base.newEvent(this, &Connection::timedout)) {
+  timeout->setSelfReferencing(false);
   LOG_DEBUG(3, "Connection " << id << " opened");
 }
 
@@ -58,6 +60,9 @@ Connection::~Connection() {
   LOG_DEBUG(3, "Connection " << id << " closed");
   if (socket.isSet()) socket->adopt(); // Keep socket form closing stale FD
 }
+
+
+void Connection::setTTL(double sec) {timeout->add(sec);}
 
 
 void Connection::setSocket(const SmartPointer<Socket> &socket) {
@@ -142,4 +147,10 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
   } CATCH_ERROR;
 
   if (cb) cb(false);
+}
+
+
+void Connection::timedout() {
+  if (stats.isSet()) stats->event("timedout");
+  close();
 }

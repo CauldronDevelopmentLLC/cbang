@@ -50,6 +50,8 @@ namespace cb {
     class Server;
 
     class Connection : public FD, public Enum {
+      SmartPointer<Event> timeout;
+
       SmartPointer<Socket> socket;
       IPAddress peer;
 
@@ -61,6 +63,8 @@ namespace cb {
     public:
       Connection(Base &base);
       ~Connection();
+
+      void setTTL(double sec);
 
       const SmartPointer<Socket> &getSocket() {return socket;}
       void setSocket(const SmartPointer<Socket> &socket);
@@ -78,6 +82,9 @@ namespace cb {
                   const SmartPointer<SSL> &ssl);
       void connect(DNSBase &dns, const IPAddress &peer, const IPAddress &bind,
                    std::function<void (bool)> cb);
+
+    protected:
+      void timedout();
     };
   }
 }

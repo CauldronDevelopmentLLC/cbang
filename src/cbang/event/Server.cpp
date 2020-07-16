@@ -82,6 +82,7 @@ void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
   conn->setStats(stats);
+  conn->setTTL(maxConnectionTTL);
 
   auto cb = conn->getOnClose();
   conn->setOnClose([this, conn, cb] () mutable {

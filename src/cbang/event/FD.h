@@ -54,12 +54,8 @@ namespace cb {
       int fd;
       SmartPointer<SSL> ssl;
 
-      SmartPointer<Event> completeEvent;
-
-      unsigned readTimeout   = 0;
-      unsigned writeTimeout  = 0;
-      Progress readProgress  = 60;
-      Progress writeProgress = 60;
+      unsigned readTimeout  = 0;
+      unsigned writeTimeout = 0;
 
       std::function<void ()> onClose;
 
