@@ -55,15 +55,26 @@ TransferRead::TransferRead(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
 
 
 int TransferRead::transfer() {
-  int ret = read(buffer, length - buffer.getLength());
-  LOG_DEBUG(4, CBANG_FUNC << "() ret=" << ret
-            << " length=" << buffer.getLength());
-  LOG_DEBUG(5, String::hexdump(buffer.toString()));
+  int bytes = 0;
 
-  if (ret < 0) finished = true;
-  else checkFinished();
+  while (true) {
+    int ret = read(buffer, length - buffer.getLength());
+    LOG_DEBUG(4, CBANG_FUNC << "() " << this
+              << " ret=" << ret
+              << " buf=" << buffer.getLength()
+              << " finished=" << finished
+              << " length=" << length
+              << " until='" << String::escapeC(until) << "'");
+    LOG_DEBUG(5, String::hexdump(buffer.toString()));
 
-  return ret;
+    if (!bytes && ret < 0) finished = true;
+    else checkFinished();
+
+    if (finished || ret <= 0)
+      return bytes ? bytes : ((success || wantsWrite()) ? ret : -1);
+
+    bytes += ret;
+  }
 }
 
 
@@ -96,15 +107,7 @@ int TransferRead::read(Buffer &buffer, unsigned length) {
   }
 #endif // HAVE_OPENSSL
 
-  int bytes = 0;
-
-  while (true) {
-    if (!length) return bytes;
-    int ret = buffer.read(fd, length);
-    if (ret <= 0) return bytes ? bytes : -1;
-    length -= ret;
-    bytes += ret;
-  }
+  return buffer.read(fd, length);
 }
 
 

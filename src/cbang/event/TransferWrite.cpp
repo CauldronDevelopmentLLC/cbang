@@ -52,13 +52,20 @@ TransferWrite::TransferWrite(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
 
 
 int TransferWrite::transfer() {
-  int ret = write(buffer, buffer.getLength());
-  LOG_DEBUG(4, CBANG_FUNC << "() ret=" << ret);
+  int bytes = 0;
 
-  if (ret < 0) finished = true;
-  else checkFinished();
+  while (true) {
+    int ret = write(buffer, buffer.getLength());
+    LOG_DEBUG(4, CBANG_FUNC << "() ret=" << ret);
 
-  return ret;
+    if (!bytes && ret < 0) finished = true;
+    else checkFinished();
+
+    if (finished || ret <= 0)
+      return bytes ? bytes : ((success || wantsRead()) ? ret : -1);
+
+    bytes += ret;
+  }
 }
 
 
@@ -82,8 +89,7 @@ int TransferWrite::write(Buffer &buffer, unsigned length) {
   }
 #endif // HAVE_OPENSSL
 
-  int ret = buffer.write(fd, length);
-  return ret <= 0 ? -1 : ret;
+  return buffer.write(fd, length);
 }
 
 
