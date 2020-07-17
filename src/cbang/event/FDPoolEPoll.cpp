@@ -73,6 +73,8 @@ namespace {
 }
 
 
+
+/******************************************************************************/
 bool FDPoolEPoll::FDQueue::wantsRead() const {
   return !empty() && front()->wantsRead();
 }
@@ -109,12 +111,7 @@ void FDPoolEPoll::FDQueue::timeout(uint64_t now) {
 
   if (getNextTimeout() < now) {
     LOG_WARNING("Read timedout on fd=" << fdr.getFD());
-    closed = true;
-
-    while (!empty()) {
-      fdr.getPool().queueComplete(front());
-      pop();
-    }
+    close();
 
   } else fdr.getPool().queueTimeout(getNextTimeout(), read, fdr.getFD());
 }
@@ -123,34 +120,29 @@ void FDPoolEPoll::FDQueue::timeout(uint64_t now) {
 void FDPoolEPoll::FDQueue::transfer(unsigned events) {
   if (closed || empty()) return;
 
+  auto &pool = fdr.getPool();
+
   if (newTransfer) {
     newTransfer = false;
-    fdr.getPool().queueProgress(read ? CMD_READ_SIZE : CMD_WRITE_SIZE,
-                                fdr.getFD(), Time::now(), front()->getLength());
+    cmd_t cmd = read ? CMD_READ_SIZE : CMD_WRITE_SIZE;
+    pool.queueProgress(cmd, fdr.getFD(), Time::now(), front()->getLength());
   }
 
   int ret = front()->transfer();
 
-  if (ret < 0) {
-    closed = true;
-
-    while (!empty()) {
-      fdr.getPool().queueComplete(front());
-      pop();
-    }
-
-  } else {
+  if (ret < 0) close();
+  else {
     last = Time::now();
 
-    fdr.getPool().queueProgress(read ? CMD_READ_PROGRESS : CMD_WRITE_PROGRESS,
-                                fdr.getFD(), last, ret);
-
     if (front()->isFinished()) {
-      fdr.getPool().queueComplete(front());
-      fdr.getPool().queueProgress(read ? CMD_READ_FINISHED : CMD_WRITE_FINISHED,
-                                  fdr.getFD(), last, front()->getLength());
-
+      pool.queueComplete(front());
+      cmd_t cmd = read ? CMD_READ_FINISHED : CMD_WRITE_FINISHED;
+      pool.queueProgress(cmd, fdr.getFD(), last, front()->getLength());
       pop();
+
+    } else {
+      cmd_t cmd = read ? CMD_READ_PROGRESS : CMD_WRITE_PROGRESS;
+      pool.queueProgress(cmd, fdr.getFD(), last, ret);
     }
   }
 }
@@ -169,12 +161,24 @@ void FDPoolEPoll::FDQueue::add(const SmartPointer<Transfer> &tran) {
 }
 
 
+void FDPoolEPoll::FDQueue::close() {
+  closed = true;
+
+  while (!empty()) {
+    fdr.getPool().queueComplete(front());
+    pop();
+  }
+}
+
+
 void FDPoolEPoll::FDQueue::pop() {
   queue<SmartPointer<Transfer> >::pop();
   newTransfer = true;
 }
 
 
+
+/******************************************************************************/
 FDPoolEPoll::FDRec::FDRec(FDPoolEPoll &pool, int fd) :
   pool(pool), fd(fd), readQ(*this, true), writeQ(*this, false) {}
 
@@ -202,10 +206,10 @@ unsigned FDPoolEPoll::FDRec::getEvents() const {
 
 void FDPoolEPoll::FDRec::transfer(unsigned events) {
   if (((events & FD::WRITE_EVENT) && readQ.wantsWrite()) ||
-      ((events & FD::READ_EVENT) && !writeQ.wantsRead()))
+      ((events & FD::READ_EVENT)  && !writeQ.wantsRead()))
     readQ.transfer(events);
 
-  if (((events & FD::READ_EVENT) && writeQ.wantsRead()) ||
+  if (((events & FD::READ_EVENT)  && writeQ.wantsRead()) ||
       ((events & FD::WRITE_EVENT) && !readQ.wantsWrite()))
     writeQ.transfer(events);
 
@@ -258,6 +262,8 @@ void FDPoolEPoll::FDRec::update() {
 }
 
 
+
+/******************************************************************************/
 FDPoolEPoll::FDPoolEPoll(Base &base) :
   event(base.newEvent(this, &FDPoolEPoll::processResults)) {
 
@@ -318,19 +324,19 @@ void FDPoolEPoll::queueTimeout(uint64_t time, bool read, int fd) {
 
 
 void FDPoolEPoll::queueComplete(const SmartPointer<Transfer> &t) {
-  results.push({CMD_COMPLETE, t->getFD(), t});
+  results.push({CMD_COMPLETE, t->getFD(), t, 0, 0});
   event->activate();
 }
 
 
 void FDPoolEPoll::queueFlushed(int fd) {
-  results.push({CMD_FLUSHED, fd, 0});
+  results.push({CMD_FLUSHED, fd, 0, 0, 0});
   event->activate();
 }
 
 
 void FDPoolEPoll::queueProgress(cmd_t cmd, int fd, uint64_t time, int value) {
-  progressQ.push({cmd, fd, time, value});
+  results.push({cmd, fd, 0, time, value});
   event->activate();
 }
 
@@ -357,7 +363,7 @@ void FDPoolEPoll::processResults() {
     case CMD_FLUSHED: {
       auto it = flushing.find(cmd.fd);
       if (it != flushing.end()) {
-        if (it->second) it->second();
+        if (it->second) it->second(); // Call callback
         flushing.erase(it);
       }
 
@@ -371,41 +377,32 @@ void FDPoolEPoll::processResults() {
         TRY_CATCH_ERROR(cmd.tran->complete());
       break;
 
-    default: LOG_ERROR("Invalid result command");
-    }
-
-    results.pop();
-  }
-
-  while (!progressQ.empty()) {
-    auto &p = progressQ.top();
-
-    switch (p.cmd) {
     case CMD_READ_PROGRESS:
-      readRate.event(p.value, p.time);
-      readProgress[p.fd].event(p.value, p.time);
+      readRate.event(cmd.value, cmd.time);
+      readProgress[cmd.fd].event(cmd.value, cmd.time);
       break;
 
     case CMD_WRITE_PROGRESS:
-      writeRate.event(p.value, p.time);
-      writeProgress[p.fd].event(p.value, p.time);
+      writeRate.event(cmd.value, cmd.time);
+      writeProgress[cmd.fd].event(cmd.value, cmd.time);
       break;
 
     case CMD_READ_SIZE:
-      readProgress[p.fd] = Progress(60 * 5, 1, p.value, p.time, p.time);
+      readProgress[cmd.fd] = Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
       break;
 
     case CMD_WRITE_SIZE:
-      writeProgress[p.fd] = Progress(60 * 5, 1, p.value, p.time, p.time);
+      writeProgress[cmd.fd] =
+        Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
       break;
 
-    case CMD_READ_FINISHED:  readProgress[p.fd].setSize(p.value);  break;
-    case CMD_WRITE_FINISHED: writeProgress[p.fd].setSize(p.value); break;
+    case CMD_READ_FINISHED:  readProgress[cmd.fd].setSize(cmd.value);  break;
+    case CMD_WRITE_FINISHED: writeProgress[cmd.fd].setSize(cmd.value); break;
 
-    default: LOG_ERROR("Invalid progress command");
+    default: LOG_ERROR("Invalid results command");
     }
 
-    progressQ.pop();
+    results.pop();
   }
 }
 

@@ -69,7 +69,7 @@ void FD::setFD(int fd) {
 }
 
 
-void FD::setReadTimeout(unsigned timeout) {readTimeout = timeout;}
+void FD::setReadTimeout(unsigned timeout)  {readTimeout  = timeout;}
 void FD::setWriteTimeout(unsigned timeout) {writeTimeout = timeout;}
 
 

@@ -58,7 +58,7 @@ Connection::Connection(Base &base) :
 
 Connection::~Connection() {
   LOG_DEBUG(3, "Connection " << id << " closed");
-  if (socket.isSet()) socket->adopt(); // Keep socket form closing stale FD
+  if (socket.isSet()) socket->adopt(); // Keep socket form closing FD
 }
 
 

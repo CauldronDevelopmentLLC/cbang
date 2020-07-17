@@ -69,17 +69,12 @@ namespace cb {
         CMD_WRITE_FINISHED,
       } cmd_t;
 
-      struct ProgressEvent {
-        cmd_t cmd;
-        int fd;
-        uint64_t time;
-        int value;
-      };
-
       struct Command {
         cmd_t cmd;
         int fd;
         SmartPointer<Transfer> tran;
+        uint64_t time;
+        int value;
       };
 
       struct Timeout {
@@ -114,6 +109,7 @@ namespace cb {
         void add(const SmartPointer<Transfer> &tran);
 
       protected:
+        void close();
         void pop();
       };
 
@@ -151,7 +147,6 @@ namespace cb {
       progress_t writeProgress;
       Rate readRate = 60;
       Rate writeRate = 60;
-      SPSCQueue<ProgressEvent> progressQ;
 
     public:
       FDPoolEPoll(Base &base);

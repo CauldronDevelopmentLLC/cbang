@@ -32,16 +32,20 @@
 
 #include "Progress.h"
 
+#include <algorithm>
+
 using namespace cb;
 
 
 uint64_t Progress::getETA() const {
   double remaining = (1 - getProgress()) * size;
-  return remaining ? remaining / getRate() : 0;
+  double rate = getRate();
+  return rate ? remaining / rate : 0;
 }
 
 
 double Progress::getProgress() const {
+  if (!size) return 0;
   double progress = getTotal() / size;
-  return progress < 0 ? 0 : (1 < progress ? 1 : progress);
+  return std::max(0.0, std::min(1.0, progress));
 }
