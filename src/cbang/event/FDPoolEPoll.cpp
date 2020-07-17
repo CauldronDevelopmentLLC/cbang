@@ -135,9 +135,9 @@ void FDPoolEPoll::FDQueue::transfer(unsigned events) {
     last = Time::now();
 
     if (front()->isFinished()) {
-      pool.queueComplete(front());
       cmd_t cmd = read ? CMD_READ_FINISHED : CMD_WRITE_FINISHED;
       pool.queueProgress(cmd, fdr.getFD(), last, front()->getLength());
+      pool.queueComplete(front());
       pop();
 
     } else {
