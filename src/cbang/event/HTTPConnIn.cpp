@@ -196,7 +196,8 @@ void HTTPConnIn::checkChunked(const SmartPointer<Request> &req) {
   auto cb =
     [this, req, contentLength] (bool success) {
       if (input.getLength() < contentLength) {
-        LOG_DEBUG(3, "Incomplete request body");
+        LOG_DEBUG(3, "Incomplete request body input=" << input.getLength()
+          << " ContentLength=" << contentLength);
         return close();
       }
 
