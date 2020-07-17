@@ -189,17 +189,12 @@ void FDPoolEPoll::FDRec::timeout(uint64_t now) {
 
 
 unsigned FDPoolEPoll::FDRec::getEvents() const {
-  unsigned events =
-    (readQ.empty()  ? 0 : FD::READ_EVENT) |
-    (writeQ.empty() ? 0 : FD::WRITE_EVENT);
+  if (writeQ.wantsRead()) return FD::READ_EVENT;
+  if (readQ.wantsWrite()) return FD::WRITE_EVENT;
 
-  if (writeQ.wantsRead()) events = FD::READ_EVENT;
-  if (readQ.wantsWrite()) events = FD::WRITE_EVENT;
-
-  if (readQ.isClosed())  events &= ~FD::READ_EVENT;
-  if (writeQ.isClosed()) events &= ~FD::WRITE_EVENT;
-
-  return events;
+  return
+    ((readQ.empty()  || readQ.isClosed())  ? 0 : FD::READ_EVENT) |
+    ((writeQ.empty() || writeQ.isClosed()) ? 0 : FD::WRITE_EVENT);
 }
 
 

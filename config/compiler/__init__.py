@@ -372,6 +372,8 @@ def configure(conf, cstd = 'c99'):
         elif compiler_mode == 'msvc':
             env.AppendUnique(CCFLAGS = ['/Qrestrict'])
 
+    # Alignment
+    if compiler_mode == 'gnu': env.AppendUnique(CXXFLAGS = ['-faligned-new'])
 
     # Dependency files
     if depends and compiler_mode == 'gnu':
