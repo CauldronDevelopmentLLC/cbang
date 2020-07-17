@@ -52,7 +52,8 @@ namespace cb {
 
       Buffer input;
 
-      std::list<SmartPointer<Request> > requests;
+      typedef std::list<SmartPointer<Request> > requests_t;
+      requests_t requests;
 
     public:
       HTTPConn(Base &base);
@@ -65,6 +66,9 @@ namespace cb {
       void setMaxHeaderSize(unsigned size) {maxHeaderSize = size;}
 
       unsigned getNumRequests() const {return requests.size();}
+      typedef requests_t::const_iterator iterator;
+      iterator beginRequests() const {return requests.begin();}
+      iterator endRequests() const {return requests.end();}
 
       virtual bool isIncoming() const = 0;
       virtual void writeRequest(const SmartPointer<Request> &req,
