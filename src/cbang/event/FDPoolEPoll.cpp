@@ -134,15 +134,14 @@ void FDPoolEPoll::FDQueue::transfer(unsigned events) {
   else {
     last = Time::now();
 
+    cmd_t cmd = read ? CMD_READ_PROGRESS : CMD_WRITE_PROGRESS;
+    pool.queueProgress(cmd, fdr.getFD(), last, ret);
+
     if (front()->isFinished()) {
-      cmd_t cmd = read ? CMD_READ_FINISHED : CMD_WRITE_FINISHED;
+      cmd = read ? CMD_READ_FINISHED : CMD_WRITE_FINISHED;
       pool.queueProgress(cmd, fdr.getFD(), last, front()->getLength());
       pool.queueComplete(front());
       pop();
-
-    } else {
-      cmd_t cmd = read ? CMD_READ_PROGRESS : CMD_WRITE_PROGRESS;
-      pool.queueProgress(cmd, fdr.getFD(), last, ret);
     }
   }
 }
