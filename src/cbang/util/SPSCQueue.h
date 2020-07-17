@@ -34,61 +34,32 @@
 
 #include <cbang/Exception.h>
 
-#include <atomic>
+#include <moodycamel/readerwriterqueue.h>
 
 
 namespace cb {
-  /// A lockless Single Producer Single Consumer queue.
-  /// See https://www.drdobbs.com/210604448?pgno=2
   template <typename T>
-  class SPSCQueue {
-    struct Node {
-      T value;
-      Node *next = 0;
-
-      Node(T value = T()) : value(value) {}
-    };
-
-    std::atomic<Node *> head;
-    std::atomic<Node *> tail;
-    std::atomic<unsigned> count;
+  class SPSCQueue : private moodycamel::ReaderWriterQueue<T> {
+    typedef moodycamel::ReaderWriterQueue<T> Super_T;
 
     // Prevent copying
     SPSCQueue(const SPSCQueue &) {}
     SPSCQueue &operator=(const SPSCQueue &) {}
 
   public:
-    SPSCQueue() : count(0) {head = tail = new Node;}
-    ~SPSCQueue() {clear(); delete head;}
+    SPSCQueue(unsigned capacity = 1024) : Super_T(capacity) {}
 
-
-    bool empty() const {return head == tail;}
-    unsigned size() const {return count;}
-
-
-    void push(const T &value) {
-      (*tail).next = new Node(value);
-      tail = (*tail).next;
-      count++;
-    }
+    bool empty() const {return !Super_T::peek();}
+    void push(const T &value) {Super_T::enqueue(value);}
 
 
     T &top() {
-      if (empty()) CBANG_THROW("Queue empty");
-      return (*head).next->value;
+      T *value = Super_T::peek();
+      if (!value) CBANG_THROW("Queue empty");
+      return *value;
     }
 
 
-    void pop() {
-      if (empty()) CBANG_THROW("Queue empty");
-      Node *n = head;
-      head = (*head).next;
-      count--;
-      (*head).value = T();
-      delete n;
-    }
-
-
-    void clear() {while (!empty()) pop();}
+    void pop() {if (!Super_T::pop()) CBANG_THROW("Queue empty");}
   };
 }
