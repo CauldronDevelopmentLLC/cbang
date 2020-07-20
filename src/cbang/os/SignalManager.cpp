@@ -43,6 +43,7 @@
 #include <cbang/util/SmartLock.h>
 
 #include <signal.h>
+#include <stdlib.h> // For atexit()
 
 using namespace std;
 using namespace cb;
@@ -50,6 +51,9 @@ using namespace cb;
 
 namespace {
   void sig_handler(int sig) {SignalManager::instance().signal(sig);}
+#ifndef _WIN32
+  void disable() {SignalManager::instance().setEnabled(false);}
+#endif // _WIN32
 }
 
 #ifndef _WIN32
@@ -77,6 +81,8 @@ SignalManager::SignalManager(Inaccessible) :
     SystemInfo::instance().getThreadsType() == ThreadsType::LINUX_THREADS;
 
   pri->dirty = false;
+
+  atexit(disable);
 #endif // _WIN32
 }
 
