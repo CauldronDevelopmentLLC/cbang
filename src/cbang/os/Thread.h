@@ -35,6 +35,8 @@
 #include <cbang/StdTypes.h>
 #include <cbang/util/UniqueID.h>
 
+#include <atomic>
+
 namespace cb {
   template <typename T> class ThreadLocalStorage;
 
@@ -52,8 +54,8 @@ namespace cb {
     struct private_t;
     private_t *p;
 
-    volatile state_t state;
-    volatile bool shutdown;
+    std::atomic<state_t> state;
+    std::atomic<bool> shutdown;
     bool destroy;
     unsigned id;
     int exitStatus;
