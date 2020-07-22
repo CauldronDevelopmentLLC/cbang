@@ -47,6 +47,7 @@
 
 using namespace cb::Event;
 using namespace cb;
+using namespace std;
 
 
 namespace {
@@ -110,8 +111,9 @@ void FDPoolEPoll::FDQueue::timeout(uint64_t now) {
   if (!getTimeout() || !last || closed) return;
 
   if (getNextTimeout() < now) {
-    LOG_WARNING("Read timedout on fd=" << fdr.getFD());
+    LOG_WARNING((read ? "Read" : "Write") << " timedout on fd=" << fdr.getFD());
     close();
+    timedout = true;
 
   } else fdr.getPool().queueTimeout(getNextTimeout(), read, fdr.getFD());
 }
@@ -195,6 +197,15 @@ unsigned FDPoolEPoll::FDRec::getEvents() const {
   return
     ((readQ.empty()  || readQ.isClosed())  ? 0 : FD::READ_EVENT) |
     ((writeQ.empty() || writeQ.isClosed()) ? 0 : FD::WRITE_EVENT);
+}
+
+
+int FDPoolEPoll::FDRec::getStatus() const {
+  return getEvents() |
+    (readQ.isClosed()    ? STATUS_READ_CLOSED    : 0) |
+    (writeQ.isClosed()   ? STATUS_WRITE_CLOSED   : 0) |
+    (readQ.isTimedout()  ? STATUS_READ_TIMEDOUT  : 0) |
+    (writeQ.isTimedout() ? STATUS_WRITE_TIMEDOUT : 0);
 }
 
 
@@ -291,6 +302,12 @@ Progress FDPoolEPoll::getWriteProgress(int fd) const {
 }
 
 
+int FDPoolEPoll::getStatus(int fd) const {
+  auto it = status.find(fd);
+  return it == status.end() ? 0 : it->second;
+}
+
+
 void FDPoolEPoll::read(const SmartPointer<Transfer> &t) {
   if (t.isNull()) THROW("Transfer cannot be null");
   queueCommand(CMD_READ, t->getFD(), t);
@@ -331,6 +348,12 @@ void FDPoolEPoll::queueFlushed(int fd) {
 
 void FDPoolEPoll::queueProgress(cmd_t cmd, int fd, uint64_t time, int value) {
   results.push({cmd, fd, 0, time, value});
+  event->activate();
+}
+
+
+void FDPoolEPoll::queueStatus(int fd, int status) {
+  results.push({CMD_STATUS, fd, 0, 0, status});
   event->activate();
 }
 
@@ -393,6 +416,8 @@ void FDPoolEPoll::processResults() {
     case CMD_READ_FINISHED:  readProgress[cmd.fd].setSize(cmd.value);  break;
     case CMD_WRITE_FINISHED: writeProgress[cmd.fd].setSize(cmd.value); break;
 
+    case CMD_STATUS: status[cmd.fd] = cmd.value; break;
+
     default: LOG_ERROR("Invalid results command");
     }
 
@@ -413,25 +438,36 @@ void FDPoolEPoll::run() {
       }
     }
 
+    set<int> changed;
+
     for (int i = 0; i < count; i++)
       try {
         unsigned events = epoll_to_fd_events(records[i].events);
-        getFD(records[i].data.fd).transfer(events);
+        int fd = records[i].data.fd;
+        getFD(fd).transfer(events);
+        changed.insert(fd);
       } CATCH_ERROR;
 
     // Process pending commands
     while (!cmds.empty()) {
       auto &cmd = cmds.top();
       getFD(cmd.fd).process(cmd.cmd, cmd.tran);
+      changed.insert(cmd.fd);
       cmds.pop();
     }
 
     // Process timeouts
     uint64_t now = Time::now();
     while (!timeoutQ.empty() && timeoutQ.top().time < now) {
-      getFD(timeoutQ.top().fd).timeout(now);
+      int fd = timeoutQ.top().fd;
+      getFD(fd).timeout(now);
+      changed.insert(fd);
       timeoutQ.pop();
     }
+
+    // Queue status changes
+    for (auto it = changed.begin(); it != changed.end(); it++)
+      queueStatus(*it, getFD(*it).getStatus());
   }
 }
 
