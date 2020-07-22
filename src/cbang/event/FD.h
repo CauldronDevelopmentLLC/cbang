@@ -61,10 +61,10 @@ namespace cb {
 
     public:
       enum {
-        READ_EVENT    = 1,
-        WRITE_EVENT   = 2,
-        CLOSE_EVENT   = 4,
-        TIMEOUT_EVENT = 8,
+        READ_EVENT    = 1 << 0,
+        WRITE_EVENT   = 1 << 1,
+        CLOSE_EVENT   = 1 << 2,
+        TIMEOUT_EVENT = 1 << 3,
       };
 
       FD(Base &base, int fd = -1, const SmartPointer<SSL> &ssl = 0);
@@ -90,6 +90,8 @@ namespace cb {
 
       Progress getReadProgress() const;
       Progress getWriteProgress() const;
+
+      int getStatus() const;
 
       void read(const SmartPointer<Transfer> transfer);
       void read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,

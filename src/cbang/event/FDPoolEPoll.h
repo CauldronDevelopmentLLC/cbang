@@ -67,7 +67,15 @@ namespace cb {
         CMD_WRITE_SIZE,
         CMD_READ_FINISHED,
         CMD_WRITE_FINISHED,
+        CMD_STATUS,
       } cmd_t;
+
+      enum {
+        STATUS_READ_CLOSED    = 1 << 4,
+        STATUS_WRITE_CLOSED   = 1 << 5,
+        STATUS_READ_TIMEDOUT  = 1 << 6,
+        STATUS_WRITE_TIMEDOUT = 1 << 7,
+      };
 
       struct Command {
         cmd_t cmd;
@@ -91,6 +99,7 @@ namespace cb {
         FDRec &fdr;
         bool read;
         bool closed = false;
+        bool timedout = false;
         uint64_t last = 0;
         bool newTransfer = true;
 
@@ -98,6 +107,7 @@ namespace cb {
         FDQueue(FDRec &fdr, bool read) : fdr(fdr), read(read) {}
 
         bool isClosed() const {return closed;}
+        bool isTimedout() const {return timedout;}
         bool wantsRead() const;
         bool wantsWrite() const;
         uint64_t getTimeout() const;
@@ -128,6 +138,7 @@ namespace cb {
 
         void timeout(uint64_t now);
         unsigned getEvents() const;
+        int getStatus() const;
         void update();
         void transfer(unsigned events);
         void flush();
@@ -148,6 +159,9 @@ namespace cb {
       Rate readRate = 60;
       Rate writeRate = 60;
 
+      typedef std::map<int, int> status_t;
+      status_t status;
+
     public:
       FDPoolEPoll(Base &base);
       ~FDPoolEPoll();
@@ -162,6 +176,7 @@ namespace cb {
       const Rate &getWriteRate() const {return writeRate;}
       Progress getReadProgress(int fd) const;
       Progress getWriteProgress(int fd) const;
+      int getStatus(int fd) const;
       void read(const SmartPointer<Transfer> &t);
       void write(const SmartPointer<Transfer> &t);
       void flush(int fd, std::function <void ()> cb);
@@ -172,6 +187,7 @@ namespace cb {
       void queueProgress(cmd_t cmd, int fd, uint64_t time, int value);
 
     protected:
+      void queueStatus(int fd, int status);
       void queueCommand(cmd_t cmd, int fd, const SmartPointer<Transfer> &tran);
       FDRec &getFD(int fd);
       void processResults();

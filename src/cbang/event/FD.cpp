@@ -83,6 +83,9 @@ Progress FD::getWriteProgress() const {
 }
 
 
+int FD::getStatus() const {return base.getPool().getStatus(fd);}
+
+
 void FD::read(const SmartPointer<Transfer> transfer) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << transfer->getLength());
   transfer->setTimeout(readTimeout);
