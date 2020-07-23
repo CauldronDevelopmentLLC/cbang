@@ -168,10 +168,9 @@ namespace cb {
 
       int getFD() const {return fd;}
 
+      // From FDPool
       void setEventPriority(int priority);
       int getEventPriority() const;
-
-      // From FDPool
       const Rate &getReadRate() const {return readRate;}
       const Rate &getWriteRate() const {return writeRate;}
       Progress getReadProgress(int fd) const;
