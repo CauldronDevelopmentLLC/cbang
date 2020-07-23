@@ -53,6 +53,8 @@ namespace cb {
 
       static SmartPointer<FDPool> create(Base &base);
 
+      virtual void setEventPriority(int priority) = 0;
+      virtual int getEventPriority() const = 0;
       virtual const Rate &getReadRate() const = 0;
       virtual const Rate &getWriteRate() const = 0;
       virtual Progress getReadProgress(int fd) const = 0;
