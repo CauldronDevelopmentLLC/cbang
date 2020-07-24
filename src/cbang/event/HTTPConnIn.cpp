@@ -60,6 +60,8 @@ void HTTPConnIn::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
 
   auto cb =
     [this, req, hasMore] (bool success) {
+      LOG_DEBUG(3, "Response " << (success ? "successful" : "failed"));
+
       // Handle write failure
       if (!success) return close();
       if (hasMore) return; // Still writing
