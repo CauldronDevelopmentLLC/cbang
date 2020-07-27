@@ -75,6 +75,7 @@ void HTTPConnIn::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
 
       // Handle another request
       if (getNumRequests()) processRequest(getRequest());
+      else readHeader();
     };
 
   write(cb, buffer);
@@ -225,7 +226,7 @@ void HTTPConnIn::processRequest(const SmartPointer<Request> &req) {
 void HTTPConnIn::addRequest(const SmartPointer<Request> &req) {
   push(req);
   if (getNumRequests() == 1) processRequest(req);
-  if (req->isPersistent()) readHeader();
+  // TODO Should read the next request in parallel if persistent connection
 }
 
 
