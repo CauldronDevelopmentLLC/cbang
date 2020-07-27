@@ -151,7 +151,7 @@ void FDPoolEPoll::FDQueue::transfer(unsigned events) {
 
 void FDPoolEPoll::FDQueue::flush() {
   while (!empty()) pop();
-  closed = false;
+  closed = timedout = false;
   last = 0;
 }
 
