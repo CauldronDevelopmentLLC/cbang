@@ -52,7 +52,7 @@ using namespace std;
 FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
   base(base), ssl(ssl) {
   LOG_DEBUG(4, CBANG_FUNC << "() fd=" << fd);
-  setFD(fd);
+  if (0 <= fd) setFD(fd);
 }
 
 
