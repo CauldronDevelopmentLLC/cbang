@@ -366,7 +366,6 @@ void FDPoolEPoll::processResults() {
     auto &cmd = results.top();
     auto it = fds.find(cmd.fd);
     if (it == fds.end()) {
-      LOG_WARNING("FD " << cmd.fd << " not active.  cmd=" << cmd.cmd);
       results.pop();
       continue;
     }
