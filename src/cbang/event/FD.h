@@ -33,7 +33,6 @@
 #pragma once
 
 #include "Base.h"
-#include "Event.h"
 #include "Transfer.h"
 #include "Buffer.h"
 
@@ -46,18 +45,23 @@
 
 namespace cb {
   namespace Event {
-    class Base;
     class FDPool;
 
     class FD : public RefCounted {
       Base &base;
-      int fd;
+      int fd = -1;
       SmartPointer<SSL> ssl;
 
       unsigned readTimeout  = 0;
       unsigned writeTimeout = 0;
 
       std::function<void ()> onClose;
+
+      uint64_t start = Time::now();
+      Progress readProgress;
+      Progress writeProgress;
+      int status = 0;
+      bool closing = false;
 
     public:
       enum {
@@ -88,10 +92,13 @@ namespace cb {
       std::function<void ()> getOnClose() const {return onClose;}
       void setOnClose(std::function<void ()> cb) {onClose = cb;}
 
-      Progress getReadProgress() const;
-      Progress getWriteProgress() const;
+      uint64_t getStart() const {return start;}
 
-      int getStatus() const;
+      Progress &getReadProgress() {return readProgress;}
+      Progress &getWriteProgress() {return writeProgress;}
+
+      void setStatus(int status) {this->status = status;}
+      int getStatus() const {return status;}
 
       void read(const SmartPointer<Transfer> transfer);
       void read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,

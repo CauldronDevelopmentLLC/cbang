@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "Connection.h"
+#include "Event.h"
 #include "Server.h"
 #include "DNSBase.h"
 
@@ -65,12 +66,6 @@ Connection::~Connection() {
 void Connection::setTTL(double sec) {timeout->add(sec);}
 
 
-void Connection::setSocket(const SmartPointer<Socket> &socket) {
-  this->socket = socket;
-  setFD(socket.isSet() ? socket->get() : -1);
-}
-
-
 bool Connection::isConnected() const {
   return socket.isSet() && socket->isConnected();
 }
@@ -79,9 +74,11 @@ bool Connection::isConnected() const {
 void Connection::accept(const IPAddress &peer,
                         const SmartPointer<Socket> &socket,
                         const SmartPointer<SSL> &ssl) {
+  if (socket.isNull()) THROW("Socket cannot be null");
   setPeer(peer);
-  setSSL(ssl); // Must be before setSocket()
-  setSocket(socket);
+  setSSL(ssl); // Must be before setFD()
+  this->socket = socket;
+  setFD(socket->get());
 }
 
 

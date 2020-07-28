@@ -50,8 +50,9 @@ using namespace std;
 
 
 FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
-  base(base), fd(fd), ssl(ssl) {
+  base(base), ssl(ssl) {
   LOG_DEBUG(4, CBANG_FUNC << "() fd=" << fd);
+  setFD(fd);
 }
 
 
@@ -66,24 +67,12 @@ FD::~FD () {
 void FD::setFD(int fd) {
   if (0 <= this->fd) THROW("FD already set");
   this->fd = fd;
+  base.getPool().open(*this);
 }
 
 
 void FD::setReadTimeout(unsigned timeout)  {readTimeout  = timeout;}
 void FD::setWriteTimeout(unsigned timeout) {writeTimeout = timeout;}
-
-
-Progress FD::getReadProgress() const {
-  return base.getPool().getReadProgress(fd);
-}
-
-
-Progress FD::getWriteProgress() const {
-  return base.getPool().getWriteProgress(fd);
-}
-
-
-int FD::getStatus() const {return base.getPool().getStatus(fd);}
 
 
 void FD::read(const SmartPointer<Transfer> transfer) {

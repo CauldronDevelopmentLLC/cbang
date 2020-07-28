@@ -153,14 +153,10 @@ namespace cb {
       typedef std::map<int, SmartPointer<FDRec> > pool_t;
       pool_t pool;
 
-      typedef std::map<int, Progress> progress_t;
-      progress_t readProgress;
-      progress_t writeProgress;
+      typedef std::map<int, FD *> fds_t;
+      fds_t fds;
       Rate readRate = 60;
       Rate writeRate = 60;
-
-      typedef std::map<int, int> status_t;
-      status_t status;
 
     public:
       FDPoolEPoll(Base &base);
@@ -173,11 +169,10 @@ namespace cb {
       int getEventPriority() const;
       const Rate &getReadRate() const {return readRate;}
       const Rate &getWriteRate() const {return writeRate;}
-      Progress getReadProgress(int fd) const;
-      Progress getWriteProgress(int fd) const;
-      int getStatus(int fd) const;
+
       void read(const SmartPointer<Transfer> &t);
       void write(const SmartPointer<Transfer> &t);
+      void open(FD &fd);
       void flush(int fd, std::function <void ()> cb);
 
       void queueTimeout(uint64_t time, bool read, int fd);

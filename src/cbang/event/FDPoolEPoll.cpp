@@ -34,7 +34,7 @@
 
 #ifdef HAVE_EPOLL
 
-#include "Base.h"
+#include "Event.h"
 
 #include <cbang/util/SmartLock.h>
 #include <cbang/log/Logger.h>
@@ -290,24 +290,6 @@ void FDPoolEPoll::setEventPriority(int priority) {event->setPriority(priority);}
 int FDPoolEPoll::getEventPriority() const {return event->getPriority();}
 
 
-Progress FDPoolEPoll::getReadProgress(int fd) const {
-  auto it = readProgress.find(fd);
-  return it == readProgress.end() ? Progress() : it->second;
-}
-
-
-Progress FDPoolEPoll::getWriteProgress(int fd) const {
-  auto it = writeProgress.find(fd);
-  return it == writeProgress.end() ? Progress() : it->second;
-}
-
-
-int FDPoolEPoll::getStatus(int fd) const {
-  auto it = status.find(fd);
-  return it == status.end() ? 0 : it->second;
-}
-
-
 void FDPoolEPoll::read(const SmartPointer<Transfer> &t) {
   if (t.isNull()) THROW("Transfer cannot be null");
   queueCommand(CMD_READ, t->getFD(), t);
@@ -317,6 +299,13 @@ void FDPoolEPoll::read(const SmartPointer<Transfer> &t) {
 void FDPoolEPoll::write(const SmartPointer<Transfer> &t) {
   if (t.isNull()) THROW("Transfer cannot be null");
   queueCommand(CMD_WRITE, t->getFD(), t);
+}
+
+
+void FDPoolEPoll::open(FD &fd) {
+  if (fd.getFD() < 0) THROW("Invalid fd " << fd.getFD());
+  if (!fds.insert(fds_t::value_type(fd.getFD(), &fd)).second)
+    THROW("FD already in pool");
 }
 
 
@@ -375,6 +364,12 @@ FDPoolEPoll::FDRec &FDPoolEPoll::getFD(int fd) {
 void FDPoolEPoll::processResults() {
   while (!results.empty()) {
     auto &cmd = results.top();
+    auto it = fds.find(cmd.fd);
+    if (it == fds.end()) {
+      LOG_WARNING("FD " << cmd.fd << " not active");
+      continue;
+    }
+    FD &fd = *it->second;
 
     switch (cmd.cmd) {
     case CMD_FLUSHED: {
@@ -384,8 +379,7 @@ void FDPoolEPoll::processResults() {
         flushing.erase(it);
       }
 
-      readProgress.erase(cmd.fd);
-      writeProgress.erase(cmd.fd);
+      fds.erase(cmd.fd);
       break;
     }
 
@@ -396,27 +390,27 @@ void FDPoolEPoll::processResults() {
 
     case CMD_READ_PROGRESS:
       readRate.event(cmd.value, cmd.time);
-      readProgress[cmd.fd].event(cmd.value, cmd.time);
+      fd.getReadProgress().event(cmd.value, cmd.time);
       break;
 
     case CMD_WRITE_PROGRESS:
       writeRate.event(cmd.value, cmd.time);
-      writeProgress[cmd.fd].event(cmd.value, cmd.time);
+      fd.getWriteProgress().event(cmd.value, cmd.time);
       break;
 
     case CMD_READ_SIZE:
-      readProgress[cmd.fd] = Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
+      fd.getReadProgress() = Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
       break;
 
     case CMD_WRITE_SIZE:
-      writeProgress[cmd.fd] =
+      fd.getWriteProgress() =
         Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
       break;
 
-    case CMD_READ_FINISHED:  readProgress[cmd.fd].setSize(cmd.value);  break;
-    case CMD_WRITE_FINISHED: writeProgress[cmd.fd].setSize(cmd.value); break;
+    case CMD_READ_FINISHED:  fd.getReadProgress().setSize(cmd.value);  break;
+    case CMD_WRITE_FINISHED: fd.getWriteProgress().setSize(cmd.value); break;
 
-    case CMD_STATUS: status[cmd.fd] = cmd.value; break;
+    case CMD_STATUS: fd.setStatus(cmd.value); break;
 
     default: LOG_ERROR("Invalid results command");
     }
