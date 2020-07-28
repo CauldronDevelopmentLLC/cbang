@@ -67,7 +67,6 @@ namespace cb {
       void setTTL(double sec);
 
       const SmartPointer<Socket> &getSocket() {return socket;}
-      void setSocket(const SmartPointer<Socket> &socket);
 
       void setPeer(const IPAddress &peer) {this->peer = peer;}
       const IPAddress &getPeer() const {return peer;}
