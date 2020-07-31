@@ -501,6 +501,7 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
 
   resetOutput();
   setContentType("application/javascript");
+  outSet("X-Content-Type-Options", "nosniff");
 
   return new Writer(this, callback);
 }
