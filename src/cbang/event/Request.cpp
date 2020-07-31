@@ -43,6 +43,7 @@
 #include <cbang/http/Cookie.h>
 #include <cbang/json/JSON.h>
 #include <cbang/time/Time.h>
+#include <cbang/util/Regex.h>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -493,6 +494,10 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
       JSONWriter::close();
     }
   };
+
+  if (!Regex("^\\w+$").match(callback))
+    THROWX("Invalid callback '" << String::escapeC(callback) << "'",
+           HTTP_BAD_REQUEST);
 
   resetOutput();
   setContentType("application/javascript");
