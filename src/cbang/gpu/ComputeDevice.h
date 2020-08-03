@@ -42,19 +42,14 @@ namespace cb {
   struct ComputeDevice {
     VersionU16 driverVersion;
     VersionU16 computeVersion;
-    int32_t vendorID;
-    int32_t platformIndex;
-    int32_t deviceIndex;
-    bool gpu;
-    int pciBus;
-    int pciSlot;
-
-    ComputeDevice() :
-      vendorID(-1), platformIndex(-1), deviceIndex(-1), gpu(false), pciBus(-1),
-      pciSlot(-1) {}
+    int32_t vendorID      = -1;
+    int32_t platformIndex = -1;
+    int32_t deviceIndex   = -1;
+    bool gpu              = false;
+    int pciBus            = -1;
+    int pciSlot           = -1;
 
     bool isValid() const;
-
     void print(std::ostream &stream) const;
   };
 
