@@ -77,7 +77,7 @@ namespace cb {
 
 
       template <typename Data>
-      struct QueuedTask : public Task {
+      struct QueuedTask : public Task, public Mutex {
         std::queue<Data> queue;
         SmartPointer<Event> event;
 
