@@ -99,13 +99,13 @@ namespace {
 
   // OpenCL functions
   typedef cl_int (CL_API_CALL *clGetDeviceInfo_t)
-  (cl_device_id, cl_device_info, size_t, void *, size_t *);
+    (cl_device_id, cl_device_info, size_t, void *, size_t *);
 
   typedef cl_int (CL_API_CALL *clGetPlatformIDs_t)
-  (cl_uint, cl_platform_id *, cl_uint *);
+    (cl_uint, cl_platform_id *, cl_uint *);
 
   typedef cl_int (CL_API_CALL *clGetDeviceIDs_t)
-  (cl_platform_id, cl_device_type, cl_uint, cl_device_id *, cl_uint *);
+    (cl_platform_id, cl_device_type, cl_uint, cl_device_id *, cl_uint *);
 
 
   // OpenCL defines
@@ -131,16 +131,16 @@ namespace {
 }
 
 
-#define DYNAMIC_CALL(lib, name, args) {                                 \
-    name##_t name = (name##_t)lib->getSymbol(#name);                    \
-    if ((err = name args)) THROW(#name "() returned " << err);         \
+#define DYNAMIC_CALL(lib, name, args) {                         \
+    cl_int err;                                                 \
+    name##_t name = (name##_t)lib->getSymbol(#name);            \
+    if ((err = name args)) THROW(#name "() returned " << err);  \
   }
 
 
 namespace {
   size_t getDeviceInfoSize(DynamicLibrary *lib, cl_device_id dev,
                            cl_device_info param) {
-    cl_int err;
     size_t size = 0;
 
     DYNAMIC_CALL(lib, clGetDeviceInfo, (dev, param, 0, 0, &size));
@@ -156,7 +156,6 @@ namespace {
     if (retSize) *retSize = size;
 
     // Get param
-    cl_int err;
     SmartPointer<char>::Array data = new char[size];
     if (size)
       DYNAMIC_CALL(lib, clGetDeviceInfo, (dev, param, size, data.get(), 0));
@@ -176,8 +175,6 @@ namespace {
 
 
 OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
-  cl_int err;
-
   // Get num platforms
   cl_uint numPlatforms;
   DYNAMIC_CALL(this, clGetPlatformIDs, (0, 0, &numPlatforms));
@@ -190,111 +187,30 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
   for (cl_uint i = 0; i < numPlatforms; i++) {
     cl_platform_id platform = platforms[i];
 
-    // Get num devices
-    cl_uint numDevices;
-    DYNAMIC_CALL(this, clGetDeviceIDs, (platform, CL_DEVICE_TYPE_ALL, 0, 0,
-                                  &numDevices));
+    // Get devices
+    cl_uint numDevices = 0;
+    SmartPointer<cl_device_id>::Array devices;
 
-    // Get devices ids
-    SmartPointer<cl_device_id>::Array devices = new cl_device_id[numDevices];
-    DYNAMIC_CALL(this, clGetDeviceIDs,
-                 (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.get(), 0));
+    try {
+      DYNAMIC_CALL(this, clGetDeviceIDs,
+                   (platform, CL_DEVICE_TYPE_ALL, 0, 0, &numDevices));
 
-    for (cl_uint j = 0; j < numDevices; j++) {
-      cl_device_id device = devices[j];
-      ComputeDevice cd;
+      devices = new cl_device_id[numDevices];
+      DYNAMIC_CALL(this, clGetDeviceIDs,
+                   (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.get(),
+                    0));
+    } catch (const Exception &e) {numDevices = 0;}
 
-      // Set indices
-      cd.platformIndex = i;
-      cd.deviceIndex = j;
-
+    for (cl_uint j = 0; j < numDevices; j++)
       try {
-        // Get driver version
-        string driverVersion =
-          getDeviceInfoString(this, device, CL_DRIVER_VERSION);
+        ComputeDevice cd = getDeviceInfo(devices[j]);
 
-        // Parse driver version
-        if (!driverVersion.empty()) {
-          // Format varies, many drivers don't following the prescribed format.
-          // Look for last group matching regex \d+\.\d+
-          vector<string> parts;
-          String::tokenize(driverVersion, parts);
+        // Set indices
+        cd.platformIndex = i;
+        cd.deviceIndex = j;
 
-          unsigned i = parts.size();
-          while (i--) {
-            string v =
-              parts[i].substr(0, parts[i].find_first_not_of("1234567890."));
-
-            size_t end = v.find('.');
-            if (end == string::npos) continue;
-            end = v.find('.', end + 1);
-
-            cd.driverVersion = VersionU16(v.substr(0, end));
-            break;
-          }
-        }
-
-        // Get device version
-        string deviceVersion =
-          getDeviceInfoString(this, device, CL_DEVICE_VERSION);
-
-        // Parse device version
-        if (!deviceVersion.empty()) {
-          // Format: OpenCL <major>.<minor> <vendor info>
-          vector<string> parts;
-          String::tokenize(deviceVersion, parts);
-          if (parts.size() < 2) continue;
-          cd.computeVersion = VersionU16(parts[1]);
-        }
-
-        // Get vendor ID
-        cl_uint vendorID = 0;
-        DYNAMIC_CALL(this, clGetDeviceInfo, (device, CL_DEVICE_VENDOR_ID,
-                                             sizeof(vendorID), &vendorID, 0));
-        cd.vendorID = vendorID;
-
-        // Get device type
-        cl_device_type devType = 0;
-        DYNAMIC_CALL(this, clGetDeviceInfo, (device, CL_DEVICE_TYPE,
-                                             sizeof(cl_device_type), &devType,
-                                             0));
-        cd.gpu = devType & CL_DEVICE_TYPE_GPU;
-
-        // Get PCI bus and slot information
-        try {
-          if (vendorID == GPUVendor::VENDOR_AMD) {
-            size_t size = 0;
-            SmartPointer<char> data =
-              getDeviceInfoData(this, device, CL_DEVICE_TOPOLOGY_AMD, &size);
-
-            cl_device_topology_amd *topology =
-              (cl_device_topology_amd *)data.get();
-
-            if (sizeof(cl_device_topology_amd) <= size &&
-                (int)topology->raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
-              cd.pciBus = topology->pcie.bus;
-              cd.pciSlot = topology->pcie.device;
-            }
-
-          } else if (vendorID == GPUVendor::VENDOR_NVIDIA) {
-            cl_int busID = -1;
-            cl_int slotID = -1;
-
-            DYNAMIC_CALL(this, clGetDeviceInfo,
-                         (device, CL_DEVICE_PCI_BUS_ID_NV, sizeof(busID),
-                          &busID, 0));
-            DYNAMIC_CALL(this, clGetDeviceInfo,
-                         (device, CL_DEVICE_PCI_SLOT_ID_NV,
-                          sizeof(slotID), &slotID, 0));
-
-            cd.pciBus = busID;
-            cd.pciSlot = slotID;
-          }
-        } CATCH_DEBUG(3);
-
-        this->devices.push_back(cd);
+        if (cd.isValid()) this->devices.push_back(cd);
       } CATCH_ERROR;
-    }
   }
 }
 
@@ -302,4 +218,115 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
 const ComputeDevice &OpenCLLibrary::getDevice(unsigned i) const {
   if (getDeviceCount() <= i) THROW("Invalid OpenCL device index " << i);
   return devices.at(i);
+}
+
+
+VersionU16 OpenCLLibrary::getDriverVersion(void *device) {
+  string version = getDeviceInfoString(this, device, CL_DRIVER_VERSION);
+
+  // Parse driver version
+  if (!version.empty()) {
+    // Format varies, many drivers don't following the prescribed format.
+    // Look for last group matching regex \d+\.\d+
+    vector<string> parts;
+    String::tokenize(version, parts);
+
+    unsigned i = parts.size();
+    while (i--) {
+      string v = parts[i].substr(0, parts[i].find_first_not_of("1234567890."));
+
+      size_t end = v.find('.');
+      if (end == string::npos) continue;
+      end = v.find('.', end + 1);
+
+      return VersionU16(v.substr(0, end));
+    }
+  }
+
+  return VersionU16();
+}
+
+
+VersionU16 OpenCLLibrary::getComputeVersion(void *device) {
+  string version = getDeviceInfoString(this, device, CL_DEVICE_VERSION);
+
+  // Parse device version
+  if (!version.empty()) {
+    // Format: OpenCL <major>.<minor> <vendor info>
+    vector<string> parts;
+    String::tokenize(version, parts);
+    if (1 < parts.size()) return VersionU16(parts[1]);
+  }
+
+  return VersionU16();
+}
+
+
+int32_t OpenCLLibrary::getVendorID(void *device) {
+  cl_uint vendorID = 0;
+  DYNAMIC_CALL(this, clGetDeviceInfo,
+               (device, CL_DEVICE_VENDOR_ID, sizeof(vendorID), &vendorID, 0));
+  return vendorID;
+}
+
+
+bool OpenCLLibrary::isGPU(void *device) {
+  cl_device_type devType = 0;
+  DYNAMIC_CALL(this, clGetDeviceInfo,
+               (device, CL_DEVICE_TYPE, sizeof(cl_device_type), &devType, 0));
+  return devType & CL_DEVICE_TYPE_GPU;
+}
+
+
+void OpenCLLibrary::getAMDPCIInfo(void *device, ComputeDevice &cd) {
+  size_t size = 0;
+  SmartPointer<char> data =
+    getDeviceInfoData(this, device, CL_DEVICE_TOPOLOGY_AMD, &size);
+
+  auto topology = (cl_device_topology_amd *)data.get();
+
+  if (sizeof(cl_device_topology_amd) <= size &&
+      (int)topology->raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
+
+    cd.pciBus = topology->pcie.bus;
+    cd.pciSlot = topology->pcie.device;
+  }
+}
+
+
+void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
+  cl_int busID = -1;
+  cl_int slotID = -1;
+
+  DYNAMIC_CALL(this, clGetDeviceInfo,
+               (device, CL_DEVICE_PCI_BUS_ID_NV, sizeof(busID), &busID, 0));
+  DYNAMIC_CALL(this, clGetDeviceInfo,
+               (device, CL_DEVICE_PCI_SLOT_ID_NV, sizeof(slotID), &slotID, 0));
+
+  cd.pciBus = busID;
+  cd.pciSlot = slotID >> 3;
+}
+
+
+void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
+  try {
+    switch (cd.vendorID) {
+    case GPUVendor::VENDOR_AMD: getAMDPCIInfo(device, cd); break;
+    case GPUVendor::VENDOR_NVIDIA: getNVIDIAPCIInfo(device, cd); break;
+    default: break;
+    }
+  } CATCH_DEBUG(3);
+}
+
+
+ComputeDevice OpenCLLibrary::getDeviceInfo(void *device) {
+  ComputeDevice cd;
+
+  cd.driverVersion = getDriverVersion(device);
+  cd.computeVersion = getComputeVersion(device);
+  cd.vendorID = getVendorID(device);
+  cd.gpu = isGPU(device);
+  getPCIInfo(device, cd);
+
+  return cd;
 }
