@@ -55,5 +55,15 @@ namespace cb {
     typedef devices_t::const_iterator iterator;
     iterator begin() const {return devices.begin();}
     iterator end() const {return devices.end();}
+
+  protected:
+    VersionU16 getDriverVersion(void *device);
+    VersionU16 getComputeVersion(void *device);
+    int32_t getVendorID(void *device);
+    bool isGPU(void *device);
+    void getAMDPCIInfo(void *device, ComputeDevice &cd);
+    void getNVIDIAPCIInfo(void *device, ComputeDevice &cd);
+    void getPCIInfo(void *device, ComputeDevice &cd);
+    ComputeDevice getDeviceInfo(void *device);
   };
 }
