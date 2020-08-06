@@ -43,24 +43,24 @@ using namespace cb;
 namespace {
   template <typename LIB>
   ComputeDevice match(uint16_t vendorID, int16_t busID, int16_t slotID) {
-    auto &lib = LIB::instance();
+    try {
+      auto &lib = LIB::instance();
 
-    if (vendorID == GPUVendor::VENDOR_INTEL && busID == -1 && slotID == -1) {
-      // Match by vendor ID.  Useful for matching a single Intel GPU
-      // Note, There is currently no way to access the PCI bus and slot IDs for
-      // Intel GPUs.
-      // TODO This assumes there is at most one Intel GPU, that could change.
-      for (auto it = lib.begin(); it != lib.end(); it++)
-        if (it->gpu && vendorID == it->vendorID)
-          return *it;
+      if (vendorID == GPUVendor::VENDOR_INTEL && busID == -1 && slotID == -1) {
+        // Match by vendor ID.  Useful for matching a single Intel GPU
+        // Note, There is currently no way to access the PCI bus and slot IDs
+        // for Intel GPUs.
+        // TODO This assumes there is at most one Intel GPU, that could change.
+        for (auto it = lib.begin(); it != lib.end(); it++)
+          if (it->gpu && vendorID == it->vendorID)
+            return *it;
 
-    } else
-      try {
+      } else
         for (auto it = lib.begin(); it != lib.end(); it++)
           if (it->gpu && busID == it->pciBus && slotID == it->pciSlot)
             return *it;
 
-      } CATCH_WARNING;
+    } CATCH_WARNING;
 
     return ComputeDevice();
   }
