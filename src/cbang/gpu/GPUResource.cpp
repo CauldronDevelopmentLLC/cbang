@@ -42,23 +42,12 @@ using namespace cb;
 
 namespace {
   template <typename LIB>
-  ComputeDevice match(uint16_t vendorID, int16_t busID, int16_t slotID) {
+  ComputeDevice match(int16_t busID, int16_t slotID, int16_t functionID) {
     try {
       auto &lib = LIB::instance();
-
-      if (vendorID == GPUVendor::VENDOR_INTEL && busID == -1 && slotID == -1) {
-        // Match by vendor ID.  Useful for matching a single Intel GPU
-        // Note, There is currently no way to access the PCI bus and slot IDs
-        // for Intel GPUs.
-        // TODO This assumes there is at most one Intel GPU, that could change.
-        for (auto it = lib.begin(); it != lib.end(); it++)
-          if (it->gpu && vendorID == it->vendorID)
-            return *it;
-
-      } else
-        for (auto it = lib.begin(); it != lib.end(); it++)
-          if (it->gpu && busID == it->pciBus && slotID == it->pciSlot)
-            return *it;
+      for (auto it = lib.begin(); it != lib.end(); it++)
+        if (it->gpu && busID == it->pciBus && slotID == it->pciSlot)
+          return *it;
 
     } CATCH_WARNING;
 
@@ -69,5 +58,5 @@ namespace {
 
 GPUResource::GPUResource(const GPU &gpu, const PCIDevice &pci) :
   GPU(gpu), pci(pci),
-  cuda(match<CUDALibrary>(getVendorID(), getBusID(), getSlotID())),
-  opencl(match<OpenCLLibrary>(getVendorID(), getBusID(), getSlotID())) {}
+  cuda(match<CUDALibrary>(getBusID(), getSlotID(), getFunctionID())),
+  opencl(match<OpenCLLibrary>(getBusID(), getSlotID(), getFunctionID())) {}

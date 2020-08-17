@@ -50,7 +50,9 @@ namespace cb {
 
     const PCIDevice &getPCI() const {return pci;}
     const ComputeDevice &getCUDA() const {return cuda;}
+    void setCUDA(const ComputeDevice &cuda) {this->cuda = cuda;}
     const ComputeDevice &getOpenCL() const {return opencl;}
+    void setOpenCL(const ComputeDevice &opencl) {this->opencl = opencl;}
 
     int16_t getBusID() const {return pci.getBusID();}
     int16_t getSlotID() const {return pci.getSlotID();}
