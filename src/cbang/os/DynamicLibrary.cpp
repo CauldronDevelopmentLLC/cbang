@@ -37,6 +37,9 @@
 #include <cbang/Exception.h>
 #include <cbang/Zap.h>
 
+#undef CBANG_EXCEPTION
+#define CBANG_EXCEPTION DynamicLibraryException
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
