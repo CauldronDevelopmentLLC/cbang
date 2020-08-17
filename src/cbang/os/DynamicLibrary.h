@@ -32,9 +32,13 @@
 
 #pragma once
 
+#include <cbang/Exception.h>
+
 #include <string>
 
 namespace cb {
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(DynamicLibraryException);
+
   class DynamicLibrary {
     struct private_t;
 
