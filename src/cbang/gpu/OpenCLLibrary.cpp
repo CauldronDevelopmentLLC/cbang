@@ -288,8 +288,9 @@ void OpenCLLibrary::getAMDPCIInfo(void *device, ComputeDevice &cd) {
   if (sizeof(cl_device_topology_amd) <= size &&
       (int)topology->raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
 
-    cd.pciBus = topology->pcie.bus;
-    cd.pciSlot = topology->pcie.device;
+    cd.pciBus      = topology->pcie.bus;
+    cd.pciSlot     = topology->pcie.device;
+    cd.pciFunction = topology->pcie.function;
   }
 }
 
@@ -303,8 +304,9 @@ void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
   DYNAMIC_CALL(this, clGetDeviceInfo,
                (device, CL_DEVICE_PCI_SLOT_ID_NV, sizeof(slotID), &slotID, 0));
 
-  cd.pciBus = busID;
-  cd.pciSlot = slotID >> 3;
+  cd.pciBus      = busID;
+  cd.pciSlot     = slotID >> 3;
+  cd.pciFunction = slotID & 7;
 }
 
 

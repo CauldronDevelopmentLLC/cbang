@@ -75,6 +75,7 @@ namespace {
 
   const int CU_DEVICE_ATTRIBUTE_PCI_BUS_ID = 33;
   const int CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 34;
+  const int CU_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID = 50;
   const int CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
   const int CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
 }
@@ -110,8 +111,9 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
         (getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device),
          getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
       cd.vendorID = GPUVendor::VENDOR_NVIDIA; // Only vendor for CUDA
-      cd.pciBus = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
+      cd.pciBus  = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
       cd.pciSlot = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);
+      cd.pciFunction = 0; // NVidia GPUs are always function 0
 
       devices.push_back(cd);
     } CATCH_ERROR;

@@ -48,6 +48,7 @@ namespace cb {
     bool gpu              = false;
     int pciBus            = -1;
     int pciSlot           = -1;
+    int pciFunction       = -1;
 
     bool isValid() const;
     void print(std::ostream &stream) const;
