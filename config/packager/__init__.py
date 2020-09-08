@@ -304,6 +304,7 @@ def generate(env):
             ('sign_id_installer', 'Installer signature name'),
             ('sign_id_app', 'Application/Tool signature name'),
             ('sign_prefix', 'codesign identifier prefix'),
+            ('osx_min_ver', 'Set minimum support OSX version.', '10.7'),
             )
 
     env.SetDefault(PACKAGE_EXCLUDES = ['.svn', '.sconsign.dblite',
