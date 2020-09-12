@@ -37,17 +37,18 @@
 #include "SysError.h"
 #include "Win32Utilities.h"
 
+#include <cbang/Exception.h>
+#include <cbang/String.h>
+#include <cbang/SmartPointer.h>
+
 #include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
 #include <cbang/log/Logger.h>
 #include <cbang/util/SmartLock.h>
 #include <cbang/net/URI.h>
-
 #include <cbang/io/File.h>
-
-#include <cbang/Exception.h>
-#include <cbang/String.h>
-#include <cbang/SmartPointer.h>
+#include <cbang/iostream/LZ4Compressor.h>
+#include <cbang/iostream/LZ4Decompressor.h>
 
 #include <errno.h>
 #include <string.h>
@@ -1095,12 +1096,14 @@ namespace cb {
         if (autoCompression) {
           bool gzip  = String::endsWith(filename, ".gz");
           bool bzip2 = String::endsWith(filename, ".bz2");
+          bool lz4   = String::endsWith(filename, ".lz4");
 
-          if (gzip || bzip2) {
+          if (gzip || bzip2 || lz4) {
             SmartPointer<IStream> s = new IStream(file);
 
             if (gzip)  s->push(io::gzip_decompressor());
             if (bzip2) s->push(io::bzip2_decompressor());
+            if (lz4)   s->push(LZ4Decompressor());
 
             s->push(*file);
 
@@ -1136,12 +1139,14 @@ namespace cb {
         if (autoCompression) {
           bool gzip  = String::endsWith(filename, ".gz");
           bool bzip2 = String::endsWith(filename, ".bz2");
+          bool lz4   = String::endsWith(filename, ".lz4");
 
-          if (gzip || bzip2) {
+          if (gzip || bzip2 || lz4) {
             SmartPointer<OStream> s = new OStream(file);
 
             if (gzip)  s->push(io::gzip_compressor());
             if (bzip2) s->push(io::bzip2_compressor());
+            if (lz4)   s->push(LZ4Compressor());
 
             s->push(*file);
 

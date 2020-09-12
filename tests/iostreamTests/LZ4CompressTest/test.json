@@ -1,0 +1,4 @@
+{
+  "command": "%(suite-dir)s/compress test.txt test.lz4",
+  "checks": ["standard", ["exists", "test.lz4", 28]]
+}
