@@ -45,5 +45,7 @@ TarFile::compression_t TarFile::infer(const string &path) {
   if (String::endsWith(path, ".gz") || String::endsWith(path, ".gzip"))
     return TARFILE_GZIP;
 
+  if (String::endsWith(path, ".lz4")) return TARFILE_LZ4;
+
   return TARFILE_NONE;
 }

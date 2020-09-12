@@ -47,6 +47,7 @@ namespace cb {
       TARFILE_AUTO,
       TARFILE_BZIP2,
       TARFILE_GZIP,
+      TARFILE_LZ4,
       TARFILE_NONE,
     } compression_t;
 

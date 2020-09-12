@@ -1,0 +1,9 @@
+Import('*')
+env = env.Clone()
+
+lib = env.Library('#/lib/lz4', Glob('*.c'))
+
+hdrs = env.Install(dir = '#/include/lz4', source = Glob('*.h'))
+Depends(lib, hdrs)
+
+Return('lib')

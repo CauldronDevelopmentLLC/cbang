@@ -26,6 +26,9 @@ def configure_deps(conf, local = True, with_openssl = True):
         env.CBConfigDef('HAVE_MARIADB')
         env.cb_enabled.add('mariadb')
 
+    # LZ4
+    conf.CBCheckLib('lz4')
+
     # Boost
     if env['PLATFORM'] == 'win32': env.CBDefine('BOOST_ALL_NO_LIB')
 
