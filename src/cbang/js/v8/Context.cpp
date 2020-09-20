@@ -50,17 +50,18 @@ Value Context::eval(const InputSource &src) {
   v8::Local<v8::String> origin;
   string filename = src.getName();
   if (!filename.empty()) origin = Value::createString(filename);
+  v8::ScriptOrigin sOrigin(origin);
 
   // Get script source
-  v8::Local<v8::String> source = Value::createString(src.toString());
+  auto source = Value::createString(src.toString());
 
   // Compile
   v8::TryCatch tryCatch(Value::getIso());
-  v8::Handle<v8::Script> script = v8::Script::Compile(source, origin);
+  auto script = v8::Script::Compile(context, source, &sOrigin).ToLocalChecked();
   if (tryCatch.HasCaught()) translateException(tryCatch, false);
 
   // Execute
-  v8::Handle<v8::Value> ret = script->Run();
+  auto ret = script->Run(context).ToLocalChecked();
   if (tryCatch.HasCaught()) translateException(tryCatch, true);
 
   // Return result
@@ -71,8 +72,8 @@ Value Context::eval(const InputSource &src) {
 void Context::translateException(const v8::TryCatch &tryCatch, bool useStack) {
   v8::HandleScope handleScope(Value::getIso());
 
-  if (useStack && !tryCatch.StackTrace().IsEmpty())
-    throw Exception(Value(tryCatch.StackTrace()).toString());
+  if (useStack && !tryCatch.StackTrace(context).IsEmpty())
+    throw Exception(Value(tryCatch.StackTrace(context)).toString());
 
   if (tryCatch.Exception()->IsNull()) throw cb::js::JSInterrupted();
 
@@ -82,8 +83,8 @@ void Context::translateException(const v8::TryCatch &tryCatch, bool useStack) {
   if (message.IsEmpty()) throw Exception(msg);
 
   string filename = Value(message->GetScriptResourceName()).toString();
-  int line = message->GetLineNumber();
-  int col = message->GetStartColumn();
+  int line = message->GetLineNumber(context).FromJust();
+  int col = message->GetStartColumn(context).FromJust();
 
   throw Exception(msg, FileLocation(filename, line, col));
 }

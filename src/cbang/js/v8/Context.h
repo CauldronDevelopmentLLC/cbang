@@ -73,8 +73,7 @@ namespace cb {
 
       Value eval(const InputSource &source);
 
-      static void translateException(const v8::TryCatch &tryCatch,
-                                     bool useStack);
+      void translateException(const v8::TryCatch &tryCatch, bool useStack);
     };
   }
 }

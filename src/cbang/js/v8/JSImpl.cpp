@@ -71,7 +71,9 @@ JSImpl::~JSImpl() {
 
 void JSImpl::init(int *argc, char *argv[]) {
   if (argv) v8::V8::SetFlagsFromCommandLine(argc, argv, true);
-  v8::V8::InitializePlatform(v8::platform::CreateDefaultPlatform());
+  static std::unique_ptr<v8::Platform> platform =
+    v8::platform::NewDefaultPlatform();
+  v8::V8::InitializePlatform(platform.get());
   v8::V8::Initialize();
 }
 

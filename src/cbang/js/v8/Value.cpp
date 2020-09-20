@@ -84,7 +84,7 @@ Value::Value(const js::Function &func) {
     v8::External::New(getIso(), (void *)cb.get());
   v8::Handle<v8::FunctionTemplate> tmpl =
     v8::FunctionTemplate::New(getIso(), &_callback, data);
-  value = tmpl->GetFunction();
+  value = tmpl->GetFunction(getCtx()).ToLocalChecked();
 }
 
 
@@ -141,47 +141,52 @@ string Value::toString() const {
   if (isFunction()) return SSTR("function " << getName() << "() {...}");
 
   // TODO this is not very efficient
-  v8::String::Utf8Value s(value);
+  v8::String::Utf8Value s(getIso(), value);
   return *s ? string(*s, s.length()) : "(null)";
 }
 
 
 bool Value::has(uint32_t index) const {
-  return value->ToObject()->Has(getCtx(), index).ToChecked();
+  return value->ToObject(getCtx()).ToLocalChecked()
+    ->Has(getCtx(), index).ToChecked();
 }
 
 
 bool Value::has(const string &key) const {
-  return value->ToObject()->Has(getCtx(), createString(key)).ToChecked();
+  return value->ToObject(getCtx()).ToLocalChecked()
+    ->Has(getCtx(), createString(key)).ToChecked();
 }
 
 
 SmartPointer<js::Value> Value::get(int index) const {
-  return new Value(value->ToObject()->Get(getCtx(), index));
+  return new Value(value->ToObject(getCtx()).ToLocalChecked()
+                   ->Get(getCtx(), index));
 }
 
 
 SmartPointer<js::Value> Value::get(const string &key) const {
-  return new Value(value->ToObject()->Get(getCtx(), createString(key)));
+  return new Value(value->ToObject(getCtx()).ToLocalChecked()
+                   ->Get(getCtx(), createString(key)));
 }
 
 
 SmartPointer<js::Value> Value::getOwnPropertyNames() const {
-  return new Value(value->ToObject()->GetOwnPropertyNames(getCtx()));
+  return new Value(value->ToObject(getCtx()).ToLocalChecked()
+                   ->GetOwnPropertyNames(getCtx()));
 }
 
 
 void Value::set(int index, const js::Value &value) {
-  v8::Maybe<bool> ret = this->value->ToObject()->
-    Set(getCtx(), index, Value(value).getV8Value());
+  v8::Maybe<bool> ret = this->value->ToObject(getCtx()).ToLocalChecked()
+    ->Set(getCtx(), index, Value(value).getV8Value());
   if (ret.IsNothing() || !ret.ToChecked())
     THROW("Set " << index << " failed");
 }
 
 
 void Value::set(const string &key, const js::Value &value) {
-  v8::Maybe<bool> ret = this->value->ToObject()->
-    Set(getCtx(), createString(key), Value(value).getV8Value());
+  v8::Maybe<bool> ret = this->value->ToObject(getCtx()).ToLocalChecked()
+    ->Set(getCtx(), createString(key), Value(value).getV8Value());
   if (ret.IsNothing() || !ret.ToChecked())
     THROW("Set " << key << " failed");
 }
@@ -205,7 +210,8 @@ Value Value::call(Value arg0, const vector<Value> &args) const {
     argv[i] = args[i].getV8Value();
 
   return v8::Handle<v8::Function>::Cast(value)->
-    Call(arg0.getV8Value()->ToObject(), args.size(), argv.get());
+    Call(getCtx(), arg0.getV8Value() ->ToObject(getCtx()).ToLocalChecked(),
+         args.size(), argv.get()).ToLocalChecked();
 
   return 0;
 }
