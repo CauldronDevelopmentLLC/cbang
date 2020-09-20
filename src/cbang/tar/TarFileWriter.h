@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include "TarFile.h"
+#include "Tar.h"
 
-#include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
 
 #include <ostream>
@@ -42,15 +41,15 @@
 
 
 namespace cb {
-  class TarFileWriter : public TarFile {
+  class TarFileWriter : public Tar {
     struct private_t;
     private_t *pri;
     SmartPointer<std::ostream> stream;
 
   public:
     TarFileWriter(const std::string &path, std::ios::openmode mode,
-                  int perm = 0644, compression_t compression = TARFILE_AUTO);
-    TarFileWriter(std::ostream &stream, compression_t compression);
+                  int perm = 0644, Compression compression = COMPRESSION_AUTO);
+    TarFileWriter(std::ostream &stream, Compression compression);
     ~TarFileWriter();
 
     void add(const std::string &path,
@@ -65,6 +64,6 @@ namespace cb {
   protected:
     void writeHeader(type_t type, const std::string &filename, uint64_t size,
                      uint32_t mode);
-    void addCompression(compression_t compression);
+    void addCompression(Compression compression);
   };
 }

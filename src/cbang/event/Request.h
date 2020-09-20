@@ -44,6 +44,7 @@
 #include <cbang/net/Session.h>
 #include <cbang/json/Value.h>
 #include <cbang/json/Writer.h>
+#include <cbang/enum/Compression.h>
 
 #include <string>
 #include <iostream>
@@ -197,13 +198,8 @@ namespace cb {
       void setContentType(const std::string &contentType);
       void guessContentType();
 
-      typedef enum {
-        COMPRESS_NONE, COMPRESS_AUTO, COMPRESS_ZLIB, COMPRESS_GZIP,
-        COMPRESS_BZIP2
-      } compression_t;
-
-      void outSetContentEncoding(compression_t compression);
-      compression_t getRequestedCompression() const;
+      void outSetContentEncoding(Compression compression);
+      Compression getRequestedCompression() const;
 
       bool hasCookie(const std::string &name) const;
       std::string findCookie(const std::string &name) const;
@@ -221,14 +217,14 @@ namespace cb {
       SmartPointer<JSON::Value> getJSONMessage() const;
       SmartPointer<JSON::Writer>
       getJSONWriter(unsigned indent, bool compact,
-                    compression_t compression = COMPRESS_AUTO);
+                    Compression compression = COMPRESSION_AUTO);
       SmartPointer<JSON::Writer>
-      getJSONWriter(compression_t compression = COMPRESS_AUTO);
+      getJSONWriter(Compression compression = COMPRESSION_AUTO);
       SmartPointer<JSON::Writer> getJSONPWriter(const std::string &callback);
 
       SmartPointer<std::istream> getInputStream() const;
       SmartPointer<std::ostream>
-      getOutputStream(compression_t compression = COMPRESS_AUTO);
+      getOutputStream(Compression compression = COMPRESSION_AUTO);
 
       virtual void sendError(HTTPStatus code);
       virtual void sendError(HTTPStatus code, const std::string &message);
