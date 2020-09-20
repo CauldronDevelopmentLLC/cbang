@@ -44,6 +44,9 @@ using namespace std;
 using namespace cb;
 
 
+#undef CBANG_EXCEPTION
+#define CBANG_EXCEPTION DynamicLibraryException
+
 #ifdef _WIN32
 static const char *openclLib = "OpenCL.dll";
 

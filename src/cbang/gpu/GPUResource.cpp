@@ -49,7 +49,7 @@ namespace {
         if (it->gpu && busID == it->pciBus && slotID == it->pciSlot)
           return *it;
 
-    } CATCH_WARNING;
+    } catch (const DynamicLibraryException &e) {}
 
     return ComputeDevice();
   }
