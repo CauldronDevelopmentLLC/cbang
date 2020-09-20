@@ -26,6 +26,8 @@ def configure(conf):
     conf.CBRequireLib('freetype')
     conf.CBConfig('ZLib')
     conf.CBCheckLib('png')
+    conf.CBCheckLib('brotlidec')
+    conf.CBCheckLib('brotlicommon')
 
     return True
 
