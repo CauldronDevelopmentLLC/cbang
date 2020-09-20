@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "TarFile.h"
+#include "Tar.h"
 
 #include <cbang/SmartPointer.h>
 
@@ -41,7 +41,7 @@
 
 
 namespace cb {
-  class TarFileReader : public TarFile {
+  class TarFileReader : public Tar {
     struct private_t;
     private_t *pri;
     SmartPointer<std::istream> stream;
@@ -49,8 +49,8 @@ namespace cb {
 
   public:
     TarFileReader(const std::string &path,
-                  compression_t compression = TARFILE_AUTO);
-    TarFileReader(std::istream &stream, compression_t compression);
+                  Compression compression = COMPRESSION_AUTO);
+    TarFileReader(std::istream &stream, Compression compression);
     ~TarFileReader();
 
     bool hasMore();
@@ -60,6 +60,6 @@ namespace cb {
     std::string extract(std::ostream &out);
 
   protected:
-    void addCompression(compression_t compression);
+    void addCompression(Compression compression);
   };
 }

@@ -44,6 +44,7 @@
 #include <cbang/json/JSON.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/Regex.h>
+#include <cbang/iostream/LZ4Compressor.h>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -64,14 +65,15 @@ namespace {
 
 
   SmartPointer<ostream> compressBufferStream
-  (cb::Event::Buffer buffer, Request::compression_t compression) {
+  (cb::Event::Buffer buffer, Compression compression) {
     SmartPointer<ostream> target = new BufferStream<>(buffer);
     SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
 
     switch (compression) {
-    case Request::COMPRESS_ZLIB:  out->push(io::zlib_compressor()); break;
-    case Request::COMPRESS_GZIP:  out->push(io::gzip_compressor()); break;
-    case Request::COMPRESS_BZIP2: out->push(io::bzip2_compressor()); break;
+    case Compression::COMPRESSION_ZLIB:  out->push(io::zlib_compressor()); break;
+    case Compression::COMPRESSION_GZIP:  out->push(io::gzip_compressor()); break;
+    case Compression::COMPRESSION_BZIP2: out->push(io::bzip2_compressor()); break;
+    case Compression::COMPRESSION_LZ4:   out->push(LZ4Compressor()); break;
     default: return target;
     }
 
@@ -82,11 +84,12 @@ namespace {
   }
 
 
-  const char *getContentEncoding(Request::compression_t compression) {
+  const char *getContentEncoding(Compression compression) {
     switch (compression) {
-    case Request::COMPRESS_ZLIB:  return "zlib";
-    case Request::COMPRESS_GZIP:  return "gzip";
-    case Request::COMPRESS_BZIP2: return "bzip2";
+    case Compression::COMPRESSION_ZLIB:  return "zlib";
+    case Compression::COMPRESSION_GZIP:  return "gzip";
+    case Compression::COMPRESSION_BZIP2: return "bzip2";
+    case Compression::COMPRESSION_LZ4:   return "lz4";
     default: return 0;
     }
   }
@@ -98,7 +101,7 @@ namespace {
     bool closed = false;
 
     JSONWriter(const SmartPointer<Request> &req, unsigned indent, bool compact,
-               Request::compression_t compression) :
+               Compression compression) :
       SmartPointer<ostream>(compressBufferStream(*this, compression)),
       JSON::Writer(*SmartPointer<ostream>::get(), indent, compact), req(req) {
       req->outSetContentEncoding(compression);
@@ -325,11 +328,12 @@ void Request::guessContentType() {
 }
 
 
-void Request::outSetContentEncoding(compression_t compression) {
+void Request::outSetContentEncoding(Compression compression) {
   switch (compression) {
-  case COMPRESS_ZLIB:
-  case COMPRESS_GZIP:
-  case COMPRESS_BZIP2:
+  case COMPRESSION_ZLIB:
+  case COMPRESSION_GZIP:
+  case COMPRESSION_BZIP2:
+  case COMPRESSION_LZ4:
     outSet("Content-Encoding", getContentEncoding(compression));
     break;
   default: break;
@@ -337,8 +341,8 @@ void Request::outSetContentEncoding(compression_t compression) {
 }
 
 
-Request::compression_t Request::getRequestedCompression() const {
-  if (!inHas("Accept-Encoding")) return COMPRESS_NONE;
+Compression Request::getRequestedCompression() const {
+  if (!inHas("Accept-Encoding")) return COMPRESSION_NONE;
 
   vector<string> accept;
   String::tokenize(inGet("Accept-Encoding"), accept, ", \t");
@@ -346,7 +350,7 @@ Request::compression_t Request::getRequestedCompression() const {
   double maxQ = 0;
   double otherQ = 0;
   set<string> named;
-  compression_t compression = COMPRESS_NONE;
+  Compression compression = COMPRESSION_NONE;
 
   for (unsigned i = 0; i < accept.size(); i++) {
     double q = 1;
@@ -367,10 +371,11 @@ Request::compression_t Request::getRequestedCompression() const {
     named.insert(name);
 
     if (maxQ < q) {
-      if (name == "identity")   compression = COMPRESS_NONE;
-      else if (name == "gzip")  compression = COMPRESS_GZIP;
-      else if (name == "zlib")  compression = COMPRESS_ZLIB;
-      else if (name == "bzip2") compression = COMPRESS_BZIP2;
+      if (name == "identity")   compression = COMPRESSION_NONE;
+      else if (name == "gzip")  compression = COMPRESSION_GZIP;
+      else if (name == "zlib")  compression = COMPRESSION_ZLIB;
+      else if (name == "bzip2") compression = COMPRESSION_BZIP2;
+      else if (name == "lz4")   compression = COMPRESSION_LZ4;
       else q = 0;
     }
 
@@ -381,7 +386,7 @@ Request::compression_t Request::getRequestedCompression() const {
   // if the user specifies something like "*;q=1" and doesn't give gzip
   // an explicit quality value then we select gzip compression.
   if (maxQ < otherQ && named.find("gzip") == named.end())
-    compression = COMPRESS_GZIP;
+    compression = COMPRESSION_GZIP;
 
   return compression;
 }
@@ -468,7 +473,7 @@ SmartPointer<JSON::Value> Request::getJSONMessage() const {
 
 SmartPointer<JSON::Writer>
 Request::getJSONWriter(unsigned indent, bool compact,
-                       compression_t compression) {
+                       Compression compression) {
   resetOutput();
   setContentType("application/json");
 
@@ -476,7 +481,7 @@ Request::getJSONWriter(unsigned indent, bool compact,
 }
 
 
-SmartPointer<JSON::Writer> Request::getJSONWriter(compression_t compression) {
+SmartPointer<JSON::Writer> Request::getJSONWriter(Compression compression) {
   return getJSONWriter(0, !getURI().has("pretty"), compression);
 }
 
@@ -484,7 +489,7 @@ SmartPointer<JSON::Writer> Request::getJSONWriter(compression_t compression) {
 SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
   struct Writer : public JSONWriter {
     Writer(const SmartPointer<Request> &req, const string &callback) :
-      JSONWriter(req, 0, true, COMPRESS_NONE) {
+      JSONWriter(req, 0, true, COMPRESSION_NONE) {
       getStream() << callback << '(';
     }
 
@@ -512,9 +517,9 @@ SmartPointer<istream> Request::getInputStream() const {
 }
 
 
-SmartPointer<ostream> Request::getOutputStream(compression_t compression) {
+SmartPointer<ostream> Request::getOutputStream(Compression compression) {
   // Auto select compression type based on Accept-Encoding
-  if (compression == COMPRESS_AUTO) compression = getRequestedCompression();
+  if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
   outSetContentEncoding(compression);
   return compressBufferStream(getOutputBuffer(), compression);
 }
@@ -668,7 +673,7 @@ void Request::sendChunk(const char *data, unsigned length) {
 SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
   struct Writer : public JSONWriter {
     Writer(const SmartPointer<Request> &req) :
-      JSONWriter(req, 0, true, COMPRESS_NONE) {}
+      JSONWriter(req, 0, true, COMPRESSION_NONE) {}
 
     // NOTE, destructor must be duplicated so virtual function call works
     ~Writer() {TRY_CATCH_ERROR(close(););}

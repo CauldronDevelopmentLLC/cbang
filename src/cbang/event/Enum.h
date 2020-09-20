@@ -39,6 +39,8 @@
 #include "WebsockOpCode.h"
 #include "WebsockStatus.h"
 
+#include <cbang/enum/Compression.h>
+
 namespace cb {
   namespace Event {
     class Enum :
@@ -47,6 +49,7 @@ namespace cb {
       public EventFlag::Enum,
       public ConnectionError::Enum,
       public WebsockOpCode::Enum,
-      public WebsockStatus::Enum {};
+      public WebsockStatus::Enum,
+      public Compression::Enum {};
   }
 }

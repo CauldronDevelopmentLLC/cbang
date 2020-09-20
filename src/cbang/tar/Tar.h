@@ -35,12 +35,13 @@
 #include "TarHeader.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/enum/Compression.h>
 
 #include <string>
 #include <iostream>
 
 namespace cb {
-  class Tar : public TarHeader {
+  class Tar : public TarHeader, public Compression {
   public:
     static const char zero_block[512];
     unsigned bufferSize;

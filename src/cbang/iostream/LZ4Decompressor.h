@@ -43,6 +43,8 @@ namespace io = boost::iostreams;
 
 #include <string.h>
 
+#include <lz4/lz4frame.h>
+
 
 namespace cb {
   class LZ4Decompressor {

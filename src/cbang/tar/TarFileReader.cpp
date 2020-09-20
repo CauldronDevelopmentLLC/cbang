@@ -36,10 +36,12 @@
 #include <cbang/os/SysError.h>
 #include <cbang/log/Logger.h>
 #include <cbang/iostream/BZip2Decompressor.h>
+#include <cbang/iostream/LZ4Decompressor.h>
 
 #include <boost/ref.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 namespace io = boost::iostreams;
 
 using namespace cb;
@@ -51,16 +53,17 @@ struct TarFileReader::private_t {
 };
 
 
-TarFileReader::TarFileReader(const string &path, compression_t compression) :
+TarFileReader::TarFileReader(const string &path, Compression compression) :
   pri(new private_t), stream(SystemUtilities::iopen(path)),
   didReadHeader(false) {
 
-  addCompression(compression == TARFILE_AUTO ? infer(path) : compression);
+  if (compression == COMPRESSION_AUTO) compression = CompressionFromPath(path);
+  addCompression(compression);
   pri->filter.push(*this->stream);
 }
 
 
-TarFileReader::TarFileReader(istream &stream, compression_t compression) :
+TarFileReader::TarFileReader(istream &stream, Compression compression) :
   pri(new private_t), stream(SmartPointer<istream>::Phony(&stream)),
   didReadHeader(false) {
 
@@ -69,9 +72,7 @@ TarFileReader::TarFileReader(istream &stream, compression_t compression) :
 }
 
 
-TarFileReader::~TarFileReader() {
-  delete pri;
-}
+TarFileReader::~TarFileReader() {delete pri;}
 
 
 bool TarFileReader::hasMore() {
@@ -134,11 +135,13 @@ string TarFileReader::extract(ostream &out) {
 }
 
 
-void TarFileReader::addCompression(compression_t compression) {
+void TarFileReader::addCompression(Compression compression) {
   switch (compression) {
-  case TARFILE_NONE: break; // none
-  case TARFILE_BZIP2: pri->filter.push(BZip2Decompressor()); break;
-  case TARFILE_GZIP: pri->filter.push(io::zlib_decompressor()); break;
+  case COMPRESSION_NONE:                                             break;
+  case COMPRESSION_BZIP2: pri->filter.push(BZip2Decompressor());     break;
+  case COMPRESSION_GZIP:  pri->filter.push(io::gzip_decompressor()); break;
+  case COMPRESSION_ZLIB:  pri->filter.push(io::zlib_decompressor()); break;
+  case COMPRESSION_LZ4:   pri->filter.push(LZ4Decompressor());       break;
   default: THROW("Invalid compression type " << compression);
   }
 }
