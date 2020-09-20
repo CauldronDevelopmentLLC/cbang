@@ -51,15 +51,40 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdarg.h>
 
 #ifdef HAVE_VALGRIND
 #include <valgrind/memcheck.h>
+#endif
+
+#ifndef bfd_get_section_flags
+#define bfd_get_section_flags(ABFD, SEC) bfd_section_flags(SEC)
+#endif
+
+#ifndef bfd_get_section_vma
+#define bfd_get_section_vma(ABFD, SEC) bfd_section_vma(SEC)
+#endif
+
+#ifndef bfd_get_section_size
+#define bfd_get_section_size(SEC) bfd_section_size(SEC)
 #endif
 
 // NOTE Cannot throw cb::Exception here because of the dependency loop
 
 using namespace std;
 using namespace cb;
+
+
+namespace {
+  void _bfd_error_handler(const char *fmt, va_list ap) {
+    // Suppress annoying error message caused by DWARF/libbfd incompatibility
+    if (String::startsWith(fmt, "DWARF error: could not find variable spec"))
+      return;
+
+    LOG_ERROR(String::vprintf(fmt, ap));
+  }
+}
+
 
 struct BacktraceDebugger::private_t {
   bfd *abfd;
@@ -113,7 +138,7 @@ bool BacktraceDebugger::getStackTrace(StackTrace &trace) {
       }
     }
 
-    if (section) {
+    if (section && p->syms) {
       bfd_vma vma = bfd_get_section_vma(p->abfd, section);
       bfd_find_nearest_line(p->abfd, section, p->syms, pc - vma,
                             &filename, &function, &line);
@@ -191,6 +216,7 @@ void BacktraceDebugger::init() {
 
   try {
     bfd_init();
+    bfd_set_error_handler(_bfd_error_handler);
 
     executable = getExecutableName();
 
