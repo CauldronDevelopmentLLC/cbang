@@ -39,13 +39,15 @@ using namespace cb;
 using namespace std;
 
 
-Compression CompressionFromPath(const string &path) {
-  if (String::endsWith(path, ".bz2") || String::endsWith(path, ".bzip2"))
-    return Compression::COMPRESSION_BZIP2;
-  if (String::endsWith(path, ".zlib")) return Compression::COMPRESSION_ZLIB;
-  if (String::endsWith(path, ".gz") || String::endsWith(path, ".gzip"))
-    return Compression::COMPRESSION_GZIP;
-  if (String::endsWith(path, ".lz4")) return Compression::COMPRESSION_LZ4;
+namespace cb {
+  Compression CompressionFromPath(const string &path) {
+    if (String::endsWith(path, ".bz2") || String::endsWith(path, ".bzip2"))
+      return Compression::COMPRESSION_BZIP2;
+    if (String::endsWith(path, ".zlib")) return Compression::COMPRESSION_ZLIB;
+    if (String::endsWith(path, ".gz") || String::endsWith(path, ".gzip"))
+      return Compression::COMPRESSION_GZIP;
+    if (String::endsWith(path, ".lz4")) return Compression::COMPRESSION_LZ4;
 
-  return Compression::COMPRESSION_NONE;
+    return Compression::COMPRESSION_NONE;
+  }
 }
