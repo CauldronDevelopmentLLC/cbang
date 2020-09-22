@@ -33,6 +33,7 @@
 #pragma once
 
 #include <iosfwd> // streamsize
+
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/operations.hpp>
 #include <boost/iostreams/close.hpp>
@@ -104,7 +105,7 @@ namespace cb {
           fill += LZ4F_compressUpdate(ctx, buffer + fill, space, in, bytes, 0);
         }
 
-        std::streamsize bytes = std::min(fill, n);
+        std::streamsize bytes = fill < n ? fill : n;
         if (bytes) {
           memcpy(s, buffer, bytes);
           if (bytes < fill) memmove(buffer, buffer + fill, fill - bytes);
