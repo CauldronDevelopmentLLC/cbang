@@ -64,6 +64,5 @@ namespace cb {
   protected:
     void writeHeader(type_t type, const std::string &filename, uint64_t size,
                      uint32_t mode);
-    void addCompression(Compression compression);
   };
 }

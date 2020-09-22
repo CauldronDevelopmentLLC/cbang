@@ -35,14 +35,7 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SysError.h>
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/BZip2Decompressor.h>
-#include <cbang/iostream/LZ4Decompressor.h>
-
-#include <boost/ref.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-namespace io = boost::iostreams;
+#include <cbang/iostream/CompressionFilter.h>
 
 using namespace cb;
 using namespace std;
@@ -58,7 +51,7 @@ TarFileReader::TarFileReader(const string &path, Compression compression) :
   didReadHeader(false) {
 
   if (compression == COMPRESSION_AUTO) compression = CompressionFromPath(path);
-  addCompression(compression);
+  pushDecompression(compression, pri->filter);
   pri->filter.push(*this->stream);
 }
 
@@ -67,7 +60,7 @@ TarFileReader::TarFileReader(istream &stream, Compression compression) :
   pri(new private_t), stream(SmartPointer<istream>::Phony(&stream)),
   didReadHeader(false) {
 
-  addCompression(compression);
+  pushDecompression(compression, pri->filter);
   pri->filter.push(*this->stream);
 }
 
@@ -132,16 +125,4 @@ string TarFileReader::extract(ostream &out) {
   didReadHeader = false;
 
   return getFilename();
-}
-
-
-void TarFileReader::addCompression(Compression compression) {
-  switch (compression) {
-  case COMPRESSION_NONE:                                             break;
-  case COMPRESSION_BZIP2: pri->filter.push(BZip2Decompressor());     break;
-  case COMPRESSION_GZIP:  pri->filter.push(io::gzip_decompressor()); break;
-  case COMPRESSION_ZLIB:  pri->filter.push(io::zlib_decompressor()); break;
-  case COMPRESSION_LZ4:   pri->filter.push(LZ4Decompressor());       break;
-  default: THROW("Invalid compression type " << compression);
-  }
 }

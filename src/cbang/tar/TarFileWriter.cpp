@@ -34,14 +34,7 @@
 
 #include <cbang/os/SystemUtilities.h>
 
-#include <cbang/iostream/BZip2Compressor.h>
-#include <cbang/iostream/LZ4Compressor.h>
-
-#include <boost/ref.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-namespace io = boost::iostreams;
+#include <cbang/iostream/CompressionFilter.h>
 
 using namespace cb;
 using namespace std;
@@ -58,7 +51,7 @@ TarFileWriter::TarFileWriter(const string &path, ios::openmode mode, int perm,
   stream(SystemUtilities::open(path, mode | ios::out, perm)) {
 
   if (compression == COMPRESSION_AUTO) compression = CompressionFromPath(path);
-  addCompression(compression);
+  pushCompression(compression, pri->filter);
   pri->filter.push(*this->stream);
 }
 
@@ -66,7 +59,7 @@ TarFileWriter::TarFileWriter(const string &path, ios::openmode mode, int perm,
 TarFileWriter::TarFileWriter(ostream &stream, Compression compression) :
   pri(new private_t), stream(SmartPointer<ostream>::Phony(&stream)) {
 
-  addCompression(compression);
+  pushCompression(compression, pri->filter);
   pri->filter.push(*this->stream);
 }
 
@@ -106,16 +99,4 @@ void TarFileWriter::writeHeader(type_t type, const string &filename,
   setSize(size);
   setMode(mode);
   writeHeader(pri->filter);
-}
-
-
-void TarFileWriter::addCompression(Compression compression) {
-  switch (compression) {
-  case COMPRESSION_NONE:                                           break;
-  case COMPRESSION_BZIP2: pri->filter.push(BZip2Compressor());     break;
-  case COMPRESSION_GZIP:  pri->filter.push(io::gzip_compressor()); break;
-  case COMPRESSION_ZLIB:  pri->filter.push(io::zlib_compressor()); break;
-  case COMPRESSION_LZ4:   pri->filter.push(LZ4Compressor());       break;
-  default: THROW("Invalid compression type " << compression);
-  }
 }

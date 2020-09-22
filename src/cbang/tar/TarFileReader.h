@@ -50,7 +50,8 @@ namespace cb {
   public:
     TarFileReader(const std::string &path,
                   Compression compression = COMPRESSION_AUTO);
-    TarFileReader(std::istream &stream, Compression compression);
+    TarFileReader(std::istream &stream,
+                  Compression compression = COMPRESSION_NONE);
     ~TarFileReader();
 
     bool hasMore();
@@ -58,8 +59,5 @@ namespace cb {
 
     std::string extract(const std::string &path = ".");
     std::string extract(std::ostream &out);
-
-  protected:
-    void addCompression(Compression compression);
   };
 }
