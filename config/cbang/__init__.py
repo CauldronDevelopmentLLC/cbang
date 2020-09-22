@@ -72,6 +72,10 @@ def configure_deps(conf, local = True, with_openssl = True):
                 conf.CBCheckLib('iberty') and conf.CBCheckLib('bfd'):
             env.CBConfigDef('HAVE_CBANG_BACKTRACE')
 
+            # Check bfd for API change
+            if not conf.CBCheckFunc('bfd_get_error_handler'):
+                env.CBConfigDef('HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE')
+
         elif env.get('backtrace_debugger', 0):
             raise SCons.Errors.StopError(
                 'execinfo.h, bfd.h and libbfd needed for backtrace_debuger')

@@ -76,6 +76,7 @@ using namespace cb;
 
 
 namespace {
+#ifdef HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE
   void _bfd_error_handler(const char *fmt, va_list ap) {
     // Suppress annoying error message caused by DWARF/libbfd incompatibility
     if (String::startsWith(fmt, "DWARF error: could not find variable spec"))
@@ -83,6 +84,20 @@ namespace {
 
     LOG_ERROR(String::vprintf(fmt, ap));
   }
+
+#else // HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE
+  void _bfd_error_handler(const char *fmt, ...) {
+    // Suppress annoying error message caused by DWARF/libbfd incompatibility
+    if (String::startsWith(fmt, "DWARF error: could not find variable spec"))
+      return;
+
+    va_list ap;
+
+    va_start(ap, fmt);
+    LOG_ERROR(String::vprintf(fmt, ap));
+    va_end(ap);
+  }
+#endif // _bfd_error_handler
 }
 
 
