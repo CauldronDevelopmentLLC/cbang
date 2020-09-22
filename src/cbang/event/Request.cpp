@@ -44,12 +44,9 @@
 #include <cbang/json/JSON.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/Regex.h>
-#include <cbang/iostream/LZ4Compressor.h>
+#include <cbang/iostream/CompressionFilter.h>
 
 #include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
 namespace io = boost::iostreams;
 
 using namespace cb::Event;
@@ -69,14 +66,9 @@ namespace {
     SmartPointer<ostream> target = new BufferStream<>(buffer);
     SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
 
-    switch (compression) {
-    case Compression::COMPRESSION_ZLIB:  out->push(io::zlib_compressor()); break;
-    case Compression::COMPRESSION_GZIP:  out->push(io::gzip_compressor()); break;
-    case Compression::COMPRESSION_BZIP2: out->push(io::bzip2_compressor()); break;
-    case Compression::COMPRESSION_LZ4:   out->push(LZ4Compressor()); break;
-    default: return target;
-    }
+    if (compression == Compression::COMPRESSION_NONE) return target;
 
+    pushCompression(compression, *out);
     out->ref = target;
     out->push(*target);
 
