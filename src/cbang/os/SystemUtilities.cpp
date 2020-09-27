@@ -47,8 +47,7 @@
 #include <cbang/util/SmartLock.h>
 #include <cbang/net/URI.h>
 #include <cbang/io/File.h>
-#include <cbang/iostream/LZ4Compressor.h>
-#include <cbang/iostream/LZ4Decompressor.h>
+#include <cbang/iostream/CompressionFilter.h>
 
 #include <errno.h>
 #include <string.h>
@@ -97,8 +96,6 @@
 #include <boost/filesystem/path.hpp>
 
 #include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/filter/gzip.hpp>
-#include <boost/iostreams/filter/bzip2.hpp>
 
 using namespace std;
 using namespace cb;
@@ -1094,17 +1091,11 @@ namespace cb {
         SmartPointer<File> file = new File(filename, ios::in);
 
         if (autoCompression) {
-          bool gzip  = String::endsWith(filename, ".gz");
-          bool bzip2 = String::endsWith(filename, ".bz2");
-          bool lz4   = String::endsWith(filename, ".lz4");
+          Compression compression = compressionFromPath(filename);
 
-          if (gzip || bzip2 || lz4) {
+          if (compression != Compression::COMPRESSION_NONE) {
             SmartPointer<IStream> s = new IStream(file);
-
-            if (gzip)  s->push(io::gzip_decompressor());
-            if (bzip2) s->push(io::bzip2_decompressor());
-            if (lz4)   s->push(LZ4Decompressor());
-
+            pushDecompression(compression, *s);
             s->push(*file);
 
             return s;
@@ -1137,17 +1128,11 @@ namespace cb {
         SmartPointer<File> file = new File(filename, ios::out, perm);
 
         if (autoCompression) {
-          bool gzip  = String::endsWith(filename, ".gz");
-          bool bzip2 = String::endsWith(filename, ".bz2");
-          bool lz4   = String::endsWith(filename, ".lz4");
+          Compression compression = compressionFromPath(filename);
 
-          if (gzip || bzip2 || lz4) {
+          if (compression != Compression::COMPRESSION_NONE) {
             SmartPointer<OStream> s = new OStream(file);
-
-            if (gzip)  s->push(io::gzip_compressor());
-            if (bzip2) s->push(io::bzip2_compressor());
-            if (lz4)   s->push(LZ4Compressor());
-
+            pushCompression(compression, *s);
             s->push(*file);
 
             return s;

@@ -43,7 +43,7 @@
 #include <string>
 
 namespace cb {
-  Compression CompressionFromPath(const std::string &path);
+  Compression compressionFromPath(const std::string &path);
 }
 
 #endif // CBANG_COMPRESSION_H

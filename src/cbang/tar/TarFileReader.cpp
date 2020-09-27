@@ -50,7 +50,7 @@ TarFileReader::TarFileReader(const string &path, Compression compression) :
   pri(new private_t), stream(SystemUtilities::iopen(path)),
   didReadHeader(false) {
 
-  if (compression == COMPRESSION_AUTO) compression = CompressionFromPath(path);
+  if (compression == COMPRESSION_AUTO) compression = compressionFromPath(path);
   pushDecompression(compression, pri->filter);
   pri->filter.push(*this->stream);
 }

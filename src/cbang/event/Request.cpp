@@ -469,6 +469,9 @@ Request::getJSONWriter(unsigned indent, bool compact,
   resetOutput();
   setContentType("application/json");
 
+  if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
+  outSetContentEncoding(compression);
+
   return new JSONWriter(this, indent, compact, compression);
 }
 
