@@ -50,7 +50,7 @@ TarFileWriter::TarFileWriter(const string &path, ios::openmode mode, int perm,
   pri(new private_t),
   stream(SystemUtilities::open(path, mode | ios::out, perm)) {
 
-  if (compression == COMPRESSION_AUTO) compression = CompressionFromPath(path);
+  if (compression == COMPRESSION_AUTO) compression = compressionFromPath(path);
   pushCompression(compression, pri->filter);
   pri->filter.push(*this->stream);
 }

@@ -40,7 +40,7 @@ using namespace std;
 
 
 namespace cb {
-  Compression CompressionFromPath(const string &path) {
+  Compression compressionFromPath(const string &path) {
     if (String::endsWith(path, ".bz2") || String::endsWith(path, ".bzip2"))
       return Compression::COMPRESSION_BZIP2;
     if (String::endsWith(path, ".zlib")) return Compression::COMPRESSION_ZLIB;
