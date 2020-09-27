@@ -109,7 +109,7 @@ namespace {
       if (closed) return;
       closed = true;
       JSON::Writer::close();
-      SmartPointer<ostream>::get()->flush();
+      SmartPointer<ostream>::release();
       if (!getLength()) req->outRemove("Content-Type");
       send(*this);
     }
@@ -322,13 +322,14 @@ void Request::guessContentType() {
 
 void Request::outSetContentEncoding(Compression compression) {
   switch (compression) {
+  case COMPRESSION_NONE: break;
   case COMPRESSION_ZLIB:
   case COMPRESSION_GZIP:
   case COMPRESSION_BZIP2:
   case COMPRESSION_LZ4:
     outSet("Content-Encoding", getContentEncoding(compression));
     break;
-  default: break;
+  case COMPRESSION_AUTO: THROW("Unexected compression method");
   }
 }
 
@@ -464,13 +465,11 @@ SmartPointer<JSON::Value> Request::getJSONMessage() const {
 
 
 SmartPointer<JSON::Writer>
-Request::getJSONWriter(unsigned indent, bool compact,
-                       Compression compression) {
+Request::getJSONWriter(unsigned indent, bool compact, Compression compression) {
   resetOutput();
   setContentType("application/json");
 
   if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
-  outSetContentEncoding(compression);
 
   return new JSONWriter(this, indent, compact, compression);
 }
