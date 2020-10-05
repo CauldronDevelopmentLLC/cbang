@@ -652,6 +652,19 @@ string String::hexEncode(const string &s) {
 }
 
 
+string String::hexEncode(const char *data, unsigned length) {
+  string result;
+  result.reserve(length * 2);
+
+  for (unsigned i = 0; i < length; i++) {
+    result.append(1, hexNibble(data[i] >> 4));
+    result.append(1, hexNibble(data[i]));
+  }
+
+  return result;
+}
+
+
 string String::escapeRE(const string &s) {
   static const Regex re("[\\^\\.\\$\\|\\(\\)\\[\\]\\*\\+\\?\\/\\\\]");
   static const string rep("\\\\\\1&");
