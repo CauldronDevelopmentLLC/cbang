@@ -155,6 +155,7 @@ namespace cb {
     static std::string hexdump(const std::string &s);
     static char hexNibble(int x, bool lower = true);
     static std::string hexEncode(const std::string &s);
+    static std::string hexEncode(const char *data, unsigned length);
     static std::string escapeRE(const std::string &s);
     static std::string escapeMySQL(const std::string &s);
     static std::string escapeC(char c);
