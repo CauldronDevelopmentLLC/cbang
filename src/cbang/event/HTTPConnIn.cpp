@@ -60,7 +60,7 @@ void HTTPConnIn::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
 
   auto cb =
     [this, req, hasMore] (bool success) {
-      LOG_DEBUG(3, "Response " << (success ? "successful" : "failed")
+      LOG_DEBUG(6, "Response " << (success ? "successful" : "failed")
                 << " hasMore=" << hasMore << " persistent="
                 << req->isPersistent() << " numReqs=" << getNumRequests());
 
