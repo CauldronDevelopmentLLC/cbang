@@ -67,6 +67,7 @@ namespace cb {
       HTTPConnOut &getConnection();
       const HTTPConnOut &getConnection() const;
 
+      void setCallback(callback_t cb) {this->cb = cb;}
       void setProgressCallback(progress_cb_t cb, double delay = 0.25);
 
       void connect(std::function<void (bool)> cb);

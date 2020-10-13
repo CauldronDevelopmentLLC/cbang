@@ -77,9 +77,12 @@ void WebServer::addOptions(cb::Options &options) {
   options.add("http-max-headers-size", "Maximum size of the HTTP request "
               "headers.");
   options.add("http-server-timeout", "Maximum time in seconds before an http "
-              "request times out.");
+              "request times out.  Zero indicates no timeout.");
   options.add("http-connection-backlog", "Size of the connection backlog "
               "queue.  Once this is full connections are rejected.");
+  options.add("http-max-connections", "Maximum simultaneous HTTP connections "
+              "per port");
+  options.add("http-max-ttl", "Maximum HTTP client connection time in seconds");
 
   options.popCategory();
 
@@ -115,6 +118,10 @@ void WebServer::init() {
     setTimeout(options["http-server-timeout"].toInteger());
   if (options["http-connection-backlog"].hasValue())
     setConnectionBacklog(options["http-connection-backlog"].toInteger());
+  if (options["http-max-connections"].hasValue())
+    setMaxConnections(options["http-max-connections"].toInteger());
+  if (options["http-max-ttl"].hasValue())
+    setMaxConnectionTTL(options["http-max-ttl"].toInteger());
 
   // Configure ports
   Option::strings_t addresses = options["http-addresses"].toStrings();
@@ -178,8 +185,16 @@ void WebServer::endRequest(const SmartPointer<Request> &req) {
 }
 
 
-void WebServer::allow(const cb::IPAddress &addr) {ipFilter.allow(addr);}
-void WebServer::deny(const cb::IPAddress &addr) {ipFilter.deny(addr);}
+void WebServer::allow(const string &spec) {
+  LOG_INFO(5, "Allowing HTTP access to " << spec);
+  ipFilter.allow(spec);
+}
+
+
+void WebServer::deny(const string &spec) {
+  LOG_INFO(5, "Denying HTTP access to " << spec);
+  ipFilter.deny(spec);
+}
 
 
 void WebServer::addListenPort(const cb::IPAddress &addr) {

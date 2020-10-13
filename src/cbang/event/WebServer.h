@@ -85,8 +85,8 @@ namespace cb {
       void addListenPort(const IPAddress &addr);
       void addSecureListenPort(const IPAddress &addr);
 
-      void allow(const IPAddress &addr);
-      void deny(const IPAddress &addr);
+      void allow(const std::string &spec);
+      void deny(const std::string &spec);
 
       void setTimeout(int timeout);
     };

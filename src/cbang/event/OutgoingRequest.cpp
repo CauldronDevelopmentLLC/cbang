@@ -128,15 +128,8 @@ void OutgoingRequest::onProgress(unsigned bytes, int total) {
 
 
 void OutgoingRequest::onResponse(ConnectionError error) {
-  if (error) {
-    LOG_ERROR("< " << getConnection().getPeer() << ' ' << error);
-
-    //string sslErrors = getSSLErrors(); TODO
-    //if (!sslErrors.empty()) sslErrors = " SSL:" + sslErrors;
-
-    //LOG_DEBUG(4, "SYS:" << SysError() << sslErrors);
-
-  } else {
+  if (error) LOG_ERROR("< " << getConnection().getPeer() << ' ' << error);
+  else {
     LOG_INFO(1, "< " << getConnection().getPeer() << ' ' << getResponseLine());
     LOG_DEBUG(5, getInputHeaders() << '\n');
     LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
