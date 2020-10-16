@@ -10,6 +10,16 @@ from SCons.Action import CommandAction
 deps = ['nsi', 'pkg', 'distpkg', 'flatdistpkg', 'app', 'deb', 'rpm']
 
 
+def get_dist():
+    if hasattr(platform, 'dist'): return platform.dist()[0].lower()
+    if os.path.exists('/etc/os-release'):
+        with open('/etc/os-release', 'r') as f:
+            for line in f:
+                if line.startswith('ID='):
+                    return line[3:].strip(' \n\r"').lower()
+    return 'unknown'
+
+
 # Older versions of Python don't have shutil.ignore_patterns()
 def ignore_patterns(*patterns):
     import fnmatch
@@ -73,7 +83,7 @@ def _GetPackageType(env):
         else: raise Exception('Invalid pkg package type "%s"' % pkg_type)
 
     elif env['PLATFORM'] == 'posix':
-        dist = platform.dist()[0].lower()
+        dist = get_dist()
 
         if dist in ['debian', 'ubuntu']: return 'deb'
         if dist in ['centos', 'redhat', 'fedora']: return 'rpm'
