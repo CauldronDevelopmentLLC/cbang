@@ -36,7 +36,6 @@
 #include "Enum.h"
 
 #include <cbang/json/Value.h>
-#include <cbang/json/Sink.h>
 
 #include <functional>
 
@@ -97,8 +96,7 @@ namespace cb {
 
 
     struct HTTPRequestJSONHandler : public HTTPRequestHandler {
-      virtual void operator()
-      (Request &, const JSON::ValuePtr &, JSON::Sink &) = 0;
+      virtual void operator()(Request &, const JSON::ValuePtr &) = 0;
 
       // From HTTPRequestHandler
       bool operator()(Request &req);
@@ -107,8 +105,7 @@ namespace cb {
 
     template <class T>
     struct HTTPRequestJSONMemberHandler : public HTTPRequestJSONHandler {
-      typedef void (T::*member_t)
-        (Request &, const JSON::ValuePtr &, JSON::Sink &);
+      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
       T *obj;
       member_t member;
 
@@ -119,14 +116,14 @@ namespace cb {
       }
 
       // From HTTPRequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg,
-                      JSON::Sink &sink) {(*obj.*member)(req, msg, sink);}
+      void operator()(Request &req, const JSON::ValuePtr &msg)
+        {(*obj.*member)(req, msg);}
     };
 
 
     template <class T>
     struct HTTPRequestJSONRecastHandler : public HTTPRequestJSONHandler {
-      typedef void (T::*member_t)(const JSON::ValuePtr &, JSON::Sink &);
+      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
       member_t member;
 
       HTTPRequestJSONRecastHandler(member_t member) : member(member) {
@@ -134,9 +131,8 @@ namespace cb {
       }
 
       // From HTTPRequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg,
-                      JSON::Sink &sink) {
-        (req.cast<T>().*member)(msg, sink);
+      void operator()(Request &req, const JSON::ValuePtr &msg) {
+        (req.cast<T>().*member)(req, msg);
       }
     };
   }

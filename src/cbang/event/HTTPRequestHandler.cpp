@@ -41,9 +41,6 @@ using namespace std;
 
 bool HTTPRequestJSONHandler::operator()(Request &req) {
   try {
-    // Setup JSON output
-    SmartPointer<JSON::Writer> writer = req.getJSONWriter();
-
     // Parse JSON message
     JSON::ValuePtr msg = req.getJSONMessage();
 
@@ -53,10 +50,7 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
     else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
 
     // Dispatch JSON call
-    (*this)(req, msg, *writer);
-
-    // Make sure JSON stream is complete
-    writer.release();
+    (*this)(req, msg);
 
     // Send reply
     req.reply();
