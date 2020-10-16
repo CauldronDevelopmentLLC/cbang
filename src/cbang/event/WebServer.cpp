@@ -113,7 +113,7 @@ void WebServer::init() {
   if (options["http-max-body-size"].hasValue())
     setMaxBodySize(options["http-max-body-size"].toInteger());
   if (options["http-max-headers-size"].hasValue())
-    setMaxHeadersSize(options["http-max-headers-size"].toInteger());
+    setMaxHeaderSize(options["http-max-headers-size"].toInteger());
   if (options["http-server-timeout"].hasValue())
     setTimeout(options["http-server-timeout"].toInteger());
   if (options["http-connection-backlog"].hasValue())

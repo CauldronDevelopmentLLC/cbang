@@ -44,8 +44,8 @@ namespace cb {
     class HTTPConn;
 
     class HTTPServer : public Server {
-      unsigned maxBodySize = std::numeric_limits<unsigned>::max();
-      unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
+      unsigned maxBodySize   = std::numeric_limits<int>::max();
+      unsigned maxHeaderSize = std::numeric_limits<int>::max();
 
     public:
       HTTPServer(Base &base);
@@ -53,8 +53,8 @@ namespace cb {
       unsigned getMaxBodySize() const {return maxBodySize;}
       void setMaxBodySize(unsigned size) {maxBodySize = size;}
 
-      unsigned getMaxHeadersSize() const {return maxHeaderSize;}
-      void setMaxHeadersSize(unsigned size) {maxHeaderSize = size;}
+      unsigned getMaxHeaderSize() const {return maxHeaderSize;}
+      void setMaxHeaderSize(unsigned size) {maxHeaderSize = size;}
 
       virtual SmartPointer<Request>
       createRequest(RequestMethod method, const URI &uri,

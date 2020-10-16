@@ -88,5 +88,8 @@ SmartPointer<Connection> HTTPServer::createConnection() {
 
 
 void HTTPServer::onConnect(const SmartPointer<Connection> &conn) {
-  conn.cast<HTTPConnIn>()->readHeader();
+  auto c = conn.cast<HTTPConnIn>();
+  c->setMaxHeaderSize(maxHeaderSize);
+  c->setMaxBodySize(maxBodySize);
+  c->readHeader();
 }
