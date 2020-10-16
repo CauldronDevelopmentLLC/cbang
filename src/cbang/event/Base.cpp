@@ -71,7 +71,10 @@ Base::Base(bool withThreads, int priorities) {
 }
 
 
-Base::~Base() {if (base) event_base_free(base);}
+Base::~Base() {
+  pool.release(); // Must be before base is freed
+  if (base) event_base_free(base);
+}
 
 
 FDPool &Base::getPool() {
