@@ -56,7 +56,7 @@ void HTTPConnIn::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
 
   checkActive(req);
 
-  getStats()->event(req->getResponseCode().toString());
+  if (getStats().isSet()) getStats()->event(req->getResponseCode().toString());
 
   auto cb =
     [this, req, hasMore] (bool success) {
