@@ -45,10 +45,10 @@
 #include <cbang/json/Value.h>
 #include <cbang/json/Writer.h>
 #include <cbang/enum/Compression.h>
+#include <cbang/debug/Demangle.h>
 
 #include <string>
 #include <iostream>
-#include <typeinfo>
 
 
 namespace cb {
@@ -95,7 +95,8 @@ namespace cb {
       template <class T>
       T &cast() {
         T *ptr = dynamic_cast<T *>(this);
-        if (!ptr) THROW("Cannot cast Request to " << typeid(T).name());
+        if (!ptr)
+          THROW("Cannot cast Request to " << type_name<T>());
         return *ptr;
       }
 
@@ -217,14 +218,14 @@ namespace cb {
       SmartPointer<JSON::Value> getJSONMessage() const;
       SmartPointer<JSON::Writer>
       getJSONWriter(unsigned indent, bool compact,
-                    Compression compression = COMPRESSION_AUTO);
+                    Compression compression = COMPRESSION_NONE);
       SmartPointer<JSON::Writer>
-      getJSONWriter(Compression compression = COMPRESSION_AUTO);
+      getJSONWriter(Compression compression = COMPRESSION_NONE);
       SmartPointer<JSON::Writer> getJSONPWriter(const std::string &callback);
 
       SmartPointer<std::istream> getInputStream() const;
       SmartPointer<std::ostream>
-      getOutputStream(Compression compression = COMPRESSION_AUTO);
+      getOutputStream(Compression compression = COMPRESSION_NONE);
 
       virtual void sendError(HTTPStatus code);
       virtual void sendError(HTTPStatus code, const std::string &message);
