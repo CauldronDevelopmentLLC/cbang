@@ -70,6 +70,7 @@ namespace cb {
       bool wantsRead() const {return ssl.isSet() && ssl->wantsRead();}
       bool wantsWrite() const {return ssl.isSet() && ssl->wantsWrite();}
 
+      virtual bool isPending() const {return false;}
       virtual int transfer() {finished = success = true; return 0;}
       virtual void complete() {if (cb) cb(success);}
     };
