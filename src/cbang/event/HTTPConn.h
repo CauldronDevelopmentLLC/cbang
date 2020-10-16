@@ -47,8 +47,8 @@ namespace cb {
 
     class HTTPConn : public Connection {
     protected:
-      unsigned maxBodySize = std::numeric_limits<unsigned>::max();
-      unsigned maxHeaderSize = std::numeric_limits<unsigned>::max();
+      unsigned maxBodySize   = std::numeric_limits<int>::max();
+      unsigned maxHeaderSize = std::numeric_limits<int>::max();
 
       Buffer input;
 
