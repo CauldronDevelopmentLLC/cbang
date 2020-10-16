@@ -114,7 +114,8 @@ namespace cb {
         uint64_t getNextTimeout() const;
         void updateTimeout(bool wasActive, bool nowActive);
         void timeout(uint64_t now);
-        void transfer(unsigned events);
+        void transfer();
+        void transferPending();
         void flush();
         void add(const SmartPointer<Transfer> &tran);
 
