@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "BacktraceDebugger.h"
+#include "Demangle.h"
 
 #include <cbang/config.h>
 
@@ -44,7 +45,6 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
-#include <cxxabi.h>
 
 #include <execinfo.h>
 #include <bfd.h>
@@ -208,18 +208,10 @@ bool BacktraceDebugger::getStackTrace(StackTrace &trace) {
     }
 
     // Function name
-    char *demangled = 0;
     if (!function) function = "";
-    else {
-      int status = 0;
-      demangled = abi::__cxa_demangle(function, 0, 0, &status);
-      if (!status && demangled) function = demangled;
-    }
 
     trace.push_back
-      (StackFrame(stack[i], FileLocation(filename, function, line)));
-
-    if (demangled) free(demangled);
+      (StackFrame(stack[i], FileLocation(filename, demangle(function), line)));
   }
 
   return true;

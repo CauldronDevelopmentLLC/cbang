@@ -35,8 +35,8 @@
 #include "Base.h"
 
 #include <cbang/Exception.h>
+#include <cbang/debug/Demangle.h>
 
-#include <typeinfo>
 #include <vector>
 
 
@@ -96,7 +96,7 @@ namespace cb {
   template <typename T> Singleton<T>::Singleton() {
     if (singleton)
       CBANG_THROW("There can be only one. . .instance of singleton "
-                   << typeid(T).name());
+                  << type_name<T>());
 
     singleton = this;
     SingletonDealloc::instance().add(singleton);
@@ -111,7 +111,7 @@ namespace cb {
 
     T *ptr = dynamic_cast<T *>(singleton);
     if (!ptr) CBANG_THROW("Invalid singleton, not of type "
-                           << typeid(T).name());
+                          << type_name<T>());
 
     return *ptr;
   }

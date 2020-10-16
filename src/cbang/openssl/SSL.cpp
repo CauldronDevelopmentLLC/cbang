@@ -220,6 +220,9 @@ void cb::SSL::shutdown() {
 }
 
 
+unsigned cb::SSL::getPending() const {return SSL_pending(ssl);}
+
+
 int cb::SSL::read(char *data, unsigned size) {
   LOG_DEBUG(5, "cb::SSL::read(" << size << ')');
 

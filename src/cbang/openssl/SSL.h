@@ -92,6 +92,7 @@ namespace cb {
     void accept();
     void shutdown();
 
+    unsigned getPending() const;
     int read(char *data, unsigned size);
     unsigned write(const char *data, unsigned size);
 
