@@ -50,6 +50,7 @@ namespace cb {
                    const std::string &until = std::string());
 
       // From Transfer
+      bool isPending() const;
       int transfer();
 
     protected:

@@ -53,8 +53,21 @@ TransferRead::TransferRead(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
   Transfer(fd, ssl, cb, length), buffer(buffer), until(until) {checkFinished();}
 
 
+bool TransferRead::isPending() const {
+#ifdef HAVE_OPENSSL
+  if (ssl.isSet()) return ssl->getPending();
+#endif
+  return false;
+}
+
 
 int TransferRead::transfer() {
+#ifdef HAVE_OPENSSL
+  const bool haveSSL = ssl.isSet();
+#else
+  const bool haveSSL = false;
+#endif
+
   int bytes = 0;
 
   while (true) {
@@ -71,7 +84,7 @@ int TransferRead::transfer() {
     else checkFinished();
 
     if (finished || ret <= 0)
-      return bytes ? bytes : ((success || wantsWrite()) ? ret : -1);
+      return bytes ? bytes : ((success || wantsWrite() || haveSSL) ? ret : -1);
 
     bytes += ret;
   }
@@ -85,7 +98,7 @@ int TransferRead::read(Buffer &buffer, unsigned length) {
   if (ssl.isSet()) {
     try {
       iovec space;
-      buffer.reserve(length, space);
+      buffer.reserve(min(length, 1U << 20), space);
       if (!space.iov_len) return -1;
 
       unsigned bytes = min(length, (unsigned)space.iov_len);
@@ -98,6 +111,9 @@ int TransferRead::read(Buffer &buffer, unsigned length) {
 
         space.iov_len = ret;
         buffer.commit(space);
+
+        if (ssl->getPending())
+          LOG_DEBUG(4, "SSL pending " << ssl->getPending());
       }
 
       return ret;
