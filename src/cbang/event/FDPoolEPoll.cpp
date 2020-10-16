@@ -119,7 +119,7 @@ void FDPoolEPoll::FDQueue::timeout(uint64_t now) {
 }
 
 
-void FDPoolEPoll::FDQueue::transfer(unsigned events) {
+void FDPoolEPoll::FDQueue::transfer() {
   if (closed || empty()) return;
 
   auto &pool = fdr.getPool();
@@ -146,6 +146,11 @@ void FDPoolEPoll::FDQueue::transfer(unsigned events) {
       pop();
     }
   }
+}
+
+
+void FDPoolEPoll::FDQueue::transferPending() {
+  while (!empty() && front()->isPending()) transfer();
 }
 
 
@@ -212,11 +217,11 @@ int FDPoolEPoll::FDRec::getStatus() const {
 void FDPoolEPoll::FDRec::transfer(unsigned events) {
   if (((events & FD::WRITE_EVENT) && readQ.wantsWrite()) ||
       ((events & FD::READ_EVENT)  && !writeQ.wantsRead()))
-    readQ.transfer(events);
+    readQ.transfer();
 
   if (((events & FD::READ_EVENT)  && writeQ.wantsRead()) ||
       ((events & FD::WRITE_EVENT) && !readQ.wantsWrite()))
-    writeQ.transfer(events);
+    writeQ.transfer();
 
   update();
 }
@@ -246,6 +251,8 @@ void FDPoolEPoll::FDRec::process(cmd_t cmd,
 
 
 void FDPoolEPoll::FDRec::update() {
+  readQ.transferPending();
+
   unsigned newEvents = getEvents();
   if (events == newEvents) return;
 
@@ -370,21 +377,21 @@ void FDPoolEPoll::processResults() {
       continue;
     }
     FD &fd = *it->second;
+    auto it2 = flushing.find(cmd.fd);
+    if (it2 != flushing.end() && cmd.cmd != CMD_FLUSHED) {
+      results.pop();
+      continue;
+    }
 
     switch (cmd.cmd) {
     case CMD_FLUSHED: {
-      auto it = flushing.find(cmd.fd);
-      if (it != flushing.end()) {
-        if (it->second) it->second(); // Call callback
-        flushing.erase(it);
-      }
-
+      if (it2->second) it2->second(); // Call callback
+      flushing.erase(it2);
       fds.erase(cmd.fd);
       break;
     }
 
     case CMD_COMPLETE:
-      if (flushing.find(cmd.fd) == flushing.end())
         TRY_CATCH_ERROR(cmd.tran->complete());
       break;
 
