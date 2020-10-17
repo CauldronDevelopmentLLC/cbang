@@ -79,7 +79,7 @@ namespace cb {
     uint64_t logDatePeriodically;
     bool logShortLevel;
     bool logLevel;
-    bool logThreadPrefix;
+    bool logPrefix;
     bool logDomain;
     bool logSimpleDomains;
     bool logThreadID;
@@ -97,7 +97,7 @@ namespace cb {
     uint64_t warningCount;
 
     SmartPointer<ThreadLocalStorage<unsigned long> > threadIDStorage;
-    SmartPointer<ThreadLocalStorage<std::string> > threadPrefixStorage;
+    SmartPointer<ThreadLocalStorage<std::string> > prefixStorage;
 
 
     SmartPointer<std::iostream> logFile;
@@ -142,7 +142,7 @@ namespace cb {
     void setLogDate(bool x) {logDate = x;}
     void setLogShortLevel(bool x) {logShortLevel = x;}
     void setLogLevel(bool x) {logLevel = x;}
-    void setLogThreadPrefix(bool x) {logThreadPrefix = x;}
+    void setLogPrefix(bool x) {logPrefix = x;}
     void setLogDomain(bool x) {logDomain = x;}
     void setLogSimpleDomains(bool x) {logSimpleDomains = x;}
     void setLogThreadID(bool x) {logThreadID = x;}
@@ -162,8 +162,8 @@ namespace cb {
 
     void setThreadID(unsigned long id);
     unsigned long getThreadID() const;
-    void setThreadPrefix(const std::string &prefix);
-    std::string getThreadPrefix() const;
+    void setPrefix(const std::string &prefix);
+    std::string getPrefix() const;
 
     std::string simplifyDomain(const std::string &domain) const;
     int domainVerbosity(const std::string &domain, int level) const;

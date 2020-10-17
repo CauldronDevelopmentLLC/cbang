@@ -35,17 +35,17 @@
 #include "Logger.h"
 
 namespace cb {
-  class SmartLogThreadPrefix {
+  class SmartLogPrefix {
     std::string oldPrefix;
 
   public:
-    SmartLogThreadPrefix(const std::string &prefix) :
-      oldPrefix(Logger::instance().getThreadPrefix()) {
-      Logger::instance().setThreadPrefix(prefix);
+    SmartLogPrefix(const std::string &prefix) :
+      oldPrefix(Logger::instance().getPrefix()) {
+      Logger::instance().setPrefix(prefix);
     }
 
-    ~SmartLogThreadPrefix() {
-      Logger::instance().setThreadPrefix(oldPrefix);
+    ~SmartLogPrefix() {
+      Logger::instance().setPrefix(oldPrefix);
     }
   };
 }
