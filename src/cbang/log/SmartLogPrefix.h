@@ -39,9 +39,10 @@ namespace cb {
     std::string oldPrefix;
 
   public:
-    SmartLogPrefix(const std::string &prefix) :
+    SmartLogPrefix(const std::string &prefix, bool append = false) :
       oldPrefix(Logger::instance().getPrefix()) {
-      Logger::instance().setPrefix(prefix);
+      Logger::instance()
+        .setPrefix((append ? oldPrefix : std::string()) + prefix);
     }
 
     ~SmartLogPrefix() {
