@@ -171,7 +171,7 @@ cb::SmartPointer<Request> WebServer::createRequest
 bool WebServer::handleRequest(const SmartPointer<Request> &req) {
   if (logPrefix) {
     string prefix = String::printf("REQ%lld:", req->getID());
-    Logger::instance().setThreadPrefix(prefix);
+    Logger::instance().setPrefix(prefix);
   }
 
   if (!allow(*req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
@@ -181,7 +181,7 @@ bool WebServer::handleRequest(const SmartPointer<Request> &req) {
 
 
 void WebServer::endRequest(const SmartPointer<Request> &req) {
-  if (logPrefix) Logger::instance().setThreadPrefix("");
+  if (logPrefix) Logger::instance().setPrefix("");
 }
 
 

@@ -77,12 +77,12 @@ Logger::Logger(Inaccessible) :
   logDebug(false),
 #endif
   logTime(true), logDate(false), logDatePeriodically(0), logShortLevel(false),
-  logLevel(true), logThreadPrefix(false), logDomain(false),
+  logLevel(true), logPrefix(false), logDomain(false),
   logSimpleDomains(true), logThreadID(false), logHeader(true),
   logNoInfoHeader(false), logColor(true), logToScreen(true), logTrunc(false),
   logRedirect(false), logRotate(true), logRotateMax(0), logRotateDir("logs"),
   threadIDStorage(new ThreadLocalStorage<unsigned long>),
-  threadPrefixStorage(new ThreadLocalStorage<string>),
+  prefixStorage(new ThreadLocalStorage<string>),
   screenStream(SmartPointer<ostream>::Phony(&cout)), idWidth(1),
   lastDate(Time::now()) {
 
@@ -117,7 +117,7 @@ void Logger::addOptions(Options &options) {
                     "information with log entries.");
   options.addTarget("log-level", logLevel,
                     "Print level information with log entries.");
-  options.addTarget("log-thread-prefix", logThreadPrefix,
+  options.addTarget("log-thread-prefix", logPrefix,
                     "Print thread prefixes, if set, with log entries.");
   options.addTarget("log-domain", logDomain,
                     "Print domain information with log entries.");
@@ -264,13 +264,13 @@ unsigned long Logger::getThreadID() const {
 }
 
 
-void Logger::setThreadPrefix(const string &prefix) {
-  threadPrefixStorage->set(prefix);
+void Logger::setPrefix(const string &prefix) {
+  prefixStorage->set(prefix);
 }
 
 
-string Logger::getThreadPrefix() const {
-  return threadPrefixStorage->isSet() ? threadPrefixStorage->get() : string();
+string Logger::getPrefix() const {
+  return prefixStorage->isSet() ? prefixStorage->get() : string();
 }
 
 
@@ -372,7 +372,7 @@ string Logger::getHeader(const string &domain, int level) const {
   if (logDomain && domain != "") header += string(domain) + ':';
 
   // Thread Prefix
-  if (logThreadPrefix) header += getThreadPrefix();
+  if (logPrefix) header += getPrefix();
 
   return header;
 }
