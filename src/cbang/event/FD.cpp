@@ -39,7 +39,12 @@
 #include <cbang/time/Time.h>
 #include <cbang/log/Logger.h>
 
-#include <unistd.h> // For close()
+// For close()
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 using namespace cb::Event;
 using namespace cb;
@@ -49,7 +54,7 @@ using namespace std;
 #define CBANG_LOG_PREFIX << "FD" << getFD() << ':'
 
 
-FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
+FD::FD(cb::Event::Base &base, int fd, const SmartPointer<SSL> &ssl) :
   base(base), ssl(ssl) {
   LOG_DEBUG(4, CBANG_FUNC << "() fd=" << fd);
   if (0 <= fd) setFD(fd);

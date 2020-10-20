@@ -44,7 +44,7 @@ using namespace std;
 using namespace cb::Event;
 
 
-WebServer::WebServer(cb::Options &options, Base &base,
+WebServer::WebServer(cb::Options &options, cb::Event::Base &base,
                      const cb::SmartPointer<cb::SSLContext> &sslCtx,
                      const cb::SmartPointer<HTTPHandlerFactory> &factory) :
   HTTPHandlerGroup(factory), HTTPServer(base), options(options),
@@ -168,7 +168,7 @@ cb::SmartPointer<Request> WebServer::createRequest
 }
 
 
-bool WebServer::handleRequest(const SmartPointer<Request> &req) {
+bool WebServer::handleRequest(const cb::SmartPointer<Request> &req) {
   if (logPrefix) {
     string prefix = String::printf("REQ%lld:", req->getID());
     Logger::instance().setPrefix(prefix);
@@ -180,7 +180,7 @@ bool WebServer::handleRequest(const SmartPointer<Request> &req) {
 }
 
 
-void WebServer::endRequest(const SmartPointer<Request> &req) {
+void WebServer::endRequest(const cb::SmartPointer<Request> &req) {
   if (logPrefix) Logger::instance().setPrefix("");
 }
 

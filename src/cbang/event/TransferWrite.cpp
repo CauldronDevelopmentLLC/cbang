@@ -41,6 +41,7 @@
 #endif
 
 #include <event2/util.h>
+#include <event2/buffer.h>
 
 using namespace cb::Event;
 using namespace cb;

@@ -49,8 +49,8 @@ HTTPConnIn::HTTPConnIn(HTTPServer &server) :
   HTTPConn(server.getBase()), server(server) {}
 
 
-void HTTPConnIn::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
-                              bool hasMore) {
+void HTTPConnIn::writeRequest(const SmartPointer<Request> &req,
+                              cb::Event::Buffer buffer, bool hasMore) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength() << " hasMore="
             << hasMore);
 
