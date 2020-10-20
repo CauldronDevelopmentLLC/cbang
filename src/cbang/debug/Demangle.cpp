@@ -54,8 +54,10 @@ namespace cb {
 
     return s;
   }
+}
 
 #else
+namespace cb {
   std::string demangle(const char *s) {return s;}
-#endif
 }
+#endif

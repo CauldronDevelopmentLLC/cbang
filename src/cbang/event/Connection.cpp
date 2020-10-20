@@ -50,7 +50,7 @@ using namespace std;
 uint64_t Connection::nextID = 0;
 
 
-Connection::Connection(Base &base) :
+Connection::Connection(cb::Event::Base &base) :
   FD(base),
   timeout(base.newEvent(this, &Connection::timedout, EVENT_NO_SELF_REF)) {
   LOG_DEBUG(3, "Connection " << id << " opened");

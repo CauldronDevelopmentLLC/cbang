@@ -45,7 +45,7 @@ using namespace std;
 #define CBANG_LOG_PREFIX << "CON" << getID() << ':'
 
 
-HTTPConn::HTTPConn(Base &base) : Connection(base) {}
+HTTPConn::HTTPConn(cb::Event::Base &base) : Connection(base) {}
 
 
 void HTTPConn::readChunks(const SmartPointer<Request> &req,

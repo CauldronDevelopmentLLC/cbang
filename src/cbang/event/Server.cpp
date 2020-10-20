@@ -43,7 +43,7 @@ using namespace cb;
 using namespace std;
 
 
-Server::Server(Base &base) : base(base) {
+Server::Server(cb::Event::Base &base) : base(base) {
 #ifndef HAVE_OPENSSL
   if (!sslCtx.isNull()) THROW("C! was not built with openssl support");
 #endif
