@@ -134,8 +134,11 @@ namespace cb {
   }
 }
 
-
+#ifdef _WIN32
+#define CBANG_FUNC __func__
+#else
 #define CBANG_FUNC cb::functionName(__PRETTY_FUNCTION__)
+#endif
 
 #ifdef DEBUG
 #define CBANG_FILE_LOCATION cb::FileLocation(__FILE__, CBANG_FUNC, __LINE__, -1)
