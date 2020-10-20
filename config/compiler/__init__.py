@@ -373,7 +373,8 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(CCFLAGS = ['/Qrestrict'])
 
     # Alignment
-    if compiler_mode == 'gnu': env.AppendUnique(CXXFLAGS = ['-faligned-new'])
+    if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
+        env.AppendUnique(CXXFLAGS = ['-faligned-new'])
 
     # Dependency files
     if depends and compiler_mode == 'gnu':
