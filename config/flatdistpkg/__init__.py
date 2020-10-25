@@ -401,7 +401,7 @@ def sign_or_copy_product_pkg(target, source, env):
 def sign_application(target, env):
     keychain = env.get('sign_keychain')
     sign = env.get('sign_id_app')
-    cmd = ['codesign', '-f', '--timestamp','--options', 'runtime']
+    cmd = ['codesign', '-f', '--timestamp'] #,'--options', 'runtime']
     try:
       ver = tuple([int(x) for x in platform.mac_ver()[0].split('.')])
       # all bundles in an app must also be signed on 10.7+
