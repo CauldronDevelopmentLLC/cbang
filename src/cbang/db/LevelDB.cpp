@@ -220,6 +220,7 @@ LevelDB::LevelDB(const string &name,
 
 
 LevelDB LevelDB::ns(const string &name) {
+  if (db.isNull()) THROW("DB not open");
   return LevelDB(getNS() + name, comparator, db);
 }
 

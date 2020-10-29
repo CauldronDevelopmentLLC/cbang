@@ -90,16 +90,25 @@ namespace cb {
     }
 
 
-    void insert(JSON::Sink &sink) const {
+    void insert(JSON::Sink &sink, bool withTotals = false) const {
       for (auto it = rates.begin(); it != rates.end(); it++)
-        sink.insert(it->first, it->second.get());
+        if (!withTotals) sink.insert(it->first, it->second.get());
+        else {
+          sink.insertDict(it->first);
+          sink.insert("rate", it->second.get());
+          sink.insert("total", it->second.getTotal());
+          sink.endDict();
+        }
+    }
+
+
+    void write(JSON::Sink &sink, bool withTotals) const {
+      sink.beginDict();
+      insert(sink, withTotals);
+      sink.endDict();
     }
 
     // From JSON::Serializable
-    void write(JSON::Sink &sink) const {
-      sink.beginDict();
-      insert(sink);
-      sink.endDict();
-    }
+    void write(JSON::Sink &sink) const {write(sink, false);}
   };
 }
