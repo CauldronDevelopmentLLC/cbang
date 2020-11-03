@@ -63,7 +63,8 @@ int TransferWrite::transfer() {
     else checkFinished();
 
     if (finished || ret <= 0)
-      return bytes ? bytes : ((success || wantsRead()) ? ret : -1);
+      return bytes ? bytes :
+        ((success || wantsRead() || wantsWrite()) ? ret : -1);
 
     bytes += ret;
   }
