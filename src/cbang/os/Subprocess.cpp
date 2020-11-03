@@ -477,12 +477,13 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     if (flags & MAX_PIPE_SIZE &&
         SystemUtilities::exists("/proc/sys/fs/pipe-max-size")) {
       string num = SystemUtilities::read("/proc/sys/fs/pipe-max-size");
-      uint32_t size = String::parseU32(num);
+      int size = (int)String::parseU32(num);
 
       for (unsigned i = 0; i < p->pipes.size(); i++)
         if (p->pipes[i].stream.isSet())
           if (fcntl(p->pipes[i].getParentHandle(), F_SETPIPE_SZ, size) == -1)
-            LOG_WARNING("Failed to set pipe " << i << " size to " << size);
+            LOG_WARNING("Failed to set pipe " << i << " size to " << size
+                        << ": " << SysError());
     }
   } CATCH_ERROR;
 
