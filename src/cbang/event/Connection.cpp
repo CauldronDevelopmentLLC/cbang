@@ -91,6 +91,7 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
     else socket->open();
     socket->setBlocking(false);
     setFD(socket->get());
+    setPeer(peer);
 
     // SSL
     if (getSSL().isSet()) {
@@ -115,6 +116,8 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
 
         // Use first address
         IPAddress addr(addrs[0].getIP(), peer.getPort());
+        addr.setHost(peer.getHost());
+        setPeer(addr);
 
         try {
           socket->connect(addr);
