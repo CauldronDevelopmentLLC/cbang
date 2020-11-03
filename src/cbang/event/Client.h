@@ -69,7 +69,10 @@ namespace cb {
 
       Base &getBase() {return base;}
       DNSBase &getDNS() {return dns;}
+
       const cb::SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
+      void setSSLContext(const cb::SmartPointer<SSLContext> &sslCtx)
+        {this->sslCtx = sslCtx;}
 
       const IPAddress &getBindAddress() const {return bindAddr;}
       void setBindAddress(const IPAddress &bind) {this->bindAddr = bind;}
