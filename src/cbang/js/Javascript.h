@@ -58,6 +58,8 @@ namespace cb {
                  const cb::SmartPointer<std::ostream> &stream =
                  cb::SmartPointer<std::ostream>::Phony(&std::cout));
 
+      void setStream(const cb::SmartPointer<std::ostream> &stream);
+
       SmartPointer<js::Factory> getFactory();
       void define(NativeModule &mod);
       void import(const std::string &module,
