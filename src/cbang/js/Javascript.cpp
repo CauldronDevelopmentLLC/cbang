@@ -86,6 +86,11 @@ Javascript::Javascript(const string &implName,
 }
 
 
+void Javascript::setStream(const SmartPointer<ostream> &stream) {
+  stdMod.setStream(stream);
+}
+
+
 SmartPointer<js::Factory> Javascript::getFactory() {return impl->getFactory();}
 
 

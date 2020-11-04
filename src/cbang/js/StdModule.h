@@ -50,6 +50,11 @@ namespace cb {
                 const cb::SmartPointer<std::ostream> &stream) :
         NativeModule("std"), js(js), stream(stream) {}
 
+
+      const cb::SmartPointer<std::ostream> &getStream() {return stream;}
+      void setStream(const cb::SmartPointer<std::ostream> &stream)
+        {this->stream = stream;}
+
       // From NativeModule
       void define(Sink &exports);
 
