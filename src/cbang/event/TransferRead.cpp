@@ -85,6 +85,8 @@ int TransferRead::transfer() {
     if (!bytes && ret < 0) finished = true;
     else checkFinished();
 
+    LOG_DEBUG(4, CBANG_FUNC << "() " << this << " finished=" << finished);
+
     if (finished || ret <= 0)
       return bytes ? bytes : ((success || wantsWrite() || haveSSL) ? ret : -1);
 

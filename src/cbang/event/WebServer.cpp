@@ -76,7 +76,7 @@ void WebServer::addOptions(cb::Options &options) {
   options.add("http-max-body-size", "Maximum size of an HTTP request body.");
   options.add("http-max-headers-size", "Maximum size of the HTTP request "
               "headers.");
-  options.add("http-server-timeout", "Maximum time in seconds before an http "
+  options.add("http-timeout", "Maximum time in seconds before an http "
               "request times out.  Zero indicates no timeout.");
   options.add("http-connection-backlog", "Size of the connection backlog "
               "queue.  Once this is full connections are rejected.");
@@ -114,8 +114,8 @@ void WebServer::init() {
     setMaxBodySize(options["http-max-body-size"].toInteger());
   if (options["http-max-headers-size"].hasValue())
     setMaxHeaderSize(options["http-max-headers-size"].toInteger());
-  if (options["http-server-timeout"].hasValue())
-    setTimeout(options["http-server-timeout"].toInteger());
+  if (options["http-timeout"].hasValue())
+    setTimeout(options["http-timeout"].toInteger());
   if (options["http-connection-backlog"].hasValue())
     setConnectionBacklog(options["http-connection-backlog"].toInteger());
   if (options["http-max-connections"].hasValue())
