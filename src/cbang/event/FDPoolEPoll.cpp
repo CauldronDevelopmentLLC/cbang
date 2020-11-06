@@ -371,11 +371,14 @@ FDPoolEPoll::FDRec &FDPoolEPoll::getFD(int fd) {
 void FDPoolEPoll::processResults() {
   while (!results.empty()) {
     auto &cmd = results.top();
+    LOG_DEBUG(5, CBANG_FUNC << "() fd=" << cmd.fd << " cmd=" << cmd.cmd);
+
     auto it = fds.find(cmd.fd);
     if (it == fds.end()) {
       results.pop();
       continue;
     }
+
     FD &fd = *it->second;
     auto it2 = flushing.find(cmd.fd);
     if (it2 != flushing.end() && cmd.cmd != CMD_FLUSHED) {
@@ -384,16 +387,13 @@ void FDPoolEPoll::processResults() {
     }
 
     switch (cmd.cmd) {
-    case CMD_FLUSHED: {
+    case CMD_FLUSHED:
       if (it2->second) it2->second(); // Call callback
       flushing.erase(it2);
       fds.erase(cmd.fd);
       break;
-    }
 
-    case CMD_COMPLETE:
-        TRY_CATCH_ERROR(cmd.tran->complete());
-      break;
+    case CMD_COMPLETE: TRY_CATCH_ERROR(cmd.tran->complete()); break;
 
     case CMD_READ_PROGRESS:
       readRate.event(cmd.value, cmd.time);

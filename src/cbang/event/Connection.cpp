@@ -53,12 +53,12 @@ uint64_t Connection::nextID = 0;
 Connection::Connection(cb::Event::Base &base) :
   FD(base),
   timeout(base.newEvent(this, &Connection::timedout, EVENT_NO_SELF_REF)) {
-  LOG_DEBUG(3, "Connection " << id << " opened");
+  LOG_DEBUG(3, "Connection opened");
 }
 
 
 Connection::~Connection() {
-  LOG_DEBUG(3, "Connection " << id << " closed");
+  LOG_DEBUG(3, "Connection closed");
   if (socket.isSet()) socket->adopt(); // Keep socket form closing FD
 }
 
@@ -79,6 +79,8 @@ void Connection::accept(const IPAddress &peer,
   setSSL(ssl); // Must be before setFD()
   this->socket = socket;
   setFD(socket->get());
+
+  LOG_DEBUG(4, "Connection accepted with fd " << socket->get());
 }
 
 
@@ -92,6 +94,8 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
     socket->setBlocking(false);
     setFD(socket->get());
     setPeer(peer);
+
+    LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
 
     // SSL
     if (getSSL().isSet()) {
@@ -109,7 +113,7 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
         ref->dnsReq.release();
 
         if (err || addrs.empty()) {
-          LOG_WARNING("DNS lookup failed for: " << peer);
+          LOG_WARNING("DNS lookup failed for " << peer);
           if (cb) cb(false);
           return;
         }
@@ -152,5 +156,6 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
 
 void Connection::timedout() {
   if (stats.isSet()) stats->event("timedout");
+  LOG_DEBUG(3, "Connection timedout");
   close();
 }
