@@ -124,7 +124,7 @@ namespace CBANG_ENUM_NAMESPACE {
 #undef CBANG_ENUM_FINAL
       };
 
-      return names[index] + (CBANG_ENUM_PREFIX);
+      return &names[index][CBANG_ENUM_PREFIX];
     }
 
 
@@ -151,11 +151,11 @@ namespace CBANG_ENUM_NAMESPACE {
 
       } else {
 #define CBANG_ENUM_FINAL(name, num, desc)                             \
-        if (nameCompare(s.c_str(), #name + (CBANG_ENUM_PREFIX)) == 0) \
+        if (nameCompare(s.c_str(), &#name[CBANG_ENUM_PREFIX]) == 0) \
           return name;
 #undef CBANG_ENUM_ALIAS
 #define CBANG_ENUM_ALIAS(alias, target)                                \
-        if (nameCompare(s.c_str(), #alias + (CBANG_ENUM_PREFIX)) == 0) \
+        if (nameCompare(s.c_str(), &#alias[CBANG_ENUM_PREFIX]) == 0) \
           return target;
 
 #include CBANG_ENUM_DEF
@@ -192,7 +192,7 @@ namespace CBANG_ENUM_NAMESPACE {
     const char *CBANG_ENUM_CLASS::toString(enum_t e) {
       switch (e) {
 #define CBANG_ENUM_FINAL(name, num, desc)               \
-        case name: return #name + (CBANG_ENUM_PREFIX);
+        case name: return &#name[CBANG_ENUM_PREFIX];
 #include CBANG_ENUM_DEF
 #undef CBANG_ENUM_FINAL
       default: return "UNKNOWN_ENUM";
@@ -220,12 +220,12 @@ namespace CBANG_ENUM_NAMESPACE {
 
       // Add enums + aliases
 #define CBANG_ENUM_FINAL(_name, num, desc)               \
-      entries[i].name = #_name + (CBANG_ENUM_PREFIX);    \
+      entries[i].name = &#_name[CBANG_ENUM_PREFIX];      \
       entries[i++].value = _name;
 
 #undef CBANG_ENUM_ALIAS
 #define CBANG_ENUM_ALIAS(alias, target)                 \
-      entries[i].name = #alias + (CBANG_ENUM_PREFIX);   \
+      entries[i].name = &#alias[CBANG_ENUM_PREFIX];     \
       entries[i++].value = target;
 
 #include CBANG_ENUM_DEF
