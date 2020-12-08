@@ -401,7 +401,7 @@ def sign_or_copy_product_pkg(target, source, env):
 def sign_application(target, env):
     keychain = env.get('sign_keychain')
     sign = env.get('sign_id_app')
-    cmd = ['codesign', '-f', '--timestamp'] #,'--options', 'runtime']
+    cmd = ['codesign', '-f', '--timestamp', '--options', 'runtime']
     try:
       ver = tuple([int(x) for x in platform.mac_ver()[0].split('.')])
       # all bundles in an app must also be signed on 10.7+
@@ -417,7 +417,29 @@ def sign_application(target, env):
         raise Exception('unable to codesign %s; no sign_id_app given' % target)
     if not os.path.isdir(target) or not target.endswith('.app'):
         raise Exception('unable to codesign %s; not an app' % target)
+    epath = os.path.join(target, 'Contents/Resources/entitlements.plist')
+    if os.path.isfile(epath):
+        cmd += ['--entitlements', epath]
     cmd += [target]
+    # sign any bundled libraries before singning app
+    # https://github.com/FoldingAtHome/fah-issues/issues/1576
+    # find libs under target dir, ignoring symlinks
+    paths = []
+    for root, dirs, files in os.walk(target):
+        for file in files:
+            e = os.path.splitext(file)[1]
+            if e in ('.so', '.dylib'):
+                path = os.path.join(root, file)
+                if not os.path.islink(path):
+                    paths.append(path)
+    # sign each lib
+    for path in paths:
+        # some macports built libs are missing x bits
+        if not os.access(path, os.X_OK):
+            print ('warning: setting execute perms on ' + path)
+            os.chmod(path, 0o755)
+        sign_executable(path, env)
+    # finally, sign app
     RunCommandOrRaise(env, cmd)
 
 
