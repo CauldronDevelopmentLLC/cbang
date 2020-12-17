@@ -74,13 +74,13 @@ namespace {
 #endif
 
 struct uint128_t {
-  uint64_t hi;
   uint64_t lo;
+  uint64_t hi;
 
 #ifdef __cplusplus
-  uint128_t() : hi(0), lo(0) {}
-  uint128_t(const uint64_t &lo) : hi(0), lo(lo) {}
-  uint128_t(const uint64_t &hi, const uint64_t &lo) : hi(hi), lo(lo) {}
+  uint128_t() : lo(0), hi(0) {}
+  uint128_t(const uint64_t &lo) : lo(lo), hi(0) {}
+  uint128_t(const uint64_t &hi, const uint64_t &lo) : lo(lo), hi(hi) {}
   operator bool () {return hi || lo;}
 #endif // __cplusplus
 };
