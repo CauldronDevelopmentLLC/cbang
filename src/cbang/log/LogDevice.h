@@ -39,7 +39,7 @@
 #include <boost/iostreams/stream.hpp>
 
 #include <string>
-#include <vector>
+
 
 namespace cb {
   class Logger;
@@ -52,34 +52,41 @@ namespace cb {
       boost::iostreams::flushable_tag
     {};
 
-  private:
-    struct impl {
+    class impl {
       std::string prefix;
       std::string suffix;
       std::string trailer;
+      std::string rateKey;
 
-      std::vector<char> buffer;
-      bool startOfLine;
-      bool locked;
-#ifdef HAVE_CBANG_BACKTRACE
+      std::string buffer;
+      std::string rateMessage;
+      bool first = true;
+      bool startOfLine = true;
+      bool locked = false;
       StackTrace trace;
-#endif
 
+    public:
       impl(const std::string &prefix, const std::string &suffix,
-           const std::string &trailer);
+           const std::string &trailer,
+           const std::string &rateKey = std::string());
       ~impl();
 
       std::streamsize write(const char_type *s, std::streamsize n);
       void flushLine();
       bool flush();
+
+    protected:
+      void lock();
+      void unlock();
     };
 
+  protected:
     SmartPointer<impl> _impl;
 
   public:
     LogDevice(const SmartPointer<impl> &_impl) : _impl(_impl) {}
     LogDevice(const std::string &prefix,
-              const std::string &suffix = std::string(),
+              const std::string &suffix  = std::string(),
               const std::string &trailer = std::string()) :
       _impl(new impl(prefix, suffix, trailer)) {}
 

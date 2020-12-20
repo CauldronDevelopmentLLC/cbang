@@ -39,12 +39,8 @@ using namespace cb;
 
 
 LogDevice::impl::impl(const std::string &prefix, const std::string &suffix,
-                      const std::string &trailer) :
-  prefix(prefix), suffix(suffix), trailer(trailer), startOfLine(true),
-  locked(false) {
-
-  buffer.reserve(1024);
-}
+                      const std::string &trailer, const std::string &rateKey) :
+  prefix(prefix), suffix(suffix), trailer(trailer), rateKey(rateKey) {}
 
 
 LogDevice::impl::~impl() {
@@ -59,17 +55,18 @@ streamsize LogDevice::impl::write(const char_type *s, streamsize n) {
   while (n) {
     if (startOfLine) {
       // Add prefix
-      buffer.insert(buffer.end(), prefix.begin(), prefix.end());
+      buffer.append(prefix.begin(), prefix.end());
       startOfLine = false;
     }
 
-    // Search for EOL
-    std::streamsize i;
-    for (i = 0; i < n; i++) if (s[i] == '\n') break;
-
     // Copy up to EOL to buffer, skipping '\r's
-    for (std::streamsize j = 0; j < i; j++)
-      if (s[j] != '\r') buffer.push_back(s[j]);
+    std::streamsize i;
+    for (i = 0; i < n; i++)
+      if (s[i] == '\n') break;
+      else if (s[i] != '\r') {
+        buffer.append(1, s[i]);
+        if (first && !rateKey.empty()) rateMessage.append(1, s[i]);
+      }
 
     if (i == n) break; // No EOL
 
@@ -91,19 +88,22 @@ streamsize LogDevice::impl::write(const char_type *s, streamsize n) {
 void LogDevice::impl::flushLine() {
   if (startOfLine) return;
 
-  // Add suffix
-  buffer.insert(buffer.end(), suffix.begin(), suffix.end());
+  if (first && !rateKey.empty() && !rateMessage.empty()) {
+    lock();
+    Logger::instance().rateMessage(rateKey, rateMessage);
+  }
+  first = false;
 
-  Logger &logger = Logger::instance();
+  // Add suffix
+  buffer.append(suffix.begin(), suffix.end());
 
   // Add EOL
-  if (logger.getLogCRLF()) buffer.push_back('\r');
-  buffer.push_back('\n');
+  if (Logger::instance().getLogCRLF()) buffer.append(1, '\r');
+  buffer.append(1, '\n');
 
   flush();
 
-  logger.unlock();
-  locked = false;
+  unlock();
   startOfLine = true;
 }
 
@@ -111,19 +111,29 @@ void LogDevice::impl::flushLine() {
 bool LogDevice::impl::flush() {
   if (buffer.empty()) return true;
 
-  Logger &logger = Logger::instance();
-
-  if (!locked) {
-    logger.lock();
-    locked = true;
-  }
+  lock();
 
   // Write to log
-  logger.write(&buffer[0], buffer.size());
+  Logger &logger = Logger::instance();
+  logger.write(buffer);
   logger.flush();
 
   // Flush the buffer
   buffer.clear();
 
   return true;
+}
+
+
+void LogDevice::impl::lock() {
+  if (locked) return;
+  Logger::instance().lock();
+  locked = true;
+}
+
+
+void LogDevice::impl::unlock() {
+  if (!locked) return;
+  Logger::instance().unlock();
+  locked = false;
 }
