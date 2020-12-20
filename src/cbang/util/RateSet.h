@@ -90,8 +90,13 @@ namespace cb {
     }
 
 
+    typedef rates_t::const_iterator iterator;
+    iterator begin() const {return rates.begin();}
+    iterator end() const {return rates.end();}
+
+
     void insert(JSON::Sink &sink, bool withTotals = false) const {
-      for (auto it = rates.begin(); it != rates.end(); it++)
+      for (auto it = begin(); it != end(); it++)
         if (!withTotals) sink.insert(it->first, it->second.get());
         else {
           sink.insertDict(it->first);

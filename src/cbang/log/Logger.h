@@ -32,11 +32,6 @@
 
 #pragma once
 
-#include <ostream>
-#include <string>
-#include <map>
-#include <set>
-
 #include <cbang/SStream.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/Exception.h>
@@ -44,12 +39,20 @@
 #include <cbang/util/Singleton.h>
 #include <cbang/os/Mutex.h>
 
+#include <ostream>
+#include <string>
+#include <map>
+#include <set>
+
 
 namespace cb {
   class Option;
   class Options;
   class CommandLine;
+  class RateSet;
   template <typename T> class ThreadLocalStorage;
+
+  namespace JSON {class Sink;}
 
   /**
    * Handles all information logging.  Both to the screen and optionally to
@@ -62,48 +65,55 @@ namespace cb {
   public:
     enum log_level_t {
       LEVEL_RAW      = 0,
-      LEVEL_ERROR    = 1 << 2,
-      LEVEL_CRITICAL = 1 << 3,
-      LEVEL_WARNING  = 1 << 4,
-      LEVEL_INFO     = 1 << 5,
-      LEVEL_DEBUG    = 1 << 6,
-      LEVEL_MASK     = (1 << 7) - 4
+      LEVEL_ERROR    = 1 << 0,
+      LEVEL_WARNING  = 1 << 1,
+      LEVEL_INFO     = 1 << 2,
+      LEVEL_DEBUG    = 1 << 3,
+      LEVEL_MASK     = (1 << 4) - 1
     };
 
   private:
-    unsigned verbosity;
-    bool logCRLF;
-    bool logDebug;
-    bool logTime;
-    bool logDate;
-    uint64_t logDatePeriodically;
-    bool logShortLevel;
-    bool logLevel;
-    bool logPrefix;
-    bool logDomain;
-    bool logSimpleDomains;
-    bool logThreadID;
-    bool logHeader;
-    bool logNoInfoHeader;
-    bool logColor;
-    bool logToScreen;
-    bool logTrunc;
-    bool logRedirect;
-    bool logRotate;
-    unsigned logRotateMax;
-    std::string logRotateDir;
+#ifdef CBANG_DEBUG_LEVEL
+    unsigned verbosity = CBANG_DEBUG_LEVEL;
+#else
+    unsigned verbosity = 1
+#endif
+    bool logCRLF = false;
+#ifdef DEBUG
+    bool logDebug = true;
+#else
+    bool logDebug = false;
+#endif
+    bool logTime = true;
+    bool logDate = false;
+    uint64_t logDatePeriodically = 0;
+    bool logShortLevel = false;
+    bool logLevel = true;
+    bool logPrefix = false;
+    bool logDomain = false;
+    bool logSimpleDomains = true;
+    bool logThreadID = false;
+    bool logHeader = true;
+    bool logNoInfoHeader = false;
+    bool logColor = true;
+    bool logToScreen = true;
+    bool logTrunc = false;
+    bool logRedirect = false;
+    bool logRotate = true;
+    unsigned logRotateMax = 0;
+    std::string logRotateDir = "logs";
+    unsigned logRates = 0;
 
-    uint64_t errorCount;
-    uint64_t warningCount;
+    SmartPointer<RateSet> rates;
+    std::map<std::string, std::string> rateMessages;
 
     SmartPointer<ThreadLocalStorage<unsigned long> > threadIDStorage;
     SmartPointer<ThreadLocalStorage<std::string> > prefixStorage;
 
-
     SmartPointer<std::iostream> logFile;
     SmartPointer<std::ostream> screenStream;
 
-    mutable unsigned idWidth;
+    mutable unsigned idWidth = 1;
 
     typedef std::map<std::string, int> domain_levels_t;
     domain_levels_t infoDomainLevels;
@@ -116,25 +126,18 @@ namespace cb {
 
   public:
     Logger(Inaccessible);
+    ~Logger();
 
     void addOptions(Options &options);
     void setOptions(Options &options);
     int domainLevelsAction(Option &option);
 
-    /**
-     * Begin logging to a file.
-     * @param filename The log file name.
-     */
     void startLogFile(const std::string &filename);
     bool getLogFileStarted() const {return !logFile.isNull();}
 
     void setScreenStream(std::ostream &stream);
     void setScreenStream(const SmartPointer<std::ostream> &stream);
 
-    /**
-     * Set the logging verbosity level.
-     * @param verbosity The level.
-     */
     void setVerbosity(unsigned x) {verbosity = x;}
     void setLogDebug(bool x) {logDebug = x;}
     void setLogCRLF(bool x) {logCRLF = x;}
@@ -154,11 +157,13 @@ namespace cb {
     void setLogRedirect(bool x) {logRedirect = x;}
     void setLogRotate(bool x) {logRotate = x;}
     void setLogRotateMax(unsigned x) {logRotateMax = x;}
+    void setLogRates(unsigned x) {logRates = x;}
     void setLogDomainLevels(const std::string &levels);
 
     unsigned getVerbosity() const {return verbosity;}
     bool getLogCRLF() const {return logCRLF;}
     unsigned getHeaderWidth() const;
+    const SmartPointer<RateSet> &getRates() const {return rates;}
 
     void setThreadID(unsigned long id);
     unsigned long getThreadID() const;
@@ -167,15 +172,20 @@ namespace cb {
 
     std::string simplifyDomain(const std::string &domain) const;
     int domainVerbosity(const std::string &domain, int level) const;
+    static char getLevelChar(int level);
     std::string getHeader(const std::string &domain, int level) const;
     const char *startColor(int level) const;
     const char *endColor(int level) const;
+
+    void writeRates(JSON::Sink &sink) const;
 
     // These functions should not be called directly.  Use the macros.
     bool enabled(const std::string &domain, int level) const;
     typedef SmartPointer<std::ostream> LogStream;
     LogStream createStream(const std::string &domain, int level,
-                           const std::string &prefix = std::string());
+                           const std::string &prefix = std::string(),
+                           const char *filename = 0, int line = 0);
+    void rateMessage(const std::string &key, const std::string &msg);
 
   protected:
     std::streamsize write(const char *s, std::streamsize n);
@@ -197,7 +207,6 @@ namespace cb {
 // Log levels
 #define CBANG_LOG_RAW_LEVEL      cb::Logger::LEVEL_RAW
 #define CBANG_LOG_ERROR_LEVEL    cb::Logger::LEVEL_ERROR
-#define CBANG_LOG_CRITICAL_LEVEL cb::Logger::LEVEL_CRITICAL
 #define CBANG_LOG_WARNING_LEVEL  cb::Logger::LEVEL_WARNING
 #define CBANG_LOG_DEBUG_LEVEL(x) (cb::Logger::LEVEL_DEBUG + ((x) << 8))
 #define CBANG_LOG_INFO_LEVEL(x)  (cb::Logger::LEVEL_INFO + ((x) << 8))
@@ -219,14 +228,13 @@ namespace cb {
 // Create logger streams
 // Warning these macros lock the Logger until they are deallocated
 #define CBANG_LOG_STREAM(domain, level)                 \
-  cb::Logger::instance().createStream(domain, level)
+  cb::Logger::instance().createStream(domain, level, std::string(),     \
+                                      __FILE__, __LINE__)
 
 #define CBANG_LOG_RAW_STREAM()                              \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_RAW_LEVEL)
 #define CBANG_LOG_ERROR_STREAM()                                \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_ERROR_LEVEL)
-#define CBANG_LOG_CRITICAL_STREAM()                                 \
-  CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_CRITICAL_LEVEL)
 #define CBANG_LOG_WARNING_STREAM()                              \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_WARNING_LEVEL)
 #define CBANG_LOG_DEBUG_STREAM(level)                               \
@@ -248,7 +256,6 @@ namespace cb {
 
 #define CBANG_LOG_RAW(msg)      CBANG_LOG_LEVEL(CBANG_LOG_RAW_LEVEL, msg)
 #define CBANG_LOG_ERROR(msg)    CBANG_LOG_LEVEL(CBANG_LOG_ERROR_LEVEL, msg)
-#define CBANG_LOG_CRITICAL(msg) CBANG_LOG_LEVEL(CBANG_LOG_CRITICAL_LEVEL, msg)
 #define CBANG_LOG_WARNING(msg)  CBANG_LOG_LEVEL(CBANG_LOG_WARNING_LEVEL, msg)
 #define CBANG_LOG_INFO(x, msg)  CBANG_LOG_LEVEL(CBANG_LOG_INFO_LEVEL(x), msg)
 
@@ -262,7 +269,6 @@ namespace cb {
 #ifdef USING_CBANG
 #define LOG_RAW_LEVEL CBANG_LOG_RAW_LEVEL
 #define LOG_ERROR_LEVEL CBANG_LOG_ERROR_LEVEL
-#define LOG_CRITICAL_LEVEL CBANG_LOG_CRITICAL_LEVEL
 #define LOG_WARNING_LEVEL CBANG_LOG_WARNING_LEVEL
 #define LOG_DEBUG_LEVEL(x) CBANG_LOG_DEBUG_LEVEL(x)
 #define LOG_INFO_LEVEL(x) CBANG_LOG_INFO_LEVEL(x)
@@ -274,7 +280,6 @@ namespace cb {
 #define LOG_STREAM(domain, level) CBANG_LOG_STREAM(domain, level)
 #define LOG_RAW_STREAM() CBANG_LOG_RAW_STREAM()
 #define LOG_ERROR_STREAM() CBANG_LOG_ERROR_STREAM()
-#define LOG_CRITICAL_STREAM() CBANG_LOG_CRITICAL_STREAM()
 #define LOG_WARNING_STREAM() CBANG_LOG_WARNING_STREAM()
 #define LOG_DEBUG_STREAM(level) CBANG_LOG_DEBUG_STREAM(level)
 #define LOG_INFO_STREAM(level) CBANG_LOG_INFO_STREAM(level)
@@ -283,7 +288,6 @@ namespace cb {
 #define LOG_LEVEL(level, msg) CBANG_LOG_LEVEL(level, msg)
 #define LOG_RAW(msg) CBANG_LOG_RAW(msg)
 #define LOG_ERROR(msg) CBANG_LOG_ERROR(msg)
-#define LOG_CRITICAL(msg) CBANG_LOG_CRITICAL(msg)
 #define LOG_WARNING(msg) CBANG_LOG_WARNING(msg)
 #define LOG_INFO(x, msg) CBANG_LOG_INFO(x, msg)
 #define LOG_DEBUG(x, msg) CBANG_LOG_DEBUG(x, msg)

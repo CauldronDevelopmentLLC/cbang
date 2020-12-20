@@ -41,7 +41,9 @@
 #include <cbang/time/Time.h>
 #include <cbang/iostream/NullDevice.h>
 #include <cbang/util/SmartLock.h>
+#include <cbang/util/RateSet.h>
 #include <cbang/debug/Debugger.h>
+#include <cbang/json/Sink.h>
 
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/ThreadLocalStorage.h>
@@ -62,35 +64,20 @@ namespace io = boost::iostreams;
 using namespace std;
 using namespace cb;
 
-#ifdef CBANG_DEBUG_LEVEL
-#define DEFAULT_VERBOSITY CBANG_DEBUG_LEVEL
-#else
-#define DEFAULT_VERBOSITY 1
-#endif
-
 
 Logger::Logger(Inaccessible) :
-  verbosity(DEFAULT_VERBOSITY), logCRLF(false),
-#ifdef DEBUG
-  logDebug(true),
-#else
-  logDebug(false),
-#endif
-  logTime(true), logDate(false), logDatePeriodically(0), logShortLevel(false),
-  logLevel(true), logPrefix(false), logDomain(false),
-  logSimpleDomains(true), logThreadID(false), logHeader(true),
-  logNoInfoHeader(false), logColor(true), logToScreen(true), logTrunc(false),
-  logRedirect(false), logRotate(true), logRotateMax(0), logRotateDir("logs"),
-  threadIDStorage(new ThreadLocalStorage<unsigned long>),
+  rates(new RateSet), threadIDStorage(new ThreadLocalStorage<unsigned long>),
   prefixStorage(new ThreadLocalStorage<string>),
-  screenStream(SmartPointer<ostream>::Phony(&cout)), idWidth(1),
-  lastDate(Time::now()) {
+  screenStream(SmartPointer<ostream>::Phony(&cout)), lastDate(Time::now()) {
 
 #ifdef _WIN32
   logCRLF = true;
   logColor = false; // Windows does not handle ANSI color codes well
 #endif
 }
+
+
+Logger::~Logger() {}
 
 
 void Logger::addOptions(Options &options) {
@@ -305,6 +292,19 @@ int Logger::domainVerbosity(const string &domain, int level) const {
 }
 
 
+char Logger::getLevelChar(int level) {
+  level &= LEVEL_MASK;
+
+  switch (level) {
+  case LEVEL_ERROR:    return 'E';
+  case LEVEL_WARNING:  return 'W';
+  case LEVEL_INFO:     return 'I';
+  case LEVEL_DEBUG:    return 'D';
+  default: THROW("Unknown log level " << level);
+  }
+}
+
+
 string Logger::getHeader(const string &domain, int level) const {
   string header;
 
@@ -334,14 +334,7 @@ string Logger::getHeader(const string &domain, int level) const {
 
   // Level
   if (logShortLevel) {
-    switch (level) {
-    case LEVEL_ERROR:    header += "E"; break;
-    case LEVEL_CRITICAL: header += "C"; break;
-    case LEVEL_WARNING:  header += "W"; break;
-    case LEVEL_INFO:     header += "I"; break;
-    case LEVEL_DEBUG:    header += "D"; break;
-    default: THROW("Unknown log level " << level);
-    }
+    header += string(1, getLevelChar(level));
 
     // Verbosity
     if (level >= LEVEL_INFO && verbosity) header += String(verbosity);
@@ -349,23 +342,20 @@ string Logger::getHeader(const string &domain, int level) const {
 
     header += ':';
 
-  } else if (logLevel) {
+  } else if (logLevel && (!logNoInfoHeader || level != LEVEL_INFO)) {
     switch (level) {
-    case LEVEL_ERROR:    header += "ERROR"; break;
-    case LEVEL_CRITICAL: header += "CRITICAL"; break;
+    case LEVEL_ERROR:    header += "ERROR";   break;
     case LEVEL_WARNING:  header += "WARNING"; break;
-    case LEVEL_INFO:     if (!logNoInfoHeader) header += "INFO"; break;
-    case LEVEL_DEBUG:    header += "DEBUG"; break;
+    case LEVEL_INFO:     header += "INFO";    break;
+    case LEVEL_DEBUG:    header += "DEBUG";   break;
     default: THROW("Unknown log level " << level);
     }
 
-    if (!logNoInfoHeader || level != LEVEL_INFO) {
-      // Verbosity
-      if (level >= LEVEL_INFO && verbosity)
-        header += string("(") + String(verbosity) + ")";
+    // Verbosity
+    if (level >= LEVEL_INFO && verbosity)
+      header += string("(") + String(verbosity) + ")";
 
-      header += ':';
-    }
+    header += ':';
   }
 
   // Domain
@@ -383,7 +373,6 @@ const char *Logger::startColor(int level) const {
 
   switch (level & LEVEL_MASK) {
   case LEVEL_ERROR:    return "\033[91m";
-  case LEVEL_CRITICAL: return "\033[31m";
   case LEVEL_WARNING:  return "\033[93m";
   case LEVEL_DEBUG:    return "\033[92m";
   default: return "";
@@ -396,12 +385,30 @@ const char *Logger::endColor(int level) const {
 
   switch (level & LEVEL_MASK) {
   case LEVEL_ERROR:
-  case LEVEL_CRITICAL:
   case LEVEL_WARNING:
   case LEVEL_DEBUG:
     return "\033[0m";
   default: return "";
   }
+}
+
+
+void Logger::writeRates(JSON::Sink &sink) const {
+  SmartLock lock(this);
+
+  sink.beginDict();
+
+  for (auto it = rates->begin(); it != rates->end(); it++) {
+    sink.insertDict(it->first);
+    sink.insert("rate", it->second.get());
+    sink.insert("total", it->second.getTotal());
+
+    auto it2 = rateMessages.find(it->first);
+    if (it2 != rateMessages.end()) sink.insert("msg", it2->second);
+    sink.endDict();
+  }
+
+  sink.endDict();
 }
 
 
@@ -420,10 +427,17 @@ bool Logger::enabled(const string &domain, int level) const {
 
 
 Logger::LogStream Logger::createStream(const string &_domain, int level,
-                                       const std::string &_prefix) {
+                                       const std::string &_prefix,
+                                       const char *filename, int line) {
   string domain = simplifyDomain(_domain);
 
   if (!enabled(domain, level)) return new NullStream<>;
+
+  string rateKey;
+  if (level & logRates) {
+    rateKey = SSTR(getLevelChar(level) << ':' << filename << ':' << line);
+    rates->event(rateKey);
+  }
 
   // Log date periodically
   if (logDatePeriodically && lastDate + logDatePeriodically <= Time::now()) {
@@ -445,7 +459,13 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
   }
 #endif
 
-  return new cb::LogStream(prefix, suffix, trailer);
+  return new cb::LogStream
+    (new cb::LogDevice::impl(prefix, suffix, trailer, rateKey));
+}
+
+
+void Logger::rateMessage(const string &key, const string &msg) {
+  rateMessages[key] = msg;
 }
 
 
@@ -456,7 +476,7 @@ streamsize Logger::write(const char *s, streamsize n) {
 }
 
 
-void Logger::write(const string &s) {write(s.c_str(), s.length());}
+void Logger::write(const string &s) {write(s.data(), s.length());}
 
 
 bool Logger::flush() {
