@@ -67,7 +67,7 @@ void Connection::setTTL(double sec) {timeout->add(sec);}
 
 
 bool Connection::isConnected() const {
-  return socket.isSet() && socket->isConnected();
+  return getFD() != -1 && socket.isSet() && socket->isConnected();
 }
 
 

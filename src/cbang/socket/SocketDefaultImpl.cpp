@@ -33,7 +33,6 @@
 #include "SocketDefaultImpl.h"
 
 #include "Socket.h"
-#include "SocketSet.h"
 #include "SocketDebugger.h"
 
 #include <cbang/os/SystemUtilities.h>
