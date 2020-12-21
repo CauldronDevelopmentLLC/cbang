@@ -482,8 +482,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       for (unsigned i = 0; i < p->pipes.size(); i++)
         if (p->pipes[i].stream.isSet())
           if (fcntl(p->pipes[i].getParentHandle(), F_SETPIPE_SZ, size) == -1)
-            LOG_WARNING("Failed to set pipe " << i << " size to " << size
-                        << ": " << SysError());
+            LOG_DEBUG(3, "Failed to set pipe " << i << " size to " << size
+                      << ": " << SysError());
     }
   } CATCH_ERROR;
 
