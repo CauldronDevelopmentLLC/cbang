@@ -71,6 +71,16 @@ namespace {
 
     return e;
   }
+
+
+  const char *epollOpString(int op) {
+    switch (op) {
+    case EPOLL_CTL_MOD: return "mod";
+    case EPOLL_CTL_DEL: return "del";
+    case EPOLL_CTL_ADD: return "add";
+    default: return "???";
+    }
+  }
 }
 
 
@@ -263,7 +273,8 @@ void FDPoolEPoll::FDRec::update() {
   int op = events ? (newEvents ? EPOLL_CTL_MOD : EPOLL_CTL_DEL) : EPOLL_CTL_ADD;
 
   if (epoll_ctl(pool.getFD(), op, fd, &ev))
-    LOG_ERROR("epoll_ctl() failed for fd " << fd << ": " << SysError());
+    LOG_ERROR("epoll_ctl(" << epollOpString(op) << ") failed for fd " << fd
+              << ": " << SysError());
 
   // Update timeouts
   readQ.updateTimeout(events & FD::READ_EVENT, newEvents & FD::READ_EVENT);
