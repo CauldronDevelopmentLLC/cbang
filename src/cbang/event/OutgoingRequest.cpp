@@ -128,7 +128,7 @@ void OutgoingRequest::onProgress(unsigned bytes, int total) {
 
 
 void OutgoingRequest::onResponse(ConnectionError error) {
-  if (error) LOG_ERROR("< " << getConnection().getPeer() << ' ' << error);
+  if (error) LOG_WARNING("< " << getConnection().getPeer() << ' ' << error);
   else {
     LOG_INFO(1, "< " << getConnection().getPeer() << ' ' << getResponseLine());
     LOG_DEBUG(5, getInputHeaders() << '\n');

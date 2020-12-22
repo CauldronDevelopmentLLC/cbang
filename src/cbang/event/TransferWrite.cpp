@@ -86,7 +86,7 @@ int TransferWrite::write(Buffer &buffer, unsigned length) {
 
       return ret;
 
-    } CATCH_ERROR;
+    } CATCH_DEBUG(4);
     return -1;
   }
 #endif // HAVE_OPENSSL
