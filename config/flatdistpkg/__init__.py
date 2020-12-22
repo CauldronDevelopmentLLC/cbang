@@ -1,4 +1,5 @@
-# flatdistpkg.py
+'''  flatdistpkg '''
+
 from __future__ import print_function
 
 import os, platform, shutil
@@ -15,6 +16,7 @@ except ImportError:
     import simplejson as json
 from pprint import pprint
 
+deps = ['codesign', 'notarize']
 
 filename_package_build_txt = 'package.txt'
 filename_package_desc_txt = 'package-description.txt'
@@ -390,15 +392,16 @@ def sign_flat_package(target, source, env):
 
 
 def sign_or_copy_product_pkg(target, source, env):
-    if env.get('sign_id_installer'):
+    if env.get('sign_id_installer') and not env.get('sign_disable'):
         sign_flat_package(target, source, env)
         return
-    print('NOT signing package; no sign_id_installer provided; copying '
-          'instead...')
+    print('WARNING: NOT signing package %s; copying instead.' % source,
+          file=sys.stderr)
     shutil.copy2(source, target)
 
 
 def sign_application(target, env):
+    if env.get('sign_disable'): return
     keychain = env.get('sign_keychain')
     sign = env.get('sign_id_app')
     cmd = ['codesign', '-f', '--timestamp', '--options', 'runtime']
@@ -444,6 +447,7 @@ def sign_application(target, env):
 
 
 def sign_executable(target, env):
+    if env.get('sign_disable'): return
     keychain = env.get('sign_keychain')
     sign = env.get('sign_id_app')
     prefix = env.get('sign_prefix')
@@ -825,6 +829,8 @@ def flat_dist_pkg_build(target, source, env):
 
     sign_or_copy_product_pkg(target_pkg, target_unsigned, env)
 
+    env.NotarizeWaitStaple(target_pkg, timeout = 1200)
+
     env.ZipDir(target_zip, target_pkg)
 
     # write package-description.txt
@@ -851,6 +857,8 @@ def generate(env):
                   source_factory = SCons.Node.FS.Entry,
                   source_scanner = SCons.Defaults.DirScanner)
     env.Append(BUILDERS = {'FlatDistPkg' : bld})
+    for tool in deps:
+        env.CBLoadTool(tool)
     return True
 
 
