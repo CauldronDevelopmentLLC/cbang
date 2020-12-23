@@ -53,11 +53,12 @@ namespace cb {
 
   public:
     static Debugger &instance();
-    static bool printStackTrace(std::ostream &stream);
+    static void printStackTrace(std::ostream &stream);
     static StackTrace getStackTrace();
 
     static std::string getExecutableName();
 
-    virtual bool getStackTrace(StackTrace &trace) {return 0;}
+    virtual void getStackTrace(StackTrace &trace, bool resolved = true) {}
+    virtual void resolve(StackTrace &trace) {}
   };
 }

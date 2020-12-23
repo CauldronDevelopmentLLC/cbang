@@ -71,22 +71,19 @@ Debugger &Debugger::instance() {
 }
 
 
-bool Debugger::printStackTrace(ostream &stream) {
+void Debugger::printStackTrace(ostream &stream) {
   StackTrace trace;
-  if (!instance().getStackTrace(trace)) return false;
+  instance().getStackTrace(trace);
 
   unsigned count = 0;
   bool skip = true;
 
-  StackTrace::iterator it;
-  for (it = trace.begin(); it != trace.end(); it++) {
+  for (auto it = trace.begin(); it != trace.end(); it++) {
     if (skip) {
       if (it->getFunction().find("cb::Debugger::printStackTrace"))
         skip = false;
     } else  stream << "\n  #" << ++count << ' ' << *it;
   }
-
-  return true;
 }
 
 
@@ -116,13 +113,6 @@ string Debugger::getExecutableName() {
 #else
   throw runtime_error("Not supported");
 #endif
-}
-
-
-extern "C" {
-  int cbang_print_stacktrace() {
-    return Debugger::printStackTrace(cout);
-  }
 }
 
 

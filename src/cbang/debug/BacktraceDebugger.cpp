@@ -119,102 +119,119 @@ BacktraceDebugger::~BacktraceDebugger() {}
 bool BacktraceDebugger::supported() {return true;}
 
 
-bool BacktraceDebugger::getStackTrace(StackTrace &trace) {
+void BacktraceDebugger::getStackTrace(StackTrace &trace, bool resolved) {
   init(); // Might set enabled false
-  if (!enabled) return false;
+  if (!enabled) return;
 
   void *stack[maxStack];
   int n = backtrace(stack, maxStack);
-  SmartPointer<char *>::Malloc symbols = backtrace_symbols(stack, n);
 
 #ifdef VALGRIND_MAKE_MEM_DEFINED
   (void)VALGRIND_MAKE_MEM_DEFINED(stack, n * sizeof(void *));
 #endif // VALGRIND_MAKE_MEM_DEFINED
 
+  for (int i = 0; i < n; i++)
+    trace.push_back(StackFrame(stack[i]));
+
+  if (resolved) resolve(trace);
+}
+
+
+void BacktraceDebugger::resolve(StackTrace &trace) {
   SmartLock lock(this);
 
-  for (int i = 0; i < n; i++) {
-    bfd_vma pc = (bfd_vma)stack[i];
+  for (unsigned i = 0; i < trace.size(); i++)
+    if (trace[i].getLocation()) break;
+    else trace[i].setLocation(&resolve(trace[i].getAddr()));
+}
 
-    const char *filename = 0;
-    const char *function = 0;
-    unsigned line = 0;
 
-    // Find section
-    asection *section = 0;
-    for (asection *s = p->abfd->sections; s; s = s->next) {
-      if ((bfd_get_section_flags(p->abfd, s) & SEC_CODE) == 0)
-        continue;
+const FileLocation &BacktraceDebugger::resolve(void *addr) {
+  auto it = cache.find(addr);
+  if (it != cache.end()) return *it->second;
 
-      bfd_vma vma = bfd_get_section_vma(p->abfd, s);
-      if (pc < vma) {
-        section = s->prev;
-        break;
-      }
+  bfd_vma pc = (bfd_vma)addr;
+
+  const char *filename = 0;
+  const char *function = 0;
+  unsigned line = 0;
+
+  // Find section
+  asection *section = 0;
+  for (asection *s = p->abfd->sections; s; s = s->next) {
+    if ((bfd_get_section_flags(p->abfd, s) & SEC_CODE) == 0)
+      continue;
+
+    bfd_vma vma = bfd_get_section_vma(p->abfd, s);
+    if (pc < vma) {
+      section = s->prev;
+      break;
     }
+  }
 
-    if (section && p->syms) {
-      bfd_vma vma = bfd_get_section_vma(p->abfd, section);
-      bfd_find_nearest_line(p->abfd, section, p->syms, pc - vma,
-                            &filename, &function, &line);
+  if (section && p->syms) {
+    bfd_vma vma = bfd_get_section_vma(p->abfd, section);
+    bfd_find_nearest_line(p->abfd, section, p->syms, pc - vma,
+                          &filename, &function, &line);
 
 #ifdef VALGRIND_MAKE_MEM_DEFINED
-      if (filename) (void)VALGRIND_MAKE_MEM_DEFINED(filename, strlen(filename));
-      if (function) (void)VALGRIND_MAKE_MEM_DEFINED(function, strlen(function));
-      (void)VALGRIND_MAKE_MEM_DEFINED(&line, sizeof(line));
+    if (filename) (void)VALGRIND_MAKE_MEM_DEFINED(filename, strlen(filename));
+    if (function) (void)VALGRIND_MAKE_MEM_DEFINED(function, strlen(function));
+    (void)VALGRIND_MAKE_MEM_DEFINED(&line, sizeof(line));
 #endif // VALGRIND_MAKE_MEM_DEFINED
-    }
+  }
 
-    // Fallback to backtrace symbols
-    if ((!function || !filename) && symbols.get()) {
-      char *sym = symbols[i];
+  // Fallback to backtrace symbols
+  if (!function || !filename) {
+    SmartPointer<char *>::Malloc symbols = backtrace_symbols(&addr, 1);
+    char *sym = symbols[0];
 
-      // Parse symbol string
-      // Expected format: <module>(<function>+0x<offset>)
-      char *ptr = sym;
-      while (*ptr && *ptr != '(') ptr++;
-      if (*ptr == '(') {
-        *ptr++ = 0;
-        if (!filename) filename = sym; // Not really the source file
+    // Parse symbol string
+    // Expected format: <module>(<function>+0x<offset>)
+    char *ptr = sym;
+    while (*ptr && *ptr != '(') ptr++;
+    if (*ptr == '(') {
+      *ptr++ = 0;
+      if (!filename) filename = sym; // Not really the source file
 
-        if (!function) {
-          function = ptr;
-          while (*ptr && *ptr != '+') ptr++;
+      if (!function) {
+        function = ptr;
+        while (*ptr && *ptr != '+') ptr++;
 
-          if (*ptr) {
-            *ptr++ = 0;
-            char *offset = ptr;
-            while (*ptr && *ptr != ')') ptr++;
-            if (*ptr == ')') *ptr = 0;
+        if (*ptr) {
+          *ptr++ = 0;
+          char *offset = ptr;
+          while (*ptr && *ptr != ')') ptr++;
+          if (*ptr == ')') *ptr = 0;
 
-            int save_errno = errno;
-            errno = 0;
-            line = strtol(offset, 0, 0); // Byte offset not line number
-            if (errno) line = 0;
-            errno = save_errno;
-          }
+          int save_errno = errno;
+          errno = 0;
+          line = strtol(offset, 0, 0); // Byte offset not line number
+          if (errno) line = 0;
+          errno = save_errno;
         }
       }
     }
-
-    // Filename
-    if (!filename) filename = "";
-    else if (0 <= parents) {
-      const char *ptr = filename + strlen(filename);
-      for (int j = 0; j <= parents; j++)
-        while (filename < ptr && *--ptr != '/') continue;
-
-      if (*ptr == '/') filename = ptr + 1;
-    }
-
-    // Function name
-    if (!function) function = "";
-
-    trace.push_back
-      (StackFrame(stack[i], FileLocation(filename, demangle(function), line)));
   }
 
-  return true;
+  // Filename
+  if (!filename) filename = "";
+  else if (0 <= parents) {
+    const char *ptr = filename + strlen(filename);
+    for (int j = 0; j <= parents; j++)
+      while (filename < ptr && *--ptr != '/') continue;
+
+    if (*ptr == '/') filename = ptr + 1;
+  }
+
+  // Function name
+  if (!function) function = "";
+
+  SmartPointer<FileLocation> loc =
+    new FileLocation(filename, demangle(function), line);
+
+  cache.insert(cache_t::value_type(addr, loc));
+  return *loc;
 }
 
 
