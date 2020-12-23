@@ -36,13 +36,19 @@
 #include <cbang/String.h>
 #include <cbang/json/Sink.h>
 
+#include <exception>
 
 using namespace std;
 using namespace cb;
 
-
 string StackFrame::getAddrString() const {
   return String::printf("0x%08x", (uintptr_t)addr);
+}
+
+
+const string &StackFrame::getFunction() const {
+  if (!location) throw std::runtime_error("StackFrame not resolved");
+  return location->getFunction();
 }
 
 
@@ -50,8 +56,8 @@ ostream &StackFrame::print(ostream &stream) const {
   stream << getAddrString() << " in "
          << (getFunction().empty() ? "??" : getFunction());
 
-  if (!location.getFilename().empty())
-    stream << " at " << location.getFileLineColumn();
+  if (location && !location->getFilename().empty())
+    stream << " at " << location->getFileLineColumn();
 
   return stream;
 }
@@ -60,9 +66,9 @@ ostream &StackFrame::print(ostream &stream) const {
 void StackFrame::write(JSON::Sink &sink) const {
   sink.beginDict();
   sink.insert("address", getAddrString());
-  if (!location.isEmpty()) {
+  if (location && !location->isEmpty()) {
     sink.beginInsert("location");
-    location.write(sink);
+    location->write(sink);
   }
   sink.endDict();
 }

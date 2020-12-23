@@ -106,7 +106,7 @@ Exception::Exception(const string &message, int code,
 #ifdef HAVE_CBANG_BACKTRACE
   if (enableStackTraces) {
     trace = new StackTrace();
-    Debugger::instance().getStackTrace(*trace);
+    Debugger::instance().getStackTrace(*trace, false);
   }
 #endif
 }
@@ -121,6 +121,8 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
     stream << "\n       At: " << location;
 
   if (!trace.isNull()) {
+    Debugger::instance().resolve(*trace);
+
     unsigned count = 0;
     unsigned i = 0;
 

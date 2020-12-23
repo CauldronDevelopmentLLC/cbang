@@ -39,16 +39,17 @@
 namespace cb {
   class StackFrame {
     void *addr;
-    FileLocation location;
+    const FileLocation *location = 0;
 
   public:
-    StackFrame(void *addr, const FileLocation &location) :
-      addr(addr), location(location) {}
+    StackFrame(void *addr) : addr(addr) {}
 
     void *getAddr() const {return addr;}
     std::string getAddrString() const;
-    const FileLocation &getLocation() const {return location;}
-    const std::string &getFunction() const {return location.getFunction();}
+
+    void setLocation(const FileLocation *location) {this->location = location;}
+    const FileLocation *getLocation() const {return location;}
+    const std::string &getFunction() const;
 
     std::ostream &print(std::ostream &stream) const;
     void write(cb::JSON::Sink &sink) const;

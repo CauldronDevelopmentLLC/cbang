@@ -33,8 +33,11 @@
 #pragma once
 
 #include "Debugger.h"
+#include <cbang/SmartPointer.h>
 
 #include <string>
+#include <map>
+
 
 namespace cb {
   class BacktraceDebugger : public Debugger {
@@ -45,6 +48,9 @@ namespace cb {
     bool initialized;
     bool enabled;
 
+    typedef std::map<void *, SmartPointer<FileLocation> > cache_t;
+    cache_t cache;
+
   public:
     int parents;
 
@@ -52,9 +58,11 @@ namespace cb {
     ~BacktraceDebugger();
 
     static bool supported();
-    bool getStackTrace(StackTrace &trace);
+    void getStackTrace(StackTrace &trace, bool resolved);
+    void resolve(StackTrace &trace);
 
   protected:
+    const FileLocation &resolve(void *addr);
     void init();
     void release();
   };
