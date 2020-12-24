@@ -76,7 +76,7 @@ namespace cb {
 #ifdef CBANG_DEBUG_LEVEL
     unsigned verbosity = CBANG_DEBUG_LEVEL;
 #else
-    unsigned verbosity = 1
+    unsigned verbosity = 1;
 #endif
     bool logCRLF = false;
 #ifdef DEBUG
