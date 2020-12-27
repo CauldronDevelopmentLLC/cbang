@@ -54,7 +54,7 @@ namespace cb {
       Reader(const InputSource &src) :
       line(0), column(0), src(src), stream(src.getStream()) {}
 
-      void parse(Sink &sink);
+      void parse(Sink &sink, unsigned depth = 0);
       ValuePtr parse();
       static ValuePtr parse(const InputSource &src);
       static ValuePtr parseString(const std::string &s);
@@ -76,8 +76,8 @@ namespace cb {
       bool parseBoolean();
       void parseNumber(Sink &sink);
       std::string parseString();
-      void parseList(Sink &sink);
-      void parseDict(Sink &sink);
+      void parseList(Sink &sink, unsigned depth = 0);
+      void parseDict(Sink &sink, unsigned depth = 0);
 
       void error(const std::string &msg) const;
 
