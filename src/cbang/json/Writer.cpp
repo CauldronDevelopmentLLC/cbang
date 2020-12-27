@@ -251,7 +251,7 @@ string Writer::escape(const string &s, const char *fmt) {
 
         if (!valid) result.append(encodeChar(*it, fmt)); // Encode character
         else {
-          if (0x2000 <= code || code <= 0x2100)
+          if (0x2000 <= code && code < 0x2100)
             // Always encode Javascript line separators
             result.append(encodeChar(code, fmt));
 

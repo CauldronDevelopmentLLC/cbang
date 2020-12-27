@@ -47,7 +47,7 @@ using namespace std;
 
 
 HTTPConnOut::HTTPConnOut(Client &client) :
-  HTTPConn(client.getBase()), client(client) {
+  HTTPConn(client.getBase()) {
 
   if (client.getSSLContext().isSet())
     setSSL(client.getSSLContext()->createSSL());
