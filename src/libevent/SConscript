@@ -63,7 +63,7 @@ conf.AddTest('CheckDecl', CheckDecl)
 
 # Structs
 def CheckStruct(ctx, struct, includes = None):
-    src = 'int main() {struct %s *x = 0; x = x; return 0;}' % struct
+    src = 'int main() {struct %s *x = 0; return !x;}' % struct
 
     if includes is not None:
         for inc in includes:
@@ -79,7 +79,7 @@ conf.AddTest('CheckStruct', CheckStruct)
 
 # Types
 def CheckType(ctx, type, includes = None, defs = None):
-    src = 'int main() {%s *x = 0; x = x; return 0;}' % type
+    src = 'int main() {%s *x = 0; return !x;}' % type
 
     if includes is not None:
         for inc in includes:

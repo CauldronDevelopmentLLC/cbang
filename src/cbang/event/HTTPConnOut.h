@@ -40,8 +40,6 @@ namespace cb {
     class Client;
 
     class HTTPConnOut : public HTTPConn {
-      Client &client;
-
     public:
       HTTPConnOut(Client &client);
 

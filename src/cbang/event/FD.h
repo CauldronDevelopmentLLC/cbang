@@ -61,7 +61,6 @@ namespace cb {
       Progress readProgress;
       Progress writeProgress;
       int status = 0;
-      bool closing = false;
 
     public:
       enum {

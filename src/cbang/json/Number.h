@@ -52,8 +52,8 @@ namespace cb {
       template <typename T, typename X, int _T, int _X>
       struct Imp {
         static inline bool InRange(X x) {
-          return std::numeric_limits<T>::min() <= x ||
-            x <= std::numeric_limits<T>::max();
+          return (X)std::numeric_limits<T>::min() <= x ||
+            x <= (X)std::numeric_limits<T>::max();
         }
       };
 
