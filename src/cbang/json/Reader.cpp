@@ -47,7 +47,9 @@ using namespace cb;
 using namespace cb::JSON;
 
 
-void Reader::parse(Sink &sink) {
+void Reader::parse(Sink &sink, unsigned depth) {
+  if (1000 < ++depth) THROW("Maximum JSON parse depth reached");
+
   while (good()) {
     switch (next()) {
     case 'N': case 'n':
@@ -68,13 +70,13 @@ void Reader::parse(Sink &sink) {
 
     case '[':
       sink.beginList();
-      parseList(sink);
+      parseList(sink, depth);
       sink.endList();
       return;
 
     case '{':
       sink.beginDict();
-      parseDict(sink);
+      parseDict(sink, depth);
       sink.endDict();
       return;
 
@@ -271,21 +273,21 @@ string Reader::parseString() {
 }
 
 
-void Reader::parseList(Sink &sink) {
+void Reader::parseList(Sink &sink, unsigned depth) {
   match("[");
 
   while (good()) {
     if (tryMatch(']')) return; // End or trailing comma
 
     sink.beginAppend();
-    parse(sink);
+    parse(sink, depth);
 
     if (match(",]") == ']') return; // Continuation or end
   }
 }
 
 
-void Reader::parseDict(Sink &sink) {
+void Reader::parseDict(Sink &sink, unsigned depth) {
   match("{");
 
   while (good()) {
@@ -294,7 +296,7 @@ void Reader::parseDict(Sink &sink) {
     string key = parseString();
     match(":");
     sink.beginInsert(key);
-    parse(sink);
+    parse(sink, depth);
 
     if (match(",}") == '}') return; // Continuation or end
   }
