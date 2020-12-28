@@ -152,9 +152,9 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
 
   bfd_vma pc = (bfd_vma)addr;
 
-  const char *filename = 0;
-  const char *function = 0;
-  unsigned line = 0;
+  string filename;
+  string function;
+  int line = -1;
 
   // Find section
   asection *section = 0;
@@ -170,65 +170,62 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
   }
 
   if (section && p->syms) {
+    const char *_filename = 0;
+    const char *_function = 0;
+    unsigned _line = 0;
+
     bfd_vma vma = bfd_get_section_vma(p->abfd, section);
-    bfd_find_nearest_line(p->abfd, section, p->syms, pc - vma,
-                          &filename, &function, &line);
+    if (bfd_find_nearest_line(p->abfd, section, p->syms, pc - vma,
+                              &_filename, &_function, &_line)) {
 
 #ifdef VALGRIND_MAKE_MEM_DEFINED
-    if (filename) (void)VALGRIND_MAKE_MEM_DEFINED(filename, strlen(filename));
-    if (function) (void)VALGRIND_MAKE_MEM_DEFINED(function, strlen(function));
-    (void)VALGRIND_MAKE_MEM_DEFINED(&line, sizeof(line));
+      if (_filename)
+        (void)VALGRIND_MAKE_MEM_DEFINED(_filename, strlen(_filename));
+      if (_function)
+        (void)VALGRIND_MAKE_MEM_DEFINED(_function, strlen(_function));
+      (void)VALGRIND_MAKE_MEM_DEFINED(&line, sizeof(_line));
 #endif // VALGRIND_MAKE_MEM_DEFINED
+
+      if (_filename) {filename = _filename; line = _line;}
+      if (_function) function = _function;
+    }
   }
 
   // Fallback to backtrace symbols
-  if (!function || !filename) {
+  if (function.empty() || filename.empty()) {
     SmartPointer<char *>::Malloc symbols = backtrace_symbols(&addr, 1);
-    char *sym = symbols[0];
+    char *sym = symbols.isSet() ? symbols[0] : 0;
 
     // Parse symbol string
     // Expected format: <module>(<function>+0x<offset>)
     char *ptr = sym;
-    while (*ptr && *ptr != '(') ptr++;
+    while (ptr && *ptr && *ptr != '(') ptr++;
     if (*ptr == '(') {
-      *ptr++ = 0;
-      if (!filename) filename = sym; // Not really the source file
+      // Not really the source file name
+      if (filename.empty()) filename = string(sym, ptr - sym);
 
-      if (!function) {
-        function = ptr;
+      if (function.empty()) {
+        char *start = ++ptr;
         while (*ptr && *ptr != '+') ptr++;
-
-        if (*ptr) {
-          *ptr++ = 0;
-          char *offset = ptr;
-          while (*ptr && *ptr != ')') ptr++;
-          if (*ptr == ')') *ptr = 0;
-
-          int save_errno = errno;
-          errno = 0;
-          line = strtol(offset, 0, 0); // Byte offset not line number
-          if (errno) line = 0;
-          errno = save_errno;
-        }
+        function = string(start, ptr - start);
       }
     }
   }
 
   // Filename
-  if (!filename) filename = "";
-  else if (0 <= parents) {
-    const char *ptr = filename + strlen(filename);
-    for (int j = 0; j <= parents; j++)
-      while (filename < ptr && *--ptr != '/') continue;
+  if (0 <= parents) {
+    size_t ptr = string::npos;
 
-    if (*ptr == '/') filename = ptr + 1;
+    for (int j = 0; j <= parents; j++) {
+      if (ptr != string::npos && ptr) ptr--;
+      ptr = filename.find_last_of('/', ptr);
+    }
+
+    if (ptr && ptr != string::npos) filename = filename.substr(ptr + 1);
   }
 
-  // Function name
-  if (!function) function = "";
-
   SmartPointer<FileLocation> loc =
-    new FileLocation(filename, demangle(function), line);
+    new FileLocation(filename, demangle(function.c_str()), line);
 
   cache.insert(cache_t::value_type(addr, loc));
   return *loc;
