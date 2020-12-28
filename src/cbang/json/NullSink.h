@@ -43,14 +43,20 @@ namespace cb {
   namespace JSON {
     class NullSink : public Sink {
     protected:
+      bool allowDuplicates;
+
       std::vector<ValueType> stack;
       typedef std::set<std::string> keys_t;
       std::vector<keys_t> keyStack;
 
-      bool canWrite;
+      bool canWrite = true;
 
     public:
-      NullSink() : canWrite(true) {}
+      NullSink(bool allowDuplicates = false) :
+        allowDuplicates(allowDuplicates) {}
+
+      bool getAllowDuplicates() const {return allowDuplicates;}
+      void setAllowDuplicates(bool x) {allowDuplicates = x;}
 
       unsigned getDepth() const;
       bool inList() const;

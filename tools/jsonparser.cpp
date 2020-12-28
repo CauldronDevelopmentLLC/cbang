@@ -40,8 +40,10 @@ using namespace cb;
 
 int main(int argc, char *argv[]) {
   try {
-    JSON::Reader reader(cin);
+    JSON::Reader reader(cin, true);
     JSON::Writer writer(cout, 0, true);
+
+    writer.setAllowDuplicates(true);
     reader.parse(writer);
     cout.flush();
 

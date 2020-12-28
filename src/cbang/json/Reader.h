@@ -45,14 +45,16 @@ namespace cb {
     class Sink;
 
     class Reader {
-      unsigned line;
-      unsigned column;
       InputSource src;
       std::istream &stream;
+      bool strict;
+
+      unsigned line = 0;
+      unsigned column = 0;
 
     public:
-      Reader(const InputSource &src) :
-      line(0), column(0), src(src), stream(src.getStream()) {}
+      Reader(const InputSource &src, bool strict = false) :
+        src(src), stream(src.getStream()), strict(strict) {}
 
       void parse(Sink &sink, unsigned depth = 0);
       ValuePtr parse();
