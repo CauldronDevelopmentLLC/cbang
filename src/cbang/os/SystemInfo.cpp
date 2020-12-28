@@ -62,6 +62,8 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
 
+#include "MacOSUtilities.h"
+
 #else // !_MSC_VER && !__APPLE__
 #include <sys/sysinfo.h>
 #include <sys/utsname.h>
@@ -198,14 +200,7 @@ Version SystemInfo::getOSVersion() const {
   return Version((uint8_t)info.dwMajorVersion, (uint8_t)info.dwMinorVersion);
 
 #elif defined(__APPLE__)
-  SInt32 major;
-  SInt32 minor;
-  SInt32 release;
-  Gestalt(gestaltSystemVersionMajor,  &major);
-  Gestalt(gestaltSystemVersionMinor,  &minor);
-  Gestalt(gestaltSystemVersionBugFix, &release);
-
-  return Version((uint8_t)major, (uint8_t)minor, (uint8_t)release);
+  return MacOSUtilities::getMacOSVersion();
 
 #else
   struct utsname i;
@@ -236,9 +231,7 @@ void SystemInfo::add(Info &info) {
   info.add(category, "Threads", getThreadsType().toString());
 
   Version osVersion = getOSVersion();
-  info.add(category, "OS Version",
-           SSTR((unsigned)osVersion.getMajor() << '.'
-                << (unsigned)osVersion.getMinor()));
+  info.add(category, "OS Version", osVersion.toString());
 
   info.add(category, "Has Battery",
            String(PowerManagement::instance().hasBattery()));
