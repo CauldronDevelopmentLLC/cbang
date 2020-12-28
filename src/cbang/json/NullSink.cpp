@@ -108,7 +108,8 @@ bool NullSink::has(const std::string &key) const {
 
 void NullSink::beginInsert(const std::string &key) {
   assertWriteNotPending();
-  if (has(key)) KEY_ERROR("Key '" << key << "' already written to output");
+  if (has(key) && !allowDuplicates)
+    KEY_ERROR("Key '" << key << "' already written to output");
   keyStack.back().insert(key);
   canWrite = true;
 }

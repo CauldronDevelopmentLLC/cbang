@@ -54,9 +54,10 @@ namespace cb {
 
     public:
       Writer(std::ostream &stream, unsigned indentStart = 0,
-             bool compact = false, unsigned indentSpace = 2, int precision = 6)
-        : stream(stream), indentSpace(indentSpace), indentStart(indentStart),
-          compact(compact), precision(precision) {}
+             bool compact = false, unsigned indentSpace = 2, int precision = 6,
+             bool allowDuplicates = false)
+        : NullSink(allowDuplicates), stream(stream), indentSpace(indentSpace),
+          indentStart(indentStart), compact(compact), precision(precision) {}
 
       unsigned getIndentSpace() const {return indentSpace;}
       void setIndentSpace(unsigned x) {indentSpace = x;}

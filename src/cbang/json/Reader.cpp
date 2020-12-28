@@ -48,7 +48,7 @@ using namespace cb::JSON;
 
 
 void Reader::parse(Sink &sink, unsigned depth) {
-  if (1000 < ++depth) THROW("Maximum JSON parse depth reached");
+  if (1000 < ++depth) error("Maximum JSON parse depth reached");
 
   while (good()) {
     switch (next()) {
@@ -56,7 +56,7 @@ void Reader::parse(Sink &sink, unsigned depth) {
       parseNull();
       return sink.writeNull();
 
-    case 'T': case 't': case 'F': case 'f':
+    case 'T': case 'F': case 't': case 'f':
       return sink.writeBoolean(parseBoolean());
 
     case '-': case '.':
@@ -179,22 +179,28 @@ const string Reader::parseKeyword() {
 
 
 void Reader::parseNull() {
-  string value = cb::String::toLower(parseKeyword());
+  if (strict) {
+    string value = parseKeyword();
+    if (value != "null") error(SSTR("'null' but found '" << value << '\''));
 
-  if (value != "none" && value != "null")
-    error(SSTR("Expected keyword 'None' or 'null' but found '" << value
-               << '\''));
+  } else {
+    string value = cb::String::toLower(parseKeyword());
+
+    if (value != "none" && value != "null")
+      error(SSTR("Expected keyword 'None' or 'null' but found '" << value
+                 << '\''));
+  }
 }
 
 
 bool Reader::parseBoolean() {
-  string value = cb::String::toLower(parseKeyword());
+  string value = parseKeyword();
+  if (!strict) value = cb::String::toLower(value);
 
   if (value == "true") return true;
   else if (value == "false") return false;
 
-  error(SSTR("Expected keyword 'true' or 'false' but found '" << value
-             << '\''));
+  error(SSTR("Expected keyword 'true' or 'false' but found '" << value << "'"));
   throw "Unreachable";
 }
 
@@ -212,11 +218,17 @@ void Reader::parseNumber(Sink &sink) {
   }
 
   if (stream.peek() == '0') value += stream.get();
-  else while (isdigit(stream.peek())) value += stream.get();
+  else {
+    if (strict && !isdigit(stream.peek()))
+      error("Missing digit at start of number");
+    while (isdigit(stream.peek())) value += stream.get();
+  }
 
   if (stream.peek() == '.') {
     decimal = true;
     value += stream.get();
+    if (strict && !isdigit(stream.peek()))
+      error("Missing digit after decimal point");
     while (isdigit(stream.peek())) value += stream.get();
   }
 
@@ -224,6 +236,8 @@ void Reader::parseNumber(Sink &sink) {
     decimal = true;
     value += stream.get();
     if (stream.peek() == '+' || stream.peek() == '-') value += stream.get();
+    if (strict && !isdigit(stream.peek()))
+      error("Missing digit in exponent");
     while (isdigit(stream.peek())) value += stream.get();
   }
 
@@ -258,31 +272,140 @@ void Reader::parseNumber(Sink &sink) {
 string Reader::parseString() {
   match("\"");
 
+  unsigned char c = 0;
   string s;
   bool escape = false;
   while (good()) {
-    char c = get();
+    c = get();
+    if (!good()) break;
 
-    if (c == '"' && !escape) break;
-    if (good()) s += c;
+    if (c == '\n') error("Unescaped new line in JSON string");
 
-    escape = !escape && c == '\\';
+    if (escape) {
+      escape = false;
+
+      switch (c) {
+      case '"': case '\\': case '/': s += c; break;
+      case 'b': s += '\b'; break;
+      case 'f': s += '\b'; break;
+      case 'n': s += '\n'; break;
+      case 'r': s += '\r'; break;
+      case 't': s += '\t'; break;
+
+      case 'x': {
+        if (strict) error("Hex escape sequence not allowed in JSON");
+
+        uint16_t code = 0;
+        for (unsigned i = 0; i < 2; i++) {
+          code <<= 4;
+          c = get();
+          if ('0' <= c && c <= '9') code += c - '0';
+          else if ('a' <= c && c <= 'f') code += c - 'a' + 10;
+          else if ('A' <= c && c <= 'F') code += c - 'F' + 10;
+          else error(SSTR("Invalid hex character '" << String::escapeC(c)
+                          << "' in JSON string"));
+        }
+
+        s += code;
+        break;
+      }
+
+      case 'u': {
+        uint16_t code = 0;
+
+        for (unsigned i = 0; i < 4; i++) {
+          code <<= 4;
+          c = get();
+
+          if ('0' <= c && c <= '9') code += c - '0';
+          else if ('a' <= c && c <= 'f') code += c - 'a' + 10;
+          else if ('A' <= c && c <= 'F') code += c - 'A' + 10;
+          else error("Invalid unicode escape sequence in JSON");
+        }
+
+        if (code < 0x80) s += (char)code;
+        else if (code < 0x800) {
+          s += 0xc0 | (code >> 6);
+          s += 0x80 | (code & 0x3f);
+
+        } else {
+          s += 0xe0 | (code >> 12);
+          s += 0x80 | ((code >> 6) & 0x3f);
+          s += 0x80 | (code & 0x3f);
+        }
+
+        break;
+      }
+
+      default:
+        if ('0' <= c && c <= '7') {
+          if (strict) error("Hex escape sequence not allowed in JSON");
+
+          uint16_t code = 0;
+          for (unsigned i = 0; i < 3; i++) {
+            code <<= 3;
+            if (i) c = get();
+            if ('0' <= c && c <= '7') code += c - '0';
+            else error(SSTR("Invalid octal character '" << String::escapeC(c)
+                            << "' in JSON string"));
+          }
+
+          if (0377 < code) error("Invalid octal code in JSON string");
+          s += code;
+
+        } else error(SSTR("Invalid string escape character '"
+                          << String::escapeC(c) << "' in JSON"));
+      }
+
+    } else if (c == '"') break;
+    else if (c == '\\') escape = true;
+    else if (0x00 <= c && c <= 0x1f)
+      error("Control characters not allowed in JSON strings");
+
+    else if (0x80 <= c) {
+      // Compute code width
+      unsigned width;
+      if ((c & 0xe0) == 0xc0) width = 1;
+      else if ((c & 0xf0) == 0xe0) width = 2;
+      else if ((c & 0xf8) == 0xf0) width = 3;
+      else error(SSTR("Invalid UTF-8 byte '" <<
+                      String::printf("0x%02x", (unsigned)c)
+                      << " in JSON string"));
+
+      s += c;
+      for (unsigned i = 0; i < width; i++) {
+        c = get();
+        if ((c & 0xc0) != 0x80)
+          error("Incomplete UTF-8 sequence in JSON string");
+        s += 3;
+      }
+
+    } else s += c;
   }
 
-  return unescape(s);
+  if (c != '"') error("Unclosed string in JSON");
+
+  return s;
 }
 
 
 void Reader::parseList(Sink &sink, unsigned depth) {
   match("[");
 
+  bool comma = false;
+
   while (good()) {
-    if (tryMatch(']')) return; // End or trailing comma
+    if (tryMatch(']')) {
+      // Empty list or trailing comma
+      if (strict && comma) error("Trailing comma not allowed in JSON list");
+      return;
+    }
 
     sink.beginAppend();
     parse(sink, depth);
 
     if (match(",]") == ']') return; // Continuation or end
+    comma = true;
   }
 }
 
@@ -290,8 +413,14 @@ void Reader::parseList(Sink &sink, unsigned depth) {
 void Reader::parseDict(Sink &sink, unsigned depth) {
   match("{");
 
+  bool comma = false;
+
   while (good()) {
-    if (tryMatch('}')) return; // Empty or trailing comma
+    if (tryMatch('}')) {
+      // Empty dict or trailing comma
+      if (strict && comma) error("Trailing comma not allowed in JSON dict");
+      return;
+    }
 
     string key = parseString();
     match(":");
@@ -299,6 +428,7 @@ void Reader::parseDict(Sink &sink, unsigned depth) {
     parse(sink, depth);
 
     if (match(",}") == '}') return; // Continuation or end
+    comma = true;
   }
 }
 
