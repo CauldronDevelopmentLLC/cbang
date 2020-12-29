@@ -80,7 +80,7 @@ void HTTPConnOut::writeRequest(const SmartPointer<Request> &req,
 
 
 void HTTPConnOut::fail(ConnectionError err, const string &msg) {
-  LOG_WARNING(msg);
+  LOG_DEBUG(3, msg);
 
   auto requests = this->requests;
   this->requests.clear();

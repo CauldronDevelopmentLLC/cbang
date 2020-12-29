@@ -70,6 +70,11 @@
 using namespace std;
 using namespace cb;
 
+
+#undef CBANG_EXCEPTION
+#define CBANG_EXCEPTION SSLException
+
+
 namespace {
   extern "C" void ssl_info_callback(const ::SSL *ssl, int where, int ret) {
     ((cb::SSL *)SSL_get_app_data(ssl))->infoCallback(where, ret);

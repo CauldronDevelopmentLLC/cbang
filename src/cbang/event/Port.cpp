@@ -99,7 +99,12 @@ void Port::accept() {
     if (sslCtx.isSet()) {
       ssl = sslCtx->createSSL();
       ssl->setFD(newSocket->get());
-      ssl->accept();
+
+      try {
+        ssl->accept();
+      } catch (const SSLException &e) {
+        LOG_DEBUG(4, e.getMessage());
+      }
     }
 #endif // HAVE_OPENSSL
 

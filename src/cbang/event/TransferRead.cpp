@@ -122,7 +122,9 @@ int TransferRead::read(Buffer &buffer, unsigned length) {
 
       return ret;
 
-    } CATCH_ERROR;
+    } catch (const SSLException &e) {
+      LOG_DEBUG(4, e.getMessage());
+    }
     return -1;
   }
 #endif // HAVE_OPENSSL

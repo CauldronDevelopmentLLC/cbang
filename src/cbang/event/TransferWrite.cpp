@@ -86,7 +86,9 @@ int TransferWrite::write(Buffer &buffer, unsigned length) {
 
       return ret;
 
-    } CATCH_DEBUG(4);
+    } catch (const SSLException &e) {
+      LOG_DEBUG(4, e.getMessage());
+    }
     return -1;
   }
 #endif // HAVE_OPENSSL
