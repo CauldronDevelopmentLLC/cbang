@@ -121,7 +121,8 @@ void FDPoolEPoll::FDQueue::timeout(uint64_t now) {
   if (!getTimeout() || !last || closed) return;
 
   if (getNextTimeout() < now) {
-    LOG_WARNING((read ? "Read" : "Write") << " timedout on fd=" << fdr.getFD());
+    LOG_DEBUG(4, (read ? "Read" : "Write")
+              << " timedout on fd=" << fdr.getFD());
     close();
     timedout = true;
 
@@ -273,8 +274,9 @@ void FDPoolEPoll::FDRec::update() {
   int op = events ? (newEvents ? EPOLL_CTL_MOD : EPOLL_CTL_DEL) : EPOLL_CTL_ADD;
 
   if (epoll_ctl(pool.getFD(), op, fd, &ev))
-    LOG_ERROR("epoll_ctl(" << epollOpString(op) << ") failed for fd " << fd
-              << ": " << SysError());
+    if (op != EPOLL_CTL_DEL)
+      LOG_ERROR("epoll_ctl(" << epollOpString(op) << ") failed for fd " << fd
+                << ": " << SysError());
 
   // Update timeouts
   readQ.updateTimeout(events & FD::READ_EVENT, newEvents & FD::READ_EVENT);

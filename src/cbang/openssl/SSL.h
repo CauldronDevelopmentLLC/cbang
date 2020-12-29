@@ -131,6 +131,9 @@ namespace cb {
     bool checkWants();
     void checkError(int ret);
   };
+
+
+  CBANG_DEFINE_EXCEPTION_SUBCLASS(SSLException);
 }
 
 #else // HAVE_OPENSSL
