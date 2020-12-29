@@ -78,37 +78,43 @@ const string String::NUMBERS = "0123456789";
 const string String::ALPHA_NUMERIC = String::LETTERS + String::NUMBERS;
 
 
-String::String(const char *s, size_type n) {
-  size_type len;
-  for (len = 0; len < n && s[len]; len++) continue;
+namespace {
+  string toString(const char *s, string::size_type n) {
+    string::size_type len = 0;
+    while (len < n && s[len]) len++;
 
-  if (len) assign(s, len);
+    return len ? string(s, len) : string();
+  }
+
+
+  string toString(double x, int precision) {
+    bool big = x < -1e20 || 1e20 < x;
+    string s = String::printf(big ? "%.*e" : "%.*f", precision, x);
+
+    int chop = 0;
+    char point = use_facet<numpunct<char> >(cout.getloc()).decimal_point();
+
+    for (auto it = s.rbegin(); it != s.rend(); it++)
+      if (*it == '0' || *it == point) {
+        chop++;
+        if (*it == point) break;
+
+      } else break;
+
+    if (chop) s = s.substr(0, s.length() - chop);
+
+    return s == "-0" ? "0" : s;
+  }
 }
 
 
+String::String(const char *s, size_type n) : string(toString(s, n)) {}
 String::String(int32_t x)   : string(printf("%i", x)) {}
 String::String(uint32_t x)  : string(printf("%u", x)) {}
 String::String(int64_t x)   : string(printf("%lli", (long long int)x)) {}
 String::String(uint64_t x)  : string(printf("%llu", (long long unsigned)x)) {}
 String::String(uint128_t x) : string(SSTR(x)) {}
-
-
-String::String(double x, int precision) : string(printf("%.*f", precision, x)) {
-  int chop = 0;
-  char point = use_facet<numpunct<char> >(cout.getloc()).decimal_point();
-
-  for (reverse_iterator it = rbegin(); it != rend(); it++)
-    if (*it == '0' || *it == point) {
-      chop++;
-      if (*it == point) break;
-
-    } else break;
-
-  if (chop) *this = substr(0, length() - chop);
-  if (*this == "-0") *this = "0";
-}
-
-
+String::String(double x, int precision) : string(toString(x, precision)) {}
 String::String(bool x) : string(x ? "true" : "false") {}
 
 
