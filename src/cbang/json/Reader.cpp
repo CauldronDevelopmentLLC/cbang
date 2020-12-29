@@ -363,6 +363,18 @@ string Reader::parseString() {
       error("Control characters not allowed in JSON strings");
 
     else if (0x80 <= c) {
+      // Check UTF-8 encodings.
+      //
+      // UTF-8 code can be of the following formats:
+      //
+      //    Range in Hex   Binary representation
+      //        0-7f       0xxxxxxx
+      //       80-7ff      110xxxxx 10xxxxxx
+      //      800-ffff     1110xxxx 10xxxxxx 10xxxxxx
+      //    10000-1fffff   11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+      //
+      // See: http://en.wikipedia.org/wiki/UTF-8
+
       // Compute code width
       unsigned width;
       if ((c & 0xe0) == 0xc0) width = 1;
@@ -377,7 +389,7 @@ string Reader::parseString() {
         c = get();
         if ((c & 0xc0) != 0x80)
           error("Incomplete UTF-8 sequence in JSON string");
-        s += 3;
+        s += c;
       }
 
     } else s += c;
