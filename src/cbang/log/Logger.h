@@ -227,9 +227,12 @@ namespace cb {
 
 // Create logger streams
 // Warning these macros lock the Logger until they are deallocated
+#define CBANG_LOG_STREAM_LOCATION(domain, level, file, line)            \
+  cb::Logger::instance()                                                \
+  .createStream(domain, level, std::string(), file, line)
+
 #define CBANG_LOG_STREAM(domain, level)                 \
-  cb::Logger::instance().createStream(domain, level, std::string(),     \
-                                      __FILE__, __LINE__)
+  CBANG_LOG_STREAM_LOCATION(domain, level, __FILE__, __LINE__)
 
 #define CBANG_LOG_RAW_STREAM()                              \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_RAW_LEVEL)
