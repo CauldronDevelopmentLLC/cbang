@@ -187,13 +187,13 @@ void Writer::endDict() {
 
 
 namespace {
-  string encodeChar(unsigned char c, const char *fmt) {
-    return cb::String::printf(fmt, (unsigned)c);
+  string encode(unsigned c) {
+    return cb::String::printf("\\u%04x", c);
   }
 }
 
 
-string Writer::escape(const string &s, const char *fmt) {
+string Writer::escape(const string &s) {
   string result;
   result.reserve(s.length());
 
@@ -201,7 +201,7 @@ string Writer::escape(const string &s, const char *fmt) {
     unsigned char c = *it;
 
     switch (c) {
-    case 0: result.append(encodeChar(0, fmt)); break;
+    case 0: result.append(encode(0)); break;
     case '\\': result.append("\\\\"); break;
     case '\"': result.append("\\\""); break;
     case '\b': result.append("\\b"); break;
@@ -230,13 +230,13 @@ string Writer::escape(const string &s, const char *fmt) {
         else if ((c & 0xf8) == 0xf0) width = 3;
         else {
           // Invalid or non-standard UTF-8 code width, escape it
-          result.append(encodeChar(c, fmt));
+          result.append(encode(c));
           break;
         }
 
         // Check if UTF-8 code is valid
         bool valid = true;
-        uint16_t code = c & (0x3f >> width);
+        uint32_t code = c & (0x3f >> width);
         auto it2 = it;
 
         for (int i = 0; i < width; i++) {
@@ -249,19 +249,19 @@ string Writer::escape(const string &s, const char *fmt) {
           code = (code << 6) | (*it2 & 0x3f);
         }
 
-        if (!valid) result.append(encodeChar(*it, fmt)); // Encode character
+        if (!valid) result.append(encode(*it)); // Encode character
         else {
           if (0x2000 <= code && code < 0x2100)
             // Always encode Javascript line separators
-            result.append(encodeChar(code, fmt));
+            result.append(encode(code));
 
-          else result.append(it, it2); // Otherwise, pass valid UTF-8
+          else result.append(it, it2 + 1); // Otherwise, pass valid UTF-8
 
           it = it2;
         }
 
       } else if (iscntrl(c)) // Always encode control characters
-        result.append(encodeChar(c, fmt));
+        result.append(encode(c));
 
       else result.push_back(c); // Pass normal characters
       break;

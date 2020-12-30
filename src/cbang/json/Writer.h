@@ -89,8 +89,7 @@ namespace cb {
       void beginInsert(const std::string &key);
       void endDict();
 
-      static std::string escape(const std::string &s,
-                                const char *fmt = "\\u%04x");
+      static std::string escape(const std::string &s);
 
     protected:
       void indent() const;
