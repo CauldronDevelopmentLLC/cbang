@@ -53,12 +53,12 @@ uint64_t Connection::nextID = 0;
 Connection::Connection(cb::Event::Base &base) :
   FD(base),
   timeout(base.newEvent(this, &Connection::timedout, EVENT_NO_SELF_REF)) {
-  LOG_DEBUG(3, "Connection opened");
+  LOG_DEBUG(4, "Connection opened");
 }
 
 
 Connection::~Connection() {
-  LOG_DEBUG(3, "Connection closed");
+  LOG_DEBUG(4, "Connection closed");
   if (socket.isSet()) socket->adopt(); // Keep socket form closing FD
 }
 
