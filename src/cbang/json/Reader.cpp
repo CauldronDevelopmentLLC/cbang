@@ -34,6 +34,7 @@
 #include "Builder.h"
 
 #include <cbang/String.h>
+#include <cbang/log/Logger.h>
 #include <cbang/io/StringInputSource.h>
 
 #include <vector>
@@ -96,23 +97,27 @@ ValuePtr Reader::parse() {
 }
 
 
-SmartPointer<Value> Reader::parse(const InputSource &src) {
-  return Reader(src).parse();
+SmartPointer<Value> Reader::parse(const InputSource &src, bool strict,
+                                  bool permissive) {
+  return Reader(src, strict, permissive).parse();
 }
 
 
-SmartPointer<Value> Reader::parseString(const string &s) {
-  return parse(StringInputSource(s));
+SmartPointer<Value> Reader::parseString(const string &s, bool strict,
+                                        bool permissive) {
+  return parse(StringInputSource(s), strict, permissive);
 }
 
 
-void Reader::parse(const InputSource &src, Sink &sink) {
-  Reader(src).parse(sink);
+void Reader::parse(const InputSource &src, Sink &sink, bool strict,
+                   bool permissive) {
+  Reader(src, strict, permissive).parse(sink);
 }
 
 
-void Reader::parseString(const string &s, Sink &sink) {
-  parse(StringInputSource(s), sink);
+void Reader::parseString(const string &s, Sink &sink, bool strict,
+                         bool permissive) {
+  parse(StringInputSource(s), sink, strict, permissive);
 }
 
 
@@ -248,18 +253,14 @@ void Reader::parseNumber(Sink &sink) {
   if (!decimal && negative) {
     long long int v = strtoll(start, &end, 0);
 
-    if (!errno && (size_t)(end - start) == value.length()) {
-      sink.write((int64_t)v);
-      return;
-    }
+    if (!errno && (size_t)(end - start) == value.length())
+      return sink.write((int64_t)v);
 
   } else if (!decimal) {
     long long unsigned v = strtoull(start, &end, 0);
 
-    if (!errno && (size_t)(end - start) == value.length()) {
-      sink.write((uint64_t)v);
-      return;
-    }
+    if (!errno && (size_t)(end - start) == value.length())
+      return sink.write((uint64_t)v);
   }
 
   double v = strtod(start, &end);
@@ -414,7 +415,15 @@ void Reader::parseList(Sink &sink, unsigned depth) {
     }
 
     sink.beginAppend();
-    parse(sink, depth);
+
+    try {
+      parse(sink, depth);
+    } catch (const Exception &e) {
+      if (permissive) {
+        sink.writeNull();
+        LOG_DEBUG(3, e.getMessage());
+      } else throw;
+    }
 
     if (match(",]") == ']') return; // Continuation or end
     comma = true;
@@ -437,7 +446,15 @@ void Reader::parseDict(Sink &sink, unsigned depth) {
     string key = parseString();
     match(":");
     sink.beginInsert(key);
-    parse(sink, depth);
+
+    try {
+      parse(sink, depth);
+    } catch (const Exception &e) {
+      if (permissive) {
+        sink.writeNull();
+        LOG_DEBUG(3, e.getMessage());
+      } else throw;
+    }
 
     if (match(",}") == '}') return; // Continuation or end
     comma = true;
@@ -448,6 +465,3 @@ void Reader::parseDict(Sink &sink, unsigned depth) {
 void Reader::error(const string &msg) const {
   throw ParseError(msg, FileLocation(src.getName(), line, column));
 }
-
-
-string Reader::unescape(const string &s) {return cb::String::unescapeC(s);}

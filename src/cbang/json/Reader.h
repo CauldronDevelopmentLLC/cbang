@@ -48,20 +48,33 @@ namespace cb {
       InputSource src;
       std::istream &stream;
       bool strict;
+      bool permissive;
 
       unsigned line = 0;
       unsigned column = 0;
 
     public:
-      Reader(const InputSource &src, bool strict = false) :
-        src(src), stream(src.getStream()), strict(strict) {}
+      Reader(const InputSource &src, bool strict = false,
+             bool permissive = false) :
+        src(src), stream(src.getStream()), strict(strict),
+        permissive(permissive) {}
+
+      bool getStrict() const {return strict;}
+      void setStrict(bool strict) {this->strict = strict;}
+
+      bool getPermissive() const {return permissive;}
+      void setPermissive(bool permissive) {this->permissive = permissive;}
 
       void parse(Sink &sink, unsigned depth = 0);
       ValuePtr parse();
-      static ValuePtr parse(const InputSource &src);
-      static ValuePtr parseString(const std::string &s);
-      static void parse(const InputSource &src, Sink &sink);
-      static void parseString(const std::string &s, Sink &sink);
+      static ValuePtr parse(const InputSource &src, bool strict = false,
+                            bool permissive = false);
+      static ValuePtr parseString(const std::string &s, bool strict = false,
+                                  bool permissive = false);
+      static void parse(const InputSource &src, Sink &sink, bool strict = false,
+                        bool permissive = false);
+      static void parseString(const std::string &s, Sink &sink, bool strict = false,
+                              bool permissive = false);
 
       unsigned getLine() const {return line;}
       unsigned getColumn() const {return column;}
@@ -82,8 +95,6 @@ namespace cb {
       void parseDict(Sink &sink, unsigned depth = 0);
 
       void error(const std::string &msg) const;
-
-      static std::string unescape(const std::string &s);
     };
 
 
