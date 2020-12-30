@@ -97,27 +97,23 @@ ValuePtr Reader::parse() {
 }
 
 
-SmartPointer<Value> Reader::parse(const InputSource &src, bool strict,
-                                  bool permissive) {
-  return Reader(src, strict, permissive).parse();
+SmartPointer<Value> Reader::parse(const InputSource &src, bool strict) {
+  return Reader(src, strict).parse();
 }
 
 
-SmartPointer<Value> Reader::parseString(const string &s, bool strict,
-                                        bool permissive) {
-  return parse(StringInputSource(s), strict, permissive);
+SmartPointer<Value> Reader::parseString(const string &s, bool strict) {
+  return parse(StringInputSource(s), strict);
 }
 
 
-void Reader::parse(const InputSource &src, Sink &sink, bool strict,
-                   bool permissive) {
-  Reader(src, strict, permissive).parse(sink);
+void Reader::parse(const InputSource &src, Sink &sink, bool strict) {
+  Reader(src, strict).parse(sink);
 }
 
 
-void Reader::parseString(const string &s, Sink &sink, bool strict,
-                         bool permissive) {
-  parse(StringInputSource(s), sink, strict, permissive);
+void Reader::parseString(const string &s, Sink &sink, bool strict) {
+  parse(StringInputSource(s), sink, strict);
 }
 
 
@@ -415,15 +411,7 @@ void Reader::parseList(Sink &sink, unsigned depth) {
     }
 
     sink.beginAppend();
-
-    try {
-      parse(sink, depth);
-    } catch (const Exception &e) {
-      if (permissive) {
-        sink.writeNull();
-        LOG_DEBUG(3, e.getMessage());
-      } else throw;
-    }
+    parse(sink, depth);
 
     if (match(",]") == ']') return; // Continuation or end
     comma = true;
@@ -446,15 +434,7 @@ void Reader::parseDict(Sink &sink, unsigned depth) {
     string key = parseString();
     match(":");
     sink.beginInsert(key);
-
-    try {
-      parse(sink, depth);
-    } catch (const Exception &e) {
-      if (permissive) {
-        sink.writeNull();
-        LOG_DEBUG(3, e.getMessage());
-      } else throw;
-    }
+    parse(sink, depth);
 
     if (match(",}") == '}') return; // Continuation or end
     comma = true;
