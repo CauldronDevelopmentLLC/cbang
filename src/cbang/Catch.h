@@ -44,12 +44,10 @@
 
 #define CBANG_CATCH_CBANG(LEVEL, MSG)                                   \
   catch (const cb::Exception &e) {                                      \
-    if (CBANG_LOG_ENABLED(CBANG_LOG_DOMAIN, LEVEL))                     \
-      *CBANG_LOG_STREAM_LOCATION(CBANG_LOG_DOMAIN, LEVEL,               \
-                                 e.getLocation().getFilename().c_str(), \
-                                 e.getLocation().getLine())             \
-        CBANG_LOG_PREFIX << "Exception" << MSG << ": "                  \
-                         << e CBANG_CATCH_LOCATION;                     \
+    CBANG_LOG_LEVEL_LOCATION(LEVEL, "Exception" << MSG << ": "          \
+                             << e CBANG_CATCH_LOCATION,                 \
+                             e.getLocation().getFilename().c_str(),     \
+                             e.getLocation().getLine());                \
   }
 
 #define CBANG_CATCH_STD(LEVEL, MSG)                                     \

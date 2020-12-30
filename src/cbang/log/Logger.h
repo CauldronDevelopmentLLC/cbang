@@ -249,11 +249,18 @@ namespace cb {
 // Log messages
 // The 'do {...} while (false)' loop lets this compile correctly:
 //   if (expr) CBANG_LOG(...); else ...
-#define CBANG_LOG(domain, level, msg)                           \
-  do {                                                          \
-    if (CBANG_LOG_ENABLED(domain, level))                       \
-      *CBANG_LOG_STREAM(domain, level) CBANG_LOG_PREFIX << msg;       \
+#define CBANG_LOG_LOCATION(domain, level, msg, file, line)            \
+  do {                                                                \
+    if (CBANG_LOG_ENABLED(domain, level))                             \
+      *CBANG_LOG_STREAM_LOCATION(domain, level, file, line)           \
+        CBANG_LOG_PREFIX << msg;                                      \
   } while (false)
+
+#define CBANG_LOG(domain, level, msg)                           \
+  CBANG_LOG_LOCATION(domain, level, msg, __FILE__, __LINE__)
+
+#define CBANG_LOG_LEVEL_LOCATION(level, msg, file, line)        \
+  CBANG_LOG_LOCATION(CBANG_LOG_DOMAIN, level, msg, file, line)
 
 #define CBANG_LOG_LEVEL(level, msg) CBANG_LOG(CBANG_LOG_DOMAIN, level, msg)
 
