@@ -187,13 +187,13 @@ void Writer::endDict() {
 
 
 namespace {
-  string encode(unsigned c) {
-    return cb::String::printf("\\u%04x", c);
+  string encode(unsigned c, const char *fmt) {
+    return cb::String::printf(fmt, c);
   }
 }
 
 
-string Writer::escape(const string &s) {
+string Writer::escape(const string &s, const char *fmt) {
   string result;
   result.reserve(s.length());
 
@@ -201,7 +201,7 @@ string Writer::escape(const string &s) {
     unsigned char c = *it;
 
     switch (c) {
-    case 0: result.append(encode(0)); break;
+    case 0: result.append(encode(0, fmt)); break;
     case '\\': result.append("\\\\"); break;
     case '\"': result.append("\\\""); break;
     case '\b': result.append("\\b"); break;
@@ -230,7 +230,7 @@ string Writer::escape(const string &s) {
         else if ((c & 0xf8) == 0xf0) width = 3;
         else {
           // Invalid or non-standard UTF-8 code width, escape it
-          result.append(encode(c));
+          result.append(encode(c, fmt));
           break;
         }
 
@@ -249,11 +249,11 @@ string Writer::escape(const string &s) {
           code = (code << 6) | (*it2 & 0x3f);
         }
 
-        if (!valid) result.append(encode(*it)); // Encode character
+        if (!valid) result.append(encode(*it, fmt)); // Encode character
         else {
           if (0x2000 <= code && code < 0x2100)
             // Always encode Javascript line separators
-            result.append(encode(code));
+            result.append(encode(code, fmt));
 
           else result.append(it, it2 + 1); // Otherwise, pass valid UTF-8
 
@@ -261,7 +261,7 @@ string Writer::escape(const string &s) {
         }
 
       } else if (iscntrl(c)) // Always encode control characters
-        result.append(encode(c));
+        result.append(encode(c, fmt));
 
       else result.push_back(c); // Pass normal characters
       break;
