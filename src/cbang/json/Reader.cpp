@@ -373,7 +373,7 @@ string Reader::parseString() {
       // See: http://en.wikipedia.org/wiki/UTF-8
 
       // Compute code width
-      unsigned width;
+      unsigned width = 0;
       if ((c & 0xe0) == 0xc0) width = 1;
       else if ((c & 0xf0) == 0xe0) width = 2;
       else if ((c & 0xf8) == 0xf0) width = 3;
