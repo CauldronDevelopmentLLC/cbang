@@ -98,7 +98,6 @@ namespace cb {
     bool logColor = true;
     bool logToScreen = true;
     bool logTrunc = false;
-    bool logRedirect = false;
     bool logRotate = true;
     unsigned logRotateMax = 0;
     std::string logRotateDir = "logs";
@@ -154,7 +153,6 @@ namespace cb {
     void setLogColor(bool x) {logColor = x;}
     void setLogToScreen(bool x) {logToScreen = x;}
     void setLogTruncate(bool x) {logTrunc = x;}
-    void setLogRedirect(bool x) {logRedirect = x;}
     void setLogRotate(bool x) {logRotate = x;}
     void setLogRotateMax(unsigned x) {logRotateMax = x;}
     void setLogRates(unsigned x) {logRates = x;}
