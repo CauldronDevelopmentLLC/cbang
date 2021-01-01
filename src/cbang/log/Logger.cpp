@@ -52,7 +52,6 @@
 #include <cbang/config/OptionActionSet.h>
 
 #include <iostream>
-#include <stdio.h> // for freopen()
 
 #include <boost/ref.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -142,8 +141,6 @@ void Logger::addOptions(Options &options) {
                     "Print log messages with ANSI color coding.");
   options.addTarget("log-to-screen", logToScreen, "Log to screen.");
   options.addTarget("log-truncate", logTrunc, "Truncate log file.");
-  options.addTarget("log-redirect", logRedirect, "Redirect all output to log "
-                    "file.  Implies !log-to-screen.");
   options.addTarget("log-rotate", logRotate, "Rotate log files on each run.");
   options.addTarget("log-rotate-dir", logRotateDir,
                     "Put rotated logs in this directory.");
@@ -185,17 +182,6 @@ void Logger::startLogFile(const string &filename) {
            << (logCRLF ? "\r\n" : "\n");
   logFile->flush();
   lastDate = Time::now();
-
-  if (logRedirect) {
-    setLogToScreen(false);
-
-    SystemUtilities::open(filename, ios::app | ios::out); // Test filename
-
-    // Redirect standard error and out
-    if (!freopen(filename.c_str(), "a", stdout) ||
-        !freopen(filename.c_str(), "a", stderr))
-      THROW("Redirecting output to '" << filename << "'");
-  }
 }
 
 
