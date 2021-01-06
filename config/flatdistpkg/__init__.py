@@ -5,6 +5,8 @@ from __future__ import print_function
 import os, platform, shutil
 import config
 import zipfile
+import mimetypes
+mimetypes.init()
 
 from SCons.Script import *
 from SCons.Action import CommandAction
@@ -551,9 +553,21 @@ def build_distribution_template(env, target=None):
 
     background = env.get('distpkg_background', None)
     if background:
+        mtype = mimetypes.guess_type(background)[0]
         etree.SubElement(root, 'background', {
             'alignment': 'bottomleft',
             'file': background,
+            'mime-type': mtype,
+            'scaling': 'none',
+            })
+    # dark mode background; defaults to same image as light
+    background = env.get('distpkg_background_dark', background)
+    if background:
+        mtype = mimetypes.guess_type(background)[0]
+        etree.SubElement(root, 'background-darkAqua', {
+            'alignment': 'bottomleft',
+            'file': background,
+            'mime-type': mtype,
             'scaling': 'none',
             })
 
