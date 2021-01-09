@@ -35,6 +35,7 @@
 #include "Buffer.h"
 #include "Request.h"
 
+#include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
 
 using namespace cb::Event;
@@ -50,7 +51,8 @@ HTTPConnIn::HTTPConnIn(HTTPServer &server) :
 
 
 void HTTPConnIn::writeRequest(const SmartPointer<Request> &req,
-                              cb::Event::Buffer buffer, bool hasMore) {
+                              cb::Event::Buffer buffer, bool hasMore,
+                              std::function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength() << " hasMore="
             << hasMore);
 
@@ -58,11 +60,13 @@ void HTTPConnIn::writeRequest(const SmartPointer<Request> &req,
 
   if (getStats().isSet()) getStats()->event(req->getResponseCode().toString());
 
-  auto cb =
-    [this, req, hasMore] (bool success) {
+  auto cb2 =
+    [this, req, hasMore, cb] (bool success) {
       LOG_DEBUG(6, "Response " << (success ? "successful" : "failed")
                 << " hasMore=" << hasMore << " persistent="
                 << req->isPersistent() << " numReqs=" << getNumRequests());
+
+      if (cb) TRY_CATCH_ERROR(cb(success));
 
       // Handle write failure
       if (!success) return close();
@@ -78,7 +82,7 @@ void HTTPConnIn::writeRequest(const SmartPointer<Request> &req,
       else readHeader();
     };
 
-  write(cb, buffer);
+  write(cb2, buffer);
 }
 
 

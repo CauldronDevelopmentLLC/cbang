@@ -48,7 +48,7 @@ namespace cb {
       // From HTTPConn
       bool isIncoming() const {return false;}
       void writeRequest(const SmartPointer<Request> &req, Buffer buffer,
-                        bool hasMore);
+                        bool hasMore, std::function<void (bool)> cb);
 
     protected:
       void fail(ConnectionError err, const std::string &msg);
