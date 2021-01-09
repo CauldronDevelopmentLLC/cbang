@@ -61,21 +61,23 @@ void HTTPConnOut::makeRequest(const SmartPointer<Request> &req) {
 
 
 void HTTPConnOut::writeRequest(const SmartPointer<Request> &req,
-                               cb::Event::Buffer buffer, bool hasMore) {
+                               cb::Event::Buffer buffer, bool hasMore,
+                               std::function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength());
   LOG_DEBUG(4, "Sending: " << buffer.toString());
 
   checkActive(req);
 
-  auto cb =
-    [this, req, hasMore] (bool success) {
+  auto cb2 =
+    [this, req, hasMore, cb] (bool success) {
+      if (cb) TRY_CATCH_ERROR(cb(success));
       if (!success) return fail(CONN_ERR_EOF, "Failed to write request");
       if (hasMore) return; // Still writing
 
       readHeader(req);
    };
 
-  write(cb, buffer);
+  write(cb2, buffer);
 }
 
 

@@ -660,7 +660,8 @@ void Request::sendChunk(const cb::Event::Buffer &buf) {
   out.add(buf);
   out.add("\r\n");
 
-  connection->writeRequest(this, out, chunked);
+  auto cb = [this] (bool success) {onWriteComplete(success);};
+  connection->writeRequest(this, out, chunked, cb);
 }
 
 
@@ -739,7 +740,9 @@ void Request::write() {
   if (outputBuffer.getLength()) out.add(outputBuffer);
 
   bytesWritten += out.getLength();
-  connection->writeRequest(this, out, chunked);
+
+  auto cb = [this] (bool success) {onWriteComplete(success);};
+  connection->writeRequest(this, out, chunked, cb);
 }
 
 

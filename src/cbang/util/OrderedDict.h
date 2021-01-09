@@ -91,9 +91,7 @@ namespace cb {
     }
 
 
-    bool has(const KEY &key) const {
-      return dict.find(key) != dict.end();
-    }
+    bool has(const KEY &key) const {return dict.find(key) != dict.end();}
 
 
     const typename OrderedDict::type_t &
