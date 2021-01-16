@@ -92,6 +92,7 @@ def build_function(target, source, env):
     install_files(env, 'icons', build_dir + '/usr/share/pixmaps')
     install_files(env, 'mime', build_dir + '/usr/share/mime/packages')
     install_files(env, 'platform_independent', build_dir + '/usr/share/' + name)
+    install_files(env, 'misc', build_dir)
 
     # Dirs
     docs_dir =  build_dir + '/usr/share/doc/' + name
