@@ -57,15 +57,15 @@ Value Context::eval(const InputSource &src) {
 
   // Compile
   v8::TryCatch tryCatch(Value::getIso());
-  auto script = v8::Script::Compile(context, source, &sOrigin).ToLocalChecked();
+  auto script = v8::Script::Compile(context, source, &sOrigin);
   if (tryCatch.HasCaught()) translateException(tryCatch, false);
 
   // Execute
-  auto ret = script->Run(context).ToLocalChecked();
+  auto ret = script.ToLocalChecked()->Run(context);
   if (tryCatch.HasCaught()) translateException(tryCatch, true);
 
   // Return result
-  return handleScope.Escape(ret);
+  return handleScope.Escape(ret.ToLocalChecked());
 }
 
 
