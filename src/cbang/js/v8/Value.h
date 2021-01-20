@@ -86,7 +86,7 @@ namespace cb {
       bool isBoolean() const {return value->IsBoolean();}
       bool toBoolean() const {
         assertDefined();
-        return value->BooleanValue(getCtx()).FromJust();
+        return value->BooleanValue(v8::Isolate::GetCurrent());
       }
 
       // Number
