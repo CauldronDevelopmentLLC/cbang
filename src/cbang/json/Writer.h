@@ -92,6 +92,18 @@ namespace cb {
       static std::string escape(const std::string &s,
                                 const char *fmt = "\\u%04x");
 
+
+      template <typename T> static
+      std::string toString(const T &o, unsigned indentStart = 0,
+                           bool compact = false, unsigned indentSpace = 2,
+                           int precision = 6, bool allowDuplicates = false) {
+        std::ostringstream str;
+        Writer writer(str, indentStart, compact, indentSpace, precision,
+                      allowDuplicates);
+        o.write(writer);
+        return str.str();
+      }
+
     protected:
       void indent() const;
     };
