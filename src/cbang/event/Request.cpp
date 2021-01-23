@@ -605,7 +605,7 @@ void Request::sendFile(const string &path) {getOutputBuffer().addFile(path);}
 
 
 void Request::reply(HTTPStatus code) {
-  if (replying) THROW("Request already replying");
+  if (replying && !isWebsocket()) THROW("Request already replying");
 
   if (code) responseCode = code;
   else responseCode = HTTP_INTERNAL_SERVER_ERROR;
@@ -661,7 +661,7 @@ void Request::sendChunk(const cb::Event::Buffer &buf) {
   out.add("\r\n");
 
   auto cb = [this] (bool success) {onWriteComplete(success);};
-  connection->writeRequest(this, out, chunked, cb);
+  connection->writeRequest(this, out, chunked || isWebsocket(), cb);
 }
 
 

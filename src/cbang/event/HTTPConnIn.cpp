@@ -34,6 +34,7 @@
 #include "HTTPServer.h"
 #include "Buffer.h"
 #include "Request.h"
+#include "Websocket.h"
 
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
@@ -137,6 +138,25 @@ void HTTPConnIn::processHeader() {
 
   // Headers callback
   req->onHeaders();
+
+  // Handle protocol upgrades
+  if (req->inHas("Upgrade")) {
+    string upgrade = String::toLower(req->inFind("Upgrade"));
+
+    if (upgrade == "websocket") {
+      push(req);
+
+      Websocket *websock = dynamic_cast<Websocket *>(req.get());
+      if (websock && websock->upgrade()) {
+        TRY_CATCH_ERROR(return websock->onOpen(););
+        return websock->close(WS_STATUS_UNEXPECTED, "Exception");
+      }
+
+      pop();
+    }
+
+    return req->sendError(HTTP_BAD_REQUEST, "Cannot upgrade");
+  }
 
   // If this is a request without a body, then we are done
   if (!req->mayHaveBody()) return addRequest(req);
