@@ -114,8 +114,8 @@ bool Websocket::upgrade() {
     outSet("Connection", "upgrade");
     outSet("Sec-WebSocket-Accept", key);
 
+    active = true;
     reply(HTTP_SWITCHING_PROTOCOLS);
-    active = true; // Must be after above reply; See Connection::write()
 
     // Start connection heartbeat
     schedulePing();
