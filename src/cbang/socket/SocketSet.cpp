@@ -39,58 +39,29 @@
 
 #include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
-#include <cbang/Zap.h>
 
 #include <cbang/time/Timer.h>
 
 #include <cbang/os/SysError.h>
 
 #ifndef _WIN32
-#include <sys/select.h>
-#include <sys/types.h>
+#include <signal.h>
+#include <poll.h>
 #endif
+
 
 using namespace cb;
 
-struct SocketSet::private_t {
-  fd_set read;
-  fd_set write;
-  fd_set except;
-};
 
-
-SocketSet::SocketSet() : p(new private_t) {
-  Socket::initialize();
-  clear();
-}
-
-
-SocketSet::SocketSet(const SocketSet &s) : p(new private_t), maxFD(s.maxFD) {
-  *p = *s.p;
-}
-
-
-SocketSet::~SocketSet() {
-  zap(p);
-}
-
-
-void SocketSet::clear() {
-  FD_ZERO(&p->read);
-  FD_ZERO(&p->write);
-  FD_ZERO(&p->except);
-  maxFD = -1;
-}
+SocketSet::SocketSet() {}
 
 
 void SocketSet::add(const Socket &socket, int type) {
   if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
-  if (type & READ) FD_SET(s, &p->read);
-  if (type & WRITE) FD_SET(s, &p->write);
-  if (type & EXCEPT) FD_SET(s, &p->except);
-  if (maxFD < (int)s) maxFD = s;
+  auto ret = sockets.insert(sockets_t::value_type(s, type));
+  if (!ret.second) ret.first->second |= type;
 }
 
 
@@ -98,9 +69,8 @@ void SocketSet::remove(const Socket &socket, int type) {
   if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
-  if (type & READ) FD_CLR(s, &p->read);
-  if (type & WRITE) FD_CLR(s, &p->write);
-  if (type & EXCEPT) FD_CLR(s, &p->except);
+  auto ret = sockets.insert(sockets_t::value_type(s, 0));
+  if (!ret.second) ret.first->second &= type;
 }
 
 
@@ -108,25 +78,85 @@ bool SocketSet::isSet(const Socket &socket, int type) const {
   if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
-  return
-    ((type & READ)   && FD_ISSET(s, &p->read))  ||
-    ((type & WRITE)  && FD_ISSET(s, &p->write)) ||
+  if (SocketDebugger::instance().isEnabled()) type &= ~EXCEPT;
 
-    (!SocketDebugger::instance().isEnabled() &&
-     ((type & EXCEPT) && FD_ISSET(s, &p->except)));
+  auto it = sockets.find(s);
+  return it != sockets.end() && it->second & type;
 }
 
 
 bool SocketSet::select(double timeout) {
   if (SocketDebugger::instance().isEnabled()) return true;
 
+#ifdef _WIN32
+  int maxFD = -1;
+  fd_set read;
+  fd_set write;
+  fd_set except;
+
+  for (auto it = sockets.begin(); it != sockets.end(); it++) {
+    if (maxFD < it->first)   maxFD = it->first;
+    if (it->second & READ)   FD_SET(it->first, &read);
+    if (it->second & WRITE)  FD_SET(it->first, &write);
+    if (it->second & EXCEPT) FD_SET(it->first, &except);
+  }
+
   struct timeval t;
   if (0 <= timeout) t = Timer::toTimeVal(timeout);
 
   SysError::clear();
   int ret =
-    ::select(maxFD + 1, &p->read, &p->write, &p->except, 0 <= timeout ? &t : 0);
+    ::select(maxFD + 1, &read, &write, &except, 0 <= timeout ? &t : 0);
 
   if (ret < 0) THROW("select() " << SysError());
+
+  for (auto it = sockets.begin(); it != sockets.end(); it++) {
+    it->second = 0;
+    if (FD_ISSET(it->first, &read))   it->second |= READ;
+    if (FD_ISSET(it->first, &write))  it->second |= WRITE;
+    if (FD_ISSET(it->first, &except)) it->second |= EXCEPT;
+  }
+
   return ret;
+
+#else  // !_WIN32
+  // Emulate select() with poll() on Linux because select() is unable to handle
+  // file descriptors >= 1024.
+  while (true) {
+    struct pollfd fds[sockets.size()];
+
+    int i = 0;
+    for (auto it = sockets.begin(); it != sockets.end(); it++) {
+      fds[i].fd = it->first;
+      fds[i].events =
+        ((it->second & READ)  ? POLLIN  : 0) |
+        ((it->second & WRITE) ? POLLOUT : 0);
+      fds[i].revents = 0;
+      i++;
+    }
+
+    int ret = poll(fds, sockets.size(), timeout * 1000);
+
+    if (ret < 0) THROW("poll() " << SysError());
+
+    bool found = false;
+    i = 0;
+    for (auto it = sockets.begin(); it != sockets.end(); it++) {
+      int mask = it->second;
+      it->second =
+        ((fds[i].revents & POLLIN)               ? READ   : 0) |
+        ((fds[i].revents & POLLOUT)              ? WRITE  : 0) |
+        ((fds[i].revents & (POLLERR | POLLNVAL)) ? EXCEPT : 0);
+      it->second &= mask;
+      if (it->second) found = true;
+      i++;
+    }
+
+    // NOTE, we only return if an event that was requested was detected,
+    // the timeout was zero, meaning not to wait or there was an error.
+    if (found) return true;
+    if (!timeout) return false;
+  }
+
+#endif // !_WIN32
 }

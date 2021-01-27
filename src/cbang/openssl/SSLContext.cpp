@@ -40,6 +40,7 @@
 #include "CRL.h"
 
 #include <cbang/Exception.h>
+#include <cbang/log/Logger.h>
 
 // This avoids a conflict with OCSP_RESPONSE in wincrypt.h
 #ifdef OCSP_RESPONSE
@@ -61,6 +62,29 @@ using namespace cb;
 #define TLS_method TLSv1_method
 #endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
 
+namespace {
+  extern "C" {
+    int verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
+#ifdef DEBUG
+      X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
+      int err = X509_STORE_CTX_get_error(ctx);
+      int depth = X509_STORE_CTX_get_error_depth(ctx);
+
+      if (!preverify_ok) {
+        char buf[256];
+        X509_NAME_oneline(X509_get_subject_name(cert), buf, 256);
+
+        LOG_DEBUG(4, "SSL verify error:" << err << ':' <<
+                  X509_verify_cert_error_string(err) << ":depth="
+                  << depth << buf);
+      }
+#endif
+
+      return preverify_ok;
+    }
+  }
+}
+
 
 SSLContext::SSLContext() : ctx(0) {
   cb::SSL::init();
@@ -72,6 +96,8 @@ SSLContext::SSLContext() : ctx(0) {
 
   // A session ID is required for session caching to work
   SSL_CTX_set_session_id_context(ctx, (unsigned char *)"cbang", 5);
+
+  setVerifyPeer(false, false, 0);
 }
 
 
@@ -104,7 +130,7 @@ void SSLContext::setCipherList(const string &list) {
 
 
 void SSLContext::setVerifyNone() {
-  SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, 0);
+  SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, verify_callback);
 }
 
 
@@ -113,7 +139,7 @@ void SSLContext::setVerifyPeer(bool verifyClientOnce, bool failIfNoPeerCert,
   int mode = SSL_VERIFY_PEER;
   if (verifyClientOnce) mode |= SSL_VERIFY_CLIENT_ONCE;
   if (failIfNoPeerCert) mode |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-  SSL_CTX_set_verify(ctx, mode, 0);
+  SSL_CTX_set_verify(ctx, mode, verify_callback);
   if (depth) SSL_CTX_set_verify_depth(ctx, depth);
 }
 

@@ -32,15 +32,17 @@
 
 #pragma once
 
+#include "SocketType.h"
+
 #include <map>
+
 
 namespace cb {
   class Socket;
 
   class SocketSet {
-    struct private_t;
-    private_t *p;
-    int maxFD;
+    typedef std::map<socket_t, int> sockets_t;
+    sockets_t sockets;
 
   public:
     typedef enum {
@@ -51,10 +53,8 @@ namespace cb {
     } type_t;
 
     SocketSet();
-    SocketSet(const SocketSet &s);
-    ~SocketSet();
 
-    void clear();
+    void clear() {sockets.clear();}
     void add(const Socket &socket, int type = ALL);
     void remove(const Socket &socket, int type = ALL);
     bool isSet(const Socket &socket, int type = ALL) const;
