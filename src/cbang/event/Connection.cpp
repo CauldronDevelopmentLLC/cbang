@@ -101,6 +101,7 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
     if (getSSL().isSet()) {
       getSSL()->setFD(socket->get());
       getSSL()->setConnectState();
+      if (peer.hasHost()) getSSL()->setTLSExtHostname(peer.getHost());
     }
 
     // DNS request reference
