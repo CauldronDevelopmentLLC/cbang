@@ -122,41 +122,36 @@ bool SocketSet::select(double timeout) {
 #else  // !_WIN32
   // Emulate select() with poll() on Linux because select() is unable to handle
   // file descriptors >= 1024.
-  while (true) {
-    struct pollfd fds[sockets.size()];
+  struct pollfd fds[sockets.size()];
 
-    int i = 0;
-    for (auto it = sockets.begin(); it != sockets.end(); it++) {
-      fds[i].fd = it->first;
-      fds[i].events =
-        ((it->second & READ)  ? POLLIN  : 0) |
-        ((it->second & WRITE) ? POLLOUT : 0);
-      fds[i].revents = 0;
-      i++;
-    }
-
-    int ret = poll(fds, sockets.size(), timeout * 1000);
-
-    if (ret < 0) THROW("poll() " << SysError());
-
-    bool found = false;
-    i = 0;
-    for (auto it = sockets.begin(); it != sockets.end(); it++) {
-      int mask = it->second;
-      it->second =
-        ((fds[i].revents & POLLIN)               ? READ   : 0) |
-        ((fds[i].revents & POLLOUT)              ? WRITE  : 0) |
-        ((fds[i].revents & (POLLERR | POLLNVAL)) ? EXCEPT : 0);
-      it->second &= mask;
-      if (it->second) found = true;
-      i++;
-    }
-
-    // NOTE, we only return if an event that was requested was detected,
-    // the timeout was zero, meaning not to wait or there was an error.
-    if (found) return true;
-    if (!timeout) return false;
+  int i = 0;
+  for (auto it = sockets.begin(); it != sockets.end(); it++) {
+    fds[i].fd = it->first;
+    fds[i].events =
+      ((it->second & READ)  ? POLLIN  : 0) |
+      ((it->second & WRITE) ? POLLOUT : 0);
+    fds[i].revents = 0;
+    i++;
   }
+
+  int ret = poll(fds, sockets.size(), timeout * 1000);
+
+  if (ret < 0) THROW("poll() " << SysError());
+
+  bool found = false;
+  i = 0;
+  for (auto it = sockets.begin(); it != sockets.end(); it++) {
+    int mask = it->second;
+    it->second =
+      ((fds[i].revents & POLLIN)               ? READ   : 0) |
+      ((fds[i].revents & POLLOUT)              ? WRITE  : 0) |
+      ((fds[i].revents & (POLLERR | POLLNVAL)) ? EXCEPT : 0);
+    it->second &= mask;
+    if (it->second) found = true;
+    i++;
+  }
+
+  return found;
 
 #endif // !_WIN32
 }
