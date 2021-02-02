@@ -18,7 +18,7 @@ except ImportError:
     import simplejson as json
 from pprint import pprint
 
-deps = ['codesign', 'notarize']
+deps = ['codesign', 'notarize', 'compiler']
 
 filename_package_build_txt = 'package.txt'
 filename_package_desc_txt = 'package-description.txt'
@@ -500,10 +500,17 @@ def build_distribution_template(env, target=None):
     distpkg_target = env.get('distpkg_target', '10.5')
     distpkg_arch = env.get('distpkg_arch')
     if not distpkg_arch:
-        distpkg_arch = env.get('package_arch')
+        distpkg_arch = env.get('osx_archs')
+
+    # handle some aberrant values
     if distpkg_arch in (None, '', 'intel'):
         print('using distpkg_arch i386 instead of "%s"' % distpkg_arch)
         distpkg_arch = 'i386'
+    # some projects might be passing package_arch
+    if distpkg_arch == 'universal':
+        distpkg_arch = 'x86_64 arm64'
+
+    hostArchitectures = ','.join(distpkg_arch.split())
 
     # generate new tree
     import xml.etree.ElementTree as etree
@@ -520,8 +527,6 @@ def build_distribution_template(env, target=None):
     else: allow_external = 'no'
     allow_ppc = distpkg_arch and 'ppc' in distpkg_arch and \
         (distpkg_target.split('.') < '10.6'.split('.'))
-    if allow_ppc: hostArchitectures = 'i386,ppc'
-    else: hostArchitectures = 'i386'
     if distpkg_root_volume_only: rootVolumeOnly = 'true'
     else: rootVolumeOnly = 'false'
     opts = {
@@ -584,6 +589,7 @@ def build_distribution_template(env, target=None):
     # options hostArchitectures is sufficient on 10.5+, but no clear
     # message is given by Installer.app, so we still want potential
     # hw.cputype check in install_check
+    # allowed-os-versions req macOS 10.6.6+, so volume_check is still needed
     script_text = """
 function is_min_version(ver) {
   if (my.target && my.target.systemVersion &&
@@ -603,7 +609,7 @@ function have_64_bit_cpu() {
 function volume_check() {
   if (!is_min_version('""" + distpkg_target + """')) {
     my.result.title = 'Unable to Install';
-    my.result.message = 'OSX """ + distpkg_target + \
+    my.result.message = 'macOS """ + distpkg_target + \
     """ or later is required.';
     my.result.type = 'Fatal';
     return false;
@@ -612,12 +618,12 @@ function volume_check() {
 }
 function install_check() {"""
 
-    if not (distpkg_arch and 'ppc' in distpkg_arch) and \
+    if not allow_ppc and \
         (distpkg_target.split('.') < '10.6'.split('.')):
         script_text += """
   if (system.sysctl('hw.cputype') == '18') {
     my.result.title = 'Unable to Install';
-    my.result.message = 'An Intel-based Mac is required.';
+    my.result.message = 'PowerPC Mac is not supported.';
     my.result.type = 'Fatal';
     return false;
   }"""
@@ -704,6 +710,10 @@ function """ + name_lower + """_start_selected() {
 
 def patch_expanded_pkg_distribution(target, source, env):
     # fixup whatever needs changing for < 10.6.6 compatibility
+    distpkg_target = env.get('distpkg_target', '10.5')
+    if distpkg_target.split('.') >= '10.6.6'.split('.'):
+        return
+
     fpath = os.path.join(target, 'Distribution')
     # load xml
     tree = None
