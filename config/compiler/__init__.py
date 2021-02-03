@@ -449,7 +449,7 @@ def configure(conf, cstd = 'c99'):
     # For darwin
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         env.CBDefine('__APPLE__')
-        if osx_archs and compiler == 'gnu':
+        if osx_archs and compiler_mode == 'gnu':
             # note: only apple compilers support multipe -arch options
             for arch in osx_archs.split():
                 env.Append(CCFLAGS = ['-arch', arch])
