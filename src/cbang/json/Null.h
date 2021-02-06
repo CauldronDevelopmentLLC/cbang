@@ -41,12 +41,13 @@ namespace cb {
       static Null null;
 
       Null() {}
+    public:
       ~Null() {}
 
     public:
       inline static Null &instance() {return null;}
       inline static ValuePtr instancePtr()
-        {return SmartPointer<Null>::Phony(&null);}
+        {return SmartPointer<Null>(new Null);}
 
       // From Value
       ValueType getType() const {return JSON_NULL;}
