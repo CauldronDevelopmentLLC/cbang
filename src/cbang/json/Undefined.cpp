@@ -36,3 +36,4 @@ using namespace cb::JSON;
 
 
 Undefined Undefined::undefined;
+cb::SmartPointer<Undefined>::Phony Undefined::ptr(&undefined);

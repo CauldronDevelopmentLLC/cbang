@@ -35,4 +35,4 @@
 using namespace cb::JSON;
 
 Null Null::null;
-ValuePtr::Phony Null::ptr(&null);
+cb::SmartPointer<Null>::Phony Null::ptr(&null);

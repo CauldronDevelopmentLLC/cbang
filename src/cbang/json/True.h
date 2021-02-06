@@ -39,13 +39,14 @@ namespace cb {
   namespace JSON {
     class True : public Value {
       static True singleton;
+      static SmartPointer<True>::Phony ptr;
 
       True() {}
       ~True() {}
 
     public:
       inline static True &instance() {return singleton;}
-      inline static ValuePtr instancePtr() {return ValuePtr::Phony(&singleton);}
+      inline static ValuePtr instancePtr() {return ptr;}
 
       // From Value
       ValueType getType() const {return JSON_BOOLEAN;}
