@@ -39,7 +39,7 @@ namespace cb {
   namespace JSON {
     class Null : public Value {
       static Null null;
-      static ValuePtr::Phony ptr;
+      static SmartPointer<Null>::Phony ptr;
 
       Null() {}
       ~Null() {}
