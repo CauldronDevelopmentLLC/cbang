@@ -35,4 +35,3 @@
 using namespace cb::JSON;
 
 True True::singleton;
-cb::SmartPointer<True>::Phony True::ptr(&singleton);
