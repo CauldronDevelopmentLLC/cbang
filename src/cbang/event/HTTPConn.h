@@ -89,6 +89,7 @@ namespace cb {
       void push(const SmartPointer<Request> &req);
       void pop();
 
+    public:
       // From FD
       void close();
     };

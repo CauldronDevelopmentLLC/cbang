@@ -72,10 +72,10 @@ void Websocket::send(const string &s) {
 void Websocket::close(WebsockStatus status, const std::string &msg) {
   LOG_DEBUG(4, CBANG_FUNC << '(' << status << ", " << msg << ')');
 
-  if (!active) return; // Already closed
-
   pingEvent.release();
   pongEvent.release();
+
+  if (!active) return; // Already closed
 
   uint16_t data = hton16(status);
   writeFrame(WS_OP_CLOSE, true, &data, 2);
@@ -127,130 +127,136 @@ bool Websocket::upgrade() {
 }
 
 
-bool Websocket::readHeader(Buffer &input) {
-  if (input.getLength() < 2) return false; // Wait for more
+void Websocket::readHeader() {
+  auto cb =
+    [this] (bool success) {
+      if (!success) return close(WS_STATUS_PROTOCOL);
 
-  uint8_t header[14];
-  input.copy((char *)header, 2);
+      uint8_t header[2];
+      input.copy((char *)header, 2);
 
-  // Client must set mask bit
-  bool mask = header[1] & 0x80;
-  if (!mask) {
-    close(WS_STATUS_PROTOCOL);
-    return false;
-  }
+      // Client must set mask bit
+      bool mask = header[1] & 0x80;
+      if (!mask) return close(WS_STATUS_PROTOCOL);
 
-  // Compute header size
-  uint8_t bytes = 6;
-  uint8_t size = header[1] & 0x7f;
-  if (size == 126) bytes = 8;
-  if (size == 127) bytes = 14;
+      // Compute header size
+      uint8_t bytes = 6;
+      uint8_t size = header[1] & 0x7f;
+      if (size == 126) bytes = 8;
+      if (size == 127) bytes = 14;
 
-  // Read frame header
-  if (input.getLength() < bytes) return false; // Wait for more
-  input.remove((char *)header, bytes);
+      auto cb =
+        [this, bytes, size] (bool success) {
+          if (!success) return close(WS_STATUS_PROTOCOL);
 
-  // Compute frame size
-  if (size == 126) bytesToRead = hton16(*(uint16_t *)&header[2]);
-  else if (size == 127) bytesToRead = hton64(*(uint64_t *)&header[2]);
-  else bytesToRead = size;
-  if (bytesToRead & (1ULL << 63)) {
-    close(WS_STATUS_PROTOCOL);
-    return false;
-  }
+          uint8_t header[14];
+          input.remove((char *)header, bytes);
 
-  // Check opcode
-  uint8_t opcode = header[0] & 0xf;
-  wsOpCode = (WebsockOpCode::enum_t)opcode;
+          // Compute frame size
+          if (size == 126) bytesToRead = hton16(*(uint16_t *)&header[2]);
+          else if (size == 127) bytesToRead = hton64(*(uint64_t *)&header[2]);
+          else bytesToRead = size;
+          if (bytesToRead & (1ULL << 63))
+            return close(WS_STATUS_PROTOCOL);
 
-  if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
+          // Check opcode
+          uint8_t opcode = header[0] & 0xf;
+          wsOpCode = (WebsockOpCode::enum_t)opcode;
 
-  switch (wsOpCode) {
-  case WS_OP_TEXT:
-  case WS_OP_BINARY:
-  case WS_OP_CONTINUE: {
-    // Check total message size
-    auto maxBodySize = getConnection()->getMaxBodySize();
-    if (maxBodySize && maxBodySize < wsMsg.size() + bytesToRead) {
-      close(WS_STATUS_TOO_BIG);
-      return false;
-    }
+          if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
 
-    // Copy mask
-    memcpy(wsMask, &header[bytes - 4], 4);
+          switch (wsOpCode) {
+          case WS_OP_TEXT:
+          case WS_OP_BINARY:
+          case WS_OP_CONTINUE: {
+            // Check total message size
+            auto maxBodySize = getConnection()->getMaxBodySize();
+            if (maxBodySize && maxBodySize < wsMsg.size() + bytesToRead)
+              return close(WS_STATUS_TOO_BIG);
 
-    // Last part of message?
-    wsFinish = 0x80 & header[0];
-    break;
-  }
+            // Copy mask
+            memcpy(wsMask, &header[bytes - 4], 4);
 
-  case WS_OP_CLOSE:
-  case WS_OP_PING:
-  case WS_OP_PONG:
-    break; // Control codes
+            // Last part of message?
+            wsFinish = 0x80 & header[0];
+            break;
+          }
 
-  default: {
-    close(WS_STATUS_PROTOCOL);
-    return false;
-  }
-  }
+          case WS_OP_CLOSE:
+          case WS_OP_PING:
+          case WS_OP_PONG:
+            break; // Control codes
 
-  return true;
+          default: return close(WS_STATUS_PROTOCOL);
+          }
+
+          readBody();
+        };
+
+      // Read rest of header
+      getConnection()->read(cb, input, bytes);
+    };
+
+  // Read first part of header
+  getConnection()->read(cb, input, 2);
 }
 
 
-bool Websocket::readBody(Buffer &input) {
-  LOG_DEBUG(4, CBANG_FUNC << "() bytesToRead=" << bytesToRead
-            << " inBuf=" << input.getLength());
+void Websocket::readBody() {
+  LOG_DEBUG(4, CBANG_FUNC << "() bytesToRead=" << bytesToRead);
 
-  if (input.getLength() < bytesToRead) return false; // Wait for more
+  auto cb = [this] (bool success) {
+    if (!success) return close(WS_STATUS_PROTOCOL);
 
-  uint64_t offset = wsMsg.size();
-  wsMsg.resize(offset + bytesToRead);
-  input.remove(&wsMsg[offset], bytesToRead);
+    uint64_t offset = wsMsg.size();
+    wsMsg.resize(offset + bytesToRead);
+    input.remove(&wsMsg[offset], bytesToRead);
 
-  // Demask
-  for (uint64_t i = 0; i < bytesToRead; i++)
-    wsMsg[offset +  i] ^= wsMask[i & 3];
+    // Demask
+    for (uint64_t i = 0; i < bytesToRead; i++)
+      wsMsg[offset +  i] ^= wsMask[i & 3];
 
-  LOG_DEBUG(5, "Frame body\n"
-            << String::hexdump(string(wsMsg.begin() + offset, wsMsg.end()))
-            << '\n');
+    LOG_DEBUG(5, "Frame body\n"
+              << String::hexdump(string(wsMsg.begin() + offset, wsMsg.end()))
+              << '\n');
 
-  switch (wsOpCode) {
-  case WS_OP_CONTINUE:
-  case WS_OP_TEXT:
-  case WS_OP_BINARY:
-    if (wsFinish) {
-      message(wsMsg.data(), wsMsg.size());
-      wsMsg.clear();
+    switch (wsOpCode) {
+    case WS_OP_CONTINUE:
+    case WS_OP_TEXT:
+    case WS_OP_BINARY:
+      if (wsFinish) {
+        message(wsMsg.data(), wsMsg.size());
+        wsMsg.clear();
+      }
+      break;
+
+    case WS_OP_CLOSE: {
+      // Get close status
+      WebsockStatus status = WS_STATUS_NONE;
+      if (1 < bytesToRead)
+        status = (WebsockStatus::enum_t)hton16(*(uint16_t *)wsMsg.data());
+
+      // Send close response and close payload if any
+      return close(status, string(wsMsg.begin() + 2, wsMsg.end()));
     }
-    break;
 
-  case WS_OP_CLOSE: {
-    // Get close status
-    WebsockStatus status = WS_STATUS_NONE;
-    if (1 < bytesToRead)
-      status = (WebsockStatus::enum_t)hton16(*(uint16_t *)wsMsg.data());
+    case WS_OP_PING:
+      // Schedule pong to aggregate backlogged pings
+      pongPayload = string(wsMsg.begin(), wsMsg.end());
+      schedulePong();
+      schedulePing();
+      break;
 
-    // Send close response and close payload if any
-    close(status, string(wsMsg.begin() + 2, wsMsg.end()));
-    break;
-  }
+    case WS_OP_PONG: schedulePing(); break;
 
-  case WS_OP_PING:
-    // Schedule pong to aggregate backlogged pings
-    pongPayload = string(wsMsg.begin(), wsMsg.end());
-    schedulePong();
-    schedulePing();
-    break;
+    default: return close(WS_STATUS_PROTOCOL);
+    }
 
-  case WS_OP_PONG: schedulePing(); break;
+    // Read next message
+    readHeader();
+  };
 
-  default: close(WS_STATUS_PROTOCOL); break;
-  }
-
-  return true;
+  getConnection()->read(cb, input, bytesToRead);
 }
 
 
@@ -312,8 +318,10 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
   }
 
   auto cb =
-    [] (unsigned status) {
-      // TODO close connection if write fails
+    [this, opcode] (bool success) {
+      // Close connection if write fails or this is a close op code
+      if (!success || opcode == WS_OP_CLOSE)
+        getConnection()->close();
     };
 
   getConnection()->write(cb, out);
