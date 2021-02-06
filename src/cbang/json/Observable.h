@@ -130,7 +130,7 @@ namespace cb {
 
 
       void setParentRef(Value *parent, unsigned index) {
-        if (parent && this->parent) THROW("Parent already set");
+        if (parent && this->parent) CBANG_THROW("Parent already set");
         this->parent = parent;
         this->index = index;
       }
