@@ -742,7 +742,7 @@ void Request::write() {
   bytesWritten += out.getLength();
 
   auto cb = [this] (bool success) {onWriteComplete(success);};
-  connection->writeRequest(this, out, chunked, cb);
+  connection->writeRequest(this, out, chunked || isWebsocket(), cb);
 }
 
 

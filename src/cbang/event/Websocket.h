@@ -34,6 +34,7 @@
 
 #include "Request.h"
 #include "Event.h"
+#include "Buffer.h"
 
 #include <functional>
 
@@ -46,6 +47,7 @@ namespace cb {
       typedef std::function<void (const char *, uint64_t)> cb_t;
       cb_t cb;
 
+      Buffer input;
       uint64_t bytesToRead = 0;
       WebsockOpCode wsOpCode;
       uint8_t wsMask[4];
@@ -78,8 +80,9 @@ namespace cb {
 
       // Called by Connection
       bool upgrade();
-      bool readHeader(Buffer &input);
-      bool readBody(Buffer &input);
+
+      void readHeader();
+      void readBody();
 
       // From Request
       bool isWebsocket() const {return active;}

@@ -148,11 +148,14 @@ void HTTPConnIn::processHeader() {
 
       Websocket *websock = dynamic_cast<Websocket *>(req.get());
       if (websock && websock->upgrade()) {
-        TRY_CATCH_ERROR(return websock->onOpen(););
+        try {
+          websock->onOpen();
+          websock->readHeader();
+          return;
+        } CATCH_ERROR;
+
         return websock->close(WS_STATUS_UNEXPECTED, "Exception");
       }
-
-      pop();
     }
 
     return req->sendError(HTTP_BAD_REQUEST, "Cannot upgrade");

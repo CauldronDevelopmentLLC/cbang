@@ -159,6 +159,6 @@ void HTTPConn::pop() {
 
 
 void HTTPConn::close() {
-  requests.clear();
   Connection::close();
+  requests.clear(); // Must be after close so all transactions have cleared
 }

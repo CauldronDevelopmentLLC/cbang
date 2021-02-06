@@ -39,13 +39,14 @@ namespace cb {
   namespace JSON {
     class Null : public Value {
       static Null null;
+      static ValuePtr::Phony ptr;
 
       Null() {}
       ~Null() {}
 
     public:
       inline static Null &instance() {return null;}
-      inline static ValuePtr instancePtr() {return ValuePtr::Phony(&null);}
+      inline static ValuePtr instancePtr() {return ptr;}
 
       // From Value
       ValueType getType() const {return JSON_NULL;}
