@@ -39,14 +39,14 @@ namespace cb {
   namespace JSON {
     class Undefined : public Value {
       static Undefined undefined;
-      static SmartPointer<Undefined>::Phony ptr;
 
       Undefined() {}
       ~Undefined() {}
 
     public:
       inline static Undefined &instance() {return undefined;}
-      inline static ValuePtr instancePtr() {return ptr;}
+      inline static ValuePtr instancePtr()
+        {return SmartPointer<Undefined>::Phony(&undefined);}
 
       // From Value
       ValueType getType() const {return JSON_UNDEFINED;}

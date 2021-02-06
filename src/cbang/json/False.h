@@ -39,14 +39,14 @@ namespace cb {
   namespace JSON {
     class False : public Value {
       static False singleton;
-      static SmartPointer<False>::Phony ptr;
 
       False() {}
       ~False() {}
 
     public:
       inline static False &instance() {return singleton;}
-      inline static ValuePtr instancePtr() {return ptr;}
+      inline static ValuePtr instancePtr()
+        {return SmartPointer<False>::Phony(&singleton);}
 
       // From Value
       ValueType getType() const {return JSON_BOOLEAN;}
