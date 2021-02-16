@@ -18,7 +18,9 @@ def configure(conf):
     conf.CBRequireCXXHeader('v8.h')
     conf.CBRequireCXXHeader('libplatform/libplatform.h')
 
-    if not conf.CBCheckLib('v8'):
+    if conf.CBCheckLib('v8'):
+        conf.CBCheckLib('v8_libplatform')
+    else:
         conf.CBRequireLib('v8_snapshot')
 
         if not conf.CBCheckLib('v8_base'):

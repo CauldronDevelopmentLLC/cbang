@@ -39,5 +39,6 @@
 #define V8STDINT_H_
 
 #define V8_ENABLE_CHECKS
+#define V8_COMPRESS_POINTERS
 
 #include <v8.h>
