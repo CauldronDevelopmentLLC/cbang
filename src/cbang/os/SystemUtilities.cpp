@@ -528,10 +528,24 @@ namespace cb {
       return buf.get();
     }
 
+    void listDirectory(
+      const std::string &path,
+      const std::function<void (const std::string &path, unsigned depth)> &cb,
+      const std::string &pattern, unsigned maxDepth, bool listDirs) {
+      DirectoryWalker walker(path, pattern, maxDepth, listDirs);
+
+      while (walker.hasNext()) {
+        std::string path = walker.next();
+        unsigned depth = walker.getDepth();
+        cb(path, depth);
+      }
+    }
+
 
     void listDirectory(vector<string> &paths, const string &path,
-                       const string &pattern, unsigned maxDepth) {
-      DirectoryWalker walker(path, pattern, maxDepth);
+                       const string &pattern, unsigned maxDepth,
+                       bool listDirs) {
+      DirectoryWalker walker(path, pattern, maxDepth, listDirs);
       while (walker.hasNext()) paths.push_back(walker.next());
     }
 

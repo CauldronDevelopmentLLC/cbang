@@ -42,6 +42,7 @@
 #include <cbang/enum/ProcessPriority.h>
 
 #include <limits>
+#include <functional>
 
 #if defined(_WIN32) && defined(max)
 #undef max
@@ -96,9 +97,14 @@ namespace cb {
     std::string getcwd();
     void chdir(const std::string &path);
     std::string createTempDir(const std::string &parent);
+    void listDirectory(
+      const std::string &path,
+      const std::function<void (const std::string &path, unsigned depth)> &cb,
+      const std::string &pattern = ".*", unsigned maxDepth = 1,
+      bool listDirs = false);
     void listDirectory(std::vector<std::string> &paths, const std::string &path,
                        const std::string &pattern = ".*",
-                       unsigned maxDepth = 1);
+                       unsigned maxDepth = 1, bool listDirs = false);
     void rmtree(const std::string &path);
 
     // File

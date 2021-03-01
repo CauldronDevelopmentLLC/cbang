@@ -32,6 +32,9 @@
 
 #include "ContentTypes.h"
 
+#include <cbang/String.h>
+#include <cbang/os/SystemUtilities.h>
+
 using namespace std;
 using namespace cb;
 using namespace cb::HTTP;
@@ -200,4 +203,14 @@ ContentTypes::ContentTypes(Inaccessible) {
   insert(value_type("wmx",     "video/x-ms-wmx"));
   insert(value_type("wvx",     "video/x-ms-wvx"));
   insert(value_type("avi",     "video/x-msvideo"));
+}
+
+
+string ContentTypes::guess(const string &path, const string &defaultType) {
+  string ext = SystemUtilities::hasExtension(path) ?
+    SystemUtilities::extension(path) : path;
+
+  auto &ct = instance();
+  auto it = ct.find(String::toLower(ext));
+  return it == ct.end() ? defaultType : it->second;
 }

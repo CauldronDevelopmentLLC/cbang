@@ -72,6 +72,8 @@ namespace cb {
      */
     void init(const std::string &root);
 
+    unsigned getDepth() const {return dirStack.size();}
+
     /// @return True if there is another matching file available.
     bool hasNext();
 
