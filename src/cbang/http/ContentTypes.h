@@ -43,6 +43,9 @@ namespace cb {
                          public std::map<std::string, std::string> {
     public:
       ContentTypes(Inaccessible);
+
+      static std::string guess(const std::string &path,
+                               const std::string &defaultType = "text/plain");
     };
   }
 }
