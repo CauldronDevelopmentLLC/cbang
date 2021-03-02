@@ -56,11 +56,16 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
     req.reply();
 
   } catch (const Exception &e) {
-    if (400 <= e.getCode() && e.getCode() < 600) LOG_WARNING(e.getMessages());
-    else LOG_ERROR(e);
-
     req.setContentType("application/json");
-    req.sendError(e);
+
+    if (400 <= e.getCode() && e.getCode() < 600) {
+      LOG_WARNING(e.getMessages());
+      req.sendJSONError((HTTPStatus::enum_t)e.getCode(), e.getMessage());
+
+    } else {
+      LOG_ERROR(e);
+      req.sendError(e);
+    }
   }
 
   return true;
