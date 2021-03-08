@@ -58,6 +58,12 @@ bool ACLHandler::operator()(Request &req) {
     if (!allow) allow = aclSet.allowGroup(path, group = "unauthenticated");
   }
 
+  if (!allow && req.getSession().isSet()) {
+    auto groups = req.getSession()->getGroups();
+    for (unsigned i = 0; i < groups.size(); i++)
+      if (aclSet.allowGroup(path, group = groups[i])) {allow = true; break;}
+  }
+
   LOG_INFO(allow ? 5 : 3, "allow(" << path << ", "
            << (user.empty() ? "@" + group : user) << ", "
            << req.getClientIP().getHost() << ") = "
