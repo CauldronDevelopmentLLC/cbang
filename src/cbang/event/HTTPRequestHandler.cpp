@@ -46,7 +46,7 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
 
     // Log JSON call
     const string &path = req.getURI().getPath();
-    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path << "()");
+    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path);
     else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
 
     // Dispatch JSON call
