@@ -110,6 +110,21 @@ IPAddressRange::IPAddressRange(IPAddress start, IPAddress end) {
 
 string IPAddressRange::toString() const {
   if (start == end) return start.toString();
+
+  uint32_t a = start.getIP();
+  uint32_t b = end.getIP();
+
+  for (unsigned i = 0; i < 32; i++) {
+    uint32_t bit = 1 << (31 - i);
+
+    if ((a & bit) != (b & bit)) {
+      uint32_t mask = i ? (1UL << (32 - i)) - 1: ~0;
+      if ((a & mask) == 0 && (b & mask) == mask)
+        return start.toString() + String::printf("/%u", i);
+      else break;
+    }
+  }
+
   return start.toString() + "-" + end.toString();
 }
 
