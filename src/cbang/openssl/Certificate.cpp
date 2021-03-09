@@ -329,6 +329,16 @@ void Certificate::verify(const KeyPair &key) const {
 }
 
 
+bool Certificate::operator==(const Certificate &o) const {
+  return X509_cmp(cert, o.cert) == 0;
+}
+
+
+bool Certificate::operator<(const Certificate &o) const {
+  return X509_cmp(cert, o.cert) < 0;
+}
+
+
 void Certificate::read(istream &stream) {
   BIStream bio(stream);
 

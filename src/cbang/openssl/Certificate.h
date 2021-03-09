@@ -100,6 +100,10 @@ namespace cb {
     void sign(const KeyPair &key, const std::string &digest = "sha256") const;
     void verify(const KeyPair &key) const;
 
+    bool operator==(const Certificate &o) const;
+    bool operator!=(const Certificate &o) const {return !(*this == o);}
+    bool operator<(const Certificate &o) const;
+
     // From Serializable
     void read(std::istream &stream);
     void write(std::ostream &stream) const;
