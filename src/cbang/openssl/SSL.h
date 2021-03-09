@@ -87,6 +87,7 @@ namespace cb {
     bool hasPeerCertificate() const;
     void verifyPeerCertificate() const;
     SmartPointer<Certificate> getPeerCertificate() const;
+    std::vector<SmartPointer<Certificate> > getVerifiedChain() const;
     void setTLSExtHostname(const std::string &hostname);
 
     void setConnectState();

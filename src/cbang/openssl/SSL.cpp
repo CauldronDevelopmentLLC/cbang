@@ -170,6 +170,21 @@ SmartPointer<Certificate> cb::SSL::getPeerCertificate() const {
 }
 
 
+vector<SmartPointer<Certificate> > cb::SSL::getVerifiedChain() const {
+  vector<SmartPointer<Certificate> > certs;
+
+  auto stack = SSL_get0_verified_chain(ssl);
+  if (stack)
+    for (int i = 0; i < sk_X509_num(stack); i++) {
+      X509 *cert = sk_X509_value(stack, i);
+      X509_up_ref(cert);
+      certs.push_back(new Certificate(cert));
+    }
+
+  return certs;
+}
+
+
 void cb::SSL::setTLSExtHostname(const string &hostname) {
   if (!SSL_set_tlsext_host_name(ssl, hostname.c_str()))
     THROW("Failed to set TLS host name extension to '" << hostname << "'");
