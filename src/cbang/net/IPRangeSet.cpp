@@ -129,7 +129,7 @@ string IPRangeSet::toString() const {
 void IPRangeSet::print(ostream &stream) const {
   for (unsigned i = 0; i < rangeSet.size(); i += 2) {
     if (i) stream << ' ';
-    stream << IPAddress(rangeSet[i]) << '-' << IPAddress(rangeSet[i + 1]);
+    stream << IPAddressRange(rangeSet[i], rangeSet[i + 1]);
   }
 }
 
@@ -138,17 +138,14 @@ void IPRangeSet::write(JSON::Sink &sink) const {
   sink.beginList();
 
   for (unsigned i = 0; i < rangeSet.size(); i += 2)
-    if (rangeSet[i] == rangeSet[i + 1])
-      sink.append(IPAddress(rangeSet[i]).toString());
+    sink.append(IPAddressRange(rangeSet[i], rangeSet[i + 1]).toString());
 
-    else sink.append(IPAddress(rangeSet[i]).toString() + "-" +
-                     IPAddress(rangeSet[i + 1]).toString());
   sink.endList();
 }
 
 
 unsigned IPRangeSet::find(uint32_t ip) const {
-  // An odded numbered result means the ip was within that a range.  An even
+  // An odd numbered result means the ip was within that a range.  An even
   // numbered result means the ip was outside of all ranges in the set.
 
   unsigned start = 0;
