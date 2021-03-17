@@ -81,6 +81,7 @@ namespace cb {
       SmartPointer<js::Scope> enterScope();
       SmartPointer<js::Scope> newScope();
       void interrupt();
+      SmartPointer<js::StackTrace> getStackTrace(unsigned maxFrames);
     };
   }
 }

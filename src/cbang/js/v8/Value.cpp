@@ -37,6 +37,7 @@
 
 #include <cbang/js/Callback.h>
 #include <cbang/js/Sink.h>
+#include <cbang/log/Logger.h>
 
 using namespace cb::gv8;
 using namespace cb;
@@ -78,6 +79,11 @@ Value::Value(const js::Value &value) {
 
 Value::Value(const js::Function &func) {
   SmartPointer<js::Callback> cb = func.getCallback();
+
+  // TODO Use v8::Persistent<v8::External>::MakeWeak() to store a reference to
+  // the js::Function in the v8::Function's hidden properties
+
+  // Store a reference to the js::Callback
   JSImpl::current().add(cb);
 
   v8::Handle<v8::Value> data =
@@ -137,7 +143,7 @@ v8::Local<v8::Symbol> Value::createSymbol(const string &name) {
 
 
 string Value::toString() const {
-  if (isUndefined()) return "undefined";
+  if (value.IsEmpty() || isUndefined()) return "undefined";
   if (isFunction()) return SSTR("function " << getName() << "() {...}");
 
   // TODO this is not very efficient

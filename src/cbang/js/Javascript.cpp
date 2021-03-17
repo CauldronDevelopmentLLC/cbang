@@ -147,6 +147,11 @@ SmartPointer<js::Value> Javascript::eval(const InputSource &source) {
 void Javascript::interrupt() {impl->interrupt();}
 
 
+SmartPointer<js::StackTrace> Javascript::getStackTrace(unsigned maxFrames) {
+  return impl->getStackTrace(maxFrames);
+}
+
+
 string Javascript::stringify(Value &value) {
   SmartPointer<Scope> scope = impl->newScope();
   SmartPointer<Value> f =
@@ -169,6 +174,8 @@ SmartPointer<Value> Javascript::require(const string &id) {
     JSON::ValuePtr package = JSON::Reader(path).parse();
     path = SystemUtilities::absolute(path, package->getString("main"));
   }
+
+  path = SystemUtilities::getCanonicalPath(path);
 
   // Register module
   SmartPointer<Module> module = new Module(id, path);

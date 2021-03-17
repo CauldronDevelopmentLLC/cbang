@@ -35,6 +35,7 @@
 #include "Module.h"
 #include "Factory.h"
 #include "Scope.h"
+#include "StackTrace.h"
 
 #include <cbang/io/InputSource.h>
 
@@ -49,6 +50,8 @@ namespace cb {
       virtual SmartPointer<Scope> enterScope() = 0;
       virtual SmartPointer<Scope> newScope() = 0;
       virtual void interrupt() = 0;
+      virtual SmartPointer<js::StackTrace>
+      getStackTrace(unsigned maxFrames) = 0;
     };
   }
 }

@@ -49,7 +49,7 @@ namespace cb {
       v8::Handle<v8::Value> value;
 
     public:
-      Value() : value(v8::Undefined(v8::Isolate::GetCurrent())) {}
+      Value() : value(v8::Undefined(getIso())) {}
       Value(const SmartPointer<js::Value> &value);
       Value(const js::Value &value);
       Value(const js::Function &func);
@@ -57,15 +57,15 @@ namespace cb {
       Value(const v8::Handle<v8::Primitive> &value) : value(value) {}
       Value(const v8::Local<v8::Object> &value) : value(value) {}
       Value(const v8::Local<v8::Array> &value) : value(value) {}
+      Value(const v8::Local<v8::String> &value) : value(value) {}
       Value(const v8::Handle<v8::Value> &value);
       Value(const v8::MaybeLocal<v8::Value> &value);
       Value(const v8::MaybeLocal<v8::Array> &value);
-      explicit Value(bool x) : value(x ? v8::True(v8::Isolate::GetCurrent()) :
-                                     v8::False(v8::Isolate::GetCurrent())) {}
-      Value(double x) : value(v8::Number::New(v8::Isolate::GetCurrent(), x)) {}
-      Value(int32_t x) : value(v8::Int32::New(v8::Isolate::GetCurrent(), x)) {}
-      Value(uint32_t x) :
-        value(v8::Uint32::New(v8::Isolate::GetCurrent(), x)) {}
+      explicit Value(bool x) :
+        value(x ? v8::True(getIso()) : v8::False(getIso())) {}
+      Value(double x) : value(v8::Number::New(getIso(), x)) {}
+      Value(int32_t x) : value(v8::Int32::New(getIso(), x)) {}
+      Value(uint32_t x) : value(v8::Uint32::New(getIso(), x)) {}
       Value(const char *s, int length = -1);
       Value(const std::string &s);
 
@@ -78,7 +78,7 @@ namespace cb {
 
       // Null
       bool isNull() const {return value->IsNull();}
-      static Value createNull() {return v8::Null(v8::Isolate::GetCurrent());}
+      static Value createNull() {return v8::Null(getIso());}
 
       // Boolean
       void assertBoolean() const
@@ -89,7 +89,7 @@ namespace cb {
 #if V8_MAJOR_VERSION < 8
         return value->BooleanValue(getCtx()).FromJust();
 #else
-        return value->BooleanValue(v8::Isolate::GetCurrent());
+        return value->BooleanValue(getIso());
 #endif
       }
 
@@ -139,8 +139,7 @@ namespace cb {
       }
 
       // Object
-      static Value createObject()
-      {return v8::Object::New(v8::Isolate::GetCurrent());}
+      static Value createObject() {return v8::Object::New(getIso());}
       void assertObject() const
       {if (!isObject()) CBANG_THROW("Value is not a object");}
       bool isObject() const {return value->IsObject();}
@@ -156,7 +155,7 @@ namespace cb {
 
       // Array
       static Value createArray(unsigned size = 0)
-      {return v8::Array::New(v8::Isolate::GetCurrent(), size);}
+      {return v8::Array::New(getIso(), size);}
       void assertArray() const
       {if (!isArray()) CBANG_THROW("Value is not a array");}
       bool isArray() const {return value->IsArray();}
