@@ -95,8 +95,7 @@ namespace cb {
       template <class T>
       T &cast() {
         T *ptr = dynamic_cast<T *>(this);
-        if (!ptr)
-          THROW("Cannot cast Request to " << type_name<T>());
+        if (!ptr) CBANG_THROW("Cannot cast Request to " << type_name<T>());
         return *ptr;
       }
 

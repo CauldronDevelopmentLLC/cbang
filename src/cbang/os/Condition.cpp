@@ -94,7 +94,7 @@ Condition::~Condition() {
   zap(p);
 }
 
-void Condition::wait() {
+void Condition::wait() const {
   if (!isLocked()) THROW("Condition not locked!");
 
 #ifdef _WIN32
@@ -107,7 +107,7 @@ void Condition::wait() {
 }
 
 
-bool Condition::timedWait(double timeout) {
+bool Condition::timedWait(double timeout) const {
   if (!isLocked()) THROW("Condition not locked!");
 
 #ifdef _WIN32
@@ -166,7 +166,7 @@ bool Condition::timedWait(double timeout) {
 }
 
 
-void Condition::signal(bool broadcast) {
+void Condition::signal(bool broadcast) const {
   SmartLock lock(this);
 
 #ifdef _WIN32

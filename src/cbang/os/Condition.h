@@ -43,9 +43,9 @@ namespace cb {
     Condition();
     ~Condition();
 
-    void wait();
-    bool timedWait(double time);
-    void signal(bool broadcast = false);
-    void broadcast() {signal(true);}
+    void wait() const;
+    bool timedWait(double time) const;
+    void signal(bool broadcast = false) const;
+    void broadcast() const {signal(true);}
   };
 }

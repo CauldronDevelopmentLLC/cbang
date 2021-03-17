@@ -210,7 +210,7 @@ Value Value::call(Value arg0, const vector<Value> &args) const {
     argv[i] = args[i].getV8Value();
 
   return v8::Handle<v8::Function>::Cast(value)->
-    Call(getCtx(), arg0.getV8Value() ->ToObject(getCtx()).ToLocalChecked(),
+    Call(getCtx(), arg0.getV8Value()->ToObject(getCtx()).ToLocalChecked(),
          args.size(), argv.get()).ToLocalChecked();
 
   return 0;
