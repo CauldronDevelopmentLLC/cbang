@@ -33,6 +33,7 @@
 #include "JSImpl.h"
 #include "Context.h"
 #include "Factory.h"
+#include "Value.h"
 
 #include <cbang/js/Javascript.h>
 #include <cbang/util/SmartFunctor.h>
@@ -94,3 +95,29 @@ SmartPointer<js::Scope> JSImpl::newScope() {
 
 
 void JSImpl::interrupt() {isolate->TerminateExecution();}
+
+
+SmartPointer<js::StackTrace> JSImpl::getStackTrace(unsigned maxFrames) {
+  v8::StackTrace::StackTraceOptions options =
+    static_cast<v8::StackTrace::StackTraceOptions>
+    (v8::StackTrace::kOverview |
+     v8::StackTrace::kExposeFramesAcrossSecurityOrigins);
+  v8::Local<v8::StackTrace> v8Trace =
+    v8::StackTrace::CurrentStackTrace(isolate, maxFrames, options);
+  SmartPointer<js::StackTrace> trace = new js::StackTrace;
+
+  for (int i = 0; i < v8Trace->GetFrameCount(); i++) {
+    v8::Local<v8::StackFrame> frame = v8Trace->GetFrame(isolate, i);
+    auto v8Filename = frame->GetScriptName();
+    auto v8Function = frame->GetFunctionName();
+    string filename =
+      v8Filename.IsEmpty() ? string() : gv8::Value(v8Filename).toString();
+    string function =
+      v8Function.IsEmpty() ? string() : gv8::Value(v8Function).toString();
+
+    trace->push_back(FileLocation(filename, function, frame->GetLineNumber(),
+                                  frame->GetColumn()));
+  }
+
+  return trace;
+}

@@ -64,3 +64,8 @@ SmartPointer<js::Scope> JSImpl::newScope() {
 
 
 void JSImpl::interrupt() {JsDisableRuntimeExecution(runtime);}
+
+
+SmartPointer<js::StackTrace> JSImpl::getStackTrace(unsigned maxFrames) {
+  THROW("Not yet implemented");
+}

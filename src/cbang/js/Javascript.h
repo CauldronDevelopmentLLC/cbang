@@ -66,6 +66,7 @@ namespace cb {
                   const std::string &as = std::string());
       SmartPointer<js::Value> eval(const InputSource &source);
       void interrupt();
+      SmartPointer<js::StackTrace> getStackTrace(unsigned maxFrames);
 
       std::string stringify(Value &value);
 

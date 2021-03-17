@@ -30,53 +30,27 @@
 
 \******************************************************************************/
 
-#include "StackFrame.h"
+#pragma once
 
-#include <cbang/StdTypes.h>
-#include <cbang/String.h>
-#include <cbang/json/Sink.h>
+#include <cbang/FileLocation.h>
 
-#include <exception>
+#include <vector>
 
-using namespace std;
-using namespace cb;
-
-
-string StackFrame::getAddrString() const {
-  return String::printf("0x%08x", (uintptr_t)addr);
-}
-
-
-const string &StackFrame::getFunction() const {
-  if (!location) throw std::runtime_error("StackFrame not resolved");
-  return location->getFunction();
-}
+namespace cb {
+  namespace js {
+    class StackTrace : public std::vector<FileLocation> {
+    public:
+      void print(std::ostream &stream) const {
+        for (unsigned i = 0; i < size(); i++)
+          stream << '#' << i << ' ' << at(i) << '\n';
+      }
+    };
 
 
-ostream &StackFrame::print(ostream &stream) const {
-  stream << getAddrString();
-
-  if (location) {
-    if (!location->getFunction().empty())
-      stream << " in" << location->getFunction() << ' ';
-
-    if (!location->getFilename().empty())
-      stream << " at " << location->getFileLineColumn();
+    static inline
+    std::ostream &operator<<(std::ostream &stream, const StackTrace &t) {
+      t.print(stream);
+      return stream;
+    }
   }
-
-  return stream;
-}
-
-
-void StackFrame::write(JSON::Sink &sink) const {
-  sink.beginDict();
-
-  sink.insert("address", getAddrString());
-
-  if (location && !location->isEmpty()) {
-    sink.beginInsert("location");
-    location->write(sink);
-  }
-
-  sink.endDict();
 }
