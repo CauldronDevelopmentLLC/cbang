@@ -415,6 +415,12 @@ def CBBuildSetRegex(env, pats):
 
 
 def generate(env):
+    major, minor = 3, 1
+    v = sys.version_info
+    if v.major < major or (v.major == major and v.minor < minor):
+        raise Exception("C! requires Python %d.%d+ found %d.%d." % (
+            major, minor, v.major, v.minor))
+
     # Add member variables
     env.cb_loaded = set()
     env.cb_enabled = set()
