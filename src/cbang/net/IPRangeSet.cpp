@@ -56,9 +56,58 @@ void IPRangeSet::insert(const string &spec) {
 
 
 void IPRangeSet::insert(const IPAddressRange &range) {
-  uint32_t start = range.getStart();
-  uint32_t end = range.getEnd();
+  insert(range.getStart(), range.getEnd());
+}
 
+
+void IPRangeSet::insert(const IPRangeSet &set) {
+  for (unsigned i = 0; i < set.rangeSet.size(); i += 2)
+    insert(set.rangeSet[i], set.rangeSet[i + 1]);
+}
+
+
+void IPRangeSet::erase(const string &spec) {
+  vector<string> tokens;
+  String::tokenize(spec, tokens, " \r\n\t,;");
+
+  for (unsigned i = 0; i < tokens.size(); i++)
+    erase(IPAddressRange(tokens[i]));
+}
+
+
+void IPRangeSet::erase(const IPAddressRange &range) {
+  erase(range.getStart(), range.getEnd());
+}
+
+
+void IPRangeSet::erase(const IPRangeSet &set) {
+  for (unsigned i = 0; i < set.rangeSet.size(); i++)
+    erase(set.rangeSet[i], set.rangeSet[i + 1]);
+}
+
+
+string IPRangeSet::toString() const {return SSTR(*this);}
+
+
+void IPRangeSet::print(ostream &stream) const {
+  for (unsigned i = 0; i < rangeSet.size(); i += 2) {
+    if (i) stream << ' ';
+    stream << IPAddressRange(rangeSet[i], rangeSet[i + 1]);
+  }
+}
+
+
+void IPRangeSet::write(JSON::Sink &sink) const {
+  sink.beginList();
+
+  for (unsigned i = 0; i < rangeSet.size(); i += 2)
+    sink.append(IPAddressRange(rangeSet[i], rangeSet[i + 1]).toString());
+
+  sink.endList();
+}
+
+
+void IPRangeSet::insert(uint32_t start, uint32_t end) {
   if (end < start) swap(start, end);
 
   unsigned startPos = find(start);
@@ -79,19 +128,7 @@ void IPRangeSet::insert(const IPAddressRange &range) {
 }
 
 
-void IPRangeSet::erase(const string &spec) {
-  vector<string> tokens;
-  String::tokenize(spec, tokens, " \r\n\t,;");
-
-  for (unsigned i = 0; i < tokens.size(); i++)
-    erase(IPAddressRange(tokens[i]));
-}
-
-
-void IPRangeSet::erase(const IPAddressRange &range) {
-  uint32_t start = range.getStart();
-  uint32_t end = range.getEnd();
-
+void IPRangeSet::erase(uint32_t start, uint32_t end) {
   if (end < start) swap(start, end);
 
   unsigned startPos = find(start);
@@ -118,29 +155,6 @@ void IPRangeSet::erase(const IPAddressRange &range) {
 
   if (startInside) rangeSet[startPos] = start - 1;
   if (endInside) rangeSet[endPos - 1] = end + 1;
-}
-
-
-string IPRangeSet::toString() const {
-  return SSTR(*this);
-}
-
-
-void IPRangeSet::print(ostream &stream) const {
-  for (unsigned i = 0; i < rangeSet.size(); i += 2) {
-    if (i) stream << ' ';
-    stream << IPAddressRange(rangeSet[i], rangeSet[i + 1]);
-  }
-}
-
-
-void IPRangeSet::write(JSON::Sink &sink) const {
-  sink.beginList();
-
-  for (unsigned i = 0; i < rangeSet.size(); i += 2)
-    sink.append(IPAddressRange(rangeSet[i], rangeSet[i + 1]).toString());
-
-  sink.endList();
 }
 
 
