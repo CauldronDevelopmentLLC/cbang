@@ -60,8 +60,10 @@ namespace cb {
 
     void insert(const std::string &spec);
     void insert(const IPAddressRange &range);
+    void insert(const IPRangeSet &set);
     void erase(const std::string &spec);
     void erase(const IPAddressRange &range);
+    void erase(const IPRangeSet &set);
     bool contains(const IPAddress &ip) const {return find(ip) & 1;}
 
     std::string toString() const;
@@ -72,6 +74,9 @@ namespace cb {
     {return new IPRangeSet(s);}
 
   private:
+    void insert(uint32_t start, uint32_t end);
+    void erase(uint32_t start, uint32_t end);
+
     unsigned find(uint32_t ip) const;
     void shift(int amount, unsigned position);
   };
