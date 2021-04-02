@@ -67,7 +67,6 @@ namespace cb {
       Buffer outputBuffer;
 
       RequestMethod method;
-      URI originalURI;
       URI uri;
       Version version;
       HTTPStatus responseCode;
@@ -114,9 +113,8 @@ namespace cb {
       RequestMethod getMethod() const {return method;}
       void setMethod(RequestMethod method) {this->method = method;}
 
-      const URI &getOriginalURI() const {return originalURI;}
       const URI &getURI() const {return uri;}
-      URI &getURI() {return uri;}
+      void setURI(const URI &uri) {this->uri = uri;}
       std::string getHost() const {return uri.getHost();}
 
       const Version &getVersion() const {return version;}
