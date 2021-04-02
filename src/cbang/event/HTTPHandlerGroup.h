@@ -53,6 +53,9 @@ namespace cb {
                        new HTTPHandlerFactory) : factory(factory) {}
       virtual ~HTTPHandlerGroup() {}
 
+      const SmartPointer<HTTPHandlerFactory> &getHandlerFactory() const
+        {return factory;}
+
       void addHandler(const SmartPointer<HTTPRequestHandler> &handler);
       void addHandler(unsigned methods, const std::string &pattern,
                       const SmartPointer<HTTPRequestHandler> &handler);

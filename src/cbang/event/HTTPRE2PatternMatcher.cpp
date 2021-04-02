@@ -78,7 +78,7 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
   }
 
   // Attempt match
-  URI &uri = req.getURI();
+  const URI &uri = req.getURI();
   string path = uri.getEscapedPath();
   if (!RE2::FullMatchN(path, pri->regex, argPtrs.data(), n))
     return false;

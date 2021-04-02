@@ -42,15 +42,18 @@ using namespace cb::Event;
 
 
 bool IndexHTMLHandler::operator()(Request &req) {
-  URI &uri = req.getURI();
+  URI uri = req.getURI();
 
-  if (String::endsWith(uri.getPath(), "/"))
+  if (String::endsWith(uri.getPath(), "/")) {
     uri.setPath(uri.getPath() + filename);
+    req.setURI(uri);
+  }
 
   if ((*child)(req)) return true;
 
   if (SystemUtilities::extension(uri.getPath()).empty()) {
     uri.setPath(uri.getPath() + "/" + filename);
+    req.setURI(uri);
     return (*child)(req);
   }
 

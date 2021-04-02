@@ -123,8 +123,7 @@ namespace {
 
 
 Request::Request(RequestMethod method, const URI &uri, const Version &version) :
-  method(method), originalURI(uri), uri(uri), version(version),
-  args(new JSON::Dict) {
+  method(method), uri(uri), version(version), args(new JSON::Dict) {
   LOG_DEBUG(4, "created");
 }
 
