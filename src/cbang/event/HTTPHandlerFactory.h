@@ -54,7 +54,6 @@ namespace cb {
 
       virtual SmartPointer<HTTPRequestHandler>
       createMatcher(unsigned methods, const std::string &search,
-                    const std::string &replace,
                     const SmartPointer<HTTPRequestHandler> &child);
       virtual SmartPointer<HTTPRequestHandler>
       createHandler(const Resource &res);

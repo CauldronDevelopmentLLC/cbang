@@ -32,7 +32,6 @@
 
 #include "HTTPPatternMatcher.h"
 #include "Request.h"
-#include "RestoreURIPath.h"
 
 using namespace std;
 using namespace cb::Event;
@@ -46,12 +45,6 @@ bool HTTPPatternMatcher::operator()(Request &req) {
 
   for (unsigned i = 1; i < m.size(); i++)
     req.appendArg(m[1]);
-
-  if (replace.empty()) return (*child)(req);
-
-  RestoreURIPath restoreURIPath(req.getURI());
-
-  req.getURI().setPath(m.format(replace)); // Modify path
 
   return (*child)(req);
 }

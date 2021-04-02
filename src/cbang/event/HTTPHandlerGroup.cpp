@@ -42,47 +42,26 @@ void HTTPHandlerGroup::addHandler
 
 
 void HTTPHandlerGroup::addHandler
-(unsigned methods, const string &search, const string &replace,
- const SmartPointer<HTTPRequestHandler> &handler) {
-  addHandler(factory->createMatcher(methods, search, replace, handler));
-}
-
-
-void HTTPHandlerGroup::addHandler
 (unsigned methods, const string &pattern,
  const SmartPointer<HTTPRequestHandler> &handler) {
-  addHandler(methods, pattern, string(), handler);
+  addHandler(factory->createMatcher(methods, pattern, handler));
 }
 
 
-
-void HTTPHandlerGroup::addHandler(const string &search, const string &replace,
-                                  const Resource &res) {
-  addHandler(HTTP_GET, search, replace, factory->createHandler(res));
+void HTTPHandlerGroup::addHandler(const string &search, const Resource &res) {
+  addHandler(HTTP_GET, search, factory->createHandler(res));
 }
 
 
-void HTTPHandlerGroup::addHandler(const string &pattern, const Resource &res) {
-  addHandler(pattern, "", res);
-}
-
-
-void HTTPHandlerGroup::addHandler(const string &search, const string &replace,
-                                  const string &path) {
-  addHandler(HTTP_GET, search, replace, factory->createHandler(path));
-}
-
-
-void HTTPHandlerGroup::addHandler(const string &pattern, const string &path) {
-  addHandler(pattern, "", path);
+void HTTPHandlerGroup::addHandler(const string &search, const string &path) {
+  addHandler(HTTP_GET, search, factory->createHandler(path));
 }
 
 
 SmartPointer<HTTPHandlerGroup>
-HTTPHandlerGroup::addGroup(unsigned methods, const string &search,
-                           const string &replace) {
+HTTPHandlerGroup::addGroup(unsigned methods, const string &search) {
   SmartPointer<HTTPHandlerGroup> group = new HTTPHandlerGroup(factory);
-  addHandler(methods, search, replace, group);
+  addHandler(methods, search, group);
   return group;
 }
 

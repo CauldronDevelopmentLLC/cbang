@@ -45,12 +45,11 @@ using namespace cb::Event;
 
 SmartPointer<HTTPRequestHandler>
 HTTPHandlerFactory::createMatcher
-(unsigned methods, const string &search, const string &replace,
+(unsigned methods, const string &pattern,
  const SmartPointer<HTTPRequestHandler> &child) {
   SmartPointer<HTTPRequestHandler> handler = child;
 
-  if (!search.empty())
-    handler = new HTTPRE2PatternMatcher(search, replace, handler);
+  if (!pattern.empty()) handler = new HTTPRE2PatternMatcher(pattern, handler);
 
   if (methods != (unsigned)RequestMethod::HTTP_ANY)
     handler = new HTTPMethodMatcher(methods, handler);

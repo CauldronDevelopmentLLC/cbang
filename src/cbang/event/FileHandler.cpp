@@ -42,9 +42,10 @@ using namespace cb;
 using namespace cb::Event;
 
 
-FileHandler::FileHandler(const string &root, uint64_t timeout) :
-  root(root), timeout(timeout), directory(SystemUtilities::isDirectory(root)) {
-}
+FileHandler::FileHandler(const string &root, unsigned pathPrefix,
+                         uint64_t timeout) :
+  root(root), pathPrefix(pathPrefix), timeout(timeout),
+  directory(SystemUtilities::isDirectory(root)) {}
 
 
 bool FileHandler::operator()(Request &req) {
@@ -52,7 +53,8 @@ bool FileHandler::operator()(Request &req) {
 
   if (directory) {
     string orig = req.getURI().getPath();
-    if (orig.empty()) return false;
+    if (orig.length() <= pathPrefix) return false;
+    orig = orig.substr(pathPrefix);
 
     // Remove unsafe parts
     vector<string> parts;

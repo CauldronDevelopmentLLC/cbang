@@ -45,11 +45,12 @@ namespace cb {
 
     class FileHandler : public HTTPRequestHandler {
       std::string root;
+      unsigned pathPrefix;
       uint64_t timeout;
       bool directory;
 
     public:
-      FileHandler(const std::string &root,
+      FileHandler(const std::string &root, unsigned pathPrefix = 0,
                   uint64_t timeout = Time::SEC_PER_HOUR);
 
       void setTimeout(uint64_t timeout) {this->timeout = timeout;}

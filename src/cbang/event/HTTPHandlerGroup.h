@@ -54,25 +54,17 @@ namespace cb {
       virtual ~HTTPHandlerGroup() {}
 
       void addHandler(const SmartPointer<HTTPRequestHandler> &handler);
-      void addHandler(unsigned methods, const std::string &search,
-                      const std::string &replace,
-                      const SmartPointer<HTTPRequestHandler> & handler);
       void addHandler(unsigned methods, const std::string &pattern,
                       const SmartPointer<HTTPRequestHandler> &handler);
 
-      void addHandler(const std::string &search, const std::string &replace,
-                      const Resource &res);
       void addHandler(const std::string &pattern, const Resource &res);
       void addHandler(const Resource &res) {addHandler("", res);}
 
-      void addHandler(const std::string &search, const std::string &replace,
-                      const std::string &path);
       void addHandler(const std::string &pattern, const std::string &path);
       void addHandler(const std::string &path) {addHandler("", path);}
 
       SmartPointer<HTTPHandlerGroup>
-      addGroup(unsigned methods, const std::string &search,
-               const std::string &replace = std::string());
+      addGroup(unsigned methods, const std::string &search);
 
       // Member callbacks
       template <class T>
