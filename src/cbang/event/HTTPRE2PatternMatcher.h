@@ -45,13 +45,11 @@ namespace cb {
       struct Private;
 
       SmartPointer<Private> pri;
-      std::string replace;
       SmartPointer<HTTPRequestHandler> child;
       std::set<std::string> args;
 
     public:
-      HTTPRE2PatternMatcher(const std::string &search,
-                            const std::string &replace,
+      HTTPRE2PatternMatcher(const std::string &pattern,
                             const SmartPointer<HTTPRequestHandler> &child);
 
       const std::set<std::string> &getArgs() const {return args;}

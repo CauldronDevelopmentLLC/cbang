@@ -34,7 +34,6 @@
 
 #include <cbang/Exception.h>
 #include <cbang/event/Request.h>
-#include <cbang/event/RestoreURIPath.h>
 #include <cbang/log/Logger.h>
 
 #include <vector>
@@ -53,9 +52,8 @@ struct HTTPRE2PatternMatcher::Private {
 
 
 HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
-(const string &search, const string &replace,
- const SmartPointer<HTTPRequestHandler> &child) :
-  pri(new Private(search)), replace(replace), child(child) {
+(const string &pattern, const SmartPointer<HTTPRequestHandler> &child) :
+  pri(new Private(pattern)), child(child) {
   if (pri->regex.error_code())
     THROW("Failed to compile RE2: " << pri->regex.error());
 
@@ -98,11 +96,6 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
       req.insertArg(names.at(i + 1), results[i]);
     else req.appendArg(results[i]);
   }
-
-  // Replace path
-  RestoreURIPath restoreURIPath(uri);
-  if (!replace.empty() && RE2::Replace(&path, pri->regex, replace))
-    uri.setPath(path);
 
   // Call child
   return (*child)(req);

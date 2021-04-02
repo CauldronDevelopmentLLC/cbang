@@ -42,14 +42,12 @@ namespace cb {
   namespace Event {
     class HTTPPatternMatcher : public HTTPRequestHandler {
       Regex search;
-      std::string replace;
       SmartPointer<HTTPRequestHandler> &child;
 
     public:
       HTTPPatternMatcher(const std::string &search,
-                         const std::string &replace,
                          SmartPointer<HTTPRequestHandler> &child) :
-        search(search), replace(replace), child(child) {}
+        search(search), child(child) {}
 
       // From HTTPRequestHandler
       bool operator()(Request &req);
