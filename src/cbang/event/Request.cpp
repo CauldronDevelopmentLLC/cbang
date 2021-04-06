@@ -189,17 +189,8 @@ const JSON::ValuePtr &Request::parseJSONArgs() {
   if (hdrs.hasContentType() &&
       String::startsWith(hdrs.getContentType(), "application/json")) {
 
-    Buffer buf = getInputBuffer();
-    if (buf.getLength()) {
-      BufferStream<> stream(buf);
-      JSON::Reader reader(stream);
-
-      // Find start of dict & parse keys into request args
-      if (reader.next() == '{') {
-        JSON::Builder builder(args);
-        reader.parseDict(builder);
-      }
-    }
+    getJSONMessage();
+    if (msg.isSet() && msg->isDict()) args->merge(*msg);
   }
 
   return args;
@@ -209,7 +200,7 @@ const JSON::ValuePtr &Request::parseJSONArgs() {
 const JSON::ValuePtr &Request::parseQueryArgs() {
   const URI &uri = getURI();
   for (URI::const_iterator it = uri.begin(); it != uri.end(); it++)
-    insertArg(it->first, it->second);
+    args->insert(it->first, it->second);
   return args;
 }
 
@@ -447,21 +438,13 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
 }
 
 
-SmartPointer<JSON::Value> Request::getJSONMessage() const {
-  const Headers &hdrs = getInputHeaders();
+const SmartPointer<JSON::Value> &Request::getJSONMessage() {
+  if (msg.isNull()) {
+    const Headers &hdrs = getInputHeaders();
 
-  if (hdrs.hasContentType() &&
-      String::startsWith(hdrs.getContentType(), "application/json"))
-    return getInputJSON();
-
-  SmartPointer<JSON::Value> msg;
-  const URI &uri = getURI();
-
-  if (!uri.empty()) {
-    msg = new JSON::Dict;
-
-    for (URI::const_iterator it = uri.begin(); it != uri.end(); it++)
-      msg->insert(it->first, it->second);
+    if (hdrs.hasContentType() &&
+        String::startsWith(hdrs.getContentType(), "application/json"))
+      msg = getInputJSON();
   }
 
   return msg;

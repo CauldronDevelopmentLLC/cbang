@@ -57,6 +57,8 @@ HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
   if (pri->regex.error_code())
     THROW("Failed to compile RE2: " << pri->regex.error());
 
+  if (child.isNull()) THROW("Child cannot be NULL");
+
   // Regex args
   const map<int, string> &names = pri->regex.CapturingGroupNames();
   map<int, string>::const_iterator it;
@@ -65,7 +67,8 @@ HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
 }
 
 
-bool HTTPRE2PatternMatcher::operator()(Request &req) {
+bool HTTPRE2PatternMatcher::match(const URI &uri,
+                                  JSON::ValuePtr resultArgs) const {
   int n = pri->regex.NumberOfCapturingGroups();
   vector<RE2::Arg> args(n);
   vector<RE2::Arg *> argPtrs(n);
@@ -78,14 +81,13 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
   }
 
   // Attempt match
-  const URI &uri = req.getURI();
   string path = uri.getEscapedPath();
   if (!RE2::FullMatchN(path, pri->regex, argPtrs.data(), n))
     return false;
 
   LOG_DEBUG(5, path << " matched " << pri->regex.pattern());
 
-  if (child.isNull()) return true;
+  if (resultArgs.isNull()) return true;
 
   // Store results
   const map<int, string> &names = pri->regex.CapturingGroupNames();
@@ -93,10 +95,15 @@ bool HTTPRE2PatternMatcher::operator()(Request &req) {
     if (results[i].empty()) continue;
 
     if (names.find(i + 1) != names.end())
-      req.insertArg(names.at(i + 1), results[i]);
-    else req.appendArg(results[i]);
+      resultArgs->insert(names.at(i + 1), results[i]);
+    else resultArgs->insert(String(resultArgs->size()), results[i]);
   }
 
-  // Call child
+  return true;
+}
+
+
+bool HTTPRE2PatternMatcher::operator()(Request &req) {
+  if (!match(req.getURI(), req.getArgs())) return false;
   return (*child)(req);
 }

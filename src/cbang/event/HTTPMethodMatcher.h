@@ -45,8 +45,11 @@ namespace cb {
 
     public:
       HTTPMethodMatcher(unsigned methods,
-                        const SmartPointer<HTTPRequestHandler> &child) :
-        methods(methods), child(child) {}
+                        const SmartPointer<HTTPRequestHandler> &child);
+
+      const SmartPointer<HTTPRequestHandler> &getChild() const {return child;}
+
+      bool match(RequestMethod method) const;
 
       // From HTTPRequestHandler
       bool operator()(Request &req);

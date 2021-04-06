@@ -52,7 +52,10 @@ namespace cb {
       HTTPRE2PatternMatcher(const std::string &pattern,
                             const SmartPointer<HTTPRequestHandler> &child);
 
+      const SmartPointer<HTTPRequestHandler> &getChild() const {return child;}
       const std::set<std::string> &getArgs() const {return args;}
+
+      bool match(const URI &uri, JSON::ValuePtr args) const;
 
       // From HTTPRequestHandler
       bool operator()(Request &req);

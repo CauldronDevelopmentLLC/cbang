@@ -30,21 +30,53 @@
 
 \******************************************************************************/
 
-#include "HTTPPatternMatcher.h"
-#include "Request.h"
+#pragma once
 
-using namespace std;
-using namespace cb::Event;
+#include "HTTPRequestHandler.h"
+
+#include <cbang/json/Value.h>
+
+namespace cb {
+  namespace Event {
+    struct HTTPRequestJSONHandler : public HTTPRequestHandler {
+      virtual void operator()(Request &, const JSON::ValuePtr &) = 0;
+
+      // From HTTPRequestHandler
+      bool operator()(Request &req);
+    };
 
 
-bool HTTPPatternMatcher::operator()(Request &req) {
-  Regex::Match m;
+    template <class T>
+    struct HTTPRequestJSONMemberHandler : public HTTPRequestJSONHandler {
+      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
+      T *obj;
+      member_t member;
 
-  if (!search.match(req.getURI().getEscapedPath(), m)) return false;
-  if (child.isNull()) return true;
+      HTTPRequestJSONMemberHandler(T *obj, member_t member) :
+        obj(obj), member(member) {
+        if (!obj) CBANG_THROW("Object cannot be NULL");
+        if (!member) CBANG_THROW("Member cannot be NULL");
+      }
 
-  for (unsigned i = 1; i < m.size(); i++)
-    req.appendArg(m[1]);
+      // From HTTPRequestJSONHandler
+      void operator()(Request &req, const JSON::ValuePtr &msg)
+        {(*obj.*member)(req, msg);}
+    };
 
-  return (*child)(req);
+
+    template <class T>
+    struct HTTPRequestJSONRecastHandler : public HTTPRequestJSONHandler {
+      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
+      member_t member;
+
+      HTTPRequestJSONRecastHandler(member_t member) : member(member) {
+        if (!member) CBANG_THROW("Member cannot be NULL");
+      }
+
+      // From HTTPRequestJSONHandler
+      void operator()(Request &req, const JSON::ValuePtr &msg) {
+        (req.cast<T>().*member)(req, msg);
+      }
+    };
+  }
 }

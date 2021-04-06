@@ -36,7 +36,18 @@
 using namespace cb::Event;
 
 
+HTTPMethodMatcher::HTTPMethodMatcher(
+  unsigned methods, const SmartPointer<HTTPRequestHandler> &child) :
+  methods(methods), child(child) {
+  if (child.isNull()) THROW("Child cannot be NULL");
+}
+
+
+bool HTTPMethodMatcher::match(RequestMethod method) const {
+  return methods & method;
+}
+
+
 bool HTTPMethodMatcher::operator()(Request &req) {
-  if (!(methods & req.getMethod())) return false;
-  return child.isSet() ? (*child)(req) : true;
+  return match(req.getMethod()) && (*child)(req);
 }

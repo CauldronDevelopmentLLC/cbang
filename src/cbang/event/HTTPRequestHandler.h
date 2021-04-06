@@ -35,8 +35,6 @@
 #include "Request.h"
 #include "Enum.h"
 
-#include <cbang/json/Value.h>
-
 #include <functional>
 
 
@@ -92,48 +90,6 @@ namespace cb {
 
       // From HTTPRequestHandler
       bool operator()(Request &req) {return (req.cast<T>().*member)();}
-    };
-
-
-    struct HTTPRequestJSONHandler : public HTTPRequestHandler {
-      virtual void operator()(Request &, const JSON::ValuePtr &) = 0;
-
-      // From HTTPRequestHandler
-      bool operator()(Request &req);
-    };
-
-
-    template <class T>
-    struct HTTPRequestJSONMemberHandler : public HTTPRequestJSONHandler {
-      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
-      T *obj;
-      member_t member;
-
-      HTTPRequestJSONMemberHandler(T *obj, member_t member) :
-        obj(obj), member(member) {
-        if (!obj) CBANG_THROW("Object cannot be NULL");
-        if (!member) CBANG_THROW("Member cannot be NULL");
-      }
-
-      // From HTTPRequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg)
-        {(*obj.*member)(req, msg);}
-    };
-
-
-    template <class T>
-    struct HTTPRequestJSONRecastHandler : public HTTPRequestJSONHandler {
-      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
-      member_t member;
-
-      HTTPRequestJSONRecastHandler(member_t member) : member(member) {
-        if (!member) CBANG_THROW("Member cannot be NULL");
-      }
-
-      // From HTTPRequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg) {
-        (req.cast<T>().*member)(req, msg);
-      }
     };
   }
 }
