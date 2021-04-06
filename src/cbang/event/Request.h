@@ -85,6 +85,7 @@ namespace cb {
       uint64_t bytesWritten = 0;
 
       JSON::ValuePtr args;
+      JSON::ValuePtr msg;
 
     public:
       Request(RequestMethod method = RequestMethod(), const URI &uri = URI(),
@@ -156,22 +157,10 @@ namespace cb {
       virtual bool isWebsocket() const {return false;}
       virtual void resetOutput();
 
-      virtual void appendArg(const std::string &arg)
-      {args->insert(String(args->size()), arg);}
-      virtual void insertArg(const std::string &key, const std::string &arg)
-      {args->insert(key, arg);}
-      virtual const JSON::ValuePtr &getArgs() const {return args;}
-      virtual JSON::ValuePtr &getArgs() {return args;}
-      virtual const std::string &getArg(unsigned i) const
-      {return args->getString(i);}
-      virtual const std::string &getArg(const std::string &key) const
-      {return args->getString(key);}
-      virtual std::string getArg(const std::string &key,
-                                 const std::string &defaultVal) const
-      {return args->getString(key, defaultVal);}
-      virtual const JSON::ValuePtr &parseJSONArgs();
-      virtual const JSON::ValuePtr &parseQueryArgs();
-      virtual const JSON::ValuePtr &parseArgs();
+      const JSON::ValuePtr &getArgs() const {return args;}
+      const JSON::ValuePtr &parseJSONArgs();
+      const JSON::ValuePtr &parseQueryArgs();
+      const JSON::ValuePtr &parseArgs();
 
       const IPAddress &getClientIP() const;
 
@@ -212,7 +201,9 @@ namespace cb {
       std::string getOutput() const;
 
       SmartPointer<JSON::Value> getInputJSON() const;
-      SmartPointer<JSON::Value> getJSONMessage() const;
+      void setJSONMessage(const SmartPointer<JSON::Value> &msg)
+        {this->msg = msg;}
+      const SmartPointer<JSON::Value> &getJSONMessage();
       SmartPointer<JSON::Writer>
       getJSONWriter(unsigned indent, bool compact,
                     Compression compression = COMPRESSION_NONE);

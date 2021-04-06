@@ -33,7 +33,7 @@
 #pragma once
 
 #include "HTTPHandlerFactory.h"
-#include "HTTPRequestHandler.h"
+#include "HTTPRequestJSONHandler.h"
 
 #include <vector>
 

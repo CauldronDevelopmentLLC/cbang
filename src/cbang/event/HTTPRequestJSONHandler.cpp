@@ -30,7 +30,7 @@
 
 \******************************************************************************/
 
-#include "HTTPRequestHandler.h"
+#include "HTTPRequestJSONHandler.h"
 
 #include <cbang/json/Writer.h>
 #include <cbang/log/Logger.h>
@@ -43,11 +43,10 @@ bool HTTPRequestJSONHandler::operator()(Request &req) {
   try {
     // Parse JSON message
     JSON::ValuePtr msg = req.getJSONMessage();
+    if (msg.isNull()) msg = req.parseQueryArgs();
 
     // Log JSON call
-    const string &path = req.getURI().getPath();
-    if (msg.isNull()) LOG_DEBUG(5, "JSON Call: " << path);
-    else LOG_DEBUG(5, "JSON Call: " << path << '(' << *msg << ')');
+    LOG_DEBUG(5, "JSON Call: " << req.getURI().getPath() << '(' << *msg << ')');
 
     // Dispatch JSON call
     (*this)(req, msg);
