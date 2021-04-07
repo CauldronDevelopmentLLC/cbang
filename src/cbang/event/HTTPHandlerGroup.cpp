@@ -44,24 +44,26 @@ void HTTPHandlerGroup::addHandler
 void HTTPHandlerGroup::addHandler
 (unsigned methods, const string &pattern,
  const SmartPointer<HTTPRequestHandler> &handler) {
-  addHandler(factory->createMatcher(methods, pattern, handler));
+  addHandler(factory->createMatcher(methods, prefix + pattern, handler));
 }
 
 
-void HTTPHandlerGroup::addHandler(const string &search, const Resource &res) {
-  addHandler(HTTP_GET, search, factory->createHandler(res));
+void HTTPHandlerGroup::addHandler(const string &pattern, const Resource &res) {
+  addHandler(HTTP_GET, pattern, factory->createHandler(res));
 }
 
 
-void HTTPHandlerGroup::addHandler(const string &search, const string &path) {
-  addHandler(HTTP_GET, search, factory->createHandler(path));
+void HTTPHandlerGroup::addHandler(const string &pattern, const string &path) {
+  addHandler(HTTP_GET, pattern, factory->createHandler(path));
 }
 
 
 SmartPointer<HTTPHandlerGroup>
-HTTPHandlerGroup::addGroup(unsigned methods, const string &search) {
+HTTPHandlerGroup::addGroup(unsigned methods, const string &pattern,
+                           const string &prefix) {
   SmartPointer<HTTPHandlerGroup> group = new HTTPHandlerGroup(factory);
-  addHandler(methods, search, group);
+  group->setPrefix(this->prefix + prefix);
+  addHandler(methods, pattern, group);
   return group;
 }
 

@@ -48,6 +48,8 @@ namespace cb {
       typedef std::vector<SmartPointer<HTTPRequestHandler> > handlers_t;
       handlers_t handlers;
 
+      std::string prefix;
+
     public:
       HTTPHandlerGroup(const SmartPointer<HTTPHandlerFactory> &factory =
                        new HTTPHandlerFactory) : factory(factory) {}
@@ -55,6 +57,9 @@ namespace cb {
 
       const SmartPointer<HTTPHandlerFactory> &getHandlerFactory() const
         {return factory;}
+
+      const std::string &getPrefix() const {return prefix;}
+      void setPrefix(const std::string &prefix) {this->prefix = prefix;}
 
       void addHandler(const SmartPointer<HTTPRequestHandler> &handler);
       void addHandler(unsigned methods, const std::string &pattern,
@@ -67,7 +72,8 @@ namespace cb {
       void addHandler(const std::string &path) {addHandler("", path);}
 
       SmartPointer<HTTPHandlerGroup>
-      addGroup(unsigned methods, const std::string &search);
+      addGroup(unsigned methods, const std::string &pattern,
+               const std::string &prefix = std::string());
 
       // Member callbacks
       template <class T>
