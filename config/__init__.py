@@ -415,11 +415,22 @@ def CBBuildSetRegex(env, pats):
 
 
 def generate(env):
-    major, minor = 3, 1
+    def version_less(a, b):
+        return a.major < b.major or (a.major == b.major and a.minor < b.minor)
+
+
+    class objdict(object):
+        def __init__(self, **kwargs):
+            self.__dict__ = kwargs
+
+    # Check Python version
+    v2 = objdict(major = 2, minor = 7)
+    v3 = objdict(major = 3, minor = 1)
     v = sys.version_info
-    if v.major < major or (v.major == major and v.minor < minor):
-        raise Exception("C! requires Python %d.%d+ found %d.%d." % (
-            major, minor, v.major, v.minor))
+
+    if (2 < v.major and version_less(v, v3)) or version_less(v, v2):
+        raise Exception("C! requires Python %d.%d+ or %d.%d+ found %d.%d." % (
+            v2.major, v2.minor, v3.major, v3.minor, v.major, v.minor))
 
     # Add member variables
     env.cb_loaded = set()
