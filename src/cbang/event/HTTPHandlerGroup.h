@@ -53,6 +53,10 @@ namespace cb {
     public:
       HTTPHandlerGroup(const SmartPointer<HTTPHandlerFactory> &factory =
                        new HTTPHandlerFactory) : factory(factory) {}
+      HTTPHandlerGroup(const std::string &prefix,
+                       const SmartPointer<HTTPHandlerFactory> &factory =
+                       new HTTPHandlerFactory) :
+        factory(factory), prefix(prefix) {}
       virtual ~HTTPHandlerGroup() {}
 
       const SmartPointer<HTTPHandlerFactory> &getHandlerFactory() const

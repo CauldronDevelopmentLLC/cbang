@@ -58,7 +58,7 @@ ostream &StackFrame::print(ostream &stream) const {
 
   if (location) {
     if (!location->getFunction().empty())
-      stream << " in" << location->getFunction() << ' ';
+      stream << " in " << location->getFunction();
 
     if (!location->getFilename().empty())
       stream << " at " << location->getFileLineColumn();
