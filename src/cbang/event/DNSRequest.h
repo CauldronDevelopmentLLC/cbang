@@ -62,7 +62,8 @@ namespace cb {
         DNS_ERR_NODATA = 70,
       } dns_error_t;
 
-      typedef std::function<void (int, std::vector<IPAddress> &, int)>
+      typedef
+      std::function<void (int error, std::vector<IPAddress> &addrs, int ttl)>
       callback_t;
 
     protected:

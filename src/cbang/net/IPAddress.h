@@ -47,6 +47,7 @@ namespace cb {
     uint16_t port = 0;
 
   public:
+    IPAddress(uint32_t ip, const std::string &host, uint16_t port = 0);
     IPAddress(uint32_t ip = 0, uint16_t port = 0);
     IPAddress(const std::string &host, uint16_t port = 0);
 
