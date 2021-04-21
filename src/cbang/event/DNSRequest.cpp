@@ -96,18 +96,14 @@ void DNSRequest::callback(int error, char type, int count, int ttl,
         if (type == DNS_IPv4_A) {
           auto ips = (uint32_t *)addresses;
 
-          for (int i = 0; i < count; i++) {
-            addrs.push_back(IPAddress(hton32(ips[i])));
-            addrs.back().setHost(source.getHost());
-          }
+          for (int i = 0; i < count; i++)
+            addrs.push_back(IPAddress(hton32(ips[i]), source.getHost()));
 
         } else if (type == DNS_PTR) {
           auto names = (const char **)addresses;
 
-          for (int i = 0; i < count; i++) {
-            addrs.push_back(IPAddress(names[i]));
-            addrs.back().setIP(source.getIP());
-          }
+          for (int i = 0; i < count; i++)
+            addrs.push_back(IPAddress(source.getIP(), names[i]));
 
         } else {
           LOG_ERROR("Unsupported DNS response type " << type);

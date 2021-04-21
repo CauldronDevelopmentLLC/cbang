@@ -120,8 +120,7 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
         }
 
         // Use first address
-        IPAddress addr(addrs[0].getIP(), peer.getPort());
-        addr.setHost(peer.getHost());
+        IPAddress addr(addrs[0].getIP(), peer.getHost(), peer.getPort());
         setPeer(addr);
 
         try {

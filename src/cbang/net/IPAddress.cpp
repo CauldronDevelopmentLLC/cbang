@@ -59,13 +59,8 @@ using namespace std;
 using namespace cb;
 
 
-IPAddress::IPAddress(uint32_t ip, uint16_t port) :
-  host(ipToString(ip)), ip(ip), port(port) {}
-
-
-IPAddress::IPAddress(const string &host, uint16_t port) :
-  host(host), ip(ipFromString(host)), port(port ? port : portFromString(host)) {
-
+IPAddress::IPAddress(uint32_t ip, const std::string &host, uint16_t port) :
+  host(host), ip(ip), port(port ? port : portFromString(host)) {
   Socket::initialize(); // Windows needs this
 
   size_t ptr = host.find(":");
@@ -73,6 +68,14 @@ IPAddress::IPAddress(const string &host, uint16_t port) :
 
   if (this->host == "0") this->host = "0.0.0.0"; // OSX & Windows need this
 }
+
+
+IPAddress::IPAddress(uint32_t ip, uint16_t port) :
+  host(ipToString(ip)), ip(ip), port(port) {}
+
+
+IPAddress::IPAddress(const string &host, uint16_t port) :
+  IPAddress(ipFromString(host), host, port) {}
 
 
 bool IPAddress::hasHost() const {
