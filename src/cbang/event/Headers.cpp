@@ -80,6 +80,7 @@ bool Headers::connectionKeepAlive() const {
 
 bool Headers::parse(Buffer &buf, unsigned maxSize) {
   unsigned bytes = 0;
+  string last;
 
   while (buf.getLength()) {
     string line;
@@ -94,7 +95,7 @@ bool Headers::parse(Buffer &buf, unsigned maxSize) {
     // Continuation line
     if (line[0] == ' ' || line[0] == '\t') {
       if (empty()) THROW("Invalid header line: " << line);
-      get(size() - 1) += String::trim(line);
+      get(last) += String::trim(line);
       continue;
     }
 
@@ -104,7 +105,16 @@ bool Headers::parse(Buffer &buf, unsigned maxSize) {
 
     string key = line.substr(0, semi);
     string value = String::trim(line.substr(semi + 1));
-    insert(key, value);
+
+    // See RFC 2616 Section 4.2 "Message Headers"
+    if (has(key)) {
+      auto &h = get(key);
+      if (!String::trim(h).empty()) h += ", ";
+      h += value;
+
+    } else insert(key, value);
+
+    last = key;
   }
 
   return false;
