@@ -88,6 +88,20 @@ namespace {
 
 SSLContext::SSLContext() : ctx(0) {
   cb::SSL::init();
+  reset();
+}
+
+
+SSLContext::~SSLContext() {
+  if (ctx) {
+    SSL_CTX_free(ctx);
+    ctx = 0;
+  }
+}
+
+
+void SSLContext::reset() {
+  if (ctx) SSL_CTX_free(ctx);
 
   ctx = SSL_CTX_new(TLS_method());
   if (!ctx) THROW("Failed to create SSL context: " << cb::SSL::getErrorStr());
@@ -100,13 +114,6 @@ SSLContext::SSLContext() : ctx(0) {
   setVerifyPeer(false, false, 0);
 }
 
-
-SSLContext::~SSLContext() {
-  if (ctx) {
-    SSL_CTX_free(ctx);
-    ctx = 0;
-  }
-}
 
 
 X509_STORE *SSLContext::getStore() const {
