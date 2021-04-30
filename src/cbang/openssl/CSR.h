@@ -56,18 +56,18 @@ namespace cb {
 
     X509_REQ *getX509_REQ() const {return csr;}
 
-    void getPublicKey(KeyPair &key);
-    SmartPointer<KeyPair> getPublicKey();
+    void getPublicKey(KeyPair &key) const;
+    SmartPointer<KeyPair> getPublicKey() const;
 
     void addNameEntry(const std::string &name, const std::string &value);
     std::string getNameEntry(const std::string &name) const;
 
-    bool hasExtension(const std::string &name);
-    std::string getExtension(const std::string &name);
+    bool hasExtension(const std::string &name) const;
+    std::string getExtension(const std::string &name) const;
     void addExtension(const std::string &name, const std::string &value);
 
     void sign(const KeyPair &key, const std::string &digest = "sha256");
-    void verify();
+    void verify() const;
 
     std::string toString() const;
     std::string toDER() const;

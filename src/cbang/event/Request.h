@@ -162,7 +162,7 @@ namespace cb {
       const JSON::ValuePtr &parseQueryArgs();
       const JSON::ValuePtr &parseArgs();
 
-      const IPAddress &getClientIP() const;
+      IPAddress getClientIP() const;
 
       bool inHas(const std::string &name) const;
       std::string inFind(const std::string &name) const;

@@ -85,7 +85,7 @@ CSR::~CSR() {
 }
 
 
-void CSR::getPublicKey(KeyPair &key) {
+void CSR::getPublicKey(KeyPair &key) const {
   EVP_PKEY *pkey = X509_REQ_get_pubkey(csr);
   if (!pkey)
     THROW("Error getting public key from CSR: " << SSL::getErrorStr());
@@ -95,7 +95,7 @@ void CSR::getPublicKey(KeyPair &key) {
 }
 
 
-SmartPointer<KeyPair> CSR::getPublicKey() {
+SmartPointer<KeyPair> CSR::getPublicKey() const {
   SmartPointer<KeyPair> key = new KeyPair(0);
   getPublicKey(*key);
   return key;
@@ -127,7 +127,7 @@ string CSR::getNameEntry(const string &name) const {
 }
 
 
-bool CSR::hasExtension(const string &name) {
+bool CSR::hasExtension(const string &name) const {
   ASN1_OBJECT *obj = OBJ_txt2obj(name.c_str(), 0);
   if (!obj) THROW("Unrecognized extension name '" << name << "'");
 
@@ -149,7 +149,7 @@ bool CSR::hasExtension(const string &name) {
 }
 
 
-string CSR::getExtension(const string &name) {
+string CSR::getExtension(const string &name) const {
   ASN1_OBJECT *obj = OBJ_txt2obj(name.c_str(), 0);
   if (!obj) THROW("Unrecognized extension name '" << name << "'");
 
@@ -210,7 +210,7 @@ void CSR::sign(const KeyPair &key, const string &digest) {
 }
 
 
-void CSR::verify() {
+void CSR::verify() const {
   EVP_PKEY *pkey = X509_REQ_get_pubkey(csr);
   if (!pkey)
     THROW("Error getting public key from CSR: " << SSL::getErrorStr());

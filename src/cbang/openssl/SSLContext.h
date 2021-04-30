@@ -56,6 +56,8 @@ namespace cb {
     SSLContext();
     ~SSLContext();
 
+    void reset();
+
     SSL_CTX *getCTX() const {return ctx;}
     X509_STORE *getStore() const;
 

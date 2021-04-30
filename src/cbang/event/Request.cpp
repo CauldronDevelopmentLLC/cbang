@@ -212,7 +212,9 @@ const JSON::ValuePtr &Request::parseArgs() {
 }
 
 
-const IPAddress &Request::getClientIP() const {return connection->getPeer();}
+IPAddress Request::getClientIP() const {
+  return connection.isSet() ? connection->getPeer() : IPAddress();
+}
 
 
 bool Request::inHas(const string &name) const {
@@ -593,7 +595,8 @@ void Request::reply(HTTPStatus code) {
   else responseCode = HTTP_INTERNAL_SERVER_ERROR;
 
   // Log results
-  LOG_DEBUG(5, getResponseLine() << '\n' << getOutputHeaders() << '\n');
+  if (300 <= code) LOG_INFO(1, "> " << getResponseLine());
+  LOG_DEBUG(5, getOutputHeaders() << '\n');
   LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
 
   write();
@@ -636,6 +639,8 @@ void Request::sendChunk(const cb::Event::Buffer &buf) {
 
   // Check for final empty chunk.  Must be before add() below
   if (!buf.getLength()) chunked = false;
+
+  if (connection.isNull()) return; // Ignore write
 
   Buffer out;
   out.add(String::printf("%x\r\n", buf.getLength()));
@@ -716,6 +721,8 @@ void Request::parseResponseLine(const string &line) {
 
 
 void Request::write() {
+  if (connection.isNull()) return; // Ignore write
+
   Buffer out;
 
   writeHeaders(out);
