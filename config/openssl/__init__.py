@@ -35,6 +35,8 @@ def configure(conf, version = None):
     if (conf.CBCheckCHeader('openssl/ssl.h') and
         (conf.CBCheckLib('crypto') and
          conf.CBCheckLib('ssl')) or
+        (conf.CBCheckLib('libcrypto') and
+         conf.CBCheckLib('libssl')) or
         (conf.CBCheckLib('libeay32MT') and
          conf.CBCheckLib('ssleay32MT')) or
         (conf.CBCheckLib('libeay32') and
