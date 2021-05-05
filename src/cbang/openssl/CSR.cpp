@@ -111,6 +111,21 @@ void CSR::addNameEntry(const string &name, const string &value) {
 }
 
 
+bool CSR::hasNameEntry(const string &name) const {
+  X509_NAME *subject = X509_REQ_get_subject_name(csr);
+
+  for (int i = 0; i < X509_NAME_entry_count(subject); i++) {
+    X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
+    ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
+    int nid = OBJ_obj2nid(obj);
+
+    if (OBJ_nid2sn(nid) == name) return true;
+  }
+
+  return false;
+}
+
+
 string CSR::getNameEntry(const string &name) const {
   X509_NAME *subject = X509_REQ_get_subject_name(csr);
 

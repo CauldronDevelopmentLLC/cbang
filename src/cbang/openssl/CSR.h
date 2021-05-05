@@ -60,6 +60,7 @@ namespace cb {
     SmartPointer<KeyPair> getPublicKey() const;
 
     void addNameEntry(const std::string &name, const std::string &value);
+    bool hasNameEntry(const std::string &name) const;
     std::string getNameEntry(const std::string &name) const;
 
     bool hasExtension(const std::string &name) const;
