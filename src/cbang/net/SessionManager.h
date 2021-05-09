@@ -48,13 +48,14 @@ namespace cb {
     typedef std::map<std::string, SmartPointer<Session> > sessions_t;
     sessions_t sessions;
 
-    uint64_t lifetime;
-    uint64_t timeout;
-    std::string cookie;
+    uint64_t lifetime    = Time::SEC_PER_DAY;
+    uint64_t timeout     = Time::SEC_PER_HOUR;
+    std::string cookie   = "sid";
+    uint64_t lastCleanup = 0;
 
   public:
-    SessionManager();
-    SessionManager(Options &options);
+    SessionManager() {}
+    SessionManager(Options &options) {addOptions(options);}
 
     void addOptions(Options &options);
 
