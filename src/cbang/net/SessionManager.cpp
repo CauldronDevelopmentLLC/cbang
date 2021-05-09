@@ -47,16 +47,6 @@ using namespace cb;
 using namespace std;
 
 
-SessionManager::SessionManager() :
-  lifetime(Time::SEC_PER_DAY), timeout(Time::SEC_PER_HOUR), cookie("sid") {}
-
-
-SessionManager::SessionManager(Options &options) :
-  lifetime(Time::SEC_PER_DAY), timeout(Time::SEC_PER_HOUR), cookie("sid") {
-  addOptions(options);
-}
-
-
 void SessionManager::addOptions(Options &options) {
   options.pushCategory("Session Management");
 
@@ -105,12 +95,8 @@ bool SessionManager::hasSession(const string &sid) const {
 
 SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
   iterator it = sessions.find(sid);
-  if (it == end()) THROW("Session ID '" << sid << "' does not exist");
-  if (isExpired(*it->second))
-    THROW("Session ID '" << sid << "' has expired, last_used="
-           << Time(it->second->getLastUsed()).toString() << " created="
-           << Time(it->second->getCreationTime()).toString() << " now="
-           << Time().toString());
+  if (it == end() || isExpired(*it->second))
+    THROW("Session ID '" << sid << "' does not exist");
 
   it->second->touch(); // Update timestamp
 
@@ -133,14 +119,20 @@ void SessionManager::closeSession(const string &sid) {sessions.erase(sid);}
 
 
 void SessionManager::addSession(const SmartPointer<Session> &session) {
+  if (isExpired(*session)) return;
+
   pair<sessions_t::iterator, bool> result =
     sessions.insert(sessions_t::value_type(session->getID(), session));
 
   if (!result.second) result.first->second = session;
+
+  if (lastCleanup + Time::SEC_PER_HOUR < Time::now()) cleanup();
 }
 
 
 void SessionManager::cleanup() {
+  lastCleanup = Time::now();
+
   // Remove expired Sessions
   for (sessions_t::iterator it = sessions.begin(); it != sessions.end();)
     if (isExpired(*it->second)) sessions.erase(it++);
@@ -161,6 +153,7 @@ void SessionManager::write(JSON::Sink &sink) const {
   sink.beginDict();
 
   for (iterator it = begin(); it != end(); it++) {
+    if (isExpired(*it->second)) continue;
     sink.beginInsert(it->first);
     it->second->write(sink);
   }
