@@ -86,26 +86,11 @@ namespace {
   }
 
 
-  bool contains(const char *s, char c) {
-    return c && strchr(s, c);
-  }
+  bool contains(const char *s, char c) {return c && strchr(s, c);}
 }
 
 
 const char *URI::DEFAULT_UNESCAPED = UNRESERVED_CHARS "/";
-
-
-URI::URI() : port(0) {}
-
-
-URI::URI(const string &uri) : port(0) {
-  read(uri);
-}
-
-
-URI::URI(const char *uri) : port(0) {
-  read(uri);
-}
 
 
 unsigned URI::getPort() const {
@@ -157,9 +142,16 @@ const string URI::getQuery() const {
 }
 
 
-void URI::setQuery(const string &query) {
-  setQuery(query.c_str());
+void URI::setPath(const string &_path) {
+  string path = encode(_path);
+  const char *s = path.c_str();
+  pathSegs.clear();
+  parsePath(s);
+  if (*s) THROW("Invalid path: " + path);
 }
+
+
+void URI::setQuery(const string &query) {setQuery(query.c_str());}
 
 
 void URI::setQuery(const char *query) {
@@ -188,21 +180,22 @@ void URI::clear() {
 
 
 void URI::normalize() {
-  // TODO: Resolove '..' and '.'
-
   // NOTE, last empty seg denotes a trailing /, do not remove it
-  vector<string>::iterator it;
-  for (it = pathSegs.begin(); it != pathSegs.end();)
-    if (it->empty() && (it + 1) != pathSegs.end()) it = pathSegs.erase(it);
+  for (auto it = pathSegs.begin(); it != pathSegs.end();)
+    if (*it == "..") {
+      if (it == pathSegs.begin()) THROW("Invalid path, '..' with no parent");
+      pathSegs.erase(it - 1);
+      it = pathSegs.erase(it);
+
+    } else if (*it == "." || (it->empty() && (it + 1) != pathSegs.end()))
+      it = pathSegs.erase(it);
     else it++;
 
   path = "/" + String::join(pathSegs, "/");
 }
 
 
-void URI::read(const string &uri) {
-  read(uri.c_str());
-}
+void URI::read(const string &uri) {read(uri.c_str());}
 
 
 void URI::read(const char *uri) {
@@ -218,7 +211,7 @@ void URI::read(const char *uri) {
   try {
     if (!*s) THROW("Cannot be empty");
 
-    if (*s == '/') parseAbsPath(s);
+    if (*s == '/') parsePath(s);
     else {
       parseScheme(s);
       parseNetPath(s);
@@ -229,6 +222,8 @@ void URI::read(const char *uri) {
     THROW("Failed to parse URI '" << String::escapeC(uri) << "' at char "
            << (s - uri) << ": " << e.getMessage());
   }
+
+  if (*s) THROW("URI parse incomplete: " << uri);
 }
 
 
@@ -309,15 +304,15 @@ char URI::parseEscape(const char *&s) {
 }
 
 
-void URI::parseAbsPath(const char *&s) {
-  match(s, '/');
+void URI::parsePath(const char *&s) {
+  bool absolute = consume(s, '/');
 
   do {
     parsePathSegment(s);
   } while (consume(s, '/'));
 
   // TODO This fails for encoded / i.e. %2f
-  path = "/" + String::join(pathSegs, "/");
+  path = (absolute ? "/" : "") + String::join(pathSegs, "/");
 }
 
 
@@ -348,7 +343,7 @@ void URI::parseNetPath(const char *&s) {
   match(s, '/');
   consume(s, '/');
   parseAuthority(s);
-  if (*s == '/') parseAbsPath(s);
+  if (*s == '/') parsePath(s);
 }
 
 

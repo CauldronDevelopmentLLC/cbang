@@ -45,7 +45,7 @@ namespace cb {
   protected:
     std::string scheme;
     std::string host;
-    unsigned port;
+    unsigned port = 0;
     std::string path;
     std::vector<std::string> pathSegs;
     std::string user;
@@ -54,9 +54,9 @@ namespace cb {
   public:
     static const char *DEFAULT_UNESCAPED;
 
-    URI();
-    URI(const std::string &uri);
-    URI(const char *uri);
+    URI() {}
+    URI(const std::string &uri) {read(uri);}
+    URI(const char *uri) {read(uri);}
 
     const std::string &getScheme() const {return scheme;}
     const std::string &getHost() const {return host;}
@@ -73,7 +73,7 @@ namespace cb {
     void setScheme(const std::string &scheme) {this->scheme = scheme;}
     void setHost(const std::string &host) {this->host = host;}
     void setPort(unsigned port) {this->port = port;}
-    void setPath(const std::string &path) {this->path = path;}
+    void setPath(const std::string &path);
     void setUser(const std::string &user) {this->user = user;}
     void setPass(const std::string &pass) {this->pass = pass;}
     void setQuery(const std::string &query);
@@ -96,7 +96,7 @@ namespace cb {
 
   protected:
     char parseEscape(const char *&s);
-    void parseAbsPath(const char *&s);
+    void parsePath(const char *&s);
     void parsePathSegment(const char *&s);
     void parseScheme(const char *&s);
     void parseNetPath(const char *&s);
