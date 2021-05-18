@@ -56,8 +56,25 @@ DNSBase::DNSBase(cb::Event::Base &base, bool initialize,
 DNSBase::~DNSBase() {if (dns) evdns_base_free(dns, failRequestsOnExit);}
 
 
+void DNSBase::initSystemNameservers() {
+#ifdef _WIN32
+  int ret = evdns_base_config_windows_nameservers(dns);
+#else
+  int ret =
+    evdns_base_resolv_conf_parse(dns, DNS_OPTIONS_ALL, "/etc/resolv.conf");
+#endif
+
+  if (ret) THROW("Failed to initialize system nameservers: " << ret);
+}
+
+
+void DNSBase::addNameserver(const string &addr) {
+  evdns_base_nameserver_ip_add(dns, addr.c_str());
+}
+
+
 void DNSBase::addNameserver(const IPAddress &ns) {
-  evdns_base_nameserver_add(dns, ns.getIP());
+  evdns_base_nameserver_add(dns, htonl(ns.getIP()));
 }
 
 
