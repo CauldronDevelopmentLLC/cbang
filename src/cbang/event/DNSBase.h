@@ -53,6 +53,9 @@ namespace cb {
 
       evdns_base *getDNSBase() const {return dns;}
 
+      void initSystemNameservers();
+
+      void addNameserver(const std::string &addr);
       void addNameserver(const IPAddress &ns);
 
       typedef std::function<void (int, std::vector<IPAddress> &, int)>
