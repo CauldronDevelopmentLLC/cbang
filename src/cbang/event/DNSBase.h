@@ -58,6 +58,11 @@ namespace cb {
       void addNameserver(const std::string &addr);
       void addNameserver(const IPAddress &ns);
 
+      /// Options are: ndots, timeout, max-timeouts, max-inflight, attempts,
+      ///   randomize-case, bind-to, initial-probe-timeout,
+      ///   getaddrinfo-allow-skew.
+      void setOption(const std::string &name, const std::string &value);
+
       typedef std::function<void (int, std::vector<IPAddress> &, int)>
       callback_t;
 
