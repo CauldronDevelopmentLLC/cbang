@@ -36,6 +36,8 @@
 #include <ostream>
 #include <string>
 
+struct tm;
+
 namespace cb {
   /**
    * Used for printing and parsing times.  Should be 64-bit everywhere and
@@ -60,6 +62,7 @@ namespace cb {
     /// @param time In seconds since Janary 1st, 1970
     Time(uint64_t time = ~(uint64_t)0,
          const std::string &format = iso8601Format);
+    Time(const struct tm &tm, const std::string &format = iso8601Format);
     Time(const std::string &format);
 
     std::string toString() const;

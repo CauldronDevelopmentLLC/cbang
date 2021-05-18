@@ -127,9 +127,7 @@ void Certificate::setVersion(int version) {
 }
 
 
-int Certificate::getVersion() const {
-  return X509_get_version(cert);
-}
+int Certificate::getVersion() const {return X509_get_version(cert);}
 
 
 void Certificate::setSerial(long serial) {
@@ -139,18 +137,25 @@ void Certificate::setSerial(long serial) {
 
 
 long Certificate::getSerial() const {
-  return ASN1_INTEGER_get(X509_get_serialNumber(cert));
+  return ASN1_INTEGER_get(X509_get0_serialNumber(cert));
+}
+
+
+uint64_t Certificate::getNotBefore() const {
+  struct tm t;
+  ASN1_TIME_to_tm(X509_get0_notBefore(cert), &t);
+  return Time(t);
 }
 
 
 void Certificate::setNotBefore(uint64_t x) {
-  if (!X509_gmtime_adj(X509_get_notBefore(cert), x))
+  if (!X509_gmtime_adj(X509_getm_notBefore(cert), x))
     THROW("Failed to set certificate's not before: " << SSL::getErrorStr());
 }
 
 
 bool Certificate::isNotBeforeInFuture() const {
-  int ret = X509_cmp_current_time(X509_get_notBefore(cert));
+  int ret = X509_cmp_current_time(X509_get0_notBefore(cert));
 
   if (!ret)
     THROW("Failed to get certificate's not before: " << SSL::getErrorStr());
@@ -159,14 +164,21 @@ bool Certificate::isNotBeforeInFuture() const {
 }
 
 
+uint64_t Certificate::getNotAfter() const {
+  struct tm t;
+  ASN1_TIME_to_tm(X509_get0_notAfter(cert), &t);
+  return Time(t);
+}
+
+
 void Certificate::setNotAfter(uint64_t x) {
-  if (!X509_gmtime_adj(X509_get_notAfter(cert), x))
+  if (!X509_gmtime_adj(X509_getm_notAfter(cert), x))
     THROW("Failed to set certificate's not after: " << SSL::getErrorStr());
 }
 
 
 bool Certificate::isNotAfterInPast() const {
-  int ret = X509_cmp_current_time(X509_get_notAfter(cert));
+  int ret = X509_cmp_current_time(X509_get0_notAfter(cert));
 
   if (!ret)
     THROW("Failed to get certificate's not after: " << SSL::getErrorStr());
@@ -180,7 +192,7 @@ bool Certificate::expiredIn(unsigned secs) const {
   time(&t);
   t += (time_t)secs;
 
-  int ret = X509_cmp_time(X509_get_notAfter(cert), &t);
+  int ret = X509_cmp_time(X509_get0_notAfter(cert), &t);
 
   if (!ret)
     THROW("Failed to get certificate's not after: " << SSL::getErrorStr());
