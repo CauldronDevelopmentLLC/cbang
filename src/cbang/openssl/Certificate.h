@@ -70,9 +70,11 @@ namespace cb {
     void setSerial(long serial);
     long getSerial() const;
 
+    uint64_t getNotBefore() const;
     void setNotBefore(uint64_t x = 0);
     bool isNotBeforeInFuture() const;
 
+    uint64_t getNotAfter() const;
     void setNotAfter(uint64_t x);
     bool isNotAfterInPast() const;
     bool expiredIn(unsigned secs) const;

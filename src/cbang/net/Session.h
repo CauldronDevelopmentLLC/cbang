@@ -45,6 +45,7 @@
 namespace cb {
   class Session : public JSON::Dict {
   public:
+    Session();
     Session(const JSON::Value &value);
     Session(const std::string &id, const IPAddress &ip);
 

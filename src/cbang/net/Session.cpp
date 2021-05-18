@@ -38,6 +38,9 @@ using namespace std;
 using namespace cb;
 
 
+Session::Session() {if (!hasDict("group")) insertDict("group");}
+
+
 Session::Session(const JSON::Value &value) {
   read(value);
   if (!hasDict("group")) insertDict("group");

@@ -39,9 +39,9 @@
 
 namespace cb {
   /**
-   * Used for printing time intervals in a common format.
+   * Print time intervals in a human readable format.
    *
-   * E.g.  cout << TimeInterval(interval) << endl;
+   *     cout << TimeInterval(interval) << endl;
    */
   class TimeInterval {
     double interval;
@@ -54,6 +54,7 @@ namespace cb {
 
     std::string toString() const;
   };
+
 
   inline std::ostream &operator<<(std::ostream &stream, const TimeInterval &t) {
     return stream << t.toString();

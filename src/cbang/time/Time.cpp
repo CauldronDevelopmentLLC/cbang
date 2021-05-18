@@ -52,8 +52,12 @@ namespace {
 
 
 Time::Time(uint64_t time, const string &format) :
-  format(format), time(time == ~(uint64_t)0 ? now() : time) {
-}
+  format(format), time(time == ~(uint64_t)0 ? now() : time) {}
+
+
+Time::Time(const struct tm &tm, const std::string &format) :
+  format(format),
+  time((pt::ptime_from_tm(tm) - pt::ptime(epoch)).total_seconds()) {}
 
 
 Time::Time(const string &format) : format(format), time(now()) {}
