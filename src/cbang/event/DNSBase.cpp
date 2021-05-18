@@ -78,6 +78,12 @@ void DNSBase::addNameserver(const IPAddress &ns) {
 }
 
 
+void DNSBase::setOption(const string &name, const string &value) {
+  if (evdns_base_set_option(dns, name.c_str(), value.c_str()))
+    THROW("Failed to set DNS option " << name << "=" << value);
+}
+
+
 SmartPointer<DNSRequest>
 DNSBase::resolve(const string &name, callback_t cb, bool search) {
   return new DNSRequest(dns, name, cb, search);
