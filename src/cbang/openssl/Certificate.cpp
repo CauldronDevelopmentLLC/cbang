@@ -142,9 +142,13 @@ long Certificate::getSerial() const {
 
 
 uint64_t Certificate::getNotBefore() const {
+#if OPENSSL_VERSION_NUMBER < 0x1010100fL
+  THROW(__func__ << "() Not supported");
+#else
   struct tm t;
   ASN1_TIME_to_tm(X509_get0_notBefore(cert), &t);
   return Time(t);
+#endif
 }
 
 
@@ -165,9 +169,13 @@ bool Certificate::isNotBeforeInFuture() const {
 
 
 uint64_t Certificate::getNotAfter() const {
+#if OPENSSL_VERSION_NUMBER < 0x1010100fL
+  THROW(__func__ << "() Not supported");
+#else
   struct tm t;
   ASN1_TIME_to_tm(X509_get0_notAfter(cert), &t);
   return Time(t);
+#endif
 }
 
 
