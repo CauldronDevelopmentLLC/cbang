@@ -34,6 +34,8 @@
 
 #include "HTTPRequestHandler.h"
 
+#include <functional>
+
 
 namespace cb {
   class ACLSet;
@@ -43,11 +45,11 @@ namespace cb {
 
     class ACLHandler : public HTTPRequestHandler {
       const ACLSet &aclSet;
-      std::string redirectPath;
+      std::function<void (Request &)> cb;
 
     public:
-      ACLHandler(const ACLSet &aclSet, const std::string &redirectPath = "") :
-        aclSet(aclSet), redirectPath(redirectPath) {}
+      ACLHandler(const ACLSet &aclSet, std::function<void (Request &)> cb = 0) :
+        aclSet(aclSet), cb(cb) {}
 
       // From HTTPRequestHandler
       bool operator()(Request &req);
