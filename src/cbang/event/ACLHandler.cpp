@@ -70,7 +70,7 @@ bool ACLHandler::operator()(Request &req) {
            << (allow ? "true" : "false"));
 
   if (!allow) {
-    if (!redirectPath.empty()) req.redirect(redirectPath);
+    if (cb) cb(req);
     else req.reply(HTTP_UNAUTHORIZED);
     return true;
   }
