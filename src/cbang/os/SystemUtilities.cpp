@@ -620,7 +620,7 @@ namespace cb {
 
     bool unlink(const string &filename) {
       LOG_DEBUG(4, "Removing file '" << filename << "'");
-      if (!exists(filename)) return false;
+      if (!exists(filename) && !isLink(filename)) return false;
       if (::unlink(filename.c_str()))
         THROW("Failed to remove '" << filename << "': " << SysError());
       return true;

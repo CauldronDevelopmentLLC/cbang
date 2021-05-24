@@ -174,6 +174,7 @@ bool WebServer::handleRequest(const cb::SmartPointer<Request> &req) {
     Logger::instance().setPrefix(prefix);
   }
 
+  // TODO call allow() on the connection before handling any requests
   if (!allow(*req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
 
   return HTTPHandlerGroup::operator()(*req);
