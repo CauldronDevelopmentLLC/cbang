@@ -137,7 +137,11 @@ void HTTPConnIn::processHeader() {
     return error(HTTP_BAD_REQUEST, "Incomplete headers");
 
   // Headers callback
-  req->onHeaders();
+  try {
+    req->onHeaders();
+  } catch (const Exception &e) {
+    return error((HTTPStatus::enum_t)e.getCode(), e.getMessage());
+  }
 
   // Handle protocol upgrades
   if (req->inHas("Upgrade")) {
@@ -258,7 +262,13 @@ void HTTPConnIn::addRequest(const SmartPointer<Request> &req) {
 
 
 void HTTPConnIn::error(HTTPStatus code, const std::string &message) {
+  if (!code) {
+    LOG_ERROR(message);
+    code = HTTP_INTERNAL_SERVER_ERROR;
+  }
+
   LOG_DEBUG(3, "Error: " << code << ": " << message);
+
   if (!getNumRequests()) close();
   else getRequest()->sendError(code, message);
 }
