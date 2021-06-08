@@ -28,6 +28,9 @@ def configure(conf):
                 conf.CBRequireLib('v8_base.x64')
             else: conf.CBRequireLib('v8_base.ia32')
 
+    if conf.env.get('v8_compress_pointers'):
+        conf.env.CBConfigDef('V8_COMPRESS_POINTERS')
+
     conf.env.CBConfigDef('HAVE_V8')
 
 
