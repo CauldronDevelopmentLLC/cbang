@@ -558,8 +558,8 @@ namespace cb {
 
       while (walker.hasNext()) {
         string filename = walker.next();
-        if (isDirectory(filename)) rmdir(filename);
-        else unlink(filename);
+        if (!isDirectory(filename) || isLink(filename)) (void)unlink(filename);
+        else rmdir(filename);
       }
     }
 
