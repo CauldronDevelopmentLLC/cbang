@@ -73,6 +73,63 @@ namespace {
 #include <stdint.h>
 #endif
 
+// Format strings
+#include <inttypes.h>
+
+#ifndef __WORDSIZE
+#  ifdef _WIN64
+#    define __WORDSIZE 64
+#  else
+#    define __WORDSIZE 32
+#  endif
+#endif // __WORDSIZE
+
+#ifndef __PRI64_PREFIX
+#  if __WORDSIZE == 64
+#    define __PRI64_PREFIX        "l"
+#  else
+#    define __PRI64_PREFIX        "ll"
+#  endif
+#endif // __PRI64_PREFIX
+
+#ifndef __PRIPTR_PREFIX
+#  if __WORDSIZE == 64
+#    define __PRIPTR_PREFIX       "l"
+#  else
+#    define __PRIPTR_PREFIX
+#  endif
+#endif // __PRIPTR_PREFIX
+
+
+#ifndef PRIo32
+#  define PRIo32 "o"
+#endif
+
+#ifndef PRIu32
+#  define PRIu32 "u"
+#endif
+
+#ifndef PRIi32
+#  define PRIi32 "i"
+#endif
+
+#ifndef PRIo64
+#  define PRIo64 __PRI64_PREFIX "o"
+#endif
+
+#ifndef PRIu64
+#  define PRIu64 __PRI64_PREFIX "u"
+#endif
+
+#ifndef PRIi64
+#  define PRIi64 __PRI64_PREFIX "i"
+#endif
+
+#ifndef PRIxPTR
+#  define PRIxPTR __PRIPTR_PREFIX "x"
+#endif
+
+
 struct uint128_t {
   uint64_t lo;
   uint64_t hi;

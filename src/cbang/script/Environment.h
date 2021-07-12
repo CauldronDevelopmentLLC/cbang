@@ -39,6 +39,7 @@
 #include "BareMemberFunctor.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/FormatCheck.h>
 
 #include <map>
 
@@ -83,7 +84,8 @@ namespace cb {
       }
 
       void set(const std::string &name, const std::string &value);
-      void setf(const char *key, const char *value, ...);
+      void setf(const char *key, const char *value, ...)
+        FORMAT_CHECK(printf, 3, 4);
       void unset(const std::string &name) {erase(name);}
 
       // From Handler

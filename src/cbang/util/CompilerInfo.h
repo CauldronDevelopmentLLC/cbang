@@ -100,7 +100,8 @@
 #define COMPILER "Unknown"
 #endif
 
-#if defined(_WIN64) || defined(__x86_64__) || defined(__LP64__)
+#if defined(_WIN64) || defined(__x86_64__) || defined(__LP64__) || \
+  defined(__aarch64__)
 #define COMPILER_BITS 64
 #else
 #define COMPILER_BITS 32

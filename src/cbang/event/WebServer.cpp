@@ -170,7 +170,7 @@ cb::SmartPointer<Request> WebServer::createRequest
 
 bool WebServer::handleRequest(const cb::SmartPointer<Request> &req) {
   if (logPrefix) {
-    string prefix = String::printf("REQ%lld:", req->getID());
+    string prefix = String::printf("REQ%" PRIu64 ":", req->getID());
     Logger::instance().setPrefix(prefix);
   }
 
