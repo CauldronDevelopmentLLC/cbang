@@ -87,12 +87,12 @@ void IPAddress::lookupHost() {host = hostFromIP(*this);}
 
 
 string IPAddress::toString() const {
-  return getHost() + (getPort() ? String::printf(":%d", getPort()) : string());
+  return getHost() + (getPort() ? String::printf(":%u", getPort()) : string());
 }
 
 
 string IPAddress::ipToString(uint32_t ip) {
-  return String::printf("%d.%d.%d.%d", ip >> 24, (ip >> 16) & 0xff,
+  return String::printf("%u.%u.%u.%u", ip >> 24, (ip >> 16) & 0xff,
                         (ip >> 8) & 0xff, ip & 0xff);
 }
 

@@ -103,7 +103,7 @@ namespace cb {
       while (!count.compare_exchange_weak(c, c + 1))
         continue;
 
-      log(trace, "incCount() count=%d", c + 1);
+      log(trace, "incCount() count=%u", c + 1);
     }
 
     void decCount() {
@@ -114,7 +114,7 @@ namespace cb {
       while (!count.compare_exchange_weak(c, c - 1))
         if (!c) raise("Already zero!");
 
-      log(trace, "decCount() count=%d", c - 1);
+      log(trace, "decCount() count=%u", c - 1);
 
       if (c == 1) release();
     }
