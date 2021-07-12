@@ -33,25 +33,12 @@
 #include "TarHeader.h"
 
 #include <cbang/Exception.h>
+#include <cbang/StdTypes.h>
 
 #include <stdio.h>
 #include <errno.h>
 #include <time.h>
 #include <string.h>
-#include <inttypes.h>
-
-#ifndef PRIo32
-#define PRIo32 "o"
-#endif
-
-#ifndef PRIo64
-#if defined(_M_X64) || (defined(__x86_64__) && !defined(__ILP32__)) ||  \
-  defined(__aarch64__) || defined(__ppc64__) || defined(__PPC64__)
-#define PRIo64 "lo"
-#else
-#define PRIo64 "llo"
-#endif
-#endif
 
 
 using namespace std;

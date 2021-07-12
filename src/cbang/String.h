@@ -34,6 +34,7 @@
 
 #include <cbang/StdTypes.h>
 #include <cbang/Exception.h>
+#include <cbang/util/FormatCheck.h>
 
 #include <string>
 #include <vector>
@@ -95,8 +96,10 @@ namespace cb {
     /// Convert a boolean value to a string.
     explicit String(bool x);
 
-    static std::string printf(const char *format, ...);
-    static std::string vprintf(const char *format, va_list ap);
+    static std::string printf(const char *format, ...)
+      FORMAT_CHECK(printf, 1, 2);
+    static std::string vprintf(const char *format, va_list ap)
+      FORMAT_CHECK(printf, 1, 0);
 
     static unsigned tokenize(const std::string &s,
                              std::vector<std::string> &tokens,

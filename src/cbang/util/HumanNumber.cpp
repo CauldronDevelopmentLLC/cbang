@@ -46,7 +46,7 @@ string HumanNumber::toString() const {
   if (sign < 0) x = -x;
 
   while (1000 < x) {
-    result = String::printf(",%03d", x % 1000) + result;
+    result = String::printf(",%03ld", x % 1000) + result;
     x /= 1000;
   }
 

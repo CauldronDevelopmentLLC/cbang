@@ -36,6 +36,7 @@
 #include "Backup.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/FormatCheck.h>
 
 #include <string>
 
@@ -79,13 +80,14 @@ namespace cb {
       void open(const std::string &con, unsigned flags = READ_WRITE | CREATE);
       void close();
 
-      void executef(const char *sql, ...);
+      void executef(const char *sql, ...) FORMAT_CHECK(printf, 2, 3);
       void execute(const std::string &sql);
       bool execute(const std::string &sql, int64_t &result);
       bool execute(const std::string &sql, double &result);
       bool execute(const std::string &sql, std::string &result);
 
-      SmartPointer<Statement> compilef(const char *sql, ...);
+      SmartPointer<Statement> compilef(const char *sql, ...)
+        FORMAT_CHECK(printf, 2, 3);
       SmartPointer<Statement> compile(const std::string &sql);
 
       SmartPointer<Transaction> begin(transaction_t type = DEFERRED,

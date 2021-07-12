@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <cbang/util/FormatCheck.h>
+
 #include <ostream>
 #include <string>
 
@@ -53,7 +55,8 @@ namespace cb {
       static void eval(const Context &ctx, const char *s);
       static void eval(const Context &ctx, const std::string &s);
       static void eval(const Context &ctx, const char *s, unsigned length);
-      static void evalf(const Context &ctx, const char *s, ...);
+      static void evalf(const Context &ctx, const char *s, ...)
+        FORMAT_CHECK(printf, 2, 3);
       static void parse(Arguments &args, const std::string &s);
       static void exec(const Context &ctx, const std::string &script);
 

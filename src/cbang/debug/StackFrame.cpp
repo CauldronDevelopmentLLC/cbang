@@ -43,7 +43,7 @@ using namespace cb;
 
 
 string StackFrame::getAddrString() const {
-  return String::printf("0x%08x", (uintptr_t)addr);
+  return String::printf("0x%08" PRIxPTR, (uintptr_t)addr);
 }
 
 

@@ -31,8 +31,9 @@
 \******************************************************************************/
 
 #include "Schema.h"
-
 #include "Database.h"
+
+#include <cbang/StdTypes.h>
 
 using namespace cb::DB;
 
@@ -49,7 +50,7 @@ int64_t Schema::getCurrentVersion(Database &db) {
 
 
 void Schema::setCurrentVersion(Database &db, int64_t version) {
-  db.executef("PRAGMA user_version=%d", version);
+  db.executef("PRAGMA user_version=%" PRIi64, version);
 }
 
 
