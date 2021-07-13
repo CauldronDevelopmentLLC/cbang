@@ -485,6 +485,11 @@ namespace cb {
     }
 
 
+    bool isDirectoryTreeEmpty(const string &path) {
+      return DirectoryWalker(path).hasNext();
+    }
+
+
     string getcwd() {
       char buffer[4096];
 #ifdef _WIN32

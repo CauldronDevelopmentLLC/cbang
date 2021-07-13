@@ -95,6 +95,7 @@ namespace cb {
     void rmdir(const std::string &path, bool withChildren = false);
     bool ensureDirectory(const std::string &dir);
     bool isDirectory(const std::string &path);
+    bool isDirectoryTreeEmpty(const std::string &path);
     std::string getcwd();
     void chdir(const std::string &path);
     std::string createTempDir(const std::string &parent);
