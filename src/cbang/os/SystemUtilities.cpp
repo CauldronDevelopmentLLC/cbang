@@ -485,6 +485,11 @@ namespace cb {
     }
 
 
+    bool isDirectoryEmpty(const string &path) {
+      return DirectoryWalker(path, ".*", 1, true).hasNext();
+    }
+
+
     bool isDirectoryTreeEmpty(const string &path) {
       return DirectoryWalker(path).hasNext();
     }
