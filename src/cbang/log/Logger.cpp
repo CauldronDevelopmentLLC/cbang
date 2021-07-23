@@ -144,8 +144,13 @@ void Logger::addOptions(Options &options) {
   options.addTarget("log-rotate", logRotate, "Rotate log files on each run.");
   options.addTarget("log-rotate-dir", logRotateDir,
                     "Put rotated logs in this directory.");
+  options.addTarget("log-rotate-compression", logRotateCompression,
+                    "The type of compression to use when rotating log files.");
   options.addTarget("log-rotate-max", logRotateMax,
                     "Maximum number of rotated logs to keep.");
+  options.addTarget("log-rotate-period", logRotatePeriod,
+                    "Rotate log once every so many seconds.  No periodic "
+                    "rotation is performed if zero.");
   options.popCategory();
 }
 
@@ -172,16 +177,22 @@ void Logger::setScreenStream(const SmartPointer<std::ostream> &stream) {
 
 
 void Logger::startLogFile(const string &filename) {
+  SmartLock lock(this);
+
+  logFilename = filename;
+  lastDate = lastRotate = Time::now();
+
   // Rotate log
-  if (logRotate) SystemUtilities::rotate(filename, logRotateDir, logRotateMax);
+  if (logRotate) {
+    if (logFile.isSet()) logBar("Log Rotated", lastDate);
+    SystemUtilities::rotate(filename, logRotateDir, logRotateMax,
+                            logRotateCompression);
+  }
 
   logFile = SystemUtilities::open(filename, ios::out |
                                   (logTrunc ? ios::trunc : ios::app));
-
-  *logFile << String::bar(SSTR("Log Started " << Time()))
-           << (logCRLF ? "\r\n" : "\n");
+  logBar("Log Started", lastDate);
   logFile->flush();
-  lastDate = Time::now();
 }
 
 
@@ -425,9 +436,16 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
     rates->event(rateKey);
   }
 
+  // Rotate log periodically
+  uint64_t now = Time::now();
+  if (logRotatePeriod && !logFilename.empty() &&
+      lastRotate / logRotatePeriod != now / logRotatePeriod)
+    startLogFile(logFilename);
+
   // Log date periodically
-  if (logDatePeriodically && lastDate + logDatePeriodically <= Time::now()) {
-    lastDate = Time::now();
+  if (logDatePeriodically &&
+      lastDate / logDatePeriodically != now / logDatePeriodically) {
+    lastDate = now;
     write(String::bar(Time(lastDate, "Date: %Y-%m-%d").toString()) +
           (logCRLF ? "\r\n" : "\n"));
   }
@@ -452,6 +470,12 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
 
 void Logger::rateMessage(const string &key, const string &msg) {
   rateMessages[key] = msg;
+}
+
+
+void Logger::logBar(const string &msg, uint64_t ts) const {
+  *logFile << String::bar(msg + " " + Time(ts).toString())
+           << (logCRLF ? "\r\n" : "\n") << std::flush;
 }
 
 
