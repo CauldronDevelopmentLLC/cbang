@@ -50,4 +50,18 @@ namespace cb {
 
     return Compression::COMPRESSION_NONE;
   }
+
+
+  const char *compressionExtension(Compression compression) {
+    switch (compression) {
+    case Compression::COMPRESSION_BZIP2: return ".bz2";
+    case Compression::COMPRESSION_ZLIB:  return ".zlib";
+    case Compression::COMPRESSION_GZIP:  return ".gz";
+    case Compression::COMPRESSION_LZ4:   return ".lz4";
+    case Compression::COMPRESSION_NONE:  return "";
+    case Compression::COMPRESSION_AUTO:  break;
+    }
+
+    THROW("Invalid compression type " << (unsigned)compression);
+  }
 }

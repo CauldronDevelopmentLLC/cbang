@@ -44,6 +44,7 @@
 
 namespace cb {
   Compression compressionFromPath(const std::string &path);
+  const char *compressionExtension(Compression compression);
 }
 
 #endif // CBANG_COMPRESSION_H

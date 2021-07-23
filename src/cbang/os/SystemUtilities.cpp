@@ -713,7 +713,8 @@ namespace cb {
     }
 
 
-    void rotate(const string &path, const string &dir, unsigned maxFiles) {
+    void rotate(const string &path, const string &dir, unsigned maxFiles,
+                Compression compression) {
       if (!exists(path)) return;
 
       string target;
@@ -727,20 +728,27 @@ namespace cb {
 
       // Name
       string ext = extension(target);
-      if (!ext.empty())
-        target = target.substr(0, target.length() - ext.length() - 1);
+      if (!ext.empty()) {
+        ext = "." + ext;
+        target = target.substr(0, target.length() - ext.length());
+      }
 
-      target += Time("-%Y%m%d-%H%M%S").toString();
-      if (ext != "") target += string(".") + ext;
+      ext += compressionExtension(compression);
+      target += Time("-%Y%m%d-%H%M%S").toString() + ext;
 
       // Move it
-      rename(path, target);
+      if (compression == Compression::COMPRESSION_NONE) rename(path, target);
+      else {
+        auto out = SystemUtilities::oopen(target, 0644, true);
+        auto in  = SystemUtilities::iopen(path);
+        SystemUtilities::cp(*in, *out);
+        SystemUtilities::unlink(path);
+      }
 
       // Remove old log files
       if (maxFiles) {
         string base = basename(path);
-        if (!ext.empty())
-          base = base.substr(0, base.length() - ext.length() - 1);
+        if (!ext.empty()) base = base.substr(0, base.length() - ext.length());
 
         string searchDir;
         if (dir.empty()) searchDir = dirname(path);
@@ -763,7 +771,6 @@ namespace cb {
           }
         }
       }
-
     }
 
 

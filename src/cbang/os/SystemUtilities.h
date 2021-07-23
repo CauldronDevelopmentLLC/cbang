@@ -38,8 +38,8 @@
 #include <cbang/SmartPointer.h>
 
 #include <cbang/util/StringMap.h>
-
 #include <cbang/enum/ProcessPriority.h>
+#include <cbang/enum/Compression.h>
 
 #include <limits>
 #include <functional>
@@ -136,7 +136,8 @@ namespace cb {
     void truncate(const std::string &path, unsigned long length);
     void chmod(const std::string &path, unsigned mode);
     void rotate(const std::string &path, const std::string &dir = std::string(),
-                unsigned maxFiles = 0);
+                unsigned maxFiles = 0,
+                Compression compression = Compression::COMPRESSION_NONE);
     int openModeToFlags(std::ios::openmode mode);
 
 

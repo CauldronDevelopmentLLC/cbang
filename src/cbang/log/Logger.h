@@ -37,6 +37,7 @@
 #include <cbang/Exception.h>
 
 #include <cbang/util/Singleton.h>
+#include <cbang/enum/Compression.h>
 #include <cbang/os/Mutex.h>
 
 #include <ostream>
@@ -73,6 +74,8 @@ namespace cb {
     };
 
   private:
+    std::string logFilename;
+
 #ifdef CBANG_DEBUG_LEVEL
     unsigned verbosity = CBANG_DEBUG_LEVEL;
 #else
@@ -99,8 +102,10 @@ namespace cb {
     bool logToScreen = true;
     bool logTrunc = false;
     bool logRotate = true;
+    Compression logRotateCompression;
     unsigned logRotateMax = 0;
     std::string logRotateDir = "logs";
+    uint32_t logRotatePeriod = 0;
     unsigned logRates = 0;
 
     SmartPointer<RateSet> rates;
@@ -122,6 +127,7 @@ namespace cb {
     domain_traces_t domainTraces;
 
     uint64_t lastDate;
+    uint64_t lastRotate = 0;
 
   public:
     Logger(Inaccessible);
@@ -137,25 +143,26 @@ namespace cb {
     void setScreenStream(std::ostream &stream);
     void setScreenStream(const SmartPointer<std::ostream> &stream);
 
-    void setVerbosity(unsigned x) {verbosity = x;}
-    void setLogDebug(bool x) {logDebug = x;}
-    void setLogCRLF(bool x) {logCRLF = x;}
-    void setLogTime(bool x) {logTime = x;}
-    void setLogDate(bool x) {logDate = x;}
-    void setLogShortLevel(bool x) {logShortLevel = x;}
-    void setLogLevel(bool x) {logLevel = x;}
-    void setLogPrefix(bool x) {logPrefix = x;}
-    void setLogDomain(bool x) {logDomain = x;}
-    void setLogSimpleDomains(bool x) {logSimpleDomains = x;}
-    void setLogThreadID(bool x) {logThreadID = x;}
-    void setLogNoInfoHeader(bool x) {logNoInfoHeader = x;}
-    void setLogHeader(bool x) {logHeader = x;}
-    void setLogColor(bool x) {logColor = x;}
-    void setLogToScreen(bool x) {logToScreen = x;}
-    void setLogTruncate(bool x) {logTrunc = x;}
-    void setLogRotate(bool x) {logRotate = x;}
-    void setLogRotateMax(unsigned x) {logRotateMax = x;}
-    void setLogRates(unsigned x) {logRates = x;}
+    void setVerbosity(unsigned x)       {verbosity        = x;}
+    void setLogDebug(bool x)            {logDebug         = x;}
+    void setLogCRLF(bool x)             {logCRLF          = x;}
+    void setLogTime(bool x)             {logTime          = x;}
+    void setLogDate(bool x)             {logDate          = x;}
+    void setLogShortLevel(bool x)       {logShortLevel    = x;}
+    void setLogLevel(bool x)            {logLevel         = x;}
+    void setLogPrefix(bool x)           {logPrefix        = x;}
+    void setLogDomain(bool x)           {logDomain        = x;}
+    void setLogSimpleDomains(bool x)    {logSimpleDomains = x;}
+    void setLogThreadID(bool x)         {logThreadID      = x;}
+    void setLogNoInfoHeader(bool x)     {logNoInfoHeader  = x;}
+    void setLogHeader(bool x)           {logHeader        = x;}
+    void setLogColor(bool x)            {logColor         = x;}
+    void setLogToScreen(bool x)         {logToScreen      = x;}
+    void setLogTruncate(bool x)         {logTrunc         = x;}
+    void setLogRotate(bool x)           {logRotate        = x;}
+    void setLogRotateMax(unsigned x)    {logRotateMax     = x;}
+    void setLogRotatePeriod(uint32_t x) {logRotatePeriod  = x;}
+    void setLogRates(unsigned x)        {logRates         = x;}
     void setLogDomainLevels(const std::string &levels);
 
     unsigned getVerbosity() const {return verbosity;}
@@ -186,6 +193,7 @@ namespace cb {
     void rateMessage(const std::string &key, const std::string &msg);
 
   protected:
+    void logBar(const std::string &msg, uint64_t ts) const;
     std::streamsize write(const char *s, std::streamsize n);
     void write(const std::string &s);
     bool flush();
