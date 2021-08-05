@@ -113,6 +113,10 @@ namespace {
 #  define PRIi32 "i"
 #endif
 
+#ifndef PRId32
+#  define PRId32 "d"
+#endif
+
 #ifndef PRIo64
 #  define PRIo64 __PRI64_PREFIX "o"
 #endif
@@ -123,6 +127,10 @@ namespace {
 
 #ifndef PRIi64
 #  define PRIi64 __PRI64_PREFIX "i"
+#endif
+
+#ifndef PRId64
+#  define PRId64 __PRI64_PREFIX "d"
 #endif
 
 #ifndef PRIxPTR
