@@ -73,7 +73,7 @@ ConstValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
     cb::String::join(vector<string>(parts.begin(), parts.begin() + i + 1), ".");
 
   if (fail_cb) return fail_cb(path);
-  CBANG_KEY_ERROR("At JSON path " << path);
+  CBANG_KEY_ERROR("At JSON path: " << path);
 }
 
 
