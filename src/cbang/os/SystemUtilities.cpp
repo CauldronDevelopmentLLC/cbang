@@ -173,9 +173,14 @@ namespace cb {
     }
 
 
-    string swapExtension(const string &path, const string &ext) {
+    string removeExtension(const string &path) {
       string::size_type pos = getExtensionPosition(path);
-      return path.substr(0, pos) + "." + ext;
+      return path.substr(0, pos);
+    }
+
+
+    string swapExtension(const string &path, const string &ext) {
+      return removeExtension(path) + "." + ext;
     }
 
 
