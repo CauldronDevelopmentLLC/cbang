@@ -69,6 +69,7 @@ namespace cb {
     std::string::size_type getExtensionPosition(const std::string &path);
     bool hasExtension(const std::string &path);
     std::string extension(const std::string &path);
+    std::string removeExtension(const std::string &path);
     std::string swapExtension(const std::string &path, const std::string &ext);
     std::vector<std::string> splitExt(const std::string &path);
     bool isAbsolute(const std::string &path);
