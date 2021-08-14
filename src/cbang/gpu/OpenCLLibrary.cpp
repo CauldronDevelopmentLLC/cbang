@@ -51,7 +51,7 @@ using namespace cb;
 static const char *openclLib = "OpenCL.dll";
 
 #elif __APPLE__
-static const char *openclLib = "libOpenCL.dylib";
+static const char *openclLib = "/System/Library/Frameworks/OpenCL.framework/OpenCL";
 
 size_t strnlen(const char *s, size_t n) {
   size_t l = 0;

@@ -295,7 +295,9 @@ def configure(conf, cstd = 'c99'):
 
     else:
         if compiler_mode == 'gnu': # Strip symbols
-            env.AppendUnique(LINKFLAGS = ['-Wl,-s', '-Wl,-x'])
+            if compiler != 'clang':
+                env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
+            env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
         if compiler == 'gnu': # Enable dead code removal
             env.AppendUnique(LINKFLAGS = ['-Wl,--gc-sections'])
@@ -383,7 +385,8 @@ def configure(conf, cstd = 'c99'):
     # No PIE with GCC 6+
     if compiler_mode == 'gnu' and (5,) <= gcc_version(env):
         env.AppendUnique(CCFLAGS = '-fno-pie')
-        env.AppendUnique(LINKFLAGS = '-no-pie')
+        if compiler != 'clang':
+            env.AppendUnique(LINKFLAGS = '-no-pie')
 
 
     # C mode
