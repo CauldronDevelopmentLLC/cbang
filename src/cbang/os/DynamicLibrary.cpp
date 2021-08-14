@@ -77,6 +77,9 @@ DynamicLibrary::DynamicLibrary(const string &path) :
 #else
   dlerror(); // Clear errors
 
+  if (path.empty())
+    THROW("Library path is ''");
+
   pri->handle = dlopen(path.c_str(), RTLD_LAZY);
   if (!pri->handle)
     THROW("Failed to open dynamic library '" << path << "': " << dlerror());
