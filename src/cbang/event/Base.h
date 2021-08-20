@@ -116,7 +116,7 @@ namespace cb {
       template <class T>
       SmartPointer<Event> newEvent(socket_t fd, T *obj,
                                    typename Callback<T>::member_t member,
-                                   unsigned flags)
+                                   unsigned flags = EVENT_PERSIST)
         {return newEvent(fd, bind(obj, member), flags);}
 
       template <class T> SmartPointer<Event>

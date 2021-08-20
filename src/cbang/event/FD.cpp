@@ -64,7 +64,7 @@ FD::FD(cb::Event::Base &base, int fd, const SmartPointer<SSL> &ssl) :
 FD::~FD () {
   if (fd != -1) {
     int fd = this->fd;
-    base.getPool().flush(fd, [fd] () {::close(fd);});
+    TRY_CATCH_ERROR(base.getPool().flush(fd, [fd] () {::close(fd);}));
   }
 }
 
