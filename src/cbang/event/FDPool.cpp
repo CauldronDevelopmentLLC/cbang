@@ -32,6 +32,7 @@
 
 #include "FDPool.h"
 #include "FDPoolEPoll.h"
+#include "FDPoolEvent.h"
 
 using namespace cb::Event;
 using namespace cb;
@@ -41,6 +42,6 @@ SmartPointer<FDPool> FDPool::create(Base &base) {
 #ifdef HAVE_EPOLL
   return new FDPoolEPoll(base);
 #else
-  THROW("No FDPool implementation for this platform");
+  return new FDPoolEvent(base);
 #endif
 }
