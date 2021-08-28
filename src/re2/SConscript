@@ -6,7 +6,9 @@ if not env.GetOption('clean'):
     env.Append(CPPPATH = ['#/src/re2/src'])
 
     if env.get('compiler_mode') == 'gnu':
-        env.Append(CXXFLAGS = ['-Wno-class-memaccess', '-Wno-parentheses'])
+        if env.get('compiler') != 'clang':
+            env.Append(CXXFLAGS = ['-Wno-class-memaccess'])
+        env.Append(CXXFLAGS = ['-Wno-parentheses'])
 
     if env['PLATFORM'] == 'win32': env.CBDefine('NOMINMAX')
 
