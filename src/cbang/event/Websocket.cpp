@@ -237,7 +237,9 @@ void Websocket::readBody() {
         status = (WebsockStatus::enum_t)hton16(*(uint16_t *)wsMsg.data());
 
       // Send close response and close payload if any
-      return close(status, string(wsMsg.begin() + 2, wsMsg.end()));
+      string payload;
+      if (2 < wsMsg.size()) payload = string(wsMsg.begin() + 2, wsMsg.end());
+      return close(status, payload);
     }
 
     case WS_OP_PING:
