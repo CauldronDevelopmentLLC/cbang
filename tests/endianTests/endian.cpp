@@ -47,12 +47,12 @@ using namespace std;
   if ((0 < x || numeric_limits<TYPE>::is_signed) &&                     \
       (int64_t)(TYPE)X == X)                                            \
     cout << X << " = "                                                  \
-         << String::printf("0x%016llx", X) << " -> "                    \
+         << String::printf("0x%016" PRIx64, X) << " -> "                \
          << #SWAP "(" << X << ") = "                                    \
-         << String::printf("0x%016llx", (uint64_t)SWAP(X)) << " -> "    \
+         << String::printf("0x%016" PRIx64, (uint64_t)SWAP(X)) << " -> " \
          << setw(10) << "(" #TYPE ")"                                   \
          << #SWAP "(" #SWAP "(" << X << ")) = "                         \
-         << String::printf("0x%016llx", (uint64_t)SWAP(SWAP(X))) << " = " \
+         << String::printf("0x%016" PRIx64, (uint64_t)SWAP(SWAP(X))) << " = " \
          << (TYPE)SWAP(SWAP(X)) << endl;
 
 
