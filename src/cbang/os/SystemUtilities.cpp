@@ -676,13 +676,12 @@ namespace cb {
 
 
     uint64_t cp(istream &in, ostream &out, uint64_t length) {
-      char buffer[4096];
+      const unsigned bufferSize = 102400;
+      char buffer[bufferSize];
       uint64_t bytes = 0;
 
       while (!in.fail() && !out.fail() && length) {
-        size_t size = 4096;
-        if (length < size) size = length;
-
+        size_t size = length < bufferSize ? length : bufferSize;
         in.read(buffer, size);
 
         if ((size = in.gcount())) {
@@ -738,16 +737,20 @@ namespace cb {
         target = target.substr(0, target.length() - ext.length());
       }
 
-      ext += compressionExtension(compression);
       target += Time("-%Y%m%d-%H%M%S").toString() + ext;
 
       // Move it
-      if (compression == Compression::COMPRESSION_NONE) rename(path, target);
-      else {
-        auto out = SystemUtilities::oopen(target, 0644, true);
-        auto in  = SystemUtilities::iopen(path);
+      rename(path, target);
+
+      // Compression
+      string compExt = compressionExtension(compression);
+      if (compression != Compression::COMPRESSION_NONE) {
+        string compTarget = target + compExt;
+
+        auto out = SystemUtilities::oopen(compTarget, 0644, true);
+        auto in  = SystemUtilities::iopen(target);
         SystemUtilities::cp(*in, *out);
-        SystemUtilities::unlink(path);
+        SystemUtilities::unlink(target);
       }
 
       // Remove old log files
@@ -761,6 +764,8 @@ namespace cb {
 
         string pattern =  String::escapeRE(base) +
           "-[0-9]{8}-[0-9]{6}\\." + String::escapeRE(ext);
+        if (!compExt.empty()) pattern += "(" + String::escapeRE(compExt) + ")?";
+
         DirectoryWalker walker(searchDir, pattern, 1);
         set<string> files;
 
