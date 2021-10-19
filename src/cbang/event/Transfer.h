@@ -67,8 +67,13 @@ namespace cb {
       void setTimeout(uint64_t timeout) {this->timeout = timeout;}
       uint64_t getTimeout() const {return timeout;}
 
+#ifdef HAVE_OPENSSL
       bool wantsRead() const {return ssl.isSet() && ssl->wantsRead();}
       bool wantsWrite() const {return ssl.isSet() && ssl->wantsWrite();}
+#else // HAVE_OPENSSL
+      bool wantsRead() const {return false;}
+      bool wantsWrite() const {return false;}
+#endif // HAVE_OPENSSL
 
       virtual bool isPending() const {return false;}
       virtual int transfer() {finished = success = true; return 0;}
