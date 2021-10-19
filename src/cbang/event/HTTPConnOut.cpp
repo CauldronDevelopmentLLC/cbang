@@ -49,8 +49,10 @@ using namespace std;
 HTTPConnOut::HTTPConnOut(Client &client) :
   HTTPConn(client.getBase()) {
 
+#ifdef HAVE_OPENSSL
   if (client.getSSLContext().isSet())
     setSSL(client.getSSLContext()->createSSL());
+#endif // HAVE_OPENSSL
 }
 
 

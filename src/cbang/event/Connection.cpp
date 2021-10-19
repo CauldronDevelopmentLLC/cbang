@@ -97,12 +97,14 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
 
     LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
 
+#ifdef HAVE_OPENSSL
     // SSL
     if (getSSL().isSet()) {
       getSSL()->setFD(socket->get());
       getSSL()->setConnectState();
       if (peer.hasHost()) getSSL()->setTLSExtHostname(peer.getHost());
     }
+#endif // HAVE_OPENSSL
 
     // DNS request reference
     struct Ref {SmartPointer<DNSRequest> dnsReq;};
