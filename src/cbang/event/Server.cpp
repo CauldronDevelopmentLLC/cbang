@@ -43,11 +43,7 @@ using namespace cb;
 using namespace std;
 
 
-Server::Server(cb::Event::Base &base) : base(base) {
-#ifndef HAVE_OPENSSL
-  if (!sslCtx.isNull()) THROW("C! was not built with openssl support");
-#endif
-}
+Server::Server(cb::Event::Base &base) : base(base) {}
 
 
 void Server::bind(const IPAddress &addr, const SmartPointer<SSLContext> &sslCtx,
