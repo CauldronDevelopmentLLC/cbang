@@ -37,7 +37,7 @@ using namespace cb::Event;
 
 
 HTTPMethodMatcher::HTTPMethodMatcher(
-  unsigned methods, const SmartPointer<HTTPRequestHandler> &child) :
+  unsigned methods, const cb::SmartPointer<HTTPRequestHandler> &child) :
   methods(methods), child(child) {
   if (child.isNull()) THROW("Child cannot be NULL");
 }

@@ -48,7 +48,7 @@ bool FDPoolEvent::FDQueue::wantsWrite() const {
 }
 
 
-void FDPoolEvent::FDQueue::add(const SmartPointer<Transfer> &t) {
+void FDPoolEvent::FDQueue::add(const cb::SmartPointer<Transfer> &t) {
   if (closed) TRY_CATCH_ERROR(t->complete());
   else push_back(t);
 }
@@ -89,13 +89,13 @@ FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, int fd) :
 }
 
 
-void FDPoolEvent::FDRec::read(const SmartPointer<Transfer> &t) {
+void FDPoolEvent::FDRec::read(const cb::SmartPointer<Transfer> &t) {
   readQ.add(t);
   updateEvent();
 }
 
 
-void FDPoolEvent::FDRec::write(const SmartPointer<Transfer> &t) {
+void FDPoolEvent::FDRec::write(const cb::SmartPointer<Transfer> &t) {
   writeQ.add(t);
   updateEvent();
 }
@@ -138,12 +138,12 @@ FDPoolEvent::FDPoolEvent(Base &base) : base(base) {
 }
 
 
-void FDPoolEvent::read(const SmartPointer<Transfer> &t) {
+void FDPoolEvent::read(const cb::SmartPointer<Transfer> &t) {
   get(t->getFD()).read(t);
 }
 
 
-void FDPoolEvent::write(const SmartPointer<Transfer> &t) {
+void FDPoolEvent::write(const cb::SmartPointer<Transfer> &t) {
   get(t->getFD()).write(t);
 }
 
