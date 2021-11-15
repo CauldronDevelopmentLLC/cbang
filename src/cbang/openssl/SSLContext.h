@@ -86,6 +86,7 @@ namespace cb {
 
     void loadVerifyLocationsFile(const std::string &path);
     void loadVerifyLocationsPath(const std::string &path);
+    void loadSystemRootCerts();
 
     void addCRL(const CRL &crl);
     void addCRLStr(const std::string &data);
