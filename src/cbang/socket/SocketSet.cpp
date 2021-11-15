@@ -94,6 +94,10 @@ bool SocketSet::select(double timeout) {
   fd_set write;
   fd_set except;
 
+  FD_ZERO(&read);
+  FD_ZERO(&write);
+  FD_ZERO(&except);
+
   for (auto it = sockets.begin(); it != sockets.end(); it++) {
     if (maxFD < it->first)   maxFD = it->first;
     if (it->second & READ)   FD_SET(it->first, &read);
