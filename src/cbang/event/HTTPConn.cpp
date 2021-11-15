@@ -159,6 +159,7 @@ void HTTPConn::pop() {
 
 
 void HTTPConn::close() {
+  SmartPointer<HTTPConn> self(this); // Make sure we don't get deallocated
   Connection::close();
   requests.clear(); // Must be after close so all transactions have cleared
 }
