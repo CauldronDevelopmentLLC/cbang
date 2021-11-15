@@ -41,7 +41,7 @@
 
 // For close()
 #ifdef _WIN32
-#include <io.h>
+#include <cbang/socket/Winsock.h>
 #else
 #include <unistd.h>
 #endif
@@ -52,6 +52,16 @@ using namespace std;
 
 #undef CBANG_LOG_PREFIX
 #define CBANG_LOG_PREFIX << "FD" << getFD() << ':'
+
+namespace {
+  void close_fd(int fd) {
+#ifdef _WIN32
+    closesocket((SOCKET)fd);
+#else
+    ::close(fd);
+#endif
+  }
+}
 
 
 FD::FD(cb::Event::Base &base, int fd, const SmartPointer<SSL> &ssl) :
@@ -64,7 +74,7 @@ FD::FD(cb::Event::Base &base, int fd, const SmartPointer<SSL> &ssl) :
 FD::~FD () {
   if (fd != -1) {
     int fd = this->fd;
-    TRY_CATCH_ERROR(base.getPool().flush(fd, [fd] () {::close(fd);}));
+    TRY_CATCH_ERROR(base.getPool().flush(fd, [fd] () {close_fd(fd);}));
   }
 }
 
@@ -121,7 +131,7 @@ void FD::close() {
 
     auto cb =
       [fd, onClose] () {
-        ::close(fd);
+        close_fd(fd);
         if (onClose) onClose();
       };
 
