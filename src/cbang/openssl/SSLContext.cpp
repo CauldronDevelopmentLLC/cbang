@@ -41,6 +41,8 @@
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
+#include <cbang/os/SystemUtilities.h>
+#include <cbang/os/SysError.h>
 
 // This avoids a conflict with OCSP_RESPONSE in wincrypt.h
 #ifdef OCSP_RESPONSE
@@ -53,6 +55,12 @@
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/opensslv.h>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <wincrypt.h>
+#endif
 
 using namespace std;
 using namespace cb;
@@ -247,6 +255,48 @@ void SSLContext::loadVerifyLocationsFile(const string &path) {
 void SSLContext::loadVerifyLocationsPath(const string &path) {
   if (!SSL_CTX_load_verify_locations(ctx, 0, path.c_str()))
     THROW("Failed to load verify locations path '" << path << "'");
+}
+
+
+void SSLContext::loadSystemRootCerts() {
+#ifdef _WIN32
+  // Use Wincrypt API to get Windows root certificates
+  X509_STORE *verifyStore = SSL_CTX_get_cert_store(ctx);
+  HCERTSTORE store = CertOpenSystemStoreA(0, "ROOT");
+  if (!store) THROW("Error opening system root cert store: " << SysError());
+
+  PCCERT_CONTEXT cctx = 0;
+  while ((cctx = CertEnumCertificatesInStore(store, cctx))) {
+    const uint8_t *bytes = (const uint8_t *)cctx->pbCertEncoded;
+    X509 *cert = d2i_X509(0, &bytes, cctx->cbCertEncoded);
+
+    if (!cert) {
+      LOG_WARNING("Error parsing system root cert: " << SSL::getErrorStr());
+      continue;
+    }
+
+    if (!X509_STORE_add_cert(verifyStore, cert)) {
+      LOG_ERROR("Error adding system root cert: " << SSL::getErrorStr());
+      X509_free(cert);
+      break;
+    }
+
+    X509_free(cert);
+  }
+
+  CertCloseStore(store, 0);
+
+#elif __APPLE__
+  // TODO
+  LOG_WARNING(__FUNCTION__ << "() Not yet implemented on OSX");
+
+#else
+  const char *filename = "/etc/ssl/certs/ca-certificates.crt";
+
+  if (SystemUtilities::exists(filename))
+    loadVerifyLocationsFile(filename);
+  else LOG_WARNING("System root certificates not found at " << filename);
+#endif
 }
 
 
