@@ -32,6 +32,9 @@
 
 #include "Progress.h"
 
+#include <cbang/Catch.h>
+#include <cbang/time/Timer.h>
+
 #include <algorithm>
 
 using namespace cb;
@@ -48,4 +51,23 @@ double Progress::getProgress() const {
   if (!size) return 0;
   double progress = getTotal() / size;
   return std::max(0.0, std::min(1.0, progress));
+}
+
+
+void Progress::setCallback(callback_t cb, double cbRate) {
+  this->cb = cb;
+  this->cbRate = cbRate;
+}
+
+
+void Progress::onUpdate() {
+  if (!cb) return;
+
+  double now = Timer::now();
+
+  if (getTotal() == size || (lastCB + cbRate) <= now)
+    try {
+      cb(*this);
+      lastCB = now;
+    } CATCH_ERROR;
 }

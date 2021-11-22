@@ -34,12 +34,19 @@
 
 #include "Rate.h"
 
+#include <functional>
+
 
 namespace cb {
   class Progress : public Rate {
     uint64_t size;
     uint64_t start;
     uint64_t end;
+
+    typedef std::function<void (const Progress &)> callback_t;
+    callback_t cb;
+    double lastCB = 0;
+    double cbRate = 0;
 
   public:
     Progress(unsigned buckets = 60 * 5, unsigned period = 1, uint64_t size = 0,
@@ -48,6 +55,7 @@ namespace cb {
 
     void setSize(uint64_t size) {this->size = size;}
     uint64_t getSize() const {return size;}
+    void setStart(uint64_t start) {this->start = start;}
     uint64_t getStart() const {return start;}
     void setEnd(uint64_t end) {this->end = end;}
     uint64_t getEnd() const {return end;}
@@ -55,5 +63,10 @@ namespace cb {
     uint64_t getETA() const;
     double getProgress() const;
     double getRate() const {return Rate::get(end);}
+
+    void setCallback(callback_t cb, double cbRate = 0);
+
+    // From Rate
+    void onUpdate();
   };
 }

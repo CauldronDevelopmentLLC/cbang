@@ -77,12 +77,6 @@ const HTTPConnOut &OutgoingRequest::getConnection() const {
 }
 
 
-void OutgoingRequest::setProgressCallback(progress_cb_t cb, double delay) {
-  progressCB = cb;
-  progressDelay = delay;
-}
-
-
 void OutgoingRequest::connect(std::function<void (bool)> cb) {
   if (getConnection().isConnected()) {
     if (cb) cb(true);
@@ -113,17 +107,6 @@ void OutgoingRequest::send() {
             if (success) getConnection().makeRequest(this);
             else if (cb) cb(*this);
           });
-}
-
-
-void OutgoingRequest::onProgress(unsigned bytes, int total) {
-  double now = Timer::now();
-
-  if (progressCB && ((int)bytes == total || lastProgress + progressDelay < now))
-    try {
-      progressCB(bytes, total);
-      lastProgress = now;
-    } CATCH_ERROR;
 }
 
 
