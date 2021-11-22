@@ -55,9 +55,6 @@ namespace cb {
     protected:
       Client &client;
       callback_t cb;
-      double lastProgress = 0;
-      double progressDelay;
-      progress_cb_t progressCB;
 
     public:
       OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
@@ -68,7 +65,6 @@ namespace cb {
       const HTTPConnOut &getConnection() const;
 
       void setCallback(callback_t cb) {this->cb = cb;}
-      void setProgressCallback(progress_cb_t cb, double delay = 0.25);
 
       void connect(std::function<void (bool)> cb);
 
@@ -76,7 +72,6 @@ namespace cb {
       void send();
 
       // From Request
-      void onProgress(unsigned bytes, int total);
       void onResponse(ConnectionError error);
     };
 

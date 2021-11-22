@@ -248,7 +248,6 @@ namespace cb {
       // Callbacks
       virtual void onHeaders() {}
       virtual bool onContinue() {return true;}
-      virtual void onProgress(unsigned bytes, int total) {}
       virtual void onResponse(ConnectionError error) {}
       virtual void onWriteComplete(bool success) {}
       virtual void onComplete() {}

@@ -60,6 +60,9 @@ Client::call(const URI &uri, RequestMethod method, const char *data,
 
   if (stats.isSet()) stats->event("outgoing");
 
+  req->getConnection().setReadTimeout(readTimeout);
+  req->getConnection().setWriteTimeout(writeTimeout);
+
   return req;
 }
 

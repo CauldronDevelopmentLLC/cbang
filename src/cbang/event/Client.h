@@ -54,6 +54,8 @@ namespace cb {
       DNSBase &dns;
       SmartPointer<SSLContext> sslCtx;
       IPAddress bindAddr;
+      unsigned readTimeout  = 0;
+      unsigned writeTimeout = 0;
       SmartPointer<RateSet> stats;
 
     public:
@@ -76,6 +78,12 @@ namespace cb {
 
       const IPAddress &getBindAddress() const {return bindAddr;}
       void setBindAddress(const IPAddress &bind) {this->bindAddr = bind;}
+
+      unsigned getReadTimeout() const {return readTimeout;}
+      void setReadTimeout(unsigned timeout) {readTimeout = timeout;}
+
+      unsigned getWriteTimeout() const {return writeTimeout;}
+      void setWriteTimeout(unsigned timeout) {writeTimeout = timeout;}
 
       const SmartPointer<RateSet> &getStats() const {return stats;}
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}

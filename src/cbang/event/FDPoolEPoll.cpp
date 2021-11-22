@@ -419,12 +419,17 @@ void FDPoolEPoll::processResults() {
       break;
 
     case CMD_READ_SIZE:
-      fd.getReadProgress() = Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
+      fd.getReadProgress().reset();
+      fd.getReadProgress().setSize(cmd.value);
+      fd.getReadProgress().setStart(cmd.time);
+      fd.getReadProgress().setEnd(cmd.time);
       break;
 
     case CMD_WRITE_SIZE:
-      fd.getWriteProgress() =
-        Progress(60 * 5, 1, cmd.value, cmd.time, cmd.time);
+      fd.getWriteProgress().reset();
+      fd.getWriteProgress().setSize(cmd.value);
+      fd.getWriteProgress().setStart(cmd.time);
+      fd.getWriteProgress().setEnd(cmd.time);
       break;
 
     case CMD_READ_FINISHED:  fd.getReadProgress().setSize(cmd.value);  break;

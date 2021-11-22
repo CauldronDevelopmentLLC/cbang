@@ -52,6 +52,8 @@ namespace cb {
     Rate(unsigned buckets = 60 * 5, unsigned period = 1) :
       buckets(buckets), period(period) {reset();}
 
+    virtual ~Rate() {}
+
 
     void reset() {
       total = last = head = 0;
@@ -101,6 +103,11 @@ namespace cb {
       buckets[head] += value; // Sum event
       total += value;
       last = time;
+
+      onUpdate();
     }
+
+
+    virtual void onUpdate() {}
   };
 }
