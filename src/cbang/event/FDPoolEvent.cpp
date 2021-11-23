@@ -126,8 +126,8 @@ void FDPoolEvent::FDRec::updateEvent() {
 
 
 void FDPoolEvent::FDRec::callback(Event &e, int fd, unsigned events) {
-  readQ.transfer();
-  writeQ.transfer();
+  if (events & EF::EVENT_READ)  readQ.transfer();
+  if (events & EF::EVENT_WRITE) writeQ.transfer();
   updateEvent();
 }
 

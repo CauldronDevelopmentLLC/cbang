@@ -34,14 +34,28 @@
 #include "FDPoolEPoll.h"
 #include "FDPoolEvent.h"
 
+#include <cbang/os/SystemUtilities.h>
+
 using namespace cb::Event;
 using namespace cb;
 
 
 SmartPointer<FDPool> FDPool::create(Base &base) {
+  const char *type = SystemUtilities::getenv("CBANG_EVENT_POOL");
+
+  if (!type) {
 #ifdef HAVE_EPOLL
-  return new FDPoolEPoll(base);
+    type = "epoll";
 #else
-  return new FDPoolEvent(base);
+    type = "event";
 #endif
+  }
+
+  if (String::toLower(type) == "event") return new FDPoolEvent(base);
+
+#ifdef HAVE_EPOLL
+  if (String::toLower(type) == "epoll") return new FDPoolEPoll(base);
+#endif
+
+  THROW("Unsupported event pool type: " << type);
 }
