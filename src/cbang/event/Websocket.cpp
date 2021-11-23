@@ -190,7 +190,8 @@ void Websocket::readHeader() {
           default: return close(WS_STATUS_PROTOCOL);
           }
 
-          readBody();
+          if (bytesToRead) readBody();
+          else readHeader();
         };
 
       // Read rest of header
