@@ -147,7 +147,7 @@ void Base::loopBreak() {
 
 
 void Base::loopContinue() {
-  if (event_base_loopcontinue(base)) THROW("Loop break failed");
+  if (event_base_loopcontinue(base)) THROW("Loop continue failed");
 }
 
 
