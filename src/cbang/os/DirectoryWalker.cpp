@@ -82,10 +82,8 @@ bool DirectoryWalker::hasNext() {
 
       if (name == ".." || name == ".") continue;
 
-      if (isDir) {
-        if (dirStack.size() < maxDepth) push(name);
-
-      } else if (re.match(name)) {
+      if (isDir && dirStack.size() < maxDepth) push(name);
+      else if (re.match(name) && (!isDir || listDirs)) {
         nextFile = path + name;
         return true;
       }
