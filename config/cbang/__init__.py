@@ -59,9 +59,10 @@ def configure_deps(conf, local = True, with_openssl = True):
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         if not (conf.CheckOSXFramework('CoreServices') and
                 conf.CheckOSXFramework('IOKit') and
+                conf.CheckOSXFramework('Security') and
                 conf.CheckOSXFramework('CoreFoundation')):
             raise SCons.Errors.StopError(
-                'Need CoreServices, IOKit & CoreFoundation frameworks')
+                'Need CoreServices, IOKit, Security & CoreFoundation frameworks')
 
     conf.CBConfig('valgrind', False)
 
