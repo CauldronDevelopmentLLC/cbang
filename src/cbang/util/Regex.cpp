@@ -104,7 +104,7 @@ string Regex::toString() const {return pri->re.str();}
 
 bool Regex::match(const string &s) const {
   try {
-    return boost::regex_match(s, pri->re);
+    return boost::regex_match(s, pri->re, typeToMatchFlags(type));
 
   } catch (const boost::regex_error &e) {
     THROW("Match error: " << e.what());
