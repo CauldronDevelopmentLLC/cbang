@@ -169,6 +169,8 @@ namespace cb {
     void open(const std::string &path, int options = 0);
     void close();
 
+    bool isOpen() const {return db.isSet();}
+
     bool has(const std::string &key, int options = 0) const;
     std::string get(const std::string &key, int options = 0) const;
     std::string get(const std::string &key,
