@@ -95,8 +95,8 @@ namespace cb {
     {impl->setReceiveTimeout(timeout);}
     virtual void setSendTimeout(double timeout) {impl->setSendTimeout(timeout);}
     virtual void setTimeout(double timeout);
-    virtual void setReceiveBuf(int size = INT_MAX) {impl->setReceiveBuf(size);}
-    virtual void setSendBuf(int size = INT_MAX) {impl->setSendBuf(size);}
+    virtual void setReceiveBuf(int size) {impl->setReceiveBuf(size);}
+    virtual void setSendBuf(int size) {impl->setSendBuf(size);}
 
     virtual void open() {impl->open();}
     virtual void bind(const IPAddress &ip) {impl->bind(ip);}

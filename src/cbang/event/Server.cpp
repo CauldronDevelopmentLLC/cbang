@@ -66,10 +66,6 @@ void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
                     const SmartPointer<SSL> &ssl) {
   LOG_DEBUG(4, "New connection from " << peer);
 
-  // Maximize socket buffers
-  socket->setReceiveBuf();
-  socket->setSendBuf();
-
   if (stats.isSet()) stats->event("incoming");
 
   auto conn = createConnection();
