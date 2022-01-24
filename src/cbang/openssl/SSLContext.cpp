@@ -62,6 +62,10 @@
 #include <wincrypt.h>
 #endif
 
+#ifdef __APPLE__
+#include <Security/Security.h>
+#endif
+
 using namespace std;
 using namespace cb;
 
@@ -93,6 +97,36 @@ namespace {
   }
 }
 
+
+#ifdef __APPLE__
+// FIXME this should be moved to MacOSUtilities
+namespace {
+  const string getStringFromCFString(const CFStringRef cfstr) {
+      if (!cfstr)
+          return string();
+      // CFStringGetCString requires an 8-bit encoding
+      CFStringEncoding encoding = kCFStringEncodingUTF8;
+      const char *str0 = CFStringGetCStringPtr(cfstr, encoding);
+      if (str0)
+          return string(str0);
+      CFIndex len = 1 +
+        CFStringGetMaximumSizeForEncoding(CFStringGetLength(cfstr), encoding);
+      string myString;
+      char *buf = new char[len];
+      if (buf) {
+          if (CFStringGetCString(cfstr, buf, len, encoding))
+              myString = buf;
+          delete[] buf;
+      }
+      return myString;
+  }
+}
+#endif
+
+
+#ifdef __APPLE__
+namespace cb { // avoid namespace collision with Apple Security.framework
+#endif
 
 SSLContext::SSLContext() : ctx(0) {
   cb::SSL::init();
@@ -291,8 +325,111 @@ void SSLContext::loadSystemRootCerts() {
   CertCloseStore(store, 0);
 
 #elif __APPLE__
-  // TODO
-  LOG_WARNING(__FUNCTION__ << "() Not yet implemented on OSX");
+  X509_STORE *verifyStore = SSL_CTX_get_cert_store(ctx);
+  CFArrayRef anchors = NULL;
+  CFIndex trustedCount = 0;
+
+  OSStatus err = SecTrustCopyAnchorCertificates(&anchors);
+  if (err != errSecSuccess) {
+    LOG_ERROR(__FUNCTION__ << "() Failed to get anchor certificates");
+    return;
+  }
+
+  CFIndex count = CFArrayGetCount(anchors);
+  LOG_DEBUG(3, "Anchor certificate count: " << count);
+
+  for (CFIndex i = 0; i < count; i++) {
+    SecCertificateRef cert;
+    string summary = string();
+    bool valid;
+
+    cert = (SecCertificateRef) CFArrayGetValueAtIndex(anchors, i);
+
+    CFStringRef summary0 = SecCertificateCopySubjectSummary(cert);
+    if (summary0) {
+      summary = getStringFromCFString(summary0);
+      CFRelease(summary0);
+    }
+
+    LOG_DEBUG(5, "Cert " << i << ": " << summary);
+
+    // validate root cert
+    // anchor certs are already trusted, but can be expired, revoked, or
+    // explicitly distrusted by a user
+    // on macOS 10.11 and earlier, some root certs will have expired
+    valid = false;
+
+    SecTrustRef trust = NULL;
+    SecPolicyRef x509Policy = SecPolicyCreateBasicX509();
+    if (x509Policy) {
+      err = SecTrustCreateWithCertificates(cert, x509Policy, &trust);
+      if (err == errSecSuccess)
+        err = SecTrustSetPolicies(trust, x509Policy);
+
+      // OPTIONAL, apparently, for our use
+      // set params for validating a root cert
+      // see ValidateSystemTrust in
+      // https://github.com/macports/macports-ports/blob/master/security/certsync/files/certsync.m
+
+      if (err == errSecSuccess) {
+        if (__builtin_available(macOS 10.14, *)) { // macOS 10.14+
+          valid = SecTrustEvaluateWithError(trust, NULL);
+          LOG_DEBUG(5, "Called SecTrustEvaluateWithError()");
+        } else {
+          SecTrustResultType result;
+          err = SecTrustEvaluate(trust, &result); // macOS 10.3–10.15
+          LOG_DEBUG(5, "Called SecTrustEvaluate()");
+          if (err == errSecSuccess) {
+            switch (result) {
+              case kSecTrustResultUnspecified:
+              case kSecTrustResultProceed:
+                valid = true;
+                break;
+              default:
+                valid = false;
+                break;
+            }
+          }
+        }
+      }
+
+      if (x509Policy) CFRelease(x509Policy);
+      if (trust) CFRelease(trust);
+    }
+
+    if (valid) {
+      LOG_DEBUG(5, "Trusting certificate: " << summary);
+      // convert and add cert to trusted store
+      CFDataRef data = SecCertificateCopyData(cert);
+      if (data) {
+        const uint8_t *bytes = CFDataGetBytePtr(data);
+        long len = CFDataGetLength(data);
+        X509 *xcert = d2i_X509(0, &bytes, len);
+
+        if (!xcert) {
+          LOG_WARNING("Error parsing root cert: " << SSL::getErrorStr());
+          CFRelease(data);
+          continue;
+        }
+
+        if (!X509_STORE_add_cert(verifyStore, xcert)) {
+          auto error = ERR_get_error();
+
+          if (ERR_GET_REASON(error) != X509_R_CERT_ALREADY_IN_HASH_TABLE) {
+            LOG_ERROR("Error adding root cert: " << SSL::getErrorStr(error));
+            X509_free(xcert);
+            CFRelease(data);
+            break;
+          }
+        }
+        trustedCount++;
+        X509_free(xcert);
+        CFRelease(data);
+      } else LOG_ERROR("Failed to get data for certificate: " << summary);
+    } else LOG_DEBUG(3, "Untrusted certificate: " << summary);
+  }
+  if (anchors) CFRelease(anchors);
+  LOG_DEBUG(3, "Trusted certificate count: " << trustedCount);
 
 #else
   const char *filename = "/etc/ssl/certs/ca-certificates.crt";
@@ -360,3 +497,7 @@ void SSLContext::setCheckCRL(bool x) {
 
 long SSLContext::getOptions() const {return SSL_CTX_get_options(ctx);}
 void SSLContext::setOptions(long options) {SSL_CTX_set_options(ctx, options);}
+
+#ifdef __APPLE__
+} // namespace cb
+#endif
