@@ -10,7 +10,7 @@ def CheckOSXFramework(ctx, name):
         save_FRAMEWORKS = env['FRAMEWORKS']
         env.PrependUnique(FRAMEWORKS = [name])
         result = \
-            ctx.TryLink('int main(int argc, char **argv) {return 0;}', '.c')
+            ctx.TryLink('int main() {return 0;}\n', '.c')
         ctx.Result(result)
 
         if not result:
