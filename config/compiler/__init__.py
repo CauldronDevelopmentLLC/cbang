@@ -29,8 +29,7 @@ def CheckRDynamic(context):
     env = context.env
     flags = env['LINKFLAGS']
     context.env.AppendUnique(LINKFLAGS = ['-rdynamic'])
-    result = context.TryLink('int main(int argc, char *argv[]) {return 0;}',
-                             '.c')
+    result = context.TryLink('int main() {return 0;}\n', '.c')
     context.Result(result)
     env['LINKFLAGS'] = flags
     return result
