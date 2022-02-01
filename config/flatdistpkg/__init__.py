@@ -798,7 +798,8 @@ def flat_dist_pkg_build(target, source, env):
 
     # flat packages require OS X 10.5+
     distpkg_target = env.get('distpkg_target', '10.5')
-    if distpkg_target.split('.') < '10.5'.split('.'):
+    ver = tuple([int(x) for x in distpkg_target.split('.')])
+    if ver < (10,5):
         raise Exception(
             'incompatible configuration: flat package and osx pre-10.5 (%s)'
             % distpkg_target)
