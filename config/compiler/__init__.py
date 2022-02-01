@@ -375,7 +375,8 @@ def configure(conf, cstd = 'c99'):
 
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
-        env.AppendUnique(CXXFLAGS = ['-faligned-new'])
+        if not (compiler == 'clang' and env['PLATFORM'] == 'darwin'):
+            env.AppendUnique(CXXFLAGS = ['-faligned-new'])
 
     # Dependency files
     if depends and compiler_mode == 'gnu':
