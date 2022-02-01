@@ -376,6 +376,7 @@ void SSLContext::loadSystemRootCerts() {
           valid = SecTrustEvaluateWithError(trust, NULL);
           LOG_DEBUG(5, "Called SecTrustEvaluateWithError()");
         } else {
+#if (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_15)
           SecTrustResultType result;
           err = SecTrustEvaluate(trust, &result); // macOS 10.3–10.15
           LOG_DEBUG(5, "Called SecTrustEvaluate()");
@@ -390,6 +391,7 @@ void SSLContext::loadSystemRootCerts() {
                 break;
             }
           }
+#endif
         }
       }
 
