@@ -13,6 +13,11 @@
 #  include <boost/type_traits/conditional.hpp>
 # endif
 
+#if defined(BOOST_GCC) && BOOST_GCC >= 110000
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
+#endif
+
 // This implementation works on Comeau and GCC, all the way back to
 // 2.95
 namespace boost { namespace concepts {
@@ -46,7 +51,7 @@ struct constraint
 {
     static void failed() { ((Model*)0)->constraints(); }
 };
-  
+
 template <class Model>
 struct requirement_<void(*)(Model)>
   : boost::conditional<
@@ -55,7 +60,7 @@ struct requirement_<void(*)(Model)>
       , requirement<failed ************ Model::************>
     >::type
 {};
-  
+
 # else
 
 // For GCC-2.x, these can't have exactly the same name
@@ -63,7 +68,7 @@ template <class Model>
 struct requirement_<void(*)(Model)>
     : requirement<failed ************ Model::************>
 {};
-  
+
 # endif
 
 #  define BOOST_CONCEPT_ASSERT_FN( ModelFnPtr )             \
@@ -73,5 +78,9 @@ struct requirement_<void(*)(Model)>
       BOOST_ATTRIBUTE_UNUSED
 
 }}
+
+#if defined(BOOST_GCC) && BOOST_GCC >= 110000
+#pragma GCC diagnostic pop
+#endif
 
 #endif // BOOST_CONCEPT_DETAIL_GENERAL_DWA2006429_HPP
