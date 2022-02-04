@@ -83,7 +83,6 @@ For licensing information please see the files LICENSE and COPYING.
 ## Optional
 The following add optional features to C!.
 
-  - ChakraCore https://github.com/Microsoft/ChakraCore/
   - V8         https://developers.google.com/v8/
   - mariadb    https://mariadb.org/
   - LevelDB    https://github.com/google/leveldb
@@ -102,9 +101,6 @@ command line:
 
     sudo apt-get install -y scons build-essential libssl-dev binutils-dev \
       libiberty-dev libmariadb-dev-compat libleveldb-dev libsnappy-dev git
-
-Unfortunately, at this time, there is no ChakraCore package for Debian.  See
-the build instructions below.
 
 # Build
 
@@ -147,7 +143,7 @@ cbang source tree, building the test programs and running the test harness:
 
 This section describes some common problems and their solutions.
 
-## OpenSSL Library Less than v1.0.0
+## OpenSSL Library Too Old
 
 If you get an error about the openssl library version being too old then you
 either need to upgrade your package or build openssl from source like this:
@@ -159,53 +155,4 @@ either need to upgrade your package or build openssl from source like this:
     make
     export OPENSSL_HOME=$PWD
 
-Then try building C!.
-
-## ChakraCore
-
-You can either download a prebuilt ChakraCore or build it yourself.  Currently
-we require a fork of ChakraCore which includes some fixes.
-
-### Windows Binaries
-
-You can find windows binaries of ChakraCore here:
-https://github.com/CauldronDevelopmentLLC/ChakraCore/releases/tag/v2.0.0.1
-
-### Building ChakraCore
-
-ChakraCore is the Javascript engine used by the Microsoft Edge browser.  It
-is fast and Open-Source.  Unfortunately there currently aren't any readily
-available Debian packages for ChakraCore so you will have to build it from
-source.
-
-First make sure you have the prerequisites:
-
-    sudo apt-get install -y cmake clang libunwind-dev libicu-dev
-
-You need at least cmake 3.2 and clang 3.8.  If your system doesn't have these
-then you need to build them from source.
-
-
-First download the source code:
-
-    git clone --depth=1 https://github.com/CauldronDevelopmentLLC/ChakraCore.git
-
-Then build it:
-
-    cd ChakraCore
-    ./build.sh --static -j 8
-
-Next collect the various libraries it produces in to one:
-
-    mkdir tmp
-    cd tmp
-    for i in $(find ../Build* -name \*.a); do
-      ar x $i
-    done
-    ar rcs ../libChakraCore.a *.o
-    cd ..
-    rm -rf tmp
-
-Now setup the environment so that the C! build system can find ChakraCore:
-
-    export CHAKRA_CORE_HOME=$PWD
+Then build C!.
