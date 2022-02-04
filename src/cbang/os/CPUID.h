@@ -42,15 +42,21 @@
 
 namespace cb {
   class CPUID {
+#if defined(__aarch64__)
+    uint64_t regs[4];
+#else
     uint32_t regs[4];
+#endif
 
   public:
+    CPUID();
+
+#if defined(_WIN32) || defined(__i386__) || defined(__x86_64)
     CPUID &cpuID(uint32_t eax, uint32_t ebx = 0, uint32_t ecx = 0,
                  uint32_t edx = 0);
 
     const uint32_t *getRegs() const {return regs;}
 
-    static uint32_t getBits(uint32_t x, unsigned start = 31, unsigned end = 0);
     uint32_t EAX(unsigned start = 31, unsigned end = 0) const
       {return getBits(regs[0], start, end);}
     uint32_t EBX(unsigned start = 31, unsigned end = 0) const
@@ -59,6 +65,21 @@ namespace cb {
       {return getBits(regs[2], start, end);}
     uint32_t EDX(unsigned start = 31, unsigned end = 0) const
       {return getBits(regs[3], start, end);}
+
+    static uint32_t getBits(uint32_t x, unsigned start = 31, unsigned end = 0);
+
+#elif defined(__aarch64__)
+    uint32_t MIDR_EL1(unsigned start = 31, unsigned end = 0) const
+      {return getBits(regs[0], start, end);}
+    uint64_t ID_AA64ISAR0_EL1(unsigned start = 63, unsigned end = 0) const
+      {return getBits(regs[1], start, end);}
+    uint64_t ID_AA64ISAR1_EL1(unsigned start = 63, unsigned end = 0) const
+      {return getBits(regs[2], start, end);}
+    uint64_t ID_AA64PFR0_EL1(unsigned start = 63, unsigned end = 0) const
+      {return getBits(regs[3], start, end);}
+
+    static uint64_t getBits(uint64_t x, unsigned start = 63, unsigned end = 0);
+#endif
 
     std::string getCPUBrand();
     std::string getCPUVendor();
