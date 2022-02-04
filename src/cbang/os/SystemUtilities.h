@@ -134,6 +134,7 @@ namespace cb {
           bool autoCompression = false);
     std::string read(std::istream &stream, uint64_t length = ~0);
     std::string read(const std::string &filename, uint64_t length = ~0);
+    std::string getline(std::istream &stream, uint64_t length = 1024);
     void truncate(const std::string &path, unsigned long length);
     void chmod(const std::string &path, unsigned mode);
     void rotate(const std::string &path, const std::string &dir = std::string(),

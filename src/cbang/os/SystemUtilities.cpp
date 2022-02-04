@@ -1202,6 +1202,15 @@ namespace cb {
     }
 
 
+    string getline(istream &stream, uint64_t length) {
+      if (stream.fail()) THROW("Failed stream");
+
+      char line[length];
+      stream.getline(line, length);
+      return string(line, stream.gcount());
+    }
+
+
     void truncate(const string &path, unsigned long length) {
       bool failed;
 
