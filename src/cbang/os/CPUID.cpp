@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2022, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -31,6 +31,11 @@
 \******************************************************************************/
 
 #include "CPUID.h"
+#include "SystemUtilities.h"
+#include "SysError.h"
+
+#include <cbang/String.h>
+#include <cbang/Catch.h>
 
 #if 1500 < _MSC_VER
 #include <intrin.h>
@@ -49,99 +54,61 @@
 #include <mach/machine.h>
 #endif
 
-#include <assert.h>
+#include <string.h>
 
 using namespace std;
 using namespace cb;
+
 
 #if defined(_WIN32) || defined(__i386__) || defined(__x86_64)
 #define CBANG_HWPLATFORM_INTEL 1
 
 #elif defined(__aarch64__)
 #define CBANG_HWPLATFORM_AARCH64 1
-
-#else
-#error "Unsupported hardware platform"
 #endif
 
+
 #if defined(__aarch64__) && defined(__APPLE__)
-static uint32_t cpu_part()
-{
-  size_t len;
+static uint32_t cpu_part() {
   uint32_t family;
   uint32_t subfamily;
 
-  len = sizeof(family);
-  if (::sysctlbyname("hw.cpufamily", &family, &len, NULL, 0) < 0) {
-    ::fprintf(stderr, "Can't read 'hw.cpufamily': %s\n", ::strerror(errno));
-    ::abort();
-  }
+  size_t len = sizeof(family);
+  if (::sysctlbyname("hw.cpufamily", &family, &len, 0, 0) < 0)
+    THROW("Can't read 'hw.cpufamily': " << SysError());
 
   len = sizeof(subfamily);
-  if (::sysctlbyname("hw.cpusubfamily", &subfamily, &len, NULL, 0) < 0) {
-    ::fprintf(stderr, "Can't read 'hw.cpusubfamily': %s\n", ::strerror(errno));
-    ::abort();
-  }
+  if (::sysctlbyname("hw.cpusubfamily", &subfamily, &len, 0, 0) < 0)
+    THROW("Can't read 'hw.cpusubfamily': " << SysError());
 
-  // The numbers are taken from https://github.com/apple/darwin-xnu/blob/master/osfmk/arm/cpuid.h
-  // and /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk/System/Library/Frameworks/Kernel.framework/Versions/A/Headers/arm/cpuid.h
+  // The numbers are taken from
+  // https://github.com/apple/darwin-xnu/blob/master/osfmk/arm/cpuid.h
+  // and /Library/Developer/CommandLineTools/SDKs/MacOSX11.1.sdk/System/
+  //   Library/Frameworks/Kernel.framework/Versions/A/Headers/arm/cpuid.h
+  bool arm_hg = subfamily == CPUSUBFAMILY_ARM_HG;
   switch (family) {
-    case CPUFAMILY_ARM_CYCLONE:
-      return 0x01; // A7
-    case CPUFAMILY_ARM_TYPHOON:
-      switch (subfamily) {
-        case CPUSUBFAMILY_ARM_HG:
-          return 0x03; // A8X
-        default:
-          return 0x02; // A8
-      }
-    case CPUFAMILY_ARM_TWISTER:
-      switch (subfamily) {
-        case CPUSUBFAMILY_ARM_HG:
-          return 0x05; // A9X
-        default:
-          return 0x04; // A9
-      }
-    case CPUFAMILY_ARM_HURRICANE:
-      switch (subfamily) {
-        case CPUSUBFAMILY_ARM_HG:
-          return 0x07; // A10X
-        default:
-          return 0x06; // A10
-      }
-    case CPUFAMILY_ARM_MONSOON_MISTRAL:
-      return 0x09; // A11
-    case CPUFAMILY_ARM_VORTEX_TEMPEST:
-      switch (subfamily) {
-        case CPUSUBFAMILY_ARM_HG:
-          return 0x11; // A12X
-        default:
-          return 0x0c; // A12
-      }
-    case CPUFAMILY_ARM_LIGHTNING_THUNDER:
-      return 0x13; // A13
-    case CPUFAMILY_ARM_FIRESTORM_ICESTORM:
-      switch (subfamily) {
-        case CPUSUBFAMILY_ARM_HG:
-          return 0x23; // M1
-        default:
-          return 0x21; // A14
-      }
-    default:
-      return 0;
+  case CPUFAMILY_ARM_CYCLONE:            return 1;                // A7
+  case CPUFAMILY_ARM_TYPHOON:            return arm_hg ? 3 : 2;   // A8X  : A8
+  case CPUFAMILY_ARM_TWISTER:            return arm_hg ? 5 : 4;   // A9X  : a9
+  case CPUFAMILY_ARM_HURRICANE:          return arm_hg ? 7 : 6;   // A10X : A10
+  case CPUFAMILY_ARM_MONSOON_MISTRAL:    return 9;                // A11
+  case CPUFAMILY_ARM_VORTEX_TEMPEST:     return arm_hg ? 17 : 12; // A12X : A12
+  case CPUFAMILY_ARM_LIGHTNING_THUNDER:  return 19;               // A13
+  case CPUFAMILY_ARM_FIRESTORM_ICESTORM: return arm_hg ? 35 : 33; // M1   : A14
+  default: return 0;
   }
-
 }
 #endif // defined(__aarch64__) && defined(__APPLE__)
 
+
 CPUID::CPUID() {
 #if defined(CBANG_HWPLATFORM_AARCH64)
-  for (size_t i = 0; i < sizeof(regs) / sizeof(regs[0]); ++i) regs[i] = 0;
+  memset(regs, 0, sizeof(regs));
 
 #if defined(__linux__)
-  if ((getauxval(AT_HWCAP) & HWCAP_CPUID) != 0) {
-    // Great! We can use AArch64 feature registers.
-    // See https://www.kernel.org/doc/html/latest/arm64/cpu-feature-registers.html for details.
+  if ((getauxval(AT_HWCAP) & HWCAP_CPUID)) {
+    // Use AArch64 feature registers.  See
+    //   https://www.kernel.org/doc/html/latest/arm64/cpu-feature-registers.html
 
     asm("mrs %0, MIDR_EL1"         : "=r" (regs[0]));
     asm("mrs %0, ID_AA64ISAR0_EL1" : "=r" (regs[1]));
@@ -149,199 +116,103 @@ CPUID::CPUID() {
     asm("mrs %0, ID_AA64PFR0_EL1"  : "=r" (regs[3]));
   }
 
-  if (regs[0] == 0) {
+  if (!regs[0]) {
     // Try to read and parse MIDR_EL1 register, exposed by the Linux kernel
+    try {
+      string filename =
+        "/sys/devices/system/cpu/cpu0/regs/identification/midr_el1";
 
-    uint32_t logical, cores, threads;
-    getCPUCounts(logical, cores, threads);
+      if (SystemUtilities::exists(filename))
+        regs[0] = String::parseU64(SystemUtilities::read(filename));
 
-    assert(cores > 0);
-
-    for (int i = cores - 1; i >= 0; --i) {
-      char buf[128];
-      int n = ::snprintf(buf, sizeof(buf), "/sys/devices/system/cpu/cpu%d/regs/identification/midr_el1", i);
-      if (n < 0 || n >= sizeof(buf))
-        continue;
-
-      FILE *fp = ::fopen(buf, "r");
-      if (fp == NULL)
-        continue;
-
-      const char *s = ::fgets(buf, sizeof(buf), fp);
-      ::fclose(fp);
-
-      if (s == NULL)
-        continue;
-
-      char *ep = NULL;
-      unsigned long midr_el1 = ::strtoul(s, &ep, 16);
-      if (ep == s)
-        continue;
-
-      regs[0] = midr_el1;
-      break;
-    }
+    } CATCH_WARNING;
   }
 
-  if (regs[1] == 0 || regs[3] == 0) {
+  if (!regs[1] || !regs[3]) {
     // Try to parse /proc/cpuinfo and fill the register appropriately
-    FILE *fp = ::fopen("/proc/cpuinfo", "r");
-    if (fp != NULL) {
-      char buf[1024];
-      for (;;) {
-        char *s = ::fgets(buf, sizeof(buf), fp);
-        if (s == NULL)
-          break;
+    string filename = "/proc/cpuinfo";
+    if (SystemUtilities::exists(filename)) {
+      auto f = SystemUtilities::iopen(filename);
 
-        if (::strncmp(s, "CPU implementer", 15) == 0) {
-          s += 15;
-          while (::isspace(*s)) ++s;
-          if (*s++ == ':') {
-            while (::isspace(*s)) ++s;
+      while (!f->fail()) {
+        string line = SystemUtilities::getline(*f);
+        vector<string> parts;
+        String::tokenize(line, parts, ":", false, 2);
 
-            char *e = NULL;
-            unsigned long value = ::strtoul(s, &e, 16);
-            if (e != s)
-              regs[0] |= ((value & 0xff) << 24);
-          }
+        if (parts.size() != 2) continue;
+        string name  = String::trim(parts[0]);
+        string value = String::trim(parts[1]);
+
+        if (name == "CPU implementer")
+          regs[0] |= (String::parseU64(value) & 0xff) << 24;
+
+        if (name == "CPU part")
+          regs[0] |= (String::parseU64(value) & 0xfff) << 4;
+
+        if (name == "CPU variant")
+          regs[0] |= (String::parseU64(value) & 0xf) << 20;
+
+        if (name == "CPU revision")
+          regs[0] |= String::parseU64(value) & 0xf;
+
+        if (name == "CPU architecture") {
+          uint64_t v = String::parseU64(value);
+          if (v == 7 || v == 8) regs[0] |= 0xf << 16;
         }
 
-        if (::strncmp(s, "CPU part", 8) == 0) {
-          s += 8;
-          while (::isspace(*s)) ++s;
-          if (*s++ == ':') {
-            while (::isspace(*s)) ++s;
+        if (name == "Features") {
+          vector<string> features;
+          String::tokenize(value, features);
 
-            char *e = NULL;
-            unsigned long value = ::strtoul(s, &e, 16);
-            if (e != s)
-              regs[0] |= ((value & 0xfff) << 4);
-          }
-        }
-
-        if (::strncmp(s, "CPU variant", 11) == 0) {
-          s += 11;
-          while (::isspace(*s)) ++s;
-          if (*s++ == ':') {
-            while (::isspace(*s)) ++s;
-
-            char *e = NULL;
-            unsigned long value = ::strtoul(s, &e, 16);
-            if (e != s)
-              regs[0] |= ((value & 0xf) << 20);
-          }
-        }
-
-        if (::strncmp(s, "CPU revision", 12) == 0) {
-          s += 12;
-          while (::isspace(*s)) ++s;
-          if (*s++ == ':') {
-            while (::isspace(*s)) ++s;
-
-            char *e = NULL;
-            unsigned long value = ::strtoul(s, &e, 16);
-            if (e != s)
-              regs[0] |= (value & 0xf);
-          }
-        }
-
-        if (::strncmp(s, "CPU architecture", 16) == 0) {
-          s += 16;
-          while (::isspace(*s)) ++s;
-          if (*s++ == ':') {
-            while (::isspace(*s)) ++s;
-
-            char *e = NULL;
-            unsigned long value = ::strtoul(s, &e, 10);
-            if (e != s && (value == 7 || value == 8))
-              regs[0] |= (0xf << 16);
-          }
-        }
-
-        if (::strncmp(s, "Features", 8) == 0) {
-          s += 8;
-          while (::isspace(*s)) ++s;
-          if (*s++ == ':') {
-            while (*s != '\0') {
-              while (::isspace(*s)) ++s;
-
-              char *e = s;
-              while (*e != '\0' && !::isspace(*e)) ++e;
-              if (e != s) {
-                *e++ = '\0';
-
-                if (::strcmp(s, "fphp") == 0)
-                  regs[3] |= (1ULL << 16);
-                else if (::strcmp(s, "asimdhp") == 0)
-                  regs[3] |= (1ULL << 20);
-                else if (::strcmp(s, "aes") == 0)
-                  regs[1] |= (1ULL << 4);
-                else if (::strcmp(s, "pmull") == 0)
-                  regs[1] |= (1ULL << 5);
-                else if (::strcmp(s, "sha1") == 0)
-                  regs[1] |= (1ULL << 8);
-                else if (::strcmp(s, "sha2") == 0)
-                  regs[1] |= (1ULL << 12);
-                else if (::strcmp(s, "sha3") == 0)
-                  regs[1] |= (1ULL << 32);
-                else if (::strcmp(s, "crc32") == 0)
-                  regs[1] |= (1ULL << 16);
-                else if (::strcmp(s, "atomics") == 0)
-                  regs[1] |= (1ULL << 21);
-                else if (::strcmp(s, "asimdrdm") == 0)
-                  regs[1] |= (1ULL << 28);
-                else if (::strcmp(s, "asimddp") == 0)
-                  regs[1] |= (1ULL << 44);
-
-                s = e;
-              }
-            }
+          for (unsigned i = 0; i < features.size(); i++) {
+            if (features[i] == "fphp")     regs[3] |= 1ULL << 16;
+            if (features[i] == "asimdhp")  regs[3] |= 1ULL << 20;
+            if (features[i] == "aes")      regs[3] |= 1ULL << 4;
+            if (features[i] == "pmull")    regs[3] |= 1ULL << 5;
+            if (features[i] == "sha1")     regs[3] |= 1ULL << 8;
+            if (features[i] == "sha2")     regs[3] |= 1ULL << 12;
+            if (features[i] == "sha3")     regs[3] |= 1ULL << 32;
+            if (features[i] == "crc32")    regs[3] |= 1ULL << 16;
+            if (features[i] == "atomics")  regs[3] |= 1ULL << 21;
+            if (features[i] == "asimdrdm") regs[3] |= 1ULL << 28;
+            if (features[i] == "asimddp")  regs[3] |= 1ULL << 44;
           }
         }
       }
-      ::fclose(fp);
     }
   }
 
-  if (regs[0] == 0) {
-    // If we're unable to retrieve the MIDR_EL1, assume it's the lowest possible one.
-    // Arm Cortex-A53 rev 0
-    regs[0] = 0x410FD030;
-  }
+  // If we're unable to retrieve the MIDR_EL1, assume Arm Cortex-A53 rev 0
+  if (!regs[0]) regs[0] = 0x410fd030;
 
-  // If the "Architecture" part of the MIDR_EL1 isn't set, force set it to 0xf
-  if ((regs[0] & 0xf0000) == 0)
-    regs[0] |= 0xf0000;
+  // If the "Architecture" part of the MIDR_EL1 isn't set, force it to 0xf
+  if (!(regs[0] & 0xf0000)) regs[0] |= 0xf0000;
 
-  // If the "EL0" part of the ID_AA64PFR0_EL1 isn't set, force set it to AArch64-only mode
-  if ((regs[3] & 0x0f) == 0)
-    regs[3] |= 0x01;
+  // If the "EL0" part of the ID_AA64PFR0_EL1 isn't set, force AArch64-only mode
+  if (!(regs[3] & 0xf)) regs[3] |= 1;
 
-  // If the "EL1" part of the ID_AA64PFR0_EL1 isn't set, force set it to AArch64-only mode
-  if ((regs[3] & 0xf0) == 0)
-    regs[3] |= 0x10;
+  // If the "EL1" part of the ID_AA64PFR0_EL1 isn't set, force AArch64-only mode
+  if (!(regs[3] & 0xf0)) regs[3] |= 16;
 
 #elif defined(__APPLE__)
   uint32_t type;
   size_t len = sizeof(type);
-  if (::sysctlbyname("hw.cputype", &type, &len, NULL, 0) < 0) {
-    ::fprintf(stderr, "Can't read 'hw.cputype': %s\n", ::strerror(errno));
-    ::abort();
-  }
+  if (::sysctlbyname("hw.cputype", &type, &len, 0, 0) < 0)
+    THROW("Can't read 'hw.cputype': " << SysError());
 
-  if (type != CPU_TYPE_ARM64) {
-    ::fprintf(stderr, "*** INTERNAL ERROR: 'hw.cputype' expected to be 0x%x (CPU_TYPE_ARM64), but its actual value is 0x%x",
-            (unsigned) CPU_TYPE_ARM64, (unsigned) type);
-    ::abort();
-  }
+  if (type != CPU_TYPE_ARM64)
+    THROW("Expected hw.cputype=0x" << hex << CPU_TYPE_ARM64 << " was 0x"
+          << type);
 
   // Set "implementer" field of the MIDR_EL1
-  // 0x61 means Apple (CPU_VID_APPLE at https://github.com/apple/darwin-xnu/blob/master/osfmk/arm/cpuid.h)
+  // 0x61 means Apple (CPU_VID_APPLE at
+  // https://github.com/apple/darwin-xnu/blob/master/osfmk/arm/cpuid.h)
   regs[0] |= 0x61 << 24;
 
   // Set the "Architecture" field of the MIDR_EL1 to 0xf.
   // This is a requirement for ARMv8-A profile.
-  // See https://developer.arm.com/docs/ddi0595/d/external-system-registers/midr_el1#Architecture_19 for details.
+  // See https://developer.arm.com/docs/ddi0595/d/external-system-registers/
+  //   midr_el1#Architecture_19 for details.
   regs[0] |= 0xf << 16;
 
   // Set "part" field of MIDR_EL1
@@ -352,48 +223,49 @@ CPUID::CPUID() {
 
   uint32_t val;
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.neon_fp16", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[3] |= (1ULL << 16);
+  if (!::sysctlbyname("hw.optional.neon_fp16", &val, &len, 0, 0) && val == 1)
+    regs[3] |= 1ULL << 16;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.neon_hpfp", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[3] |= (1ULL << 20);
+  if (!::sysctlbyname("hw.optional.neon_hpfp", &val, &len, 0, 0) && val == 1)
+    regs[3] |= 1ULL << 20;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.armv8_crc32", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[1] |= (1ULL << 16);
+  if (!::sysctlbyname("hw.optional.armv8_crc32", &val, &len, 0, 0) && val == 1)
+    regs[1] |= 1ULL << 16;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.armv8_sha1", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[1] |= (1ULL << 8);
+  if (!::sysctlbyname("hw.optional.armv8_sha1", &val, &len, 0, 0) && val == 1)
+    regs[1] |= 1ULL << 8;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.armv8_sha2", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[1] |= (1ULL << 12);
+  if (!::sysctlbyname("hw.optional.armv8_sha2", &val, &len, 0, 0) && val == 1)
+    regs[1] |= 1ULL << 12;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.armv8_1_atomics", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[1] |= (1ULL << 21);
+  if (!::sysctlbyname("hw.optional.armv8_1_atomics", &val, &len, 0, 0) &&
+      val == 1) regs[1] |= 1ULL << 21;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.armv8_2_sha3", &val, &len, NULL, 0) == 0 && val == 1)
-    regs[1] |= (1ULL << 32);
+  if (!::sysctlbyname("hw.optional.armv8_2_sha3", &val, &len, 0, 0) && val == 1)
+    regs[1] |= 1ULL << 32;
 
   len = sizeof(val);
-  if (::sysctlbyname("hw.optional.armv8_2_sha512", &val, &len, NULL, 0) == 0 && val == 1) {
-    // According to Arm Architecture Reference Manual, FEAT_SHA512 requires FEAT_SHA1
-    regs[1] |= (1ULL << 8);
-    // Clear SHA2 field because allowed values for this field are only 0b0000, 0b0001, and 0b0010
+  if (!::sysctlbyname("hw.optional.armv8_2_sha512", &val, &len, 0, 0) &&
+      val == 1) {
+    // Arm Architecture Reference Manual, FEAT_SHA512 requires FEAT_SHA1
+    regs[1] |= 1ULL << 8;
+    // Clear SHA2 field.  Allowed values are 0b0000, 0b0001, and 0b0010.
     regs[1] &= ~(3ULL << 12);
     // Now, set SHA2 field to the value of 0b0010
-    regs[1] |= (2ULL << 12);
+    regs[1] |= 2ULL << 12;
   }
 
 #else
-#error "I don't know how to retrieve ARM CPU ID on this OS"
+#error "Cannot retrieve ARM CPU ID on this OS"
 #endif
 
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -430,18 +302,20 @@ CPUID &CPUID::cpuID(uint32_t _eax, uint32_t _ebx, uint32_t _ecx,
 
   return *this;
 }
-#endif /* CBANG_HWPLATFORM_INTEL */
+#endif // CBANG_HWPLATFORM_INTEL
 
 
 #if defined(CBANG_HWPLATFORM_INTEL)
 uint32_t CPUID::getBits(uint32_t x, unsigned start, unsigned end) {
   return (x >> end) & (~((uint32_t)0) >> (31 - (start - end)));
 }
+
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
 uint64_t CPUID::getBits(uint64_t x, unsigned start, unsigned end) {
   return (x >> end) & (~((uint64_t)0) >> (63 - (start - end)));
 }
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 
 
 string CPUID::getCPUBrand() {
@@ -459,75 +333,55 @@ string CPUID::getCPUBrand() {
     return brand.c_str(); // Strips trailing zeros
 
   } else return "Unknown";
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   switch (MIDR_EL1(31, 24)) {
     case 0x41: // Arm
       switch (MIDR_EL1(15, 4)) {
-        case 0xd0c:
-          return "Neoverse N";
-        case 0xd4a:
-          return "Neoverse E";
-        default:
-          return "Cortex-A";
+        case 0xd0c: return "Neoverse N";
+        case 0xd4a: return "Neoverse E";
+        default:    return "Cortex-A";
       }
-    case 0x51: // Qualcomm
-      return "Snapdragon";
-    case 0x53: // Samsung
-      return "Exynos";
-    case 0x42: // Broadcom
-      return "Cortex-A";
-    case 0x43: // Cavium
-    case 0x56: // Marvell
-      return "ThunderX";
+
+    case 0x51: return "Snapdragon"; // Qualcomm
+    case 0x53: return "Exynos";     // Samsung
+    case 0x42: return "Cortex-A";   // Broadcom
+    case 0x43:                      // Cavium
+    case 0x56: return "ThunderX";   // Marvell
+
     case 0x4e: // NVIDIA
       switch (MIDR_EL1(15, 4)) {
         case 0x000:
-        case 0x003:
-          return "Denver";
-        default:
-          return "Carmel";
+        case 0x003: return "Denver";
+        default:    return "Carmel";
       }
+
     case 0x61: // Apple
       switch (MIDR_EL1(15, 4)) {
-        case 0x01:
-          return "Apple A7";
-        case 0x02:
-          return "Apple A8";
-        case 0x03:
-          return "Apple A8X";
-        case 0x04:
-          return "Apple A9";
-        case 0x05:
-          return "Apple A9X";
-        case 0x06:
-          return "Apple A10";
-        case 0x07:
-          return "Apple A10X";
+        case 0x01: return "Apple A7";
+        case 0x02: return "Apple A8";
+        case 0x03: return "Apple A8X";
+        case 0x04: return "Apple A9";
+        case 0x05: return "Apple A9X";
+        case 0x06: return "Apple A10";
+        case 0x07: return "Apple A10X";
         case 0x08:
-        case 0x09:
-          return "Apple A11";
+        case 0x09: return "Apple A11";
         case 0x0b:
-        case 0x0c:
-          return "Apple A12";
+        case 0x0c: return "Apple A12";
         case 0x10:
-        case 0x11:
-          return "Apple A12X";
+        case 0x11: return "Apple A12X";
         case 0x12:
-        case 0x13:
-          return "Apple A13";
+        case 0x13: return "Apple A13";
         case 0x20:
-        case 0x21:
-          return "Apple A14";
+        case 0x21: return "Apple A14";
         case 0x22:
-        case 0x23:
-          return "Apple M1";
-        default:
-          return "Apple";
+        case 0x23: return "Apple M1";
+        default:   return "Apple";
       }
-    default:
-      return "Arm Generic";
+    default: return "Arm Generic";
   }
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -542,6 +396,7 @@ string CPUID::getCPUVendor() {
   vendor[2] = ECX();
 
   return string((char *)vendor, 12);
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   switch (MIDR_EL1(31, 24)) {
     case 0x41: return "Arm";
@@ -562,7 +417,7 @@ string CPUID::getCPUVendor() {
     case 0x61: return "Apple";
     default:   return "UNKNOWN";
   }
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -570,9 +425,10 @@ uint32_t CPUID::getCPUSignature() {
 #if defined(CBANG_HWPLATFORM_INTEL)
   cpuID(1);
   return EAX();
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   return ID_AA64ISAR0_EL1();
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -580,14 +436,16 @@ uint64_t CPUID::getCPUFeatures() {
 #if defined(CBANG_HWPLATFORM_INTEL)
   cpuID(1);
   return (uint64_t)ECX() << 32 | EDX();
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
-  // Basically, we should return the ID_AA64ISAR0_EL1 here. However, there's a lot of code,
-  // which treats the returned value as Intel-specific one. So, for the safety reason, it's
-  // better to return 0 here, till the moment when all the places, treating getCPUFeatures
-  // as an Intel-specific value, are fixed.
-  //return ID_AA64ISAR0_EL1();
+  // We should return the ID_AA64ISAR0_EL1 here. However, there's a lot of code,
+  // which treats the returned value as Intel-specific one. So, for the safety
+  // reason, it's better to return 0 here, till the moment when all the places,
+  // treating getCPUFeatures as an Intel-specific value, are fixed.
+  // return ID_AA64ISAR0_EL1();
   return 0;
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -595,9 +453,10 @@ uint64_t CPUID::getCPUExtendedFeatures() {
 #if defined(CBANG_HWPLATFORM_INTEL)
   cpuID(7);
   return (uint64_t)ECX() << 32 | EBX();
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   return 0;
-#endif /* CBANG_HWPLATFORM_INTEL */
+#endif // CBANG_HWPLATFORM_INTEL
 }
 
 
@@ -605,9 +464,10 @@ uint64_t CPUID::getCPUFeatures80000001() {
 #if defined(CBANG_HWPLATFORM_INTEL)
   cpuID(0x80000001);
   return (uint64_t)ECX() << 32 | EDX();
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   return 0;
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -637,10 +497,10 @@ unsigned CPUID::getCPUFamily() {
     family += getBits(signature, 27, 20);
 
   return family;
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
-  // AArch64 is ARMv8
-  return 8;
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+  return 8; // AArch64 is ARMv8
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -656,6 +516,7 @@ unsigned CPUID::getCPUModel() {
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   uint32_t implementer = MIDR_EL1(31, 24);
   uint32_t part = MIDR_EL1(15, 4);
+
   switch (implementer) {
     case 0x41: // Arm
       switch (part) {
@@ -669,10 +530,11 @@ unsigned CPUID::getCPUModel() {
         case 0xd0a: return 75; // Cortex-A75
         case 0xd0b: return 76; // Cortex-A76
         case 0xd0d: return 77; // Cortex-A77
-        case 0xd0c: return 1; // Neoverse N1
-        case 0xd4a: return 1; // Neoverse E1
-        default: return 0;
+        case 0xd0c: return  1; // Neoverse N1
+        case 0xd4a: return  1; // Neoverse E1
+        default:    return  0;
       }
+
     case 0x51: // Qualcomm
       switch (part) {
         case 0x800: return 73; // Cortex-A73
@@ -681,28 +543,31 @@ unsigned CPUID::getCPUModel() {
         case 0x803: return 55; // Cortex-A55
         case 0x804: return 76; // Cortex-A76
         case 0x805: return 55; // Cortex-A55
-        default: return 0;
+        default:    return  0;
       }
+
     case 0x53: // Samsung
       switch (part) {
-        case 0x001: return 1; // Exynos-M1
-        case 0x002: return 2; // Exynos-M2
-        case 0x003: return 3; // Exynos-M3
-        case 0x004: return 4; // Exynos-M4
-        default: return 0;
+        case 0x001: return  1; // Exynos-M1
+        case 0x002: return  2; // Exynos-M2
+        case 0x003: return  3; // Exynos-M3
+        case 0x004: return  4; // Exynos-M4
+        default:    return  0;
       }
+
     default: return 0;
   }
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
 unsigned CPUID::getCPUStepping() {
 #if defined(CBANG_HWPLATFORM_INTEL)
   return getBits(getCPUSignature(), 3, 0);
+
 #elif defined(CBANG_HWPLATFORM_AARCH64)
   return MIDR_EL1(3, 0);
-#endif /* CBANG_HWPLATFORM_AARCH64*/
+#endif // CBANG_HWPLATFORM_AARCH64
 }
 
 
@@ -743,7 +608,7 @@ void CPUID::getCPUCounts(uint32_t &logical, uint32_t &cores,
 
 #if defined(__linux__)
   long ncpu = sysconf(_SC_NPROCESSORS_CONF);
-  if (ncpu > 0) {
+  if (0 < ncpu) {
     logical = cores = ncpu;
     return;
   }
@@ -756,22 +621,22 @@ void CPUID::getCPUCounts(uint32_t &logical, uint32_t &cores,
   for (int i = 0; i < 256; i++)
     count += CPU_ISSET(i, &cs) ? 1 : 0;
 
-  if (count == 0) count = 1;
+  if (!count) count = 1;
 
   logical = cores = count;
 
 #elif defined(__APPLE__)
   uint32_t ncpu;
   size_t len = sizeof(ncpu);
-  if (::sysctlbyname("hw.ncpu", &ncpu, &len, NULL, 0) < 0)
-    ncpu = 1;
-  if (ncpu < 1)
-    ncpu = 1;
+
+  if (::sysctlbyname("hw.ncpu", &ncpu, &len, 0, 0) < 0) ncpu = 1;
+  if (ncpu < 1) ncpu = 1;
 
   logical = cores = ncpu;
-#else /* __linux__ */
-#error "I don't know how to detect number of CPUs on this OS"
-#endif /* __linux__ */
 
-#endif /* CBANG_HWPLATFORM_AARCH64 */
+#else // __linux__
+#error "Cannot detect number of CPUs"
+#endif // __linux__
+
+#endif // CBANG_HWPLATFORM_AARCH64
 }
