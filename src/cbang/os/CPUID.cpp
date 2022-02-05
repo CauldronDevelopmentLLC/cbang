@@ -640,3 +640,47 @@ void CPUID::getCPUCounts(uint32_t &logical, uint32_t &cores,
 
 #endif // CBANG_HWPLATFORM_AARCH64
 }
+
+
+void CPUID::getCPUFeatureNames(set<string> &names) {
+#if defined(CBANG_HWPLATFORM_INTEL)
+  uint64_t features = getCPUFeatures();
+
+  for (unsigned i = 0; i < CPUFeature::getCount(); i++)
+    if (features & (1 << i))
+      names.insert(CPUFeature(CPUFeature::getValue(i)).toString());
+
+#elif defined(CBANG_HWPLATFORM_AARCH64)
+  // TODO: fix the CPUID::getCPUFeatures() and use it instead of Arm-specific
+  // things here.
+  names.insert("FP");    // All AArch64 CPUs support floating point
+  names.insert("ASIMD"); // All AArch64 CPUs support Advansed SIMD
+
+  if (ID_AA64PFR0_EL1( 19, 16) == 1) names.insert("FPHP");
+  if (ID_AA64PFR0_EL1( 23, 20) == 1) names.insert("ASIMDHP");
+  if (ID_AA64ISAR0_EL1( 7,  4) == 2) names.insert("AES");
+  if (ID_AA64ISAR0_EL1(11,  8) == 1) names.insert("SHA1");
+  if (ID_AA64ISAR0_EL1(14, 12))      names.insert("SHA2");
+  if (ID_AA64ISAR0_EL1(35, 32) == 1) names.insert("SHA3");
+  if (ID_AA64ISAR0_EL1(15, 12) == 2) names.insert("SHA512");
+  if (ID_AA64ISAR0_EL1(19, 16) == 1) names.insert("CRC32");
+  if (ID_AA64ISAR0_EL1(23, 20) == 2) names.insert("ATOMICS");
+  if (ID_AA64ISAR0_EL1(31, 28) == 1) names.insert("ASIMDRDM");
+  if (ID_AA64ISAR0_EL1(39, 36) == 1) names.insert("SM3");
+  if (ID_AA64ISAR0_EL1(43, 40) == 1) names.insert("SM4");
+  if (ID_AA64ISAR0_EL1(47, 44) == 1) names.insert("ASIMDDP");
+  if (ID_AA64ISAR0_EL1(51, 48) == 1) names.insert("FHM");
+  if (ID_AA64ISAR0_EL1(55, 52) == 2) names.insert("TSX");
+  if (ID_AA64ISAR0_EL1(55, 52) == 1) names.insert("TS");
+  if (ID_AA64ISAR0_EL1(59, 56) == 1) names.insert("TLB");
+  if (ID_AA64ISAR0_EL1(59, 56) == 2) names.insert("TLB TLBR");
+  if (ID_AA64ISAR0_EL1(63, 60) == 1) names.insert("RNDR");
+#endif
+}
+
+
+void CPUID::printCPUFeatures(ostream &stream) {
+  set<string> features;
+  getCPUFeatureNames(features);
+  stream << String::join(features);
+}

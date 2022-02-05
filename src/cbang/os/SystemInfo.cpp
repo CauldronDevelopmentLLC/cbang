@@ -32,6 +32,7 @@
 
 #include "SystemInfo.h"
 #include "PowerManagement.h"
+#include "CPUID.h"
 
 #include <cbang/Info.h>
 #include <cbang/SStream.h>
@@ -219,10 +220,12 @@ Version SystemInfo::getOSVersion() const {
 void SystemInfo::add(Info &info) {
   const char *category = "System";
 
-  info.add(category, "CPU", getCPUBrand());
-  info.add(category, "CPU ID",
-           SSTR(getCPUVendor() << " Family " << getCPUFamily() << " Model "
-                << getCPUModel() << " Stepping " << getCPUStepping()));
+  info.add(category, "CPU", CPUID().getCPUBrand());
+  info.add(category, "CPU ID", SSTR(
+             CPUID().getCPUVendor()
+             << " Family "   << CPUID().getCPUFamily()
+             << " Model "    << CPUID().getCPUModel()
+             << " Stepping " << CPUID().getCPUStepping()));
   info.add(category, "CPUs", String(getCPUCount()));
 
   info.add(category, "Memory", HumanSize(getTotalMemory()).toString() + "B");
