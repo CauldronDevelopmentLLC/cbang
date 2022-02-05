@@ -39,6 +39,8 @@
 #include <cbang/enum/CPUFeature80000001.h>
 
 #include <string>
+#include <set>
+
 
 namespace cb {
   class CPUID {
@@ -94,5 +96,8 @@ namespace cb {
     unsigned getCPUModel();
     unsigned getCPUStepping();
     void getCPUCounts(uint32_t &logical, uint32_t &cores, uint32_t &threads);
+
+    void getCPUFeatureNames(std::set<std::string> &names);
+    void printCPUFeatures(std::ostream &stream);
   };
 }

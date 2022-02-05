@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include "CPUID.h"
-
 #include <cbang/StdTypes.h>
 #include <cbang/SmartPointer.h>
 
@@ -48,7 +46,7 @@
 namespace cb {
   class Info;
 
-  class SystemInfo : public Singleton<SystemInfo>, public CPUID {
+  class SystemInfo : public Singleton<SystemInfo> {
     ThreadsType threadsType;
 
   public:
