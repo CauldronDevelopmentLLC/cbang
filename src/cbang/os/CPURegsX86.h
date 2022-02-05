@@ -40,21 +40,17 @@
 
 #include <string>
 #include <set>
+#include <ostream>
 
 
 namespace cb {
-  class CPUID {
-#if defined(__aarch64__)
-    uint64_t regs[4];
-#else
+  class CPURegsX86 {
     uint32_t regs[4];
-#endif
 
   public:
-    CPUID();
+    CPURegsX86();
 
-#if defined(_WIN32) || defined(__i386__) || defined(__x86_64)
-    CPUID &cpuID(uint32_t eax, uint32_t ebx = 0, uint32_t ecx = 0,
+    CPURegsX86 &cpuID(uint32_t eax, uint32_t ebx = 0, uint32_t ecx = 0,
                  uint32_t edx = 0);
 
     const uint32_t *getRegs() const {return regs;}
@@ -70,19 +66,6 @@ namespace cb {
 
     static uint32_t getBits(uint32_t x, unsigned start = 31, unsigned end = 0);
 
-#elif defined(__aarch64__)
-    uint32_t MIDR_EL1(unsigned start = 31, unsigned end = 0) const
-      {return getBits(regs[0], start, end);}
-    uint64_t ID_AA64ISAR0_EL1(unsigned start = 63, unsigned end = 0) const
-      {return getBits(regs[1], start, end);}
-    uint64_t ID_AA64ISAR1_EL1(unsigned start = 63, unsigned end = 0) const
-      {return getBits(regs[2], start, end);}
-    uint64_t ID_AA64PFR0_EL1(unsigned start = 63, unsigned end = 0) const
-      {return getBits(regs[3], start, end);}
-
-    static uint64_t getBits(uint64_t x, unsigned start = 63, unsigned end = 0);
-#endif
-
     std::string getCPUBrand();
     std::string getCPUVendor();
     uint32_t getCPUSignature();
@@ -95,9 +78,11 @@ namespace cb {
     unsigned getCPUFamily();
     unsigned getCPUModel();
     unsigned getCPUStepping();
-    void getCPUCounts(uint32_t &logical, uint32_t &cores, uint32_t &threads);
 
     void getCPUFeatureNames(std::set<std::string> &names);
-    void printCPUFeatures(std::ostream &stream);
+
+    void dumpFunction(std::ostream &stream, unsigned function,
+                      unsigned indent = 0);
+    void dump(std::ostream &stream, unsigned indent = 0);
   };
 }
