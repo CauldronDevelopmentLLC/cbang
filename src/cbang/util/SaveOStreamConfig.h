@@ -45,7 +45,7 @@ namespace cb {
     char fill;
 
   public:
-    SaveOStreamConfig(std::ostream &stream) :
+    explicit SaveOStreamConfig(std::ostream &stream) :
       stream(stream), flags(stream.flags()), precision(stream.precision()),
       width(stream.width()), fill(stream.fill()) {}
 
