@@ -30,28 +30,49 @@
 
 \******************************************************************************/
 
-#include <cbang/util/ID.h>
+#pragma once
+
+#include "SaveOStreamConfig.h"
+
+#include <cbang/StdTypes.h>
+#include <cbang/SStream.h>
 
 #include <iomanip>
-#include <sstream>
-
-using namespace cb;
-using namespace std;
-
-ostream &ID::print(ostream &stream) const {
-  ios::fmtflags flags = stream.flags();
-  char fill = stream.fill();
-
-  stream << "0x" << setbase(16) << setw(16) << setfill('0') << id;
-  stream.flags(flags);
-  stream.fill(fill);
-
-  return stream;
-}
 
 
-string ID::toString() const {
-  ostringstream str;
-  str << *this;
-  return str.str();
+namespace cb {
+  class Hex;
+  inline std::ostream &operator<<(std::ostream &stream, const Hex &h);
+
+
+  /**
+   * Print hexadecimal numbers.
+   *
+   *     cout << HEX(id, 16) << endl;
+   */
+  class Hex {
+    uint64_t value;
+    unsigned width;
+
+  public:
+    Hex(uint64_t value, unsigned width = 16) :
+      value(value), width(width) {}
+
+
+    std::ostream &print(std::ostream &stream) const {
+      using namespace std;
+      SaveOStreamConfig save(stream);
+      stream << "0x" << hex << setw(width) << setfill('0') << value;
+      return stream;
+    }
+
+
+    std::string toString() const {return SSTR(*this);}
+    operator std::string () const {return toString();}
+  };
+
+
+  inline std::ostream &operator<<(std::ostream &stream, const Hex &h) {
+    return h.print(stream);
+  }
 }

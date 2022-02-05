@@ -32,28 +32,14 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-#include <ostream>
-#include <string>
+#include "Hex.h"
+
 
 namespace cb {
   /**
-   * Used for printing 64-bit ids in hexadecimal.
+   * Print 64-bit ids in hexadecimal.
    *
-   * E.g.   cout << ID(job_id) << endl;
+   *     cout << ID(job_id) << endl;
    */
-  class ID {
-    uint64_t id;
-
-  public:
-    ID(uint64_t id) : id(id) {}
-
-    std::ostream &print(std::ostream &stream) const;
-    std::string toString() const;
-    operator std::string () const {return toString();}
-  };
-
-  inline std::ostream &operator<<(std::ostream &stream, const ID &id) {
-    return id.print(stream);
-  }
+  typedef Hex ID;
 }
