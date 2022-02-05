@@ -11,8 +11,13 @@ def run_tests(env):
 
 def generate(env):
     import os
+    import distutils.spawn
 
-    cmd = 'python tests/testHarness -C tests --diff-failed --view-failed ' \
+    python = distutils.spawn.find_executable('python3')
+    if not python: python = distutils.spawn.find_executable('python')
+    if not python: python = distutils.spawn.find_executable('python2')
+
+    cmd = python + ' tests/testHarness -C tests --diff-failed --view-failed ' \
         '--view-unfiltered --save-failed --build'
 
     if 'DOCKBOT_MASTER_PORT' in os.environ: cmd += ' --no-color'
