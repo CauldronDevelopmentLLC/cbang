@@ -36,6 +36,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#endif
+
 using namespace cb;
 using namespace std;
 
