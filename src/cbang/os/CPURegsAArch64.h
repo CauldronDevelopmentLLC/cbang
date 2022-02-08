@@ -55,8 +55,8 @@ namespace cb {
 
     static uint64_t getBits(uint64_t x, unsigned start = 63, unsigned end = 0);
 
-    const char *getCPUVendor() const;
-    const char *getCPUBrand() const;
+    std::string getCPUVendor() const;
+    std::string getCPUBrand() const;
     uint32_t getCPUSignature() const;
     unsigned getCPUFamily() const;
     unsigned getCPUModel() const;
