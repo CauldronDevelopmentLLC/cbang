@@ -263,7 +263,7 @@ uint64_t CPURegsAArch64::getBits(uint64_t x, unsigned start, unsigned end) {
 }
 
 
-const char *CPURegsAArch64::getCPUVendor() const {
+string CPURegsAArch64::getCPUVendor() const {
   switch (MIDR_EL1(31, 24)) {
     case 0x41: return "ARM";
     case 0x42: return "Broadcom";
@@ -286,7 +286,7 @@ const char *CPURegsAArch64::getCPUVendor() const {
 }
 
 
-const char *CPURegsAArch64::getCPUBrand() const {
+string CPURegsAArch64::getCPUBrand() const {
   switch (MIDR_EL1(31, 24)) {
   case 0x41: // Arm
     switch (MIDR_EL1(15, 4)) {
@@ -309,6 +309,15 @@ const char *CPURegsAArch64::getCPUBrand() const {
     }
 
   case 0x61: // Apple
+    // machdep.cpu.brand_string seems to always be set on macOS
+    char buf[256];
+    size_t len;
+    // not inline with decl due to strange compiler error
+    len = sizeof(buf);
+    buf[0] = '\0';
+    if (!::sysctlbyname("machdep.cpu.brand_string", buf, &len, 0, 0))
+      if (buf[0]) return string(buf);
+    // couldn't get brand_string or it was empty
     switch (MIDR_EL1(15, 4)) {
     case 0x01: return "Apple A7";
     case 0x02: return "Apple A8";
