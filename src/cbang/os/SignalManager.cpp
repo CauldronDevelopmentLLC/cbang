@@ -268,12 +268,12 @@ void SignalManager::unblock(int sig) {
 const char *SignalManager::signalString(int sig) {
   switch (sig) {
   case SIGABRT: return "SIGABRT";
-  case SIGFPE: return "SIGFPE";
-  case SIGILL: return "SIGILL";
-  case SIGINT: return "SIGINT";
+  case SIGFPE:  return "SIGFPE";
+  case SIGILL:  return "SIGILL";
+  case SIGINT:  return "SIGINT";
   case SIGSEGV: return "SIGSEGV";
   case SIGTERM: return "SIGTERM";
-  case SIGHUP: return "SIGHUP";
+  case SIGHUP:  return "SIGHUP";
   case SIGQUIT: return "SIGQUIT";
 #ifndef _WIN32
   case SIGKILL: return "SIGKILL";
@@ -284,8 +284,8 @@ const char *SignalManager::signalString(int sig) {
   case SIGCHLD: return "SIGCHLD";
   case SIGCONT: return "SIGCONT";
   case SIGSTOP: return "SIGSTOP";
-  case SIGBUS: return "SIGBUS";
+  case SIGBUS:  return "SIGBUS";
 #endif
-  default: return "UNKNOWN";
+  default:      return "UNKNOWN";
   }
 }
