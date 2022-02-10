@@ -41,21 +41,12 @@ using namespace cb;
 using namespace cb::JSON;
 
 
-ConstValuePtr Value::select(const string &path) const {
+ValuePtr Value::select(const string &path) const {
   return Path(path).select(*this);
 }
 
 
-ConstValuePtr Value::select(const string &path,
-                            const ConstValuePtr &defaultValue) const {
-  return Path(path).select(*this, defaultValue);
-}
-
-
-ValuePtr Value::select(const string &path) {return Path(path).select(*this);}
-
-
-ValuePtr Value::select(const string &path, const ValuePtr &defaultValue) {
+ValuePtr Value::select(const string &path, const ValuePtr &defaultValue) const {
   return Path(path).select(*this, defaultValue);
 }
 

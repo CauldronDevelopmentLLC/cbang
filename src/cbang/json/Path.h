@@ -46,15 +46,10 @@ namespace cb {
     public:
       Path(const std::string &path);
 
-      typedef std::function <ConstValuePtr (const std::string &path)> fail_cb_t;
+      typedef std::function <ValuePtr (const std::string &path)> fail_cb_t;
 
-      ConstValuePtr select(const Value &value, fail_cb_t fail_cb = 0) const;
-      ConstValuePtr select(const Value &value,
-                           const ConstValuePtr &defaultValue) const;
-
-      ValuePtr select(Value &value, fail_cb_t fail_cb = 0) const;
-      ValuePtr select(Value &value, const ValuePtr &defaultValue) const;
-
+      ValuePtr select(const Value &value, fail_cb_t fail_cb = 0) const;
+      ValuePtr select(const Value &value, const ValuePtr &defaultValue) const;
 
 #define CBANG_JSON_VT(NAME, TYPE)                                       \
       TYPE select##NAME(const Value &value) const;                      \
