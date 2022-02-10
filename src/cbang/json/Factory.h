@@ -41,7 +41,6 @@ namespace cb {
     class Value;
 
     typedef cb::SmartPointer<Value> ValuePtr;
-    typedef cb::SmartPointer<const Value> ConstValuePtr;
 
     class Factory {
     public:

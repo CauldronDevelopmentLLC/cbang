@@ -42,7 +42,7 @@ namespace cb {
   namespace Event {
     struct HTTPRequestHandler : public Enum {
       virtual ~HTTPRequestHandler() {}
-      virtual bool operator()(Request &req) = 0;
+      virtual bool operator()(Request &req) {return false;};
     };
 
 

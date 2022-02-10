@@ -60,9 +60,8 @@ HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
   if (child.isNull()) THROW("Child cannot be NULL");
 
   // Regex args
-  const map<int, string> &names = pri->regex.CapturingGroupNames();
-  map<int, string>::const_iterator it;
-  for (it = names.begin(); it != names.end(); it++)
+  const auto &names = pri->regex.CapturingGroupNames();
+  for (auto it = names.begin(); it != names.end(); it++)
     if (!it->second.empty()) args.insert(it->second);
 }
 

@@ -47,8 +47,8 @@ Path::Path(const string &path) : path(path) {
 }
 
 
-ConstValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
-  ConstValuePtr ptr; // Cannot create pointer to passed value
+ValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
+  ValuePtr ptr;
   unsigned i;
 
   for (i = 0; i < parts.size(); i++) {
@@ -77,29 +77,15 @@ ConstValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
 }
 
 
-ConstValuePtr Path::select(const Value &value,
-                           const ConstValuePtr &defaultValue) const {
+ValuePtr Path::select(const Value &value, const ValuePtr &defaultValue) const {
   auto cb = [&] (const string &path) {return defaultValue;};
   return select(value, cb);
 }
 
 
-ValuePtr Path::select(Value &value, fail_cb_t fail_cb) const {
-  ConstValuePtr result = select(static_cast<const Value &>(value), fail_cb);
-  return const_cast<Value *>(result.get());
-}
-
-
-ValuePtr Path::select(Value &value, const ValuePtr &defaultValue) const {
-  ConstValuePtr result =
-    select(static_cast<const Value &>(value), defaultValue);
-  return const_cast<Value *>(result.get());
-}
-
-
 #define CBANG_JSON_VT(NAME, TYPE)                                   \
   TYPE Path::select##NAME(const Value &value) const {               \
-    ConstValuePtr result = select(value);                           \
+    ValuePtr result = select(value);                                \
                                                                     \
     if (!result->is##NAME())                                        \
       CBANG_TYPE_ERROR("Not a " #NAME " at " << path);              \
@@ -112,7 +98,7 @@ ValuePtr Path::select(Value &value, const ValuePtr &defaultValue) const {
 #define CBANG_JSON_VT(NAME, TYPE)                                   \
   TYPE Path::select##NAME(const Value &value,                       \
                           TYPE defaultValue) const {                \
-    ConstValuePtr result = select(value, ConstValuePtr());          \
+    ValuePtr result = select(value, ValuePtr());                    \
                                                                     \
     if (result.isNull() || !result->is##NAME())                     \
       return defaultValue;                                          \
