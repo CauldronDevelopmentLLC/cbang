@@ -6,7 +6,9 @@ def run_tests(env):
     import subprocess
     import sys
 
-    sys.exit(subprocess.call(shlex.split(env.get('TEST_COMMAND'))))
+    cmd = shlex.split(env.get('TEST_COMMAND'))
+    print('Executing:', cmd)
+    sys.exit(subprocess.call(cmd))
 
 
 def generate(env):
@@ -16,6 +18,8 @@ def generate(env):
     python = distutils.spawn.find_executable('python3')
     if not python: python = distutils.spawn.find_executable('python')
     if not python: python = distutils.spawn.find_executable('python2')
+    if not python: python = 'python'
+    if env['PLATFORM'] == 'win32': python = python.replace('\\', '\\\\')
 
     cmd = python + ' tests/testHarness -C tests --diff-failed --view-failed ' \
         '--view-unfiltered --save-failed --build'
