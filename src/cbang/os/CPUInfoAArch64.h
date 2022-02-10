@@ -41,8 +41,6 @@ namespace cb {
   public:
     CPUInfoAArch64();
 
-    unsigned getCPUCount() const;
-
     // From CPUInfo
     void dumpRegisters(std::ostream &stream, unsigned indent) const;
   };

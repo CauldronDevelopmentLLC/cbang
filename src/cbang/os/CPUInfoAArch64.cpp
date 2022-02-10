@@ -31,14 +31,7 @@
 \******************************************************************************/
 
 #include "CPUInfoAArch64.h"
-
-#if defined(__linux__)
-#include <unistd.h>
-#endif
-
-#if defined(__APPLE__)
-#include <sys/sysctl.h>
-#endif
+#include "SystemInfo.h"
 
 using namespace cb;
 using namespace std;
@@ -51,7 +44,7 @@ CPUInfoAArch64::CPUInfoAArch64() {
   family    = getCPUFamily();
   model     = getCPUModel();
   stepping  = getCPUStepping();
-  physical  = getCPUCount();
+  physical  = SystemInfo::instance().getCPUCount();
   threads   = 1;
 
   features.insert("FP");    // All AArch64 CPUs support floating point
@@ -76,32 +69,6 @@ CPUInfoAArch64::CPUInfoAArch64() {
   if (ID_AA64ISAR0_EL1(59, 56) == 1) features.insert("TLB");
   if (ID_AA64ISAR0_EL1(59, 56) == 2) features.insert("TLB TLBR");
   if (ID_AA64ISAR0_EL1(63, 60) == 1) features.insert("RNDR");
-}
-
-
-unsigned CPUInfoAArch64::getCPUCount() const {
-#if defined(__linux__)
-  long ncpu = sysconf(_SC_NPROCESSORS_CONF);
-  if (0 < ncpu) return ncpu;
-
-  cpu_set_t cs;
-  CPU_ZERO(&cs);
-  sched_getaffinity(0, sizeof(cs), &cs);
-
-  unsigned count = 0;
-  for (int i = 0; i < 256; i++)
-    count += CPU_ISSET(i, &cs) ? 1 : 0;
-
-  return count ? count : 1;
-
-#elif defined(__APPLE__)
-  uint32_t ncpu;
-  size_t len = sizeof(ncpu);
-
-  if (::sysctlbyname("hw.ncpu", &ncpu, &len, 0, 0) < 0) ncpu = 1;
-
-  return ncpu ? ncpu : 1;
-#endif // __linux__
 }
 
 
