@@ -32,9 +32,6 @@
 
 #include "CPURegsX86.h"
 
-#include <cbang/util/SaveOStreamConfig.h>
-#include <cbang/util/Hex.h>
-
 #if 1500 < _MSC_VER
 #include <intrin.h>
 #endif
@@ -192,27 +189,4 @@ void CPURegsX86::getCPUFeatureNames(set<string> &names) {
   for (unsigned i = 0; i < CPUFeature::getCount(); i++)
     if (features & (1 << i))
       names.insert(CPUFeature(CPUFeature::getValue(i)).toString());
-}
-
-
-void CPURegsX86::dumpFunction(ostream &stream, unsigned function,
-                              unsigned indent) {
-  SaveOStreamConfig save(cout);
-  cpuID(function);
-
-  stream
-    << string(indent, ' ')
-    << "CPURegsX86[" << Hex(function, 8) << "] =>"
-    << " EAX="  << Hex(EAX(),    8)
-    << " EBX="  << Hex(EBX(),    8)
-    << " ECX="  << Hex(ECX(),    8)
-    << " EDX="  << Hex(EDX(),    8)
-    << '\n';
-}
-
-
-void CPURegsX86::dump(ostream &stream, unsigned indent) {
-  for (unsigned i = 1; i < 14; i++) dumpFunction(stream, i, indent);
-  for (unsigned i = 0; i <= 8; i++)
-    dumpFunction(stream, 0x80000000 + i, indent);
 }

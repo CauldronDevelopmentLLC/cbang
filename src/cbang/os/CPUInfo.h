@@ -34,24 +34,30 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
+#include <cbang/json/Sink.h>
 
 #include <ostream>
 #include <string>
 #include <set>
+#include <map>
 
 
 namespace cb {
   class CPUInfo {
   protected:
     std::string vendor = "unknown";
-    std::string brand = "unknown";
+    std::string brand  = "unknown";
     uint32_t signature = 0;
-    unsigned family = 0;
-    unsigned model = 0;
-    unsigned stepping = 0;
-    unsigned physical = 0;
-    unsigned threads = 0;
+    unsigned family    = 0;
+    unsigned model     = 0;
+    unsigned stepping  = 0;
+    unsigned physical  = 0;
+    unsigned threads   = 0;
+
     std::set<std::string> features;
+
+    typedef std::map<std::string, uint64_t> registers_t;
+    registers_t registers;
 
     CPUInfo() {}
 
@@ -72,9 +78,16 @@ namespace cb {
 
     const std::set<std::string> &getFeatures() const {return features;}
     bool hasFeature(const std::string &feature) const;
+    const registers_t &getRegisters() const {return registers;}
 
-    virtual void dump(std::ostream &stream) const;
-    virtual void dumpRegisters(std::ostream &stream,
-                               unsigned indent = 0) const {}
+    void print(std::ostream &stream) const;
+    void write(JSON::Sink &sink) const;
   };
+
+
+  static inline
+  std::ostream &operator<<(std::ostream &stream, const CPUInfo &info) {
+    info.print(stream);
+    return stream;
+  }
 }

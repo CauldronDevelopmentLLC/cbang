@@ -32,6 +32,8 @@
 
 #include "CPUInfoX86.h"
 
+#include <cbang/util/Hex.h>
+
 using namespace cb;
 using namespace std;
 
@@ -72,9 +74,16 @@ CPUInfoX86::CPUInfoX86() {
 
   // Features
   getCPUFeatureNames(features);
-}
 
+  // Registers
+  for (unsigned i = 1; i < 23; i++) {
+    unsigned function = i < 14 ? i : (i + 0x80000000 - 14);
+    string fname = Hex(function, 8);
 
-void CPUInfoX86::dumpRegisters(ostream &stream, unsigned indent) const {
-  CPURegsX86().dump(stream, indent);
+    cpuID(function);
+    registers[fname + ".EAX"] = EAX();
+    registers[fname + ".EBX"] = EBX();
+    registers[fname + ".ECX"] = ECX();
+    registers[fname + ".EDX"] = EDX();
+  }
 }

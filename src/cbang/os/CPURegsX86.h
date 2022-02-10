@@ -80,9 +80,5 @@ namespace cb {
     unsigned getCPUStepping();
 
     void getCPUFeatureNames(std::set<std::string> &names);
-
-    void dumpFunction(std::ostream &stream, unsigned function,
-                      unsigned indent = 0);
-    void dump(std::ostream &stream, unsigned indent = 0);
   };
 }
