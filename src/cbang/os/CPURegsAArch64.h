@@ -61,7 +61,5 @@ namespace cb {
     unsigned getCPUFamily() const;
     unsigned getCPUModel() const;
     unsigned getCPUStepping() const;
-
-    void dump(std::ostream &stream, unsigned indent = 0) const;
   };
 }

@@ -69,9 +69,9 @@ CPUInfoAArch64::CPUInfoAArch64() {
   if (ID_AA64ISAR0_EL1(59, 56) == 1) features.insert("TLB");
   if (ID_AA64ISAR0_EL1(59, 56) == 2) features.insert("TLB TLBR");
   if (ID_AA64ISAR0_EL1(63, 60) == 1) features.insert("RNDR");
-}
 
-
-void CPUInfoAArch64::dumpRegisters(ostream &stream, unsigned indent) const {
-  CPURegsAArch64::dump(stream, indent);
+  registers["MIDR_EL1"]         = MIDR_EL1();
+  registers["ID_AA64ISAR0_EL1"] = ID_AA64ISAR0_EL1();
+  registers["ID_AA64ISAR1_EL1"] = ID_AA64ISAR1_EL1();
+  registers["ID_AA64PFR0_EL1"]  = ID_AA64PFR0_EL1();
 }

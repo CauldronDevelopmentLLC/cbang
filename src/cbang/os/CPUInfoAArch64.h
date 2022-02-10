@@ -40,8 +40,5 @@ namespace cb {
   class CPUInfoAArch64 : public CPUInfo, public CPURegsAArch64 {
   public:
     CPUInfoAArch64();
-
-    // From CPUInfo
-    void dumpRegisters(std::ostream &stream, unsigned indent) const;
   };
 }

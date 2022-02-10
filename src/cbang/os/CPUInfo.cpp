@@ -35,6 +35,7 @@
 #include "CPUInfoAArch64.h"
 
 #include <cbang/String.h>
+#include <cbang/util/Hex.h>
 
 #include <iomanip>
 
@@ -60,20 +61,49 @@ bool CPUInfo::hasFeature(const string &feature) const {
 }
 
 
-void CPUInfo::dump(ostream &stream) const {
-  const unsigned w = 12;
+void CPUInfo::print(ostream &stream) const {
+  const unsigned w = 20;
 
   stream
-    << setw(w) << "Vendor: "   << getVendor()                 << '\n'
-    << setw(w) << "Brand: "    << getBrand()                  << '\n'
-    << setw(w) << "Family: "   << getFamily()                 << '\n'
-    << setw(w) << "Model: "    << getModel()                  << '\n'
-    << setw(w) << "Stepping: " << getStepping()               << '\n'
-    << setw(w) << "Cores: "    << getPhysicalCPUCount()       << '\n'
-    << setw(w) << "Threads: "  << getThreadsPerCore()         << '\n'
-    << setw(w) << "Logical: "  << getLogicalCPUCount()        << '\n'
-    << setw(w) << "Features: " << String::join(getFeatures()) << '\n'
-    << "\nRegisters:\n";
+    << setw(w) << "Vendor: "    << getVendor()                 << '\n'
+    << setw(w) << "Brand: "     << getBrand()                  << '\n'
+    << setw(w) << "Family: "    << getFamily()                 << '\n'
+    << setw(w) << "Model: "     << getModel()                  << '\n'
+    << setw(w) << "Stepping: "  << getStepping()               << '\n'
+    << setw(w) << "Physical: "  << getPhysicalCPUCount()       << '\n'
+    << setw(w) << "Threading: " << getThreadsPerCore()         << '\n'
+    << setw(w) << "Logical: "   << getLogicalCPUCount()        << '\n'
+    << setw(w) << "Features: "  << String::join(getFeatures()) << '\n';
 
-  dumpRegisters(stream, 2);
+  for (auto it = registers.begin(); it != registers.end(); it++)
+    stream << setw(w) << (it->first + ": ") << Hex(it->second, 16) << '\n';
+}
+
+
+void CPUInfo::write(JSON::Sink &sink) const {
+  sink.beginDict();
+
+  sink.insert("vendor",    getVendor());
+  sink.insert("brand",     getBrand());
+  sink.insert("family",    getFamily());
+  sink.insert("model",     getModel());
+  sink.insert("stepping",  getStepping());
+  sink.insert("physical",  getPhysicalCPUCount());
+  sink.insert("threading", getThreadsPerCore());
+  sink.insert("logical",   getLogicalCPUCount());
+
+  // Features
+  sink.insertList("features");
+  auto &features = getFeatures();
+  for (auto it = features.begin(); it != features.end(); it++)
+    sink.append(*it);
+  sink.endList();
+
+  // Registers
+  sink.insertDict("registers");
+  for (auto it = registers.begin(); it != registers.end(); it++)
+    sink.insert(it->first, it->second);
+  sink.endDict();
+
+  sink.endDict();
 }

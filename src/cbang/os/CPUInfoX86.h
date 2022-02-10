@@ -40,8 +40,5 @@ namespace cb {
   class CPUInfoX86 : public CPUInfo, public CPURegsX86 {
   public:
     CPUInfoX86();
-
-    // From CPUInfo
-    void dumpRegisters(std::ostream &stream, unsigned indent) const;
   };
 }

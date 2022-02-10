@@ -37,7 +37,6 @@
 
 #include <cbang/String.h>
 #include <cbang/Catch.h>
-#include <cbang/util/Hex.h>
 
 
 #if defined(__linux__)
@@ -401,14 +400,3 @@ unsigned CPURegsAArch64::getCPUModel() const {
 
 
 unsigned CPURegsAArch64::getCPUStepping() const {return MIDR_EL1(3, 0);}
-
-
-void CPURegsAArch64::dump(ostream &stream, unsigned indent) const {
-  string s(indent, ' ');
-
-  stream
-    << s << "MIDR_EL1         = " << Hex(MIDR_EL1(),          8) << '\n'
-    << s << "ID_AA64ISAR0_EL1 = " << Hex(ID_AA64ISAR0_EL1(), 16) << '\n'
-    << s << "ID_AA64ISAR1_EL1 = " << Hex(ID_AA64ISAR1_EL1(), 16) << '\n'
-    << s << "ID_AA64PFR0_EL1  = " << Hex(ID_AA64PFR0_EL1(),  16) << '\n';
-}

@@ -30,6 +30,8 @@
 \******************************************************************************/
 
 #include <cbang/os/CPUInfo.h>
+#include <cbang/os/SystemInfo.h>
+#include <cbang/json/Writer.h>
 
 #include <iostream>
 
@@ -38,7 +40,11 @@ using namespace cb;
 
 
 int main(int argc, char *argv[]) {
-  CPUInfo::create()->dump(cout);
-  cout << flush;
+  if (1 < argc && string(argv[1]) == "--json") {
+    JSON::Writer writer(cout);
+    CPUInfo::create()->write(writer);
+
+  } else cout << *CPUInfo::create() << flush;
+
   return 0;
 }
