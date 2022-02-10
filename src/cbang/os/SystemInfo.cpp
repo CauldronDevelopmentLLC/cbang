@@ -81,9 +81,7 @@ using namespace std;
 namespace fs = boost::filesystem;
 
 
-SystemInfo::SystemInfo(Inaccessible) {
-  detectThreads();
-}
+SystemInfo::SystemInfo(Inaccessible) {detectThreads();}
 
 
 uint32_t SystemInfo::getCPUCount() const {
@@ -93,18 +91,19 @@ uint32_t SystemInfo::getCPUCount() const {
 
   if (!GetLogicalProcessorInformationEx(RelationGroup, 0, &len)) {
     SmartPointer<uint8_t>::Array buffer = new uint8_t[len];
-    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)buffer.get();
+    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer.get();
 
     if (!GetLogicalProcessorInformationEx(RelationGroup, info, &len)) {
       uint32_t cpus = 0;
 
       for (unsigned i = 0; i < len;) {
-        info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)&buffer[i];
+        info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)&buffer[i];
 
         for (unsigned j = 0; j < info->Group.ActiveGroupCount; j++) {
           cpus += info->Group.GroupInfo[j].ActiveProcessorCount;
 
-        i += info->Size;
+          i += info->Size;
+        }
       }
 
       if (cpus) return cpus;
@@ -112,28 +111,28 @@ uint32_t SystemInfo::getCPUCount() const {
   }
 
   // Fallback to old method
-  SYSTEM_INFO info;
-  GetSystemInfo(&info);
-  return info.dwNumberOfProcessors;
+  SYSTEM_INFO sysInfo;
+  GetSystemInfo(&sysInfo);
+  return sysInfo.dwNumberOfProcessors;
 
 #elif defined(__APPLE__) || defined(__FreeBSD__)
   int nm[2];
   size_t length = 4;
-  uint32_t count;
+  uint32_t count = 0;
 
   nm[0] = CTL_HW; nm[1] = HW_AVAILCPU;
   sysctl(nm, 2, &count, &length, 0, 0);
 
-  if (count < 1) {
+  if (!count) {
     nm[1] = HW_NCPU;
     sysctl(nm, 2, &count, &length, 0, 0);
-    if (count < 1) count = 1;
   }
 
-  return count;
+  return count ? count : 1;
 
 #else
-  return sysconf(_SC_NPROCESSORS_ONLN);
+  long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+  return cpus < 1 ? 1 : cpus;
 #endif
 }
 
