@@ -49,6 +49,7 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
+#include <sysinfoapi.h>
 
 #elif defined(__APPLE__)
 #include <sys/types.h>
@@ -87,9 +88,33 @@ SystemInfo::SystemInfo(Inaccessible) {
 
 uint32_t SystemInfo::getCPUCount() const {
 #if defined(_WIN32)
-  SYSTEM_INFO sysinfo;
-  GetSystemInfo(&sysinfo);
-  return sysinfo.dwNumberOfProcessors;
+  // Count active CPU threads
+  DWORD len = 0;
+
+  if (!GetLogicalProcessorInformationEx(RelationGroup, 0, &len)) {
+    SmartPointer<uint8_t>::Array buffer = new uint8_t[len];
+    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)buffer.get();
+
+    if (!GetLogicalProcessorInformationEx(RelationGroup, info, &len)) {
+      uint32_t cpus = 0;
+
+      for (unsigned i = 0; i < len;) {
+        info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)&buffer[i];
+
+        for (unsigned j = 0; j < info->Group.ActiveGroupCount; j++) {
+          cpus += info->Group.GroupInfo[j].ActiveProcessorCount;
+
+        i += info->Size;
+      }
+
+      if (cpus) return cpus;
+    }
+  }
+
+  // Fallback to old method
+  SYSTEM_INFO info;
+  GetSystemInfo(&info);
+  return info.dwNumberOfProcessors;
 
 #elif defined(__APPLE__) || defined(__FreeBSD__)
   int nm[2];
