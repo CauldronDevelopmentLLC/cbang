@@ -25,11 +25,11 @@ filename_package_desc_txt = 'package-description.txt'
 filename_package_info_json = 'package-parameters.json'
 filename_distribution_xml = 'distribution.xml'
 
-build_dir = 'build'
-build_dir_tmp = build_dir + '/distpkg/tmp'
-build_dir_resources = build_dir + '/distpkg/Resources'
-build_dir_packages = build_dir + '/distpkg/Packages'
-build_dir_stage = build_dir + '/flatpkg' # appended with /package_name
+build_dir = 'build/flatdistpkg'
+build_dir_tmp = build_dir + '/tmp'
+build_dir_resources = build_dir + '/Resources'
+build_dir_packages = build_dir + '/Packages'
+build_dir_stage = build_dir + '/stage' # appended with /package_name
 
 build_dirs = [
     build_dir_tmp, build_dir_resources,
@@ -147,7 +147,7 @@ def build_component_pkg(info, env):
     name = info.get('name')
     home = info.get('home')
     pkg_id = info.get('pkg_id')
-    # if no comp version, use distpkg version
+    # if no component version, use distpkg version
     version = info.get('version', env.get('version'))
     root = info.get('root')
     resources = info.get('resources')
@@ -176,7 +176,8 @@ def build_component_pkg(info, env):
         resources = home + '/build/pkg/Resources'
 
     # FIXME uses knowledge of layout of most projects
-    if pkg_resources is None:
+    # not very important, as component pkgs have no resources
+    if not pkg_resources:
         d = os.path.join(home,'osx/Resources')
         if d and os.path.isdir(d):
             pkg_resources = [[d, '.']]

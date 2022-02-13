@@ -401,9 +401,14 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       args.push_back((char *)_args[i].c_str());
     args.push_back(0); // Sentinal
 
+#ifdef __APPLE__
+    // vfork deprecated in macos 12.0, previously discouraged
+    p->pid = fork();
+#else
     if (flags & USE_VFORK) p->pid = vfork();
     else p->pid = fork();
-
+#endif
+      
     if (!p->pid) { // Child
       // Process group
       if (flags & CREATE_PROCESS_GROUP) setpgid(0, 0);
