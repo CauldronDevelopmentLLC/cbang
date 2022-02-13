@@ -38,17 +38,17 @@ def build_function(target, source, env):
     os.makedirs(root_dir, 0o775)
 
     # Apps
-    if 'pkg_apps' in env:
+    if env.get('pkg_apps'):
         d = os.path.join(root_dir, 'Applications')
         os.makedirs(d, 0o775)
         InstallApps(env, 'pkg_apps', d)
 
     # Other files
-    if 'pkg_files' in env:
+    if env.get('pkg_files'):
         env.InstallFiles('pkg_files', root_dir)
 
     # pkg_id
-    if 'app_id' in env and not 'pkg_id' in env:
+    if env.get('app_id') and not env.get('pkg_id'):
         env.Replace(pkg_id = env.get('app_id') + '.pkg')
 
     # pkgbuild command
@@ -58,15 +58,15 @@ def build_function(target, source, env):
            '--version', env.get('version'),
            '--install-location', env.get('pkg_install_to', '/'),
            ]
-    if 'pkg_scripts' in env: cmd += ['--scripts', env.get('pkg_scripts')]
-    if 'pkg_plist' in env: cmd += ['--component-plist', env.get('pkg_plist')]
+    if env.get('pkg_scripts'): cmd += ['--scripts', env.get('pkg_scripts')]
+    if env.get('pkg_plist'): cmd += ['--component-plist', env.get('pkg_plist')]
     cmd += [build_dir + '/%s.pkg' % env.get('package_name')]
 
     RunCommandOrRaise(env, cmd)
 
     # Filter distribution.xml
     dist = None
-    if 'pkg_distribution' in env:
+    if env.get('pkg_distribution'):
         f = open(env.get('pkg_distribution'), 'r')
         data = f.read()
         f.close()
@@ -87,13 +87,16 @@ def build_function(target, source, env):
         cmd += ['--root', root_dir, env.get('pkg_install_to', '/'),
                 '--id', env.get('pkg_id'),
                 '--version', env.get('version')]
-        if 'pkg_scripts' in env: cmd += ['--scripts', env.get('pkg_scripts')]
-    if 'pkg_resources' in env:
+        scripts = env.get('pkg_scripts')
+        if scripts: cmd += ['--scripts', scripts]
+    if env.get('pkg_resources'):
         cmd += ['--resources', env.get('pkg_resources')]
-    if 'sign_id_installer' in env:
+
+    if env.get('sign_id_installer') and not env.get('sign_disable'):
         cmd += ['--sign', env.get('sign_id_installer')]
         if 'sign_keychain' in env:
             cmd += ['--keychain', env.get('sign_keychain')]
+
     cmd += [str(target[0])]
 
     RunCommandOrRaise(env, cmd)
