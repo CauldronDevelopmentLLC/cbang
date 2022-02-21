@@ -25,6 +25,13 @@
 #include <iosfwd>
 #include <string>
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 namespace re2 {
 
 class StringPiece {
@@ -147,7 +154,7 @@ class StringPiece {
   int rfind(char c, size_type pos = npos) const;
 
   StringPiece substr(size_type pos, size_type n = npos) const;
-  
+
   static bool _equal(const StringPiece&, const StringPiece&);
 };
 

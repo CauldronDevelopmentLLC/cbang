@@ -31,6 +31,13 @@
 #include <utility>
 #include <set>
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 // Use std names.
 using std::set;
 using std::pair;

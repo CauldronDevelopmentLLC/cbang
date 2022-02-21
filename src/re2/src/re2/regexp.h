@@ -89,6 +89,13 @@
 #include "util/util.h"
 #include "re2/stringpiece.h"
 
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
+
 namespace re2 {
 
 // Keep in sink with string list kOpcodeNames[] in testing/dump.cc
