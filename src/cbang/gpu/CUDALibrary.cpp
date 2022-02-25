@@ -49,8 +49,7 @@ static const char *cudaLib = "nvcuda.dll";
 #define STDCALL __stdcall
 
 #elif __APPLE__
-// if supported, would be "/usr/local/cuda/lib/libcuda.dylib"
-static const char *cudaLib = "";
+static const char *cudaLib = "/Library/Frameworks/CUDA.framework/CUDA";
 #define STDCALL
 
 #else
