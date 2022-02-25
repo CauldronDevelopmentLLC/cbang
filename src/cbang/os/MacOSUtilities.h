@@ -36,6 +36,7 @@
 
 // macOS specific utility functions
 
+#include <CoreFoundation/CoreFoundation.h>
 #include <cbang/util/Version.h>
 
 namespace cb {
@@ -48,7 +49,9 @@ namespace cb {
 
     cb::Version getMacOSVersion();
 
-  };
+    const std::string toString(const _Nullable CFStringRef cfstr);
+
+  }
 }
 
 #endif // __APPLE__

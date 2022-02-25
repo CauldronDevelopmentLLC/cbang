@@ -64,6 +64,7 @@
 
 #ifdef __APPLE__
 #include <Security/Security.h>
+#include <cbang/os/MacOSUtilities.h>
 #endif
 
 using namespace std;
@@ -96,32 +97,6 @@ namespace {
     }
   }
 }
-
-
-#ifdef __APPLE__
-// FIXME this should be moved to MacOSUtilities
-namespace {
-  const string getStringFromCFString(const CFStringRef cfstr) {
-      if (!cfstr)
-          return string();
-      // CFStringGetCString requires an 8-bit encoding
-      CFStringEncoding encoding = kCFStringEncodingUTF8;
-      const char *str0 = CFStringGetCStringPtr(cfstr, encoding);
-      if (str0)
-          return string(str0);
-      CFIndex len = 1 +
-        CFStringGetMaximumSizeForEncoding(CFStringGetLength(cfstr), encoding);
-      string myString;
-      char *buf = new char[len];
-      if (buf) {
-          if (CFStringGetCString(cfstr, buf, len, encoding))
-              myString = buf;
-          delete[] buf;
-      }
-      return myString;
-  }
-}
-#endif
 
 
 #ifdef __APPLE__
@@ -347,7 +322,7 @@ void SSLContext::loadSystemRootCerts() {
 
     CFStringRef summary0 = SecCertificateCopySubjectSummary(cert);
     if (summary0) {
-      summary = getStringFromCFString(summary0);
+      summary = MacOSUtilities::toString(summary0);
       CFRelease(summary0);
     }
 
