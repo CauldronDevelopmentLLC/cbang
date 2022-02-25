@@ -33,8 +33,6 @@
 #ifdef __APPLE__
 
 #include "MacOSUtilities.h"
-#include <CoreFoundation/CoreFoundation.h>
-//#include <errno.h>
 #include <sys/sysctl.h>
 
 // The bulk of the get macOS version code comes from a
@@ -60,12 +58,6 @@ void initMacOSVersionViaSysctl(void * unused) {
     if ((scans == 1) && (versions[0] > 0))
       versionOK = true;
   }
-#ifdef DEBUG
-  if (ret != 0) str[0] = '\0';
-  printf("kern.osproductversion: \"%s\" (%u.%u.%u) %s\n", str,
-      versions[0], versions[1], versions[2],
-      (versionOK ? "ok":"not ok"));
-#endif
 }
 
 
@@ -78,7 +70,7 @@ void initMacOSVersion(void * unused) {
   if (versionOK) return;
 
   // `Gestalt()` actually gets the system version from this file.
-  // Even `if (@available(macOS 10.x, *))` gets the version from there.
+  // `if (@available(macOS 10.x, *))` also gets the version from there.
   CFURLRef url = CFURLCreateWithFileSystemPath(NULL,
       CFSTR("/System/Library/CoreServices/SystemVersion.plist"),
       kCFURLPOSIXPathStyle, false);
@@ -141,17 +133,13 @@ void initMacOSVersion(void * unused) {
   // accept single-number version if > 0; this could happen in future
   if ((scans == 1) && (versions[0] > 0))
     versionOK = true;
-#ifdef DEBUG
-  printf("SystemVersion.plist ProductVersion: \"%s\" (%u.%u.%u) %s\n", cstr,
-      versions[0], versions[1], versions[2],
-      (versionOK ? "ok":"not ok"));
-#endif
   free(cstr);
 }
 
 
 } // anonymous namespace
 
+using namespace std;
 
 namespace cb {
   namespace MacOSUtilities {
@@ -187,7 +175,27 @@ namespace cb {
       return Version((uint8_t)major, (uint8_t)minor, (uint8_t)release);
     }
 
-  };
+    const string toString(const _Nullable CFStringRef cfstr) {
+      if (!cfstr)
+          return string();
+      // CFStringGetCString requires an 8-bit encoding
+      CFStringEncoding encoding = kCFStringEncodingUTF8;
+      const char *str0 = CFStringGetCStringPtr(cfstr, encoding);
+      if (str0)
+          return string(str0);
+      CFIndex len = 1 +
+        CFStringGetMaximumSizeForEncoding(CFStringGetLength(cfstr), encoding);
+      string myString;
+      char *buf = new char[len];
+      if (buf) {
+          if (CFStringGetCString(cfstr, buf, len, encoding))
+              myString = buf;
+          delete[] buf;
+      }
+      return myString;
+    }
+
+  }
 }
 
 #endif // __APPLE__
