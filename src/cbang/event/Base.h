@@ -77,6 +77,9 @@ namespace cb {
       int getNumActiveEvents() const;
       void countActiveEventsByPriority(std::map<int, unsigned> &counts) const;
 
+      void setTimeout(callback_t cb, double t);
+      void setTimeout(bare_callback_t cb, double t) {setTimeout(bind(cb), t);}
+
       SmartPointer<Event> newEvent(callback_t cb,
                                    unsigned flags = EVENT_PERSIST);
       SmartPointer<Event> newEvent(socket_t fd, callback_t cb,
