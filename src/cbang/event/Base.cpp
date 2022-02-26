@@ -109,6 +109,9 @@ void Base::countActiveEventsByPriority(std::map<int, unsigned> &counts) const {
 }
 
 
+void Base::setTimeout(callback_t cb, double t) {newEvent(cb, 0)->add(t);}
+
+
 SmartPointer<cb::Event::Event>
 Base::newEvent(callback_t cb, unsigned flags) {return newEvent(-1, cb, flags);}
 
