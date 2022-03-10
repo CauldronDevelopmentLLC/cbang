@@ -64,7 +64,7 @@ namespace cb {
     public:
       using Request::Request;
 
-      bool isActive() const {return active;}
+      bool isActive() const;
 
       void setCallback(const cb_t &cb) {this->cb = cb;}
 
