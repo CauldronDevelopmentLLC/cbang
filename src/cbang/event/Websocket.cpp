@@ -48,6 +48,11 @@ using namespace cb;
 using namespace cb::Event;
 
 
+bool Websocket::isActive() const {
+  return active && hasConnection() && getConnection()->isConnected();
+}
+
+
 void Websocket::send(const char *data, unsigned length) {
   if (!active) return Request::send(data, length);
 
@@ -63,10 +68,7 @@ void Websocket::send(const char *data, unsigned length) {
 }
 
 
-void Websocket::send(const string &s) {
-  if (!active) return Request::send(s);
-  send(s.c_str(), s.length());
-}
+void Websocket::send(const string &s) {send(CBANG_CPP_TO_C_STR(s), s.length());}
 
 
 void Websocket::close(WebsockStatus status, const std::string &msg) {
