@@ -276,7 +276,7 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
   LOG_DEBUG(4, CBANG_FUNC << '(' << opcode << ", " << finish << ", " << len
             << ')');
 
-  if (!active) THROW("Not active");
+  if (!isActive()) THROW("Not active");
 
   uint8_t header[14];
   uint8_t bytes = 2;
