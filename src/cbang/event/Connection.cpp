@@ -149,6 +149,7 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
 
     // Start async DNS lookup
     ref->dnsReq = dns.resolve(peer.getHost(), dnsCB);
+    return;
 
   } CATCH_ERROR;
 
