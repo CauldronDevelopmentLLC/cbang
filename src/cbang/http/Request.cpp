@@ -43,12 +43,7 @@ using namespace cb::HTTP;
 
 Request::Request(RequestMethod method, const URI &uri, float version) :
   Message(version), method(method), uri(uri) {
-  if (version != 1.0) {
-    set("Host", uri.getHost());
-    if ((uri.getScheme() == "http" && uri.getPort() != 80) ||
-        (uri.getScheme() == "https" && uri.getPort() != 443))
-      append("Host", String(uri.getPort()));
-  }
+  if (version != 1.0) set("Host", uri.getHost());
 }
 
 
