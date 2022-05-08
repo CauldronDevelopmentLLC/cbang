@@ -42,7 +42,10 @@
 #elif __APPLE__
 #include <machine/endian.h>
 
-#else // POSIX systems
+#elif __FreeBSD__
+#include <sys/endian.h>
+
+#else // Other POSIX systems
 #include <endian.h>
 #endif
 
