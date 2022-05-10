@@ -50,6 +50,9 @@
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
+#  ifdef __FreeBSD__
+#include <netinet/in.h>
+#  endif
 #include <netdb.h>
 #endif
 
