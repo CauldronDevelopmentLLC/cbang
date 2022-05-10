@@ -100,8 +100,7 @@ def configure(conf):
 
     conf.CBRequireLib('cbang-boost')
     conf.CBRequireLib('cbang')
-    if os.uname()[0] == 'FreeBSD'
-        conf.CBRequireLib('sysinfo')
+    if os.uname()[0] == 'FreeBSD': conf.CBRequireLib('sysinfo')
     conf.CBRequireCXXHeader('cbang/Exception.h')
     env.CBDefine('HAVE_CBANG')
 
