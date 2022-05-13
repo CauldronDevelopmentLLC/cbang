@@ -1,5 +1,6 @@
 from SCons.Script import *
 import inspect
+import platform
 import os
 
 
@@ -100,7 +101,7 @@ def configure(conf):
 
     conf.CBRequireLib('cbang-boost')
     conf.CBRequireLib('cbang')
-    if os.uname()[0] == 'FreeBSD': conf.CBRequireLib('sysinfo')
+    if platform.system() == 'FreeBSD': conf.CBRequireLib('sysinfo')
     conf.CBRequireCXXHeader('cbang/Exception.h')
     env.CBDefine('HAVE_CBANG')
 
