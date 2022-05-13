@@ -84,7 +84,9 @@ namespace {
 
 
 bool cb::SSL::initialized = false;
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
 Mutex *cb::SSL::locks = 0;
+#endif
 unsigned cb::SSL::maxHandshakes = 3;
 
 
@@ -316,6 +318,7 @@ unsigned cb::SSL::write(const char *data, unsigned size) {
 }
 
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
 unsigned long cb::SSL::idCallback() {
   return (unsigned long)cb::Thread::self();
 }
@@ -325,6 +328,7 @@ void cb::SSL::lockingCallback(int mode, int n, const char *file, int line) {
   if (mode & CRYPTO_LOCK) locks[n].lock();
   else locks[n].unlock();
 }
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
 
 
 int cb::SSL::passwordCallback(char *buf, int num, int rwflags, void *data) {
@@ -403,6 +407,7 @@ int cb::SSL::findObject(const string &name) {
 void cb::SSL::init() {
   if (initialized) return;
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   SSL_library_init();
   SSL_load_error_strings();
   ERR_load_crypto_strings();
@@ -412,6 +417,13 @@ void cb::SSL::init() {
   CRYPTO_set_id_callback(idCallback);
   CRYPTO_set_locking_callback(lockingCallback);
 
+#else // OPENSSL_VERSION_NUMBER < 0x1010000fL
+  OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS |
+                   OPENSSL_INIT_LOAD_CRYPTO_STRINGS, 0);
+  OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS |
+                      OPENSSL_INIT_ADD_ALL_DIGESTS, 0);
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
   initialized = true;
 }
 
@@ -419,15 +431,15 @@ void cb::SSL::init() {
 void cb::SSL::deinit() {
   if (!initialized) return;
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   CRYPTO_set_id_callback(0);
   CRYPTO_set_locking_callback(0);
 
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   ERR_remove_state(0);
-#endif
   ERR_free_strings();
   EVP_cleanup();
   CRYPTO_cleanup_all_ex_data();
+#endif
 
   initialized = false;
 }

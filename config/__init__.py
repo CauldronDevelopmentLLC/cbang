@@ -261,7 +261,11 @@ def CBWriteConfigDef(env, path):
         f.write('#pragma once\n\n')
 
         for var in sorted(env.cb_config_defs):
-            f.write('#define %s\n' % var)
+            if '=' in var:
+                name, value = var.split('=', 1)
+                f.write('#define %s %s\n' % (name, value))
+
+            else: f.write('#define %s\n' % var)
 
 
 def CBAddVariables(env, *args):
