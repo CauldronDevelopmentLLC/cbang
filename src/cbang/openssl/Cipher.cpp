@@ -49,7 +49,11 @@ Cipher::Cipher(const string &cipher, bool encrypt, const void *key,
   ctx(EVP_CIPHER_CTX_new()), encrypt(encrypt) {
   SSL::init();
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   EVP_CIPHER_CTX_init(ctx);
+#else
+  EVP_CIPHER_CTX_reset(ctx);
+#endif
 
   const EVP_CIPHER *c = EVP_get_cipherbyname(cipher.c_str());
   if (!c) THROW("Unrecognized cipher '" << cipher << "'");
@@ -62,7 +66,11 @@ Cipher::Cipher(const string &cipher, bool encrypt, const void *key,
 
 Cipher::~Cipher() {
   if (ctx) {
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
     EVP_CIPHER_CTX_cleanup(ctx);
+#else
+    EVP_CIPHER_CTX_reset(ctx);
+#endif
     EVP_CIPHER_CTX_free(ctx);
   }
 }

@@ -55,6 +55,8 @@ using namespace std;
 
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
 #define X509_EXTENSION_get_data(e) e->value
+#define X509_CRL_set1_lastUpdate X509_CRL_set_lastUpdate
+#define X509_CRL_set1_nextUpdate X509_CRL_set_nextUpdate
 #endif /* OPENSSL_VERSION_NUMBER < 0x1010000fL */
 
 
@@ -107,7 +109,7 @@ void CRL::setLastUpdate(uint64_t x) {
 
   X509_gmtime_adj(tm, x);
 
-  if (!X509_CRL_set_lastUpdate(crl, tm)) {
+  if (!X509_CRL_set1_lastUpdate(crl, tm)) {
     ASN1_TIME_free(tm);
     THROW("Failed to set CRL's last update: " << SSL::getErrorStr());
   }
@@ -122,7 +124,7 @@ void CRL::setNextUpdate(uint64_t x) {
 
   X509_gmtime_adj(tm, x);
 
-  if (!X509_CRL_set_nextUpdate(crl, tm)) {
+  if (!X509_CRL_set1_nextUpdate(crl, tm)) {
     ASN1_TIME_free(tm);
     THROW("Failed to set CRL's next update: " << SSL::getErrorStr());
   }

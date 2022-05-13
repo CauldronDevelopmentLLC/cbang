@@ -54,7 +54,9 @@ namespace cb {
     unsigned handshakes = 0;
 
     static bool initialized;
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
     static Mutex *locks;
+#endif
     static unsigned maxHandshakes;
 
     enum {
@@ -104,8 +106,11 @@ namespace cb {
     static unsigned getMaxHandshakes() {return maxHandshakes;}
     static void setMaxHandshakes(unsigned n) {maxHandshakes = n;}
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
     static unsigned long idCallback();
     static void lockingCallback(int mode, int n, const char *file, int line);
+#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
+
     static int passwordCallback(char *buf, int num, int rwflags, void *data);
 
     static void flushErrors();
