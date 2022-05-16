@@ -39,10 +39,10 @@ typedef struct rsa_st RSA;
 
 namespace cb {
   class RSA {
-    ::RSA *rsa;
+    const ::RSA *rsa;
 
   public:
-    RSA(::RSA *rsa) : rsa(rsa) {}
+    RSA(const ::RSA *rsa) : rsa(rsa) {}
 
     BigNum getN() const;
     BigNum getE() const;

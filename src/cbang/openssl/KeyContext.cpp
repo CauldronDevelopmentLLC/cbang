@@ -91,7 +91,9 @@ void KeyContext::setRSAPadding(padding_t _padding) {
   switch (_padding) {
   case NO_PADDING:         padding = RSA_NO_PADDING;         break;
   case PKCS1_PADDING:      padding = RSA_PKCS1_PADDING;      break;
+#ifdef RSA_SSLV23_PADDING
   case SSLV23_PADDING:     padding = RSA_SSLV23_PADDING;     break;
+#endif
   case PKCS1_OAEP_PADDING: padding = RSA_PKCS1_OAEP_PADDING; break;
   case X931_PADDING:       padding = RSA_X931_PADDING;       break;
   default: THROW("Invalid padding " << _padding);
