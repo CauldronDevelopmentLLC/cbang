@@ -522,17 +522,17 @@ class CheckFileExists(Check):
 
 class CheckFileSize(CheckFileExists):
   def __init__(self, filename, size):
-    CheckFileExists.__init__(filename, size = size)
+    CheckFileExists.__init__(self, filename, size = size)
 
 
 class CheckFileMinSize(CheckFileExists):
   def __init__(self, filename, size):
-    CheckFileExists.__init__(filename, min_size = size)
+    CheckFileExists.__init__(self, filename, min_size = size)
 
 
 class CheckFileMaxSize(CheckFileExists):
   def __init__(self, filename, size):
-    CheckFileExists.__init__(filename, max_size = size)
+    CheckFileExists.__init__(self, filename, max_size = size)
 
 
 class MatchFilter:

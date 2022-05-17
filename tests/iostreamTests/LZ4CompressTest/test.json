@@ -1,4 +1,6 @@
 {
   "command": "%(suite-dir)s/compress test.txt test.lz4",
-  "checks": ["standard", ["exists", "test.lz4", 28]]
+  "checks": ["standard",
+             ["min_size", "test.lz4", 20],
+             ["max_size", "test.lz4", 60]]
 }
