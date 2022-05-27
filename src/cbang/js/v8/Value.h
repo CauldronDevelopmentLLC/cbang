@@ -86,7 +86,7 @@ namespace cb {
       bool isBoolean() const {return value->IsBoolean();}
       bool toBoolean() const {
         assertDefined();
-#if V8_MAJOR_VERSION < 8
+#if V8_MAJOR_VERSION < 7
         return value->BooleanValue(getCtx()).FromJust();
 #else
         return value->BooleanValue(getIso());
