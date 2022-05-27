@@ -704,7 +704,7 @@ function """ + name_lower + """_start_selected() {
     f = None
     try:
         f = open(target, 'w')
-        tree.write(f, encoding='utf-8')
+        tree.write(f, encoding='unicode')
     finally:
         if f is not None: f.close()
 
@@ -736,7 +736,7 @@ def patch_expanded_pkg_distribution(target, source, env):
         f = None
         try:
             f = open(fpath, 'w')
-            tree.write(f, encoding='utf-8')
+            tree.write(f, encoding='unicode')
         finally:
             if f is not None: f.close()
         # FIXME detect any failures somehow
