@@ -7,6 +7,7 @@ from SCons.Script import *
 import inspect
 import types
 import re
+import shlex
 
 
 def CBCheckEnv(ctx, name, require = False):
@@ -336,18 +337,27 @@ def CBConfigure(env):
     # Load config files
     configs = []
 
-    if 'SCONS_OPTIONS' in os.environ:
-        options = os.environ['SCONS_OPTIONS']
-        if not os.path.exists(options):
-            print('options file "%s" set in SCONS_OPTIONS does not exist' %
-                  options)
-            Exit(1)
-
-        configs.append(options)
-
     if os.path.exists('default-options.py'):
         configs.append('default-options.py')
     if os.path.exists('options.py'): configs.append('options.py')
+
+    if 'SCONS_OPTIONS' in os.environ:
+        options = os.environ['SCONS_OPTIONS']
+        if os.path.exists(options): configs.append(options)
+        else:
+            if '=' not in options:
+                print('options file "%s" set in SCONS_OPTIONS does not exist' %
+                      options)
+                Exit(1)
+
+            env_opts = 'scons-env-options.py'
+            if os.path.exists(env_opts): os.unlink(env_opts)
+            with open(env_opts, 'w') as f:
+                for item in shlex.split(options):
+                    n, v = item.split('=', 1)
+                    f.write('%s="%s"\n' % (n, v))
+
+            configs.append(env_opts)
 
     # Load variables
     v = Variables(configs)
