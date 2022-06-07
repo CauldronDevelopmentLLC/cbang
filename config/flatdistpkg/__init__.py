@@ -193,11 +193,10 @@ def build_component_pkg(info, env):
     # make needed dirs
     if not os.path.isdir(stage): os.makedirs(stage)
 
-    # if root doesn't exist, do full build of root, same as pkg.py does
-    # need package-parameters.json to do so
-    # TODO
-    if not os.path.isdir(root):
-        pass
+    # if pkg_files exists, always copy to root, same as pkg module does
+    pkg_files = info.get('pkg_files')
+    if pkg_files:
+        env.CopyToPackage(pkg_files, root)
 
     if not os.path.isdir(root) and not pkg_nopayload:
         raise Exception('%s component root does not exist! %s' % (name, root))
@@ -499,6 +498,7 @@ def build_distribution_template(env, target=None):
     print('generating ' + target)
 
     distpkg_target = env.get('distpkg_target', '10.5')
+    ver = tuple([int(x) for x in distpkg_target.split('.')])
     distpkg_arch = env.get('distpkg_arch')
     if not distpkg_arch:
         distpkg_arch = env.get('osx_archs')
@@ -515,7 +515,7 @@ def build_distribution_template(env, target=None):
 
     # generate new tree
     import xml.etree.ElementTree as etree
-    root = etree.Element('installer-script', {'minSpecVersion':'1'})
+    root = etree.Element('installer-gui-script', {'minSpecVersion':'2'})
     tree = etree.ElementTree(root)
 
     etree.SubElement(root, 'title').text = \
@@ -526,8 +526,7 @@ def build_distribution_template(env, target=None):
     allow_external = env.get('distpkg_allow_external_scripts', False)
     if allow_external: allow_external = 'yes'
     else: allow_external = 'no'
-    allow_ppc = distpkg_arch and 'ppc' in distpkg_arch and \
-        (distpkg_target.split('.') < '10.6'.split('.'))
+    allow_ppc = 'ppc' in distpkg_arch.lower() and ver < (10,6)
     if distpkg_root_volume_only: rootVolumeOnly = 'true'
     else: rootVolumeOnly = 'false'
     opts = {
@@ -619,8 +618,7 @@ function volume_check() {
 }
 function install_check() {"""
 
-    if not allow_ppc and \
-        (distpkg_target.split('.') < '10.6'.split('.')):
+    if not allow_ppc and ver < (10,6):
         script_text += """
   if (system.sysctl('hw.cputype') == '18') {
     my.result.title = 'Unable to Install';
@@ -650,7 +648,8 @@ function install_check() {"""
     for info in components:
         pkg_id = info.get('pkg_id')
         name_lower = info.get('package_name_lower')
-        pkg_target = info.get('distpkg_target', distpkg_target)
+        pkg_target = info.get('pkg_target', distpkg_target)
+        pkg_ver = tuple([int(x) for x in pkg_target.split('.')])
         choice_id = name_lower
         # remove any dots or spaces in choice_id for 10.5 compatibility
         choice_id = choice_id.replace('.','').replace(' ','')
@@ -682,7 +681,7 @@ function install_check() {"""
                 etree.SubElement(must_close, 'app', {'id':app_id})
             pkgrefs.append(r)
         # if appropriate, add start_{enabled,selected} attrs and script
-        if pkg_target and pkg_target.split('.') > distpkg_target.split('.'):
+        if pkg_ver > ver:
             # add start_{enabled,selected} attrs to choice
             # add min version scripts to script_text
             # TODO add arch checks if component has diff reqs than distpkg
@@ -712,7 +711,8 @@ function """ + name_lower + """_start_selected() {
 def patch_expanded_pkg_distribution(target, source, env):
     # fixup whatever needs changing for < 10.6.6 compatibility
     distpkg_target = env.get('distpkg_target', '10.5')
-    if distpkg_target.split('.') >= '10.6.6'.split('.'):
+    ver = tuple([int(x) for x in distpkg_target.split('.')])
+    if ver >= (10,6,6):
         return
 
     fpath = os.path.join(target, 'Distribution')
@@ -815,7 +815,7 @@ def flat_dist_pkg_build(target, source, env):
     # TODO: more validation here ...
 
     name = env.get('package_name')
-    print('Building "%s" flat, target %s' % (name, distpkg_target))
+    print('Building "%s", target %s' % (name, distpkg_target))
 
     # copy our own dist Resources
     if env.get('distpkg_resources'):

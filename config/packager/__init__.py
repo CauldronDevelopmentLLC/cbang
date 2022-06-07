@@ -307,16 +307,11 @@ def generate(env):
             ('osx_min_ver', 'Set minimum support OSX version.', '10.7'),
             )
 
-    env.SetDefault(PACKAGE_EXCLUDES = ['.svn', '.sconsign.dblite',
+    env.SetDefault(PACKAGE_EXCLUDES = ['.DS_Store', '.svn', '.sconsign.dblite',
                                        '.sconf_temp', '*~', '*.o', '*.obj'])
 
-    env.CBLoadTool('nsi')
-    env.CBLoadTool('pkg')
-    env.CBLoadTool('distpkg')
-    env.CBLoadTool('flatdistpkg')
-    env.CBLoadTool('app')
-    env.CBLoadTool('deb')
-    env.CBLoadTool('rpm')
+    for tool in deps:
+        env.CBLoadTool(tool)
 
     env.AddMethod(FindFiles)
     env.AddMethod(WriteVariable)
