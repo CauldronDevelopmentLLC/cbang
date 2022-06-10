@@ -145,6 +145,7 @@ def GetPackageName(env, name, without_build = False, type = None):
         if type == 'rpm': name += '.' + arch
         else: name += seps[0] + arch # deb and others
 
+    if type == 'mpkg': type = 'pkg' # bundle mpkg is deprecated
     name += '.' + type
     if type in ('app', 'mpkg'): name += '.zip'
 
