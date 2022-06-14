@@ -23,7 +23,8 @@ def build_function(target, source, env):
     # Create Info.plist
     import plistlib
     plist_template = env.get('app_plist_template', None)
-    if plist_template is not None: info = plistlib.readPlist(plist_template)
+    if plist_template is not None:
+        with open(plist_template, 'rb') as f: info = plistlib.load(f)
     else: info = {}
 
     # Info.plist keys
@@ -46,7 +47,7 @@ def build_function(target, source, env):
     if other is not None: info.update(other)
 
     info_file = os.path.join(contents_dir, 'Info.plist')
-    plistlib.writePlist(info, info_file)
+    with open(info_file, 'wb') as f: plistlib.dump(info, f)
 
     # Let 'app_programs' override 'programs'
     if 'app_programs' in env: programs_key = 'app_programs'
