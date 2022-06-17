@@ -97,6 +97,7 @@ def CBCheckLib(ctx, lib, unique = False, append = False, **kwargs):
     if libname: lib = libname
 
     if ctx.sconf.CheckLib(lib, autoadd = 0, **kwargs):
+        if '/' in lib or '\\' in lib: lib = File(lib)
         if unique: ctx.env.PrependUnique(LIBS = [lib])
         else: ctx.env.Prepend(LIBS = [lib])
 
