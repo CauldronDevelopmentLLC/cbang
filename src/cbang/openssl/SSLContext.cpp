@@ -347,7 +347,12 @@ void SSLContext::loadSystemRootCerts() {
       // https://github.com/macports/macports-ports/blob/master/security/certsync/files/certsync.m
 
       if (err == errSecSuccess) {
+#if __clang__
         if (__builtin_available(macOS 10.14, *)) { // macOS 10.14+
+#else
+        Version vers = MacOSUtilities::getMacOSVersion();
+        if (vers >= Version(10, 14)) {
+#endif
           valid = SecTrustEvaluateWithError(trust, NULL);
           LOG_DEBUG(5, "Called SecTrustEvaluateWithError()");
         } else {
