@@ -299,7 +299,8 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
         if compiler == 'gnu': # Enable dead code removal
-            env.AppendUnique(LINKFLAGS = ['-Wl,--gc-sections'])
+            if env['PLATFORM'] != 'darwin':
+                env.AppendUnique(LINKFLAGS = ['-Wl,--gc-sections'])
             env.AppendUnique(CCFLAGS =
                              ['-ffunction-sections', '-fdata-sections'])
 
@@ -445,7 +446,7 @@ def configure(conf, cstd = 'c99'):
 
 
     # Don't link unneeded dynamic libs
-    if compiler == 'gnu':
+    if compiler == 'gnu' and env['PLATFORM'] != 'darwin':
         env.PrependUnique(LINKFLAGS = ['-Wl,--as-needed'])
 
 
