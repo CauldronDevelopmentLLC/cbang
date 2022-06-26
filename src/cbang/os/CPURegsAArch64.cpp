@@ -52,6 +52,7 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <mach/machine.h>
+#include <string.h>
 #endif
 
 using namespace cb;
