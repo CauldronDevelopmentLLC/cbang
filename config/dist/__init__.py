@@ -24,17 +24,18 @@ def find_files(path, exclude = None):
 def modify_targets(target, source, env):
     if env.get('debug', False): mode = 'debug'
     else: mode = 'release'
+    mode = env.get('PACKAGE_MODE', mode)
 
     dist_ver = env.get('dist_version', env.subst('$PACKAGE_VERSION'))
 
     vars = {
-        'machine' : platform.machine(),
-        'bits' : platform.architecture()[0],
-        'system' : platform.system(),
-        'release' : platform.release(),
-        'version' : dist_ver,
-        'date' : time.strftime('%Y%m%d'),
-        'mode' : mode,
+        'machine': platform.machine(),
+        'bits':    platform.architecture()[0],
+        'system':  platform.system(),
+        'release': platform.release(),
+        'version': dist_ver,
+        'date':    time.strftime('%Y%m%d'),
+        'mode':    mode,
         }
 
     build = env.get('dist_build')
