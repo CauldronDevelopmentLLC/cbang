@@ -42,9 +42,14 @@ def modify_targets(target, source, env):
     if len(build) and build[0] not in '-_': build = '_' + build
     if len(dist_ver): build = '_' + dist_ver + build
 
-    target = ((str(target[0]) + build) % vars % env._dict) + '.tar.bz2'
+    target = ((str(target[0]) + build) % vars % env._dict) + '.tar'
 
     return [target.lower(), source]
+
+
+def modify_targets_bz2(target, source, env):
+    target, source = modify_targets(target, source, env)
+    return [target + '.bz2', source]
 
 
 def build_function(target, source, env):
@@ -60,7 +65,7 @@ def build_function(target, source, env):
 
     dist_name = os.path.splitext(os.path.splitext(target)[0])[0]
 
-    tar = tarfile.open(target, mode = 'w:bz2')
+    tar = tarfile.open(target, mode = 'w')
 
     exclude_pats = env.get('DIST_EXCLUDES')
     exclude_re = re.compile('^((' + ')|('.join(exclude_pats) + '))$')
@@ -82,7 +87,13 @@ def generate(env):
                   source_factory = SCons.Node.FS.Entry,
                   source_scanner = SCons.Defaults.DirScanner,
                   emitter = modify_targets)
-    env.Append(BUILDERS = {'TarBZ2Dist' : bld})
+    bld_bz2 = Builder(action = build_function,
+                      source_factory = SCons.Node.FS.Entry,
+                      source_scanner = SCons.Defaults.DirScanner,
+                      emitter = modify_targets_bz2)
+
+    env.Append(BUILDERS = {'TarBZ2Dist' : bld_bz2})
+    env.Append(BUILDERS = {'TarDist' : bld})
 
     return True
 
