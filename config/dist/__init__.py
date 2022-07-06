@@ -58,7 +58,8 @@ def build_function(target, source, env):
     # Write 'dist.txt'
     with open('dist.txt', 'w') as f: f.write(target)
 
-    dist_name = os.path.splitext(os.path.splitext(target)[0])[0]
+    m = re.match(r'^(.*)\.tar(\.\w+)?$', target)
+    dist_name = m.group(1)
 
     with tarfile.open(target, mode = 'w') as tar:
         exclude_pats = env.get('DIST_EXCLUDES')
