@@ -17,9 +17,7 @@ class ResourceContext:
     def __init__(self): pass
 
 
-def start_file(ctx, path):
-    f = open(path, 'w')
-
+def start_file(ctx, f):
     note = ('WARNING: This file was auto generated.  Please do NOT '
             'edit directly or check in to source control.')
 
@@ -36,15 +34,11 @@ def start_file(ctx, path):
         for namespace in ctx.ns.split('::'):
             f.write('namespace %s {\n' % namespace)
 
-    return f
-
 
 def end_file(ctx, f):
     if ctx.ns:
         for namespace in ctx.ns.split('::'):
             f.write('} // namespace %s\n' % namespace)
-
-    f.close()
 
 
 def write_string(ctx, output, s, newline = 0):
@@ -95,29 +89,29 @@ def write_resource(ctx, output, data_dir, path, children = None,
         print('Writing resource: %s to %s' % (path, out_path))
 
         typeStr = 'File'
-        f = open(path, 'rb')
+        with open(path, 'rb') as f:
+            prototype = 'extern const unsigned char data%d[]' % id
 
-        prototype = 'extern const unsigned char data%d[]' % id
+            write_string(ctx, output, '%s;\n' % prototype)
 
-        write_string(ctx, output, '%s;\n' % prototype)
+            with open(out_path, 'w') as out:
+                start_file(ctx, out)
 
-        out = start_file(ctx, out_path)
+                write_string(ctx, out, prototype + ' = {')
 
-        write_string(ctx, out, prototype + ' = {')
+                while True:
+                    count = 0
+                    for c in f.read(102400):
+                        if not isinstance(c, int): c = ord(c)
+                        write_string(ctx, out, '%d,' % c)
+                        count += 1
 
-        while True:
-            count = 0
-            for c in f.read(102400):
-                if not isinstance(c, int): c = ord(c)
-                write_string(ctx, out, '%d,' % c)
-                count += 1
+                    if count == 0: break
+                    length += count
 
-            if count == 0: break
-            length += count
+                write_string(ctx, out, '0};\n')
 
-        write_string(ctx, out, '0};\n')
-
-        end_file(ctx, out)
+                end_file(ctx, out)
 
     if children != None: children.append(id)
 
@@ -187,12 +181,13 @@ def resources_build(target, source, env):
     os.mkdir(data_dir)
 
     # Write resources
-    f = start_file(ctx, target)
+    with open(target, 'w') as f:
+        start_file(ctx, f)
 
-    for src in source:
-        write_resource(ctx, f, data_dir, str(src))
+        for src in source:
+            write_resource(ctx, f, data_dir, str(src))
 
-    end_file(ctx, f)
+        end_file(ctx, f)
 
 
 def get_targets(exclude, path, data_dir, count = [0]):

@@ -294,12 +294,7 @@ def build_component_pkgs(env):
         if not desc:
             fname = os.path.join(home, filename_package_desc_txt)
             if os.path.isfile(fname):
-                f = None
-                try:
-                    f = open(fname, 'r')
-                    desc = f.read().strip()
-                finally:
-                    if f is not None: f.close()
+                with open(fname, 'r') as f: desc = f.read().strip()
         if not desc:
             desc = info.get('summary', '').strip()
         if desc:
@@ -351,12 +346,7 @@ def unlock_keychain(env, keychain=None, password=None):
     if password is None:
         passfile = os.path.expanduser('~/.ssh/p')
         if os.path.isfile(passfile):
-            f = None
-            try:
-                f = open(passfile, 'r')
-                password = f.read().strip('\n')
-            finally:
-                if f is not None: f.close()
+            with open(passfile, 'r') as f: password = f.read().strip('\n')
     if password:
         cmd = ['security', 'unlock-keychain', '-p', password]
         if keychain: cmd += [keychain]
@@ -699,12 +689,7 @@ function """ + name_lower + """_start_selected() {
     etree.SubElement(root, 'script').text = script_text
 
     # save tree to target
-    f = None
-    try:
-        f = open(target, 'w')
-        tree.write(f, encoding='unicode')
-    finally:
-        if f is not None: f.close()
+    with open(target, 'w') as f: tree.write(f, encoding = 'unicode')
 
 
 def patch_expanded_pkg_distribution(target, source, env):
@@ -732,12 +717,7 @@ def patch_expanded_pkg_distribution(target, source, env):
             print('changing minSpecVersion from %s to 1' % minSpecVersion)
             root.set('minSpecVersion', '1')
         # overwrite back to fpath
-        f = None
-        try:
-            f = open(fpath, 'w')
-            tree.write(f, encoding='unicode')
-        finally:
-            if f is not None: f.close()
+        with open(fpath, 'w') as f: tree.write(f, encoding = 'unicode')
         # FIXME detect any failures somehow
         return
     # failed to load xml

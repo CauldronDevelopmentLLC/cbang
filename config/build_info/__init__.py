@@ -116,36 +116,33 @@ def build_function(target, source, env):
             )
 
     target = str(target[0])
-    f = open(target, 'w')
+    with open(target, 'w') as f:
+        note = ('WARNING: This file was auto generated.  Please do NOT '
+                'edit directly or check in to source control.')
 
-    note = ('WARNING: This file was auto generated.  Please do NOT '
-            'edit directly or check in to source control.')
+        f.write(
+            '/' + ('*' * 75) + '\\\n   ' +
+            '\n   '.join(textwrap.wrap(note)) + '\n' +
+            '\\' + ('*' * 75) + '/\n'
+            '\n'
+            '#include <cbang/Info.h>\n'
+            '#include <cbang/String.h>\n'
+            '#include <cbang/util/CompilerInfo.h>\n\n'
+            'using namespace cb;\n\n'
+            )
 
-    f.write(
-        '/' + ('*' * 75) + '\\\n   ' +
-        '\n   '.join(textwrap.wrap(note)) + '\n' +
-        '\\' + ('*' * 75) + '/\n'
-        '\n'
-        '#include <cbang/Info.h>\n'
-        '#include <cbang/String.h>\n'
-        '#include <cbang/util/CompilerInfo.h>\n\n'
-        'using namespace cb;\n\n'
-        )
+        ns = env.subst('$BUILD_INFO_NS')
+        if ns:
+            for namespace in ns.split('::'):
+                f.write(env.subst('namespace %s {\n' % namespace))
 
-    ns = env.subst('$BUILD_INFO_NS')
-    if ns:
-        for namespace in ns.split('::'):
-            f.write(env.subst('namespace %s {\n' % namespace))
+        f.write(env.subst(contents) + '\n')
 
-    f.write(env.subst(contents) + '\n')
-
-    if ns:
-        parts = ns.split('::')
-        parts.reverse()
-        for namespace in parts:
-            f.write('} // namespace %s\n' % namespace)
-
-    f.close()
+        if ns:
+            parts = ns.split('::')
+            parts.reverse()
+            for namespace in parts:
+                f.write('} // namespace %s\n' % namespace)
 
     return None
 
