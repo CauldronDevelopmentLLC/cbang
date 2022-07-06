@@ -244,12 +244,8 @@ def RunCommand(env, cmd):
 def WriteStringToFile(env, path, contents):
     if not isinstance(contents, (list, tuple)): contents = [contents]
 
-    f = None
-    try:
-        f = open(path, 'w')
+    with open(path, 'w') as f:
         for line in contents: f.write(line + '\n')
-    finally:
-        if f is not None: f.close()
 
 
 def Packager(env, name, **kwargs):

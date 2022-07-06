@@ -22,10 +22,7 @@ def replace_underscore(s):
 
 
 def write_control(path, env, installed_size):
-    f = None
-    try:
-        f = open(path, 'w')
-
+    with open(path, 'w')  as f:
         write_var = env.WriteVariable
         write_var(env, f, 'Package', 'package_name_lower', None,
                   replace_underscore)
@@ -55,10 +52,6 @@ def write_control(path, env, installed_size):
         for line in env.get('description').split('\n'):
             if line.strip() == '': line = '.'
             f.write(' %s\n' % line)
-
-
-    finally:
-        if f is not None: f.close()
 
 
 def install_files(env, key, target, perms = 0o644, dperms = 0o755):
@@ -98,18 +91,12 @@ def build_function(target, source, env):
     docs_dir =  build_dir + '/usr/share/doc/' + name
 
     # Create conffiles
-    filename = build_dir + '/DEBIAN/conffiles'
-    f = None
-    try:
-        conffiles = get_files(env, 'init_d', '/etc/init.d')
-        if conffiles is not None:
+    conffiles = get_files(env, 'init_d', '/etc/init.d')
+    if conffiles:
+        def opener(path, flags): return os.open(path, flags, 0o644)
+        with open(build_dir + '/DEBIAN/conffiles', 'w', opener = opener) as f:
             for src, dst, mode in conffiles:
-                if f is None: f = open(filename, 'w')
                 f.write(dst + '\n')
-    finally:
-        if f is not None:
-            f.close()
-            os.chmod(filename, 0o644)
 
     # Debian changelog
     changelog = build_dir + '/DEBIAN/changelog'

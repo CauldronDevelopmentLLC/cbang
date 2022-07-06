@@ -18,13 +18,7 @@ def write_spec_script(f, env, name, var):
     if var in env:
         script = env.get(var)
 
-        input = None
-        try:
-            input = open(script, 'r')
-            contents = input.read().strip()
-
-        finally:
-            if input is not None: input.close()
+        with open(script, 'r') as input: contents = input.read().strip()
 
         f.write('%%%s\n%s\n\n' % (name, contents))
 
@@ -55,10 +49,7 @@ def build_function(target, source, env):
 
     # Create the SPEC file
     spec_file = 'build/%s.spec' % name
-    f = None
-    try:
-        f = open(spec_file, 'w')
-
+    with open(spec_file, 'w') as f:
         # Create the preamble
         write_var = env.WriteVariable
         write_var(env, f, 'Summary', 'summary')
@@ -114,9 +105,6 @@ def build_function(target, source, env):
 
         # ChangeLog
         write_spec_text_section(f, env, 'changelog', 'rpm_changelog')
-
-    finally:
-        if f is not None: f.close()
 
     # Create directories needed by rpmbuild
     for dir in ['BUILD', 'BUILDROOT', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS']:

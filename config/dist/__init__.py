@@ -56,23 +56,17 @@ def build_function(target, source, env):
     target = str(target[0])
 
     # Write 'dist.txt'
-    f = None
-    try:
-        f = open('dist.txt', 'w')
-        f.write(target)
-    finally:
-        if f is not None: f.close()
+    with open('dist.txt', 'w') as f: f.write(target)
 
     dist_name = os.path.splitext(os.path.splitext(target)[0])[0]
 
-    tar = tarfile.open(target, mode = 'w')
+    with tarfile.open(target, mode = 'w') as tar:
+        exclude_pats = env.get('DIST_EXCLUDES')
+        exclude_re = re.compile('^((' + ')|('.join(exclude_pats) + '))$')
 
-    exclude_pats = env.get('DIST_EXCLUDES')
-    exclude_re = re.compile('^((' + ')|('.join(exclude_pats) + '))$')
-
-    for src in map(str, source):
-        for file in find_files(src, exclude_re):
-            tar.add(file, dist_name + '/' + file)
+        for src in map(str, source):
+            for file in find_files(src, exclude_re):
+                tar.add(file, dist_name + '/' + file)
 
 
 def generate(env):

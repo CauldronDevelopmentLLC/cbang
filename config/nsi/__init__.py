@@ -35,16 +35,9 @@ def build_function(target, source, env):
         env['PACKAGE_ARCH'] = platform.architecture()[0][:2]
 
     tmp = nsi + '.tmp'
-    input = None
-    output = None
-    try:
-        input = open(nsi, 'r')
-        output = open(tmp, 'w')
-        output.write(input.read() % env)
-
-    finally:
-        if input is not None: input.close()
-        if output is not None: output.close()
+    with open(nsi, 'r') as input:
+        with open(tmp, 'w') as output:
+            output.write(input.read() % env)
 
     action = CommandAction('$NSISCOM $NSISOPTS ' + tmp)
     ret = action.execute(target, [tmp], env)

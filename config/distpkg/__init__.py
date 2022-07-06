@@ -127,12 +127,8 @@ function pm_install_check() {
         SubElement(root, 'pkg-ref', pkg_ref_info).text = pkg_path
 
     tree = ElementTree(root)
-    f = None
-    try:
-        f = open(contents_dir + '/distribution.dist', 'w')
+    with open(contents_dir + '/distribution.dist', 'w') as f:
         tree.write(f, 'utf-8')
-    finally:
-        if f is not None: f.close()
 
     # Install files
     env.InstallFiles('distpkg_resources', resources_dir)

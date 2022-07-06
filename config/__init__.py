@@ -396,24 +396,17 @@ def CBDownload(env, target, url):
         opener = urllib.build_opener(urllib.ProxyHandler(handlers))
         urllib.install_opener(opener)
 
-    f = None
-    stream = None
-    try:
-        stream = urllib.urlopen(url)
-        f = open(target, 'wb', 0) # Unbuffered
-        while stream and f:
-            data = stream.read(1024 * 1024)
-            if not data: break
-            f.write(data)
-            sys.stdout.write('.')
-            sys.stdout.flush()
+    with urllib.urlopen(url) as stream:
+        with open(target, 'wb', 0) as f: # Unbuffered
+            while stream and f:
+                data = stream.read(1024 * 1024)
+                if not data: break
+                f.write(data)
+                sys.stdout.write('.')
+                sys.stdout.flush()
 
         sys.stdout.write('ok\n')
         sys.stdout.flush()
-
-    finally:
-        if f is not None: f.close()
-        if stream is not None: stream.close()
 
 
 def CBAddConfigFinishCB(env, cb):

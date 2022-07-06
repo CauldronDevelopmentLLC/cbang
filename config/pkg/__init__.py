@@ -67,13 +67,9 @@ def build_function(target, source, env):
     # Filter distribution.xml
     dist = None
     if env.get('pkg_distribution'):
-        f = open(env.get('pkg_distribution'), 'r')
-        data = f.read()
-        f.close()
+        with open(env.get('pkg_distribution'), 'r') as f: data = f.read()
         dist = build_dir + '/distribution.xml'
-        f = open(dist, 'w')
-        f.write(data % env)
-        f.close()
+        with open(dist, 'w') as f: f.write(data % env)
 
     # productbuild command
     cmd = ['${PRODUCTBUILD}']
