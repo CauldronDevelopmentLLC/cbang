@@ -193,6 +193,9 @@ def resources_build(target, source, env):
 def get_targets(exclude, path, data_dir, count = [0]):
     if is_excluded(exclude, path): return []
 
+    if not os.path.exists(path):
+        raise Exception('Resource "%s" does not exist' % path)
+
     id = count[0]
     count[0] += 1
 
@@ -200,21 +203,20 @@ def get_targets(exclude, path, data_dir, count = [0]):
         targets = []
 
         for name in os.listdir(path):
-            targets += \
-                get_targets(exclude, os.path.join(path, name), data_dir, count)
+            child = os.path.join(path, name)
+            targets += get_targets(exclude, child, data_dir, count)
 
         return targets
 
-    else:
-        target = '%s/data%d.cpp' % (data_dir, id)
-        return [File(target)]
+    return [File('%s/data%d.cpp' % (data_dir, id))]
 
 
 def modify_targets(target, source, env):
     exclude = get_exclude(env)
     name = str(target[0])
     data_dir = os.path.splitext(name)[0] + ".data"
-    target += get_targets(exclude, str(source[0]), data_dir, [0])
+    count = [0]
+    for s in source: target += get_targets(exclude, str(s), data_dir, count)
     print(tuple(map(str, target)))
     Depends(target, FindFile('cbang/util/Resource.h', env['CPPPATH']))
     return target, source
