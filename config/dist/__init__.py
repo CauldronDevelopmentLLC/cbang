@@ -62,7 +62,9 @@ def build_function(target, source, env):
     m = re.match(r'^(.*)\.tar(\.\w+)?$', target)
     dist_name = m.group(1)
 
-    with tarfile.open(target, mode = 'w') as tar:
+    mode = 'w:bz2' if target.endswith('.bz2') else 'w'
+
+    with tarfile.open(target, mode = mode) as tar:
         exclude_pats = env.get('DIST_EXCLUDES')
         exclude_re = re.compile('^((' + ')|('.join(exclude_pats) + '))$')
 
