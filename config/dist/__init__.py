@@ -9,14 +9,15 @@ from SCons.Script import *
 
 def find_files(path, exclude = None):
     if not os.path.exists(path): return []
-    if exclude:
-        dir, filename = os.path.split(path)
-        if exclude.match(filename): return []
-    if not os.path.isdir(path): return [path]
+    dir, filename = os.path.split(path)
+
+    if exclude and exclude.match(filename): return []
+    if not os.path.isdir(path): return [(path, filename)]
 
     files = []
     for f in os.listdir(path):
-        files += find_files(path + '/' + f, exclude)
+        children = find_files(path + '/' + f, exclude)
+        files += [(path, filename + '/' + name) for path, name in children]
 
     return files
 
@@ -66,8 +67,8 @@ def build_function(target, source, env):
         exclude_re = re.compile('^((' + ')|('.join(exclude_pats) + '))$')
 
         for src in map(str, source):
-            for file in find_files(src, exclude_re):
-                tar.add(file, dist_name + '/' + file)
+            for path, name in find_files(src, exclude_re):
+                tar.add(path, dist_name + '/' + name)
 
 
 def generate(env):
