@@ -160,6 +160,7 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     info.add("System", "UTC Offset", String(Time::offset() / 3600));
     info.add("System", "PID", String(SystemUtilities::getPID()));
     info.add("System", "CWD", SystemUtilities::getcwd());
+    info.add("System", "Exec", SystemUtilities::getExecutablePath());
   }
 
   // Script functions
