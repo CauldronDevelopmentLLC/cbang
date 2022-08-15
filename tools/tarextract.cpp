@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2022, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -30,35 +29,20 @@
 
 \******************************************************************************/
 
-#pragma once
+#include <cbang/Catch.h>
+#include <cbang/tar/TarFileReader.h>
 
-#include "Tar.h"
-
-#include <cbang/SmartPointer.h>
-
-#include <istream>
-#include <string>
+using namespace std;
+using namespace cb;
 
 
-namespace cb {
-  class TarFileReader : public Tar {
-    struct private_t;
-    private_t *pri;
-    SmartPointer<std::istream> stream;
-    bool didReadHeader;
+int main(int argc, char *argv[]) {
+  try {
+    for (int i = 1; i < argc; i++)
+      TarFileReader(argv[i]).extractAll();
 
-  public:
-    TarFileReader(const std::string &path,
-                  Compression compression = COMPRESSION_AUTO);
-    TarFileReader(std::istream &stream,
-                  Compression compression = COMPRESSION_NONE);
-    ~TarFileReader();
+    return 0;
+  } CATCH_ERROR;
 
-    bool hasMore();
-    bool next();
-
-    std::string extract(const std::string &path = ".");
-    std::string extract(std::ostream &out);
-    void extractAll(const std::string &path = ".");
-  };
+  return 1;
 }

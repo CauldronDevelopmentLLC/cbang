@@ -36,17 +36,23 @@
 #include <string>
 #include <iostream>
 
+
+// https://www.gnu.org/software/tar/manual/html_node/Standard.html
+
 namespace cb {
   struct TarHeader {
     enum type_t {
-      NORMAL_FILE,
-      HARD_LINK,
-      SYMBOLIC_LINK,
-      CHARACTER_DEV,
-      BLOCK_DEV,
-      DIRECTORY,
-      FIFO,
-      CONTIGUOUS_FILE,
+      REG_FILE        = 0,
+      NORMAL_FILE     = '0',
+      HARD_LINK       = '1',
+      SYMBOLIC_LINK   = '2',
+      CHARACTER_DEV   = '3',
+      BLOCK_DEV       = '4',
+      DIRECTORY       = '5',
+      FIFO            = '6',
+      CONTIGUOUS_FILE = '7',
+      PAX_EXTENDED    = 'x',
+      PAX_GLOBAL      = 'g',
     };
 
     char filename[100];
@@ -58,7 +64,14 @@ namespace cb {
     char checksum[8];
     char type[1];
     char link_name[100];
-    char reserved[255];
+    char magic[6];
+    char version[2];
+    char uname[32];
+    char gname[32];
+    char devmajor[8];
+    char devminor[8];
+    char prefix[155];
+    char reserved[12];
 
     bool checksum_valid;
 

@@ -20,5 +20,5 @@ conf.Finish()
 
 # Tools
 for tool in ['acmev2', 'request', 'server', 'httpserver', 'httpclient',
-             'jsonparser', 'cpuinfo']:
+             'jsonparser', 'cpuinfo', 'tarextract']:
   Default(env.Program(tool, tool + '.cpp'))
