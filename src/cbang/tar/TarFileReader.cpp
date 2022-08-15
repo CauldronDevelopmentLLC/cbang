@@ -108,9 +108,14 @@ std::string TarFileReader::extract(const string &_path) {
   LOG_DEBUG(5, "Extracting: " << path);
 
   switch (getType()) {
-  case NORMAL_FILE: case CONTIGUOUS_FILE:
-    return extract(*SystemUtilities::oopen(path));
-  case DIRECTORY: SystemUtilities::ensureDirectory(path); break;
+  case REG_FILE: case NORMAL_FILE: case CONTIGUOUS_FILE:
+    return extract(*SystemUtilities::oopen(path, getMode()));
+
+  case DIRECTORY:
+    SystemUtilities::ensureDirectory(path);
+    didReadHeader = false;
+    break;
+
   default: THROW("Unsupported tar file type " << getType());
   }
 
@@ -125,4 +130,9 @@ string TarFileReader::extract(ostream &out) {
   didReadHeader = false;
 
   return getFilename();
+}
+
+
+void TarFileReader::extractAll(const string &path) {
+  while (next()) extract(path);
 }

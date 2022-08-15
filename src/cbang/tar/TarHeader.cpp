@@ -56,6 +56,7 @@ static size_t __strnlen(const char *s, size_t limit) {
 
 
 TarHeader::TarHeader(const string &filename, uint64_t size) {
+  memset(this->filename, 0, 512);
   setFilename(filename);
   setMode(0644);
   setOwner(0);
@@ -64,7 +65,8 @@ TarHeader::TarHeader(const string &filename, uint64_t size) {
   setModTime(time(0));
   setType(NORMAL_FILE);
   setLinkName("");
-  memset(reserved, 0, 255);
+  writeString("ustar", magic, 6);
+  writeNumber((uint32_t)0, version, 2);
 }
 
 
@@ -106,7 +108,7 @@ void TarHeader::setModTime(uint64_t mod_time) {
 
 void TarHeader::setType(type_t type) {
   checksum_valid = false;
-  this->type[0] = (type & 7) + '0';
+  this->type[0] = (char)type;
 }
 
 
@@ -146,9 +148,7 @@ uint64_t TarHeader::getModTime() const {
 }
 
 
-TarHeader::type_t TarHeader::getType() const {
-  return (type_t)(type[0] - '0');
-}
+TarHeader::type_t TarHeader::getType() const {return (type_t)type[0];}
 
 
 const string TarHeader::getLinkName() const {
@@ -194,6 +194,19 @@ bool TarHeader::read(istream &stream) {
              << " expected=" << sum);
   }
 
+  // Skip over PAX extended headers
+  if (getType() == PAX_EXTENDED || getType() == PAX_GLOBAL) {
+    unsigned blocks = (getSize() + 511) / 512;
+
+    for (unsigned i = 0; i < blocks; i++) {
+      stream.read(filename, 512);
+      if (stream.gcount() != 512)
+        THROW("Tar file expected extended block");
+    }
+
+    return read(stream);
+  }
+
   return true;
 }
 
@@ -215,9 +228,7 @@ void TarHeader::writeNumber(uint64_t n, char *buf, unsigned length) {
 }
 
 
-bool TarHeader::isEOF() const {
-  return readNumber(checksum, 6) == 0;
-}
+bool TarHeader::isEOF() const {return readNumber(checksum, 6) == 0;}
 
 
 void TarHeader::writeString(const string &s, char *buf, unsigned length) {
