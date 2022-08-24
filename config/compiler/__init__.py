@@ -595,7 +595,7 @@ def generate(env):
     env.CBAddConfigFinishCB(prefer_static_libs)
     env.AddMethod(CBConfConsole)
 
-    env.SetDefault(PREFER_DYNAMIC = 'pthread dl'.split())
+    env.SetDefault(PREFER_DYNAMIC = 'pthread dl rt'.split())
     env.SetDefault(PREFER_STATIC = [])
     env.SetDefault(REQUIRE_STATIC = [])
 
