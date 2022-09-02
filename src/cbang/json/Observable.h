@@ -83,8 +83,13 @@ namespace cb {
 
 
       void set(unsigned i, const ValuePtr &_value) {
+        // Block operation if value is equal
+        ValuePtr current = T::get(i);
+        if (*_value == *current) return;
+
+        current->clearParentRef();
+
         ValuePtr value = convert(_value);
-        T::get(i)->clearParentRef();
         T::set(i, value);
         value->setParentRef(this, i);
         notify(i, value);
@@ -92,8 +97,17 @@ namespace cb {
 
 
       unsigned insert(const std::string &key, const ValuePtr &_value) {
+        // Block operation if value is equal
+        int index = T::indexOf(key);
+
+        if (index != -1) {
+          ValuePtr current = T::get(index);
+          if (*_value == *current) return index;
+
+          current->clearParentRef();
+        }
+
         ValuePtr value = convert(_value);
-        if (T::has(key)) T::get(key)->clearParentRef();
         unsigned i = T::insert(key, value);
         value->setParentRef(this, i);
         notify(key, value);

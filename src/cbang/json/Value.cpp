@@ -236,3 +236,38 @@ string Value::toString(unsigned indentStart, bool compact, unsigned indentSpace,
 
 
 string Value::asString() const {return isString() ? getString() : toString();}
+
+
+bool Value::operator==(const Value &o) const {
+  if (getType() != o.getType()) return false;
+
+  switch (getType()) {
+  case JSON_NULL: case JSON_UNDEFINED: return true;
+  case JSON_BOOLEAN: return getBoolean() == o.getBoolean();
+  case JSON_STRING:  return getString()  == o.getString();
+    // TODO Some numbers are not represented exactly as doubles
+  case JSON_NUMBER:  return getNumber()  == o.getNumber();
+
+  case JSON_LIST:
+    if (size() != o.size()) return false;
+
+    for (unsigned i = 0; i < size(); i++)
+      if (*get(i) != *o.get(i)) return false;
+
+    return true;
+
+  case JSON_DICT:
+    if (size() != o.size()) return false;
+
+    for (unsigned i = 0; i < size(); i++) {
+      const string &key = keyAt(i);
+
+      if (!o.has(key) || *get(key) != *o.get(key))
+        return false;
+    }
+
+    return true;
+  }
+
+  return false;
+}
