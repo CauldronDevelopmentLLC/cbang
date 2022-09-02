@@ -290,6 +290,10 @@ namespace cb {
       std::string toString(unsigned indentStart = 0, bool compact = false,
                            unsigned indentSpace = 2, int precision = 6) const;
       std::string asString() const;
+
+      // Comparison
+      bool operator==(const Value &o) const;
+      bool operator!=(const Value &o) const {return !(*this == o);}
     };
 
     static inline
