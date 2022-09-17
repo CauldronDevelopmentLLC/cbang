@@ -101,7 +101,7 @@ namespace cb {
         int index = T::indexOf(key);
 
         if (index != -1) {
-          ValuePtr current = T::get(index);
+          const ValuePtr &current = T::get(index);
           if (*_value == *current) return index;
 
           current->clearParentRef();

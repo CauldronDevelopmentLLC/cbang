@@ -192,9 +192,9 @@ void Account::writeJWK(JSON::Sink &sink) const {
 
   if (key.isRSA()) {
     // Insert order matters
-    sink.insert("e", URLBase64().encode(key.getRSA().getE().toBinString()));
+    sink.insert("e", URLBase64().encode(key.getRSA_E().toBinString()));
     sink.insert("kty", "RSA");
-    sink.insert("n", URLBase64().encode(key.getRSA().getN().toBinString()));
+    sink.insert("n", URLBase64().encode(key.getRSA_N().toBinString()));
 
   } else THROW("Unsupported key type");
 

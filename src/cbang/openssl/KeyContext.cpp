@@ -35,6 +35,7 @@
 #include "SSL.h"
 #include "KeyPair.h"
 #include "KeyGenCallback.h"
+#include "BigNum.h"
 
 #include <cbang/Exception.h>
 
@@ -117,13 +118,11 @@ void KeyContext::setRSABits(int bits) {
 
 
 void KeyContext::setRSAPubExp(uint64_t exp) {
-  BIGNUM *num = BN_new();
-  BN_set_word(num, exp);
+  BigNum num;
+  num.set(exp);
 
-  if (EVP_PKEY_CTX_set_rsa_keygen_pubexp(ctx, num) <= 0) {
-    BN_free(num);
+  if (EVP_PKEY_CTX_set1_rsa_keygen_pubexp(ctx, num.get()) <= 0)
     THROW("Failed to set RSA public exponent: " << SSL::getErrorStr());
-  }
 }
 
 

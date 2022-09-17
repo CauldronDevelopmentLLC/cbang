@@ -40,6 +40,7 @@ using namespace cb;
 using namespace std;
 
 
+BigNum::BigNum() : bn(BN_new()), deallocate(true) {}
 BigNum::~BigNum() {if (deallocate && bn) BN_free(bn);}
 
 
@@ -54,3 +55,6 @@ string BigNum::toBinString() const {
   SmartPointer<unsigned char>::Array s = new unsigned char[size()];
   return string((char *)s.get(), BN_bn2bin(bn, s.get()));
 }
+
+
+void BigNum::set(uint64_t x) {BN_set_word(bn, x);}

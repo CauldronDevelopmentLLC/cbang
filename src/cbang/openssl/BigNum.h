@@ -42,12 +42,15 @@ namespace cb {
     bool deallocate;
 
   public:
+    BigNum();
     BigNum(const BIGNUM *bn, bool deallocate = false) :
       bn((BIGNUM *)bn), deallocate(deallocate) {}
     ~BigNum();
 
+    BIGNUM *get() const {return bn;}
     bool isNull() const {return !bn;}
     unsigned size() const;
     std::string toBinString() const;
+    void set(uint64_t x);
   };
 }

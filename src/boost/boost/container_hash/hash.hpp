@@ -126,8 +126,11 @@ namespace boost
             typedef std::size_t result_type;
         };
 #else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         template <typename T>
         struct hash_base : std::unary_function<T, std::size_t> {};
+#pragma GCC diagnostic pop
 #endif
 
         struct enable_hash_value { typedef std::size_t type; };

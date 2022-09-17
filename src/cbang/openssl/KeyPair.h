@@ -35,7 +35,6 @@
 #include "BigNum.h"
 #include "KeyGenCallback.h"
 #include "PasswordCallback.h"
-#include "RSA.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/StdTypes.h>
@@ -74,13 +73,15 @@ namespace cb {
     bool isDH() const;
     bool isEC() const;
 
-    RSA getRSA() const;
+    BigNum getParam(const char *id) const;
+    BigNum getRSA_E() const;
+    BigNum getRSA_N() const;
 
-    BigNum getPublic() const;
     BigNum getPrivate() const;
+    BigNum getPublic() const;
 
-    bool hasPublic() const;
     bool hasPrivate() const;
+    bool hasPublic() const;
 
     unsigned size() const; ///< In bytes
     bool match(const KeyPair &o) const;
