@@ -3,6 +3,7 @@ Import('*')
 # Local includes
 env.Append(CPPPATH = ['#'])
 
-prog = env.Program('hmac-sha256-aws-s3', 'hmac-sha256-aws-s3.cpp')
+p1 = env.Program('hmac-sha256-aws-s3', 'hmac-sha256-aws-s3.cpp')
+p2 = env.Program('readkey', 'readkey.cpp')
 
-Return('prog')
+Return('p1 p2')
