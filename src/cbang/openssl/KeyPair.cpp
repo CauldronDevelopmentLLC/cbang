@@ -54,6 +54,7 @@
 #include <openssl/dh.h>
 #include <openssl/engine.h>
 #include <openssl/opensslv.h>
+#include <openssl/core_names.h>
 
 #include <string.h>
 
@@ -118,48 +119,47 @@ const KeyPair &KeyPair::operator=(const KeyPair &o) {
 }
 
 
-bool KeyPair::isValid() const {return EVP_PKEY_get0(key);}
-bool KeyPair::isRSA() const {return EVP_PKEY_base_id(key) == EVP_PKEY_RSA;}
-bool KeyPair::isDSA() const {return EVP_PKEY_base_id(key) == EVP_PKEY_DSA;}
-bool KeyPair::isDH() const {return EVP_PKEY_base_id(key) == EVP_PKEY_DH;}
-bool KeyPair::isEC() const {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
+bool KeyPair::isValid() const {return EVP_PKEY_base_id(key) != EVP_PKEY_NONE;}
+bool KeyPair::isRSA() const   {return EVP_PKEY_base_id(key) == EVP_PKEY_RSA;}
+bool KeyPair::isDSA() const   {return EVP_PKEY_base_id(key) == EVP_PKEY_DSA;}
+bool KeyPair::isDH() const    {return EVP_PKEY_base_id(key) == EVP_PKEY_DH;}
+bool KeyPair::isEC() const    {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
 
 
-cb::RSA KeyPair::getRSA() const {
-  if (!isRSA()) THROW("Not an RSA key");
-  return EVP_PKEY_get0_RSA(key);
+BigNum KeyPair::getParam(const char *id) const {
+  BIGNUM *param = 0;
+  EVP_PKEY_get_bn_param(key, id, &param);
+  return BigNum(param, true);
 }
 
 
-BigNum KeyPair::getPublic() const {
+BigNum KeyPair::getRSA_E() const {
+  if (!isRSA()) THROW("Not an RSA key");
+  return getParam(OSSL_PKEY_PARAM_RSA_E);
+}
+
+
+BigNum KeyPair::getRSA_N() const {
+  if (!isRSA()) THROW("Not an RSA key");
+  return getParam(OSSL_PKEY_PARAM_RSA_N);
+}
+
+
+BigNum KeyPair::getPublic() const  {
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->e;
   case EVP_PKEY_DSA: return key->pkey.dsa->pub_key;
-  case EVP_PKEY_DH: return key->pkey.dh->pub_key;
-  case EVP_PKEY_EC: return EC_KEY_get0_public_key(key->pkey.ec);
+  case EVP_PKEY_DH:  return key->pkey.dh->pub_key;
+  case EVP_PKEY_EC:  return EC_KEY_get0_public_key(key->pkey.ec);
   }
 
 #else // OPENSSL_VERSION_NUMBER < 0x1010000fL
-  const BIGNUM *n = 0;
-
   switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: RSA_get0_key(EVP_PKEY_get0_RSA(key), 0, &n, 0); return n;
-  case EVP_PKEY_DSA: DSA_get0_key(EVP_PKEY_get0_DSA(key), &n, 0); return n;
-  case EVP_PKEY_DH: DH_get0_key(EVP_PKEY_get0_DH(key), &n, 0); return n;
-  case EVP_PKEY_EC: {
-    const EC_KEY *ec = EVP_PKEY_get0_EC_KEY(key);
-    const EC_POINT *pt = EC_KEY_get0_public_key(ec);
-    const EC_GROUP *group = EC_KEY_get0_group(ec);
-    point_conversion_form_t form = EC_KEY_get_conv_form(ec);
-
-    if (pt && group) {
-      BIGNUM *n = BN_new();
-      EC_POINT_point2bn(group, pt, form, n, 0);
-      return BigNum(n, true);
-    }
-    return n;
-  }
+  case EVP_PKEY_RSA: return getParam(OSSL_PKEY_PARAM_RSA_E);
+  case EVP_PKEY_DSA:
+  case EVP_PKEY_DH:  return getParam(OSSL_PKEY_PARAM_PUB_KEY);
+  case EVP_PKEY_EC:  break; // Cannot get EC pub key as a BigNum
   }
 #endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
 
@@ -172,18 +172,16 @@ BigNum KeyPair::getPrivate() const {
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->d;
   case EVP_PKEY_DSA: return key->pkey.dsa->priv_key;
-  case EVP_PKEY_DH: return key->pkey.dh->priv_key;
-  case EVP_PKEY_EC: return EC_KEY_get0_private_key(key->pkey.ec);
+  case EVP_PKEY_DH:  return key->pkey.dh->priv_key;
+  case EVP_PKEY_EC:  return EC_KEY_get0_private_key(key->pkey.ec);
   }
 
 #else // OPENSSL_VERSION_NUMBER < 0x1010000fL
-  const BIGNUM *n = 0;
-
   switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: RSA_get0_key(EVP_PKEY_get0_RSA(key), 0, 0, &n); return n;
-  case EVP_PKEY_DSA: DSA_get0_key(EVP_PKEY_get0_DSA(key), 0, &n); return n;
-  case EVP_PKEY_DH: DH_get0_key(EVP_PKEY_get0_DH(key), 0, &n); return n;
-  case EVP_PKEY_EC: return EC_KEY_get0_private_key(EVP_PKEY_get0_EC_KEY(key));
+  case EVP_PKEY_RSA: return getParam(OSSL_PKEY_PARAM_RSA_D);
+  case EVP_PKEY_DSA:
+  case EVP_PKEY_DH:
+  case EVP_PKEY_EC:  return getParam(OSSL_PKEY_PARAM_PRIV_KEY);
   }
 #endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
 
@@ -191,15 +189,16 @@ BigNum KeyPair::getPrivate() const {
 }
 
 
+bool KeyPair::hasPrivate() const {return getPrivate().get();}
+bool KeyPair::hasPublic() const  {return getPublic().get();}
 
-bool KeyPair::hasPublic() const {return !getPublic().isNull();}
-bool KeyPair::hasPrivate() const {return !getPrivate().isNull();}
+
 unsigned KeyPair::size() const {return EVP_PKEY_size(key);}
 
 
 bool KeyPair::match(const KeyPair &o) const {
-  switch (EVP_PKEY_cmp(key, o.key)) {
-  case 0: return false;
+  switch (EVP_PKEY_eq(key, o.key)) {
+  case 0: case -1: return false;
   case 1: return true;
   default: THROW("Error comparing keys: " << SSL::getErrorStr());
   }
@@ -313,6 +312,7 @@ void KeyPair::read(const string &pem, SmartPointer<PasswordCallback> callback) {
 istream &KeyPair::read(istream &stream,
                        SmartPointer<PasswordCallback> callback) {
   try {return readPrivate(stream, callback);} catch (...) {} // Ignore
+  stream.clear();
   stream.seekg(0);
   return readPublic(stream);
 }
