@@ -48,6 +48,7 @@ namespace cb {
     ~BigNum();
 
     BIGNUM *get() const {return bn;}
+    BIGNUM *adopt() {deallocate = false; return bn;}
     bool isNull() const {return !bn;}
     unsigned size() const;
     std::string toBinString() const;
