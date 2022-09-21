@@ -338,7 +338,7 @@ config = None
 if env['PLATFORM'] != 'win32':
     defs = get_event_config_defs()
     config = env.LibEventConfig('#/include/event2/event-config.h', [])
-    env.AlwaysBuild(config)
+    if not COMMAND_LINE_TARGETS: env.AlwaysBuild(config)
 
 
 # Warnings

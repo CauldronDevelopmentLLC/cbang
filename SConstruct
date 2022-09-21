@@ -98,7 +98,7 @@ src.append(res)
 
 # Build Info
 info = env.BuildInfo('build/build_info.cpp', [])
-AlwaysBuild(info)
+if not COMMAND_LINE_TARGETS: AlwaysBuild(info)
 src.append(info)
 
 
