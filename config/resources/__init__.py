@@ -185,7 +185,6 @@ def modify_targets(target, source, env):
     data_dir = os.path.splitext(name)[0] + ".data"
     count = [0]
     for s in source: target += get_targets(exclude, str(s), data_dir, count)
-    print(tuple(map(str, target)))
     Depends(target, FindFile('cbang/util/Resource.h', env['CPPPATH']))
     return target, source
 
