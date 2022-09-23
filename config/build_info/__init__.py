@@ -55,8 +55,8 @@ def svn_get_info():
 
 
 def git_get_info():
-    git = which('git')
-    if not git: return None, None
+    if not which('git'): return None, None
+
     revision, branch = None, None
 
     try:
