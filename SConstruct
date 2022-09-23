@@ -57,8 +57,8 @@ for lib in 'zlib bzip2 lz4 sqlite3 expat boost libevent re2 libyaml'.split():
         Default(SConscript('src/%s/SConscript' % lib,
                            variant_dir = 'build/' + lib))
 
-if 'boost' not in disable_local:
-    env.CBDefine('HAVE_BOOST')
+if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
+
 
 # Source
 subdirs = [
