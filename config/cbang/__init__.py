@@ -94,12 +94,20 @@ def configure(conf):
     env.AppendUnique(LIBPATH = [home + '/lib'])
 
     with open(home + '/include/cbang/config.h', 'r') as f:
-        with_openssl = f.read().find('#define HAVE_OPENSSL') != -1
+        config = f.read()
+        with_openssl = config.find('#define HAVE_OPENSSL') != -1
+        with_boost = config.find('#define HAVE_BOOST') != -1
 
     if not env.CBConfigEnabled('cbang-deps'):
         conf.CBConfig('cbang-deps', local = False, with_openssl = with_openssl)
 
-    conf.CBRequireLib('cbang-boost')
+    if with_boost:
+        conf.CBRequireLib('cbang-boost')
+    else:
+        conf.CBRequireLib('boost_filesystem')
+        conf.CBRequireLib('boost_iostreams')
+        conf.CBRequireLib('boost_regex')
+        conf.CBRequireLib('boost_system')
     conf.CBRequireLib('cbang')
     if platform.system() == 'FreeBSD': conf.CBRequireLib('sysinfo')
     conf.CBRequireCXXHeader('cbang/Exception.h')
