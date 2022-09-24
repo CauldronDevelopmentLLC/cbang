@@ -51,11 +51,14 @@ if hasattr(force_local, 'split'): force_local = force_local.split()
 disable_local = env.get('disable_local', '')
 if hasattr(disable_local, 'split'): disable_local = disable_local.split()
 Export('env conf')
+resources_excludes = []
 for lib in 'zlib bzip2 lz4 sqlite3 expat boost libevent re2 libyaml'.split():
-    if lib in disable_local: continue
-    if not env.CBConfigEnabled(lib) or lib in force_local:
-        Default(SConscript('src/%s/SConscript' % lib,
-                           variant_dir = 'build/' + lib))
+    if lib in disable_local: resources_excludes.append('licenses/%s\\.txt' % lib)
+    else:
+        if not env.CBConfigEnabled(lib) or lib in force_local:
+            Default(SConscript('src/%s/SConscript' % lib,
+                            variant_dir = 'build/' + lib))
+env.Append(RESOURCES_EXCLUDES = resources_excludes)
 
 if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 
