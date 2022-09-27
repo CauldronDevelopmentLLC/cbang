@@ -208,7 +208,7 @@ def get_targets(exclude, path, data_dir, count = [0]):
 
         return targets
 
-    return [File('%s/data%d.cpp' % (data_dir, id))]
+    return Depends(File('%s/data%d.cpp' % (data_dir, id)), path)
 
 
 def modify_targets(target, source, env):
@@ -233,7 +233,7 @@ def generate(env):
 
     bld = env.Builder(action = resources_build,
                       source_factory = SCons.Node.FS.Entry,
-                      source_scanner = SCons.Defaults.DirScanner,
+                      source_scanner = None,
                       emitter = modify_targets)
     env.Append(BUILDERS = {'Resources' : bld})
 
