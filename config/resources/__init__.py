@@ -176,7 +176,7 @@ def get_targets(exclude, path, data_dir, count = [0]):
 
         return targets
 
-    return Depends(File('%s/data%d.cpp' % (data_dir, id)), path)
+    return Depends(File('data%d.cpp' % id, data_dir), path)
 
 
 def modify_targets(target, source, env):
@@ -185,12 +185,7 @@ def modify_targets(target, source, env):
     data_dir = os.path.splitext(name)[0] + ".data"
     count = [0]
     for s in source: target += get_targets(exclude, str(s), data_dir, count)
-    Depends(target, FindFile('cbang/util/Resource.h', env['CPPPATH']))
     return target, source
-
-
-def resources_message(target, source, env):
-    return 'building resource file "%s"' % str(target[0])
 
 
 def generate(env):
@@ -199,10 +194,8 @@ def generate(env):
 
     bld = env.Builder(action = resources_build,
                       source_factory = SCons.Node.FS.Entry,
-                      source_scanner = None,
                       emitter = modify_targets)
     env.Append(BUILDERS = {'Resources' : bld})
 
 
-def exists():
-    return True
+def exists(): return True
