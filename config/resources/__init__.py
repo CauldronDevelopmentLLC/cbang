@@ -124,25 +124,6 @@ def write_resource(ctx, output, data_dir, path, children = None,
     output.write(');\n')
 
 
-def update_time(ctx, path):
-    if not os.path.exists(path): return 0
-    exclude = ctx.exclude
-    if exclude is not None and exclude.search(path) is not None: return 0
-
-    if os.path.isdir(path):
-        updated = 0
-
-        for name in os.listdir(path):
-            t = os.stat(path)[stat.ST_MTIME]
-            if updated < t: updated = t
-            t = update_time(os.path.join(path, name), exclude)
-            if updated < t: updated = t
-
-        return updated
-
-    else: return os.stat(path)[stat.ST_MTIME]
-
-
 def get_exclude(env):
     pattern = None
     for ex in env.get('RESOURCES_EXCLUDES'):
@@ -162,19 +143,6 @@ def resources_build(target, source, env):
     ctx.col = 0
 
     target = str(target[0])
-
-    # Check update times
-    if not env.get('RESOURCES_ALWAYS_BUILD'):
-        if os.path.exists(target):
-            updated = False
-            lastUpdate = os.stat(target)[stat.ST_MTIME]
-
-            for src in source:
-                if lastUpdate < update_time(ctx, str(src)):
-                    updated = True
-                    break
-
-            if not updated: return
 
     data_dir = os.path.splitext(target)[0] + ".data"
     if os.path.exists(data_dir): shutil.rmtree(data_dir)
@@ -208,7 +176,7 @@ def get_targets(exclude, path, data_dir, count = [0]):
 
         return targets
 
-    return [File('%s/data%d.cpp' % (data_dir, id))]
+    return Depends(File('%s/data%d.cpp' % (data_dir, id)), path)
 
 
 def modify_targets(target, source, env):
@@ -229,11 +197,10 @@ def resources_message(target, source, env):
 def generate(env):
     env.SetDefault(RESOURCES_NS = '')
     env.SetDefault(RESOURCES_EXCLUDES = [r'\.svn', r'.*~'])
-    env.SetDefault(RESOURCES_ALWAYS_BUILD = not COMMAND_LINE_TARGETS)
 
     bld = env.Builder(action = resources_build,
                       source_factory = SCons.Node.FS.Entry,
-                      source_scanner = SCons.Defaults.DirScanner,
+                      source_scanner = None,
                       emitter = modify_targets)
     env.Append(BUILDERS = {'Resources' : bld})
 
