@@ -51,7 +51,7 @@ namespace cb {
     CPURegsX86();
 
     CPURegsX86 &cpuID(uint32_t eax, uint32_t ebx = 0, uint32_t ecx = 0,
-                 uint32_t edx = 0);
+                      uint32_t edx = 0);
 
     const uint32_t *getRegs() const {return regs;}
 
