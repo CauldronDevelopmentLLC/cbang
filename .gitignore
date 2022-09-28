@@ -42,3 +42,12 @@ build_info.cpp
 .ninja_deps
 .ninja_log
 build.ninja
+
+# VS Code files
+.vscode
+*.code-workspace
+
+# Patches, regects, origs
+*.patch
+*.rej
+*.orig
