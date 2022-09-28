@@ -116,7 +116,7 @@ libsuffix = env.get('libsuffix')
 libpath = env.get('libpath')
 if env.get('staticlib'):
     libs.append(env.StaticLibrary('lib/cbang', src))
-    install.append(env.Install(dir = (prefix, libpath, libsuffix), source = libs))
+    install.append(env.Install(dir = '%s/%s%s' % (prefix, libpath, libsuffix), source = libs))
 
 if env.get('sharedlib'):
     shlib = env.SharedLibrary('lib/cbang' + libversion, src, SHLIBVERSION=version, SONAME=env.get('soname'))
