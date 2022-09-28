@@ -116,14 +116,19 @@ libsuffix = env.get('libsuffix')
 libpath = env.get('libpath')
 if env.get('staticlib'):
     libs.append(env.StaticLibrary('lib/cbang', src))
-    install.append(env.Install(dir = '%s/%s%s' % (prefix, libpath, libsuffix), source = libs))
+    install.append(env.Install(dir = '%s/%s%s' % (prefix, libpath, libsuffix),
+                               source = libs))
 
 if env.get('sharedlib'):
-    shlib = env.SharedLibrary('lib/cbang' + libversion, src, SHLIBVERSION=version, SONAME=env.get('soname'))
-    install.append(InstallVersionedLib(dir = '%s/%s%s' % (prefix, libpath, libsuffix), source = shlib));
+    shlib = env.SharedLibrary(
+        'lib/cbang' + libversion, src, SHLIBVERSION = version,
+        SONAME = env.get('soname'))
+    libdir = '%s/%s%s' % (prefix, libpath, libsuffix)
+    install.append(InstallVersionedLib(dir = libdir, source = shlib))
     libs.append(shlib)
 
 for lib in libs: Default(lib)
+
 
 # Clean
 Clean(libs, 'build lib include config.log cbang-config.pyc package.txt'
@@ -131,12 +136,11 @@ Clean(libs, 'build lib include config.log cbang-config.pyc package.txt'
 
 
 # Install
-
 for dir in subdirs:
     files = Glob('src/cbang/%s/*.h' % dir)
     files += Glob('src/cbang/%s/*.def' % dir)
-    install.append(env.Install(dir = prefix + '/include/cbang/' + dir,
-                               source = files))
+    dir = prefix + '/include/cbang/' + dir
+    install.append(env.Install(dir = dir, source = files))
 
 docs = ['README.md', 'COPYING']
 docdir = env.get('docdir').replace('${prefix}', prefix)
