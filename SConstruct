@@ -18,6 +18,7 @@ env.CBAddVariables(
     BoolVariable('sharedlib', 'Build a shared library', False),
     ('soname', 'Shared library soname', 'libcbang%s.so' % libversion),
     ('libsuffix', 'Suffix for library path, e.g. "64" to get lib64', ''),
+    ('libpath', 'Library installation path, e.g. "/lib64"', '/lib'),
     PathVariable('prefix', 'Install path prefix', '/usr/local',
                  PathVariable.PathAccept),
     ('docdir', 'Path for documentation', '${prefix}/share/doc/cbang'),
@@ -109,13 +110,18 @@ src.append(info)
 
 # Build
 libs = []
+install = []
+prefix = env.get('prefix')
+libsuffix = env.get('libsuffix')
+libpath = env.get('libpath')
 if env.get('staticlib'):
     libs.append(env.StaticLibrary('lib/cbang', src))
+    install.append(env.Install(dir = '%s/%s%s' % (prefix, libpath, libsuffix), source = libs))
 
 if env.get('sharedlib'):
-    env.Append(SHLIBSUFFIX = '.' + version)
-    env.Append(SHLINKFLAGS = '-Wl,-soname -Wl,${soname}')
-    libs.append(env.SharedLibrary('lib/cbang' + libversion, src))
+    shlib = env.SharedLibrary('lib/cbang' + libversion, src, SHLIBVERSION=version, SONAME=env.get('soname'))
+    install.append(InstallVersionedLib(dir = '%s/%s%s' % (prefix, libpath, libsuffix), source = shlib));
+    libs.append(shlib)
 
 for lib in libs: Default(lib)
 
@@ -125,9 +131,6 @@ Clean(libs, 'build lib include config.log cbang-config.pyc package.txt'
 
 
 # Install
-prefix = env.get('prefix')
-libsuffix = env.get('libsuffix')
-install = [env.Install(dir = prefix + '/lib' + libsuffix, source = libs)]
 
 for dir in subdirs:
     files = Glob('src/cbang/%s/*.h' % dir)
