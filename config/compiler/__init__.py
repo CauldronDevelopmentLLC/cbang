@@ -623,7 +623,7 @@ def generate(env):
         ('ccflags', 'Set extra C and C++ compiler flags', None),
         ('cxxflags', 'Set extra C++ compiler flags', None),
         ('linkflags', 'Set extra linker flags', None),
-        EnumVariable('cxxstd', 'Set C++ language standard', 'c++11',
+        EnumVariable('cxxstd', 'Set C++ language standard', 'c++14',
                    allowed_values = ('c++98', 'c++11', 'c++14', 'c++17',
                                      'c++20')),
         EnumVariable('compiler', 'Select compiler', 'default',
