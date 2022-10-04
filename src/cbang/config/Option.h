@@ -75,7 +75,7 @@ namespace cb {
       OPTIONAL_FLAG     = 1 << 2,
       OBSCURED_FLAG     = 1 << 3,
       COMMAND_LINE_FLAG = 1 << 4,
-      DEPRECIATED_FLAG  = 1 << 5,
+      DEPRECATED_FLAG  = 1 << 5,
       READ_ONLY_FLAG    = 1 << 6,
     } flags_t;
 
@@ -132,8 +132,8 @@ namespace cb {
     bool isPlural() const {return type >= STRINGS_TYPE;}
     void setCommandLine() {flags |= COMMAND_LINE_FLAG;}
     bool isCommandLine() const {return flags & COMMAND_LINE_FLAG;}
-    void setDepreciated();
-    bool isDepreciated() const {return flags & DEPRECIATED_FLAG;}
+    void setDeprecated();
+    bool isDeprecated() const {return flags & DEPRECATED_FLAG;}
     void setReadOnly(bool set = true);
     bool isReadOnly() const {return flags & READ_ONLY_FLAG;}
     bool isHidden() const;
