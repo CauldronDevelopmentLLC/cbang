@@ -129,8 +129,8 @@ bool Option::isDefault() const {
 }
 
 
-void Option::setDepreciated() {
-  flags |= DEPRECIATED_FLAG;
+void Option::setDeprecated() {
+  flags |= DEPRECATED_FLAG;
   clearDefault();
 }
 
@@ -142,7 +142,7 @@ void Option::setReadOnly(bool set) {
 
 
 bool Option::isHidden() const {
-  return isDepreciated() || isReadOnly() || name.empty() || name[0] == '_';
+  return isDeprecated() || isReadOnly() || name.empty() || name[0] == '_';
 }
 
 
@@ -165,8 +165,8 @@ void Option::unset() {
 
 void Option::set(const string &value) {
   if (isReadOnly()) THROW("Option '" << name << "' is read only");
-  if (isDepreciated()) {
-    LOG_WARNING("Option '" << name << "' has been depreciated: " << help);
+  if (isDeprecated()) {
+    LOG_WARNING("Option '" << name << "' has been deprecated: " << help);
     return;
   }
   if (isSet() && this->value == value) return;
@@ -441,8 +441,8 @@ ostream &Option::printHelp(ostream &stream, bool cmdLine) const {
     stream << (isOptional() ? ']' : '>');
   }
 
-  // Depreciated
-  if (isDepreciated()) stream << " (Depreciated)";
+  // Deprecated
+  if (isDeprecated()) stream << " (Deprecated)";
 
   // Help
   unsigned width = 80;
@@ -560,7 +560,7 @@ void Option::write(JSON::Sink &sink, bool config, const string &delims) const {
   if (shortName) sink.insert("short", string(1, shortName));
   if (isSet()) sink.insertBoolean("set", true);
   if (isCommandLine()) sink.insertBoolean("command_line", true);
-  if (isDepreciated()) sink.insertBoolean("depreciated", true);
+  if (isDeprecated()) sink.insertBoolean("deprecated", true);
   if (!constraint.isNull()) sink.insert("constraint", constraint->getHelp());
 
   sink.endDict();
