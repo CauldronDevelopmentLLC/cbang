@@ -59,6 +59,10 @@ double String::getNumber() const {
 }
 
 
+int8_t   String::getS8()  const {return cb::String::parseS8(s, true);}
+uint8_t  String::getU8()  const {return cb::String::parseU8(s, true);}
+int16_t  String::getS16() const {return cb::String::parseS16(s, true);}
+uint16_t String::getU16() const {return cb::String::parseU16(s, true);}
 int32_t  String::getS32() const {return cb::String::parseS32(s, true);}
 uint32_t String::getU32() const {return cb::String::parseU32(s, true);}
 int64_t  String::getS64() const {return cb::String::parseS64(s, true);}
