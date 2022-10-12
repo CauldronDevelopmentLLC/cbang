@@ -57,9 +57,13 @@ namespace cb {
       ValuePtr copy(bool deep = false) const {return new String(s);}
       bool getBoolean() const;
       double getNumber() const;
-      int32_t getS32() const;
+      int8_t   getS8()  const;
+      uint8_t  getU8()  const;
+      int16_t  getS16() const;
+      uint16_t getU16() const;
+      int32_t  getS32() const;
       uint32_t getU32() const;
-      int64_t getS64() const;
+      int64_t  getS64() const;
       uint64_t getU64() const;
       bool toBoolean() const {return getBoolean();}
       const std::string &getString() const {return s;}
