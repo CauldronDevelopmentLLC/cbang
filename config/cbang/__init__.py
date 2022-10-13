@@ -9,9 +9,9 @@ def GetHome():
     return os.path.dirname(os.path.abspath(path))
 
 
-def configure_deps(conf, local = True, with_openssl = True):
+def configure_deps(conf, local = True, with_openssl = True, with_local_boost = True):
     env = conf.env
-
+    
     conf.CBConfig('ZLib', not local)
     conf.CBConfig('bzip2', not local)
     conf.CBConfig('XML', not local)
@@ -83,7 +83,12 @@ def configure_deps(conf, local = True, with_openssl = True):
                 'execinfo.h, bfd.h and libbfd needed for backtrace_debuger')
 
         env.CBDefine('CBANG_DEBUG_LEVEL=' + str(env.get('debug_level', 1)))
-
+        
+    if not with_local_boost:
+        conf.CBRequireLib('boost_filesystem')
+        conf.CBRequireLib('boost_iostreams')
+        conf.CBRequireLib('boost_regex')
+        conf.CBRequireLib('boost_system')
 
 def configure(conf):
     env = conf.env

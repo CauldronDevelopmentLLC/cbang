@@ -35,9 +35,12 @@ env.Replace(RESOURCES_NS = 'cb')
 
 
 # Configure
+disable_local = env.get('disable_local', '')
+if hasattr(disable_local, 'split'): disable_local = disable_local.split()
 if not env.GetOption('clean'):
     conf.CBConfig('compiler')
-    conf.CBConfig('cbang-deps', with_openssl = env['with_openssl'])
+    conf.CBConfig('cbang-deps', with_openssl = env['with_openssl'], 
+        with_local_boost = 'boost' not in disable_local)
     env.CBDefine('USING_CBANG') # Using CBANG macro namespace
     if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
 
@@ -49,8 +52,6 @@ env.Append(CPPPATH = ['#/include', '#/src', '#/src/boost'])
 # Build third-party libs
 force_local = env.get('force_local', '')
 if hasattr(force_local, 'split'): force_local = force_local.split()
-disable_local = env.get('disable_local', '')
-if hasattr(disable_local, 'split'): disable_local = disable_local.split()
 Export('env conf')
 resources_excludes = []
 for lib in 'zlib bzip2 lz4 sqlite3 expat boost libevent re2 libyaml'.split():
