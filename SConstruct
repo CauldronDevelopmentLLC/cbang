@@ -3,7 +3,7 @@ import platform
 
 
 # Version
-version = '1.7.0'
+version = '1.7.2'
 libversion = '0'
 
 
@@ -143,7 +143,7 @@ for dir in subdirs:
     dir = prefix + '/include/cbang/' + dir
     install.append(env.Install(dir = dir, source = files))
 
-docs = ['README.md', 'COPYING']
+docs = ['README.md', 'LICENSE']
 docdir = env.get('docdir').replace('${prefix}', prefix)
 install.append(env.Install(dir = docdir, source = docs))
 
