@@ -9,7 +9,8 @@ def GetHome():
     return os.path.dirname(os.path.abspath(path))
 
 
-def configure_deps(conf, local = True, with_openssl = True):
+def configure_deps(conf, local = True, with_openssl = True,
+                   with_local_boost = True):
     env = conf.env
 
     conf.CBConfig('ZLib', not local)
@@ -32,6 +33,11 @@ def configure_deps(conf, local = True, with_openssl = True):
 
     # Boost
     if env['PLATFORM'] == 'win32': env.CBDefine('BOOST_ALL_NO_LIB')
+    if not with_local_boost:
+        conf.CBRequireLib('boost_filesystem')
+        conf.CBRequireLib('boost_iostreams')
+        conf.CBRequireLib('boost_regex')
+        conf.CBRequireLib('boost_system')
 
     # clock_gettime() needed by boost iterprocess
     if env['PLATFORM'] == 'posix' and int(env.get('cross_osx', 0)) == 0 \
@@ -62,8 +68,8 @@ def configure_deps(conf, local = True, with_openssl = True):
                 conf.CheckOSXFramework('IOKit') and
                 conf.CheckOSXFramework('Security') and
                 conf.CheckOSXFramework('CoreFoundation')):
-            raise SCons.Errors.StopError(
-                'Need CoreServices, IOKit, Security & CoreFoundation frameworks')
+            raise SCons.Errors.StopError('Need CoreServices, IOKit, Security '
+                                         '& CoreFoundation frameworks')
 
     conf.CBConfig('valgrind', False)
 
@@ -99,14 +105,10 @@ def configure(conf):
         with_local_boost = config.find('#define HAVE_LOCAL_BOOST') != -1
 
     if not env.CBConfigEnabled('cbang-deps'):
-        conf.CBConfig('cbang-deps', local = False, with_openssl = with_openssl)
+        conf.CBConfig('cbang-deps', local = False, with_openssl = with_openssl,
+                      with_local_boost = with_local_boost)
 
     if with_local_boost: conf.CBRequireLib('cbang-boost')
-    else:
-        conf.CBRequireLib('boost_filesystem')
-        conf.CBRequireLib('boost_iostreams')
-        conf.CBRequireLib('boost_regex')
-        conf.CBRequireLib('boost_system')
 
     conf.CBRequireLib('cbang')
     if platform.system() == 'FreeBSD': conf.CBRequireLib('sysinfo')

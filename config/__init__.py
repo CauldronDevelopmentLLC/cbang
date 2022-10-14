@@ -444,7 +444,6 @@ def generate(env):
     env.cb_loaded = set()
     env.cb_enabled = set()
     env.cb_methods = {}
-    env.cb_deps_methods = {}
     env.cb_tests = {}
     env.cb_vars = []
     env.cb_paths = []
