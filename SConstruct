@@ -25,7 +25,7 @@ env.CBAddVariables(
     BoolVariable('with_openssl', 'Build with OpenSSL support', True),
     ('force_local', 'List of 3rd party libs to be built locally', ''),
     ('disable_local', 'List of 3rd party libs not to be built locally', ''))
-env.CBLoadTools('packager compiler cbang build_info resources')
+env.CBLoadTools('packager compiler cbang build_info resources testtool')
 conf = env.CBConfigure()
 
 
