@@ -40,6 +40,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/json/BufferWriter.h>
 
+#include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
 #include <cbang/time/HumanTime.h>
 
@@ -69,8 +70,6 @@ void Account::addOptions(Options &options) {
   options.addTarget("acmev2-emails", emails, "Space separated list of "
                     "certificate contact emails."
                     )->setType(Option::STRINGS_TYPE);
-  options.addTarget("acmev2-retries", maxRetries, "Maximum number of times "
-                    "to retry an operation before giving up.");
   options.addTarget("acmev2-retry-wait", retryWait, "The time in seconds to "
                     "wait between retries.");
   options.addTarget("acmev2-renewal-period", renewPeriod, "Renew certificates "
@@ -356,10 +355,11 @@ void Account::post(const string &url, const string &payload) {
 }
 
 
-void Account::error(const string &msg, const JSON::Value &json) const {
+void Account::error(const string &msg, const JSON::Value &json) {
   string err = json.hasDict("error") ?
     getProblemString(*json.get("error")) : json.toString();
   LOG_ERROR(msg << ": " << err);
+  getCurrentKeyCert().setWaitUntil(Time::now() + retryWait);
 }
 
 
@@ -379,8 +379,6 @@ void Account::nextAuth() {
 
 
 void Account::next() {
-  retries = 0; // Reset retry count
-
   if (STATE_GET_DIR < state && nonce.empty()) {
     head("newNonce");
     return;
@@ -436,9 +434,7 @@ void Account::next() {
 }
 
 
-void Account::retry(Event::Request &req) {
-  double delay = retryWait;
-
+void Account::retry(Event::Request &req, double delay) {
   // Check for rate limit
   if (req.inHas("Retry-After")) {
     string s = req.inGet("Retry-After");
@@ -453,16 +449,17 @@ void Account::retry(Event::Request &req) {
       }
     }
 
-    if (delay < retryWait) delay = retryWait;
   }
 
   LOG_DEBUG(3, "Retrying certificate operation in " << HumanTime(delay));
+  retryEvent->add(delay);
+}
 
-  if (retries++ < maxRetries) retryEvent->add(delay);
-  else {
-    getCurrentKeyCert().setWaitUntil(Time::now() + delay);
-    nextKeyCert();
-  }
+
+void Account::fail(double delay) {
+  LOG_DEBUG(3, "Failed, retrying certificate in " << HumanTime(delay));
+  getCurrentKeyCert().setWaitUntil(Time::now() + delay);
+  nextKeyCert();
 }
 
 
@@ -482,9 +479,12 @@ void Account::responseHandler(Event::Request &req) {
 
       if (req.inGet("Content-Type") == "application/problem+json") {
         LOG_WARNING("Account: " << getProblemString(*req.getInputJSON()));
-        retry(req);
+        fail(retryWait);
         return;
       }
+
+      if (req.getResponseCode() == Event::HTTPStatus::HTTP_TOO_MANY_REQUESTS)
+        return fail(Time::SEC_PER_HOUR);
 
       switch (state) {
       case STATE_IDLE: return;
@@ -503,7 +503,7 @@ void Account::responseHandler(Event::Request &req) {
         string status = authorization->getString("status");
 
         if (status == "pending") break;
-        if (status == "processing") return retry(req);
+        if (status == "processing") return retry(req, 5);
         if (status == "valid") return nextAuth();
 
         // status == invalid or revoked
@@ -528,9 +528,10 @@ void Account::responseHandler(Event::Request &req) {
 
         else if (status == "pending") {
           state = STATE_GET_AUTH;
-          retry(req);
+          retry(req, 5);
 
         } else nextKeyCert();
+
         return;
       }
 
@@ -541,7 +542,7 @@ void Account::responseHandler(Event::Request &req) {
         order = req.getInputJSON();
         string status = order->getString("status");
 
-        if (status == "processing") return retry(req);
+        if (status == "processing") return retry(req, 5);
         if (status == "valid") break;
 
         error("Unexpected certificate order status", *order);
@@ -570,5 +571,5 @@ void Account::responseHandler(Event::Request &req) {
 
     } CATCH_ERROR;
 
-  retry(req);
+  fail(retryWait);
 }

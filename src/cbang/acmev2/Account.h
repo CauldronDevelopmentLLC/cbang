@@ -67,8 +67,7 @@ namespace cb {
       std::string uriBase = letsencrypt_staging;
       std::string emails;
 
-      double retryWait = 5;
-      int maxRetries = 5;
+      double retryWait = 60 * 20;
       double renewPeriod = 15;
 
       typedef enum {
@@ -83,8 +82,6 @@ namespace cb {
         STATE_GET_CERT,
       } state_t;
       state_t state = STATE_IDLE;
-
-      int retries = 0;
 
       unsigned currentKeyCert = 0;
       std::vector<SmartPointer<KeyCert> > keyCerts;
@@ -117,7 +114,6 @@ namespace cb {
       void setURIBase(const std::string &uriBase) {this->uriBase = uriBase;}
       void setContactEmails(const std::string &emails) {this->emails = emails;}
       void setRetryWait(double retryWait) {this->retryWait = retryWait;}
-      void setMaxRetries(int maxRetries) {this->maxRetries = maxRetries;}
       void setRenewPeriod(double renewPeriod) {this->renewPeriod = renewPeriod;}
 
       void addOptions(Options &options);
@@ -125,7 +121,7 @@ namespace cb {
                       const std::string &domains,
                       const std::string &clientChain,
                       Event::HTTPHandlerGroup &group, listener_t cb,
-                      unsigned updateRate = 60 * 5);
+                      unsigned updateRate = 60);
       void addListener(listener_t listener);
       void addHandler(Event::HTTPHandlerGroup &group);
       bool needsRenewal(const KeyCert &keyCert) const;
@@ -160,11 +156,12 @@ namespace cb {
       void get(const std::string &url) {call(url, HTTP_GET);}
       void post(const std::string &url, const std::string &payload);
 
-      void error(const std::string &msg, const JSON::Value &json) const;
+      void error(const std::string &msg, const JSON::Value &json);
       void nextKeyCert();
       void nextAuth();
       void next();
-      void retry(Event::Request &req);
+      void retry(Event::Request &req, double delay);
+      void fail(double delay);
       void responseHandler(Event::Request &req);
     };
   }
