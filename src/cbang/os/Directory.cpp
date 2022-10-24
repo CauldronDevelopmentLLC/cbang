@@ -42,6 +42,14 @@ using namespace std;
 using namespace cb;
 
 
+#define RETHROW_BOOST(EXPR)                     \
+  try {                                         \
+    EXPR;                                       \
+  } catch (const exception &e) {                \
+    THROW(e.what());                            \
+  }
+
+
 struct Directory::private_t {
   fs::path path;
   fs::directory_iterator it;
@@ -52,21 +60,32 @@ struct Directory::private_t {
 
 
 Directory::Directory(const string &path) : dirPath(path) {
-  if (!fs::is_directory(path)) THROW("Not a directory '" << path << "'");
-  p = new private_t(path);
+  bool isDir;
+  RETHROW_BOOST(isDir = fs::is_directory(path));
+
+  if (!isDir) THROW("Not a directory '" << path << "'");
+  RETHROW_BOOST(p = new private_t(path));
 }
 
 
-void Directory::rewind() {p->it = fs::directory_iterator(p->path);}
-Directory::operator bool() const {return p->it != fs::directory_iterator();}
+void Directory::rewind() {
+  RETHROW_BOOST(p->it = fs::directory_iterator(p->path));
+}
+
+
+Directory::operator bool() const {
+  RETHROW_BOOST(return p->it != fs::directory_iterator());
+}
+
+
 void Directory::next() {p->it++;}
 
 
 string Directory::getFilename() const {
 #if BOOST_FILESYSTEM_VERSION < 3
-  return p->it->path().filename();
+  RETHROW_BOOST(return p->it->path().filename());
 #else
-  return p->it->path().filename().string();
+  RETHROW_BOOST(return p->it->path().filename().string());
 #endif
 }
 
@@ -75,5 +94,5 @@ string Directory::getPath() const {return dirPath + "/" + getFilename();}
 
 
 bool Directory::isSubdirectory() const {
-  return fs::is_directory(p->it->status());
+  RETHROW_BOOST(return fs::is_directory(p->it->status()));
 }
