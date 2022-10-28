@@ -52,7 +52,7 @@ double String::getNumber() const {
   if (l == "-infinity" || l == "-inf")
     return -numeric_limits<double>::infinity();
 
-  if (l == "infinity" || l == "inf")
+  if (l == "infinity" || l == "inf" || l == "+infinity" || l == "+inf")
     return numeric_limits<double>::infinity();
 
   return cb::String::parseDouble(s, true);
