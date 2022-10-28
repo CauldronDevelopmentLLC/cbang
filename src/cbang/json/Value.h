@@ -169,18 +169,12 @@ namespace cb {
       virtual int indexOf(const std::string &key) const
         {CBANG_TYPE_ERROR("Not a Dict");}
 
-#define CBANG_JSON_VT(NAME, TYPE)                                       \
-      int indexOf##NAME(const std::string &key) const {                 \
-        int index = indexOf(key);                                       \
-        return (index != -1 && get(index)->is##NAME()) ? index : -1;    \
-      }
-#include "ValueTypes.def"
-
       bool has(const std::string &key) const {return indexOf(key) != -1;}
 
 #define CBANG_JSON_VT(NAME, TYPE)                               \
       bool has##NAME(const std::string &key) const {            \
-        return indexOf##NAME(key) != -1;                        \
+        int index = indexOf(key);                               \
+        return index != -1 && get(index)->is##NAME();           \
       }
 #include "ValueTypes.def"
 
@@ -232,8 +226,10 @@ namespace cb {
       // Dict accessors with defaults
 #define CBANG_JSON_VT(NAME, TYPE)                                       \
       TYPE get##NAME(const std::string &key, TYPE defaultValue) const { \
-        int index = indexOf##NAME(key);                                 \
-        return index == -1 ? defaultValue : get(index)->get##NAME();    \
+        int index = indexOf(key);                                       \
+        if (index == -1) return defaultValue;                           \
+        try {return get(index)->get##NAME();}                           \
+        catch (...) {return defaultValue;}                              \
       }
 #include "ValueTypes.def"
 
