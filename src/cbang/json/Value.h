@@ -99,6 +99,13 @@ namespace cb {
       virtual TYPE get##NAME() const {CBANG_TYPE_ERROR("Not a " #NAME);}
 #include "ValueTypes.def"
 
+#define CBANG_JSON_VT(NAME, TYPE)                                       \
+      virtual TYPE get##NAME##WithDefault(TYPE defaultValue) const {    \
+        try {return get##NAME();}                                       \
+        catch (...) {return defaultValue;}                              \
+      }
+#include "ValueTypes.def"
+
       virtual Value &getList() {CBANG_TYPE_ERROR("Not a List");}
       virtual Value &getDict() {CBANG_TYPE_ERROR("Not a Dict");}
 
@@ -228,8 +235,7 @@ namespace cb {
       TYPE get##NAME(const std::string &key, TYPE defaultValue) const { \
         int index = indexOf(key);                                       \
         if (index == -1) return defaultValue;                           \
-        try {return get(index)->get##NAME();}                           \
-        catch (...) {return defaultValue;}                              \
+        return get(index)->get##NAME##WithDefault(defaultValue);        \
       }
 #include "ValueTypes.def"
 
