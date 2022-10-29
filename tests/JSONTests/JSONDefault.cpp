@@ -30,44 +30,32 @@
 
 \******************************************************************************/
 
-#pragma once
+#include <cbang/Catch.h>
 
-#include "Value.h"
+#include <cbang/json/Value.h>
 
-#include <cbang/String.h>
+#include <iostream>
 
-#include <string>
+using namespace std;
+using namespace cb::JSON;
 
-namespace cb {
-  namespace JSON {
-    class String : public Value {
-      std::string s;
 
-    public:
-      String(const std::string &s = std::string()) : s(s) {}
+int main(int argc, char *argv[]) {
+  try {
+    ValuePtr data = Factory().createDict();
 
-      std::string &getValue() {return s;}
-      const std::string &getValue() const {return s;}
+    data->insert("a", "256");
+    data->insert("b", "-1");
+    data->insert("c", "0xdeadbeef");
+    cout << (int)data->getU8("a", 0) << endl;
+    cout << data->getU16("a", 0) << endl;
+    cout << data->getU32("b", 0) << endl;
+    cout << data->getS32("b", 0) << endl;
+    cout << hex << data->getU16("c", 0) << endl;
+    cout << hex << data->getU32("c", 0) << endl;
 
-      operator const std::string &() const {return s;}
+    return 0;
 
-      // From Value
-      ValueType getType() const {return JSON_STRING;}
-      bool isString() const {return true;}
-      ValuePtr copy(bool deep = false) const {return new String(s);}
-      bool getBoolean() const;
-      double getNumber() const;
-
-#define CBANG_STRING_PT(NAME, TYPE, DESC) TYPE get##NAME() const;
-#include <cbang/StringParseTypes.def>
-
-#define CBANG_STRING_PT(NAME, TYPE, DESC)                       \
-      TYPE get##NAME##WithDefault(TYPE defaultValue) const;
-#include <cbang/StringParseTypes.def>
-
-      bool toBoolean() const {return getBoolean();}
-      const std::string &getString() const {return s;}
-      void write(Sink &sink) const {sink.write(s);}
-    };
-  }
+  } CBANG_CATCH_ERROR;
+  return 0;
 }

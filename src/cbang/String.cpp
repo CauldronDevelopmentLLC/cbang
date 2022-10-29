@@ -87,7 +87,7 @@ namespace {
   }
 
 
-  string toString(double x, int precision) {
+  string toString(double x, int precision = 6) {
     bool big = x < -1e20 || 1e20 < x;
     string s = String::printf(big ? "%.*e" : "%.*f", precision, x);
 
@@ -109,13 +109,20 @@ namespace {
 
 
 String::String(const char *s, size_type n) : string(toString(s, n)) {}
-String::String(int32_t x)   : string(printf("%i", x)) {}
-String::String(uint32_t x)  : string(printf("%u", x)) {}
-String::String(int64_t x)   : string(printf("%lli", (long long int)x)) {}
-String::String(uint64_t x)  : string(printf("%llu", (long long unsigned)x)) {}
-String::String(uint128_t x) : string(SSTR(x)) {}
-String::String(double x, int precision) : string(toString(x, precision)) {}
-String::String(bool x) : string(x ? "true" : "false") {}
+String::String(double x, int precision)    : string(toString(x, precision)) {}
+
+String::String(int8_t    x) : string(printf("%i", (int)x))                  {}
+String::String(uint8_t   x) : string(printf("%u", (unsigned)x))             {}
+String::String(int16_t   x) : string(printf("%i", (int)x))                  {}
+String::String(uint16_t  x) : string(printf("%u", (unsigned)x))             {}
+String::String(int32_t   x) : string(printf("%i", x))                       {}
+String::String(uint32_t  x) : string(printf("%u", x))                       {}
+String::String(int64_t   x) : string(printf("%lli", (long long int)x))      {}
+String::String(uint64_t  x) : string(printf("%llu", (long long unsigned)x)) {}
+String::String(uint128_t x) : string(SSTR(x))                               {}
+String::String(double    x) : string(toString(x))                           {}
+String::String(float     x) : string(toString((double)x))                   {}
+String::String(bool      x) : string(x ? "true" : "false")                  {}
 
 
 string String::printf(const char *format, ...) {
@@ -203,205 +210,189 @@ unsigned String::tokenizeLine(istream &stream, vector<string> &tokens,
 }
 
 
-bool String::isInteger(const string &s) {
-  char *endptr = 0;
-
-  errno = 0;
-  strtoll(s.c_str(), &endptr, 0);
-
-  while (isspace(*endptr)) endptr++;
-
-  return !errno && !*endptr;
-}
-
-
-bool String::isNumber(const string &s) {
-  char *endptr = 0;
-
-  errno = 0;
-  strtold(s.c_str(), &endptr);
-
-  while (isspace(*endptr)) endptr++;
-
-  return !errno && !*endptr;
-}
-
-
-uint8_t String::parseU8(const string &s, bool full) {
-  uint32_t v = parseU32(s, full);
-  if (v > 255) TYPE_ERROR("Unsigned 8-bit value '" << s << "' out of range");
-
-  return (uint8_t)v;
-}
-
-
-int8_t String::parseS8(const string &s, bool full) {
-  int32_t v = parseS32(s, full);
-  if (v < -127 || 127 < v)
-    TYPE_ERROR("Signed 8-bit value '" << s << "' out of range");
-
-  return (int8_t)v;
-}
-
-
-uint16_t String::parseU16(const string &s, bool full) {
-  uint32_t v = parseU32(s, full);
-  if (65535 < v) TYPE_ERROR("Unsigned 16-bit value '" << s << "' out of range");
-
-  return (uint16_t)v;
-}
-
-
-int16_t String::parseS16(const string &s, bool full) {
-  int32_t v = parseS32(s, full);
-  if (v < -32767 || 32767 < v)
-    TYPE_ERROR("Signed 16-bit value '" << s << "' out of range");
-
-  return (int16_t)v;
-}
-
-
-uint32_t String::parseU32(const string &s, bool full) {
-  errno = 0;
-  char *end = 0;
-  unsigned long v = strtoul(s.c_str(), &end, 0);
-  if (errno || numeric_limits<uint32_t>::max() < v || (full && end && *end))
-    TYPE_ERROR("Invalid unsigned 32-bit value '" << s << "'");
-
-  return (uint32_t)v;
-}
-
-
-int32_t String::parseS32(const string &s, bool full) {
-  errno = 0;
-  char *end = 0;
-  long v = strtol(s.c_str(), &end, 0);
-  if (errno || v < -numeric_limits<int32_t>::max() ||
-      numeric_limits<int32_t>::max() < v || (full && end && *end))
-    TYPE_ERROR("Invalid signed 32-bit value '" << s << "'");
-
-  return (int32_t)v;
-}
-
-
-uint64_t String::parseU64(const string &s, bool full) {
-  errno = 0;
-  char *end = 0;
-  unsigned long long v = strtoull(s.c_str(), &end, 0);
-  if (errno || (full && end && *end))
-    TYPE_ERROR("Invalid unsigned 64-bit value '" << s << "'");
-
-  return (uint64_t)v;
-}
-
-
-int64_t String::parseS64(const string &s, bool full) {
-  errno = 0;
-  char *end = 0;
-  long long int v = strtoll(s.c_str(), &end, 0);
-  if (errno || (full && end && *end))
-    TYPE_ERROR("Invalid signed 64-bit value '" << s << "'");
-
-  return (int64_t)v;
-}
-
-
-uint128_t String::parseU128(const string &s, bool full) {
-  int len = s.length();
-
-  if (!startsWith(s, "0x") || len < 3 || 34 < len)
-    TYPE_ERROR("Invalid 128-bit format '" << s << "'");
-
-  uint128_t v;
-  int loLen = min(len - 2, 16);
-  v.lo = parseU64(string("0x") + s.substr(len - loLen), full);
-  if (18 < len) v.hi = parseU64(s.substr(0, len - loLen), full);
-
-  return v;
-}
-
-
-double String::parseDouble(const string &s, bool full) {
-  errno = 0;
-  char *end = 0;
-  double v = strtod(s.c_str(), &end);
-  if (errno || (full && end && *end))
-    TYPE_ERROR("Invalid double '" << s << "'");
-  return v;
-}
-
-
-float String::parseFloat(const string &s, bool full) {
-  errno = 0;
-  char *end = 0;
-  float v = strtof(s.c_str(), &end);
-  if (errno || (full && end && *end))
-    TYPE_ERROR("Invalid float '" << s << "'");
-  return v;
-}
-
-
-bool String::parseBool(const string &s, bool full) {
-  string v = toLower(trim(s));
-
-  if (v == "true" || v == "t" || v == "1" || v == "yes" || v == "y")
-    return true;
-  if (v == "false" || v == "f" || v == "0" || v == "no" || v == "n")
-    return false;
-
-  TYPE_ERROR("Invalid bool '" << s << "'");
-}
-
-
 namespace cb {
   template <>
-  uint8_t String::parse<uint8_t>(const string &s, bool full)
-  {return parseU8(s, full);}
+  bool String::parse<int64_t>(const string &s, int64_t &value, bool full) {
+    errno = 0;
+    char *end = 0;
+    long long v = strtoll(s.c_str(), &end, 0);
+    if (errno || v < -numeric_limits<int64_t>::max() ||
+        numeric_limits<int64_t>::max() < v || (full && end && *end))
+      return false;
+
+    value = (int64_t)v;
+    return true;
+  }
+
 
   template <>
-  int8_t String::parse<int8_t>(const string &s, bool full)
-  {return parseS8(s, full);}
+  bool String::parse<uint64_t>(const string &s, uint64_t &value, bool full) {
+    errno = 0;
+    char *end = 0;
+    unsigned long long v = strtoull(s.c_str(), &end, 0);
+    if (errno || numeric_limits<uint64_t>::max() < v || (full && end && *end))
+      return false;
+    value = (uint64_t)v;
+    return true;
+  }
+
 
   template <>
-  uint16_t String::parse<uint16_t>(const string &s, bool full)
-  {return parseU16(s, full);}
+  bool String::parse<int32_t>(const string &s, int32_t &value, bool full) {
+    errno = 0;
+    char *end = 0;
+    long v = strtol(s.c_str(), &end, 0);
+    if (errno || v < -numeric_limits<int32_t>::max() ||
+        numeric_limits<int32_t>::max() < v || (full && end && *end))
+      return false;
+
+    value = (int32_t)v;
+    return true;
+  }
+
 
   template <>
-  int16_t String::parse<int16_t>(const string &s, bool full)
-  {return parseS16(s, full);}
+  bool String::parse<uint32_t>(const string &s, uint32_t &value, bool full) {
+    errno = 0;
+    char *end = 0;
+    unsigned long v = strtoul(s.c_str(), &end, 0);
+    if (errno || numeric_limits<uint32_t>::max() < v || (full && end && *end))
+      return false;
+    value = (uint32_t)v;
+    return true;
+  }
+
 
   template <>
-  uint32_t String::parse<uint32_t>(const string &s, bool full)
-  {return parseU32(s, full);}
+  bool String::parse<int16_t>(const string &s, int16_t &value, bool full) {
+    int32_t v;
+    if (!parse<int32_t>(s, v, full) || v < -32767 || 32767 < v) return false;
+    value = (int16_t)v;
+    return true;
+  }
+
 
   template <>
-  int32_t String::parse<int32_t>(const string &s, bool full)
-  {return parseS32(s, full);}
+  bool String::parse<uint16_t>(const string &s, uint16_t &value, bool full) {
+    uint32_t v;
+    if (!parse<uint32_t>(s, v, full) || 65535 < v) return false;
+    value = (uint16_t)v;
+    return true;
+  }
+
 
   template <>
-  uint64_t String::parse<uint64_t>(const string &s, bool full)
-  {return parseU64(s, full);}
+  bool String::parse<int8_t>(const string &s, int8_t &value, bool full) {
+    int32_t v;
+    if (!parse<int32_t>(s, v, full) || v < -127 || 127 < v) return false;
+    value = (int8_t)v;
+    return true;
+  }
+
 
   template <>
-  int64_t String::parse<int64_t>(const string &s, bool full)
-  {return parseS64(s, full);}
+  bool String::parse<uint8_t>(const string &s, uint8_t &value, bool full) {
+    uint32_t v;
+    if (!parse<uint32_t>(s, v, full) || 255 < v) return false;
+    value = (uint8_t)v;
+    return true;
+  }
+
 
   template <>
-  uint128_t String::parse<uint128_t>(const string &s, bool full)
-  {return parseU128(s, full);}
+  bool String::parse<uint128_t>(const string &s, uint128_t &value, bool full) {
+    int len = s.length();
+    if (!startsWith(s, "0x") || len < 3 || 34 < len) return false;
+
+    uint128_t v;
+    int loLen = min(len - 2, 16);
+    if (!parse<uint64_t>(string("0x") + s.substr(len - loLen), v.lo, full)
+        || ((18 < len) &&
+            !parse<uint64_t>(s.substr(0, len - loLen), v.hi, full)))
+      return false;
+
+    value = v;
+    return true;
+  }
+
 
   template <>
-  double String::parse<double>(const string &s, bool full)
-  {return parseDouble(s, full);}
+  bool String::parse<double>(const string &s, double &value, bool full) {
+    errno = 0;
+    char *end = 0;
+    double v = strtod(s.c_str(), &end);
+    if (errno || (full && end && *end)) return false;
+    value = v;
+    return true;
+  }
+
 
   template <>
-  float String::parse<float>(const string &s, bool full)
-  {return parseFloat(s, full);}
+  bool String::parse<float>(const string &s, float &value, bool full) {
+    errno = 0;
+    char *end = 0;
+    float v = strtof(s.c_str(), &end);
+    if (errno || (full && end && *end)) return false;
+    value = v;
+    return false;
+  }
+
 
   template <>
-  bool String::parse<bool>(const string &s, bool full)
-  {return parseBool(s, full);}
+  bool String::parse<bool>(const string &s, bool &value, bool full) {
+    string v = toLower(trim(s));
+
+    if (v == "true" || v == "t" || v == "1" || v == "yes" || v == "y") {
+      value = true;
+      return true;
+    }
+
+
+    if (v == "false" || v == "f" || v == "0" || v == "no" || v == "n") {
+      value = false;
+      return true;
+    }
+
+    return false;
+  }
+
+
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+  template <>                                                           \
+  TYPE String::parse<TYPE>(const string &s, bool full) {                \
+    TYPE v = 0;                                                         \
+    if (!parse<TYPE>(s, v, full))                                       \
+      TYPE_ERROR("Invalid " DESC " value '" << s << "'");               \
+    return v;                                                           \
+  }
+#include "StringParseTypes.def"
 }
+
+
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+  TYPE String::parse##NAME(const string &s, TYPE &value, bool full) {   \
+    return parse<TYPE>(s, value, full);                                 \
+  }
+#include "StringParseTypes.def"
+
+
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+  TYPE String::parse##NAME(const string &s, bool full) {                \
+    return parse<TYPE>(s, full);                                        \
+  }
+#include "StringParseTypes.def"
+
+
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                       \
+  TYPE String::is##NAME(const string &s, bool full) {           \
+    TYPE v;                                                     \
+    return parse##NAME(s, v, full);                             \
+  }
+#include "StringParseTypes.def"
+
+
+bool String::isInteger(const string &s) {return isU64(s,    true);}
+bool String::isNumber(const string &s)  {return isDouble(s, true);}
 
 
 string String::trimLeft(const string &s, const string &delims) {

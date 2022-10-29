@@ -75,32 +75,18 @@ namespace cb {
     String(size_type n, char c) : std::string(n, c) {}
 
     // Conversion constructors
-    /// Convert a 32-bit signed value to a string.
-    explicit String(int32_t x);
+    explicit String(double x, int precision);
 
-    /// Convert a 32-bit unsigned value to a string.
-    explicit String(uint32_t x);
+#define CBANG_STRING_PT(NAME, TYPE, DESC) explicit String(TYPE x);
+#include "StringParseTypes.def"
 
-    /// Convert a 64-bit signed value a string.
-    explicit String(int64_t x);
-
-    /// Convert a 64-bit unsigned value to a string.
-    explicit String(uint64_t x);
-
-    /// Convert a 128-bit unsigned value to a string.
-    explicit String(uint128_t x);
-
-    /// Convert a double value to a string.
-    explicit String(double x, int precision = 6);
-
-    /// Convert a boolean value to a string.
-    explicit String(bool x);
-
+    // Formatting
     static std::string printf(const char *format, ...)
       FORMAT_CHECK(printf, 1, 2);
     static std::string vprintf(const char *format, va_list ap)
       FORMAT_CHECK(printf, 1, 0);
 
+    // Tokenizing
     static unsigned tokenize(const std::string &s,
                              std::vector<std::string> &tokens,
                              const std::string &delims = DEFAULT_DELIMS,
@@ -113,25 +99,29 @@ namespace cb {
                                  DEFAULT_LINE_DELIMS,
                                  unsigned maxLength = 1024);
 
+    // Parsing
+    template <typename T> static bool parse(const std::string &s, T &value,
+                                            bool full);
+
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+    static TYPE parse##NAME(const std::string &s, TYPE &value, bool full);
+#include "StringParseTypes.def"
+
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+    static TYPE parse##NAME(const std::string &s, bool full = false);
+#include "StringParseTypes.def"
+
+    template <typename T> static T parse(const std::string &s, bool full);
+
+    // Type tests
+#define CBANG_STRING_PT(NAME, TYPE, DESC)                       \
+    static TYPE is##NAME(const std::string &s, bool full);
+#include "StringParseTypes.def"
+
     static bool isInteger(const std::string &s);
     static bool isNumber(const std::string &s);
 
-    static uint8_t parseU8(const std::string &s, bool full = false);
-    static int8_t parseS8(const std::string &s, bool full = false);
-    static uint16_t parseU16(const std::string &s, bool full = false);
-    static int16_t parseS16(const std::string &s, bool full = false);
-    static uint32_t parseU32(const std::string &s, bool full = false);
-    static int32_t parseS32(const std::string &s, bool full = false);
-    static uint64_t parseU64(const std::string &s, bool full = false);
-    static int64_t parseS64(const std::string &s, bool full = false);
-    static uint128_t parseU128(const std::string &s, bool full = false);
-    static double parseDouble(const std::string &s, bool full = false);
-    static float parseFloat(const std::string &s, bool full = false);
-    static bool parseBool(const std::string &s, bool full = false);
-
-    template <typename T> static T parse(const std::string &s,
-                                         bool full = false);
-
+    // Transformations
     static std::string trimLeft(const std::string &s,
                                 const std::string &delims = DEFAULT_DELIMS);
     static std::string trimRight(const std::string &s,

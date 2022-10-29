@@ -121,7 +121,7 @@ namespace cb {
     static T parsePart(const std::string &part) {
       if (part.empty()) CBANG_THROW("Invalid version string, part is empty");
       if (part.find_first_not_of("0") == std::string::npos) return 0;
-      return String::parse<T>(String::trimLeft(part, "0"));
+      return String::parse<T>(String::trimLeft(part, "0"), true);
     }
 
 
