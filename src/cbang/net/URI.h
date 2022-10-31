@@ -57,6 +57,8 @@ namespace cb {
     URI() {}
     URI(const std::string &uri) {read(uri);}
     URI(const char *uri) {read(uri);}
+    URI(const std::string &scheme, const IPAddress &addr,
+        const std::string &path = "/");
 
     const std::string &getScheme() const {return scheme;}
     const std::string &getHost() const {return host;}

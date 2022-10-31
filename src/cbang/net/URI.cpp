@@ -87,34 +87,45 @@ namespace {
 
 
   bool contains(const char *s, char c) {return c && strchr(s, c);}
+
+
+  unsigned portFromScheme(const string &scheme) {
+    if (scheme == "ftp")    return 21;
+    if (scheme == "ssh")    return 22;
+    if (scheme == "telnet") return 23;
+    if (scheme == "domain") return 53;
+    if (scheme == "tftp")   return 69;
+    if (scheme == "gopher") return 70;
+    if (scheme == "finger") return 79;
+    if (scheme == "http")   return 80;
+    if (scheme == "pop2")   return 109;
+    if (scheme == "pop3")   return 110;
+    if (scheme == "auth")   return 113;
+    if (scheme == "sftp")   return 115;
+    if (scheme == "nntp")   return 119;
+    if (scheme == "ntp")    return 123;
+    if (scheme == "snmp")   return 161;
+    if (scheme == "irc")    return 194;
+    if (scheme == "imap3")  return 220;
+    if (scheme == "ldap")   return 389;
+    if (scheme == "https")  return 443;
+    return 0;
+  }
 }
 
 
 const char *URI::DEFAULT_UNESCAPED = UNRESERVED_CHARS "/";
 
 
+URI::URI(const string &scheme, const IPAddress &addr, const string &path) :
+  scheme(scheme), host(addr.getHost()), port(addr.getPort()) {setPath(path);}
+
+
 unsigned URI::getPort() const {
   if (port || scheme.empty()) return port;
 
-  if (scheme == "ftp") return 21;
-  if (scheme == "ssh") return 22;
-  if (scheme == "telnet") return 23;
-  if (scheme == "domain") return 53;
-  if (scheme == "tftp") return 69;
-  if (scheme == "gopher") return 70;
-  if (scheme == "finger") return 79;
-  if (scheme == "http") return 80;
-  if (scheme == "pop2") return 109;
-  if (scheme == "pop3") return 110;
-  if (scheme == "auth") return 113;
-  if (scheme == "sftp") return 115;
-  if (scheme == "nntp") return 119;
-  if (scheme == "ntp") return 123;
-  if (scheme == "snmp") return 161;
-  if (scheme == "irc") return 194;
-  if (scheme == "imap3") return 220;
-  if (scheme == "ldap") return 389;
-  if (scheme == "https") return 443;
+  unsigned port = portFromScheme(scheme);
+  if (port) return port;
 
   THROW("Unknown scheme '" << String::escapeC(scheme) << "' and port not set");
 }
@@ -237,7 +248,7 @@ ostream &URI::write(ostream &stream) const {
     if (!user.empty() || !pass.empty()) stream << '@';
 
     stream << encode(host, HOST_CHARS);
-    if (port) stream << ':' << port;
+    if (port && port != portFromScheme(scheme)) stream << ':' << port;
   }
 
   stream << getEscapedPath();
