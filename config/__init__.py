@@ -297,36 +297,7 @@ def on_config_finish(conf):
     if env.get('gen_ninja', False): env.GenerateNinja()
 
 
-updated_csig = set()
-
-
-def decider_hack(dep, target, prev_ni, *args, **kwargs):
-    from SCons.Util import MD5signature
-
-    #print('%s ?= %s %s' % (dep, target, prev_ni.csig))
-
-    ninfo = dep.get_ninfo();
-
-    # Make sure csigs get updated
-    if not hasattr(ninfo, 'csig') or str(dep) not in updated_csig:
-        ninfo.csig = MD5signature(dep.get_contents())
-        updated_csig.add(str(dep))
-
-    # .csig may not exist, because no target was built yet...
-    if not hasattr(prev_ni, 'csig'): return True
-
-    # Target file may not exist yet
-    if not os.path.exists(str(target.abspath)): return True
-
-    # Some change on source file => update installed one
-    if ninfo.csig != prev_ni.csig: return True
-
-    return False
-
-
 def CBConfigure(env):
-    env.Decider(decider_hack)
-
     env.CBLoadTool('test')
     env.CBLoadTool('ninja')
 
