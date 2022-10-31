@@ -51,3 +51,6 @@ build.ninja
 *.patch
 *.rej
 *.orig
+
+# Env files
+/scons-env-options.py
