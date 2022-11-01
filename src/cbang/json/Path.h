@@ -50,10 +50,12 @@ namespace cb {
 
       ValuePtr select(const Value &value, fail_cb_t fail_cb = 0) const;
       ValuePtr select(const Value &value, const ValuePtr &defaultValue) const;
+      bool     exists(const Value &value) const;
 
 #define CBANG_JSON_VT(NAME, TYPE)                                       \
       TYPE select##NAME(const Value &value) const;                      \
-      TYPE select##NAME(const Value &value, TYPE defaultValue) const;
+      TYPE select##NAME(const Value &value, TYPE defaultValue) const;   \
+      bool exists##NAME(const Value &value) const;
 #include "ValueTypes.def"
    };
   }

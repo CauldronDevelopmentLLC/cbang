@@ -41,6 +41,9 @@ using namespace cb;
 using namespace cb::JSON;
 
 
+bool Value::exists(const string &path) const {return Path(path).exists(*this);}
+
+
 ValuePtr Value::select(const string &path) const {
   return Path(path).select(*this);
 }

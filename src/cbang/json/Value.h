@@ -78,11 +78,17 @@ namespace cb {
       virtual ValuePtr copy(bool deep = false) const = 0;
       virtual bool canWrite(Sink &sink) const {return true;}
 
+      bool     exists(const std::string &path) const;
       ValuePtr select(const std::string &path) const;
       ValuePtr select(const std::string &path,
                       const ValuePtr &defaultValue) const;
 
 #define CBANG_JSON_VT(NAME, TYPE)                                       \
+      bool exists##NAME(const std::string &path) const {                \
+        return Path(path).exists##NAME(*this);                          \
+      }                                                                 \
+                                                                        \
+                                                                        \
       TYPE select##NAME(const std::string &path) const {                \
         return Path(path).select##NAME(*this);                          \
       }                                                                 \
