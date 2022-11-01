@@ -125,7 +125,7 @@ void Event::renew(int signal) {
 
 
 void Event::add(double t) {
-  struct timeval tv = Timer::toTimeVal(t);
+  struct timeval tv = Timer::toTimeVal(max(0.0, t));
   event_add(e, &tv);
   if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
