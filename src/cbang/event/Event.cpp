@@ -89,6 +89,7 @@ double Event::getTimeout() const {
 
 
 bool Event::isPending(unsigned events) const {
+  events &= EV_TIMEOUT | EV_READ | EV_WRITE | EV_SIGNAL;
   return event_pending(e, events, 0);
 }
 
