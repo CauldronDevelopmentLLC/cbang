@@ -83,6 +83,12 @@ ValuePtr Path::select(const Value &value, const ValuePtr &defaultValue) const {
 }
 
 
+bool Path::exists(const Value &value) const {
+  auto cb = [] (const string &path) {return (ValuePtr)0;};
+  return select(value, cb).isSet();
+}
+
+
 #define CBANG_JSON_VT(NAME, TYPE)                                   \
   TYPE Path::select##NAME(const Value &value) const {               \
     ValuePtr result = select(value);                                \
@@ -91,11 +97,9 @@ ValuePtr Path::select(const Value &value, const ValuePtr &defaultValue) const {
       CBANG_TYPE_ERROR("Not a " #NAME " at " << path);              \
                                                                     \
     return result->get##NAME();                                     \
-  }
-#include "ValueTypes.def"
-
-
-#define CBANG_JSON_VT(NAME, TYPE)                                   \
+  }                                                                 \
+                                                                    \
+                                                                    \
   TYPE Path::select##NAME(const Value &value,                       \
                           TYPE defaultValue) const {                \
     ValuePtr result = select(value, ValuePtr());                    \
@@ -104,5 +108,12 @@ ValuePtr Path::select(const Value &value, const ValuePtr &defaultValue) const {
       return defaultValue;                                          \
                                                                     \
     return result->get##NAME();                                     \
+  }                                                                 \
+                                                                    \
+                                                                    \
+  bool Path::exists##NAME(const Value &value) const {               \
+    auto cb = [] (const string &path) {return (ValuePtr)0;};        \
+    ValuePtr result = select(value, cb);                            \
+    return result.isSet() && result->is##NAME();                    \
   }
 #include "ValueTypes.def"
