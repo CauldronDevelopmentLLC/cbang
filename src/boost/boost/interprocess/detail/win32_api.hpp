@@ -36,19 +36,19 @@
 //#define BOOST_INTERPROCESS_BOOTSTAMP_IS_SESSION_MANAGER_BASED
 
 #ifdef BOOST_INTERPROCESS_BOOTSTAMP_IS_LASTBOOTUPTIME
-#  define BOOST_INTERPROCESS_BOOTSTAMP_IS_LASTBOOTUPTIME_VALUE 1 
+#  define BOOST_INTERPROCESS_BOOTSTAMP_IS_LASTBOOTUPTIME_VALUE 1
 #else
 #  define BOOST_INTERPROCESS_BOOTSTAMP_IS_LASTBOOTUPTIME_VALUE 0
 #endif
 
 #ifdef BOOST_INTERPROCESS_BOOTSTAMP_IS_EVENTLOG_BASED
-#  define BOOST_INTERPROCESS_BOOTSTAMP_IS_EVENTLOG_BASED_VALUE 1 
+#  define BOOST_INTERPROCESS_BOOTSTAMP_IS_EVENTLOG_BASED_VALUE 1
 #else
 #  define BOOST_INTERPROCESS_BOOTSTAMP_IS_EVENTLOG_BASED_VALUE 0
 #endif
 
 #ifdef BOOST_INTERPROCESS_BOOTSTAMP_IS_SESSION_MANAGER_BASED
-#  define BOOST_INTERPROCESS_BOOTSTAMP_IS_SESSION_MANAGER_BASED_VALUE 1 
+#  define BOOST_INTERPROCESS_BOOTSTAMP_IS_SESSION_MANAGER_BASED_VALUE 1
 #else
 #  define BOOST_INTERPROCESS_BOOTSTAMP_IS_SESSION_MANAGER_BASED_VALUE 0
 #endif
@@ -113,7 +113,7 @@
 #  else
 #     pragma GCC system_header
 #  endif
-//When loading DLLs we have no option but reinterpret casting function types  
+//When loading DLLs we have no option but reinterpret casting function types
 #  if (BOOST_GCC >= 80000)
 #        pragma GCC diagnostic ignored "-Wcast-function-type"
 #  endif
@@ -2358,7 +2358,7 @@ inline bool get_last_bootup_time(std::string &stamp)
                // Print the contents of each record in the buffer.
                if(find_record_in_buffer(heap_deleter.get(), dwBytesRead, provider_name, event_id, pTypedRecord)){
                   char stamp_str[sizeof(unsigned long)*3+1];
-                  std::sprintf(&stamp_str[0], "%u", ((unsigned int)pTypedRecord->TimeGenerated));
+                  std::snprintf(&stamp_str[0], sizeof(stamp_str), "%u", ((unsigned int)pTypedRecord->TimeGenerated));
                   stamp = stamp_str;
                   break;
                }

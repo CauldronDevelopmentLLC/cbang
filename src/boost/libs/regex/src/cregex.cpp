@@ -3,8 +3,8 @@
  * Copyright (c) 1998-2002
  * John Maddock
  *
- * Use, modification and distribution are subject to the 
- * Boost Software License, Version 1.0. (See accompanying file 
+ * Use, modification and distribution are subject to the
+ * Boost Software License, Version 1.0. (See accompanying file
  * LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  *
  */
@@ -361,7 +361,7 @@ void BuildFileList(std::list<std::string>* pl, const char* files, bool recurse)
 
       while(dstart != dend)
       {
-         // Verify that sprintf will not overflow:
+         // Verify that snprintf will not overflow:
          if(std::strlen(dstart.path()) + std::strlen(directory_iterator::separator()) + std::strlen(ptr) >= MAX_PATH)
          {
             // Oops overflow, skip this item:
@@ -371,11 +371,11 @@ void BuildFileList(std::list<std::string>* pl, const char* files, bool recurse)
 #if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) && !defined(_WIN32_WCE) && !defined(UNDER_CE)
          int r = (::sprintf_s)(buf, sizeof(buf), "%s%s%s", dstart.path(), directory_iterator::separator(), ptr);
 #else
-         int r = (std::sprintf)(buf, "%s%s%s", dstart.path(), directory_iterator::separator(), ptr);
+         int r = (std::snprintf)(buf, sizeof(buf), "%s%s%s", dstart.path(), directory_iterator::separator(), ptr);
 #endif
          if(r < 0)
          {
-            // sprintf failed, skip this item:
+            // snprintf failed, skip this item:
             ++dstart;
             continue;
          }
@@ -472,7 +472,7 @@ std::string RegEx::Merge(const char* in, const char* fmt,
    return result;
 }
 
-std::size_t RegEx::Split(std::vector<std::string>& v, 
+std::size_t RegEx::Split(std::vector<std::string>& v,
                       std::string& s,
                       match_flag_type flags,
                       unsigned max_count)
@@ -561,11 +561,11 @@ std::string RegEx::What(int i)const
    switch(pdata->t)
    {
    case BOOST_REGEX_DETAIL_NS::RegExData::type_pc:
-      if(pdata->m[i].matched) 
+      if(pdata->m[i].matched)
          result.assign(pdata->m[i].first, pdata->m[i].second);
       break;
    case BOOST_REGEX_DETAIL_NS::RegExData::type_pf:
-      if(pdata->m[i].matched) 
+      if(pdata->m[i].matched)
          result.assign(to_string(pdata->m[i].first, pdata->m[i].second));
       break;
    case BOOST_REGEX_DETAIL_NS::RegExData::type_copy:
