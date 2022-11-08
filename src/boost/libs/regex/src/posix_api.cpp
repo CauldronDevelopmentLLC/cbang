@@ -3,12 +3,12 @@
  * Copyright (c) 1998-2002
  * John Maddock
  *
- * Use, modification and distribution are subject to the 
- * Boost Software License, Version 1.0. (See accompanying file 
+ * Use, modification and distribution are subject to the
+ * Boost Software License, Version 1.0. (See accompanying file
  * LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  *
  */
- 
+
  /*
   *   LOCATION:    see http://www.boost.org for most recent version.
   *   FILE:        posix_api.cpp
@@ -25,7 +25,7 @@
 
 #if defined(BOOST_NO_STDC_NAMESPACE)
 namespace std{
-   using ::sprintf;
+   using ::snprintf;
    using ::strcpy;
    using ::strcmp;
 }
@@ -125,7 +125,7 @@ BOOST_REGEX_DECL int BOOST_REGEX_CCALL regcompA(regex_tA* expression, const char
       expression->re_nsub = static_cast<c_regex_type*>(expression->guts)->mark_count();
       result = static_cast<c_regex_type*>(expression->guts)->error_code();
 #ifndef BOOST_NO_EXCEPTIONS
-   } 
+   }
    catch(const boost::regex_error& be)
    {
       result = be.code();
@@ -172,10 +172,10 @@ BOOST_REGEX_DECL regsize_t BOOST_REGEX_CCALL regerrorA(int code, const regex_tA*
 #if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) && !defined(_WIN32_WCE) && !defined(UNDER_CE)
             int r = (::sprintf_s)(localbuf, 5, "%d", i);
 #else
-            int r = (std::sprintf)(localbuf, "%d", i);
+            int r = (std::snprintf)(localbuf, 5, "%d", i);
 #endif
             if(r < 0)
-               return 0; // sprintf failed
+               return 0; // snprintf failed
             if(std::strlen(localbuf) < buf_size)
                BOOST_REGEX_DETAIL_NS::strcpy_s(buf, buf_size, localbuf);
             return std::strlen(localbuf) + 1;
@@ -184,10 +184,10 @@ BOOST_REGEX_DECL regsize_t BOOST_REGEX_CCALL regerrorA(int code, const regex_tA*
 #if BOOST_WORKAROUND(BOOST_MSVC, >= 1400) && !defined(_WIN32_WCE) && !defined(UNDER_CE)
       int r = (::sprintf_s)(localbuf, 5, "%d", 0);
 #else
-      int r = (std::sprintf)(localbuf, "%d", 0);
+      int r = (std::snprintf)(localbuf, 5, "%d", 0);
 #endif
       if(r < 0)
-         return 0; // sprintf failed
+         return 0; // snprintf failed
       if(std::strlen(localbuf) < buf_size)
          BOOST_REGEX_DETAIL_NS::strcpy_s(buf, buf_size, localbuf);
       return std::strlen(localbuf) + 1;
@@ -224,7 +224,7 @@ BOOST_REGEX_DECL int BOOST_REGEX_CCALL regexecA(const regex_tA* expression, cons
    const char* end;
    const char* start;
    cmatch m;
-   
+
    if(eflags & REG_NOTBOL)
       flags |= match_not_bol;
    if(eflags & REG_NOTEOL)

@@ -219,12 +219,12 @@ void TarHeader::write(ostream &stream) {
 
 
 void TarHeader::writeNumber(uint32_t n, char *buf, unsigned length) {
-  sprintf(buf, "%0*" PRIo32, length - 1, n);
+  snprintf(buf, length, "%0*" PRIo32, length - 1, n);
 }
 
 
 void TarHeader::writeNumber(uint64_t n, char *buf, unsigned length) {
-  sprintf(buf, "%0*" PRIo64, length - 1, n);
+  snprintf(buf, length, "%0*" PRIo64, length - 1, n);
 }
 
 
