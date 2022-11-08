@@ -144,6 +144,37 @@ uint32_t SystemInfo::getCPUCount() const {
 }
 
 
+uint32_t SystemInfo::getPerformanceCPUCount() const {
+#if defined(__APPLE__)
+  int32_t pcount = 0;
+  size_t len = sizeof(pcount);
+
+  // macOS 12+
+  if (!::sysctlbyname("hw.perflevel0.logicalcpu", &pcount, &len, 0, 0))
+    if (pcount > 0) return pcount;
+
+#ifdef __aarch64__
+  // macOS 11 ARM; only four possibilities
+  auto cpuInfo = CPUInfo::create();
+  string brand = cpuInfo->getBrand();
+
+  if      (brand == "Apple M1")     pcount = 4;
+  else if (brand == "Apple M1 Max") pcount = 8;
+  else if (brand == "Apple M1 Pro") pcount = getCPUCount() - 2; // 6 or 8
+#endif // __aarch64__
+
+  return pcount > 0 ? pcount : 0;
+
+#elif defined(_WIN32)
+  return 0;
+
+#else
+  return 0;
+
+#endif
+}
+
+
 uint64_t SystemInfo::getMemoryInfo(memory_info_t type) const {
 #if defined(_WIN32)
   MEMORYSTATUSEX info;
