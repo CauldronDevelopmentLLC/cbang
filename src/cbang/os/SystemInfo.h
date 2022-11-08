@@ -60,6 +60,7 @@ namespace cb {
     SystemInfo(Inaccessible);
 
     uint32_t getCPUCount() const;
+    uint32_t getPerformanceCPUCount() const;
     ThreadsType getThreadsType() {return threadsType;}
 
     uint64_t getMemoryInfo(memory_info_t type) const;
