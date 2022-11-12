@@ -151,27 +151,21 @@ uint32_t SystemInfo::getPerformanceCPUCount() const {
 
   // macOS 12+
   if (!::sysctlbyname("hw.perflevel0.logicalcpu", &pcount, &len, 0, 0))
-    if (pcount > 0) return pcount;
+    if (0 < pcount) return pcount;
 
 #ifdef __aarch64__
   // macOS 11 ARM; only four possibilities
-  auto cpuInfo = CPUInfo::create();
-  string brand = cpuInfo->getBrand();
+  string brand = CPUInfo::create()->getBrand();
 
-  if      (brand == "Apple M1")     pcount = 4;
-  else if (brand == "Apple M1 Max") pcount = 8;
-  else if (brand == "Apple M1 Pro") pcount = getCPUCount() - 2; // 6 or 8
+  if (brand == "Apple M1")     return 4;
+  if (brand == "Apple M1 Max") return 8;
+  if (brand == "Apple M1 Pro") return getCPUCount() - 2; // 6 or 8
 #endif // __aarch64__
+#endif // __APPLE__
 
-  return pcount > 0 ? pcount : 0;
+  // TODO Windows and Linux support
 
-#elif defined(_WIN32)
   return 0;
-
-#else
-  return 0;
-
-#endif
 }
 
 
