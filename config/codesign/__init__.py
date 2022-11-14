@@ -12,7 +12,7 @@ Add apropriate methods for public use.
 def generate(env):
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         env.CBAddVariables(
-            # put sign_* in scons_options.py (dockbot.json)
+            # put sign_* in scons_options.py (build.json)
             # if not sign_keychain, the default (login) keychain will be used
             # if not sign_id_installer, productsign will be skipped
             # sign_id_app is required for sign_apps and sign_tools
