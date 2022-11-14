@@ -1,5 +1,5 @@
 from SCons.Script import *
-import inspect
+import shlex
 
 
 def run_tests(env):
@@ -22,13 +22,9 @@ def generate(env):
     if not python: python = 'python'
     if env['PLATFORM'] == 'win32': python = python.replace('\\', '\\\\')
 
-    path = inspect.getfile(inspect.currentframe())
-    home = os.path.dirname(os.path.abspath(path)) + '/../..'
-
-    cmd = python + ' ' + home + '/tests/testHarness -C tests --diff-failed ' \
-        '--view-failed --view-unfiltered --save-failed --build'
-
-    if 'DOCKBOT_MASTER_PORT' in os.environ: cmd += ' --no-color'
+    cmd = [python, 'tests/testHarness', '-C', 'tests', '--diff-failed',
+           '--view-failed', '--view-unfiltered', '--save-failed', '--build']
+    cmd = shlex.join(cmd)
 
     env.CBAddVariables(('TEST_COMMAND', '`test` target command line', cmd))
 
