@@ -20,10 +20,16 @@ def generate(env):
     if not python: python = distutils.spawn.find_executable('python')
     if not python: python = distutils.spawn.find_executable('python2')
     if not python: python = 'python'
-    if env['PLATFORM'] == 'win32': python = python.replace('\\', '\\\\')
 
-    cmd = [python, 'tests/testHarness', '-C', 'tests', '--diff-failed',
-           '--view-failed', '--view-unfiltered', '--save-failed', '--build']
+    dir = os.path.dirname(os.path.realpath(__file__))
+    testHarness = dir + '/../../tests/testHarness'
+
+    if env['PLATFORM'] == 'win32':
+        python = python.replace('\\', '\\\\')
+        testHarness = testHarness.replace('\\', '\\\\')
+
+    cmd = [python, testHarness, '-C', 'tests', '--diff-failed', '--view-failed',
+           '--view-unfiltered', '--save-failed', '--build']
     cmd = shlex.join(cmd)
 
     env.CBAddVariables(('TEST_COMMAND', '`test` target command line', cmd))
