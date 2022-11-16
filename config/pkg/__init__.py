@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 '''Builds an OSX single application package'''
 
 import os
@@ -90,7 +88,7 @@ def build_function(target, source, env):
 
     if env.get('sign_id_installer') and not env.get('sign_disable'):
         cmd += ['--sign', env.get('sign_id_installer')]
-        if 'sign_keychain' in env:
+        if env.get('sign_keychain'):
             cmd += ['--keychain', env.get('sign_keychain')]
 
     cmd += [str(target[0])]
