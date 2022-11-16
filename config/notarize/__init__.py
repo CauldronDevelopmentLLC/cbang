@@ -1,6 +1,7 @@
 ''' notarize '''
 
-from __future__ import print_function
+# TODO remove support for altool when it stops working in Fall 2023
+
 import os
 import sys
 import subprocess
@@ -38,10 +39,9 @@ def notarize_get_identifier(env, fpath):
         identifier = sign_prefix + identifier
 
     # sanitize identifier
-    # replace underscore with hyphen, strip spaces
-    identifier = identifier.replace('_', '-').replace(' ', '')
-    # replace any remaining suspect chars with hyphen
-    # I don't know the specs, so only known valid chars allowed
+    # strip spaces
+    identifier = identifier.replace(' ', '')
+    # replace invalid chars with hyphen
     identifier = re.sub(r'[^A-Za-z0-9\-\.]', '-', identifier)
 
     return identifier
@@ -59,12 +59,15 @@ def notarize_sanity_check(env, fpath):
     if not os.path.isfile(fpath):
         raise Exception('ERROR: file does not exist: \"%s\"' % fpath)
     # if invaid config disable notarization and print warning
+    notarize_profile = env.get('notarize_profile')
     notarize_user = env.get('notarize_user')
     notarize_pass = env.get('notarize_pass')
-    if not (notarize_user and notarize_pass):
+    if not (notarize_profile or (notarize_user and notarize_pass)):
         env['notarize_disable'] = True
         print('WARNING: setting notarize_disable due to incomplete config',
               file=sys.stderr)
+        if not notarize_profile:
+            print('NOTE: notarize_profile is not set', file=sys.stderr)
         if not notarize_user:
             print('NOTE: notarize_user is not set', file=sys.stderr)
         if not notarize_pass:
@@ -181,7 +184,31 @@ def notarize_staple_file(fpath):
     return ret
 
 
+def NewNotarizeWaitStaple(env, fpath, timeout=0):
+    notarize_sanity_check(env, fpath)
+    if env.get('sign_disable'): return False
+    if env.get('notarize_disable'): return False
+    if timeout < 0: timeout = 0
+    elif timeout > 3600: timeout = 3600
+    notarize_profile = env.get('notarize_profile')
+    cmd = ['/usr/bin/xcrun', 'notarytool', 'submit', '--wait']
+    if timeout: cmd += ['--timeout', str(timeout)]
+    cmd += ['-p', notarize_profile, fpath]
+    print('@', cmd)
+    ret = subprocess.call(cmd)
+    if ret != 0:
+        raise Exception('ERROR: unable to notarize \"%s\"' % fpath)
+    ret = notarize_staple_file(fpath)
+    if ret != 0:
+        print('ERROR: Stapling failed, though notarize may have succeeded',
+              file=sys.stderr)
+    print('Done notarizing.')
+    return ret == 0
+
+
 def NotarizeWaitStaple(env, fpath, timeout=0, interval=30):
+    if env.get('notarize_profile'):
+        return NewNotarizeWaitStaple(env, fpath, timeout)
     notarize_sanity_check(env, fpath)
     if env.get('sign_disable'):
         return False
@@ -217,6 +244,8 @@ def generate(env):
             # You should at least disable notarization for debug builds
             # Really, only pkgs users can download need be notarized
             BoolVariable('notarize_disable', 'Disable notarization', 0),
+            ('notarize_profile', 'The notarytool keychain item profile name'),
+            # if using notarize_profile, you do not need user, pass, asc, team
             ('notarize_user', 'The deveoper AppleID email used to notarize.' +
              ' Need not be same as codesign account.'),
             # Example pass: '@keychain:Developer altool: Jane Doe'
