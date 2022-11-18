@@ -7,7 +7,7 @@ def configure(conf):
     if conf.env.get('debug', False): lib_suffix.append('/build/Release/lib')
     else: lib_suffix.append('/build/Debug/lib')
 
-    if not 'V8_INCLUDE' in os.environ:
+    if not 'V8_INCLUDE' in os.environ and not 'V8_HOME' in os.environ:
         os.environ['V8_INCLUDE'] = '/usr/include/v8'
 
     conf.CBCheckHome('v8', lib_suffix = lib_suffix)
