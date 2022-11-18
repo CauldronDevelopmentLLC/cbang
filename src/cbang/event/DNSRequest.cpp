@@ -66,7 +66,8 @@ DNSRequest::DNSRequest(evdns_base *dns, const string &name,
 
 DNSRequest::DNSRequest(evdns_base *dns, uint32_t ip, DNSRequest::callback_t cb,
                        bool search) : dns(dns), cb(cb), self(this) {
-  struct in_addr addr = {hton32(ip)};
+  struct in_addr addr;
+  addr.s_addr = hton32(ip);
 
   req = evdns_base_resolve_reverse
     (dns, &addr, (search ? 0 : DNS_QUERY_NO_SEARCH), dns_cb, this);
