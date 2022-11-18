@@ -14,6 +14,7 @@ def configure(conf):
 
     if conf.env['PLATFORM'] == 'win32' or int(conf.env.get('cross_mingw', 0)):
         conf.CBRequireLib('winmm')
+        conf.CBCheckLib('dbghelp')
 
     conf.CBRequireCXXHeader('v8.h')
     conf.CBRequireCXXHeader('libplatform/libplatform.h')
