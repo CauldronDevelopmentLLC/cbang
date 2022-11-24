@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os, platform, shutil, subprocess
 
 import zipfile
@@ -241,6 +239,12 @@ def RunCommand(env, cmd):
     CommandAction(cmd).execute(None, [], env)
 
 
+def RunCommandOrRaise(env, cmd):
+    print('@', cmd)
+    ret = CommandAction(cmd).execute(None, [], env)
+    if ret: raise Exception('command failed, return code %s' % str(ret))
+
+
 def WriteStringToFile(env, path, contents):
     if not isinstance(contents, (list, tuple)): contents = [contents]
 
@@ -318,6 +322,7 @@ def generate(env):
     env.AddMethod(CopyToPackage)
     env.AddMethod(InstallFiles)
     env.AddMethod(RunCommand)
+    env.AddMethod(RunCommandOrRaise)
     env.AddMethod(ResolvePackageFileMap)
     env.AddMethod(WriteStringToFile)
     env.AddMethod(ZipDir)

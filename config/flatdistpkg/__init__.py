@@ -42,12 +42,6 @@ build_dir_distribution_xml = \
     os.path.join(build_dir_tmp, filename_distribution_xml)
 
 
-def RunCommandOrRaise(env, cmd):
-    print('@', cmd)
-    ret = CommandAction(cmd).execute(None, [], env)
-    if ret: raise Exception('command failed, return code %s' % str(ret))
-
-
 def clean_old_build(env):
     # rm intermediate build stuff
     # do not rm old build products, descriptions
@@ -191,8 +185,9 @@ def build_component_pkg(info, env):
     if not os.path.isdir(stage): os.makedirs(stage)
 
     # if pkg_files exists, always copy to root, same as pkg module does
+    # Note that this creates root if it doesn't yet exist
     pkg_files = info.get('pkg_files')
-    if pkg_files:
+    if pkg_files and not pkg_nopayload:
         env.CopyToPackage(pkg_files, root)
 
     if not os.path.isdir(root) and not pkg_nopayload:
@@ -245,7 +240,7 @@ def build_component_pkg(info, env):
     elif scripts and os.path.isdir(scripts):
         cmd += ['--scripts', scripts]
     cmd += [target]
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def build_component_pkgs(env):
@@ -324,17 +319,17 @@ def build_product_pkg(target, source, env):
         ]
     if pkg_id: cmd += ['--identifier', pkg_id]
     cmd += [target]
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def expand_flat_pkg(target, source, env):
     cmd = ['pkgutil', '--expand', source, target]
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def flatten_to_pkg(target, source, env):
     cmd = ['pkgutil', '--flatten', source, target]
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def unlock_keychain(env, keychain=None, password=None):
@@ -377,7 +372,7 @@ def sign_flat_package(target, source, env):
     if keychain:
         cmd += ['--keychain', keychain]
     cmd += [source, target]
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def sign_or_copy_product_pkg(target, source, env):
@@ -432,7 +427,7 @@ def sign_application(target, env):
             os.chmod(path, 0o755)
         sign_executable(path, env)
     # finally, sign app
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def sign_executable(target, env):
@@ -456,7 +451,7 @@ def sign_executable(target, env):
         raise Exception('unable to codesign %s; not an executable' % target)
     # FIXME should not try to sign executable scripts
     cmd += [target]
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def build_or_copy_distribution_template(env):
