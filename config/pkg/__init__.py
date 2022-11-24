@@ -4,13 +4,8 @@ import os
 import shutil
 
 from SCons.Script import *
-from SCons.Action import CommandAction
 
-
-def RunCommandOrRaise(env, cmd):
-    print('@', cmd)
-    ret = CommandAction(cmd).execute(None, [], env)
-    if ret: raise Exception('command failed, return code %s' % str(ret))
+deps = ['codesign', 'notarize']
 
 
 def InstallApps(env, key, target):
@@ -60,7 +55,7 @@ def build_function(target, source, env):
     if env.get('pkg_plist'): cmd += ['--component-plist', env.get('pkg_plist')]
     cmd += [build_dir + '/%s.pkg' % env.get('package_name')]
 
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
     # Filter distribution.xml
     dist = None
@@ -93,7 +88,7 @@ def build_function(target, source, env):
 
     cmd += [str(target[0])]
 
-    RunCommandOrRaise(env, cmd)
+    env.RunCommandOrRaise(cmd)
 
 
 def generate(env):
@@ -104,6 +99,8 @@ def generate(env):
                   source_factory = SCons.Node.FS.Entry,
                   source_scanner = SCons.Defaults.DirScanner)
     env.Append(BUILDERS = {'Pkg' : bld})
+
+    for tool in deps: env.CBLoadTool(tool)
 
     return True
 
