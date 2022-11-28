@@ -1,13 +1,12 @@
 '''  flatdistpkg '''
 
-import os, platform, shutil
+import os, shutil
 import config
 import zipfile
 import mimetypes
 mimetypes.init()
 
 from SCons.Script import *
-from SCons.Action import CommandAction
 
 import glob
 try:
@@ -36,7 +35,7 @@ build_dirs = [
 # probably don't need these; info should be passed via FlatDistPackager()
 default_src_resources = 'Resources'
 # going to generate this from scratch, so won't need template
-default_src_distribution_xml = 'src/distribution.xml'
+default_src_distribution_xml = 'osx/distribution.xml'
 
 build_dir_distribution_xml = \
     os.path.join(build_dir_tmp, filename_distribution_xml)
@@ -216,13 +215,13 @@ def build_component_pkg(info, env):
     for path in sign_apps:
         if not path.startswith('/'):
             path = os.path.join(root, path)
-        sign_application(path, env)
+        env.SignApplication(path)
 
     sign_tools = info.get('sign_tools', [])
     for path in sign_tools:
         if not path.startswith('/'):
             path = os.path.join(root, path)
-        sign_executable(path, env)
+        env.SignExecutable(path)
 
     cmd = ['pkgbuild',
         '--install-location', install_to,
@@ -331,127 +330,6 @@ def flatten_to_pkg(target, source, env):
     cmd = ['pkgutil', '--flatten', source, target]
     env.RunCommandOrRaise(cmd)
 
-
-def unlock_keychain(env, keychain=None, password=None):
-    if keychain is None: keychain = env.get('sign_keychain', None)
-    if keychain: name = keychain
-    else: name = 'default-keychain'
-    if password is None:
-        passfile = os.path.expanduser('~/.ssh/p')
-        if os.path.isfile(passfile):
-            with open(passfile, 'r') as f: password = f.read().strip('\n')
-    if password:
-        cmd = ['security', 'unlock-keychain', '-p', password]
-        if keychain: cmd += [keychain]
-        try:
-            sanitized_cmd = cmd[:3] + ['xxxxxx']
-            if keychain: sanitized_cmd += [keychain]
-            print('@', sanitized_cmd)
-            # returns 0 if keychain already unlocked, even if pass is wrong
-            ret = CommandAction(cmd).execute(None, [], env)
-            if ret: raise Exception(
-                'unlock-keychain failed, return code %s' % str(ret))
-        except Exception as e:
-            print('unable to unlock keychain "%s"' % name)
-            raise e
-    else:
-        print('skipping unlock "%s"' % name + '; no password given')
-
-
-def sign_flat_package(target, source, env):
-    # expect source 'somewhere/tmpname.pkg', target elsewhere/finalname.pkg
-    sign = env.get('sign_id_installer', None)
-    keychain = env.get('sign_keychain', None)
-    if not sign:
-        raise Exception('unable to sign; no sign_id_installer provided')
-    # FIXME should do more than this
-    x, ext = os.path.splitext(source)
-    if not (os.path.isfile(source) and ext in ('.pkg', '.mpkg')):
-        raise Exception('unable to sign; not a flat package: ' + source)
-    cmd = ['productsign','--timestamp', '--sign', sign]
-    if keychain:
-        cmd += ['--keychain', keychain]
-    cmd += [source, target]
-    env.RunCommandOrRaise(cmd)
-
-
-def sign_or_copy_product_pkg(target, source, env):
-    if env.get('sign_id_installer') and not env.get('sign_disable'):
-        sign_flat_package(target, source, env)
-        return
-    print('WARNING: NOT signing package %s; copying instead.' % source,
-          file=sys.stderr)
-    shutil.copy2(source, target)
-
-
-def sign_application(target, env):
-    if env.get('sign_disable'): return
-    keychain = env.get('sign_keychain')
-    sign = env.get('sign_id_app')
-    cmd = ['codesign', '-f', '--timestamp', '--options', 'runtime']
-    try:
-      ver = tuple([int(x) for x in platform.mac_ver()[0].split('.')])
-      # all bundles in an app must also be signed on 10.7+
-      # easy way to do this is just to codesign --deep
-      # only ok if there are no sandbox entitlements for this app
-      if ver >= (10,7): cmd += ['--deep']
-    except: pass
-    if keychain:
-        cmd += ['--keychain', keychain]
-    if sign:
-        cmd += ['--sign', sign]
-    else:
-        raise Exception('unable to codesign %s; no sign_id_app given' % target)
-    if not os.path.isdir(target) or not target.endswith('.app'):
-        raise Exception('unable to codesign %s; not an app' % target)
-    epath = os.path.join(target, 'Contents/Resources/entitlements.plist')
-    if os.path.isfile(epath):
-        cmd += ['--entitlements', epath]
-    cmd += [target]
-    # sign any bundled libraries before singning app
-    # https://github.com/FoldingAtHome/fah-issues/issues/1576
-    # find libs under target dir, ignoring symlinks
-    paths = []
-    for root, dirs, files in os.walk(target):
-        for file in files:
-            e = os.path.splitext(file)[1]
-            if e in ('.so', '.dylib'):
-                path = os.path.join(root, file)
-                if not os.path.islink(path):
-                    paths.append(path)
-    # sign each lib
-    for path in paths:
-        # some macports built libs are missing x bits
-        if not os.access(path, os.X_OK):
-            print ('warning: setting execute perms on ' + path)
-            os.chmod(path, 0o755)
-        sign_executable(path, env)
-    # finally, sign app
-    env.RunCommandOrRaise(cmd)
-
-
-def sign_executable(target, env):
-    if env.get('sign_disable'): return
-    keychain = env.get('sign_keychain')
-    sign = env.get('sign_id_app')
-    prefix = env.get('sign_prefix')
-    cmd = ['codesign', '-f', '--timestamp', '--options', 'runtime']
-    if keychain:
-        cmd += ['--keychain', keychain]
-    if prefix:
-        if not prefix.endswith('.'): prefix += '.'
-        cmd += ['--prefix', prefix]
-    else:
-        raise Exception('unable to codesign %s; no sign_prefix given' % target)
-    if sign:
-        cmd += ['--sign', sign]
-    else:
-        raise Exception('unable to codesign %s; no sign_id_app given' % target)
-    if not (os.path.isfile(target) and os.access(target, os.X_OK)):
-        raise Exception('unable to codesign %s; not an executable' % target)
-    # FIXME should not try to sign executable scripts
-    cmd += [target]
-    env.RunCommandOrRaise(cmd)
 
 
 def build_or_copy_distribution_template(env):
@@ -801,7 +679,7 @@ def flat_dist_pkg_build(target, source, env):
     elif env.get('pkg_resources'):
         env.InstallFiles('pkg_resources', build_dir_resources)
 
-    unlock_keychain(env)
+    env.UnlockKeychain()
 
     build_component_pkgs(env)
 
@@ -831,7 +709,7 @@ def flat_dist_pkg_build(target, source, env):
 
     flatten_to_pkg(target_unsigned, target_pkg_expanded, env)
 
-    sign_or_copy_product_pkg(target_pkg, target_unsigned, env)
+    env.SignOrCopyPackage(target_pkg, target_unsigned)
 
     env.NotarizeWaitStaple(target_pkg, timeout = 1200)
 
