@@ -1,6 +1,8 @@
 '''  flatdistpkg '''
 
-import os, shutil
+import os
+import shutil
+import re
 import config
 import zipfile
 import mimetypes
@@ -13,7 +15,6 @@ try:
     import json
 except ImportError:
     import simplejson as json
-from pprint import pprint
 
 deps = ['codesign', 'notarize', 'compiler']
 
@@ -309,6 +310,7 @@ def build_component_pkgs(env):
 
 def build_product_pkg(target, source, env):
     version = env.get('version')
+    if not version: raise Exception('version is not set')
     pkg_id = env.get('distpkg_id')
     cmd = ['productbuild',
         '--distribution', build_dir_distribution_xml,
@@ -399,10 +401,10 @@ def build_distribution_template(env, target=None):
         }
     etree.SubElement(root, 'options', opts)
 
-    # WARNING domains element is buggy for anything other then root-only.
+    # WARNING domains element is buggy for anything other than root-only.
     # It also leads to support questions, because default selection must be
-    # clicked before can click continue. And it gives an uninformative,
-    # unhelpful message if volume check fails.
+    # clicked before one can click continue.
+    # It also gives an uninformative, unhelpful message if volume check fails.
     # So, disabled for now. May need to enable in the future if
     # options rootVolumeOnly becomes unsupported.
     if False and distpkg_root_volume_only:
@@ -478,7 +480,7 @@ function volume_check() {
 }
 function install_check() {"""
 
-    if not allow_ppc and ver < (10,6):
+    if not allow_ppc and ver < (10,6,6):
         script_text += """
   if (system.sysctl('hw.cputype') == '18') {
     my.result.title = 'Unable to Install';
@@ -540,18 +542,14 @@ function install_check() {"""
             for app_id in must_close_apps:
                 etree.SubElement(must_close, 'app', {'id':app_id})
             pkgrefs.append(r)
-        # if appropriate, add start_{enabled,selected} attrs and script
+        # if appropriate, add {enabled,selected} attrs and script
         if pkg_ver > ver:
-            # add start_{enabled,selected} attrs to choice
-            # add min version scripts to script_text
             # TODO add arch checks if component has diff reqs than distpkg
-            choice.set('start_enabled', name_lower + '_start_enabled()')
-            choice.set('start_selected', name_lower + '_start_selected()')
+            munged_name = 'is_' + re.sub(r'[^A-Za-z0-9]+', '_', name_lower)
+            choice.set('enabled', munged_name + '_enabled();')
+            choice.set('selected', munged_name + '_enabled();')
             script_text += """
-function """ + name_lower + """_start_enabled() {
-  return is_min_version('""" + pkg_target + """');
-}
-function """ + name_lower + """_start_selected() {
+function """ + munged_name + """_enabled() {
   return is_min_version('""" + pkg_target + """');
 }
 """

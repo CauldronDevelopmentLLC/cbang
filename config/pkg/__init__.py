@@ -8,6 +8,19 @@ from SCons.Script import *
 deps = ['codesign', 'notarize']
 
 
+# https://stackoverflow.com/a/65450788
+# fast xml escape
+xml_escape_table = str.maketrans({
+    "<": "&lt;",
+    ">": "&gt;",
+    "&": "&amp;",
+    "'": "&apos;",
+    '"': "&quot;",
+})
+def xml_escape(txt):
+    return txt.translate(xml_escape_table)
+
+
 def InstallApps(env, key, target):
     # copy apps, preserving symlinks, no ignores
     for src in env.get(key):
@@ -31,6 +44,9 @@ def build_function(target, source, env):
         env.Replace(pkg_id = env.get('app_id') + '.pkg')
     if not env.get('pkg_id'):
         raise Exception('neither pkg_id nor app_id is set')
+
+    version = env.get('version')
+    if not version: raise Exception('version is not set')
 
     # Make root dir
     root_dir = os.path.join(build_dir, 'root')
@@ -74,12 +90,13 @@ def build_function(target, source, env):
     cmd = ['${PKGBUILD}',
            '--root', root_dir,
            '--id', env.get('pkg_id'),
-           '--version', env.get('version'),
+           '--version', version,
            '--install-location', env.get('pkg_install_to', '/'),
            ]
     if env.get('pkg_scripts'): cmd += ['--scripts', env.get('pkg_scripts')]
     if env.get('pkg_plist'): cmd += ['--component-plist', env.get('pkg_plist')]
-    cmd += [build_dir_packages + '/%s.pkg' % env.get('package_name')]
+    component_pkg = build_dir_packages + '/%s.pkg' % env.get('package_name')
+    cmd += [component_pkg]
 
     env.RunCommandOrRaise(cmd)
 
@@ -88,27 +105,34 @@ def build_function(target, source, env):
     if env.get('pkg_distribution'):
         with open(env.get('pkg_distribution'), 'r') as f: data = f.read()
         dist = build_dir + '/distribution.xml'
-        with open(dist, 'w') as f: f.write(data % env)
+        # make xml escaped str values dict for distribution.xml insertion
+        xenv = {}
+        for key in env.keys():
+            value = env[key]
+            if isinstance(value, (str, bytes)):
+                xenv[key] = xml_escape(str(value))
+        with open(dist, 'w') as f: f.write(data % xenv)
     # TODO else build distribution.xml similar to flastdistpkg
 
     # productbuild command
-    cmd = ['${PRODUCTBUILD}']
+    cmd = ['${PRODUCTBUILD}', '--version', version]
     if dist:
         cmd += ['--distribution', dist]
         cmd += ['--package-path', build_dir_packages]
-        cmd += ['--resources', build_dir_resources]
+    elif component_pkg:
+        print("WARNING: No distribution specified. Using --package.")
+        cmd += ['--package', component_pkg]
     else:
-        print("WARNING: No distribution specified. Attempting to build "
-              "using --root. Package will not have Resources and will put "
-              "wrong package id in receipts.")
+        print("WARNING: No distribution specified. Using --root.")
         cmd += ['--root', root_dir, env.get('pkg_install_to', '/'),
-                '--id', env.get('pkg_id'),
-                '--version', env.get('version')]
+                '--id', env.get('pkg_id')]
         scripts = env.get('pkg_scripts')
         if scripts: cmd += ['--scripts', scripts]
 
+    cmd += ['--resources', build_dir_resources]
+
     if env.get('sign_id_installer') and not env.get('sign_disable'):
-        cmd += ['--sign', env.get('sign_id_installer')]
+        cmd += ['--sign', env.get('sign_id_installer'), '--timestamp']
         if env.get('sign_keychain'):
             cmd += ['--keychain', env.get('sign_keychain')]
 
