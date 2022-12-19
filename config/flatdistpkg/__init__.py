@@ -1,6 +1,8 @@
 '''  flatdistpkg '''
 
-import os, shutil
+import os
+import shutil
+import re
 import config
 import zipfile
 import mimetypes
@@ -13,7 +15,6 @@ try:
     import json
 except ImportError:
     import simplejson as json
-from pprint import pprint
 
 deps = ['codesign', 'notarize', 'compiler']
 
@@ -82,39 +83,6 @@ def create_dirs(env):
     #   Tried to lookup File 'build' as a Dir.
 
 
-def remove_cruft_from_directory(d, env):
-    if not (d and os.path.isdir(d) and d.startswith('build/')):
-        return
-    # rm any lingering cruft (.svn .DS_Store)
-    # other candidates may include
-    #    ._??*, resource forks, ACLs, xattrs
-    # In SConstruct, should use env['package_ignores'] += ['.DS_Store']
-    # FIXME NOT FULLY IMPLEMENTED
-    # FIXME should probably use os.walk()
-    cmd = ['find',d,'-type','f','-name','.DS_Store','-print','-delete']
-    env.RunCommand(cmd)
-    return
-    # feels too dangerous
-    cmd = ['find', d, '-type', 'd', '-name', '.svn', '-exec',
-        'rm', '-rf', '{}', ';', '-prune', '-print']
-    env.RunCommand(cmd)
-    # UNTESTED:
-    cruft_files = ['.DS_Store']
-    cruft_dirs = ['.svn']
-    for root, dirs, files in os.walk(d):
-        for name in cruft_files:
-            if name in files:
-                path = os.path.join(root, name)
-                print('WOULD BE deleting ' + path)
-                #os.remove(path)
-        for name in cruft_dirs:
-            if name in dirs:
-                dirs.remove(name)
-                path = os.path.join(root, name)
-                print('WOULD BE deleting directory ' + path)
-                #shutil.rmtree(path)
-
-
 def rename_prepostflight_scripts(scripts_dir):
     # unless PackageInfo says otherwise,
     # flat pkgs only use pre/postinstall
@@ -137,12 +105,12 @@ def build_component_pkg(info, env):
     name = info.get('name')
     home = info.get('home')
     pkg_id = info.get('pkg_id')
-    # if no component version, use distpkg version
+    # if no component version, use package version
     version = info.get('version', env.get('version'))
     root = info.get('root')
     resources = info.get('resources')
     pkg_resources = info.get('pkg_resources')
-    install_to = info.get('install_to', '/')
+    install_to = info.get('install_to', env.get('pkg_install_to', '/'))
     pkg_nopayload = info.get('pkg_nopayload', False)
 
     if not name:
@@ -203,10 +171,9 @@ def build_component_pkg(info, env):
     elif pkg_resources:
         env.CopyToPackage(pkg_resources, stage_resources)
 
-    # not needed, done later to expanded distpkg anyway
-    #remove_cruft_from_directory(stage, env)
-
-    rename_prepostflight_scripts(stage_scripts)
+    # pkg_plist might specify non-default script names
+    if not env.get('pkg_plist') and not info.get('pkg_plist'):
+        rename_prepostflight_scripts(stage_scripts)
 
     # if any apps/tools should be codesign'd do that now
     # assumes project didn't do it when creating its distroot
@@ -246,7 +213,8 @@ def build_component_pkgs(env):
     components = env.get('distpkg_components', None)
 
     if not components:
-        # in future, maybe handle as implicit pkg+distpkg if pkg_type dist
+        # TODO: instead create components for single-pkg dist
+        # and set any needed distpkg_/pkg_ vars
         raise Exception('no distpkg_components specified')
 
     # validate and fill-in any missing info
@@ -284,17 +252,13 @@ def build_component_pkgs(env):
         if not desc:
             desc = info.get('description', '').strip()
         if not desc:
+            # try contents of <home>/package-description.txt
             fname = os.path.join(home, filename_package_desc_txt)
             if os.path.isfile(fname):
                 with open(fname, 'r') as f: desc = f.read().strip()
         if not desc:
             desc = info.get('summary', '').strip()
-        if desc:
-            desc = desc.replace('\n',' ')
-            desc = desc.replace('  ',' ').replace('  ',' ')
-            desc = desc.replace('. ','.  ')
-        if desc:
-            info['short_description'] = desc
+        info['short_description'] = desc
 
     for info in components:
         try:
@@ -309,6 +273,7 @@ def build_component_pkgs(env):
 
 def build_product_pkg(target, source, env):
     version = env.get('version')
+    if not version: raise Exception('version is not set')
     pkg_id = env.get('distpkg_id')
     cmd = ['productbuild',
         '--distribution', build_dir_distribution_xml,
@@ -331,14 +296,14 @@ def flatten_to_pkg(target, source, env):
     env.RunCommandOrRaise(cmd)
 
 
-
 def build_or_copy_distribution_template(env):
+    # TODO: use env pkg_distribution if exists; escape values to insert into it
     target = build_dir_distribution_xml
     source = default_src_distribution_xml
 
     build_distribution_template(env, target)
 
-    if os.path.exists(target): return
+    if os.path.exists(target): return # assume build succeeded
 
     print('WARNING: did not generate distribution.xml; '
           'using pre-built template %s' % source)
@@ -348,6 +313,7 @@ def build_or_copy_distribution_template(env):
     # sometimes after a 'scons --clean', above fails with
     # scons: *** [fah-installer_7.2.12_intel.pkg.zip] TypeError :
     #   Tried to lookup File 'build' as a Dir.
+    # TODO: filter it, don't just copy
     shutil.copy2(source, target)
 
 
@@ -378,8 +344,9 @@ def build_distribution_template(env, target=None):
     root = etree.Element('installer-gui-script', {'minSpecVersion':'2'})
     tree = etree.ElementTree(root)
 
-    etree.SubElement(root, 'title').text = \
-        env.get('package_name_lower') + '_title'
+    title = env.get('summary', env.get('package_name'))
+    title = title.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
+    etree.SubElement(root, 'title').text = title
 
     # non-root pkg installs are very buggy, so this should stay True
     distpkg_root_volume_only = env.get('distpkg_root_volume_only', True)
@@ -399,10 +366,10 @@ def build_distribution_template(env, target=None):
         }
     etree.SubElement(root, 'options', opts)
 
-    # WARNING domains element is buggy for anything other then root-only.
+    # WARNING domains element is buggy for anything other than root-only.
     # It also leads to support questions, because default selection must be
-    # clicked before can click continue. And it gives an uninformative,
-    # unhelpful message if volume check fails.
+    # clicked before one can click continue.
+    # It also gives an uninformative, unhelpful message if volume check fails.
     # So, disabled for now. May need to enable in the future if
     # options rootVolumeOnly becomes unsupported.
     if False and distpkg_root_volume_only:
@@ -478,7 +445,7 @@ function volume_check() {
 }
 function install_check() {"""
 
-    if not allow_ppc and ver < (10,6):
+    if not allow_ppc and ver < (10,6,6):
         script_text += """
   if (system.sysctl('hw.cputype') == '18') {
     my.result.title = 'Unable to Install';
@@ -513,14 +480,16 @@ function install_check() {"""
         choice_id = name_lower
         # remove any dots or spaces in choice_id for 10.5 compatibility
         choice_id = choice_id.replace('.','').replace(' ','')
-        choice_title = info.get('package_name', info.get('summary'))
-        # description is in Localizable.strings
-        choice_desc = info.get('package_name_lower') + '_desc'
+        title = info.get('package_name', info.get('summary'))
+        title = title.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
+        desc = info.get('short_description', info.get('description', ''))
+        desc = desc.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
+        desc = desc.replace('\r\n', '\n').replace('\n', '__CR__')
         etree.SubElement(outline, 'line', {'choice':choice_id})
         choice = etree.SubElement(root, 'choice', {
                 'id': choice_id,
-                'title': choice_title,
-                'description': choice_desc,
+                'title': title,
+                'description': desc,
                 })
         etree.SubElement(choice, 'pkg-ref', {'id': pkg_id})
         pkg_path = info.get('package_name') + '.pkg'
@@ -540,27 +509,30 @@ function install_check() {"""
             for app_id in must_close_apps:
                 etree.SubElement(must_close, 'app', {'id':app_id})
             pkgrefs.append(r)
-        # if appropriate, add start_{enabled,selected} attrs and script
+        # if appropriate, add {enabled,selected} attrs and script
         if pkg_ver > ver:
-            # add start_{enabled,selected} attrs to choice
-            # add min version scripts to script_text
             # TODO add arch checks if component has diff reqs than distpkg
-            choice.set('start_enabled', name_lower + '_start_enabled()')
-            choice.set('start_selected', name_lower + '_start_selected()')
+            munged_name = 'is_' + re.sub(r'[^A-Za-z0-9]+', '_', name_lower)
+            choice.set('enabled', munged_name + '_enabled();')
+            choice.set('selected', munged_name + '_enabled();')
             script_text += """
-function """ + name_lower + """_start_enabled() {
-  return is_min_version('""" + pkg_target + """');
-}
-function """ + name_lower + """_start_selected() {
+function """ + munged_name + """_enabled() {
   return is_min_version('""" + pkg_target + """');
 }
 """
     for ref in pkgrefs: root.append(ref)
 
-    etree.SubElement(root, 'script').text = script_text
+    etree.SubElement(root, 'script').text = '__SCRIPT_TEXT__'
+    script_text = '<![CDATA[\n' + script_text + '\n]]>'
 
     # save tree to target
+    try: etree.indent(tree)
+    except: pass
+    # do NOT use 'utf-8' for ElementTree.write()
     with open(target, 'w') as f: tree.write(f, encoding = 'unicode')
+    with open(target, 'r') as f: contents = f.read()
+    contents = contents.replace('__SCRIPT_TEXT__', script_text)
+    with open(target, 'w') as f: f.write(contents)
 
 
 def patch_expanded_pkg_distribution(target, source, env):
@@ -596,39 +568,14 @@ def patch_expanded_pkg_distribution(target, source, env):
     print('WARNING: pkg may require OSX 10.6.6 or later')
 
 
-def create_localizable_strings(env):
-    print('generating Localizable.strings')
-    # English only for now
-    components = env.get('distpkg_components', [])
-    if components is None: components = []
-    lines = []
-
-    # FUTURE
-    # load template files into lines
-    # src/Localizable.strings
-    # Resources/en.lproj/Localizable.strings
-    # ...
-
-    # add distpkg summary aka dist package title
-    summary = env.get('summary', env.get('package_name'))
-    if summary:
-        key = env.get('package_name_lower') + '_title'
-        line = '"%s" = "%s";' % (key, summary)
-        lines.append(line)
-    # really should merge multiple Localizable.strings files, for mult lang
-    for comp in components:
-        key = comp['name'].lower() + '_desc'
-        value = comp.get('short_description', comp.get('description', ''))
-        line = '"%s" = "%s";' % (key, value)
-        lines.append(line)
-        if not value:
-            print('no description found for component ' + comp['name'])
-    # save it (overwrites if exists)
-    d = build_dir_resources + '/en.lproj'
-    if not os.path.isdir(d): os.makedirs(d, 0o755)
-    fname = d + '/Localizable.strings'
-    print('writing ' + fname)
-    env.WriteStringToFile(fname, lines)
+def patch_expanded_pkg_distribution_cr(target, env):
+    # replace __CR__ with &#13; in Distribution
+    fpath = os.path.join(target, 'Distribution')
+    if not os.path.isfile(fpath):
+        raise Exception('Distribution xml file does not exist:', fpath)
+    with open(fpath, 'r') as f: contents = f.read()
+    contents = str(contents).replace('__CR__', '&#13;')
+    with open(fpath, 'w') as f: f.write(contents)
 
 
 def flat_dist_pkg_build(target, source, env):
@@ -685,13 +632,8 @@ def flat_dist_pkg_build(target, source, env):
 
     # probably not needed
     # I think build_component_pkgs always raises on any failure
-    components = env.get('distpkg_components')
-    if components is None or not len(components):
+    if not env.get('distpkg_components'):
         raise Exception('No distpkg_components. Cannot continue.')
-
-    # create Localizable.strings with dist title, component descriptions
-    # this must be done AFTER components are built
-    create_localizable_strings(env)
 
     build_or_copy_distribution_template(env)
 
@@ -700,12 +642,11 @@ def flat_dist_pkg_build(target, source, env):
     expand_flat_pkg(target_pkg_expanded, target_pkg_tmp, env)
 
     patch_expanded_pkg_distribution(target_pkg_expanded, [], env)
+    patch_expanded_pkg_distribution_cr(target_pkg_expanded, env)
 
     # if built any components using home/osx/scripts, we still need to rename
     for d in glob.glob(os.path.join(target_pkg_expanded, '*.pkg/Scripts')):
         rename_prepostflight_scripts(d)
-
-    remove_cruft_from_directory(target_pkg_expanded, env)
 
     flatten_to_pkg(target_unsigned, target_pkg_expanded, env)
 
@@ -717,10 +658,9 @@ def flat_dist_pkg_build(target, source, env):
         env.ZipDir(target_zip, target_pkg)
 
     # write package-description.txt
-    # these are currently also generated by
+    # currently also needlessly generated by
     # {client,viewer}/SConstruct and control/setup.py
-    # it should be done by pkg.py
-    # or projects can drop a package-parameters.json so we can get all info
+    # it is written by both pkg and flatdistpkg modules
     desc = env.get('short_description', '').strip()
     if not desc:
         desc = env.get('description', '').strip()
