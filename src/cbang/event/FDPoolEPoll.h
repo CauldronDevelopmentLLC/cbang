@@ -85,6 +85,16 @@ namespace cb {
         int value;
       };
 
+      struct TimeoutMember {
+        int fd;
+        bool read;
+
+        bool operator<(const TimeoutMember &o) const {
+          if (fd == o.fd) return read < o.read;
+          return fd < o.fd;
+        }
+      };
+
       struct Timeout {
         uint64_t time;
         bool read;
@@ -137,7 +147,7 @@ namespace cb {
         FDPoolEPoll &getPool() {return pool;}
         int getFD() const {return fd;}
 
-        void timeout(uint64_t now);
+        void timeout(uint64_t now, bool read);
         unsigned getEvents() const;
         int getStatus() const;
         void update();
@@ -148,6 +158,7 @@ namespace cb {
 
       SPSCQueue<Command> cmds;
       SPSCQueue<Command> results;
+      std::set<TimeoutMember> inTimeoutQ;
       std::priority_queue<Timeout> timeoutQ;
       std::map<int, std::function<void ()> > flushing;
 

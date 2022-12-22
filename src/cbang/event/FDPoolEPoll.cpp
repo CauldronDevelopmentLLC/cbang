@@ -118,7 +118,7 @@ void FDPoolEPoll::FDQueue::updateTimeout(bool wasActive, bool nowActive) {
 
 
 void FDPoolEPoll::FDQueue::timeout(uint64_t now) {
-  if (!getTimeout() || !last || closed) return;
+  if (!getNextTimeout() || closed) return;
 
   if (getNextTimeout() < now) {
     LOG_DEBUG(4, (read ? "Read" : "Write")
@@ -200,9 +200,8 @@ FDPoolEPoll::FDRec::FDRec(FDPoolEPoll &pool, int fd) :
   pool(pool), fd(fd), readQ(*this, true), writeQ(*this, false) {}
 
 
-void FDPoolEPoll::FDRec::timeout(uint64_t now) {
-  readQ.timeout(now);
-  writeQ.timeout(now);
+void FDPoolEPoll::FDRec::timeout(uint64_t now, bool read) {
+  (read ? readQ : writeQ).timeout(now);
 }
 
 
@@ -279,7 +278,7 @@ void FDPoolEPoll::FDRec::update() {
                 << ": " << SysError());
 
   // Update timeouts
-  readQ.updateTimeout(events & FD::READ_EVENT, newEvents & FD::READ_EVENT);
+  readQ .updateTimeout(events & FD::READ_EVENT,  newEvents & FD::READ_EVENT);
   writeQ.updateTimeout(events & FD::WRITE_EVENT, newEvents & FD::WRITE_EVENT);
 
   // Update events
@@ -339,7 +338,10 @@ void FDPoolEPoll::flush(int fd, std::function <void ()> cb) {
 
 
 void FDPoolEPoll::queueTimeout(uint64_t time, bool read, int fd) {
-  timeoutQ.push({time, read, fd});
+  if (inTimeoutQ.find({fd, read}) == inTimeoutQ.end()) {
+    inTimeoutQ.insert({fd, read});
+    timeoutQ.push({time, read, fd});
+  }
 }
 
 
@@ -457,36 +459,46 @@ void FDPoolEPoll::run() {
       }
     }
 
-    set<int> changed;
+    map<int, int> changed;
+
+#define CHECK_STATUS(STMT)                                              \
+    int oldStatus = fd.getStatus();                                     \
+    STMT;                                                               \
+    int newStatus = fd.getStatus();                                     \
+    if (oldStatus != newStatus) changed[fd.getFD()] = newStatus;
 
     for (int i = 0; i < count; i++)
       try {
         unsigned events = epoll_to_fd_events(records[i].events);
-        int fd = records[i].data.fd;
-        getFD(fd).transfer(events);
-        changed.insert(fd);
+        auto &fd        = getFD(records[i].data.fd);
+        CHECK_STATUS(fd.transfer(events));
       } CATCH_ERROR;
 
     // Process pending commands
     while (!cmds.empty()) {
       auto &cmd = cmds.top();
-      getFD(cmd.fd).process(cmd.cmd, cmd.tran);
-      changed.insert(cmd.fd);
+      auto &fd  = getFD(cmd.fd);
+      CHECK_STATUS(fd.process(cmd.cmd, cmd.tran));
       cmds.pop();
     }
 
     // Process timeouts
     uint64_t now = Time::now();
     while (!timeoutQ.empty() && timeoutQ.top().time < now) {
-      int fd = timeoutQ.top().fd;
-      getFD(fd).timeout(now);
-      changed.insert(fd);
+      auto t = timeoutQ.top();
       timeoutQ.pop();
+      inTimeoutQ.erase({t.fd, t.read});
+
+      auto it = pool.find(t.fd);
+      if (it != pool.end()) {
+        auto &fd = *it->second;
+        CHECK_STATUS(fd.timeout(now, t.read));
+      }
     }
 
     // Queue status changes
-    for (auto it = changed.begin(); it != changed.end(); it++)
-      queueStatus(*it, getFD(*it).getStatus());
+    for (auto it: changed)
+      queueStatus(it.first, it.second);
   }
 }
 
