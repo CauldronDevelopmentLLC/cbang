@@ -45,15 +45,17 @@ BigNum::~BigNum() {if (deallocate && bn) BN_free(bn);}
 
 
 unsigned BigNum::size() const {
-  if (!bn) THROW("BigNul null");
+  if (!bn) THROW("BigNum null");
   return BN_num_bytes(bn);
 }
 
 
 string BigNum::toBinString() const {
-  if (!bn) THROW("BigNul null");
-  SmartPointer<unsigned char>::Array s = new unsigned char[size()];
-  return string((char *)s.get(), BN_bn2bin(bn, s.get()));
+  if (!bn) THROW("BigNum null");
+  unsigned bytes = size();
+  SmartPointer<unsigned char>::Array s = new unsigned char[bytes];
+  BN_bn2bin(bn, s.get());
+  return string((char *)s.get(), bytes);
 }
 
 
