@@ -57,7 +57,7 @@
 
 #ifndef OPENSSL_VERSION_PREREQ
 #define OPENSSL_VERSION_PREREQ(X, Y) \
-  ((OPENSSL_VERSION_MAJOR << 16) + OPENSSL_VERSION_MINOR >= ((X) << 16) + (Y))
+  (((X) << 16) + (Y) <= (OPENSSL_VERSION_MAJOR << 16) + OPENSSL_VERSION_MINOR)
 #endif
 
 #if OPENSSL_VERSION_PREREQ(3, 0)
@@ -73,7 +73,7 @@ using namespace cb;
 using namespace std;
 
 
-#if !OPENSSL_VERSION_PREREQ(1, 1)
+#if !OPENSSL_VERSION_PREREQ(1, 0)
 #define EVP_PKEY_up_ref(KEY)                                \
   CRYPTO_add(&(KEY)->references, 1, CRYPTO_LOCK_EVP_PKEY)
 #endif
@@ -177,7 +177,7 @@ BigNum KeyPair::getRSA_N() const {
 
 
 BigNum KeyPair::getPublic() const  {
-#if !OPENSSL_VERSION_PREREQ(1, 1)
+#if !OPENSSL_VERSION_PREREQ(1, 0)
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->n;
   case EVP_PKEY_DSA: return key->pkey.dsa->pub_key;
@@ -221,7 +221,7 @@ BigNum KeyPair::getPublic() const  {
 
 
 BigNum KeyPair::getPrivate() const {
-#if !OPENSSL_VERSION_PREREQ(1, 1)
+#if !OPENSSL_VERSION_PREREQ(1, 0)
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->d;
   case EVP_PKEY_DSA: return key->pkey.dsa->priv_key;
