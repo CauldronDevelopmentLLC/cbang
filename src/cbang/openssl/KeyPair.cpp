@@ -55,6 +55,11 @@
 #include <openssl/engine.h>
 #include <openssl/opensslv.h>
 
+#ifndef OPENSSL_VERSION_PREREQ
+#define OPENSSL_VERSION_PREREQ(X, Y) \
+  ((OPENSSL_VERSION_MAJOR << 16) + OPENSSL_VERSION_MINOR >= ((X) << 16) + (Y))
+#endif
+
 #if OPENSSL_VERSION_PREREQ(3, 0)
 #include <openssl/core_names.h>
 #endif
