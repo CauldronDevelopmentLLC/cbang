@@ -55,12 +55,7 @@
 #include <openssl/engine.h>
 #include <openssl/opensslv.h>
 
-#ifndef OPENSSL_VERSION_PREREQ
-#define OPENSSL_VERSION_PREREQ(X, Y) \
-  (((X) << 16) + (Y) <= (OPENSSL_VERSION_MAJOR << 16) + OPENSSL_VERSION_MINOR)
-#endif
-
-#if OPENSSL_VERSION_PREREQ(3, 0)
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
 #include <openssl/core_names.h>
 #endif
 
@@ -73,7 +68,7 @@ using namespace cb;
 using namespace std;
 
 
-#if !OPENSSL_VERSION_PREREQ(1, 0)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
 #define EVP_PKEY_up_ref(KEY)                                \
   CRYPTO_add(&(KEY)->references, 1, CRYPTO_LOCK_EVP_PKEY)
 #endif
@@ -135,7 +130,7 @@ bool KeyPair::isEC() const    {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
 
 
 BigNum KeyPair::getParam(const char *id) const {
-#if OPENSSL_VERSION_PREREQ(3, 0)
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   BIGNUM *param = 0;
   EVP_PKEY_get_bn_param(key, id, &param);
   return BigNum(param, true);
@@ -149,7 +144,7 @@ BigNum KeyPair::getParam(const char *id) const {
 BigNum KeyPair::getRSA_E() const {
   if (!isRSA()) THROW("Not an RSA key");
 
-#if OPENSSL_VERSION_PREREQ(3, 0)
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   return getParam(OSSL_PKEY_PARAM_RSA_E);
 
 #else
@@ -164,7 +159,7 @@ BigNum KeyPair::getRSA_E() const {
 BigNum KeyPair::getRSA_N() const {
   if (!isRSA()) THROW("Not an RSA key");
 
-#if OPENSSL_VERSION_PREREQ(3, 0)
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   return getParam(OSSL_PKEY_PARAM_RSA_N);
 
 #else
@@ -177,7 +172,7 @@ BigNum KeyPair::getRSA_N() const {
 
 
 BigNum KeyPair::getPublic() const  {
-#if !OPENSSL_VERSION_PREREQ(1, 0)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->n;
   case EVP_PKEY_DSA: return key->pkey.dsa->pub_key;
@@ -185,7 +180,7 @@ BigNum KeyPair::getPublic() const  {
   case EVP_PKEY_EC:  return EC_KEY_get0_public_key(key->pkey.ec);
   }
 
-#elif !OPENSSL_VERSION_PREREQ(3, 0)
+#elif OPENSSL_VERSION_NUMBER < 0x3000000fL
   const BIGNUM *n = 0;
 
   switch (EVP_PKEY_base_id(key)) {
@@ -221,7 +216,7 @@ BigNum KeyPair::getPublic() const  {
 
 
 BigNum KeyPair::getPrivate() const {
-#if !OPENSSL_VERSION_PREREQ(1, 0)
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
   switch (EVP_PKEY_base_id(key)) {
   case EVP_PKEY_RSA: return key->pkey.rsa->d;
   case EVP_PKEY_DSA: return key->pkey.dsa->priv_key;
@@ -229,7 +224,7 @@ BigNum KeyPair::getPrivate() const {
   case EVP_PKEY_EC:  return EC_KEY_get0_private_key(key->pkey.ec);
   }
 
-#elif !OPENSSL_VERSION_PREREQ(3, 0)
+#elif OPENSSL_VERSION_NUMBER < 0x3000000fL
   const BIGNUM *n = 0;
 
   switch (EVP_PKEY_base_id(key)) {
@@ -260,7 +255,7 @@ unsigned KeyPair::size() const {return EVP_PKEY_size(key);}
 
 
 bool KeyPair::match(const KeyPair &o) const {
-#if OPENSSL_VERSION_PREREQ(3, 0)
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   int ret = EVP_PKEY_eq(key, o.key);
   if (ret == -1) ret = 0;
 #else
