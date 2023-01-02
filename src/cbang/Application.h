@@ -46,6 +46,7 @@
 
 #include <cbang/script/Environment.h>
 
+#include <atomic>
 #include <string>
 
 namespace cb {
@@ -89,7 +90,7 @@ namespace cb {
 
     bool initialized;
     bool configured;
-    volatile mutable bool quit;
+    std::atomic<bool> quit;
 
     double startTime;
 
