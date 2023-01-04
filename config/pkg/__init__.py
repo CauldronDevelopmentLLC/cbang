@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import glob
 
 from SCons.Script import *
 
@@ -74,16 +75,20 @@ def build_function(target, source, env):
             pkg_resources = [[pkg_resources, '.']]
         env.CopyToPackage(pkg_resources, build_dir_resources)
 
-    sign_apps = env.get('sign_apps', [])
-    for path in sign_apps:
-        if not path.startswith('/'):
-            path = os.path.join(root_dir, path)
+    paths = []
+    for path in info.get('sign_apps', []):
+      if '*' in path: paths += glob.glob(path, root_dir = root)
+      else: paths.append(path)
+    for path in paths:
+        if not path.startswith('/'): path = os.path.join(root, path)
         env.SignApplication(path)
 
-    sign_tools = env.get('sign_tools', [])
-    for path in sign_tools:
-        if not path.startswith('/'):
-            path = os.path.join(root_dir, path)
+    paths = []
+    for path in info.get('sign_tools', []):
+      if '*' in path: paths += glob.glob(path, root_dir = root)
+      else: paths.append(path)
+    for path in paths:
+        if not path.startswith('/'): path = os.path.join(root, path)
         env.SignExecutable(path)
 
     # build component pkg
