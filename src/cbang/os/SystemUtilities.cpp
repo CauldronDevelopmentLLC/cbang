@@ -763,7 +763,7 @@ namespace cb {
         else searchDir = dir;
 
         string pattern =  String::escapeRE(base) +
-          "-[0-9]{8}-[0-9]{6}\\." + String::escapeRE(ext);
+          "-[0-9]{8}-[0-9]{6}" + String::escapeRE(ext);
         if (!compExt.empty()) pattern += "(" + String::escapeRE(compExt) + ")?";
 
         DirectoryWalker walker(searchDir, pattern, 1);
