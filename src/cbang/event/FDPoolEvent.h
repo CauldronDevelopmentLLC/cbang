@@ -46,18 +46,28 @@ namespace cb {
       Rate readRate;
       Rate writeRate;
 
+
       class FDQueue : private std::list<SmartPointer<Transfer> > {
         typedef std::list<SmartPointer<Transfer> > Super_T;
-
+        bool read;
         bool closed = false;
+        uint64_t last = 0;
 
       public:
+        FDQueue(bool read) : read(read) {}
+
         using Super_T::empty;
         bool wantsRead() const;
         bool wantsWrite() const;
         void add(const SmartPointer<Transfer> &t);
         void transfer();
+        void close();
         void flush();
+        uint64_t getTimeout() const;
+        void timeout();
+
+      protected:
+        void pop();
       };
 
 
@@ -65,6 +75,7 @@ namespace cb {
         FDPoolEvent &pool;
         int fd;
         SmartPointer<Event> event;
+        SmartPointer<Event> timeoutEvent;
         unsigned events = 0;
 
         FDQueue readQ;
@@ -79,14 +90,14 @@ namespace cb {
 
       protected:
         void updateEvent();
+        void updateTimeout();
+        void update();
         void callback(Event &e, int fd, unsigned events);
+        void timeout();
       };
 
       typedef std::map<int, SmartPointer<FDRec> > fds_t;
       fds_t fds;
-
-      SmartPointer<Event> releaseEvent;
-      std::list<SmartPointer<FDRec> > releaseFDs;
 
     public:
       FDPoolEvent(Base &base);
@@ -105,7 +116,6 @@ namespace cb {
 
     protected:
       FDRec &get(int fd);
-      void releaseCB();
     };
   }
 }

@@ -50,7 +50,10 @@ bool FDPoolEvent::FDQueue::wantsWrite() const {
 
 void FDPoolEvent::FDQueue::add(const cb::SmartPointer<Transfer> &t) {
   if (closed) TRY_CATCH_ERROR(t->complete());
-  else push_back(t);
+  else {
+    if (empty()) last = Time::now();
+    push_back(t);
+  }
 }
 
 
@@ -58,20 +61,16 @@ void FDPoolEvent::FDQueue::transfer() {
   if (empty()) return;
 
   int ret = front()->transfer();
-  if (empty()) return;
+  last = Time::now();
 
-  if (ret < 0) {
-    while (!empty()) {
-      TRY_CATCH_ERROR(front()->complete());
-      if (!empty()) pop_front();
-    }
+  if (ret < 0) close();
+  else if (!empty() && front()->isFinished()) pop();
+}
 
-    closed = true;
 
-  } else if (front()->isFinished()) {
-    TRY_CATCH_ERROR(front()->complete());
-    if (!empty()) pop_front();
-  }
+void FDPoolEvent::FDQueue::close() {
+  closed = true;
+  while (!empty()) pop();
 }
 
 
@@ -81,23 +80,51 @@ void FDPoolEvent::FDQueue::flush() {
 }
 
 
+uint64_t FDPoolEvent::FDQueue::getTimeout() const {
+  if (empty()) return 0;
+  uint64_t timeout = front()->getTimeout();
+  return timeout ? last + timeout : 0;
+}
+
+
+void FDPoolEvent::FDQueue::timeout() {
+  uint64_t timeout = getTimeout();
+
+  if (timeout && Time::now() <= timeout) {
+    LOG_DEBUG(4, (read ? "Read" : "Write") << " timedout on fd="
+              << front()->getFD());
+    close();
+  }
+}
+
+
+void FDPoolEvent::FDQueue::pop() {
+  auto t = front();
+  pop_front();
+  TRY_CATCH_ERROR(t->complete());
+}
+
+
 /******************************************************************************/
 FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, int fd) :
-  pool(pool), fd(fd) {
+  pool(pool), fd(fd), readQ(true), writeQ(false) {
   event = pool.getBase().newEvent(fd, this, &FDPoolEvent::FDRec::callback,
                                   EF::EVENT_NO_SELF_REF);
+  timeoutEvent = pool.getBase().newEvent(this, &FDPoolEvent::FDRec::timeout,
+                                         EF::EVENT_NO_SELF_REF);
+  timeoutEvent->setPriority(pool.getEventPriority());
 }
 
 
 void FDPoolEvent::FDRec::read(const cb::SmartPointer<Transfer> &t) {
   readQ.add(t);
-  updateEvent();
+  update();
 }
 
 
 void FDPoolEvent::FDRec::write(const cb::SmartPointer<Transfer> &t) {
   writeQ.add(t);
-  updateEvent();
+  update();
 }
 
 
@@ -105,6 +132,7 @@ void FDPoolEvent::FDRec::flush() {
   readQ.flush();
   writeQ.flush();
   event->del();
+  timeoutEvent->del();
 }
 
 
@@ -125,17 +153,44 @@ void FDPoolEvent::FDRec::updateEvent() {
 }
 
 
+void FDPoolEvent::FDRec::updateTimeout() {
+  uint64_t  readTimeout =  readQ.getTimeout();
+  uint64_t writeTimeout = writeQ.getTimeout();
+
+  uint64_t timeout = readTimeout ? readTimeout : writeTimeout;
+  if (writeTimeout && readTimeout && writeTimeout < readTimeout)
+    timeout = writeTimeout;
+
+  if (timeout) {
+    uint64_t now = Time::now();
+    timeoutEvent->add(timeout < now ? 0 : timeout - now);
+
+  } else timeoutEvent->del();
+}
+
+
+void FDPoolEvent::FDRec::update() {
+  updateEvent();
+  updateTimeout();
+}
+
+
 void FDPoolEvent::FDRec::callback(Event &e, int fd, unsigned events) {
   if (events & EF::EVENT_READ)  readQ.transfer();
   if (events & EF::EVENT_WRITE) writeQ.transfer();
-  updateEvent();
+  update();
+}
+
+
+void FDPoolEvent::FDRec::timeout() {
+  readQ.timeout();
+  writeQ.timeout();
+  updateTimeout();
 }
 
 
 /******************************************************************************/
-FDPoolEvent::FDPoolEvent(Base &base) : base(base) {
-  releaseEvent = base.newEvent(this, &FDPoolEvent::releaseCB);
-}
+FDPoolEvent::FDPoolEvent(Base &base) : base(base) {}
 
 
 void FDPoolEvent::read(const cb::SmartPointer<Transfer> &t) {
@@ -160,10 +215,10 @@ void FDPoolEvent::flush(int fd, std::function <void ()> cb) {
   get(fd).flush();
 
   // Defer FDRec deallocation, it may be executing
-  auto it = fds.find(fd);
-  releaseFDs.push_back(it->second);
+  auto it    = fds.find(fd);
+  auto fdPtr = it->second;
+  base.newEvent([fdPtr] () {}, 0)->add();
   fds.erase(it);
-  releaseEvent->activate();
 
   cb();
 }
@@ -175,6 +230,3 @@ FDPoolEvent::FDRec &FDPoolEvent::get(int fd) {
   if (it == fds.end()) THROW("FD " << fd << " not found in pool");
   return *it->second;
 }
-
-
-void FDPoolEvent::releaseCB() {releaseFDs.clear();}

@@ -121,14 +121,13 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
           return;
         }
 
-        // Use first address
-        IPAddress addr(addrs[0].getIP(), peer.getHost(), peer.getPort());
-        setPeer(addr);
-
         try {
-          socket->connect(addr);
+          // Use first address
+          IPAddress addr(addrs[0].getIP(), peer.getHost(), peer.getPort());
+          setPeer(addr);
 
-          // TODO Set connect timeout
+          // NOTE, Connect timeout is write timeout
+          socket->connect(addr);
 
           // Wait for socket write
           auto writeCB = [this, cb] (bool success) {if (cb) cb(isConnected());};
