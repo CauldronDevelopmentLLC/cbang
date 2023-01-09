@@ -31,45 +31,32 @@
 \******************************************************************************/
 
 #include <cbang/time/TimeInterval.h>
-
-#include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/time/Time.h>
-
-#include <cbang/os/SystemUtilities.h>
-
-#include <iomanip>
 
 using namespace std;
 using namespace cb;
 
 
 string TimeInterval::toString() const {
-  double i = interval < 0 ? -interval : interval;
+  const unsigned divs[] = {
+    Time::SEC_PER_YEAR, Time::SEC_PER_DAY, Time::SEC_PER_HOUR,
+    Time::SEC_PER_MIN, 1};
+  const char *longNames[]  = {"y", "d", "m", "h", "s"};
+  const char *shortNames[] = {" year", " day", " min", " hour", " sec"};
+  const char **names       = compact ? longNames : shortNames;
+  unsigned i = interval < 0 ? -interval : interval;
 
-  if (Time::SEC_PER_YEAR < i) {
-    return String::printf("%0.2f%s", interval / Time::SEC_PER_YEAR,
-                          compact ? "y" : " years");
+  for (unsigned j = 0; j < 4; j++)
+    if (divs[j] < i) {
+      int a = (int)interval / divs[j];
+      int b = ((int)interval % divs[j]) / divs[j + 1];
 
-  } else if (Time::SEC_PER_DAY < i) {
-    return String::printf("%0.2f%s", interval / Time::SEC_PER_DAY,
-                          compact ? "d" : " days");
+      return String::printf("%d%s%s %d%s%s",
+                            a, names[j + 0], (compact || a == 1) ? "" : "s",
+                            b, names[j + 1], (compact || b == 1) ? "" : "s");
+    }
 
-  } else if (Time::SEC_PER_HOUR < i) {
-    int hours = (int)interval / Time::SEC_PER_HOUR;
-    int mins = ((int)interval % Time::SEC_PER_HOUR) / Time::SEC_PER_MIN;
-
-    return String::printf("%d%s %02d%s", hours, compact ? "h" : " hours", mins,
-                          compact ? "m" : " mins");
-
-  } else if (Time::SEC_PER_MIN < i) {
-    int mins = (int)interval / Time::SEC_PER_MIN;
-    int secs = (int)interval % Time::SEC_PER_MIN;
-
-    return String::printf("%d%s %02d%s", mins, compact ? "m" : " mins", secs,
-                          compact ? "s" : " secs");
-  }
-
-  return String::printf("%0.2f%s", interval, compact ? "s" : " secs");
+  return String::printf("%d%s%s", (int)interval, names[4],
+                        (compact || (int)interval == 1) ? "" : "s");
 }
