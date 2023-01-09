@@ -371,13 +371,8 @@ def build_distribution_template(env, target=None):
         }
     etree.SubElement(root, 'options', opts)
 
-    # WARNING domains element is buggy for anything other than root-only.
-    # It also leads to support questions, because default selection must be
-    # clicked before one can click continue.
-    # It also gives an uninformative, unhelpful message if volume check fails.
-    # So, disabled for now. May need to enable in the future if
-    # options rootVolumeOnly becomes unsupported.
-    if False and distpkg_root_volume_only:
+    # WARNING domains element can be buggy for anything other than root-only.
+    if (10,13) <= ver and distpkg_root_volume_only:
         etree.SubElement(root, 'domains', {
             'enable_anywhere': 'false',
             'enable_currentUserHome': 'false',
