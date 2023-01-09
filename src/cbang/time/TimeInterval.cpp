@@ -42,8 +42,8 @@ string TimeInterval::toString() const {
   const unsigned divs[] = {
     Time::SEC_PER_YEAR, Time::SEC_PER_DAY, Time::SEC_PER_HOUR,
     Time::SEC_PER_MIN, 1};
-  const char *longNames[]  = {"y", "d", "m", "h", "s"};
-  const char *shortNames[] = {" year", " day", " min", " hour", " sec"};
+  const char *longNames[]  = {"y", "d", "h", "m", "s"};
+  const char *shortNames[] = {" year", " day", " hour", " min", " sec"};
   const char **names       = compact ? longNames : shortNames;
   unsigned i = interval < 0 ? -interval : interval;
 
