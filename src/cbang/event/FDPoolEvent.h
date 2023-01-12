@@ -57,6 +57,7 @@ namespace cb {
         FDQueue(bool read) : read(read) {}
 
         using Super_T::empty;
+        using Super_T::size;
         bool wantsRead() const;
         bool wantsWrite() const;
         void add(const SmartPointer<Transfer> &t);
