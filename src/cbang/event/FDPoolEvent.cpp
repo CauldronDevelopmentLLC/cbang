@@ -90,7 +90,7 @@ uint64_t FDPoolEvent::FDQueue::getTimeout() const {
 void FDPoolEvent::FDQueue::timeout() {
   uint64_t timeout = getTimeout();
 
-  if (timeout && Time::now() <= timeout) {
+  if (timeout && timeout <= Time::now()) {
     LOG_DEBUG(4, (read ? "Read" : "Write") << " timedout on fd="
               << front()->getFD());
     close();
@@ -118,13 +118,13 @@ FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, int fd) :
 
 void FDPoolEvent::FDRec::read(const cb::SmartPointer<Transfer> &t) {
   readQ.add(t);
-  update();
+  if (readQ.size() == 1) update();
 }
 
 
 void FDPoolEvent::FDRec::write(const cb::SmartPointer<Transfer> &t) {
   writeQ.add(t);
-  update();
+  if (writeQ.size() == 1) update();
 }
 
 

@@ -721,7 +721,7 @@ void Request::parseResponseLine(const string &line) {
 
 
 void Request::write() {
-  if (connection.isNull()) return; // Ignore write
+  if (connection.isNull()) return onWriteComplete(false); // Ignore write
 
   Buffer out;
 
