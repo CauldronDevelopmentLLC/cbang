@@ -66,20 +66,20 @@ namespace cb {
     operator EXT_T () const {return get();}
     void swab() {value = hton(value);}
 
-    static uint16_t hton(uint16_t x) {return hton16(x);}
-    static int16_t hton(int16_t x) {return hton16(x);}
-    static uint32_t hton(uint32_t x) {return hton32(x);}
-    static int32_t hton(int32_t x) {return hton32(x);}
-    static uint64_t hton(uint64_t x) {return hton64(x);}
-    static int64_t hton(int64_t x) {return hton64(x);}
+    static uint16_t  hton(uint16_t  x) {return hton16(x);}
+    static int16_t   hton(int16_t   x) {return hton16(x);}
+    static uint32_t  hton(uint32_t  x) {return hton32(x);}
+    static int32_t   hton(int32_t   x) {return hton32(x);}
+    static uint64_t  hton(uint64_t  x) {return hton64(x);}
+    static int64_t   hton(int64_t   x) {return hton64(x);}
     static uint128_t hton(uint128_t x) {return hton128(x);}
   };
 
-  typedef PacketField<int16_t> PFS16;
-  typedef PacketField<uint16_t> PFU16;
-  typedef PacketField<int32_t> PFS32;
-  typedef PacketField<uint32_t> PFU32;
-  typedef PacketField<int64_t> PFS64;
-  typedef PacketField<uint64_t> PFU64;
+  typedef PacketField<int16_t>   PFS16;
+  typedef PacketField<uint16_t>  PFU16;
+  typedef PacketField<int32_t>   PFS32;
+  typedef PacketField<uint32_t>  PFU32;
+  typedef PacketField<int64_t>   PFS64;
+  typedef PacketField<uint64_t>  PFU64;
   typedef PacketField<uint128_t> PFU128;
 }
