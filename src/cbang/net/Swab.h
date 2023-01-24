@@ -135,8 +135,9 @@ uint64_t swap64(T _x) {
 }
 
 
-// TODO Should also swap the 64-bit parts.  Bug inherited from COSM.
-inline uint128_t swap128(uint128_t x) {return uint128_t(x.lo, x.hi);}
+inline uint128_t swap128(uint128_t x) {
+  return uint128_t(swap64(x.lo), swap64(x.hi));
+}
 
 
 #if BYTE_ORDER == LITTLE_ENDIAN
