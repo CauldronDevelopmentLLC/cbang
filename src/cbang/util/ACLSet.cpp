@@ -49,6 +49,8 @@ void ACLSet::clear() {
 
 
 bool ACLSet::allow(const string &path, const string &user) const {
+  LOG_DEBUG(5, CBANG_FUNC << '(' << path << ", " << user << ')');
+
   // Check cache
   if (!flushDirtyCache()) {
     cache_t::const_iterator it = cache.find(path);
@@ -63,6 +65,8 @@ bool ACLSet::allow(const string &path, const string &user) const {
 
 
 bool ACLSet::allowGroup(const string &path, const string &group) const {
+  LOG_DEBUG(5, CBANG_FUNC << '(' << path << ", " << group << ')');
+
   // Check cache
   if (!flushDirtyCache()) {
     cache_t::const_iterator it = groupCache.find(path);

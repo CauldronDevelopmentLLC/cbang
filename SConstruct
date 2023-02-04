@@ -30,8 +30,15 @@ conf = env.CBConfigure()
 
 
 # Build Info
-env.Replace(BUILD_INFO_NS = 'cb::BuildInfo')
-env.Replace(RESOURCES_NS = 'cb')
+author = 'Joseph Coffland <joseph@cauldrondevelopment.com>'
+env.Replace(PACKAGE_VERSION   = version)
+env.Replace(PACKAGE_AUTHOR    = author)
+env.Replace(PACKAGE_ORG       = 'Cauldron Development LLC')
+env.Replace(PACKAGE_COPYRIGHT = 'Cauldron Development LLC, 2003-2023')
+env.Replace(PACKAGE_HOMEPAGE  = 'https://cauldrondevelopment.com/')
+env.Replace(PACKAGE_LICENSE   = 'GPL 2+')
+env.Replace(BUILD_INFO_NS     = 'cb::BuildInfo')
+env.Replace(RESOURCES_NS      = 'cb')
 
 
 # Local lib control
