@@ -76,6 +76,8 @@ bool OAuth2::isConfigured() const {
 
 
 URI OAuth2::getRedirectURL(const string &path, const string &state) const {
+  if (state.empty()) THROW("OAuth2 state cannot be empty");
+
   // Check config
   validateOption(clientID, "client-id");
   validateOption(redirectBase, "redirect-base");
