@@ -14,12 +14,9 @@ def run_tests(env):
 
 def generate(env):
     import os
-    import distutils.spawn
+    import sys
 
-    python = distutils.spawn.find_executable('python3')
-    if not python: python = distutils.spawn.find_executable('python')
-    if not python: python = distutils.spawn.find_executable('python2')
-    if not python: python = 'python'
+    python = sys.executable
 
     dir = os.path.dirname(os.path.realpath(__file__))
     testHarness = dir + '/../../tests/testHarness'
