@@ -17,33 +17,32 @@ def get_total_file_size(path):
     return total
 
 
-def replace_underscore(s):
-    return s.replace('_', '-')
+def replace_underscore(s): return s.replace('_', '-')
 
 
 def write_control(path, env, installed_size):
     with open(path, 'w')  as f:
         write_var = env.WriteVariable
-        write_var(env, f, 'Package', 'package_name_lower', None,
+        write_var(env, f, 'Package',      'package_name_lower', None,
                   replace_underscore)
-        write_var(env, f, 'Version', 'version', None, replace_underscore)
+        write_var(env, f, 'Version',      'version', None, replace_underscore)
         write_var(env, f, 'Standards-Version', 'deb_standards_version')
-        write_var(env, f, 'Maintainer', 'maintainer')
-        write_var(env, f, 'Priority', 'deb_priority')
-        write_var(env, f, 'Section', 'deb_section')
-        write_var(env, f, 'Bugs', 'bug_url')
-        write_var(env, f, 'Homepage', 'url')
-        write_var(env, f, 'Essential', 'deb_essential')
+        write_var(env, f, 'Maintainer',   'maintainer')
+        write_var(env, f, 'Priority',     'deb_priority')
+        write_var(env, f, 'Section',      'deb_section')
+        write_var(env, f, 'Bugs',         'bug_url')
+        write_var(env, f, 'Homepage',     'url')
+        write_var(env, f, 'Essential',    'deb_essential')
         write_var(env, f, 'Distribution', 'deb_distribution')
-        write_var(env, f, 'Depends', 'deb_depends')
-        write_var(env, f, 'Pre-Depends', 'deb_pre_depends')
-        write_var(env, f, 'Recommends', 'deb_recommends')
-        write_var(env, f, 'Suggests', 'deb_suggests')
-        write_var(env, f, 'Breaks', 'deb_breaks')
-        write_var(env, f, 'Conflicts', 'deb_conflicts')
-        write_var(env, f, 'Provides', 'deb_provides')
-        write_var(env, f, 'Replaces', 'deb_replaces')
-        write_var(env, f, 'Enhances', 'deb_enhances')
+        write_var(env, f, 'Depends',      'deb_depends')
+        write_var(env, f, 'Pre-Depends',  'deb_pre_depends')
+        write_var(env, f, 'Recommends',   'deb_recommends')
+        write_var(env, f, 'Suggests',     'deb_suggests')
+        write_var(env, f, 'Breaks',       'deb_breaks')
+        write_var(env, f, 'Conflicts',    'deb_conflicts')
+        write_var(env, f, 'Provides',     'deb_provides')
+        write_var(env, f, 'Replaces',     'deb_replaces')
+        write_var(env, f, 'Enhances',     'deb_enhances')
         write_var(env, f, 'Architecture', 'package_arch', env.GetPackageArch())
 
         f.write('Installed-Size: %d\n' % math.ceil(installed_size / 1024))
