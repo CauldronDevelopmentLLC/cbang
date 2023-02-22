@@ -55,10 +55,7 @@ HTTPOAuth2LoginHandler::~HTTPOAuth2LoginHandler() {}
 
 void HTTPOAuth2LoginHandler::processProfile(Request &req,
                                             const JSON::ValuePtr &profile) {
-  if (profile.isNull()) {
-    req.reply(HTTP_UNAUTHORIZED);
-    return;
-  }
+  if (profile.isNull()) return req.reply(HTTP_UNAUTHORIZED);
 
   // Fill session
   Session &session = *req.getSession();
@@ -91,6 +88,7 @@ bool HTTPOAuth2LoginHandler::operator()(Request &req) {
   if (session.isNull()) {
     // Open new Session
     session = sessionManager->openSession(req.getClientIP());
+
     // Set cookie so we can pass anti-forgery test
     const string &cookie = sessionManager->getSessionCookie();
     req.setCookie(cookie, session->getID(), "", "/");

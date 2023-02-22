@@ -66,16 +66,11 @@ bool OAuth2Login::authRedirect(Request &req, const string &state) {
 
 bool OAuth2Login::requestToken(Request &req, const string &state,
                                const string &redirectURI) {
-  auto handler =
-    [this, &req] (Request &_req) {
-      verifyToken(req, _req.getInput());
-    };
-
   auto &uri = req.getURI();
   if (getOAuth2()->isForgery(uri, state)) {
     LOG_DEBUG(3, "Failed anti-forgery check: uri code="
               << (uri.has("code") ? uri.get("code") : "<null>") << " uri state="
-              << (uri.has("state") ? uri.get("state") : "<null>")
+              << (uri.has("state") ? uri. get("state") : "<null>")
               << " server state=" << state);
 
     return false;
@@ -91,8 +86,8 @@ bool OAuth2Login::requestToken(Request &req, const string &state,
   verifyURL.setQuery("");
 
   // Verify authorization with OAuth2 server
-  SmartPointer<OutgoingRequest> pr =
-    client.call(verifyURL, HTTP_POST, data, handler);
+  auto cb = [this, &req] (Request &_req) {verifyToken(req, _req.getInput());};
+  auto pr = client.call(verifyURL, HTTP_POST, data, cb);
   pr->setContentType("application/x-www-form-urlencoded");
   pr->outSet("Accept", "application/json");
   pr->send();
@@ -106,12 +101,9 @@ void OAuth2Login::verifyToken(Request &req, const string &response) {
     [this, &req] (Request &_req) {
       if (_req.isOk())
         try {
-          SmartPointer<JSON::Value> profile =
-            getOAuth2()->processProfile(_req.getInputJSON());
-
+          auto profile = getOAuth2()->processProfile(_req.getInputJSON());
           LOG_DEBUG(3, "OAuth2 Profile: " << *profile);
-          processProfile(req, profile);
-          return;
+          return processProfile(req, profile);
         } CATCH_ERROR;
 
       processProfile(req, 0);
@@ -121,14 +113,13 @@ void OAuth2Login::verifyToken(Request &req, const string &response) {
     try {
       // Verify
       string accessToken = getOAuth2()->verifyToken(response);
+      auto profileURL    = getOAuth2()->getProfileURL(accessToken);
 
       // Get profile
-      SmartPointer<OutgoingRequest> pr =
-        client.call(getOAuth2()->getProfileURL(accessToken), HTTP_GET, handler);
+      auto pr = client.call(profileURL, HTTP_GET, handler);
       pr->outSet("User-Agent", "cbang.org");
-      pr->send();
+      return pr->send();
 
-      return;
     } catch (const Exception &e) {
       LOG_ERROR("OAuth2Login verification failed: " << response);
     }

@@ -419,7 +419,7 @@ void URI::parseQuery(const char *&s) {
 
 
 void URI::parsePair(const char *&s) {
-  string name = parseName(s);
+  string name  = parseName(s);
   string value = consume(s, '=') ? parseValue(s) : "";
   set(name, value);
 }
