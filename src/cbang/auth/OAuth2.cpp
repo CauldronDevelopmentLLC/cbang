@@ -79,18 +79,18 @@ URI OAuth2::getRedirectURL(const string &path, const string &state) const {
   if (state.empty()) THROW("OAuth2 state cannot be empty");
 
   // Check config
-  validateOption(clientID, "client-id");
+  validateOption(clientID,     "client-id");
   validateOption(redirectBase, "redirect-base");
-  validateOption(authURL, "auth-url");
-  validateOption(scope, "scope");
+  validateOption(authURL,      "auth-url");
+  validateOption(scope,        "scope");
 
   // Build redirect URL
   URI uri(authURL);
-  uri.set("client_id", clientID);
+  uri.set("client_id",     clientID);
   uri.set("response_type", "code");
-  uri.set("scope", scope);
-  uri.set("redirect_uri", redirectBase + path);
-  uri.set("state", state);
+  uri.set("scope",         scope);
+  uri.set("redirect_uri",  redirectBase + path);
+  uri.set("state",         state);
 
   LOG_DEBUG(5, CBANG_FUNC << ": " << uri);
 
@@ -106,20 +106,20 @@ bool OAuth2::isForgery(const URI &uri, const string &state) const {
 
 URI OAuth2::getVerifyURL(const URI &uri, const string &state) const {
   // Check config
-  validateOption(clientID, "client-id");
+  validateOption(clientID,     "client-id");
   validateOption(clientSecret, "client-secret");
   validateOption(redirectBase, "redirect-base");
-  validateOption(tokenURL, "token-url");
+  validateOption(tokenURL,     "token-url");
 
   // Exchange code for access token and ID token
   URI postURI(tokenURL);
 
   // Setup Query data
-  postURI.set("code", uri.get("code"));
-  postURI.set("client_id", clientID);
+  postURI.set("code",          uri.get("code"));
+  postURI.set("client_id",     clientID);
   postURI.set("client_secret", clientSecret);
-  postURI.set("redirect_uri", redirectBase + uri.getPath());
-  postURI.set("grant_type", "authorization_code");
+  postURI.set("redirect_uri",  redirectBase + uri.getPath());
+  postURI.set("grant_type",    "authorization_code");
 
   LOG_DEBUG(5, CBANG_FUNC << ": " << postURI);
 
@@ -138,7 +138,8 @@ URI OAuth2::getProfileURL(const string &accessToken) const {
 
 string OAuth2::verifyToken(const string &data) const {
   if (String::startsWith(data, "access_token=")) {
-    URI uri("http://x.com/?" + data);
+    URI uri;
+    uri.setQuery(data);
     return uri.get("access_token");
   }
 
@@ -155,5 +156,5 @@ string OAuth2::verifyToken(const SmartPointer<JSON::Value> &json) const {
 void OAuth2::validateOption(const string &option, const string &name) const {
   if (option.empty())
     THROWC(provider + "-" + name + " not configured",
-            Event::HTTPStatus::HTTP_UNAUTHORIZED);
+           Event::HTTPStatus::HTTP_UNAUTHORIZED);
 }
