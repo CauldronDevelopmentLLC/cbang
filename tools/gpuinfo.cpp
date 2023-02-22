@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2022, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -30,31 +29,28 @@
 
 \******************************************************************************/
 
-#include "ComputeDevice.h"
+#include <cbang/Catch.h>
+#include <cbang/gpu/CUDALibrary.h>
+#include <cbang/gpu/OpenCLLibrary.h>
 
-#include <cbang/String.h>
+#include <iostream>
 
 using namespace std;
 using namespace cb;
 
 
-bool ComputeDevice::isValid() const {
-  return platformIndex != -1 && deviceIndex != -1 &&
-    driverVersion != VersionU16() && computeVersion != VersionU16();
-}
+template <typename LIB>
+void printCD(const char *name) try {
+  cout << name << ":\n";
+
+  auto &lib = LIB::instance();
+  for (auto &cd: lib)
+    cout << "  " << cd << '\n';
+} CATCH_ERROR;
 
 
-void ComputeDevice::print(ostream &stream) const {
-  stream
-    << "Platform:"  << platformIndex
-    << " Device:"   << deviceIndex
-    << " Name:"     << name
-    << " Vendor:"
-    << ((vendorID == -1) ? "?" : String::printf("0x%x", vendorID))
-    << " Bus:"      << ((pciBus      == -1) ? "?" : String(pciBus))
-    << " Slot:"     << ((pciSlot     == -1) ? "?" : String(pciSlot))
-    << " Function:" << ((pciFunction == -1) ? "?" : String(pciFunction))
-    << " Compute:"  << computeVersion
-    << " Driver:"   << driverVersion
-    << " GPU:"      << (gpu ? "true" : "false");
+int main(int argc, char *argv[]) {
+  printCD<CUDALibrary>("CUDA");
+  printCD<OpenCLLibrary>("OpenCL");
+  return 0;
 }

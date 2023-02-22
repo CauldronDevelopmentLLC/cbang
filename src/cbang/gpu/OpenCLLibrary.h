@@ -59,6 +59,7 @@ namespace cb {
   protected:
     VersionU16 getDriverVersion(void *device);
     VersionU16 getComputeVersion(void *device);
+    std::string getName(void *device);
     int32_t getVendorID(void *device);
     bool isGPU(void *device);
     void getAMDPCIInfo(void *device, ComputeDevice &cd);
