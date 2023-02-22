@@ -74,14 +74,14 @@ static const char *openclLib = "libOpenCL.so";
 
 namespace {
   // OpenCL typedefs
-  typedef int8_t cl_char;
-  typedef int32_t cl_int;
+  typedef int8_t   cl_char;
+  typedef int32_t  cl_int;
   typedef uint32_t cl_uint;
   typedef uint64_t cl_ulong;
 
-  typedef void *cl_device_id;
-  typedef cl_uint cl_device_info;
-  typedef void *cl_platform_id;
+  typedef void    *cl_device_id;
+  typedef cl_uint  cl_device_info;
+  typedef void    *cl_platform_id;
   typedef cl_ulong cl_device_type;
 
   typedef union {
@@ -124,6 +124,7 @@ namespace {
   enum _cl_param_t {
     CL_DEVICE_TYPE =                   0x1000,
     CL_DEVICE_VENDOR_ID =              0x1001,
+    CL_DEVICE_NAME =                   0x102b,
     CL_DRIVER_VERSION =                0x102d,
     CL_DEVICE_VERSION =                0x102f,
     CL_DEVICE_TOPOLOGY_AMD =           0x4037,
@@ -199,9 +200,9 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
                    (platform, CL_DEVICE_TYPE_ALL, 0, 0, &numDevices));
 
       devices = new cl_device_id[numDevices];
-      DYNAMIC_CALL(this, clGetDeviceIDs,
-                   (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.get(),
-                    0));
+      DYNAMIC_CALL(
+        this, clGetDeviceIDs,
+        (platform, CL_DEVICE_TYPE_ALL, numDevices, devices.get(), 0));
     } catch (const Exception &e) {numDevices = 0;}
 
     for (cl_uint j = 0; j < numDevices; j++)
@@ -210,7 +211,7 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
 
         // Set indices
         cd.platformIndex = i;
-        cd.deviceIndex = j;
+        cd.deviceIndex   = j;
 
         if (cd.isValid()) this->devices.push_back(cd);
       } CATCH_ERROR;
@@ -265,6 +266,11 @@ VersionU16 OpenCLLibrary::getComputeVersion(void *device) {
 }
 
 
+string OpenCLLibrary::getName(void *device) {
+  return getDeviceInfoString(this, device, CL_DEVICE_NAME);
+}
+
+
 int32_t OpenCLLibrary::getVendorID(void *device) {
   cl_uint vendorID = 0;
   DYNAMIC_CALL(this, clGetDeviceInfo,
@@ -316,7 +322,7 @@ void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
 void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
   try {
     switch (cd.vendorID) {
-    case GPUVendor::VENDOR_AMD: getAMDPCIInfo(device, cd); break;
+    case GPUVendor::VENDOR_AMD:    getAMDPCIInfo   (device, cd); break;
     case GPUVendor::VENDOR_NVIDIA: getNVIDIAPCIInfo(device, cd); break;
     default: break;
     }
@@ -327,10 +333,11 @@ void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
 ComputeDevice OpenCLLibrary::getDeviceInfo(void *device) {
   ComputeDevice cd;
 
-  cd.driverVersion = getDriverVersion(device);
+  cd.driverVersion  = getDriverVersion(device);
   cd.computeVersion = getComputeVersion(device);
-  cd.vendorID = getVendorID(device);
-  cd.gpu = isGPU(device);
+  cd.name           = getName(device);
+  cd.vendorID       = getVendorID(device);
+  cd.gpu            = isGPU(device);
   getPCIInfo(device, cd);
 
   return cd;

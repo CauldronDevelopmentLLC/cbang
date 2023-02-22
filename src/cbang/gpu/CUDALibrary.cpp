@@ -37,6 +37,8 @@
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
 
+#include <string.h>
+
 using namespace std;
 using namespace cb;
 
@@ -51,6 +53,12 @@ static const char *cudaLib = "nvcuda.dll";
 #elif __APPLE__
 static const char *cudaLib = "/Library/Frameworks/CUDA.framework/CUDA";
 #define STDCALL
+
+size_t strnlen(const char *s, size_t n) {
+  size_t l = 0;
+  while (l < n && *s) l++;
+  return l;
+}
 
 #else
 static const char *cudaLib = "libcuda.so";
@@ -76,6 +84,7 @@ namespace {
   typedef int (CUDA_API *cuDeviceGetCount_t)(int *);
   typedef int (CUDA_API *cuDeviceComputeCapability_t)(int *, int *, int);
   typedef int (CUDA_API *cuDeviceGetAttribute_t)(int *, int, int);
+  typedef int (CUDA_API *cuDeviceGetName_t)(char *, int, int);
 
   const int CU_DEVICE_ATTRIBUTE_PCI_BUS_ID = 33;
   const int CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 34;
@@ -117,6 +126,11 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
       cd.pciBus  = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
       cd.pciSlot = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);
       cd.pciFunction = 0; // NVidia GPUs are always function 0
+
+      const unsigned len = 1024;
+      char name[len];
+      DYNAMIC_CALL(cuDeviceGetName, (name, len, device));
+      cd.name = string(name, strnlen(name, len));
 
       devices.push_back(cd);
     } CATCH_ERROR;
