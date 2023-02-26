@@ -75,21 +75,13 @@ def build_function(target, source, env):
             pkg_resources = [[pkg_resources, '.']]
         env.CopyToPackage(pkg_resources, build_dir_resources)
 
-    paths = []
-    for path in info.get('sign_apps', []):
-      if '*' in path: paths += glob.glob(path, root_dir = root)
-      else: paths.append(path)
-    for path in paths:
-        if not path.startswith('/'): path = os.path.join(root, path)
-        env.SignApplication(path)
+    for pattern in env.get('sign_apps', []):
+        for path in glob.glob(os.path.join(root_dir, pattern)):
+            env.SignApplication(path)
 
-    paths = []
-    for path in info.get('sign_tools', []):
-      if '*' in path: paths += glob.glob(path, root_dir = root)
-      else: paths.append(path)
-    for path in paths:
-        if not path.startswith('/'): path = os.path.join(root, path)
-        env.SignExecutable(path)
+    for pattern in env.get('sign_tools', []):
+        for path in glob.glob(os.path.join(root_dir, pattern)):
+            env.SignExecutable(path)
 
     # build component pkg
     cmd = ['${PKGBUILD}',
@@ -154,7 +146,7 @@ def build_function(target, source, env):
     env.WriteStringToFile('package-description.txt', desc)
 
     # don't try to notarize if nothing was signed
-    if sign_apps or sign_tools:
+    if 'sign_apps' in env or 'sign_tools' in env:
         env.NotarizeWaitStaple(str(target[0]), timeout = 1200)
 
 
