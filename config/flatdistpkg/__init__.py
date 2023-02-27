@@ -179,21 +179,13 @@ def build_component_pkg(info, env):
     # if any apps/tools should be codesign'd do that now
     # assumes project didn't do it when creating its distroot
     # TODO clone env and add info so all sign_ vars can be overridden
-    paths = []
-    for path in info.get('sign_apps', []):
-      if '*' in path: paths += glob.glob(path, root_dir = root)
-      else: paths.append(path)
-    for path in paths:
-        if not path.startswith('/'): path = os.path.join(root, path)
-        env.SignApplication(path)
+    for pattern in info.get('sign_apps', []):
+        for path in glob.glob(os.path.join(root, pattern)):
+            env.SignApplication(path)
 
-    paths = []
-    for path in info.get('sign_tools', []):
-      if '*' in path: paths += glob.glob(path, root_dir = root)
-      else: paths.append(path)
-    for path in paths:
-        if not path.startswith('/'): path = os.path.join(root, path)
-        env.SignExecutable(path)
+    for pattern in info.get('sign_tools', []):
+        for path in glob.glob(os.path.join(root, pattern)):
+            env.SignExecutable(path)
 
     cmd = ['pkgbuild',
         '--install-location', install_to,
