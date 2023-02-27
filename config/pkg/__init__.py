@@ -145,9 +145,7 @@ def build_function(target, source, env):
     print('writing package-description.txt')
     env.WriteStringToFile('package-description.txt', desc)
 
-    # don't try to notarize if nothing was signed
-    if 'sign_apps' in env or 'sign_tools' in env:
-        env.NotarizeWaitStaple(str(target[0]), timeout = 1200)
+    env.NotarizeWaitStaple(str(target[0]), timeout = 1200)
 
 
 def generate(env):
