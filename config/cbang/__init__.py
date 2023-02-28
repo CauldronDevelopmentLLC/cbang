@@ -77,7 +77,8 @@ def configure_deps(conf, local = True, with_openssl = True,
     if env.get('debug', 0):
         if conf.CBCheckCHeader('execinfo.h') and \
                 conf.CBCheckCHeader('bfd.h') and \
-                conf.CBCheckLib('iberty') and conf.CBCheckLib('bfd'):
+                conf.CBCheckLib('iberty') and conf.CBCheckLib('bfd') and \
+                conf.CBCheckLib('sframe') and conf.CBCheckLib('zstd'):
             env.CBConfigDef('HAVE_CBANG_BACKTRACE')
 
             # Check bfd for API change
