@@ -43,7 +43,7 @@ using namespace cb;
 PCIDevice::PCIDevice(uint16_t vendorID, uint16_t deviceID, int16_t busID ,
                      int16_t slotID, int16_t functionID,
                      const string &description) :
-  vendor(0), id(deviceID), bus(busID), slot(slotID), function(functionID),
+  vendor(0), device(deviceID), bus(busID), slot(slotID), function(functionID),
   description(description) {
   setVendorID(vendorID);
 }
@@ -52,6 +52,14 @@ PCIDevice::PCIDevice(uint16_t vendorID, uint16_t deviceID, int16_t busID ,
 void PCIDevice::setVendorID(uint16_t vendorID) {
   if (vendorID) vendor = PCIVendor::find(vendorID);
   else vendor = 0;
+}
+
+
+string PCIDevice::getID() const {
+  string b = bus      == -1 ? "??" : String::printf("%02d", bus);
+  string s = slot     == -1 ? "??" : String::printf("%02d", slot);
+  string f = function == -1 ? "??" : String::printf("%02d", function);
+  return b + ":" + s + ":" + f;
 }
 
 
@@ -66,31 +74,33 @@ string PCIDevice::getDeviceIDStr() const {
 
 
 bool PCIDevice::operator<(const PCIDevice &d) const {
-  if (bus != d.bus) return bus < d.bus;
-  if (slot != d.slot) return slot < d.slot;
-  if (function != d.function) return function < d.function;
+  if (bus           != d.bus)           return bus           < d.bus;
+  if (slot          != d.slot)          return slot          < d.slot;
+  if (function      != d.function)      return function      < d.function;
   if (getVendorID() != d.getVendorID()) return getVendorID() < d.getVendorID();
-  return id < d.id;
+  return device < d.device;
 }
 
 
 void PCIDevice::read(const JSON::Value &value) {
   setVendorID(value.getU16("vendor"));
-  id = value.getU16("device");
-  bus = value.getS16("bus", -1);
-  slot = value.getS16("slot", -1);
-  function = value.getS16("function", -1);
+  device      = value.getU16("device");
+  bus         = value.getS16("bus", -1);
+  slot        = value.getS16("slot", -1);
+  function    = value.getS16("function", -1);
   description = value.getString("description", "");
 }
 
 
 void PCIDevice::write(JSON::Sink &sink) const {
   sink.beginDict();
+
   sink.insert("vendor", getVendorID());
-  sink.insert("device", id);
-  if (0 <= bus) sink.insert("bus", bus);
-  if (0 <= slot) sink.insert("slot", slot);
-  if (0 <= function) sink.insert("function", function);
+  sink.insert("device", device);
+  if (0 <= bus)             sink.insert("bus",         bus);
+  if (0 <= slot)            sink.insert("slot",        slot);
+  if (0 <= function)        sink.insert("function",    function);
   if (!description.empty()) sink.insert("description", description);
+
   sink.endDict();
 }

@@ -36,6 +36,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
+#include <cbang/util/UUID.h>
 
 #include <string.h>
 
@@ -78,6 +79,7 @@ static const char *cudaLib = "libcuda.so";
 
 
 namespace {
+  typedef struct {uint8_t bytes[16];} CUuuid;
   typedef int (CUDA_API *cuInit_t)(unsigned);
   typedef int (CUDA_API *cuDriverGetVersion_t)(int *);
   typedef int (CUDA_API *cuDeviceGet_t)(int *, int);
@@ -85,6 +87,7 @@ namespace {
   typedef int (CUDA_API *cuDeviceComputeCapability_t)(int *, int *, int);
   typedef int (CUDA_API *cuDeviceGetAttribute_t)(int *, int, int);
   typedef int (CUDA_API *cuDeviceGetName_t)(char *, int, int);
+  typedef int (CUDA_API *cuDeviceGetUuid_t)(CUuuid *, int);
 
   const int CU_DEVICE_ATTRIBUTE_PCI_BUS_ID = 33;
   const int CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 34;
@@ -126,6 +129,10 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
       cd.pciBus  = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
       cd.pciSlot = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);
       cd.pciFunction = 0; // NVidia GPUs are always function 0
+
+      CUuuid uuid = {.bytes = {0,}};
+      DYNAMIC_CALL(cuDeviceGetUuid, (&uuid, device));
+      cd.uuid = UUID(uuid.bytes);
 
       const unsigned len = 1024;
       char name[len];

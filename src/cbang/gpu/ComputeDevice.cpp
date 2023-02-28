@@ -51,10 +51,21 @@ void ComputeDevice::print(ostream &stream) const {
     << " Name:"     << name
     << " Vendor:"
     << ((vendorID == -1) ? "?" : String::printf("0x%x", vendorID))
-    << " Bus:"      << ((pciBus      == -1) ? "?" : String(pciBus))
-    << " Slot:"     << ((pciSlot     == -1) ? "?" : String(pciSlot))
-    << " Function:" << ((pciFunction == -1) ? "?" : String(pciFunction))
+    << " PCI:"      << getPCIID()
     << " Compute:"  << computeVersion
     << " Driver:"   << driverVersion
     << " GPU:"      << (gpu ? "true" : "false");
+}
+
+
+bool ComputeDevice::isPCIValid() const {
+  return pciBus != -1 && pciSlot != -1 && pciFunction != -1;
+}
+
+
+string ComputeDevice::getPCIID() const {
+  string bus  = pciBus      == -1 ? "??" : String::printf("%02d", pciBus);
+  string slot = pciSlot     == -1 ? "??" : String::printf("%02d", pciSlot);
+  string func = pciFunction == -1 ? "??" : String::printf("%02d", pciFunction);
+  return bus + ":" + slot + ":" + func;
 }
