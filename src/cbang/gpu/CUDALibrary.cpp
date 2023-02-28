@@ -130,7 +130,7 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
       cd.pciSlot = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);
       cd.pciFunction = 0; // NVidia GPUs are always function 0
 
-      CUuuid uuid = {.bytes = {0,}};
+      CUuuid uuid = {{0,}};
       DYNAMIC_CALL(cuDeviceGetUuid, (&uuid, device));
       cd.uuid = UUID(uuid.bytes);
 
