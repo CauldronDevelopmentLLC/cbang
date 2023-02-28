@@ -184,7 +184,11 @@ void Logger::startLogFile(const string &filename) {
 
   // Rotate log
   if (logRotate) {
-    if (logFile.isSet()) logBar("Log Rotated", lastDate);
+    if (logFile.isSet()) {
+      logBar("Log Rotated", lastDate);
+      logFile.release();
+    }
+
     SystemUtilities::rotate(filename, logRotateDir, logRotateMax,
                             logRotateCompression);
   }
