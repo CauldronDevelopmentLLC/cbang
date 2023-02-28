@@ -37,6 +37,9 @@
 #include <cbang/Exception.h>
 #include <cbang/StdTypes.h>
 #include <cbang/Catch.h>
+#include <cbang/util/UUID.h>
+
+#include <set>
 
 #include <string.h>
 
@@ -84,6 +87,7 @@ namespace {
   typedef cl_uint  cl_device_info;
   typedef void    *cl_platform_id;
   typedef cl_ulong cl_device_type;
+  typedef cl_uint  cl_platform_info;
 
   typedef union {
     struct {
@@ -102,6 +106,9 @@ namespace {
 
 
   // OpenCL functions
+  typedef cl_int (CL_API_CALL *clGetPlatformInfo_t)
+    (cl_platform_id, cl_platform_info, size_t, void *, size_t *);
+
   typedef cl_int (CL_API_CALL *clGetDeviceInfo_t)
     (cl_device_id, cl_device_info, size_t, void *, size_t *);
 
@@ -122,12 +129,21 @@ namespace {
     CL_DEVICE_TYPE_ALL =               0xffffffff,
   };
 
+  enum _cl_platform_info_t {
+    CL_PLATFORM_PROFILE =              0x0900,
+    CL_PLATFORM_VERSION =              0x0901,
+    CL_PLATFORM_NAME =                 0x0902,
+    CL_PLATFORM_VENDOR =               0x0903,
+    CL_PLATFORM_EXTENSIONS =           0x0904,
+  };
+
   enum _cl_param_t {
     CL_DEVICE_TYPE =                   0x1000,
     CL_DEVICE_VENDOR_ID =              0x1001,
     CL_DEVICE_NAME =                   0x102b,
     CL_DRIVER_VERSION =                0x102d,
     CL_DEVICE_VERSION =                0x102f,
+    CL_DEVICE_UUID_KHR =               0x106a,
     CL_DEVICE_TOPOLOGY_AMD =           0x4037,
     CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD = 0x0001,
     CL_DEVICE_PCI_BUS_ID_NV =          0x4008,
@@ -144,12 +160,25 @@ namespace {
 
 
 namespace {
+  string getPlatformInfo(DynamicLibrary *lib, cl_platform_id platform,
+                         cl_platform_info param) {
+    size_t size = 0;
+    DYNAMIC_CALL(lib, clGetPlatformInfo, (platform, param, 0, 0, &size));
+    if (!size) return string();
+
+    // Get param
+    SmartPointer<char>::Array data = new char[size];
+    DYNAMIC_CALL(lib, clGetPlatformInfo,
+                 (platform, param, size, data.get(), 0));
+
+    return string(data.get(), strnlen(data.get(), size));
+  }
+
+
   size_t getDeviceInfoSize(DynamicLibrary *lib, cl_device_id dev,
                            cl_device_info param) {
     size_t size = 0;
-
     DYNAMIC_CALL(lib, clGetDeviceInfo, (dev, param, 0, 0, &size));
-
     return size;
   }
 
@@ -192,6 +221,12 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
   for (cl_uint i = 0; i < numPlatforms; i++) {
     cl_platform_id platform = platforms[i];
 
+    // Get extensions
+    vector<string> extVec;
+    String::tokenize
+      (getPlatformInfo(this, platform, CL_PLATFORM_EXTENSIONS), extVec);
+    set<string> exts(extVec.begin(), extVec.end());
+
     // Get devices
     cl_uint numDevices = 0;
     SmartPointer<cl_device_id>::Array devices;
@@ -213,6 +248,14 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
         // Set indices
         cd.platformIndex = i;
         cd.deviceIndex   = j;
+
+        // UUID
+        if (exts.find("cl_khr_device_uuid") != exts.end()) {
+          uint8_t uuid[16];
+          DYNAMIC_CALL(this, clGetDeviceInfo,
+                       (devices[j], CL_DEVICE_UUID_KHR, 16, uuid, 0));
+          cd.uuid = UUID(uuid);
+        }
 
         if (cd.isValid()) this->devices.push_back(cd);
       } CATCH_ERROR;
@@ -289,24 +332,22 @@ bool OpenCLLibrary::isGPU(void *device) {
 
 
 void OpenCLLibrary::getAMDPCIInfo(void *device, ComputeDevice &cd) {
-  size_t size = 0;
-  SmartPointer<char> data =
-    getDeviceInfoData(this, device, CL_DEVICE_TOPOLOGY_AMD, &size);
+  cl_device_topology_amd topo;
+  memset(&topo, 0, sizeof(cl_device_topology_amd));
 
-  auto topology = (cl_device_topology_amd *)data.get();
+  DYNAMIC_CALL(this, clGetDeviceInfo,
+               (device, CL_DEVICE_TOPOLOGY_AMD, sizeof(topo), &topo, 0));
 
-  if (sizeof(cl_device_topology_amd) <= size &&
-      (int)topology->raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
-
-    cd.pciBus      = topology->pcie.bus;
-    cd.pciSlot     = topology->pcie.device;
-    cd.pciFunction = topology->pcie.function;
+  if ((int)topo.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
+    cd.pciBus      = topo.pcie.bus;
+    cd.pciSlot     = topo.pcie.device;
+    cd.pciFunction = topo.pcie.function;
   }
 }
 
 
 void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
-  cl_int busID = -1;
+  cl_int busID  = -1;
   cl_int slotID = -1;
 
   DYNAMIC_CALL(this, clGetDeviceInfo,
@@ -314,9 +355,12 @@ void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
   DYNAMIC_CALL(this, clGetDeviceInfo,
                (device, CL_DEVICE_PCI_SLOT_ID_NV, sizeof(slotID), &slotID, 0));
 
-  cd.pciBus      = busID;
-  cd.pciSlot     = slotID >> 3;
-  cd.pciFunction = slotID & 7;
+  cd.pciBus = busID;
+
+  if (slotID != -1) {
+    cd.pciSlot     = slotID >> 3;
+    cd.pciFunction = slotID & 7;
+  }
 }
 
 

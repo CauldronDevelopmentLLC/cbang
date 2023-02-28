@@ -50,9 +50,12 @@ namespace cb {
     int         pciBus         = -1;
     int         pciSlot        = -1;
     int         pciFunction    = -1;
+    std::string uuid;
 
     bool isValid() const;
     void print(std::ostream &stream) const;
+    bool isPCIValid() const;
+    std::string getPCIID() const;
   };
 
 

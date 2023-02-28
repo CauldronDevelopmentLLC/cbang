@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -30,44 +30,18 @@
 
 \******************************************************************************/
 
-#include "GPUIndex.h"
+#pragma once
 
-#include <cbang/String.h>
-#include <cbang/json/Value.h>
+#include <cbang/StdTypes.h>
 
+namespace cb {
+  class UUID {
+    uint8_t data[16];
 
-using namespace std;
-using namespace cb;
+  public:
+    UUID(const uint8_t data[16]);
 
-
-bool GPUIndex::has(uint16_t vendorID, uint16_t deviceID) const {
-  return gpus.find(GPU(vendorID, deviceID)) != gpus.end();
-}
-
-
-GPU GPUIndex::find(uint16_t vendorID, uint16_t deviceID) const {
-  auto it = gpus.find(GPU(vendorID, deviceID));
-  return it == gpus.end() ? GPU() : *it;
-}
-
-
-void GPUIndex::add(const GPU &gpu) {gpus.insert(gpu);}
-
-
-void GPUIndex::read(const JSON::Value &value) {
-  clear();
-  for (unsigned i = 0; i < value.size(); i++)
-    add(GPU(*value.get(i)));
-}
-
-
-void GPUIndex::write(JSON::Sink &sink) const {
-  sink.beginList();
-
-  for (auto it = gpus.begin(); it != gpus.end(); it++) {
-    sink.beginAppend();
-    it->write(sink);
-  }
-
-  sink.endList();
+    const uint8_t *getData() const {return data;}
+    operator std::string () const;
+  };
 }

@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -30,44 +30,22 @@
 
 \******************************************************************************/
 
-#include "GPUIndex.h"
+#include "UUID.h"
 
 #include <cbang/String.h>
-#include <cbang/json/Value.h>
-
+#include <string.h>
 
 using namespace std;
 using namespace cb;
 
 
-bool GPUIndex::has(uint16_t vendorID, uint16_t deviceID) const {
-  return gpus.find(GPU(vendorID, deviceID)) != gpus.end();
-}
+UUID::UUID(const uint8_t data[16]) {memcpy(this->data, data, 16);}
 
 
-GPU GPUIndex::find(uint16_t vendorID, uint16_t deviceID) const {
-  auto it = gpus.find(GPU(vendorID, deviceID));
-  return it == gpus.end() ? GPU() : *it;
-}
-
-
-void GPUIndex::add(const GPU &gpu) {gpus.insert(gpu);}
-
-
-void GPUIndex::read(const JSON::Value &value) {
-  clear();
-  for (unsigned i = 0; i < value.size(); i++)
-    add(GPU(*value.get(i)));
-}
-
-
-void GPUIndex::write(JSON::Sink &sink) const {
-  sink.beginList();
-
-  for (auto it = gpus.begin(); it != gpus.end(); it++) {
-    sink.beginAppend();
-    it->write(sink);
-  }
-
-  sink.endList();
+UUID::operator string () const {
+  return String::printf
+    ("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+     data[15], data[14], data[13], data[12], data[11], data[10], data[9],
+     data[ 8], data[ 7], data[ 6], data[ 5], data[ 4], data[ 3], data[ 2],
+     data[ 1], data[ 0]);
 }
