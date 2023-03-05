@@ -46,9 +46,8 @@ bool ComputeDevice::isValid() const {
 
 void ComputeDevice::print(ostream &stream) const {
   stream
-    << "Platform:"  << platformIndex
-    << " Device:"   << deviceIndex
-    << " Name:"     << name
+    << "Platform:"  << platform << " (" << platformIndex << ')'
+    << " Device:"   << name << " (" << deviceIndex << ')'
     << " Vendor:"
     << ((vendorID == -1) ? "?" : String::printf("0x%x", vendorID))
     << " PCI:"      << getPCIID()
