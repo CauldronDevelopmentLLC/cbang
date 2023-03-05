@@ -41,6 +41,7 @@
 namespace cb {
   struct ComputeDevice {
     std::string name;
+    std::string platform;
     VersionU16  driverVersion;
     VersionU16  computeVersion;
     int32_t     vendorID       = -1;

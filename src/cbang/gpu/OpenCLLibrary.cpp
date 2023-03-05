@@ -104,6 +104,12 @@ namespace {
     } pcie;
   } cl_device_topology_amd;
 
+  typedef struct cl_device_pci_bus_info_khr {
+    cl_uint pci_domain;
+    cl_uint pci_bus;
+    cl_uint pci_device;
+    cl_uint pci_function;
+  } cl_device_pci_bus_info_khr;
 
   // OpenCL functions
   typedef cl_int (CL_API_CALL *clGetPlatformInfo_t)
@@ -148,6 +154,7 @@ namespace {
     CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD = 0x0001,
     CL_DEVICE_PCI_BUS_ID_NV =          0x4008,
     CL_DEVICE_PCI_SLOT_ID_NV =         0x4009,
+    CL_DEVICE_PCI_BUS_INFO_KHR =       0x410f,
   };
 }
 
@@ -221,6 +228,9 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
   for (cl_uint i = 0; i < numPlatforms; i++) {
     cl_platform_id platform = platforms[i];
 
+    // Platform name
+    string platformName = getPlatformInfo(this, platform, CL_PLATFORM_NAME);
+
     // Get extensions
     vector<string> extVec;
     String::tokenize
@@ -245,6 +255,8 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
       try {
         ComputeDevice cd = getDeviceInfo(devices[j]);
 
+        cd.platform = "OpenCL: " + platformName;
+
         // Set indices
         cd.platformIndex = i;
         cd.deviceIndex   = j;
@@ -255,6 +267,19 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
           DYNAMIC_CALL(this, clGetDeviceInfo,
                        (devices[j], CL_DEVICE_UUID_KHR, 16, uuid, 0));
           cd.uuid = UUID(uuid);
+        }
+
+        // PCI Info
+        if (exts.find("cl_khr_pci_bus_info") != exts.end()) {
+          cl_device_pci_bus_info_khr info = {0xff, 0xff, 0xff, 0xff};
+
+          DYNAMIC_CALL(
+            this, clGetDeviceInfo,
+            (devices[j], CL_DEVICE_PCI_BUS_INFO_KHR, sizeof(info), &info, 0));
+
+          cd.pciBus      = info.pci_bus;
+          cd.pciSlot     = info.pci_device;
+          cd.pciFunction = info.pci_function;
         }
 
         if (cd.isValid()) this->devices.push_back(cd);
@@ -365,6 +390,8 @@ void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
 
 
 void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
+  if (cd.isPCIValid()) return;
+
   try {
     switch (cd.vendorID) {
     case GPUVendor::VENDOR_AMD:    getAMDPCIInfo   (device, cd); break;

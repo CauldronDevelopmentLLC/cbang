@@ -111,6 +111,8 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
   for (int i = 0; i < count; i++) {
     ComputeDevice cd;
 
+    cd.platform = "CUDA";
+
     // Set indices
     cd.platformIndex = 0; // Only one platform for CUDA
     cd.deviceIndex = i;
