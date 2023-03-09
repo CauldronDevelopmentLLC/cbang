@@ -108,14 +108,14 @@ namespace io = boost::iostreams;
 namespace cb {
   namespace SystemUtilities {
 #ifdef _WIN32
-    const string path_separators  = "/\\";
-    const char path_separator  = '\\';
-    const char path_delimiter  = ';';
-    const string library_path = "PATH";
+    const string path_separators = "/\\";
+    const char path_separator    = '\\';
+    const char path_delimiter    = ';';
+    const string library_path    = "PATH";
 #else
     const string path_separators = "/";
-    const char path_separator = '/';
-    const char path_delimiter = ':';
+    const char path_separator    = '/';
+    const char path_delimiter    = ':';
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
     const string library_path = "DYLD_LIBRARY_PATH";
