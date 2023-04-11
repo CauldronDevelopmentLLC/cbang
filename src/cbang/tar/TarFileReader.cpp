@@ -101,7 +101,7 @@ std::string TarFileReader::extract(const string &_path) {
     // Check that path is under the target directory
     string a = SystemUtilities::getCanonicalPath(_path);
     string b = SystemUtilities::getCanonicalPath(path);
-    if (!String::startsWith(b, a))
+    if (!String::startsWith(b, a + "/"))
       THROW("Tar path points outside of the extraction directory: " << path);
   }
 
