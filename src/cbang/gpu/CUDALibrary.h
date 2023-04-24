@@ -49,6 +49,7 @@ namespace cb {
   public:
     CUDALibrary(Inaccessible);
 
+    inline static const char *getName() {return "CUDA";}
     unsigned getDeviceCount() const {return devices.size();}
     const ComputeDevice &getDevice(unsigned i) const;
 

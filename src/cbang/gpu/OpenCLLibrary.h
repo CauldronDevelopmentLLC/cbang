@@ -49,6 +49,7 @@ namespace cb {
   public:
     OpenCLLibrary(Inaccessible);
 
+    inline static const char *getName() {return "OpenCL";}
     unsigned getDeviceCount() const {return devices.size();}
     const ComputeDevice &getDevice(unsigned i) const;
 
