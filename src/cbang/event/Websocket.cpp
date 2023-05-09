@@ -77,10 +77,10 @@ void Websocket::close(WebsockStatus status, const std::string &msg) {
   pingEvent.release();
   pongEvent.release();
 
-  if (!isActive()) return; // Already closed
-
-  uint16_t data = hton16(status);
-  writeFrame(WS_OP_CLOSE, true, &data, 2);
+  if (isActive()) {
+    uint16_t data = hton16(status);
+    writeFrame(WS_OP_CLOSE, true, &data, 2);
+  }
 
   active = false;
   TRY_CATCH_ERROR(onClose(status, msg));
