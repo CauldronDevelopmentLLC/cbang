@@ -27,7 +27,7 @@
                   For information regarding this software email:
                                  Joseph Coffland
                           joseph@cauldrondevelopment.com
-s
+
 \******************************************************************************/
 
 #include "Client.h"
