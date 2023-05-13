@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -30,51 +30,40 @@
 
 \******************************************************************************/
 
-#pragma once
-
+#include "HTTPRequestErrorHandler.h"
 #include "Request.h"
 
-#include <cbang/SmartPointer.h>
+#include <cbang/Catch.h>
+#include <cbang/log/Logger.h>
 
-#include <functional>
+using namespace cb::Event;
 
 
-namespace cb {
-  class URI;
+bool HTTPRequestErrorHandler::operator()(Request &req) {
+  try {
+    if (!child(req)) req.sendError(HTTPStatus::HTTP_NOT_FOUND);
 
-  namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
+  } catch (cb::Exception &e) {
+    if (400 <= e.getCode() && e.getCode() < 600) {
+      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientIP() << ':'
+                  << e.getMessages());
+      req.reply((HTTPStatus::enum_t)e.getCode());
 
-    class OutgoingRequest : public Request {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+    } else {
+      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessages());
+      LOG_DEBUG(3, e);
+      req.sendError(e);
+    }
 
-    protected:
-      Client &client;
-      callback_t cb;
+  } catch (std::exception &e) {
+    LOG_ERROR(e.what());
+    req.sendError(e);
 
-    public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
-
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      void connect(std::function<void (bool)> cb);
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(ConnectionError error);
-    };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
+  } catch (...) {
+    LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
+              .getDescription());
+    req.sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
   }
+
+  return true;
 }

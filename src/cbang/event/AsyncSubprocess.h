@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -32,49 +32,43 @@
 
 #pragma once
 
-#include "Request.h"
+#include <cbang/os/Subprocess.h>
+#include <cbang/time/Time.h>
 
-#include <cbang/SmartPointer.h>
-
-#include <functional>
+#include <vector>
 
 
 namespace cb {
-  class URI;
-
   namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
-
-    class OutgoingRequest : public Request {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
-
-    protected:
-      Client &client;
-      callback_t cb;
+    class AsyncSubprocess : public cb::Subprocess {
+      std::vector<std::string> args;
+      unsigned flags;
+      int priority;
+      uint64_t ts = cb::Time();
 
     public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
+      AsyncSubprocess(
+        const std::vector<std::string> &args = std::vector<std::string>(),
+        unsigned flags = 0, int priority = 0);
+      virtual ~AsyncSubprocess();
 
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
+      const std::vector<std::string> &getArgs() const {return args;}
+      std::vector<std::string> &getArgs() {return args;}
+      void setArgs(const std::string &cmd);
 
-      void setCallback(callback_t cb) {this->cb = cb;}
+      unsigned getFlags() const {return flags;}
+      void setFlags(unsigned flags) {this->flags = flags;}
 
-      void connect(std::function<void (bool)> cb);
+      int getPriority() const {return priority;}
+      void setPriority(int priority) {this->priority = priority;}
 
-      using Request::send;
-      void send();
+      virtual void exec();
+      virtual void done() {}
 
-      // From Request
-      void onResponse(ConnectionError error);
+      bool operator<(const AsyncSubprocess &o) const {
+        if (priority == o.priority) return ts < o.ts;
+        return priority < o.priority;
+      }
     };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }

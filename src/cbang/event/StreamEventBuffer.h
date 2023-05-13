@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -32,49 +32,25 @@
 
 #pragma once
 
-#include "Request.h"
-
-#include <cbang/SmartPointer.h>
-
-#include <functional>
+#include "StreamEventHandler.h"
+#include "Buffer.h"
 
 
 namespace cb {
-  class URI;
-
   namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
-
-    class OutgoingRequest : public Request {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
-
-    protected:
-      Client &client;
-      callback_t cb;
+    class StreamEventBuffer : public StreamEventHandler, public Buffer {
+      socket_t handle;
 
     public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
+      StreamEventBuffer(Base &base, socket_t handle, unsigned flags);
 
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
+      void read();
+      void write();
+      using Buffer::read;
+      using Buffer::write;
 
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      void connect(std::function<void (bool)> cb);
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(ConnectionError error);
+      // From StreamEventHandler
+      void onEvent(Event &event, int fd, unsigned flags);
     };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }

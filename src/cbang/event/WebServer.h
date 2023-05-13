@@ -79,8 +79,8 @@ namespace cb {
       // From HTTPServer
       SmartPointer<Request> createRequest
       (RequestMethod method, const URI &uri, const Version &version);
-      bool handleRequest(const SmartPointer<Request> &req);
-      void endRequest(const SmartPointer<Request> &req);
+      bool handleRequest(Request &req);
+      void endRequest(Request &req);
 
       void addListenPort(const IPAddress &addr);
       void addSecureListenPort(const IPAddress &addr);

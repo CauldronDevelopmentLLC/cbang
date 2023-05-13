@@ -153,6 +153,19 @@ string Request::getRequestLine() const {
 }
 
 
+bool Request::logResponseErrors() const {
+  if (getConnectionError())
+    LOG_ERROR("Failed response: " << getConnectionError());
+
+  else if (!isOk())
+    LOG_ERROR(getResponseCode() << ": " << getInput());
+
+  else return false;
+
+  return true;
+}
+
+
 bool Request::isConnected() const {
   return hasConnection() && getConnection()->isConnected();
 }

@@ -250,7 +250,7 @@ void HTTPConnIn::processRequest(const SmartPointer<Request> &req) {
   LOG_DEBUG(5, req->getInputHeaders() << '\n');
   LOG_DEBUG(6, input.hexdump() << '\n');
 
-  server.dispatch(req);
+  server.dispatch(*req);
 }
 
 

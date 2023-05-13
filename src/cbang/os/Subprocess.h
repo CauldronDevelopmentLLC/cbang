@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include <cbang/util/StringMap.h>
+#include "Pipe.h"
 
+#include <cbang/util/StringMap.h>
 #include <cbang/enum/ProcessPriority.h>
 
 #include <string>
@@ -57,17 +58,19 @@ namespace cb {
       W32_WAIT_FOR_INPUT_IDLE = 1 << 10,
       MAX_PIPE_SIZE           = 1 << 11,
       USE_VFORK               = 1 << 12,
-      };
+    };
 
   protected:
     struct Private;
     Private *p;
 
+    std::vector<Pipe> pipes;
+
     bool running;
     bool wasKilled;
     bool dumpedCore;
     bool signalGroup;
-    int returnCode;
+    int  returnCode;
 
     std::string wd;
 
@@ -81,24 +84,16 @@ namespace cb {
     bool getWasKilled() const {return wasKilled;}
     bool getDumpedCore() const {return dumpedCore;}
 
-#ifdef _WIN32
-    typedef void *handle_t;
-#else
-    typedef int handle_t;
-#endif
-
+    Pipe &getPipe(unsigned i);
     unsigned createPipe(bool toChild);
-    handle_t getPipeHandle(unsigned i, bool childEnd = true);
 
-    const SmartPointer<std::iostream> &getStream(unsigned i) const;
-    std::ostream &getStdIn() const {return *getStream(0);}
-    std::istream &getStdOut() const {return *getStream(1);}
-    std::istream &getStdErr() const {return *getStream(2);}
+    std::ostream &getStdIn()  {return *getPipe(0).getStream();}
+    std::istream &getStdOut() {return *getPipe(1).getStream();}
+    std::istream &getStdErr() {return *getPipe(2).getStream();}
 
-    void closeStream(unsigned i);
-    void closeStdIn() {closeStream(0);}
-    void closeStdOut() {closeStream(1);}
-    void closeStdErr() {closeStream(2);}
+    void closeStdIn()  {getPipe(0).closeStream();}
+    void closeStdOut() {getPipe(1).closeStream();}
+    void closeStdErr() {getPipe(2).closeStream();}
 
     void setWorkingDirectory(const std::string &wd) {this->wd = wd;}
 

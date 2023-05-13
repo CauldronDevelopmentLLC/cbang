@@ -72,6 +72,7 @@ namespace cb {
       FDPool &getPool();
 
       void initPriority(int num);
+      bool hasPriorities() const {return 1 < getNumPriorities();}
       int getNumPriorities() const;
       int getNumEvents() const;
       int getNumActiveEvents() const;

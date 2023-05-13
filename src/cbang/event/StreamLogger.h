@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -32,49 +32,24 @@
 
 #pragma once
 
-#include "Request.h"
+#include "StreamEventHandler.h"
 
-#include <cbang/SmartPointer.h>
-
-#include <functional>
+#include <cbang/log/LogLineBuffer.h>
 
 
 namespace cb {
-  class URI;
-
   namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
-
-    class OutgoingRequest : public Request {
+    class StreamLogger : public LogLineBuffer, public StreamEventHandler {
     public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+      StreamLogger(
+        Base &base, socket_t handle, const std::string &prefix = std::string(),
+        const char *logDomain = CBANG_LOG_DOMAIN,
+        unsigned logLevel = CBANG_LOG_INFO_LEVEL(1));
 
-    protected:
-      Client &client;
-      callback_t cb;
+      void flush();
 
-    public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
-
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      void connect(std::function<void (bool)> cb);
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(ConnectionError error);
+      // From StreamEventHandler
+      void onEvent(Event &event, int fd, unsigned flags);
     };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }
