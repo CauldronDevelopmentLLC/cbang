@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -32,49 +32,60 @@
 
 #pragma once
 
-#include "Request.h"
+#include "AsyncSubprocess.h"
 
+#include <cbang/StdTypes.h>
 #include <cbang/SmartPointer.h>
 
-#include <functional>
+#include <queue>
+#include <list>
+#include <vector>
 
 
 namespace cb {
-  class URI;
-
   namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
+    class Base;
+    class Event;
 
-    class OutgoingRequest : public Request {
+    class SubprocessPool {
+      Base &base;
+      unsigned maxActive;
+
+      struct cmp {
+        bool operator()(const cb::SmartPointer<AsyncSubprocess> &p1,
+                        const cb::SmartPointer<AsyncSubprocess> &p2) const {
+          return *p2 < *p1; // Reverse the order, lowest first
+        }
+      };
+
+      typedef std::vector<cb::SmartPointer<AsyncSubprocess> > container_t;
+      typedef std::priority_queue<
+        cb::SmartPointer<AsyncSubprocess>, container_t, cmp> procs_t;
+      procs_t procs;
+
+      typedef std::list<cb::SmartPointer<AsyncSubprocess> > active_t;
+      active_t active;
+
+      bool quit = false;
+
+      cb::SmartPointer<cb::Event::Event> execEvent;
+      cb::SmartPointer<cb::Event::Event> signalEvent;
+
     public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+      SubprocessPool(Base &base);
+
+      unsigned getMaxActive() const {return maxActive;}
+      void setMaxActive(unsigned maxActive) {this->maxActive = maxActive;}
+
+      unsigned getNumQueued() const {return procs.size();}
+      unsigned getNumActive() const {return active.size();}
+
+      void enqueue(const cb::SmartPointer<AsyncSubprocess> &proc);
+      void shutdown();
 
     protected:
-      Client &client;
-      callback_t cb;
-
-    public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
-
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      void connect(std::function<void (bool)> cb);
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(ConnectionError error);
+      void exec();
+      void childSignal();
     };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }

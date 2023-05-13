@@ -81,6 +81,10 @@ namespace cb {
     void setQuery(const std::string &query);
     void setQuery(const char *query);
 
+    static unsigned portFromScheme(const std::string &scheme);
+    static bool schemeRequiresSSL(const std::string &scheme);
+    bool schemeRequiresSSL() const;
+
     void clear();
     void normalize();
 

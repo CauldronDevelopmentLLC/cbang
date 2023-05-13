@@ -168,20 +168,20 @@ cb::SmartPointer<Request> WebServer::createRequest
 }
 
 
-bool WebServer::handleRequest(const cb::SmartPointer<Request> &req) {
+bool WebServer::handleRequest(Request &req) {
   if (logPrefix) {
-    string prefix = String::printf("REQ%" PRIu64 ":", req->getID());
+    string prefix = String::printf("REQ%" PRIu64 ":", req.getID());
     Logger::instance().setPrefix(prefix);
   }
 
   // TODO call allow() on the connection before handling any requests
-  if (!allow(*req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
+  if (!allow(req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
 
-  return HTTPHandlerGroup::operator()(*req);
+  return HTTPHandlerGroup::operator()(req);
 }
 
 
-void WebServer::endRequest(const cb::SmartPointer<Request> &req) {
+void WebServer::endRequest(Request &req) {
   if (logPrefix) Logger::instance().setPrefix("");
 }
 

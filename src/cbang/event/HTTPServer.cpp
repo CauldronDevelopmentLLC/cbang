@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "HTTPServer.h"
+#include "HTTPRequestErrorHandler.h"
 #include "HTTPConnIn.h"
 #include "Request.h"
 
@@ -52,32 +53,8 @@ HTTPServer::createRequest(RequestMethod method, const URI &uri,
 }
 
 
-void HTTPServer::dispatch(const SmartPointer<Request> &req) {
-  try {
-    if (!handleRequest(req)) req->sendError(HTTPStatus::HTTP_NOT_FOUND);
-
-  } catch (cb::Exception &e) {
-    if (400 <= e.getCode() && e.getCode() < 600) {
-      LOG_WARNING("REQ" << req->getID() << ':' << req->getClientIP() << ':'
-                  << e.getMessages());
-      req->reply((HTTPStatus::enum_t)e.getCode());
-
-    } else {
-      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessages());
-      LOG_DEBUG(3, e);
-      req->sendError(e);
-    }
-
-  } catch (std::exception &e) {
-    LOG_ERROR(e.what());
-    req->sendError(e);
-
-  } catch (...) {
-    LOG_ERROR(HTTPStatus(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR)
-              .getDescription());
-    req->sendError(HTTPStatus::HTTP_INTERNAL_SERVER_ERROR);
-  }
-
+void HTTPServer::dispatch(Request &req) {
+  HTTPRequestErrorHandler(*this)(req);
   TRY_CATCH_ERROR(endRequest(req));
 }
 

@@ -54,13 +54,21 @@ using namespace cb::Event;
 #define CBANG_LOG_PREFIX << "OUT" << getID() << ':'
 
 
-OutgoingRequest::OutgoingRequest(Client &client, const URI &uri,
-                                 RequestMethod method, callback_t cb) :
+OutgoingRequest::OutgoingRequest(
+  Client &client, const URI &uri, RequestMethod method, callback_t cb,
+  bool forceSSL) :
+
   Request(method, uri), client(client), cb(cb) {
   LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
 
   // Create connection
-  setConnection(new HTTPConnOut(client));
+  SmartPointer<SSLContext> sslCtx;
+  if (forceSSL || uri.schemeRequiresSSL()) {
+    sslCtx = client.getSSLContext();
+    if (sslCtx.isNull()) THROW("Client lacking SSLContext");
+  }
+
+  setConnection(new HTTPConnOut(client.getBase(), sslCtx));
 }
 
 

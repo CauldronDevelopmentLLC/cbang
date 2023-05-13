@@ -87,30 +87,6 @@ namespace {
 
 
   bool contains(const char *s, char c) {return c && strchr(s, c);}
-
-
-  unsigned portFromScheme(const string &scheme) {
-    if (scheme == "ftp")    return 21;
-    if (scheme == "ssh")    return 22;
-    if (scheme == "telnet") return 23;
-    if (scheme == "domain") return 53;
-    if (scheme == "tftp")   return 69;
-    if (scheme == "gopher") return 70;
-    if (scheme == "finger") return 79;
-    if (scheme == "http")   return 80;
-    if (scheme == "pop2")   return 109;
-    if (scheme == "pop3")   return 110;
-    if (scheme == "auth")   return 113;
-    if (scheme == "sftp")   return 115;
-    if (scheme == "nntp")   return 119;
-    if (scheme == "ntp")    return 123;
-    if (scheme == "snmp")   return 161;
-    if (scheme == "irc")    return 194;
-    if (scheme == "imap3")  return 220;
-    if (scheme == "ldap")   return 389;
-    if (scheme == "https")  return 443;
-    return 0;
-  }
 }
 
 
@@ -176,6 +152,60 @@ void URI::setQuery(const char *query) {
            << "' at char " << (s - query) << ": " << e.getMessage());
   }
 }
+
+
+unsigned URI::portFromScheme(const string &scheme) {
+  if (scheme == "ftp")       return 21;
+  if (scheme == "ssh")       return 22;
+  if (scheme == "telnet")    return 23;
+  if (scheme == "smtp")      return 25;
+  if (scheme == "domain")    return 53;
+  if (scheme == "tftp")      return 69;
+  if (scheme == "gopher")    return 70;
+  if (scheme == "finger")    return 79;
+  if (scheme == "http")      return 80;
+  if (scheme == "pop2")      return 109;
+  if (scheme == "pop")       return 110;
+  if (scheme == "pop3")      return 110;
+  if (scheme == "auth")      return 113;
+  if (scheme == "sftp")      return 115;
+  if (scheme == "nntp")      return 119;
+  if (scheme == "ntp")       return 123;
+  if (scheme == "imap")      return 143;
+  if (scheme == "snmp")      return 161;
+  if (scheme == "irc")       return 194;
+  if (scheme == "wais")      return 210;
+  if (scheme == "imap3")     return 220;
+  if (scheme == "ldap")      return 389;
+  if (scheme == "https")     return 443;
+  if (scheme == "uucp")      return 540;
+  if (scheme == "nntps")     return 563;
+  if (scheme == "ldaps")     return 636;
+  if (scheme == "ftps-data") return 989;
+  if (scheme == "telnets")   return 992;
+  if (scheme == "imaps")     return 993;
+  if (scheme == "pop3s")     return 995;
+  if (scheme == "suucp")     return 4031;
+  return 0;
+}
+
+
+bool URI::schemeRequiresSSL(const std::string &scheme) {
+  // TODO not exhaustive
+  return
+    scheme == "sftp"      ||
+    scheme == "https"     ||
+    scheme == "nntps"     ||
+    scheme == "ldaps"     ||
+    scheme == "ftps-data" ||
+    scheme == "telnets"   ||
+    scheme == "imaps"     ||
+    scheme == "pop3s"     ||
+    scheme == "suucp";
+}
+
+
+bool URI::schemeRequiresSSL() const {return schemeRequiresSSL(scheme);}
 
 
 void URI::clear() {

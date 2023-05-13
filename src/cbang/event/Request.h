@@ -127,6 +127,7 @@ namespace cb {
       const std::string &getResponseCodeLine() const {return responseCodeLine;}
       std::string getResponseLine() const;
       std::string getRequestLine() const;
+      bool logResponseErrors() const;
 
       bool hasConnection() const {return connection.isSet();}
       const SmartPointer<HTTPConn> &getConnection() const {return connection;}

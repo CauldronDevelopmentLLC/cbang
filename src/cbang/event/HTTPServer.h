@@ -33,6 +33,7 @@
 #pragma once
 
 #include "Server.h"
+#include "HTTPRequestHandler.h"
 
 #include <cbang/net/URI.h>
 #include <cbang/util/Version.h>
@@ -43,7 +44,7 @@ namespace cb {
     class Request;
     class HTTPConn;
 
-    class HTTPServer : public Server {
+    class HTTPServer : public Server, private HTTPRequestHandler {
       unsigned maxBodySize   = std::numeric_limits<int>::max();
       unsigned maxHeaderSize = std::numeric_limits<int>::max();
 
@@ -59,14 +60,17 @@ namespace cb {
       virtual SmartPointer<Request>
       createRequest(RequestMethod method, const URI &uri,
                     const Version &version);
-      virtual bool handleRequest(const SmartPointer<Request> &req) = 0;
-      virtual void endRequest(const SmartPointer<Request> &req) {}
+      virtual bool handleRequest(Request &req) = 0;
+      virtual void endRequest(Request &req) {}
 
-      void dispatch(const SmartPointer<Request> &req);
+      void dispatch(Request &req);
 
       // From Server
       SmartPointer<Connection> createConnection();
       void onConnect(const SmartPointer<Connection> &conn);
+
+      // From HTTPRequestHandler
+      bool operator()(Request &req) {return handleRequest(req);}
     };
   }
 }

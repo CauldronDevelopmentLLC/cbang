@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -32,49 +32,43 @@
 
 #pragma once
 
-#include "Request.h"
-
 #include <cbang/SmartPointer.h>
+#include <cbang/socket/SocketType.h>
 
-#include <functional>
+#include <iostream>
 
 
 namespace cb {
-  class URI;
+  class Pipe {
+  public:
+    typedef socket_t handle_t;
 
-  namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
+  private:
+    bool toChild;
+    handle_t handles[2];
+    bool closeHandles[2];
+    SmartPointer<std::iostream> stream;
 
-    class OutgoingRequest : public Request {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+  public:
+    explicit Pipe(bool toChild);
 
-    protected:
-      Client &client;
-      callback_t cb;
+    handle_t getHandle(bool childEnd) const;
+    handle_t getParentHandle() const {return getHandle(false);}
+    handle_t getChildHandle()  const {return getHandle(true);}
 
-    public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
+    void closeHandle(bool childEnd);
+    void closeParentHandle() {closeHandle(false);}
+    void closeChildHandle()  {closeHandle(true);}
 
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
+    void setBlocking(bool blocking, bool childEnd);
+    void setSize(int size, bool childEnd);
 
-      void setCallback(callback_t cb) {this->cb = cb;}
+    void create();
+    void close();
 
-      void connect(std::function<void (bool)> cb);
+    const SmartPointer<std::iostream> &getStream();
+    void closeStream();
 
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(ConnectionError error);
-    };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
-  }
+    void inChildProc(int target = -1);
+  };
 }

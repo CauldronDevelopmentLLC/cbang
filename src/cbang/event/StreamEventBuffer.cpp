@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -30,51 +30,30 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "StreamEventBuffer.h"
+#include "Event.h"
 
-#include "Request.h"
+#include <event2/util.h>
 
-#include <cbang/SmartPointer.h>
+using namespace cb;
+using namespace cb::Event;
 
-#include <functional>
+
+StreamEventBuffer::StreamEventBuffer(
+  Base &base, socket_t handle, unsigned flags) :
+  StreamEventHandler(base, handle, flags), handle(handle) {}
 
 
-namespace cb {
-  class URI;
+void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
 
-  namespace Event {
-    class Client;
-    class HTTPHandler;
-    class HTTPConnOut;
 
-    class OutgoingRequest : public Request {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+void StreamEventBuffer::write() {
+  write(event->getFD(), 1e6);
+  if (!getLength()) evutil_closesocket(handle);
+}
 
-    protected:
-      Client &client;
-      callback_t cb;
 
-    public:
-      OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
-
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      void connect(std::function<void (bool)> cb);
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(ConnectionError error);
-    };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
-  }
+void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
+  if (flags & EVENT_READ)   read();
+  if (flags & EVENT_WRITE) write();
 }

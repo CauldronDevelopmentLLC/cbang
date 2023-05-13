@@ -46,12 +46,11 @@ using namespace std;
 #define CBANG_LOG_PREFIX << "CON" << getID() << ':'
 
 
-HTTPConnOut::HTTPConnOut(Client &client) :
-  HTTPConn(client.getBase()) {
+HTTPConnOut::HTTPConnOut(Base &base, const SmartPointer<SSLContext> &sslCtx) :
+  HTTPConn(base) {
 
 #ifdef HAVE_OPENSSL
-  if (client.getSSLContext().isSet())
-    setSSL(client.getSSLContext()->createSSL());
+  if (sslCtx.isSet()) setSSL(sslCtx->createSSL());
 #endif // HAVE_OPENSSL
 }
 
