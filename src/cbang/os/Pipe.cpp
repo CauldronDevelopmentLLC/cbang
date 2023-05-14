@@ -111,12 +111,12 @@ void Pipe::setBlocking(bool blocking, bool childEnd) {
 void Pipe::setSize(int size, bool childEnd) {
   if (getHandle(childEnd) == -1) THROW("Pipe handle not open");
 
-#ifdef _WIN32
-  THROW("Pipe set size is not supported on this platform");
-
-#else
+#ifdef F_SETPIPE_SZ
   if (fcntl(getHandle(childEnd), F_SETPIPE_SZ, size) == -1)
     THROW("Failed to set pipe size to " << size << ": " << SysError());
+
+#else
+  THROW("Pipe set size is not supported on this platform");
 #endif
 }
 
