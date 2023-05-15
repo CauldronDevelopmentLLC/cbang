@@ -3,7 +3,8 @@ Import('*')
 env = env.Clone()
 
 if env.get('compiler') == 'clang':
-  env.Append(CCFLAGS = '-Wno-shift-negative-value')
+  env.Append(CCFLAGS = ['-Wno-shift-negative-value',
+                        '-Wno-deprecated-non-prototype'])
 
 lib = env.Library('#/lib/z', Glob('*.c'))
 
