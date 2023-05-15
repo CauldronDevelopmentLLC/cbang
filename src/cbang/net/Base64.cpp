@@ -127,7 +127,7 @@ string Base64::encode(const char *_s, unsigned length) const {
     else result.append(encode(63 & c));
   }
 
-  return move(result);
+  return std::move(result);
 }
 
 
