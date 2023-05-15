@@ -45,7 +45,7 @@ using namespace cb::Event;
 
 
 SubprocessPool::SubprocessPool(Base &base) :
-  base(base), maxActive(SystemInfo::instance().getCPUCount()) {
+  maxActive(SystemInfo::instance().getCPUCount()) {
 
   execEvent = base.newEvent(this, &SubprocessPool::exec);
   if (base.hasPriorities()) execEvent->setPriority(8);

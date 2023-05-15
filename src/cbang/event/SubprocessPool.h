@@ -48,7 +48,6 @@ namespace cb {
     class Event;
 
     class SubprocessPool {
-      Base &base;
       unsigned maxActive;
 
       struct cmp {
