@@ -875,10 +875,11 @@ namespace cb {
 
       // Copy output to log
       uint64_t pid = process.getPID();
-      istream &out = process.getStdOut();
+      auto out = process.getPipeOut().toStream();
       char line[4096];
-      while (!out.fail()) {
-        out.getline(line, 4096);
+
+      while (!out->fail()) {
+        out->getline(line, 4096);
         LOG_INFO(1, 'P' << pid << ": " << line);
       }
 

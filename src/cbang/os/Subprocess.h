@@ -41,6 +41,7 @@
 #include <iostream>
 #include <vector>
 
+
 namespace cb {
   class Subprocess : public StringMap {
   public:
@@ -80,20 +81,16 @@ namespace cb {
 
     bool isRunning();
     uint64_t getPID() const;
-    int getReturnCode() const {return returnCode;}
-    bool getWasKilled() const {return wasKilled;}
+    int getReturnCode()  const {return returnCode;}
+    bool getWasKilled()  const {return wasKilled;}
     bool getDumpedCore() const {return dumpedCore;}
 
-    Pipe &getPipe(unsigned i);
     unsigned createPipe(bool toChild);
 
-    std::ostream &getStdIn()  {return *getPipe(0).getStream();}
-    std::istream &getStdOut() {return *getPipe(1).getStream();}
-    std::istream &getStdErr() {return *getPipe(2).getStream();}
-
-    void closeStdIn()  {getPipe(0).closeStream();}
-    void closeStdOut() {getPipe(1).closeStream();}
-    void closeStdErr() {getPipe(2).closeStream();}
+    PipeEnd &getPipe(unsigned i);
+    PipeEnd &getPipeIn()  {return getPipe(0);}
+    PipeEnd &getPipeOut() {return getPipe(1);}
+    PipeEnd &getPipeErr() {return getPipe(2);}
 
     void setWorkingDirectory(const std::string &wd) {this->wd = wd;}
 
@@ -113,7 +110,6 @@ namespace cb {
 
   protected:
     void closeProcessHandles();
-    void closeStreams();
     void closePipes();
     void closeHandles();
   };

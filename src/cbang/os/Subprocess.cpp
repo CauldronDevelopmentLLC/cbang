@@ -77,6 +77,16 @@ namespace {
 
     return CreateFile("NUL", GENERIC_WRITE, 0, &sAttrs, OPEN_EXISTING, 0, 0);
   }
+#else
+
+
+  void inChildProc(Pipe &pipe, PipeEnd::handle_t target = -1) {
+    pipe.getParentEnd().close();
+
+    // Move to target
+    if (target != -1 && !pipe.getChildEnd().moveFD(target))
+      perror("Moving file descriptor");
+  }
 #endif
 }
 
@@ -132,16 +142,16 @@ uint64_t Subprocess::getPID() const {
 }
 
 
-Pipe &Subprocess::getPipe(unsigned i) {
-  if (pipes.size() <= i) THROW("Subprocess does not have pipe " << i);
-  return pipes[i];
-}
-
-
 unsigned Subprocess::createPipe(bool toChild) {
   pipes.push_back(Pipe(toChild));
   pipes.back().create();
   return pipes.size() - 1;
+}
+
+
+PipeEnd &Subprocess::getPipe(unsigned i) {
+  if (pipes.size() <= i) THROW("Subprocess does not have pipe " << i);
+  return pipes[i].getParentEnd();
 }
 
 
@@ -172,6 +182,11 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     if (flags & REDIR_STDERR) pipes[2].create();
 
 #ifdef _WIN32
+    // Don't let child process inherit parent handles
+    for (unsigned i = 0; i < pipes.size(); i++)
+      if (!SetHandleInformation(getPipe(i), HANDLE_FLAG_INHERIT, 0))
+        THROW("Failed to clear pipe inherit flag: " << SysError());
+
     // Clear PROCESS_INFORMATION
     memset(&p->pi, 0, sizeof(PROCESS_INFORMATION));
 
@@ -179,18 +194,19 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     memset(&p->si, 0, sizeof(STARTUPINFO));
     p->si.cb = sizeof(STARTUPINFO);
     p->si.hStdInput =
-      (flags & REDIR_STDIN) ? pipes[0].getChildHandle() :
+      (flags & REDIR_STDIN)  ? pipes[0].getChildEnd() :
       GetStdHandle(STD_INPUT_HANDLE);
     p->si.hStdOutput =
-      (flags & REDIR_STDOUT) ? pipes[1].getChildHandle() :
+      (flags & REDIR_STDOUT) ? pipes[1].getChildEnd() :
       GetStdHandle(STD_OUTPUT_HANDLE);
-    p->si.hStdError = (flags & REDIR_STDERR) ? pipes[2].getChildHandle() :
-      ((flags & MERGE_STDOUT_AND_STDERR) ? pipes[1].getChildHandle() :
-       GetStdHandle(STD_ERROR_HANDLE));
+    p->si.hStdError =
+      (flags & REDIR_STDERR) ? pipes[2].getChildEnd() :
+      ((flags & MERGE_STDOUT_AND_STDERR) ?
+       pipes[1].getChildEnd() : GetStdHandle(STD_ERROR_HANDLE));
     p->si.dwFlags |= STARTF_USESTDHANDLES;
 
     if (flags & NULL_STDOUT) p->si.hStdOutput = OpenNUL();
-    if (flags & NULL_STDERR) p->si.hStdError = OpenNUL();
+    if (flags & NULL_STDERR) p->si.hStdError  = OpenNUL();
 
     // Hide window
     if (flags & W32_HIDE_WINDOW) {
@@ -294,13 +310,13 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       if (flags & CREATE_PROCESS_GROUP) setpgid(0, 0);
 
       // Configure pipes
-      if (flags & REDIR_STDIN)  pipes[0].inChildProc(0);
-      if (flags & REDIR_STDOUT) pipes[1].inChildProc(1);
+      if (flags & REDIR_STDIN)  inChildProc(pipes[0], 0);
+      if (flags & REDIR_STDOUT) inChildProc(pipes[1], 1);
 
       if (flags & MERGE_STDOUT_AND_STDERR)
         if (dup2(1, 2) != 2) perror("Copying stdout to stderr");
 
-      if (flags & REDIR_STDERR) pipes[2].inChildProc(2);
+      if (flags & REDIR_STDERR) inChildProc(pipes[2], 2);
 
       if ((flags & NULL_STDOUT) || (flags & NULL_STDERR)) {
         int fd = open("/dev/null", O_WRONLY);
@@ -316,7 +332,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       }
 
       for (unsigned i = 3; i < pipes.size(); i++)
-        pipes[i].inChildProc();
+        inChildProc(pipes[i]);
 
       // Priority
       SystemUtilities::setPriority(priority);
@@ -357,11 +373,11 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       string num = SystemUtilities::read("/proc/sys/fs/pipe-max-size");
       int size = (int)String::parseU32(num);
 
-      if (flags & REDIR_STDIN)  pipes[0].setSize(size, false);
-      if (flags & REDIR_STDOUT) pipes[1].setSize(size, false);
-      if (flags & REDIR_STDERR) pipes[2].setSize(size, false);
+      if (flags & REDIR_STDIN)  getPipeIn() .setSize(size);
+      if (flags & REDIR_STDOUT) getPipeOut().setSize(size);
+      if (flags & REDIR_STDERR) getPipeErr().setSize(size);
       for (unsigned i = 3; i < pipes.size(); i++)
-        pipes[i].setSize(size, false);
+        getPipe(i).setSize(size);
     }
   } CATCH_ERROR;
 
@@ -372,7 +388,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
 
   // Close pipe child ends
   for (unsigned i = 0; i < pipes.size(); i++)
-    pipes[i].closeHandle(true);
+    pipes[i].getChildEnd().close();
 
   running = true;
 }
@@ -557,14 +573,8 @@ void Subprocess::closeProcessHandles() {
 #ifdef _WIN32
   // Close process & thread handles
   if (p->pi.hProcess) {CloseHandle(p->pi.hProcess); p->pi.hProcess = 0;}
-  if (p->pi.hThread) {CloseHandle(p->pi.hThread); p->pi.hThread = 0;}
+  if (p->pi.hThread)  {CloseHandle(p->pi.hThread);  p->pi.hThread  = 0;}
 #endif
-}
-
-
-void Subprocess::closeStreams() {
-  for (unsigned i = 0; i < pipes.size(); i++)
-    pipes[i].closeStream();
 }
 
 
@@ -576,6 +586,5 @@ void Subprocess::closePipes() {
 
 void Subprocess::closeHandles() {
   closeProcessHandles();
-  closeStreams();
   closePipes();
 }
