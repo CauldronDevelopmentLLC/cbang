@@ -59,6 +59,9 @@ namespace io = boost::iostreams;
 using namespace cb;
 
 
+const PipeEnd::handle_t PipeEnd::INVALID = (handle_t)-1;
+
+
 void PipeEnd::close() {
   if (!isOpen()) return;
 
@@ -68,7 +71,7 @@ void PipeEnd::close() {
   ::close(handle);
 #endif
 
-  handle = -1;
+  handle = INVALID;
 }
 
 
@@ -76,8 +79,8 @@ void PipeEnd::setBlocking(bool blocking) {
   if (!isOpen()) THROW("Pipe end not open");
 
 #ifdef _WIN32
-  if (SetNamedPipeHandleState
-      (handle, blocking ? PIPE_WAIT : PIPE_NOWAIT, 0, 0)) return;
+  DWORD mode = blocking ? PIPE_WAIT : PIPE_NOWAIT;
+  if (SetNamedPipeHandleState(handle, &mode, 0, 0)) return;
 
 #else
   int opts = fcntl(handle, F_GETFL);
@@ -128,7 +131,7 @@ SmartPointer<std::iostream> PipeEnd::toStream() {
 
   typedef io::stream<io::file_descriptor> stream_t;
   SmartPointer<std::iostream> stream = new stream_t(handle, BOOST_CLOSE_HANDLE);
-  handle = -1; // Handle will now be closed by the stream
+  handle = INVALID; // Handle will now be closed by the stream
 
   return stream;
 }

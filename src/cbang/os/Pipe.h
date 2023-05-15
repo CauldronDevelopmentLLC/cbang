@@ -33,7 +33,6 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/socket/SocketType.h>
 
 #include <iostream>
 
@@ -41,24 +40,30 @@
 namespace cb {
   class PipeEnd {
   public:
-    typedef socket_t handle_t;
+#ifdef _WIN32
+    typedef void *handle_t;
+#else
+    typedef int handle_t;
+#endif
+
+    static const handle_t INVALID;
 
   private:
     handle_t handle;
 
   public:
-    PipeEnd(handle_t handle = -1) : handle(handle) {}
+    PipeEnd(handle_t handle = INVALID) : handle(handle) {}
 
     operator handle_t() const {return handle;}
     handle_t getHandle() const {return handle;}
-    void setHandle(handle_t handle) {handle = handle;}
+    void setHandle(handle_t handle) {this->handle = handle;}
 
-    bool isOpen() const {return handle != -1;}
+    bool isOpen() const {return handle != INVALID;}
 
     void close();
     void setBlocking(bool blocking);
     void setSize(int size);
-    bool moveFD(int target);
+    bool moveFD(handle_t target);
     SmartPointer<std::iostream> toStream();
   };
 
