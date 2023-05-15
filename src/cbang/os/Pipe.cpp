@@ -59,36 +59,21 @@ namespace io = boost::iostreams;
 using namespace cb;
 
 
-Pipe::Pipe(bool toChild) : toChild(toChild) {
-  handles[0] = handles[1] = -1;
-  closeHandles[0] = closeHandles[1] = false;
-}
+void PipeEnd::close() {
+  if (!isOpen()) return;
 
-
-Pipe::handle_t Pipe::getHandle(bool childEnd) const {
-  return handles[(toChild ^ childEnd) ? 1 : 0];
-}
-
-
-void Pipe::closeHandle(bool childEnd) {
-  int end = (toChild ^ childEnd) ? 1 : 0;
-
-  if (closeHandles[end]) {
 #ifdef _WIN32
-    CloseHandle(handles[end]);
+  CloseHandle(handle);
 #else
-    ::close(handles[end]);
+  ::close(handle);
 #endif
 
-    closeHandles[end] = false;
-  }
+  handle = -1;
 }
 
 
-void Pipe::setBlocking(bool blocking, bool childEnd) {
-  handle_t handle = getHandle(childEnd);
-
-  if (handle == -1) THROW("Pipe handle not open");
+void PipeEnd::setBlocking(bool blocking) {
+  if (!isOpen()) THROW("Pipe end not open");
 
 #ifdef _WIN32
   if (SetNamedPipeHandleState
@@ -108,11 +93,11 @@ void Pipe::setBlocking(bool blocking, bool childEnd) {
 }
 
 
-void Pipe::setSize(int size, bool childEnd) {
-  if (getHandle(childEnd) == -1) THROW("Pipe handle not open");
+void PipeEnd::setSize(int size) {
+  if (!isOpen()) THROW("Pipe handle not open");
 
 #ifdef F_SETPIPE_SZ
-  if (fcntl(getHandle(childEnd), F_SETPIPE_SZ, size) == -1)
+  if (fcntl(handle, F_SETPIPE_SZ, size) == -1)
     THROW("Failed to set pipe size to " << size << ": " << SysError());
 
 #else
@@ -121,9 +106,38 @@ void Pipe::setSize(int size, bool childEnd) {
 }
 
 
+bool PipeEnd::moveFD(handle_t target) {
+#ifdef _WIN32
+  THROW(CBANG_FUNC << " not supported on Windows");
+
+#else
+  if (!isOpen()) THROW("Pipe handle not open");
+
+  if (dup2(handle, target) == target) {
+    handle = target;
+    return true;
+  }
+
+  return false;
+#endif
+}
+
+
+SmartPointer<std::iostream> PipeEnd::toStream() {
+  if (!isOpen()) THROW("Pipe end not open");
+
+  typedef io::stream<io::file_descriptor> stream_t;
+  SmartPointer<std::iostream> stream = new stream_t(handle, BOOST_CLOSE_HANDLE);
+  handle = -1; // Handle will now be closed by the stream
+
+  return stream;
+}
+
+
 void Pipe::create() {
-  if (getChildHandle() != -1 || getParentHandle() != -1)
-    THROW("Pipe already created");
+  if (ends[0].isOpen() || ends[1].isOpen()) THROW("Pipe already created");
+
+  PipeEnd::handle_t handles[2];
 
 #ifdef _WIN32
   // Setup security attributes for pipe inheritance
@@ -134,48 +148,17 @@ void Pipe::create() {
   sAttrs.lpSecurityDescriptor = 0;
 
   if (!CreatePipe(&handles[0], &handles[1], &sAttrs, 0))
+#else
+  if (pipe(handles))
+#endif
     THROW("Failed to create pipe: " << SysError());
 
-  // Don't inherit other handle
-  if (!SetHandleInformation(handles[toChild ? 1 : 0],
-                            HANDLE_FLAG_INHERIT, 0))
-    THROW("Failed to clear pipe inherit flag: " << SysError());
-
-#else
-  if (pipe(handles)) THROW("Failed to create pipe: " << SysError());
-#endif
-
-  closeHandles[0] = closeHandles[1] = true;
+  getReadEnd ().setHandle(handles[0]);
+  getWriteEnd().setHandle(handles[1]);
 }
 
 
 void Pipe::close() {
-  closeParentHandle();
-  closeChildHandle();
-}
-
-
-const SmartPointer<std::iostream> &Pipe::getStream() {
-  if (stream.isNull()) {
-    if (getParentHandle() == -1) THROW("Pipe not open");
-    typedef io::stream<io::file_descriptor> stream_t;
-    stream = new stream_t(getParentHandle(), BOOST_CLOSE_HANDLE);
-    closeHandles[toChild ? 1 : 0] = false; // Don't close this handle in close()
-  }
-
-  return stream;
-}
-
-
-void Pipe::closeStream() {stream.release();}
-
-
-void Pipe::inChildProc(int target) {
-#ifndef _WIN32
-  closeParentHandle();
-
-  // Move to target
-  if (target != -1 && dup2(getChildHandle(), target) != target)
-    perror("Moving file descriptor");
-#endif
+  ends[0].close();
+  ends[1].close();
 }

@@ -39,36 +39,44 @@
 
 
 namespace cb {
-  class Pipe {
+  class PipeEnd {
   public:
     typedef socket_t handle_t;
 
   private:
-    bool toChild;
-    handle_t handles[2];
-    bool closeHandles[2];
-    SmartPointer<std::iostream> stream;
+    handle_t handle;
 
   public:
-    explicit Pipe(bool toChild);
+    PipeEnd(handle_t handle = -1) : handle(handle) {}
 
-    handle_t getHandle(bool childEnd) const;
-    handle_t getParentHandle() const {return getHandle(false);}
-    handle_t getChildHandle()  const {return getHandle(true);}
+    operator handle_t() const {return handle;}
+    handle_t getHandle() const {return handle;}
+    void setHandle(handle_t handle) {handle = handle;}
 
-    void closeHandle(bool childEnd);
-    void closeParentHandle() {closeHandle(false);}
-    void closeChildHandle()  {closeHandle(true);}
+    bool isOpen() const {return handle != -1;}
 
-    void setBlocking(bool blocking, bool childEnd);
-    void setSize(int size, bool childEnd);
+    void close();
+    void setBlocking(bool blocking);
+    void setSize(int size);
+    bool moveFD(int target);
+    SmartPointer<std::iostream> toStream();
+  };
+
+
+  class Pipe {
+    bool toChild;
+    PipeEnd ends[2];
+
+  public:
+    explicit Pipe(bool toChild) : toChild(toChild) {}
+
+    PipeEnd &getReadEnd()  {return ends[0];}
+    PipeEnd &getWriteEnd() {return ends[1];}
+
+    PipeEnd &getParentEnd() {return toChild ? getWriteEnd() : getReadEnd();}
+    PipeEnd &getChildEnd()  {return toChild ? getReadEnd()  : getWriteEnd();}
 
     void create();
     void close();
-
-    const SmartPointer<std::iostream> &getStream();
-    void closeStream();
-
-    void inChildProc(int target = -1);
   };
 }
