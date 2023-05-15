@@ -51,9 +51,14 @@ SubprocessPool::SubprocessPool(Base &base) :
   if (base.hasPriorities()) execEvent->setPriority(8);
   execEvent->add();
 
+#ifdef _WIN32
+  THROW("SubprocessPool not supported on Windows");
+
+#else
   signalEvent = base.newSignal(SIGCHLD, this, &SubprocessPool::childSignal);
   if (base.hasPriorities()) signalEvent->setPriority(7);
   signalEvent->add();
+#endif
 }
 
 
