@@ -60,7 +60,7 @@ namespace cb {
     template<typename Source> int get(Source &src) {
       int x;
 
-      if (count++ == 80) {
+      if (getWidth() && count++ == getWidth()) {
         count = 0;
         return '\n';
       }
@@ -77,7 +77,7 @@ namespace cb {
       case 0:
         a = (unsigned char)x;
         state++;
-        return Base64::encode(63 & (a >> 2));
+        return Base64::encode(a >> 2);
 
       case 1:
         if (x == EOF) {
@@ -89,7 +89,7 @@ namespace cb {
           state++;
         }
 
-        return Base64::encode(63 & (a << 4 | b >> 4));
+        return Base64::encode(a << 4 | b >> 4);
 
       case 2:
         if (x == EOF) {
@@ -101,16 +101,16 @@ namespace cb {
           state++;
         }
 
-        return Base64::encode(63 & (b << 2 | c >> 6));
+        return Base64::encode(b << 2 | c >> 6);
 
       case 3:
         state = 0;
-        return Base64::encode(63 & c);
+        return Base64::encode(c);
 
       case 5:
       case 6:
         state++;
-        return '=';
+        if (getPad()) return getPad();
 
       default: return EOF;
       }
@@ -123,21 +123,21 @@ namespace cb {
       switch (state) {
       case 0:
         a = (unsigned char)x;
-        ok = out(dest, Base64::encode(63 & (a >> 2)));
+        ok = out(dest, Base64::encode(a >> 2));
         if (ok) state++;
         break;
 
       case 1:
         b = (unsigned char)x;
-        ok = out(dest, Base64::encode(63 & (a << 4 | b >> 4)));
+        ok = out(dest, Base64::encode(a << 4 | b >> 4));
         if (ok) state++;
         break;
 
       case 2:
         c = (unsigned char)x;
-        ok = out(dest, Base64::encode(63 & (b << 2 | c >> 6)));
+        ok = out(dest, Base64::encode(b << 2 | c >> 6));
         if (!ok) break;
-        ok = out(dest, Base64::encode(63 & c));
+        ok = out(dest, Base64::encode(c);
         if (!ok) {state++; break;}
         state = 0;
         break;
@@ -146,7 +146,7 @@ namespace cb {
         if (x != c)
           THROW("Output character changed from '" << c << "' to '"
                  << (unsigned char)x << "'");
-        ok = out(dest, Base64::encode(63 & c));
+        ok = out(dest, Base64::encode(c));
         if (ok) state = 0;
         break;
       }
@@ -156,23 +156,25 @@ namespace cb {
 
 
     template<typename Device> void close(Device &dev, BOOST_IOS::openmode m) {
+      char pad = getPad();
+
       if (m == std::ios::out)
         switch (state) {
         case 1:
           b = 0;
-          out(dev, Base64::encode(63 & (a << 4 | b >> 4)));
-          boost::iostreams::put(dev, '=');
-          boost::iostreams::put(dev, '=');
+          out(dev, Base64::encode(a << 4 | b >> 4));
+          if (pad) out(dev, pad);
+          if (pad) out(dev, pad);
           break;
 
         case 2:
           c = 0;
-          out(dev, Base64::encode(63 & (b << 2 | c >> 6)));
-          boost::iostreams::put(dev, '=');
+          out(dev, Base64::encode(b << 2 | c >> 6));
+          if (pad) out(dev, pad);
           break;
 
         case 3:
-          boost::iostreams::put(dev, Base64::encode(63 & c));
+          out(dev, Base64::encode(c));
           break;
         }
 
@@ -181,11 +183,13 @@ namespace cb {
 
   protected:
     template<typename Sink> bool out(Sink &dest, char x) {
-      if (count == 80) {
-        if (!boost::iostreams::put(dest, '\n')) return false;
-        count = 0;
+      if (getWidth()) {
+        if (count == getWidth()) {
+          if (!boost::iostreams::put(dest, '\n')) return false;
+          count = 0;
 
-      } else count++;
+        } else count++;
+      }
 
       return boost::iostreams::put(dest, x);
     }
