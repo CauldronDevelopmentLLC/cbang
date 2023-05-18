@@ -39,17 +39,21 @@
 
 namespace cb {
   class Base64 {
-    const char pad;
-    const char a;
-    const char b;
-    unsigned width;
+    const unsigned width;
+    char encodeTable[65];
+    signed char decodeTable[256];
 
-    static const char *encodeTable;
-    static const signed char decodeTable[256];
+    static const char *_encodeTable;
+    static const signed char _decodeTable[256];
+
+    Base64(unsigned width);
 
   public:
-    Base64(char pad = '=', char a = '+', char b = '/', unsigned width = 0) :
-      pad(pad), a(a), b(b), width(width) {}
+    Base64(char pad, char a, char b, unsigned width = 0);
+    Base64(const char *pad = "=", const char *a = "+-", const char *b = "/_",
+           unsigned width = 0);
+
+    unsigned getWidth() const {return width;}
 
     std::string encode(const std::string &s) const;
     std::string encode(const char *s, unsigned length) const;
@@ -57,6 +61,7 @@ namespace cb {
     std::string decode(const char *s, unsigned length) const;
 
   protected:
+    char getPad() const;
     char encode(int x) const;
     int decode(char x) const;
   };
@@ -64,6 +69,6 @@ namespace cb {
 
   class URLBase64 : public Base64 {
   public:
-    URLBase64() : Base64(0, '-', '_') {}
+    URLBase64() : Base64("", "-+", "_/") {}
   };
 }
