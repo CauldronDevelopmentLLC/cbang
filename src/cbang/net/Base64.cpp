@@ -45,7 +45,6 @@ using namespace cb;
 
 namespace {
   char next(string::const_iterator &it, string::const_iterator end) {
-    if (it == end) return -2;
     char c = *it++;
     while (it != end && isspace(*it)) it++;
     return c;
@@ -92,11 +91,10 @@ Base64::Base64(char pad, char a, char b, unsigned width) : Base64(width) {
 }
 
 
-Base64::Base64(const char *pad, const char *a, const char *b, unsigned width) :
-  Base64(*pad, *a, *b, width) {
+Base64::Base64(char pad, const char *a, const char *b, unsigned width) :
+  Base64(pad, *a, *b, width) {
   for (unsigned i = 1;   a[i]; i++) decodeTable[(unsigned)a[i]]   = 62;
   for (unsigned i = 1;   b[i]; i++) decodeTable[(unsigned)b[i]]   = 63;
-  for (unsigned i = 1; pad[i]; i++) decodeTable[(unsigned)pad[i]] = -2;
 }
 
 
@@ -167,9 +165,9 @@ string Base64::decode(const string &s) const {
 
   while (it != s.end()) {
     char w = decode(next(it, s.end()));
-    char x = decode(next(it, s.end()));
-    char y = decode(next(it, s.end()));
-    char z = decode(next(it, s.end()));
+    char x = it == s.end() ? -2 : decode(next(it, s.end()));
+    char y = it == s.end() ? -2 : decode(next(it, s.end()));
+    char z = it == s.end() ? -2 : decode(next(it, s.end()));
 
     if (w == -1 || w == -2 || x == -1 || x == -2 || y == -1 || z == -1)
       THROW("Invalid Base64 data at " << (it - s.begin()));
@@ -192,4 +190,4 @@ string Base64::decode(const char *s, unsigned length) const {
 
 char Base64::getPad() const {return encodeTable[64];}
 char Base64::encode(int x) const {return encodeTable[63 & x];}
-int Base64::decode(char x) const {return decodeTable[(int)x];}
+int Base64::decode(char x) const {return decodeTable[(uint8_t)x];}

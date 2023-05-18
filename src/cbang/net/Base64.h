@@ -50,7 +50,7 @@ namespace cb {
 
   public:
     Base64(char pad, char a, char b, unsigned width = 0);
-    Base64(const char *pad = "=", const char *a = "+-", const char *b = "/_",
+    Base64(char pad = '=', const char *a = "+-", const char *b = "/_",
            unsigned width = 0);
 
     unsigned getWidth() const {return width;}
@@ -69,6 +69,6 @@ namespace cb {
 
   class URLBase64 : public Base64 {
   public:
-    URLBase64() : Base64("", "-+", "_/") {}
+    URLBase64() : Base64(0, "-+", "_/") {}
   };
 }
