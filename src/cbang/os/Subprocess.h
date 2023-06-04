@@ -67,11 +67,11 @@ namespace cb {
 
     std::vector<Pipe> pipes;
 
-    bool running;
-    bool wasKilled;
-    bool dumpedCore;
-    bool signalGroup;
-    int  returnCode;
+    bool running     = false;
+    bool wasKilled   = false;
+    bool dumpedCore  = false;
+    bool signalGroup = false;
+    int  returnCode  = 0;
 
     std::string wd;
 

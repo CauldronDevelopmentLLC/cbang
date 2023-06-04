@@ -96,24 +96,19 @@ struct Subprocess::Private {
   PROCESS_INFORMATION pi;
   STARTUPINFO si;
 #else
-  pid_t pid;
+  pid_t pid = 0;
 #endif
 
   Private() {
 #ifdef _WIN32
     memset(&pi, 0, sizeof(PROCESS_INFORMATION));
     memset(&si, 0, sizeof(STARTUPINFO));
-#else
-    pid = 0;
 #endif
   }
 };
 
 
-Subprocess::Subprocess() :
-  p(new Private), running(false), wasKilled(false), dumpedCore(false),
-  signalGroup(false), returnCode(0) {
-
+Subprocess::Subprocess() : p(new Private) {
   pipes.push_back(Pipe(true));  // stdin
   pipes.push_back(Pipe(false)); // stdout
   pipes.push_back(Pipe(false)); // stderr
@@ -167,12 +162,13 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
   // Don't redirect stderr if merging
   if (flags & MERGE_STDOUT_AND_STDERR) flags &= ~REDIR_STDERR;
 
-  // Don't redirect streams if closing
-  if (flags & NULL_STDOUT) flags &= ~REDIR_STDOUT;
-  if (flags & NULL_STDERR) flags &= ~REDIR_STDERR;
+  // Don't allow both redirecting and nulling pipes
+  if (flags & NULL_STDOUT && flags & REDIR_STDOUT)
+    THROW("Cannot both null and redirect stdout");
+  if (flags & NULL_STDERR && flags & REDIR_STDERR)
+    THROW("Cannot both null and redirect stderr");
 
   // Send signals to whole process group
-  // TODO this is kind of hackish
   signalGroup = flags & CREATE_PROCESS_GROUP;
 
   try {
@@ -306,6 +302,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
 #endif
 
     if (!p->pid) { // Child
+      vector<Pipe> pipes = this->pipes; // Make a copy for vfork case
+
       // Process group
       if (flags & CREATE_PROCESS_GROUP) setpgid(0, 0);
 
