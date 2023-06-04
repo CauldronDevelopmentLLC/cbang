@@ -87,7 +87,7 @@ void LineBuffer::read(int fd) {
     ssize_t bytes = ::read(fd, buffer + fill, space);
 
     if (bytes == -1 && errno != EAGAIN && errno != EWOULDBLOCK)
-      THROW("Failed to read file descriptor: " << SysError());
+      THROW("Failed to read file descriptor " << fd << ": " << SysError());
 
     if (bytes <= 0) break;
 
