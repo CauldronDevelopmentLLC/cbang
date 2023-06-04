@@ -97,7 +97,7 @@ void PipeEnd::setBlocking(bool blocking) {
 
 
 void PipeEnd::setSize(int size) {
-  if (!isOpen()) THROW("Pipe handle not open");
+  if (!isOpen()) THROW("Pipe end not open");
 
 #ifdef F_SETPIPE_SZ
   if (fcntl(handle, F_SETPIPE_SZ, size) == -1)
@@ -114,7 +114,7 @@ bool PipeEnd::moveFD(handle_t target) {
   THROW(CBANG_FUNC << " not supported on Windows");
 
 #else
-  if (!isOpen()) THROW("Pipe handle not open");
+  if (!isOpen()) THROW("Pipe end not open");
 
   if (dup2(handle, target) == target) {
     handle = target;
@@ -150,11 +150,12 @@ void Pipe::create() {
   sAttrs.bInheritHandle = TRUE;
   sAttrs.lpSecurityDescriptor = 0;
 
-  if (!CreatePipe(&handles[0], &handles[1], &sAttrs, 0))
+  bool ok = CreatePipe(&handles[0], &handles[1], &sAttrs, 0);
 #else
-  if (pipe(handles))
+  bool ok = !pipe(handles);
 #endif
-    THROW("Failed to create pipe: " << SysError());
+
+  if (!ok) THROW("Failed to create pipe: " << SysError());
 
   getReadEnd ().setHandle(handles[0]);
   getWriteEnd().setHandle(handles[1]);
