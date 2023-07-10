@@ -128,6 +128,8 @@ unsigned Value::insert(const string &key, const string &value) {
 
 
 void Value::merge(const Value &value) {
+  if (this == &value) return; // They are the same object
+
   // Merge lists
   if (isList() && value.isList()) {
     appendFrom(value);
