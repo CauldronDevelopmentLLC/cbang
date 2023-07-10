@@ -75,6 +75,7 @@ namespace cb {
       void addHandler(const std::string &pattern, const std::string &path);
       void addHandler(const std::string &path) {addHandler("", path);}
 
+      SmartPointer<HTTPHandlerGroup> addGroup();
       SmartPointer<HTTPHandlerGroup>
       addGroup(unsigned methods, const std::string &pattern,
                const std::string &prefix = std::string());

@@ -58,6 +58,13 @@ void HTTPHandlerGroup::addHandler(const string &pattern, const string &path) {
 }
 
 
+SmartPointer<HTTPHandlerGroup> HTTPHandlerGroup::addGroup() {
+  SmartPointer<HTTPHandlerGroup> group = new HTTPHandlerGroup(factory);
+  addHandler(group);
+  return group;
+}
+
+
 SmartPointer<HTTPHandlerGroup>
 HTTPHandlerGroup::addGroup(unsigned methods, const string &pattern,
                            const string &prefix) {
