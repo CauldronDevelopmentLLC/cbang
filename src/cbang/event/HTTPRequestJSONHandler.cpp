@@ -42,8 +42,7 @@ using namespace std;
 bool HTTPRequestJSONHandler::operator()(Request &req) {
   try {
     // Parse JSON message
-    JSON::ValuePtr msg = req.getJSONMessage();
-    if (msg.isNull()) msg = req.parseQueryArgs();
+    JSON::ValuePtr msg = req.parseArgs();
 
     // Log JSON call
     LOG_DEBUG(5, "JSON Call: " << req.getURI().getPath() << '(' << *msg << ')');
