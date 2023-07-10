@@ -260,7 +260,7 @@ void Websocket::readBody() {
     }
 
     // Read next message
-    readHeader();
+    if (isActive()) readHeader();
   };
 
   getConnection()->read(cb, input, bytesToRead);
