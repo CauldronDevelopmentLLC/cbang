@@ -196,7 +196,7 @@ SSL Request::getSSL() const {return *connection->getSSL();}
 void Request::resetOutput() {getOutputBuffer().clear();}
 
 
-const JSON::ValuePtr &Request::parseJSONArgs() {
+void Request::parseJSONArgs() {
   Headers &hdrs = getInputHeaders();
 
   switch (getMethod()) {
@@ -211,16 +211,11 @@ const JSON::ValuePtr &Request::parseJSONArgs() {
 
   default: break;
   }
-
-  return args;
 }
 
 
-const JSON::ValuePtr &Request::parseQueryArgs() {
-  const URI &uri = getURI();
-  for (URI::const_iterator it = uri.begin(); it != uri.end(); it++)
-    args->insert(it->first, it->second);
-  return args;
+void Request::parseQueryArgs() {
+  for (auto it: getURI()) args->insert(it.first, it.second);
 }
 
 

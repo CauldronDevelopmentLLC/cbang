@@ -159,8 +159,8 @@ namespace cb {
       virtual void resetOutput();
 
       const JSON::ValuePtr &getArgs() const {return args;}
-      const JSON::ValuePtr &parseJSONArgs();
-      const JSON::ValuePtr &parseQueryArgs();
+      void parseJSONArgs();
+      void parseQueryArgs();
       const JSON::ValuePtr &parseArgs();
 
       IPAddress getClientIP() const;
