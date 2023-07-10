@@ -77,7 +77,7 @@ namespace cb {
 
 
 Application::Application(const string &name, hasFeature_t hasFeature) :
-  Features(hasFeature), Environment(name), logger(Logger::instance()),
+  Features(hasFeature), logger(Logger::instance()),
   enumMan(new EnumerationManager(*this)), name(name), configRotate(true),
   configRotateMax(16), configRotateDir("configs"), initialized(false),
   configured(false), quit(false), startTime(Timer::now()) {
@@ -162,15 +162,6 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     info.add("System", "CWD", SystemUtilities::getcwd());
     info.add("System", "Exec", SystemUtilities::getExecutablePath());
   }
-
-  // Script functions
-  typedef Application A;
-  typedef Script::MemberFunctor<A> MF;
-
-  add(new MF("uptime", this, &A::evalUptime, 0, 0,
-             "Print application uptime"));
-  add(new MF("option", this, &A::evalOption, 1, 2,
-             "Get or set a configuration option", "<name> [value]"));
 
   // Load licenses
   const Resource *licenses = resource0.find("licenses");
@@ -340,22 +331,6 @@ void Application::writeConfig(ostream &stream, uint32_t flags) const {
   writer.startElement("config");
   write(writer, flags);
   writer.endElement("config");
-}
-
-
-void Application::evalUptime(const Context &ctx) {
-  ctx.stream << HumanTime((uint64_t)getUptime());
-}
-
-
-void Application::evalOption(const Script::Context &ctx) {
-  string name = ctx.args[1];
-
-  if (options.has(name)) {
-    if (ctx.args.size() > 2) options[name].set(ctx.args[2]);
-    else if (options[name].hasValue()) ctx.stream << options[name];
-
-  } else THROW("Invalid option '" << name << "'");
 }
 
 

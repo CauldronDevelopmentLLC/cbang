@@ -59,8 +59,7 @@ namespace cb {
   class EnumerationManager;
   class XMLWriter;
 
-  class Application :
-    public Features, protected ExitSignalHandler, public Script::Environment {
+  class Application : public Features, protected ExitSignalHandler {
   public:
     enum {
       FEATURE_ENUMERATION_MANAGER,
@@ -130,9 +129,6 @@ namespace cb {
     virtual void saveConfig(const std::string &filename = std::string()) const;
 
     virtual void writeConfig(std::ostream &stream, uint32_t flags = 0) const;
-
-    virtual void evalUptime(const Script::Context &ctx);
-    virtual void evalOption(const Script::Context &ctx);
 
   protected:
     // Command line actions
