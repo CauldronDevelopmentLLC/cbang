@@ -54,15 +54,13 @@ namespace cb {
 
 
       ValuePtr convert(const ValuePtr &value) {
-        if (value.isInstance<Dict>() &&
-            !value.isInstance<Observable<Dict> >()) {
+        if (value.isInstance<Dict>() && !value.isInstance<Observable<Dict>>()) {
           ValuePtr d = createDict();
           d->merge(*value);
           return d;
         }
 
-        if (value.isInstance<List>() &&
-            !value.isInstance<Observable<List> >()) {
+        if (value.isInstance<List>() && !value.isInstance<Observable<List>>()) {
           ValuePtr l = createList();
           l->appendFrom(*value);
           return l;
@@ -192,7 +190,6 @@ namespace cb {
       // From Factory
       ValuePtr createDict() const {return new Observable<Dict>;}
       ValuePtr createList() const {return new Observable<List>;}
-
     };
 
 
