@@ -199,11 +199,17 @@ void Request::resetOutput() {getOutputBuffer().clear();}
 const JSON::ValuePtr &Request::parseJSONArgs() {
   Headers &hdrs = getInputHeaders();
 
-  if (hdrs.hasContentType() &&
-      String::startsWith(hdrs.getContentType(), "application/json")) {
+  switch (getMethod()) {
+  case HTTP_POST: case HTTP_PUT: case HTTP_DELETE: case HTTP_PATCH:
+    if (hdrs.hasContentType() &&
+        String::startsWith(hdrs.getContentType(), "application/json")) {
 
-    getJSONMessage();
-    if (msg.isSet() && msg->isDict()) args->merge(*msg);
+      getJSONMessage();
+      if (msg.isSet() && msg->isDict()) args->merge(*msg);
+    }
+    break;
+
+  default: break;
   }
 
   return args;
