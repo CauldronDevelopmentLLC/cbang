@@ -33,6 +33,7 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 typedef struct bignum_st BIGNUM;
 
