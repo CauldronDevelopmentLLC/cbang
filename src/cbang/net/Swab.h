@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/UInt128.h>
+#include <cstdint>
 
 
 #ifdef _WIN32
@@ -136,30 +136,21 @@ uint64_t swap64(T _x) {
 }
 
 
-inline uint128_t swap128(uint128_t x) {
-  return uint128_t(swap64(x.lo), swap64(x.hi));
-}
-
-
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define hton16(x)  swap16(x)
 #define hton32(x)  swap32(x)
 #define hton64(x)  swap64(x)
-#define hton128(x) swap128(x)
 
 #define htol16(x)  (x)
 #define htol32(x)  (x)
 #define htol64(x)  (x)
-#define htol128(x) (x)
 
 #else // BIG_ENDIAN
 #define hton16(x)  (x)
 #define hton32(x)  (x)
 #define hton64(x)  (x)
-#define hton128(x) (x)
 
 #define htol16(x)  swap16(x)
 #define htol32(x)  swap32(x)
 #define htol64(x)  swap64(x)
-#define htol128(x) swap128(x)
 #endif

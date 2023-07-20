@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <cbang/UInt128.h>
 #include <cbang/net/Swab.h>
 
 
@@ -71,7 +70,6 @@ namespace cb {
     static int32_t   hton(int32_t   x) {return hton32(x);}
     static uint64_t  hton(uint64_t  x) {return hton64(x);}
     static int64_t   hton(int64_t   x) {return hton64(x);}
-    static uint128_t hton(uint128_t x) {return hton128(x);}
   };
 
   typedef PacketField<int16_t>   PFS16;
@@ -80,5 +78,4 @@ namespace cb {
   typedef PacketField<uint32_t>  PFU32;
   typedef PacketField<int64_t>   PFS64;
   typedef PacketField<uint64_t>  PFU64;
-  typedef PacketField<uint128_t> PFU128;
 }

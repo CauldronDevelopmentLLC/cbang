@@ -100,11 +100,6 @@ namespace cb {
   }
 
   template <>
-  inline void OptionActionSet<uint128_t>::set(const std::string &value) {
-    ref = String::parseU128(value);
-  }
-
-  template <>
   inline void OptionActionSet<double>::set(const std::string &value) {
     ref = String::parseDouble(value);
   }
