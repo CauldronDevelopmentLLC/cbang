@@ -36,11 +36,11 @@
 #include "Transfer.h"
 #include "Buffer.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/util/Progress.h>
 
 #include <queue>
 #include <functional>
+#include <cstdint>
 
 
 namespace cb {

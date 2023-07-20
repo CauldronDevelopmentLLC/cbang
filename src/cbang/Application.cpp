@@ -42,7 +42,6 @@
 
 #include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
-#include <cbang/time/HumanTime.h>
 
 #include <cbang/util/Resource.h>
 

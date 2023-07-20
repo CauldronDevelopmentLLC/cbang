@@ -32,8 +32,6 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <cbang/enum/CPUFeature.h>
 #include <cbang/enum/CPUExtendedFeature.h>
 #include <cbang/enum/CPUFeature80000001.h>
@@ -41,6 +39,7 @@
 #include <string>
 #include <set>
 #include <ostream>
+#include <cstdint>
 
 
 namespace cb {

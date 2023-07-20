@@ -32,17 +32,16 @@
 
 #pragma once
 
-#include <string>
-
-#include <cbang/StdTypes.h>
 #include <cbang/SmartPointer.h>
 
 #include <cbang/util/StringMap.h>
 #include <cbang/enum/ProcessPriority.h>
 #include <cbang/enum/Compression.h>
 
+#include <string>
 #include <limits>
 #include <functional>
+#include <cstdint>
 
 #if defined(_WIN32) && defined(max)
 #undef max

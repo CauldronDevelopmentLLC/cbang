@@ -33,7 +33,6 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 #include <cbang/String.h>
 #include <cbang/iostream/Serializable.h>
 

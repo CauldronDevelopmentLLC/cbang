@@ -32,11 +32,12 @@
 
 #include "StackFrame.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/String.h>
 #include <cbang/json/Sink.h>
 
 #include <exception>
+#include <cstdint>
+#include <cinttypes>
 
 using namespace std;
 using namespace cb;

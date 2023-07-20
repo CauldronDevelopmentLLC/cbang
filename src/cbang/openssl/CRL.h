@@ -33,9 +33,9 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 
 #include <iostream>
+#include <cstdint>
 
 typedef struct X509_crl_st X509_CRL;
 

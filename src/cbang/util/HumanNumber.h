@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <string>
 #include <ostream>
+#include <cstdint>
+
 
 namespace cb {
   class HumanNumber {

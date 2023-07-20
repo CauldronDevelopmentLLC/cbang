@@ -34,7 +34,8 @@
 
 #include "Types.h"
 
-#include <cbang/StdTypes.h>
+#include <cstdint>
+
 
 struct sqlite3_stmt;
 

@@ -33,9 +33,9 @@
 #pragma once
 #ifdef _WIN32
 
-#include <cbang/StdTypes.h>
-
 #include <string>
+#include <cstdint>
+
 
 namespace cb {
   class Win32Registry {

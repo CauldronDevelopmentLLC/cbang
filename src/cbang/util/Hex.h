@@ -33,10 +33,10 @@
 
 #include "SaveOStreamConfig.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/SStream.h>
 
 #include <iomanip>
+#include <cstdint>
 
 
 namespace cb {

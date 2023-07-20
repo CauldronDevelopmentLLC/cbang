@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <ostream>
+#include <cstdint>
 
 
 namespace cb {

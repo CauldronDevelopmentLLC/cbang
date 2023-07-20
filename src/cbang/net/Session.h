@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/json/Serializable.h>
 #include <cbang/json/Dict.h>
@@ -40,6 +39,7 @@
 
 #include <string>
 #include <set>
+#include <cstdint>
 
 
 namespace cb {

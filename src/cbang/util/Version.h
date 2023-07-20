@@ -33,7 +33,6 @@
 #pragma once
 
 #include <cbang/Exception.h>
-#include <cbang/StdTypes.h>
 #include <cbang/SStream.h>
 #include <cbang/String.h>
 #include <cbang/geom/Vector.h>
@@ -41,6 +40,7 @@
 #include <ostream>
 #include <vector>
 #include <iomanip>
+#include <cstdint>
 
 
 namespace cb {

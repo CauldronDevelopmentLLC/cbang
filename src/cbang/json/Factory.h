@@ -33,7 +33,8 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
+
+#include <cstdint>
 
 
 namespace cb {

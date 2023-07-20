@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <string>
+#include <cstdint>
 
 
 typedef struct evp_pkey_ctx_st EVP_PKEY_CTX;

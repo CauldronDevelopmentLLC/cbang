@@ -33,7 +33,7 @@
 #include "Schema.h"
 #include "Database.h"
 
-#include <cbang/StdTypes.h>
+#include <cinttypes>
 
 using namespace cb::DB;
 

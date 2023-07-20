@@ -37,10 +37,10 @@
 #include "PasswordCallback.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 
 #include <iostream>
 #include <string>
+#include <cstdint>
 
 typedef struct evp_pkey_st EVP_PKEY;
 typedef struct engine_st ENGINE;

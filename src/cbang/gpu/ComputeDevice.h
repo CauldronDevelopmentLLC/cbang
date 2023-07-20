@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/util/Version.h>
 
 #include <ostream>
+#include <cstdint>
 
 
 namespace cb {

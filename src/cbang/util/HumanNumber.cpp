@@ -34,6 +34,8 @@
 
 #include <cbang/String.h>
 
+#include <cinttypes>
+
 using namespace std;
 using namespace cb;
 

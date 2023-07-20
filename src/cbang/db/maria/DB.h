@@ -35,11 +35,12 @@
 #include "Field.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 
 #include <string>
 #include <vector>
 #include <set>
+#include <cstdint>
+
 
 struct st_mysql;
 struct st_mysql_res;

@@ -34,10 +34,10 @@
 
 #include "GPU.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/json/Serializable.h>
 
 #include <set>
+#include <cstdint>
 
 
 namespace cb {

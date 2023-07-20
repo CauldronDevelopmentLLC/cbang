@@ -32,9 +32,10 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include "BStream.h"
+
+#include <cstdint>
+
 
 namespace cb {
   class BIMemory : virtual public BStream {

@@ -34,12 +34,12 @@
 
 #include "PCIVendor.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/json/Serializable.h>
 
 #include <string>
 #include <set>
 #include <ostream>
+#include <cstdint>
 
 
 namespace cb {

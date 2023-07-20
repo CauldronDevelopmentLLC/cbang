@@ -103,7 +103,6 @@
  */
 
 #include <cbang/String.h>
-#include <cbang/StdTypes.h>
 
 #include <string>
 #include <ostream>

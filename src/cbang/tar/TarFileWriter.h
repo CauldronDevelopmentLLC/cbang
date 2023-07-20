@@ -34,10 +34,9 @@
 
 #include "Tar.h"
 
-#include <cbang/StdTypes.h>
-
 #include <ostream>
 #include <string>
+#include <cstdint>
 
 
 namespace cb {

@@ -34,7 +34,7 @@
 
 #include "HTTPRequestHandler.h"
 
-#include <cbang/StdTypes.h>
+#include <cstdint>
 
 
 namespace cb {
