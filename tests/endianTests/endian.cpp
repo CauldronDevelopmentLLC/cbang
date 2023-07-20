@@ -36,6 +36,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cinttypes>
 #include <typeinfo>
 #include <limits>
 
