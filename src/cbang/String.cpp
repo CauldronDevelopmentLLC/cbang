@@ -119,7 +119,6 @@ String::String(int32_t   x) : string(printf("%i", x))                       {}
 String::String(uint32_t  x) : string(printf("%u", x))                       {}
 String::String(int64_t   x) : string(printf("%lli", (long long int)x))      {}
 String::String(uint64_t  x) : string(printf("%llu", (long long unsigned)x)) {}
-String::String(uint128_t x) : string(SSTR(x))                               {}
 String::String(double    x) : string(toString(x))                           {}
 String::String(float     x) : string(toString((double)x))                   {}
 String::String(bool      x) : string(x ? "true" : "false")                  {}
@@ -295,23 +294,6 @@ namespace cb {
     uint32_t v;
     if (!parse<uint32_t>(s, v, full) || 255 < v) return false;
     value = (uint8_t)v;
-    return true;
-  }
-
-
-  template <>
-  bool String::parse<uint128_t>(const string &s, uint128_t &value, bool full) {
-    int len = s.length();
-    if (!startsWith(s, "0x") || len < 3 || 34 < len) return false;
-
-    uint128_t v;
-    int loLen = min(len - 2, 16);
-    if (!parse<uint64_t>(string("0x") + s.substr(len - loLen), v.lo, full)
-        || ((18 < len) &&
-            !parse<uint64_t>(s.substr(0, len - loLen), v.hi, full)))
-      return false;
-
-    value = v;
     return true;
   }
 
