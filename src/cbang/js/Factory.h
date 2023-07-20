@@ -35,7 +35,7 @@
 #include "Value.h"
 #include "Function.h"
 
-#include <cbang/StdTypes.h>
+#include <cstdint>
 
 
 namespace cb {

@@ -32,10 +32,10 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/util/UniqueID.h>
 
 #include <atomic>
+#include <cstdint>
 
 
 namespace cb {

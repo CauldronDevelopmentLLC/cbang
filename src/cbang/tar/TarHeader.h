@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <string>
 #include <iostream>
+#include <cstdint>
 
 
 // https://www.gnu.org/software/tar/manual/html_node/Standard.html

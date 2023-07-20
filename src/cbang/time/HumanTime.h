@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/SStream.h>
 
 #include <ostream>
+#include <cstdint>
+
 
 namespace cb {
   class HumanTime;

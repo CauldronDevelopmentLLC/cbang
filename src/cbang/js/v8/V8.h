@@ -35,7 +35,7 @@
 #include <cbang/config.h>
 
 // Override v8stdint.h
-#include <cbang/StdTypes.h>
+#include <cstdint>
 #include <stddef.h>
 #include <stdio.h>
 #define V8STDINT_H_

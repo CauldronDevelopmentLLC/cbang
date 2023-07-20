@@ -32,7 +32,9 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
+#include <string>
+#include <cstdint>
+
 
 struct sqlite3_stmt;
 

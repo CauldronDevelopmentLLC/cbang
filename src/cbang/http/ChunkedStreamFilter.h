@@ -32,9 +32,10 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/String.h>
 #include <cbang/log/Logger.h>
+
+#include <cstdint>
 
 #include <iosfwd> // streamsize
 #include <boost/iostreams/concepts.hpp>

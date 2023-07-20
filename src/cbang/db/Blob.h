@@ -34,9 +34,9 @@
 
 #include <cbang/packet/Packet.h>
 
-#include <cbang/StdTypes.h>
-
 #include <string>
+#include <cstdint>
+
 
 namespace cb {
   namespace DB {

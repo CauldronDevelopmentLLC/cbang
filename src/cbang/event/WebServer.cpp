@@ -40,6 +40,8 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/openssl/SSLContext.h>
 
+#include <cinttypes>
+
 using namespace std;
 using namespace cb::Event;
 

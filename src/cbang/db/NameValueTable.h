@@ -35,12 +35,12 @@
 #include "Column.h"
 #include "Statement.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/util/FormatCheck.h>
 
 #include <string>
 #include <functional>
+#include <cstdint>
 
 
 namespace cb {

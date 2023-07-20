@@ -34,12 +34,12 @@
 
 #include "AsyncSubprocess.h"
 
-#include <cbang/StdTypes.h>
 #include <cbang/SmartPointer.h>
 
 #include <queue>
 #include <list>
 #include <vector>
+#include <cstdint>
 
 
 namespace cb {

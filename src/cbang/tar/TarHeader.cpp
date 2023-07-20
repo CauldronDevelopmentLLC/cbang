@@ -33,7 +33,8 @@
 #include "TarHeader.h"
 
 #include <cbang/Exception.h>
-#include <cbang/StdTypes.h>
+
+#include <cinttypes>
 
 #include <stdio.h>
 #include <errno.h>

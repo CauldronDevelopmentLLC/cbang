@@ -33,13 +33,13 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 #include <cbang/json/Sink.h>
 
 #include <ostream>
 #include <string>
 #include <set>
 #include <map>
+#include <cstdint>
 
 
 namespace cb {

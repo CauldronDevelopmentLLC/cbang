@@ -33,11 +33,11 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 #include <cbang/net/Base64.h>
 
 #include <istream>
 #include <vector>
+#include <cstdint>
 
 #include <openssl/opensslv.h>
 

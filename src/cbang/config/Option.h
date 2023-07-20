@@ -36,14 +36,14 @@
 #include "Constraint.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
-
 #include <cbang/xml/XMLHandler.h>
 
 #include <ostream>
 #include <string>
 #include <vector>
 #include <set>
+#include <cstdint>
+
 
 namespace cb {
   namespace JSON {class Sink;}

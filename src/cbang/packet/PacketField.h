@@ -32,10 +32,9 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
+#include <cbang/UInt128.h>
 #include <cbang/net/Swab.h>
 
-#include <ostream>
 
 namespace cb {
   /***

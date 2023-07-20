@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/SmartPointer.h>
 
 #include <cbang/util/Singleton.h>
@@ -42,6 +41,8 @@
 
 #include <vector>
 #include <utility>
+#include <cstdint>
+
 
 namespace cb {
   class Info;

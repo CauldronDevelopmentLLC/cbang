@@ -32,7 +32,8 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
+#include <cstdint>
+
 
 namespace cb {
   namespace DB {

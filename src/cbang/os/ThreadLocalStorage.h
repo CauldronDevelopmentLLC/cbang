@@ -35,11 +35,11 @@
 #include "Mutex.h"
 #include "Thread.h"
 
-#include <cbang/StdTypes.h>
-
 #include <cbang/util/SmartLock.h>
 
 #include <map>
+#include <cstdint>
+
 
 namespace cb {
   template <typename T>

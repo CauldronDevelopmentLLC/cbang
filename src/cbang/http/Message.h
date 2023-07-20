@@ -35,11 +35,11 @@
 #include "Header.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/StdTypes.h>
 
 #include <string>
 #include <set>
 #include <iostream>
+#include <cstdint>
 
 
 namespace cb {

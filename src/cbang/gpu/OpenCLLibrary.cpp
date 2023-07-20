@@ -35,13 +35,14 @@
 #include "GPUVendor.h"
 
 #include <cbang/Exception.h>
-#include <cbang/StdTypes.h>
 #include <cbang/Catch.h>
 #include <cbang/util/UUID.h>
 
 #include <set>
+#include <cstdint>
 
 #include <string.h>
+
 
 using namespace std;
 using namespace cb;

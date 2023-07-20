@@ -32,7 +32,8 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
+#include <cbang/UInt128.h>
+
 
 #ifdef _WIN32
 #define LITTLE_ENDIAN 1234

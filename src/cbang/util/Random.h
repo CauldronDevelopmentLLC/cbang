@@ -32,9 +32,9 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <cbang/util/Singleton.h>
+
+#include <cstdint>
 
 
 namespace cb {

@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-#include <cbang/Exception.h>
+#include "Exception.h"
+#include "UInt128.h"
+
 #include <cbang/util/FormatCheck.h>
 
 #include <string>
@@ -41,6 +42,7 @@
 #include <istream>
 #include <sstream>
 #include <functional>
+#include <cstdint>
 
 #include <stdarg.h>
 

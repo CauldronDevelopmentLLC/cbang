@@ -44,8 +44,6 @@
 
 #include <cbang/os/ExitSignalHandler.h>
 
-#include <cbang/script/Environment.h>
-
 #include <atomic>
 #include <string>
 

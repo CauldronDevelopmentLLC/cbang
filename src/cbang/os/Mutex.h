@@ -32,10 +32,11 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <cbang/util/Lockable.h>
 #include <cbang/util/NonCopyable.h>
+
+#include <cstdint>
+
 
 namespace cb {
   /// Mutual exclusion class

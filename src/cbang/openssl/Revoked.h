@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
-
 #include <string>
+#include <cstdint>
 
 
 typedef struct x509_revoked_st X509_REVOKED;

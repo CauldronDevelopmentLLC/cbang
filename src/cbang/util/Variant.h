@@ -32,7 +32,6 @@
 
 #pragma once
 
-#include <cbang/StdTypes.h>
 #include <cbang/String.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/Exception.h>
