@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
+                Copyright (c) 2003-2023, Cauldron Development LLC
                    Copyright (c) 2003-2017, Stanford University
                                All rights reserved.
 
@@ -30,9 +30,22 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#include <cstdint>
-#include <cinttypes>
-
 #include "UInt128.h"
+
+#include <iomanip>
+
+using namespace std;
+
+
+void uint128_t::write(std::ostream &stream) const {
+  char fill = stream.fill();
+  std::ios::fmtflags flags = stream.flags();
+
+  stream.fill('0');
+  stream.flags(std::ios::right | std::ios::hex);
+
+  stream << "0x" << std::setw(16) << hi << std::setw(16) << lo;
+
+  stream.fill(fill);
+  stream.flags(flags);
+}

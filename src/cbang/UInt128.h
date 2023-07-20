@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2023, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -32,7 +31,39 @@
 
 #pragma once
 
+#include <ostream>
 #include <cstdint>
-#include <cinttypes>
 
-#include "UInt128.h"
+
+class uint128_t {
+public:
+  uint64_t lo;
+  uint64_t hi;
+
+  uint128_t() : lo(0), hi(0) {}
+  uint128_t(const uint64_t &lo) : lo(lo), hi(0) {}
+  uint128_t(const uint64_t &hi, const uint64_t &lo) : lo(lo), hi(hi) {}
+
+  void write(std::ostream &stream) const;
+
+  operator bool () {return hi || lo;}
+
+  bool operator<(const uint128_t &o) const {
+    return hi < o.hi || (hi == o.hi && lo < o.lo);
+  }
+
+  bool operator>(const uint128_t &o) const {
+    return hi > o.hi || (hi == o.hi && lo > o.lo);
+  }
+
+  bool operator<=(const uint128_t &o) const {return !(o < *this);}
+  bool operator>=(const uint128_t &o) const {return !(*this < o);}
+  bool operator==(const uint128_t &o) const {return hi == o.hi && lo == o.lo;}
+  bool operator!=(const uint128_t &o) const {return !(*this == o);}
+};
+
+
+inline std::ostream &operator<<(std::ostream &stream, const uint128_t &x) {
+  x.write(stream);
+  return stream;
+}
