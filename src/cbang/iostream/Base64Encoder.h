@@ -48,19 +48,18 @@
 namespace cb {
   class Base64Encoder :
     public Base64, public boost::iostreams::dual_use_filter {
-    int count;
-    int state;
-    unsigned char a, b, c;
+    unsigned count = 0;
+    int state = 0;
+    unsigned char a = 0, b = 0, c = 0;
 
   public:
-    Base64Encoder(const Base64 &base64 = Base64()) :
-      Base64(base64), count(0), state(0) {}
+    Base64Encoder(const Base64 &base64 = Base64()) : Base64(base64) {}
 
 
     template<typename Source> int get(Source &src) {
       int x;
 
-      if (getWidth() && count++ == getWidth()) {
+      if (getWidth() && count++ == (unsigned)getWidth()) {
         count = 0;
         return '\n';
       }
@@ -137,7 +136,7 @@ namespace cb {
         c = (unsigned char)x;
         ok = out(dest, Base64::encode(b << 2 | c >> 6));
         if (!ok) break;
-        ok = out(dest, Base64::encode(c);
+        ok = out(dest, Base64::encode(c));
         if (!ok) {state++; break;}
         state = 0;
         break;
