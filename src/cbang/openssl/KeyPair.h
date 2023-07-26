@@ -96,6 +96,10 @@ namespace cb {
     void generateEC(const std::string &curve = "secp192k1",
                     SmartPointer<KeyGenCallback> callback = 0);
 
+    // To DER string
+    std::string publicToDER() const;
+    std::string privateToDER() const;
+
     // To PEM string
     std::string publicToString() const;
     std::string privateToString() const;

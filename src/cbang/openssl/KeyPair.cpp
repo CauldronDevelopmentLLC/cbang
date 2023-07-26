@@ -312,6 +312,22 @@ void KeyPair::generateEC(const string &curve,
 }
 
 
+string KeyPair::publicToDER() const {
+  unsigned char *der = 0;
+  int len = i2d_PublicKey(key, &der);
+  if (!der) THROW("Failed to export public key in DER format");
+  return string((char *)der, len);
+}
+
+
+string KeyPair::privateToDER() const {
+  unsigned char *der = 0;
+  int len = i2d_PrivateKey(key, &der);
+  if (!der) THROW("Failed to export private key in DER format");
+  return string((char *)der, len);
+}
+
+
 string KeyPair::publicToString() const {
   ostringstream str;
   writePublic(str);
