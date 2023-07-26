@@ -55,10 +55,12 @@ static const char *cudaLib = "nvcuda.dll";
 static const char *cudaLib = "/Library/Frameworks/CUDA.framework/CUDA";
 #define STDCALL
 
-size_t strnlen(const char *s, size_t n) {
-  size_t l = 0;
-  while (l < n && *s) l++;
-  return l;
+namespace {
+  size_t strnlen(const char *s, size_t n) {
+    size_t l = 0;
+    while (l < n && *s) l++;
+    return l;
+  }
 }
 
 #else
