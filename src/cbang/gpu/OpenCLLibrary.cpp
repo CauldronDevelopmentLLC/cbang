@@ -40,9 +40,7 @@
 
 #include <set>
 #include <cstdint>
-
-#include <string.h>
-
+#include <cstring>
 
 using namespace std;
 using namespace cb;
@@ -57,12 +55,6 @@ static const char *openclLib = "OpenCL.dll";
 #elif __APPLE__
 static const char *openclLib =
   "/System/Library/Frameworks/OpenCL.framework/OpenCL";
-
-size_t strnlen(const char *s, size_t n) {
-  size_t l = 0;
-  while (l < n && *s) l++;
-  return l;
-}
 
 #else
 static const char *openclLib = "libOpenCL.so";

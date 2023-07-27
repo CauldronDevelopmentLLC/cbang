@@ -38,7 +38,7 @@
 #include <cbang/Catch.h>
 #include <cbang/util/UUID.h>
 
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 using namespace cb;
@@ -54,14 +54,6 @@ static const char *cudaLib = "nvcuda.dll";
 #elif __APPLE__
 static const char *cudaLib = "/Library/Frameworks/CUDA.framework/CUDA";
 #define STDCALL
-
-namespace {
-  size_t strnlen(const char *s, size_t n) {
-    size_t l = 0;
-    while (l < n && *s) l++;
-    return l;
-  }
-}
 
 #else
 static const char *cudaLib = "libcuda.so";
