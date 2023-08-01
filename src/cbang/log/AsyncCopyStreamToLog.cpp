@@ -31,12 +31,11 @@
 \******************************************************************************/
 
 #include "AsyncCopyStreamToLog.h"
-
 #include "Logger.h"
 
 #include <cbang/Catch.h>
 
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

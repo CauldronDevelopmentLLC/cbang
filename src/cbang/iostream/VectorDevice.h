@@ -37,8 +37,8 @@
 #include <boost/iostreams/stream.hpp>
 
 #include <vector>
+#include <cstring>
 
-#include <string.h>
 
 namespace cb {
   template <typename T = char>

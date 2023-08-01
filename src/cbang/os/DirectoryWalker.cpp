@@ -30,14 +30,13 @@
 
 \******************************************************************************/
 
-#include <cbang/os/DirectoryWalker.h>
+#include "DirectoryWalker.h"
+#include "SystemUtilities.h"
 
 #include <cbang/log/Logger.h>
-#include <cbang/os/SystemUtilities.h>
-
 #include <cbang/Exception.h>
 
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

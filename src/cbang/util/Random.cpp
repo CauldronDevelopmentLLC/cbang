@@ -33,11 +33,14 @@
 #include "Random.h"
 
 #include <cbang/config.h>
+#include <cbang/Exception.h>
 
 #ifdef HAVE_OPENSSL
+#include <cbang/openssl/SSL.h>
+
 #include <openssl/rand.h>
 #else
-#include <stdlib.h>
+#include <cstdlib>
 #endif
 
 using namespace cb;
@@ -58,7 +61,8 @@ void Random::addEntropy(const void *buffer, uint32_t bytes, double entropy) {
 
 void Random::bytes(void *buffer, uint32_t bytes) {
 #ifdef HAVE_OPENSSL
-  RAND_bytes((unsigned char *)buffer, bytes);
+  if (RAND_bytes((unsigned char *)buffer, bytes) != 1)
+    THROW("Failed to get random bytes: " << SSL::getErrorStr());
 
 #else
   while (1 < bytes) {

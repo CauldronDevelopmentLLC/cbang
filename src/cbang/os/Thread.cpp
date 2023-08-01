@@ -50,9 +50,9 @@
 #include <windows.h>
 
 #else // pthreads
-#include <signal.h>
+#include <csignal>
 #include <pthread.h>
-#include <errno.h>
+#include <cerrno>
 #endif
 
 #if defined(__APPLE__) || (defined(__linux__) && !defined(__GLIBC__))

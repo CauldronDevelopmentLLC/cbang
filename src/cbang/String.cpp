@@ -38,12 +38,11 @@
 
 #include <cbang/util/Regex.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <ctype.h>
-
+#include <cstdio>
+#include <cstdlib>
+#include <cerrno>
+#include <cstdarg>
+#include <cctype>
 #include <algorithm>
 #include <limits>
 #include <locale>

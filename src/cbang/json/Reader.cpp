@@ -40,8 +40,7 @@
 #include <vector>
 #include <cctype>
 #include <sstream>
-
-#include <errno.h>
+#include <cerrno>
 
 using namespace std;
 using namespace cb;

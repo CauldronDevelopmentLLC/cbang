@@ -34,12 +34,10 @@
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/os/SystemUtilities.h>
 
-#include <ctype.h>
-#include <stdarg.h>
-
+#include <cctype>
+#include <cstdarg>
 #include <sstream>
 
 using namespace std;

@@ -50,7 +50,6 @@
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
 #include <cbang/event/Request.h>
-#include <cbang/event/OutgoingRequest.h>
 #include <cbang/event/HTTPHandlerGroup.h>
 
 using namespace cb;
@@ -336,7 +335,8 @@ string Account::getProblemString(const JSON::Value &problem) const {
 
 
 void Account::call(const string &url, Event::RequestMethod method) {
-  client.call(getURL(url), method, this, &Account::responseHandler)->send();
+  auto req = client.call(getURL(url), method, this, &Account::responseHandler);
+  client.send(req);
 }
 
 
@@ -347,11 +347,9 @@ void Account::post(const string &url, const string &payload) {
 
   LOG_DEBUG(5, "Posting " << data);
 
-  SmartPointer<Event::OutgoingRequest> pr =
-    client.call(uri, HTTP_POST, data, this, &Account::responseHandler);
-
-  pr->outSet("Content-Type", "application/jose+json");
-  pr->send();
+  auto req = client.call(uri, HTTP_POST, data, this, &Account::responseHandler);
+  req->outSet("Content-Type", "application/jose+json");
+  client.send(req);
 }
 
 

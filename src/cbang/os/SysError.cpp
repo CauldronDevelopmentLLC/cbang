@@ -34,13 +34,12 @@
 
 #include <cbang/SmartPointer.h>
 
+#include <cstring>
+#include <cerrno>
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
-
-#else
-#include <string.h>
-#include <errno.h>
 #endif
 
 using namespace std;

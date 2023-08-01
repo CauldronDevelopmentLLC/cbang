@@ -43,12 +43,6 @@
 
 using namespace cb;
 
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-#define X509_STORE_up_ref(STORE)                            \
-  CRYPTO_add(&(STORE)->references, 1, CRYPTO_LOCK_EVP_PKEY)
-#define X509_EXTENSION_get_data(e) (e)->value
-#endif /* OPENSSL_VERSION_NUMBER < 0x1010000fL */
-
 
 CertificateStore::CertificateStore(const CertificateStore &o) : store(o.store) {
   X509_STORE_up_ref(store);

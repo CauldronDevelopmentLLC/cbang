@@ -37,9 +37,8 @@
 #include <cbang/log/Logger.h>
 
 #include <sstream>
-
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
 using namespace cb;
 using namespace std;
@@ -164,6 +163,7 @@ unsigned URI::portFromScheme(const string &scheme) {
   if (scheme == "gopher")    return 70;
   if (scheme == "finger")    return 79;
   if (scheme == "http")      return 80;
+  if (scheme == "ws")        return 80;
   if (scheme == "pop2")      return 109;
   if (scheme == "pop")       return 110;
   if (scheme == "pop3")      return 110;
@@ -178,6 +178,7 @@ unsigned URI::portFromScheme(const string &scheme) {
   if (scheme == "imap3")     return 220;
   if (scheme == "ldap")      return 389;
   if (scheme == "https")     return 443;
+  if (scheme == "wss")       return 443;
   if (scheme == "uucp")      return 540;
   if (scheme == "nntps")     return 563;
   if (scheme == "ldaps")     return 636;
@@ -195,6 +196,7 @@ bool URI::schemeRequiresSSL(const std::string &scheme) {
   return
     scheme == "sftp"      ||
     scheme == "https"     ||
+    scheme == "wss"       ||
     scheme == "nntps"     ||
     scheme == "ldaps"     ||
     scheme == "ftps-data" ||

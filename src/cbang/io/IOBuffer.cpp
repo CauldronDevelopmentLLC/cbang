@@ -30,7 +30,7 @@
 
 \******************************************************************************/
 
-#include "Buffer.h"
+#include "IOBuffer.h"
 
 using namespace cb;
 using namespace std;
@@ -39,7 +39,7 @@ using namespace std;
 static const unsigned BUFFER_SIZE = 4096;
 
 
-unsigned Buffer::writeTo(ostream &stream) {
+unsigned IOBuffer::writeTo(ostream &stream) {
   char buf[BUFFER_SIZE];
   streamsize total = 0;
 
@@ -56,7 +56,7 @@ unsigned Buffer::writeTo(ostream &stream) {
 }
 
 
-unsigned Buffer::readFrom(istream &stream) {
+unsigned IOBuffer::readFrom(istream &stream) {
   char buf[BUFFER_SIZE];
   streamsize total = 0;
 

@@ -36,7 +36,7 @@
 #include "Request.h"
 #include "Response.h"
 
-#include <cbang/buffer/MemoryBuffer.h>
+#include <cbang/io/MemoryBuffer.h>
 #include <cbang/os/Mutex.h>
 #include <cbang/socket/SocketConnection.h>
 
@@ -76,7 +76,7 @@ namespace cb {
       MemoryBuffer dataBuf;
       unsigned contentLength;
 
-      typedef std::list<SmartPointer<Buffer> > responseBuf_t;
+      typedef std::list<SmartPointer<IOBuffer>> responseBuf_t;
       responseBuf_t responseBuf;
 
       uint64_t lastUpdate;
@@ -137,7 +137,7 @@ namespace cb {
 
       MemoryBuffer &getPayload() {return dataBuf;}
       void clearResponseBuffer();
-      void addResponseBuffer(const SmartPointer<Buffer> &buf);
+      void addResponseBuffer(const SmartPointer<IOBuffer> &buf);
       void addResponseBuffer(char *buffer, unsigned length);
       void addResponseBuffer(Packet &packet);
       unsigned getResponseSize() const;

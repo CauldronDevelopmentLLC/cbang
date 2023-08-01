@@ -36,7 +36,7 @@
 #include "CertificateStore.h"
 #include "CertificateChain.h"
 
-#include <time.h>
+#include <ctime>
 
 typedef struct x509_store_ctx_st X509_STORE_CTX;
 

@@ -33,10 +33,9 @@
 #include "Packet.h"
 
 #include <cbang/Exception.h>
-
 #include <cbang/db/Blob.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 #include <algorithm>
 
 using namespace std;

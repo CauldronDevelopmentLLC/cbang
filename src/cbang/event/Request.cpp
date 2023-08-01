@@ -61,7 +61,7 @@ namespace {
 
 
   SmartPointer<ostream> compressBufferStream
-  (cb::Event::Buffer buffer, Compression compression) {
+  (Buffer buffer, Compression compression) {
     SmartPointer<ostream> target = new BufferStream<>(buffer);
     SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
 
@@ -87,7 +87,7 @@ namespace {
 
 
   struct JSONWriter :
-    cb::Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
+    Buffer, SmartPointer<ostream>, public JSON::Writer {
     SmartPointer<Request> req;
     bool closed = false;
 
@@ -101,7 +101,8 @@ namespace {
     ~JSONWriter() {TRY_CATCH_ERROR(close(););}
 
     ostream &getStream() {return *SmartPointer<ostream>::get();}
-    unsigned getID() {return req->getID();}
+    bool isIncoming() const {return req->isIncoming();}
+    unsigned getID() const {return req->getID();}
 
     // From JSON::NullSink
     void close() {
@@ -113,22 +114,20 @@ namespace {
       send(*this);
     }
 
-    virtual void send(cb::Event::Buffer &buffer) {req->send(buffer);}
+    virtual void send(Buffer &buffer) {req->send(buffer);}
   };
 }
 
 
 #undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "REQ" << getID() << ':'
+#define CBANG_LOG_PREFIX << (isIncoming() ? "OUT" : "REQ") << getID() << ':'
 
 
 Request::Request(RequestMethod method, const URI &uri, const Version &version) :
-  method(method), uri(uri), version(version), args(new JSON::Dict) {
-  LOG_DEBUG(4, "created");
-}
+  method(method), uri(uri), version(version), args(new JSON::Dict) {}
 
 
-Request::~Request() {LOG_DEBUG(4, "destroyed");}
+Request::~Request() {}
 
 
 uint64_t Request::getID() const {
@@ -154,12 +153,8 @@ string Request::getRequestLine() const {
 
 
 bool Request::logResponseErrors() const {
-  if (getConnectionError())
-    LOG_ERROR("Failed response: " << getConnectionError());
-
-  else if (!isOk())
-    LOG_ERROR(getResponseCode() << ": " << getInput());
-
+  if (connError) LOG_ERROR("Failed response: " << connError);
+  else if (!isOk()) LOG_ERROR(responseCode << ": " << getInput());
   else return false;
 
   return true;
@@ -167,7 +162,7 @@ bool Request::logResponseErrors() const {
 
 
 bool Request::isConnected() const {
-  return hasConnection() && getConnection()->isConnected();
+  return hasConnection() && connection->isConnected();
 }
 
 
@@ -187,19 +182,23 @@ void Request::setUser(const string &user) {
 }
 
 
+bool Request::isIncoming() const {
+  return !hasConnection() || connection->isIncoming();
+}
+
+
 bool Request::isSecure() const {
   return connection.isSet() && connection->getSSL().isSet();
 }
 
 
 SSL Request::getSSL() const {return *connection->getSSL();}
-void Request::resetOutput() {getOutputBuffer().clear();}
 
 
 void Request::parseJSONArgs() {
-  Headers &hdrs = getInputHeaders();
+  Headers &hdrs = inputHeaders;
 
-  switch (getMethod()) {
+  switch (method) {
   case HTTP_POST: case HTTP_PUT: case HTTP_DELETE: case HTTP_PATCH:
     if (hdrs.hasContentType() &&
         String::startsWith(hdrs.getContentType(), "application/json")) {
@@ -215,7 +214,7 @@ void Request::parseJSONArgs() {
 
 
 void Request::parseQueryArgs() {
-  for (auto it: getURI()) args->insert(it.first, it.second);
+  for (auto it: uri) args->insert(it.first, it.second);
 }
 
 
@@ -231,52 +230,42 @@ IPAddress Request::getClientIP() const {
 }
 
 
-bool Request::inHas(const string &name) const {
-  return getInputHeaders().has(name);
-}
+bool Request::inHas(const string &name) const {return inputHeaders.has(name);}
 
 
 string Request::inFind(const string &name) const {
-  return getInputHeaders().find(name);
+  return inputHeaders.find(name);
 }
 
 
-string Request::inGet(const string &name) const {
-  return getInputHeaders().get(name);
-}
+string Request::inGet(const string &name) const {return inputHeaders.get(name);}
 
 
 void Request::inSet(const string &name, const string &value) {
-  getInputHeaders().insert(name, value);
+  inputHeaders.insert(name, value);
 }
 
 
-void Request::inRemove(const string &name) {getInputHeaders().remove(name);}
-
-
-bool Request::outHas(const string &name) const {
-  return getOutputHeaders().has(name);
-}
+void Request::inRemove(const string &name) {inputHeaders.remove(name);}
+bool Request::outHas(const string &name) const {return outputHeaders.has(name);}
 
 
 string Request::outFind(const string &name) const {
-  return getOutputHeaders().find(name);
+  return outputHeaders.find(name);
 }
 
 
 string Request::outGet(const string &name) const {
-  return getOutputHeaders().get(name);
+  return outputHeaders.get(name);
 }
 
 
 void Request::outSet(const string &name, const string &value) {
-  getOutputHeaders().insert(name, value);
+  outputHeaders.insert(name, value);
 }
 
 
-void Request::outRemove(const string &name) {
-  getOutputHeaders().remove(name);
-}
+void Request::outRemove(const string &name) {outputHeaders.remove(name);}
 
 
 bool Request::isPersistent() const {
@@ -311,23 +300,17 @@ void Request::setCache(uint32_t age) {
 }
 
 
-bool Request::hasContentType() const {
-  return getOutputHeaders().hasContentType();
-}
-
-
-string Request::getContentType() const {
-  return getOutputHeaders().getContentType();
-}
+bool Request::hasContentType() const {return outputHeaders.hasContentType();}
+string Request::getContentType() const {return outputHeaders.getContentType();}
 
 
 void Request::setContentType(const string &contentType) {
-  getOutputHeaders().setContentType(contentType);
+  outputHeaders.setContentType(contentType);
 }
 
 
 void Request::guessContentType() {
-  getOutputHeaders().guessContentType(uri.getExtension());
+  outputHeaders.guessContentType(uri.getExtension());
 }
 
 
@@ -442,12 +425,12 @@ void Request::setCookie(const string &name, const string &value,
 }
 
 
-string Request::getInput() const {return getInputBuffer().toString();}
-string Request::getOutput() const {return getOutputBuffer().toString();}
+string Request::getInput() const {return inputBuffer.toString();}
+string Request::getOutput() const {return outputBuffer.toString();}
 
 
 SmartPointer<JSON::Value> Request::getInputJSON() const {
-  Buffer buf = getInputBuffer();
+  Buffer buf = inputBuffer;
   if (!buf.getLength()) return 0;
   BufferStream<> stream(buf);
   return JSON::Reader(stream).parse();
@@ -456,7 +439,7 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
 
 const SmartPointer<JSON::Value> &Request::getJSONMessage() {
   if (msg.isNull()) {
-    const Headers &hdrs = getInputHeaders();
+    const Headers &hdrs = inputHeaders;
 
     if (hdrs.hasContentType() &&
         String::startsWith(hdrs.getContentType(), "application/json"))
@@ -469,7 +452,7 @@ const SmartPointer<JSON::Value> &Request::getJSONMessage() {
 
 SmartPointer<JSON::Writer>
 Request::getJSONWriter(unsigned indent, bool compact, Compression compression) {
-  resetOutput();
+  outputBuffer.clear();
   setContentType("application/json");
 
   if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
@@ -479,7 +462,7 @@ Request::getJSONWriter(unsigned indent, bool compact, Compression compression) {
 
 
 SmartPointer<JSON::Writer> Request::getJSONWriter(Compression compression) {
-  return getJSONWriter(0, !getURI().has("pretty"), compression);
+  return getJSONWriter(0, !uri.has("pretty"), compression);
 }
 
 
@@ -501,7 +484,7 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
     THROWX("Invalid callback '" << String::escapeC(callback) << "'",
            HTTP_BAD_REQUEST);
 
-  resetOutput();
+  outputBuffer.clear();
   setContentType("application/javascript");
   outSet("X-Content-Type-Options", "nosniff");
 
@@ -510,7 +493,7 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
 
 
 SmartPointer<istream> Request::getInputStream() const {
-  return new BufferStream<>(getInputBuffer());
+  return new BufferStream<>(inputBuffer);
 }
 
 
@@ -518,7 +501,7 @@ SmartPointer<ostream> Request::getOutputStream(Compression compression) {
   // Auto select compression type based on Accept-Encoding
   if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
   outSetContentEncoding(compression);
-  return compressBufferStream(getOutputBuffer(), compression);
+  return compressBufferStream(outputBuffer, compression);
 }
 
 
@@ -541,7 +524,7 @@ void Request::sendError(HTTPStatus code) {
 void Request::sendError(HTTPStatus code, const string &msg) {
   if (getContentType() == "application/json") return sendJSONError(code, msg);
 
-  resetOutput();
+  outputBuffer.clear();
   setContentType("text/plain");
   send(msg);
   sendError(code);
@@ -589,17 +572,17 @@ void Request::sendJSONError(HTTPStatus code, const string &message) {
 }
 
 
-void Request::send(const cb::Event::Buffer &buf) {getOutputBuffer().add(buf);}
+void Request::send(const Buffer &buf) {outputBuffer.add(buf);}
 
 
 void Request::send(const char *data, unsigned length) {
-  getOutputBuffer().add(data, length);
+  outputBuffer.add(data, length);
 }
 
 
-void Request::send(const char *s) {getOutputBuffer().add(s);}
-void Request::send(const string &s) {getOutputBuffer().add(s);}
-void Request::sendFile(const string &path) {getOutputBuffer().addFile(path);}
+void Request::send(const char *s) {outputBuffer.add(s);}
+void Request::send(const string &s) {outputBuffer.add(s);}
+void Request::sendFile(const string &path) {outputBuffer.addFile(path);}
 
 
 void Request::reply(HTTPStatus code) {
@@ -608,17 +591,12 @@ void Request::reply(HTTPStatus code) {
   if (code) responseCode = code;
   else responseCode = HTTP_INTERNAL_SERVER_ERROR;
 
-  // Log results
-  if (300 <= code) LOG_INFO(1, "> " << getResponseLine());
-  LOG_DEBUG(5, getOutputHeaders() << '\n');
-  LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
-
   write();
   replying = true;
 }
 
 
-void Request::reply(const cb::Event::Buffer &buf) {reply(HTTP_OK, buf);}
+void Request::reply(const Buffer &buf) {reply(HTTP_OK, buf);}
 
 
 void Request::reply(const char *data, unsigned length) {
@@ -646,7 +624,7 @@ void Request::startChunked(HTTPStatus code) {
 }
 
 
-void Request::sendChunk(const cb::Event::Buffer &buf) {
+void Request::sendChunk(const Buffer &buf) {
   if (!chunked) THROW("Not chunked");
 
   LOG_DEBUG(4, "Sending " << buf.getLength() << " byte chunk");
@@ -694,6 +672,25 @@ void Request::redirect(const URI &uri, HTTPStatus code) {
   outSet("Location", uri);
   outSet("Content-Length", "0");
   reply(code, "", 0);
+}
+
+
+void Request::onResponse(ConnectionError error) {
+  if (error) LOG_DEBUG(4, "< " << error);
+  else {
+    LOG_INFO(1, "< " << getResponseLine());
+    LOG_DEBUG(5, inputHeaders << '\n');
+    LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
+  }
+
+  setConnectionError(error);
+}
+
+
+void Request::onRequest() {
+  LOG_INFO(1, "< " << getRequestLine());
+  LOG_DEBUG(5, inputHeaders << '\n');
+  LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
 }
 
 
@@ -749,7 +746,7 @@ void Request::write() {
 }
 
 
-void Request::writeResponse(cb::Event::Buffer &buf) {
+void Request::writeResponse(Buffer &buf) {
   buf.add(getResponseLine() + "\r\n");
 
   if (version.getMajor() == 1) {
@@ -770,26 +767,37 @@ void Request::writeResponse(cb::Event::Buffer &buf) {
 
   // If request asked for close, send close
   if (inputHeaders.needsClose()) outSet("Connection", "close");
+
+  LOG_INFO(300 <= responseCode ? 1 : 4, "> " << getResponseLine());
+  LOG_DEBUG(5, outputHeaders << '\n');
+  LOG_DEBUG(6, outputBuffer.hexdump() << '\n');
 }
 
 
-void Request::writeRequest(cb::Event::Buffer &buf) {
+void Request::writeRequest(Buffer &buf) {
   // Generate request line
   buf.add(getRequestLine() + "\r\n");
 
-  // Add the content length on a post or put request if missing
-  if ((method == HTTP_POST || method == HTTP_PUT) && !outHas("Content-Length"))
+  if (!outHas("Host")) outSet("Host", uri.getHost());
+  if (!outHas("Connection")) outSet("Connection", "close"); // Don't persist
+
+  // Add missing content length if may have body
+  if (mayHaveBody() && !outHas("Content-Length"))
     outSet("Content-Length", String(outputBuffer.getLength()));
+
+  LOG_INFO(1, "> " << getRequestLine());
+  LOG_DEBUG(5, outputHeaders << '\n');
+  LOG_DEBUG(6, outputBuffer.hexdump() << '\n');
 }
 
 
-void Request::writeHeaders(cb::Event::Buffer &buf) {
+void Request::writeHeaders(Buffer &buf) {
   if (connection->isIncoming()) writeResponse(buf);
   else writeRequest(buf);
 
-  for (auto it = outputHeaders.begin(); it != outputHeaders.end(); it++) {
-    const string &key = it->first;
-    const string &value = it->second;
+  for (auto it : outputHeaders) {
+    const string &key   = it.first;
+    const string &value = it.second;
     if (!value.empty())
       buf.add(String::printf("%s: %s\r\n", key.c_str(), value.c_str()));
   }

@@ -32,100 +32,21 @@
 
 #include "OutgoingRequest.h"
 #include "Client.h"
-#include "Buffer.h"
-#include "Headers.h"
-#include "HTTPConnOut.h"
-
-#include <cbang/String.h>
-#include <cbang/Catch.h>
-#include <cbang/log/Logger.h>
-#include <cbang/os/SysError.h>
-#include <cbang/socket/Socket.h>
-#include <cbang/time/Timer.h>
-#include <cbang/openssl/SSLContext.h>
 
 
-using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "OUT" << getID() << ':'
-
-
 OutgoingRequest::OutgoingRequest(
-  Client &client, const URI &uri, RequestMethod method, callback_t cb,
-  bool forceSSL) :
-
-  Request(method, uri), client(client), cb(cb) {
-  LOG_DEBUG(5, "Connecting to " << uri.getHost() << ':' << uri.getPort());
-
-  // Create connection
-  SmartPointer<SSLContext> sslCtx;
-  if (forceSSL || uri.schemeRequiresSSL()) {
-    sslCtx = client.getSSLContext();
-    if (sslCtx.isNull()) THROW("Client lacking SSLContext");
-  }
-
-  setConnection(new HTTPConnOut(client.getBase(), sslCtx));
-}
+  Client &client, const URI &uri, RequestMethod method, callback_t cb) :
+  Request(method, uri), client(client), cb(cb) {}
 
 
-OutgoingRequest::~OutgoingRequest() {}
-
-
-HTTPConnOut &OutgoingRequest::getConnection() {
-  return *Request::getConnection().cast<HTTPConnOut>();
-}
-
-
-const HTTPConnOut &OutgoingRequest::getConnection() const {
-  return *Request::getConnection().cast<HTTPConnOut>();
-}
-
-
-void OutgoingRequest::connect(std::function<void (bool)> cb) {
-  if (getConnection().isConnected()) {
-    if (cb) cb(true);
-    return;
-  }
-
-  getConnection().connect(client.getDNS(), getURI().getIPAddress(),
-                          client.getBindAddress(), cb);
-}
-
-
-void OutgoingRequest::send() {
-  // Set output headers
-  if (!outHas("Host")) outSet("Host", getURI().getHost());
-  if (!outHas("Connection")) outSet("Connection", "close");
-
-  // Set Content-Length
-  if (mayHaveBody() && !outHas("Content-Length"))
-    outSet("Content-Length", String(getOutputBuffer().getLength()));
-
-  LOG_INFO(1, "> " << getRequestLine());
-  LOG_DEBUG(5, getOutputHeaders() << '\n');
-  LOG_DEBUG(6, getOutputBuffer().hexdump() << '\n');
-
-  // Do it
-  SmartPointer<Request> req = this; // Keep the request alive
-  connect([this, req] (bool success) {
-            if (success) getConnection().makeRequest(this);
-            else if (cb) cb(*this);
-          });
-}
+void OutgoingRequest::send() {client.send(this);}
 
 
 void OutgoingRequest::onResponse(ConnectionError error) {
-  if (error) LOG_DEBUG(4, "< " << getConnection().getPeer() << ' ' << error);
-  else {
-    LOG_INFO(1, "< " << getConnection().getPeer() << ' ' << getResponseLine());
-    LOG_DEBUG(5, getInputHeaders() << '\n');
-    LOG_DEBUG(6, getInputBuffer().hexdump() << '\n');
-  }
-
-  setConnectionError(error);
-  if (cb) TRY_CATCH_ERROR(cb(*this));
+  Request::onResponse(error);
+  if (cb) cb(*this);
 }

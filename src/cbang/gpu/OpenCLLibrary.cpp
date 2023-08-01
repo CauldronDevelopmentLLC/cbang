@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "OpenCLLibrary.h"
-
 #include "GPUVendor.h"
 
 #include <cbang/Exception.h>

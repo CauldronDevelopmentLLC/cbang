@@ -59,19 +59,12 @@
 #include <openssl/core_names.h>
 #endif
 
-#include <string.h>
-
+#include <cstring>
 #include <sstream>
 #include <algorithm> // std::min()
 
 using namespace cb;
 using namespace std;
-
-
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-#define EVP_PKEY_up_ref(KEY)                                \
-  CRYPTO_add(&(KEY)->references, 1, CRYPTO_LOCK_EVP_PKEY)
-#endif
 
 
 namespace {
@@ -172,15 +165,7 @@ BigNum KeyPair::getRSA_N() const {
 
 
 BigNum KeyPair::getPublic() const  {
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-  switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: return key->pkey.rsa->n;
-  case EVP_PKEY_DSA: return key->pkey.dsa->pub_key;
-  case EVP_PKEY_DH:  return key->pkey.dh->pub_key;
-  case EVP_PKEY_EC:  return EC_KEY_get0_public_key(key->pkey.ec);
-  }
-
-#elif OPENSSL_VERSION_NUMBER < 0x3000000fL
+#if OPENSSL_VERSION_NUMBER < 0x3000000fL
   const BIGNUM *n = 0;
 
   switch (EVP_PKEY_base_id(key)) {
@@ -216,15 +201,7 @@ BigNum KeyPair::getPublic() const  {
 
 
 BigNum KeyPair::getPrivate() const {
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-  switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: return key->pkey.rsa->d;
-  case EVP_PKEY_DSA: return key->pkey.dsa->priv_key;
-  case EVP_PKEY_DH:  return key->pkey.dh->priv_key;
-  case EVP_PKEY_EC:  return EC_KEY_get0_private_key(key->pkey.ec);
-  }
-
-#elif OPENSSL_VERSION_NUMBER < 0x3000000fL
+#if OPENSSL_VERSION_NUMBER < 0x3000000fL
   const BIGNUM *n = 0;
 
   switch (EVP_PKEY_base_id(key)) {

@@ -71,10 +71,6 @@ using namespace std;
 using namespace cb;
 
 
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-#define TLS_method TLSv1_method
-#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
-
 namespace {
   extern "C" {
     int verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {

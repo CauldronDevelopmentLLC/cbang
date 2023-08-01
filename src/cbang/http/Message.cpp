@@ -36,8 +36,7 @@
 #include <cbang/log/Logger.h>
 
 #include <sstream>
-
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

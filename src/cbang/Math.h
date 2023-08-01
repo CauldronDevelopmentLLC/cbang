@@ -32,15 +32,15 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <cmath>
 #include <limits>
+#include <cfloat>
 
 
 namespace cb {
   namespace Math {
 #if defined(_WIN32) && !defined(__MINGW32__)
-#include <float.h>
 
     // Windows doesn't have round()
     inline static double round(double x) {return floor(x + 0.5);}

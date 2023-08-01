@@ -146,6 +146,8 @@ namespace cb {
       const std::string &getUser() const;
       void setUser(const std::string &user);
 
+      virtual bool isWebsocket() const {return false;}
+      bool isIncoming() const;
       bool isChunked() const {return chunked;}
       bool isReplying() const {return replying;}
 
@@ -154,9 +156,6 @@ namespace cb {
 
       bool isSecure() const;
       SSL getSSL() const;
-
-      virtual bool isWebsocket() const {return false;}
-      virtual void resetOutput();
 
       const JSON::ValuePtr &getArgs() const {return args;}
       void parseJSONArgs();
@@ -243,13 +242,14 @@ namespace cb {
       virtual SmartPointer<JSON::Writer> getJSONChunkWriter();
       virtual void endChunked();
 
-      virtual void redirect(const URI &uri,
-                            HTTPStatus code = HTTP_TEMPORARY_REDIRECT);
+      virtual void redirect(
+        const URI &uri, HTTPStatus code = HTTP_TEMPORARY_REDIRECT);
 
       // Callbacks
       virtual void onHeaders() {}
       virtual bool onContinue() {return true;}
-      virtual void onResponse(ConnectionError error) {}
+      virtual void onResponse(ConnectionError error);
+      virtual void onRequest();
       virtual void onWriteComplete(bool success) {}
       virtual void onComplete() {}
 
@@ -264,9 +264,11 @@ namespace cb {
       virtual void write();
 
     protected:
-      void writeResponse(Buffer &buf);
-      void writeRequest(Buffer &buf);
+      virtual void writeResponse(Buffer &buf);
+      virtual void writeRequest(Buffer &buf);
       void writeHeaders(Buffer &buf);
     };
+
+    typedef SmartPointer<Request> RequestPtr;
   }
 }

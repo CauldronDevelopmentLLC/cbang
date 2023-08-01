@@ -33,7 +33,8 @@
 #include "UUID.h"
 
 #include <cbang/String.h>
-#include <string.h>
+
+#include <cstring>
 
 using namespace std;
 using namespace cb;

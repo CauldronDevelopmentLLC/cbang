@@ -37,7 +37,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/debug/Debugger.h>
 
-#include <stdarg.h>
+#include <cstdarg>
 
 using namespace cb;
 using namespace std;

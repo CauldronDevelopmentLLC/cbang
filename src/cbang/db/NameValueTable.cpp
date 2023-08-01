@@ -37,7 +37,7 @@
 #include <cbang/String.h>
 #include <cbang/json/Reader.h>
 
-#include <stdarg.h>
+#include <cstdarg>
 
 using namespace std;
 using namespace cb;

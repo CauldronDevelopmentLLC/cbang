@@ -366,20 +366,33 @@ namespace cb {
       if (!ptr) referenceError("Can't dereference NULL pointer!");
     }
   };
+
+
+  template<typename T> inline static
+  SmartPointer<T> SmartPtr(T *ptr)    {return ptr;}
+
+  template<typename T> inline static
+  SmartPointer<T> SmartPhony(T *ptr)  {return SmartPointer<T>::Phony(ptr);}
+
+  template<typename T> inline static
+  SmartPointer<T> SmartMalloc(T *ptr) {return SmartPointer<T>::Malloc(ptr);}
+
+  template<typename T> inline static
+  SmartPointer<T> SmartArray(T *ptr)  {return SmartPointer<T>::Array(ptr);}
 }
 
-#define CBANG_SP(T) cb::SmartPointer<T>
-#define CBANG_SP_PHONY(T) cb::SmartPointer<T>::Phony
+#define CBANG_SP(T)        cb::SmartPointer<T>
+#define CBANG_SP_PHONY(T)  cb::SmartPointer<T>::Phony
 #define CBANG_SP_MALLOC(T) cb::SmartPointer<T>::Malloc
-#define CBANG_SP_ARRAY(T) cb::SmartPointer<T>::Array
+#define CBANG_SP_ARRAY(T)  cb::SmartPointer<T>::Array
 #define CBANG_SP_DEALLOC(T, DEALLOC) \
   cb::SmartPointer<T, cb::DeallocFunc<T, DEALLOC> >
 
 #ifdef USING_CBANG
-#define SP(T) CBANG_SP(T)
-#define SP_PHONY(T) CBANG_SP_PHONY(T)
-#define SP_MALLOC(T) CBANG_SP_MALLOC(T)
-#define SP_ARRAY(T) CBANG_SP_ARRAY(T)
+#define SP(T)                  CBANG_SP(T)
+#define SP_PHONY(T)            CBANG_SP_PHONY(T)
+#define SP_MALLOC(T)           CBANG_SP_MALLOC(T)
+#define SP_ARRAY(T)            CBANG_SP_ARRAY(T)
 #define SP_DEALLOC(T, DEALLOC) CBANG_SP_DEALLOC(T, DEALLOC)
 #endif
 

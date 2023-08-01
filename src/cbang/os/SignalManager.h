@@ -40,7 +40,7 @@
 
 #include <cbang/util/Singleton.h>
 
-#include <signal.h>
+#include <csignal>
 
 #ifndef SIGQUIT
 #define SIGQUIT 3

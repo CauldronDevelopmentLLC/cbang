@@ -39,13 +39,11 @@
 
 #include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
-
 #include <cbang/time/Timer.h>
-
 #include <cbang/os/SysError.h>
 
 #ifndef _WIN32
-#include <signal.h>
+#include <csignal>
 #include <poll.h>
 #endif
 

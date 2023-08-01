@@ -35,6 +35,9 @@
 #include <cbang/Exception.h>
 #include <cbang/os/SysError.h>
 
+#include <cerrno>
+#include <cstring>
+
 #ifdef _WIN32
 #include <io.h>
 #define ssize_t int
@@ -42,9 +45,6 @@
 #else
 #include <unistd.h>
 #endif
-
-#include <errno.h>
-#include <string.h>
 
 using namespace std;
 using namespace cb;

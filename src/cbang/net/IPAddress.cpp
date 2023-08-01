@@ -32,16 +32,14 @@
 
 #include "IPAddress.h"
 
-#include <cbang/socket/Winsock.h>
-
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
+#include <cbang/socket/Winsock.h>
 #include <cbang/log/Logger.h>
-
 #include <cbang/socket/Socket.h>
-
 #include <cbang/os/SysError.h>
+
+#include <cstring>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -55,8 +53,6 @@
 #  endif
 #include <netdb.h>
 #endif
-
-#include <string.h>
 
 using namespace std;
 using namespace cb;

@@ -33,9 +33,8 @@
 #include "String.h"
 
 #include <limits>
-
-#include <stdlib.h>
-#include <errno.h>
+#include <cstdlib>
+#include <cerrno>
 
 using namespace std;
 using namespace cb::JSON;

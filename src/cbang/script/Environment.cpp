@@ -38,9 +38,8 @@
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 
-#include <stdarg.h>
-#include <ctype.h>
-
+#include <cstdarg>
+#include <cctype>
 #include <sstream>
 
 using namespace std;

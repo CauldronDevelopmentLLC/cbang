@@ -32,11 +32,9 @@
 
 #pragma once
 
-#include <cbang/Exception.h>
+#include "SmartFunction.h"
+#include "Lockable.h"
 
-#include <cbang/util/SmartFunctor.h>
-#include <cbang/util/Lockable.h>
-#include <cbang/log/Logger.h>
 
 namespace cb {
   /**
@@ -44,17 +42,13 @@ namespace cb {
    * the Lockable gets relocked when the SmartUnlock goes out of scope.  This
    * makes unlocking safe when exceptions may be thrown.
    */
-  class SmartUnlock : public SmartConstFunctor<SmartUnlock> {
+  class SmartUnlock : public SmartFunction {
     const Lockable *lock;
 
   public:
     SmartUnlock(const Lockable *lock, bool alreadyUnlocked = false) :
-      Super(this, &SmartUnlock::close, false), lock(lock) {
+      SmartFunction([lock] {lock->lock();}), lock(lock) {
       if (!alreadyUnlocked) lock->unlock();
-      setEngaged(true);
     }
-
-  protected:
-    void close() const {lock->lock();}
   };
 }

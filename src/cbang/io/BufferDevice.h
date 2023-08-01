@@ -32,46 +32,28 @@
 
 #pragma once
 
-#include "Buffer.h"
+#include "IOBuffer.h"
+
+#include <boost/iostreams/categories.hpp>   // bidirectional_device_tag
+#include <boost/iostreams/positioning.hpp>  // stream_offset
+#include <boost/iostreams/stream.hpp>
+
 
 namespace cb {
-  class MemoryBuffer : public Buffer {
-    unsigned capacity;
-    unsigned position;
-    unsigned fill;
-    char *buffer;
-    bool deallocate;
+  class BufferDevice {
+    IOBuffer &buffer;
 
   public:
-    MemoryBuffer(unsigned capacity = 0, char *buffer = 0,
-                 bool deallocate = false);
-    ~MemoryBuffer();
+    typedef char char_type;
+    typedef boost::iostreams::bidirectional_device_tag category;
 
-    // From Buffer
-    unsigned getFill() const {return fill - position;}
-    unsigned getSpace() const {return capacity - fill;}
-    unsigned read(char *dst, unsigned size);
-    unsigned write(const char *src, unsigned size);
-    unsigned writeTo(std::ostream &stream);
-    unsigned readFrom(std::istream &stream);
+    BufferDevice(IOBuffer &buffer) : buffer(buffer) {}
 
-    bool isClear() const {return fill == 0 && position == 0;}
-
-    unsigned getPosition() const {return position;}
-    unsigned getCapacity() const {return capacity;}
-
-    void incPosition(unsigned count) {position += count;}
-    void incFill(unsigned count) {fill += count;}
-    void seek(unsigned position) {this->position = position;}
-    void shiftToFront();
-
-    const char *begin() const {return buffer + position;}
-    char *begin() {return buffer + position;}
-
-    const char *end() const {return buffer + fill;}
-    char *end() {return buffer + fill;}
-
-    unsigned increase(unsigned size);
-    void clear() {position = fill = 0;}
+    std::streamsize read(char *s, std::streamsize n)
+    {return (std::streamsize)buffer.read(s, n);}
+    std::streamsize write(const char *s, std::streamsize n)
+    {return (std::streamsize)buffer.write(s, n);}
   };
+
+  typedef boost::iostreams::stream<BufferDevice> BufferStream;
 }

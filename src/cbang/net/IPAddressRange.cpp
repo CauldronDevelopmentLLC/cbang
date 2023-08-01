@@ -32,13 +32,11 @@
 
 #include <cbang/net/IPAddressRange.h>
 
-#include <cctype>
-
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/log/Logger.h>
 
+#include <cctype>
 #include <algorithm>
 
 using namespace std;

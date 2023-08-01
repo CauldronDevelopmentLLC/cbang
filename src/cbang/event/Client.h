@@ -59,6 +59,8 @@ namespace cb {
       SmartPointer<RateSet> stats;
 
     public:
+      typedef SmartPointer<OutgoingRequest> RequestPtr;
+
       template <class T> struct Callback {
         typedef void (T::*member_t)(Request &);
       };
@@ -69,8 +71,8 @@ namespace cb {
              const SmartPointer<SSLContext> &sslCtx = 0);
       ~Client();
 
-      Base &getBase() {return base;}
-      DNSBase &getDNS() {return dns;}
+      Base &getBase() const {return base;}
+      DNSBase &getDNS() const {return dns;}
 
       const cb::SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
       void setSSLContext(const cb::SmartPointer<SSLContext> &sslCtx)
@@ -88,16 +90,15 @@ namespace cb {
       const SmartPointer<RateSet> &getStats() const {return stats;}
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
-      SmartPointer<OutgoingRequest>
-      call(const URI &uri, RequestMethod method, const char *data,
-           unsigned length, callback_t cb);
+      void send(const SmartPointer<Request> &req) const;
 
-      SmartPointer<OutgoingRequest>
-      call(const URI &uri, RequestMethod method, const std::string &data,
-           callback_t cb);
+      RequestPtr call(const URI &uri, RequestMethod method, const char *data,
+                      unsigned length, callback_t cb);
 
-      SmartPointer<OutgoingRequest>
-      call(const URI &uri, RequestMethod method, callback_t cb);
+      RequestPtr call(const URI &uri, RequestMethod method,
+                      const std::string &data, callback_t cb);
+
+      RequestPtr call(const URI &uri, RequestMethod method, callback_t cb);
 
 
       // Member callbacks
@@ -106,20 +107,23 @@ namespace cb {
         return std::bind(member, obj, std::placeholders::_1);
       }
 
-      template <class T> SmartPointer<OutgoingRequest>
+      template <class T> RequestPtr
       call(const URI &uri, RequestMethod method, const char *data,
            unsigned length, T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, data, length, bind(obj, member));}
 
-      template <class T> SmartPointer<OutgoingRequest>
+      template <class T> RequestPtr
       call(const URI &uri, RequestMethod method, const std::string &data,
            T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, data, bind(obj, member));}
 
-      template <class T> SmartPointer<OutgoingRequest>
+      template <class T> RequestPtr
       call(const URI &uri, RequestMethod method,
            T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, bind(obj, member));}
+
+    protected:
+      SmartPointer<HTTPConn> createConnection(bool withSSL) const;
     };
   }
 }

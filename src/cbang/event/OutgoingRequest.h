@@ -58,15 +58,9 @@ namespace cb {
 
     public:
       OutgoingRequest(Client &client, const URI &uri, RequestMethod method,
-                      callback_t cb, bool forceSSL = false);
-      ~OutgoingRequest();
-
-      HTTPConnOut &getConnection();
-      const HTTPConnOut &getConnection() const;
+                      callback_t cb);
 
       void setCallback(callback_t cb) {this->cb = cb;}
-
-      void connect(std::function<void (bool)> cb);
 
       using Request::send;
       void send();

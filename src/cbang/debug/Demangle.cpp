@@ -37,8 +37,9 @@ using namespace std;
 
 
 #ifdef __GNUG__
+#include <cstdlib>
+
 #include <cxxabi.h>
-#include <stdlib.h>
 
 
 namespace cb {

@@ -34,8 +34,8 @@
 
 #include <cbang/Exception.h>
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 using namespace cb;
 using namespace std;

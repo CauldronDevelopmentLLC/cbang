@@ -32,19 +32,17 @@
 
 #include "ServerApplication.h"
 
+#include <cbang/Catch.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SignalManager.h>
 #include <cbang/os/ProcessLock.h>
 #include <cbang/os/Subprocess.h>
-
 #include <cbang/log/Logger.h>
 #include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
-#include <cbang/Catch.h>
 
 #include <sstream>
-
-#include <signal.h>
+#include <csignal>
 
 using namespace cb;
 using namespace cb;

@@ -39,8 +39,7 @@
 
 #include <ostream>
 #include <string>
-
-#include <string.h>
+#include <cstring>
 
 namespace cb {
   namespace DB {class Blob;}

@@ -38,8 +38,7 @@
 #include <cbang/util/SmartLock.h>
 
 #include <stdexcept>
-
-#include <stdlib.h>
+#include <cstdlib>
 
 #ifndef _WIN32
 #include <unistd.h>

@@ -49,10 +49,10 @@
 #include <cbang/io/File.h>
 #include <cbang/iostream/CompressionFilter.h>
 
-#include <errno.h>
-#include <string.h>
-#include <time.h>
-#include <stdlib.h>
+#include <cerrno>
+#include <cstring>
+#include <ctime>
+#include <cstdlib>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
@@ -63,9 +63,10 @@
 #define getpid _getpid
 
 #else // _WIN32
+#include <csignal>
+
 #include <unistd.h>
 #include <termios.h>
-#include <signal.h>
 #include <sys/resource.h>
 #include <sys/times.h>
 #include <sys/wait.h>
@@ -81,20 +82,19 @@
 #include <mach-o/dyld.h>
 #endif // __APPLE__
 
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <vector>
 
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #define BOOST_SYSTEM_NO_DEPRECATED
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-
 #include <boost/iostreams/filtering_stream.hpp>
 
 using namespace std;

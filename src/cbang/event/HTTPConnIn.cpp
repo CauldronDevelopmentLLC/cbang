@@ -51,9 +51,8 @@ HTTPConnIn::HTTPConnIn(HTTPServer &server) :
   HTTPConn(server.getBase()), server(server) {}
 
 
-void HTTPConnIn::writeRequest(const SmartPointer<Request> &req,
-                              cb::Event::Buffer buffer, bool hasMore,
-                              std::function<void (bool)> cb) {
+void HTTPConnIn::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
+                              bool hasMore, std::function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength() << " hasMore="
             << hasMore);
 
@@ -246,10 +245,7 @@ void HTTPConnIn::checkChunked(const SmartPointer<Request> &req) {
 
 
 void HTTPConnIn::processRequest(const SmartPointer<Request> &req) {
-  LOG_INFO(1, "< " << getPeer() << ' ' << req->getRequestLine());
-  LOG_DEBUG(5, req->getInputHeaders() << '\n');
-  LOG_DEBUG(6, input.hexdump() << '\n');
-
+  TRY_CATCH_ERROR(req->onRequest());
   server.dispatch(*req);
 }
 

@@ -102,6 +102,8 @@ namespace CBANG_ENUM_NAMESPACE {
       static bool fastParseEnabled;
 
     public:
+      using CBANG_ENUM_BASE::CBANG_ENUM_BASE;
+
       typedef CBANG_ENUM_BASE Enum;
 
       /// @return the name of the enumeration

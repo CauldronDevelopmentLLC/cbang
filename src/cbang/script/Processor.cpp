@@ -43,8 +43,8 @@
 #include <cbang/socket/SocketDevice.h>
 
 #include <sstream>
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

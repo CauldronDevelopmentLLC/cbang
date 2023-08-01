@@ -32,7 +32,7 @@
 
 #include "StringPacketField.h"
 
-#include <string.h>
+#include <cstring>
 
 using namespace cb;
 using namespace std;

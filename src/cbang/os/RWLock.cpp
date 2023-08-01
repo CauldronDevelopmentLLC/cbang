@@ -106,7 +106,6 @@ void RWLock::writeLock() const {
   LOG_DEBUG(5, "writeLock() " << Thread::self());
 
 #ifdef _WIN32
-  // TODO this only works in Vista+
   AcquireSRWLockExclusive(&p->lock);
   p->exclusive = true;
 #else // pthreads
@@ -121,7 +120,6 @@ void RWLock::unlock() const {
   LOG_DEBUG(5, "unlock() " << Thread::self());
 
 #ifdef _WIN32
-  // TODO this only works in Vista+
   if (p->exclusive) ReleaseSRWLockExclusive(&p->lock);
   else ReleaseSRWLockShared(&p->lock);
 #else // pthreads

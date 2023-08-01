@@ -41,8 +41,9 @@ namespace io = boost::iostreams;
 
 #include <cbang/SmartPointer.h>
 
+#include <cstring>
+
 #include <bzlib.h>
-#include <string.h>
 
 
 namespace cb {

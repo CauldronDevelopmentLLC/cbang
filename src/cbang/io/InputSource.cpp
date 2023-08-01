@@ -31,13 +31,12 @@
 \******************************************************************************/
 
 #include "InputSource.h"
-
+#include "BufferDevice.h"
 #include "File.h"
 
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/iostream/ArrayDevice.h>
 #include <cbang/util/Resource.h>
-#include <cbang/buffer/BufferDevice.h>
 
 #include <sstream>
 
@@ -45,7 +44,7 @@ using namespace std;
 using namespace cb;
 
 
-InputSource::InputSource(Buffer &buffer, const string &name) :
+InputSource::InputSource(IOBuffer &buffer, const string &name) :
   Named(name), stream(new BufferStream(buffer)), length(buffer.getFill()) {}
 
 

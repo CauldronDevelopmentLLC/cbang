@@ -35,8 +35,9 @@
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 
+#include <cstring>
+
 #include <bzlib.h>
-#include <string.h>
 
 using namespace cb;
 using namespace std;

@@ -30,14 +30,13 @@
 
 \******************************************************************************/
 
-#include <cbang/config/CommandLine.h>
+#include "CommandLine.h"
 
 #include <cbang/Exception.h>
-
 #include <cbang/xml/XMLWriter.h>
 #include <cbang/log/Logger.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 using namespace std;
 using namespace cb;

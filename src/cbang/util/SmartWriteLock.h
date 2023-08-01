@@ -32,17 +32,19 @@
 
 #pragma once
 
+#include "SmartFunctor.h"
+
 #include <cbang/os/RWLock.h>
 
+
 namespace cb {
-  class SmartWriteLock {
+  class SmartWriteLock : public SmartConstFunctor<RWLock> {
     const RWLock *lock;
 
   public:
     SmartWriteLock(const RWLock *lock, bool alreadyLocked = false) :
-      lock(lock) {
+      SmartConstFunctor<RWLock>(lock, &RWLock::unlock), lock(lock) {
       if (!alreadyLocked) lock->writeLock();
     }
-    ~SmartWriteLock() {lock->unlock();}
   };
 }

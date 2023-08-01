@@ -37,7 +37,7 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SignalManager.h>
 
-#include <signal.h>
+#include <csignal>
 
 using namespace std;
 using namespace cb;

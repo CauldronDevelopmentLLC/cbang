@@ -37,10 +37,6 @@
 
 namespace cb {
   namespace Event {
-    class RequestMethod : public cb::HTTP::RequestMethod {
-    public:
-      RequestMethod() {}
-      RequestMethod(enum_t e) : cb::HTTP::RequestMethod(e) {}
-    };
+    typedef cb::HTTP::RequestMethod RequestMethod;
   }
 }

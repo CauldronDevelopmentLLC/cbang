@@ -33,10 +33,8 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-
 #include <cbang/util/Singleton.h>
 #include <cbang/util/Version.h>
-
 #include <cbang/enum/ThreadsType.h>
 
 #include <vector>

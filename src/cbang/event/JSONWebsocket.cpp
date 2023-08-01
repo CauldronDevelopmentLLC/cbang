@@ -67,9 +67,6 @@ SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
 }
 
 
-void JSONWebsocket::onMessage(const JSON::ValuePtr &msg) {if (cb) cb(msg);}
-
-
 void JSONWebsocket::onMessage(const char *data, uint64_t length) {
   onMessage(JSON::Reader::parse(InputSource(data, length)));
 }
