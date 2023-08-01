@@ -81,11 +81,14 @@ namespace cb {
 
       // From Request
       bool isWebsocket() const {return active;}
+      void onResponse(ConnectionError error);
 
       // Callbacks
       virtual bool onUpgrade() {return true;}
       virtual void onOpen() {}
       virtual void onMessage(const char *data, uint64_t length) = 0;
+      virtual void onPing(const std::string &payload);
+      virtual void onPong(const std::string &payload);
       virtual void onClose(WebsockStatus status, const std::string &msg) {}
 
     protected:
