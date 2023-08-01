@@ -43,6 +43,10 @@
 
 #include <cstring> // memcpy()
 
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX << "WS" << getID() << ':'
+
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
@@ -119,20 +123,23 @@ bool Websocket::upgrade() {
     THROW("Cannot open Websocket, C! not built with openssl support");
 #endif
 
+    // Start connection
+    active = true;
+    onOpen();
+    readHeader();
+    schedulePing();
+
+    // Respond
     setVersion(Version(1, 1));
     outSet("Upgrade", "websocket");
     outSet("Connection", "upgrade");
     outSet("Sec-WebSocket-Accept", key);
-
-    active = true;
     reply(HTTP_SWITCHING_PROTOCOLS);
-
-    // Start connection heartbeat
-    schedulePing();
 
     return true;
   } CATCH_ERROR;
 
+  close(WS_STATUS_UNEXPECTED, "Exception");
   return false;
 }
 
@@ -146,7 +153,7 @@ void Websocket::readHeader() {
       input.copy((char *)header, 2);
 
       // Client must set mask bit
-      bool mask = header[1] & 0x80;
+      bool mask = header[1] & (1 << 7);
       if (mask != isIncoming()) return close(WS_STATUS_PROTOCOL);
 
       // Compute header size
@@ -174,33 +181,24 @@ void Websocket::readHeader() {
 
           if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
 
-          switch (wsOpCode) {
-          case WS_OP_TEXT:
-          case WS_OP_BINARY:
-          case WS_OP_CONTINUE: {
-            // Check total message size
-            auto maxBodySize = getConnection()->getMaxBodySize();
-            if (maxBodySize && maxBodySize < wsMsg.size() + bytesToRead)
-              return close(WS_STATUS_TOO_BIG);
+          LOG_DEBUG(4, CBANG_FUNC << "() header opcode=" << wsOpCode
+                    << " bytesToRead=" << bytesToRead);
 
-            // Copy mask
-            if (mask) memcpy(wsMask, &header[bytes - 4], 4);
+          // Check total message size
+          auto maxBodySize = getConnection()->getMaxBodySize();
+          if (maxBodySize && maxBodySize < wsMsg.size() + bytesToRead)
+            return close(WS_STATUS_TOO_BIG);
 
-            // Last part of message?
-            wsFinish = 0x80 & header[0];
-            break;
-          }
+          // Copy mask
+          if (mask) memcpy(wsMask, &header[bytes - 4], 4);
 
-          case WS_OP_CLOSE:
-          case WS_OP_PING:
-          case WS_OP_PONG:
-            break; // Control codes
+          // Last part of message?
+          wsFinish = header[0] & (1 << 7);
 
-          default: return close(WS_STATUS_PROTOCOL);
-          }
+          // Control frames must not be fragmented
+          if ((wsOpCode & 8) && !wsFinish) return close(WS_STATUS_PROTOCOL);
 
-          if (bytesToRead) readBody();
-          else readHeader();
+          readBody();
         };
 
       // Read rest of header
@@ -253,14 +251,8 @@ void Websocket::readBody() {
       return close(status, payload);
     }
 
-    case WS_OP_PING:
-      // Schedule pong to aggregate backlogged pings
-      pongPayload = string(wsMsg.begin(), wsMsg.end());
-      schedulePong();
-      schedulePing();
-      break;
-
-    case WS_OP_PONG: schedulePing(); break;
+    case WS_OP_PING: onPing(string(wsMsg.begin(), wsMsg.end())); break;
+    case WS_OP_PONG: onPong(string(wsMsg.begin(), wsMsg.end())); break;
 
     default: return close(WS_STATUS_PROTOCOL);
     }
@@ -271,6 +263,28 @@ void Websocket::readBody() {
 
   getConnection()->read(cb, input, bytesToRead);
 }
+
+
+void Websocket::onResponse(ConnectionError error) {
+  Request::onResponse(error);
+
+  if (error == CONN_ERR_OK && getResponseCode() == HTTP_SWITCHING_PROTOCOLS) {
+    active = true;
+    onOpen();
+    readHeader();
+    schedulePing();
+  }
+}
+
+
+void Websocket::onPing(const string &payload) {
+  // Schedule pong to aggregate backlogged pings
+  pongPayload = payload;
+  schedulePong();
+}
+
+
+void Websocket::onPong(const string &payload) {schedulePing();}
 
 
 void Websocket::writeRequest(Buffer &buf) {
@@ -298,7 +312,7 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
   uint8_t bytes = 2;
 
   // Opcode
-  header[0] = (finish ? 0x80 : 0) | opcode;
+  header[0] = (finish ? (1 << 7) : 0) | opcode;
 
   // Format payload length
   if (len < 126) header[1] = len;
@@ -317,7 +331,7 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
   // Create mask
   bool mask = !isIncoming();
   if (mask) {
-    header[1] &= 1 << 7; // Set mask bit
+    header[1] |= 1 << 7; // Set mask bit
 
     // Generate random mask
     Random::instance().bytes(header + bytes, 4);
@@ -356,31 +370,33 @@ void Websocket::pong() {
 
 
 void Websocket::schedulePong() {
+  if (!active) return;
+
   if (pongEvent.isNull()) {
     auto cb = [this] () {pong();};
     pongEvent = getConnection()->getBase().newEvent(cb, EVENT_NO_SELF_REF);
   }
 
-  if (pongEvent.isSet() && !pongEvent->isPending()) pongEvent->add(5);
+  if (!pongEvent->isPending()) pongEvent->add(5);
 }
 
 
 void Websocket::schedulePing() {
+  if (!active) return;
+
   if (pingEvent.isNull()) {
-    auto cb = [this] () {ping(); schedulePing();};
+    auto cb = [this] () {ping();};
     pingEvent = getConnection()->getBase().newEvent(cb, EVENT_NO_SELF_REF);
   }
 
-  if (pingEvent.isSet()) {
-    double timeout = getConnection()->getReadTimeout();
-    pingEvent->add(timeout / 2);
-  }
+  double timeout = getConnection()->getReadTimeout();
+  pingEvent->add(10 < timeout ? timeout / 2 : 5);
 }
 
 
 void Websocket::message(const char *data, uint64_t length) {
   msgReceived++;
-  schedulePing();
+  if (pingEvent->isPending()) schedulePing();
   TRY_CATCH_ERROR(return onMessage(data, length));
   close(WS_STATUS_UNACCEPTABLE, "Message rejected");
 }
