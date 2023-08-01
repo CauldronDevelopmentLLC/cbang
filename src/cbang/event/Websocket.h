@@ -44,9 +44,6 @@ namespace cb {
     class Websocket : public Request {
       bool active = false;
 
-      typedef std::function<void (const char *, uint64_t)> cb_t;
-      cb_t cb;
-
       Buffer input;
       uint64_t bytesToRead = 0;
       WebsockOpCode wsOpCode;
@@ -62,11 +59,9 @@ namespace cb {
       uint64_t msgReceived = 0;
 
     public:
-      using Request::Request;
+      Websocket(const URI &uri = URI(), const Version &version = Version(1, 1));
 
       bool isActive() const;
-
-      void setCallback(const cb_t &cb) {this->cb = cb;}
 
       uint64_t getMessagesSent() const {return msgSent;}
       uint64_t getMessagesReceived() const {return msgReceived;}
@@ -78,7 +73,7 @@ namespace cb {
       void close(WebsockStatus status, const std::string &msg = "");
       void ping(const std::string &payload = "");
 
-      // Called by Connection
+      // Called by HTTPConnIn
       bool upgrade();
 
       void readHeader();
@@ -90,12 +85,14 @@ namespace cb {
       // Callbacks
       virtual bool onUpgrade() {return true;}
       virtual void onOpen() {}
-      virtual void onMessage(const char *data, uint64_t length);
+      virtual void onMessage(const char *data, uint64_t length) = 0;
       virtual void onClose(WebsockStatus status, const std::string &msg) {}
 
     protected:
       using Request::send;
       using Request::reply;
+
+      void writeRequest(Buffer &buf);
 
       void writeFrame(WebsockOpCode opcode, bool finish,
                       const void *data, uint64_t len);
@@ -104,5 +101,7 @@ namespace cb {
       void schedulePing();
       void message(const char *data, uint64_t length);
     };
+
+    typedef SmartPointer<Websocket> WebsocketPtr;
   }
 }

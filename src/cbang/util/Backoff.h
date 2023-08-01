@@ -34,6 +34,8 @@
 
 #include <cbang/Math.h>
 
+#include <algorithm>
+
 
 namespace cb {
   class Backoff {

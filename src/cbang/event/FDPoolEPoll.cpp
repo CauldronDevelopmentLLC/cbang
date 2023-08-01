@@ -40,10 +40,11 @@
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
 
+#include <cstring>
+#include <cerrno>
+
 #include <sys/epoll.h>
 #include <unistd.h>
-#include <string.h>
-#include <errno.h>
 
 using namespace cb::Event;
 using namespace cb;

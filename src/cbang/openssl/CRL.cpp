@@ -53,13 +53,6 @@ using namespace cb;
 using namespace std;
 
 
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-#define X509_EXTENSION_get_data(e) e->value
-#define X509_CRL_set1_lastUpdate X509_CRL_set_lastUpdate
-#define X509_CRL_set1_nextUpdate X509_CRL_set_nextUpdate
-#endif /* OPENSSL_VERSION_NUMBER < 0x1010000fL */
-
-
 CRL::CRL(X509_CRL *crl) : crl(crl) {
   SSL::init();
   if (!crl)

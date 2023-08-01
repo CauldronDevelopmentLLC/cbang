@@ -30,21 +30,16 @@
 
 \******************************************************************************/
 
-#include <cbang/os/Mutex.h>
-
+#include "Mutex.h"
 #include "MutexPrivate.h"
-
-#include <cbang/Exception.h>
-
 #include "SysError.h"
 
+#include <cbang/Exception.h>
 #include <cbang/util/ID.h>
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
 
-#ifndef _WIN32
-#include <errno.h> // For ETIMEDOUT and EBUSY
-#endif
+#include <cerrno> // For ETIMEDOUT and EBUSY
 
 using namespace cb;
 

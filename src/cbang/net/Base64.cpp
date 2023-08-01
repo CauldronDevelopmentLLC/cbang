@@ -36,8 +36,7 @@
 
 #include <locale>
 #include <utility>  // std::move()
-
-#include <string.h> // memcpy()
+#include <cstring> // memcpy()
 
 using namespace std;
 using namespace cb;

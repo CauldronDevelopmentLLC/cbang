@@ -87,6 +87,10 @@ void Connection::accept(const IPAddress &peer,
 void Connection::connect(DNSBase &dns, const IPAddress &peer,
                          const IPAddress &bind, function<void (bool)> cb) {
   try {
+    if (isConnected()) THROW("Already connected");
+
+    LOG_DEBUG(5, "Connecting to " << peer);
+
     // Open and bind new socket
     socket = new Socket;
     if (bind.getIP()) socket->bind(bind);

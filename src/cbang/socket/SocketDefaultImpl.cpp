@@ -31,17 +31,15 @@
 \******************************************************************************/
 
 #include "SocketDefaultImpl.h"
-
 #include "Socket.h"
 #include "SocketDebugger.h"
 
+#include <cbang/Exception.h>
+#include <cbang/String.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SysError.h>
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
-
-#include <cbang/Exception.h>
-#include <cbang/String.h>
 
 #ifdef _WIN32
 #include "Winsock.h"
@@ -70,9 +68,9 @@ typedef int socklen_t;  // Unix socket length
 #endif
 #endif
 
-#include <errno.h>
-#include <time.h>
-#include <string.h>
+#include <cerrno>
+#include <ctime>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

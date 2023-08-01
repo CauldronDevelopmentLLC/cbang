@@ -32,7 +32,6 @@
 
 #include "OAuth2Login.h"
 #include "Request.h"
-#include "OutgoingRequest.h"
 #include "Client.h"
 
 #include <cbang/Catch.h>

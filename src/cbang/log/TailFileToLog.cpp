@@ -36,7 +36,7 @@
 #include <cbang/time/Timer.h>
 #include <cbang/os/SystemUtilities.h>
 
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

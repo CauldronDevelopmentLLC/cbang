@@ -31,10 +31,9 @@
 \******************************************************************************/
 
 #include "Client.h"
-#include "Buffer.h"
 #include "HTTPConnOut.h"
 
-#include <cbang/config.h>
+#include <cbang/openssl/SSLContext.h>
 
 using namespace std;
 using namespace cb;
@@ -49,31 +48,64 @@ Client::Client(cb::Event::Base &base, DNSBase &dns,
 Client::~Client() {}
 
 
-SmartPointer<OutgoingRequest>
-Client::call(const URI &uri, RequestMethod method, const char *data,
-             unsigned length, callback_t cb) {
-  SmartPointer<OutgoingRequest> req =
-    new OutgoingRequest(*this, uri, method, cb);
+void Client::send(const SmartPointer<Request> &req) const {
+  auto &uri = req->getURI();
+
+  if (!req->hasConnection())
+    req->setConnection(createConnection(uri.schemeRequiresSSL()));
+
+  // Check if already connected
+  if (req->isConnected()) return req->getConnection()->makeRequest(req);
+
+  // Connect
+  req->getConnection()->connect(
+    dns, uri.getIPAddress(), bindAddr,
+    [this, req] (bool success) {
+      if (success) req->getConnection()->makeRequest(req);
+      else req->onResponse(ConnectionError::CONN_ERR_CONNECT);
+    });
+}
+
+
+Client::RequestPtr Client::call(
+  const URI &uri, RequestMethod method, const char *data, unsigned length,
+  callback_t cb) {
+  auto req = SmartPtr(new OutgoingRequest(*this, uri, method, cb));
+
+  req->setConnection(createConnection(uri.schemeRequiresSSL()));
 
   if (data) req->getOutputBuffer().add(data, length);
-  req->getConnection().setStats(stats);
-
-  if (stats.isSet()) stats->event("outgoing");
-
-  req->getConnection().setReadTimeout(readTimeout);
-  req->getConnection().setWriteTimeout(writeTimeout);
 
   return req;
 }
 
 
-SmartPointer<OutgoingRequest> Client::call
+Client::RequestPtr Client::call
 (const URI &uri, RequestMethod method, const string &data, callback_t cb) {
   return call(uri, method, CPP_TO_C_STR(data), data.length(), cb);
 }
 
 
-SmartPointer<OutgoingRequest>
-Client::call(const URI &uri, RequestMethod method, callback_t cb) {
+Client::RequestPtr Client::call(
+  const URI &uri, RequestMethod method, callback_t cb) {
   return call(uri, method, 0, 0, cb);
+}
+
+
+SmartPointer<HTTPConn> Client::createConnection(bool withSSL) const {
+  SmartPointer<SSLContext> sslCtx;
+  if (withSSL) {
+    sslCtx = getSSLContext();
+    if (sslCtx.isNull()) THROW("Client lacks SSLContext");
+  }
+
+  SmartPointer<HTTPConn> conn = new HTTPConnOut(base, sslCtx);
+
+  conn->setStats(stats);
+  if (stats.isSet()) stats->event("outgoing");
+
+  conn->setReadTimeout(readTimeout);
+  conn->setWriteTimeout(writeTimeout);
+
+  return conn;
 }

@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "CPURegsAArch64.h"
-
 #include "SystemUtilities.h"
 #include "SysError.h"
 
@@ -43,16 +42,18 @@
 #if defined(__aarch64__)
 #include <asm/hwcap.h>
 #endif
-#include <string.h>
+#include <cstring>
+
 #include <unistd.h>
 #include <sys/auxv.h>
 #endif
 
 #if defined(__APPLE__)
+#include <cstring>
+
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <mach/machine.h>
-#include <string.h>
 #endif
 
 using namespace cb;

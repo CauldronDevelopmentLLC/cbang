@@ -35,11 +35,10 @@
 #include <cbang/Exception.h>
 
 #include <cinttypes>
-
-#include <stdio.h>
-#include <errno.h>
-#include <time.h>
-#include <string.h>
+#include <cstdio>
+#include <cerrno>
+#include <ctime>
+#include <cstring>
 
 
 using namespace std;

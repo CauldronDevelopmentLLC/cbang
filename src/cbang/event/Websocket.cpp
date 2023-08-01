@@ -48,6 +48,12 @@ using namespace cb;
 using namespace cb::Event;
 
 
+Websocket::Websocket(const URI &uri, const Version &version) :
+  Request(HTTP_GET, uri, version) {
+  if (version < Version(1, 1)) THROW("Invalid HTTP version for websocket");
+}
+
+
 bool Websocket::isActive() const {
   return active && hasConnection() && getConnection()->isConnected();
 }
@@ -141,27 +147,26 @@ void Websocket::readHeader() {
 
       // Client must set mask bit
       bool mask = header[1] & 0x80;
-      if (!mask) return close(WS_STATUS_PROTOCOL);
+      if (mask != isIncoming()) return close(WS_STATUS_PROTOCOL);
 
       // Compute header size
-      uint8_t bytes = 6;
+      uint8_t bytes = mask ? 6 : 2;
       uint8_t size = header[1] & 0x7f;
-      if (size == 126) bytes = 8;
-      if (size == 127) bytes = 14;
+      if (size == 126) bytes += 2;
+      if (size == 127) bytes += 8;
 
       auto cb =
-        [this, bytes, size] (bool success) {
+        [this, mask, bytes, size] (bool success) {
           if (!success) return close(WS_STATUS_PROTOCOL);
 
           uint8_t header[14];
           input.remove((char *)header, bytes);
 
           // Compute frame size
-          if (size == 126) bytesToRead = hton16(*(uint16_t *)&header[2]);
-          else if (size == 127) bytesToRead = hton64(*(uint64_t *)&header[2]);
-          else bytesToRead = size;
-          if (bytesToRead & (1ULL << 63))
-            return close(WS_STATUS_PROTOCOL);
+          if      (size == 126) bytesToRead = hton16((uint16_t &)header[2]);
+          else if (size == 127) bytesToRead = hton64((uint64_t &)header[2]);
+          else                  bytesToRead = size;
+          if (bytesToRead & (1ULL << 63)) return close(WS_STATUS_PROTOCOL);
 
           // Check opcode
           uint8_t opcode = header[0] & 0xf;
@@ -179,7 +184,7 @@ void Websocket::readHeader() {
               return close(WS_STATUS_TOO_BIG);
 
             // Copy mask
-            memcpy(wsMask, &header[bytes - 4], 4);
+            if (mask) memcpy(wsMask, &header[bytes - 4], 4);
 
             // Last part of message?
             wsFinish = 0x80 & header[0];
@@ -217,9 +222,10 @@ void Websocket::readBody() {
     wsMsg.resize(offset + bytesToRead);
     input.remove(&wsMsg[offset], bytesToRead);
 
-    // Demask
-    for (uint64_t i = 0; i < bytesToRead; i++)
-      wsMsg[offset +  i] ^= wsMask[i & 3];
+    // Demask client messages
+    if (isIncoming())
+      for (uint64_t i = 0; i < bytesToRead; i++)
+        wsMsg[offset +  i] ^= wsMask[i & 3];
 
     LOG_DEBUG(5, "Frame body\n"
               << String::hexdump(string(wsMsg.begin() + offset, wsMsg.end()))
@@ -267,8 +273,16 @@ void Websocket::readBody() {
 }
 
 
-void Websocket::onMessage(const char *data, uint64_t length) {
-  if (cb) cb(data, length);
+void Websocket::writeRequest(Buffer &buf) {
+  char nonce[16];
+  Random::instance().bytes(nonce, 16);
+
+  outSet("Sec-WebSocket-Key",     Base64().encode(nonce, 16));
+  outSet("Sec-WebSocket-Version", "13");
+  outSet("Upgrade",               "websocket");
+  outSet("Connection",            "upgrade");
+
+  Request::writeRequest(buf);
 }
 
 
@@ -291,18 +305,18 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
 
   else if (len <= 0xffff) {
     header[1] = 126;
-    *(uint16_t *)&header[2] = hton16(len);
+    (uint16_t &)header[2] = hton16(len);
     bytes = 4;
 
   } else {
     header[1] = 127;
-    *(uint64_t *)&header[2] = hton64(len);
+    (uint64_t &)header[2] = hton64(len);
     bytes = 10;
   }
 
   // Create mask
-  bool maskData = !getConnection()->isIncoming();
-  if (maskData) {
+  bool mask = !isIncoming();
+  if (mask) {
     header[1] &= 1 << 7; // Set mask bit
 
     // Generate random mask
@@ -316,8 +330,8 @@ void Websocket::writeFrame(WebsockOpCode opcode, bool finish,
   out.add((char *)data, len);
 
   // Mask data
-  if (maskData) {
-    uint8_t *ptr = (uint8_t *)out.pullup(len + bytes) + bytes;
+  if (mask) {
+    uint8_t *ptr  = (uint8_t *)out.pullup(len + bytes) + bytes;
     uint8_t *mask = &header[bytes - 4];
 
     for (uint64_t i = 0; i < len; i++)

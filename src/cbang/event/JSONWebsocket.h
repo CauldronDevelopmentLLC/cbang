@@ -40,18 +40,13 @@
 namespace cb {
   namespace Event {
     class JSONWebsocket : public Websocket {
-      typedef std::function<void (const JSON::ValuePtr &)> cb_t;
-      cb_t cb;
-
     public:
       using Websocket::Websocket;
-
-      void setCallback(const cb_t &cb) {this->cb = cb;}
 
       virtual void send(const JSON::Value &msg);
       SmartPointer<JSON::Writer> getJSONWriter();
 
-      virtual void onMessage(const JSON::ValuePtr &msg);
+      virtual void onMessage(const JSON::ValuePtr &msg) = 0;
 
       // From Websocket
       void onMessage(const char *data, uint64_t length);

@@ -40,7 +40,7 @@
 
 
 namespace cb {
-  class Buffer;
+  class IOBuffer;
   class Resource;
 
   class InputSource : public Named {
@@ -48,7 +48,7 @@ namespace cb {
     std::streamsize length;
 
   public:
-    InputSource(Buffer &buffer, const std::string &name = "<buffer>");
+    InputSource(IOBuffer &buffer, const std::string &name = "<buffer>");
     InputSource(const char *array, std::streamsize length,
                 const std::string &name = "<memory>");
     InputSource(const std::string &filename);

@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <stdlib.h> // free()
+#include <cstdlib> // free()
 
 
 namespace cb {

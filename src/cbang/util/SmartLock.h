@@ -32,11 +32,9 @@
 
 #pragma once
 
-#include <cbang/Exception.h>
+#include "SmartFunctor.h"
+#include "Lockable.h"
 
-#include <cbang/util/SmartFunctor.h>
-#include <cbang/util/Lockable.h>
-#include <cbang/log/Logger.h>
 
 namespace cb {
   /**
@@ -48,13 +46,13 @@ namespace cb {
   public:
     SmartLock(const Lockable *lock, double timeout = -1,
               bool alreadyLocked = false) :
-      Super(lock, &Lockable::unlock, false) {
+      SmartConstFunctor<Lockable>(lock, &Lockable::unlock) {
 
       if (!alreadyLocked && !lock->lock(timeout)) {
+        setEngaged(false);
         if (timeout == -1) CBANG_THROW("Failed to acquire lock");
         else CBANG_THROW("Failed to acquire lock, timeout was " << timeout);
-
-      } else setEngaged(true);
+      }
     }
   };
 }

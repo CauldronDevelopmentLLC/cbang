@@ -32,11 +32,11 @@
 
 #include "CPURegsX86.h"
 
+#include <cstring>
+
 #if 1500 < _MSC_VER
 #include <intrin.h>
 #endif
-
-#include <string.h>
 
 using namespace std;
 using namespace cb;

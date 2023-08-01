@@ -38,9 +38,9 @@
 #include <ostream>
 
 namespace cb {
-  class Buffer {
+  class IOBuffer {
   public:
-    virtual ~Buffer() {}
+    virtual ~IOBuffer() {}
 
     virtual bool isFull() const {return !getSpace();}
     virtual bool isEmpty() const {return !getFill();}
@@ -59,14 +59,14 @@ namespace cb {
 
 
   static inline
-  std::ostream &operator<<(std::ostream &stream, Buffer &b) {
+  std::ostream &operator<<(std::ostream &stream, IOBuffer &b) {
     b.writeTo(stream);
     return stream;
   }
 
 
   static inline
-  std::istream &operator>>(std::istream &stream, Buffer &b) {
+  std::istream &operator>>(std::istream &stream, IOBuffer &b) {
     b.readFrom(stream);
     return stream;
   }

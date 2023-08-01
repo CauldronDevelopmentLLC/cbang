@@ -38,37 +38,29 @@
 namespace cb {
   template <typename T, typename MEMBER = void (T::*)()>
   class SmartFunctor {
-  protected:
-    typedef SmartFunctor<T, MEMBER> Super;
-
-    T *object;
+    T *obj;
     MEMBER member;
     bool engaged;
 
   public:
-    SmartFunctor(T *object, MEMBER member, bool engaged = true) :
-      object(object), member(member), engaged(engaged) {}
+    SmartFunctor(T *obj, MEMBER member, bool engaged = true) :
+      obj(obj), member(member), engaged(engaged) {}
+
 
     ~SmartFunctor() {
-      try {
-        if (engaged && object) (*object.*member)();
-      } CBANG_CATCH_ERROR; // Cannot throw an exception during a stack unwind
+      // Cannot throw an exception during a stack unwind
+      if (engaged && obj) TRY_CATCH_ERROR((*obj.*member)());
     }
 
-    T *getObject() const {return object;}
-    void setObject(T *object) {this->object = object;}
-    bool getEngaged() const {return engaged;}
+    bool isEngaged() const {return engaged;}
     void setEngaged(bool engaged) {this->engaged = engaged;}
   };
 
 
   template <typename T, typename MEMBER = void (T::*)() const>
   class SmartConstFunctor : public SmartFunctor<const T, MEMBER> {
-  protected:
-    typedef SmartConstFunctor<T, MEMBER> Super;
-
   public:
-    SmartConstFunctor(const T *object, MEMBER member, bool engaged = true) :
-      SmartFunctor<const T, MEMBER>(object, member, engaged) {}
+    SmartConstFunctor(const T *obj, MEMBER member, bool engaged = true) :
+      SmartFunctor<const T, MEMBER>(obj, member, engaged) {}
   };
 }

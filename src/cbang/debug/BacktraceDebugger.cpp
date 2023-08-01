@@ -45,13 +45,13 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
+#include <cstdarg>
 
 #include <execinfo.h>
 #include <bfd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <stdarg.h>
 
 #ifdef HAVE_VALGRIND
 #include <valgrind/memcheck.h>

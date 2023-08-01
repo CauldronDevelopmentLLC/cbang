@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "SignalManager.h"
-
 #include "SystemUtilities.h"
 #include "SystemInfo.h"
 
@@ -42,8 +41,8 @@
 #include <cbang/time/Timer.h>
 #include <cbang/util/SmartLock.h>
 
-#include <signal.h>
-#include <stdlib.h> // For atexit()
+#include <csignal>
+#include <cstdlib> // For atexit()
 
 using namespace std;
 using namespace cb;
@@ -58,7 +57,7 @@ namespace {
 
 #ifndef _WIN32
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #endif
 
 struct SignalManager::private_t {

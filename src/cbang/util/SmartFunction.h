@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <cbang/Catch.h>
+
 #include <functional>
 
 
@@ -39,11 +41,17 @@ namespace cb {
   class SmartFunction {
     typedef std::function<void ()> callback_t;
     callback_t cb;
-    bool engaged = true;
+    bool engaged;
 
   public:
-    explicit SmartFunction(callback_t cb) : cb(cb) {}
-    ~SmartFunction() {if (engaged && cb) cb();}
+    explicit SmartFunction(callback_t cb, bool engaged = true) :
+      cb(cb), engaged(engaged) {}
+
+
+    ~SmartFunction() {
+      // Cannot throw an exception during a stack unwind
+      if (engaged && cb) TRY_CATCH_ERROR(cb());
+    }
 
     bool isEngaged() const {return engaged;}
     void setEngaged(bool engaged) {this->engaged = engaged;}

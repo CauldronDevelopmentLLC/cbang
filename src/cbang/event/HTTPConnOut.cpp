@@ -61,9 +61,10 @@ void HTTPConnOut::makeRequest(const SmartPointer<Request> &req) {
 }
 
 
-void HTTPConnOut::writeRequest(const SmartPointer<Request> &req,
-                               cb::Event::Buffer buffer, bool hasMore,
-                               std::function<void (bool)> cb) {
+void HTTPConnOut::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
+                               bool hasMore, std::function<void (bool)> cb) {
+  if (!isConnected()) THROW("Cannot write request, not connected");
+
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength());
   LOG_DEBUG(4, "Sending: " << buffer.toString());
 

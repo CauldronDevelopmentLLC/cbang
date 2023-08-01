@@ -42,8 +42,7 @@
 #include <sstream>
 #include <functional>
 #include <cstdint>
-
-#include <stdarg.h>
+#include <cstdarg>
 
 
 namespace cb {

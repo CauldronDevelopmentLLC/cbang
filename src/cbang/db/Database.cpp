@@ -31,19 +31,16 @@
 \******************************************************************************/
 
 #include "Database.h"
-
 #include "Statement.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/os/SystemUtilities.h>
-
 #include <cbang/log/Logger.h>
 
 #include <sqlite3.h>
 
-#include <stdarg.h>
+#include <cstdarg>
 
 using namespace std;
 using namespace cb;

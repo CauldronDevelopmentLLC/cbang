@@ -36,8 +36,8 @@
 
 // Override v8stdint.h
 #include <cstdint>
-#include <stddef.h>
-#include <stdio.h>
+#include <cstddef>
+#include <cstdio>
 #define V8STDINT_H_
 
 #define V8_ENABLE_CHECKS

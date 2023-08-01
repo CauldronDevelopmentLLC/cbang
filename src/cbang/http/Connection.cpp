@@ -40,7 +40,7 @@
 #include <cbang/Zap.h>
 #include <cbang/String.h>
 
-#include <cbang/buffer/BufferDevice.h>
+#include <cbang/io/BufferDevice.h>
 
 #include <cbang/socket/SocketDevice.h>
 
@@ -214,7 +214,7 @@ void Connection::clearResponseBuffer() {
 }
 
 
-void Connection::addResponseBuffer(const SmartPointer<Buffer> &buf) {
+void Connection::addResponseBuffer(const SmartPointer<IOBuffer> &buf) {
   responseBuf.push_back(buf);
 }
 
@@ -375,7 +375,7 @@ bool Connection::write() {
 
     if (utilBuf.isEmpty()) {
       // Find the first non-empty buffer
-      SmartPointer<Buffer> &bufPtr = responseBuf.front();
+      SmartPointer<IOBuffer> &bufPtr = responseBuf.front();
       if (bufPtr->isEmpty()) {
         responseBuf.pop_front();
         continue;

@@ -37,7 +37,7 @@
 #include <cbang/Catch.h>
 #include <cbang/os/SystemInfo.h>
 
-#include <signal.h>
+#include <csignal>
 
 using namespace std;
 using namespace cb;

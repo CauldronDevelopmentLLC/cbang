@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "Semaphore.h"
-
 #include "SysError.h"
 
 #include <cbang/Exception.h>
@@ -47,7 +46,7 @@
 // Posix semaphores
 #include <fcntl.h> // For O_* constants
 #include <semaphore.h>
-#include <errno.h>
+#include <cerrno>
 #endif // _WIN32
 
 #ifdef __APPLE__

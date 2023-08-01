@@ -31,16 +31,13 @@
 \******************************************************************************/
 
 #include "Options.h"
-
 #include "OptionCategory.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/json/Dict.h>
 #include <cbang/json/Sink.h>
 #include <cbang/json/Builder.h>
-
 #include <cbang/log/Logger.h>
 
 #include <cctype>

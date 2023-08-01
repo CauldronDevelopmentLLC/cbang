@@ -40,7 +40,7 @@
 
 #include <mysql/mysql.h>
 
-#include <string.h>
+#include <cstring>
 
 #define RAISE_ERROR(msg) raiseError(SSTR(msg), false)
 #define RAISE_DB_ERROR(msg) raiseError(SSTR(msg), true)

@@ -31,16 +31,13 @@
 \******************************************************************************/
 
 #include "Header.h"
-
 #include "ContentTypes.h"
 
 #include <cbang/String.h>
 #include <cbang/Exception.h>
-
 #include <cbang/log/Logger.h>
 
-#include <string.h>
-
+#include <cstring>
 #include <vector>
 #include <sstream>
 #include <cctype>

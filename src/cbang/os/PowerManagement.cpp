@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "PowerManagement.h"
-
 #include "DynamicLibrary.h"
 
 #include <cbang/Exception.h>
@@ -67,7 +66,7 @@ typedef void (*XScreenSaverQueryInfo_t)(void *, unsigned, XScreenSaverInfo *);
 typedef Window (*XDefaultRootWindow_t)(void *);
 #endif
 
-#include <string.h>
+#include <cstring>
 
 using namespace cb;
 using namespace std;

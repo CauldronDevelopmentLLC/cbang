@@ -38,7 +38,7 @@
 
 #include <openssl/x509v3.h>
 
-#include <stdlib.h>
+#include <cstdlib>
 
 using namespace cb;
 

@@ -35,12 +35,12 @@
 #include <cbang/String.h>
 #include <cbang/log/Logger.h>
 
-#include <cstdint>
-
-#include <iosfwd> // streamsize
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/operations.hpp>
 namespace io = boost::iostreams;
+
+#include <cstdint>
+#include <iosfwd> // streamsize
 
 
 namespace cb {

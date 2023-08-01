@@ -32,7 +32,7 @@
 
 #include "XMLWriter.h"
 
-#include <ctype.h>
+#include <cctype>
 
 using namespace std;
 using namespace cb;

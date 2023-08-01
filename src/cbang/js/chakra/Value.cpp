@@ -41,7 +41,7 @@
 
 #include <ChakraCore.h>
 
-#include <string.h>
+#include <cstring>
 
 using namespace cb::chakra;
 using namespace cb;

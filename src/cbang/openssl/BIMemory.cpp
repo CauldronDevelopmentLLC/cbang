@@ -34,7 +34,7 @@
 
 #include <cbang/log/Logger.h>
 
-#include <string.h>
+#include <cstring>
 
 #include <openssl/bio.h>
 

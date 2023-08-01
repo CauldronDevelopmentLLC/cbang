@@ -45,20 +45,21 @@
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
 
-#include <string.h> // For memset()
+#include <cstring> // For memset()
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
 
 #else // _WIN32
-#include <stdio.h>
+#include <cstdio>
+#include <cerrno>
+#include <csignal>
+
 #include <unistd.h>
 #include <sys/types.h>
-#include <signal.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <errno.h>
 #endif // _WIN32
 
 using namespace cb;

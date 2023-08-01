@@ -31,7 +31,6 @@
 \******************************************************************************/
 
 #include "CUDALibrary.h"
-
 #include "GPUVendor.h"
 
 #include <cbang/Exception.h>

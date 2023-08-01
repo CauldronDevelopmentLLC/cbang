@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <cbang/SmartPointer.h>
+
 #include <iosfwd> // streamsize
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/operations.hpp>
@@ -39,10 +41,9 @@
 #include <boost/iostreams/detail/ios.hpp>
 namespace io = boost::iostreams;
 
-#include <cbang/SmartPointer.h>
+#include <cstring>
 
 #include <bzlib.h>
-#include <string.h>
 
 
 namespace cb {

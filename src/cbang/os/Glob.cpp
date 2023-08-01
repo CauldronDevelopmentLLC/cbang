@@ -31,7 +31,7 @@
 \******************************************************************************/
 
 #include "Glob.h"
-#include <cbang/os/SystemUtilities.h>
+#include "SystemUtilities.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
@@ -42,7 +42,7 @@
 #include <unistd.h>
 #endif
 
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 using namespace cb;

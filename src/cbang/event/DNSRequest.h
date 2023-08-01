@@ -84,5 +84,7 @@ namespace cb {
 
       static const char *getErrorStr(int error);
     };
+
+    typedef SmartPointer<DNSRequest> DNSRequestPtr;
   }
 }

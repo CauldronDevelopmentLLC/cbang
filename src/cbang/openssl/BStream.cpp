@@ -38,41 +38,11 @@
 #include <openssl/bio.h>
 #include <openssl/opensslv.h>
 
-#include <string.h>
+#include <cstring>
 
 using namespace cb;
 using namespace std;
 
-
-#if OPENSSL_VERSION_NUMBER < 0x1010000fL
-static BIO_METHOD *BIO_meth_new(int type, const char *name) {
-  BIO_METHOD *method = (BIO_METHOD *)calloc(1, sizeof(BIO_METHOD));
-  if (!method) THROW("Failed to allocate memory");
-
-  if (method) {
-    method->type = type;
-    method->name = name;
-  }
-
-  return method;
-}
-
-
-#define BIO_meth_set_write(b, f) b->bwrite = f
-#define BIO_meth_set_read(b, f) b->bread = f
-#define BIO_meth_set_puts(b, f) b->bputs = f
-#define BIO_meth_set_gets(b, f) b->bgets = f
-#define BIO_meth_set_ctrl(b, f) b->ctrl = f
-#define BIO_meth_set_create(b, f) b->create = f
-#define BIO_meth_set_destroy(b, f) b->destroy = f
-
-#define BIO_set_init(b, val) b->init = val
-#define BIO_set_data(b, val) b->ptr = val
-#define BIO_get_data(b) b->ptr
-
-#define BIO_set_flags(b, val) b->flags |= val
-#define BIO_clear_flags(b, val) b->flags &= ~(val)
-#endif // OPENSSL_VERSION_NUMBER < 0x1010000fL
 
 #define BSTREAM_DEBUG() LOG_DEBUG(5, __FUNCTION__ << "()");
 
