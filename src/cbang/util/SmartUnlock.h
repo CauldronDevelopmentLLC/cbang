@@ -43,11 +43,9 @@ namespace cb {
    * makes unlocking safe when exceptions may be thrown.
    */
   class SmartUnlock : public SmartFunction {
-    const Lockable *lock;
-
   public:
     SmartUnlock(const Lockable *lock, bool alreadyUnlocked = false) :
-      SmartFunction([lock] {lock->lock();}), lock(lock) {
+      SmartFunction([lock] {lock->lock();}) {
       if (!alreadyUnlocked) lock->unlock();
     }
   };
