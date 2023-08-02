@@ -60,7 +60,7 @@ void Client::send(const SmartPointer<Request> &req) const {
   // Connect
   req->getConnection()->connect(
     dns, uri.getIPAddress(), bindAddr,
-    [this, req] (bool success) {
+    [req] (bool success) {
       if (success) req->getConnection()->makeRequest(req);
       else req->onResponse(ConnectionError::CONN_ERR_CONNECT);
     });

@@ -179,10 +179,10 @@ void Websocket::readHeader() {
           uint8_t opcode = header[0] & 0xf;
           wsOpCode = (WebsockOpCode::enum_t)opcode;
 
-          if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
-
           LOG_DEBUG(4, CBANG_FUNC << "() header opcode=" << wsOpCode
-                    << " bytesToRead=" << bytesToRead);
+                    << " bytes=" << bytesToRead);
+
+          if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
 
           // Check total message size
           auto maxBodySize = getConnection()->getMaxBodySize();
@@ -211,8 +211,6 @@ void Websocket::readHeader() {
 
 
 void Websocket::readBody() {
-  LOG_DEBUG(4, CBANG_FUNC << "() bytesToRead=" << bytesToRead);
-
   auto cb = [this] (bool success) {
     if (!success) return close(WS_STATUS_PROTOCOL);
 
