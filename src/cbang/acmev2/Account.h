@@ -56,9 +56,9 @@ namespace cb {
 
   namespace ACMEv2 {
     static std::string letsencrypt_base =
-      "https://acme-v02.api.letsencrypt.org";
+      "https://acme-v02.api.letsencrypt.org/directory";
     static std::string letsencrypt_staging =
-      "https://acme-staging-v02.api.letsencrypt.org";
+      "https://acme-staging-v02.api.letsencrypt.org/directory";
 
     class Account : public Event::RequestMethod::Enum {
       Event::Client &client;
