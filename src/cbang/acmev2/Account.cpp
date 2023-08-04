@@ -384,7 +384,7 @@ void Account::next() {
 
   switch (state) {
   case STATE_IDLE: break;
-  case STATE_GET_DIR: get(uriBase + "/directory"); break;
+  case STATE_GET_DIR: get(uriBase); break;
   case STATE_REGISTER: post("newAccount", getNewAcctPayload()); break;
 
   case STATE_NEW_ORDER:
