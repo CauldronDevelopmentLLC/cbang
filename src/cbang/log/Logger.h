@@ -206,8 +206,10 @@ namespace cb {
 #define CBANG_LOG_DOMAIN __FILE__
 #endif
 
-#ifndef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX
+#ifdef CBANG_LOG_PREFIX
+#define CBANG__LOG_PREFIX CBANG_SSTR(CBANG_LOG_PREFIX)
+#else
+#define CBANG__LOG_PREFIX std::string()
 #endif
 
 // Log levels
@@ -235,9 +237,9 @@ namespace cb {
 // Warning these macros lock the Logger until they are deallocated
 #define CBANG_LOG_STREAM_LOCATION(domain, level, file, line)            \
   cb::Logger::instance()                                                \
-  .createStream(domain, level, std::string(), file, line)
+    .createStream(domain, level, CBANG__LOG_PREFIX, file, line)
 
-#define CBANG_LOG_STREAM(domain, level)                 \
+#define CBANG_LOG_STREAM(domain, level)                         \
   CBANG_LOG_STREAM_LOCATION(domain, level, __FILE__, __LINE__)
 
 #define CBANG_LOG_RAW_STREAM()                              \
@@ -258,8 +260,7 @@ namespace cb {
 #define CBANG_LOG_LOCATION(domain, level, msg, file, line)            \
   do {                                                                \
     if (CBANG_LOG_ENABLED(domain, level))                             \
-      *CBANG_LOG_STREAM_LOCATION(domain, level, file, line)           \
-        CBANG_LOG_PREFIX << msg;                                      \
+      *CBANG_LOG_STREAM_LOCATION(domain, level, file, line) << msg;   \
   } while (false)
 
 #define CBANG_LOG(domain, level, msg)                           \

@@ -33,12 +33,15 @@
 #include "JSONWebsocket.h"
 
 #include <cbang/Catch.h>
+#include <cbang/log/Logger.h>
 #include <cbang/iostream/VectorDevice.h>
 
 
 using namespace cb;
 using namespace cb::Event;
 using namespace std;
+
+#define CBANG_LOG_PREFIX "WS" << getID() << ':'
 
 
 namespace {
@@ -51,6 +54,8 @@ namespace {
 
     ~JSONWriter() {TRY_CATCH_ERROR(close(););}
 
+    unsigned getID() const {return ws->getID();}
+
     void close() {
       JSON::Writer::close();
       ws->send(data(), size());
@@ -59,7 +64,10 @@ namespace {
 }
 
 
-void JSONWebsocket::send(const JSON::Value &value) {send(value.toString());}
+void JSONWebsocket::send(const JSON::Value &value) {
+  LOG_DEBUG(6, "Sending: " << value);
+  send(value.toString());
+}
 
 
 SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
@@ -68,5 +76,7 @@ SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
 
 
 void JSONWebsocket::onMessage(const char *data, uint64_t length) {
-  onMessage(JSON::Reader::parse(InputSource(data, length)));
+  auto value = JSON::Reader::parse(InputSource(data, length));
+  LOG_DEBUG(6, "Received: " << *value);
+  onMessage(value);
 }

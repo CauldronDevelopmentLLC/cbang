@@ -43,8 +43,7 @@ using namespace cb::Event;
 using namespace cb;
 using namespace std;
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "CON" << getID() << ':'
+#define CBANG_LOG_PREFIX "CON" << getID() << ':'
 
 
 HTTPConnIn::HTTPConnIn(HTTPServer &server) :
