@@ -119,8 +119,7 @@ namespace {
 }
 
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << (isIncoming() ? "OUT" : "REQ") << getID() << ':'
+#define CBANG_LOG_PREFIX (isIncoming() ? "OUT" : "REQ") << getID() << ':'
 
 
 Request::Request(RequestMethod method, const URI &uri, const Version &version) :

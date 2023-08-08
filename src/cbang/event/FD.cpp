@@ -50,8 +50,7 @@ using namespace cb::Event;
 using namespace cb;
 using namespace std;
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "FD" << getFD() << ':'
+#define CBANG_LOG_PREFIX "FD" << getFD() << ':'
 
 namespace {
   void close_fd(int fd) {

@@ -43,8 +43,7 @@
 
 #include <cstring> // memcpy()
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "WS" << getID() << ':'
+#define CBANG_LOG_PREFIX "WS" << getID() << ':'
 
 
 using namespace std;

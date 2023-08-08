@@ -42,8 +42,7 @@ using namespace cb::Event;
 using namespace cb;
 using namespace std;
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX << "CON" << getID() << ':'
+#define CBANG_LOG_PREFIX "CON" << getID() << ':'
 
 
 HTTPConnOut::HTTPConnOut(Base &base, const SmartPointer<SSLContext> &sslCtx) :
