@@ -55,7 +55,7 @@ namespace cb {
       void processHeader();
       void checkChunked(const SmartPointer<Request> &req);
       void processRequest(const SmartPointer<Request> &req);
-      void addRequest(const SmartPointer<Request> &req);
+      void processIfNext(const SmartPointer<Request> &req);
       void error(HTTPStatus code, const std::string &message);
     };
   }
