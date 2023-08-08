@@ -151,7 +151,7 @@ void HTTPConnIn::processHeader() {
       if (websock && websock->upgrade()) return push(req);
     }
 
-    return req->sendError(HTTP_BAD_REQUEST, "Cannot upgrade");
+    return error(HTTP_BAD_REQUEST, "Cannot upgrade");
   }
 
   // If this is a request without a body, then we are done
