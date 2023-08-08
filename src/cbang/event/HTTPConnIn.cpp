@@ -130,6 +130,7 @@ void HTTPConnIn::processHeader() {
   // Create new request
   auto req = server.createRequest(method, uri, version);
   req->setConnection(this);
+  push(req);
 
   // Read header block
   if (!req->getInputHeaders().parse(input))
@@ -148,14 +149,14 @@ void HTTPConnIn::processHeader() {
 
     if (upgrade == "websocket") {
       Websocket *websock = dynamic_cast<Websocket *>(req.get());
-      if (websock && websock->upgrade()) return push(req);
+      if (websock && websock->upgrade()) return;
     }
 
     return error(HTTP_BAD_REQUEST, "Cannot upgrade");
   }
 
   // If this is a request without a body, then we are done
-  if (!req->mayHaveBody()) return addRequest(req);
+  if (!req->mayHaveBody()) return processIfNext(req);
 
   // Handle 100 HTTP continue
   if (Version(1, 1) <= version) {
@@ -189,7 +190,7 @@ void HTTPConnIn::checkChunked(const SmartPointer<Request> &req) {
   if (xferEnc == "chunked") {
     auto cb =
       [this, req] (bool success) {
-        if (success) addRequest(req);
+        if (success) processIfNext(req);
         else {
           LOG_DEBUG(3, "Incomplete chunked request body");
           return close();
@@ -208,7 +209,7 @@ void HTTPConnIn::checkChunked(const SmartPointer<Request> &req) {
   }
 
   // Non-chunked request /wo Content-Length has no body
-  if (!contentLength) return addRequest(req);
+  if (!contentLength) return processIfNext(req);
 
   if (maxBodySize && maxBodySize < contentLength)
     return error(HTTP_REQUEST_ENTITY_TOO_LARGE, "Body too large");
@@ -227,7 +228,7 @@ void HTTPConnIn::checkChunked(const SmartPointer<Request> &req) {
       }
 
       if (contentLength) input.remove(req->getInputBuffer(), contentLength);
-      addRequest(req);
+      processIfNext(req);
     };
 
   read(cb, input, contentLength);
@@ -240,9 +241,8 @@ void HTTPConnIn::processRequest(const SmartPointer<Request> &req) {
 }
 
 
-void HTTPConnIn::addRequest(const SmartPointer<Request> &req) {
-  push(req);
-  if (getNumRequests() == 1) processRequest(req);
+void HTTPConnIn::processIfNext(const SmartPointer<Request> &req) {
+  if (getNumRequests() && getRequest() == req) processRequest(req);
   // TODO Should read the next request in parallel if persistent connection
 }
 

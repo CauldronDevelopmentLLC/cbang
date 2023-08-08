@@ -123,11 +123,8 @@ bool Websocket::upgrade() {
     THROW("Cannot open Websocket, C! not built with openssl support");
 #endif
 
-    // Start connection
+    // Activate Websocket
     active = true;
-    onOpen();
-    readHeader();
-    schedulePing();
 
     // Respond
     setVersion(Version(1, 1));
@@ -135,6 +132,11 @@ bool Websocket::upgrade() {
     outSet("Connection", "upgrade");
     outSet("Sec-WebSocket-Accept", key);
     reply(HTTP_SWITCHING_PROTOCOLS);
+
+    // Start connection
+    onOpen();
+    readHeader();
+    schedulePing();
 
     return true;
   } CATCH_ERROR;
