@@ -119,6 +119,7 @@ namespace {
 }
 
 
+#undef CBANG_LOG_PREFIX
 #define CBANG_LOG_PREFIX (isIncoming() ? "OUT" : "REQ") << getID() << ':'
 
 
