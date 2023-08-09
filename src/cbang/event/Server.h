@@ -98,7 +98,7 @@ namespace cb {
       void shutdown();
 
       void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
-                  const SmartPointer<SSL> &ssl);
+                  const SmartPointer<SSLContext> &sslCtx);
       void remove(const SmartPointer<Connection> &conn);
 
       virtual SmartPointer<Connection> createConnection();

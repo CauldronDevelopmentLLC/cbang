@@ -58,11 +58,20 @@ Connection::Connection(cb::Event::Base &base) :
 
 Connection::~Connection() {
   LOG_DEBUG(4, "Connection closed");
-  if (socket.isSet()) socket->adopt(); // Prevent socket from closing FD
+  TRY_CATCH_ERROR(setSocket(0));
 }
 
 
 void Connection::setTTL(double sec) {timeout->add(sec);}
+
+
+void Connection::setSocket(const SmartPointer<Socket> &socket) {
+  // Prevent socket from closing FD
+  if (this->socket.isSet()) this->socket->adopt();
+  this->socket = socket;
+
+  setFD(socket.isSet() ? socket->get() : -1);
+}
 
 
 bool Connection::isConnected() const {
@@ -72,42 +81,61 @@ bool Connection::isConnected() const {
 
 void Connection::accept(const IPAddress &peer,
                         const SmartPointer<Socket> &socket,
-                        const SmartPointer<SSL> &ssl) {
+                        const SmartPointer<SSLContext> &sslCtx) {
   if (socket.isNull()) THROW("Socket cannot be null");
+
+  LOG_DEBUG(5, "Accepting from " << peer);
+  if (stats.isSet()) stats->event("incoming");
+
+  socket->setBlocking(false);
+
+  SmartPointer<SSL> ssl;
+#ifdef HAVE_OPENSSL
+  if (sslCtx.isSet()) {
+    ssl = sslCtx->createSSL();
+    ssl->setFD(socket->get());
+    ssl->accept();
+  }
+#endif // HAVE_OPENSSL
+
+  setSSL(ssl);
   setPeer(peer);
-  setSSL(ssl); // Must be before setFD()
-  this->socket = socket;
-  setFD(socket->get());
+  setSocket(socket);
 
   LOG_DEBUG(4, "Connection accepted with fd " << socket->get());
 }
 
 
-void Connection::connect(DNSBase &dns, const IPAddress &peer,
-                         const IPAddress &bind, function<void (bool)> cb) {
+void Connection::connect(
+  DNSBase &dns, const IPAddress &peer, const IPAddress &bind,
+  const SmartPointer<SSLContext> &sslCtx, function<void (bool)> cb) {
   try {
     if (isConnected()) THROW("Already connected");
 
     LOG_DEBUG(5, "Connecting to " << peer);
+    if (stats.isSet()) stats->event("outgoing");
 
     // Open and bind new socket
-    socket = new Socket;
+    SmartPointer<Socket> socket = new Socket;
     if (bind.getIP()) socket->bind(bind);
     else socket->open();
     socket->setBlocking(false);
-    setFD(socket->get());
-    setPeer(peer);
 
-    LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
-
+    SmartPointer<SSL> ssl;
 #ifdef HAVE_OPENSSL
-    // SSL
-    if (getSSL().isSet()) {
-      getSSL()->setFD(socket->get());
-      getSSL()->setConnectState();
-      if (peer.hasHost()) getSSL()->setTLSExtHostname(peer.getHost());
+    if (sslCtx.isSet()) {
+      ssl = sslCtx->createSSL();
+      ssl->setFD(socket->get());
+      ssl->setConnectState();
+      if (peer.hasHost()) ssl->setTLSExtHostname(peer.getHost());
     }
 #endif // HAVE_OPENSSL
+
+    setSSL(ssl);
+    setPeer(peer);
+    setSocket(socket);
+
+    LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
 
     // DNS request reference
     struct Ref {SmartPointer<DNSRequest> dnsReq;};
@@ -130,7 +158,7 @@ void Connection::connect(DNSBase &dns, const IPAddress &peer,
           setPeer(addr);
 
           // NOTE, Connect timeout is write timeout
-          socket->connect(addr);
+          getSocket()->connect(addr);
 
           // Wait for socket write
           auto writeCB = [this, cb] (bool success) {if (cb) cb(isConnected());};

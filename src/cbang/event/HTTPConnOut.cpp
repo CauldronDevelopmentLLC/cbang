@@ -35,7 +35,6 @@
 
 #include <cbang/Catch.h>
 #include <cbang/socket/Socket.h>
-#include <cbang/openssl/SSLContext.h>
 #include <cbang/log/Logger.h>
 
 using namespace cb::Event;
@@ -45,13 +44,7 @@ using namespace std;
 #define CBANG_LOG_PREFIX "CON" << getID() << ':'
 
 
-HTTPConnOut::HTTPConnOut(Base &base, const SmartPointer<SSLContext> &sslCtx) :
-  HTTPConn(base) {
-
-#ifdef HAVE_OPENSSL
-  if (sslCtx.isSet()) setSSL(sslCtx->createSSL());
-#endif // HAVE_OPENSSL
-}
+HTTPConnOut::HTTPConnOut(Base &base) : HTTPConn(base) {}
 
 
 void HTTPConnOut::makeRequest(const SmartPointer<Request> &req) {

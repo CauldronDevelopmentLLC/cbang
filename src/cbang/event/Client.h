@@ -121,9 +121,6 @@ namespace cb {
       call(const URI &uri, RequestMethod method,
            T *obj, typename Callback<T>::member_t member)
       {return call(uri, method, bind(obj, member));}
-
-    protected:
-      SmartPointer<HTTPConn> createConnection(bool withSSL) const;
     };
   }
 }

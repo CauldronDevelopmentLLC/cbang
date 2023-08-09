@@ -81,7 +81,7 @@ FD::~FD () {
 void FD::setFD(int fd) {
   if (0 <= this->fd) THROW("FD already set");
   this->fd = fd;
-  base.getPool().open(*this);
+  if (0 <= fd) base.getPool().open(*this);
 }
 
 

@@ -63,14 +63,12 @@ void Server::shutdown() {
 
 
 void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
-                    const SmartPointer<SSL> &ssl) {
+                    const SmartPointer<SSLContext> &sslCtx) {
   LOG_DEBUG(4, "New connection from " << peer);
-
-  if (stats.isSet()) stats->event("incoming");
 
   auto conn = createConnection();
 
-  conn->accept(peer, socket, ssl);
+  conn->accept(peer, socket, sslCtx);
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
   conn->setStats(stats);
