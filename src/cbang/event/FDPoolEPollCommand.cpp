@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2023, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -30,54 +29,6 @@
 
 \******************************************************************************/
 
-#include "JSONWebsocket.h"
-
-#include <cbang/Catch.h>
-#include <cbang/log/Logger.h>
-#include <cbang/iostream/VectorDevice.h>
-
-
-using namespace cb;
-using namespace cb::Event;
-using namespace std;
-
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX "WS" << getID() << ':'
-
-
-namespace {
-  struct JSONWriter : vector<char>, cb::VectorStream<>, public JSON::Writer {
-    SmartPointer<Websocket> ws;
-
-    JSONWriter(const SmartPointer<Websocket> &ws) :
-      cb::VectorStream<>((vector<char> &)*this),
-      JSON::Writer((ostream &)*this), ws(ws) {}
-
-    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
-
-    unsigned getID() const {return ws->getID();}
-
-    void close() {
-      JSON::Writer::close();
-      ws->send(data(), size());
-    }
-  };
-}
-
-
-void JSONWebsocket::send(const JSON::Value &value) {
-  LOG_DEBUG(6, "Sending: " << value);
-  send(value.toString());
-}
-
-
-SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
-  return new JSONWriter(this);
-}
-
-
-void JSONWebsocket::onMessage(const char *data, uint64_t length) {
-  auto value = JSON::Reader::parse(InputSource(data, length));
-  LOG_DEBUG(6, "Received: " << *value);
-  onMessage(value);
-}
+#define CBANG_ENUM_IMPL
+#include "FDPoolEPollCommand.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

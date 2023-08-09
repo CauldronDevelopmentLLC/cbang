@@ -45,9 +45,9 @@ namespace cb {
       HTTPConnIn(HTTPServer &server);
 
       // From HTTPConn
-      bool isIncoming() const {return true;}
+      bool isIncoming() const override {return true;}
       void writeRequest(const SmartPointer<Request> &req, Buffer buffer,
-                        bool hasMore, std::function<void (bool)> cb);
+                        bool hasMore, std::function<void (bool)> cb) override;
 
       void readHeader();
 

@@ -50,6 +50,7 @@ using namespace cb::Event;
 using namespace cb;
 using namespace std;
 
+#undef CBANG_LOG_PREFIX
 #define CBANG_LOG_PREFIX "FD" << getFD() << ':'
 
 namespace {
@@ -65,12 +66,14 @@ namespace {
 
 FD::FD(cb::Event::Base &base, int fd, const SmartPointer<SSL> &ssl) :
   base(base), ssl(ssl) {
-  LOG_DEBUG(4, CBANG_FUNC << "() fd=" << fd);
   if (0 <= fd) setFD(fd);
+  LOG_DEBUG(4, CBANG_FUNC << "()");
 }
 
 
 FD::~FD () {
+  LOG_DEBUG(4, CBANG_FUNC << "()");
+
   if (fd != -1) {
     int fd = this->fd;
     TRY_CATCH_ERROR(base.getPool().flush(fd, [fd] () {close_fd(fd);}));
@@ -79,6 +82,8 @@ FD::~FD () {
 
 
 void FD::setFD(int fd) {
+  LOG_DEBUG(4, CBANG_FUNC << "()");
+
   if (0 <= this->fd) THROW("FD already set");
   this->fd = fd;
   if (0 <= fd) base.getPool().open(*this);

@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2023, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -30,54 +29,31 @@
 
 \******************************************************************************/
 
-#include "JSONWebsocket.h"
+#ifndef CBANG_ENUM
+#ifndef CBANG_FDPOOL_EPOLL_COMMAND_H
+#define CBANG_FDPOOL_EPOLL_COMMAND_H
 
-#include <cbang/Catch.h>
-#include <cbang/log/Logger.h>
-#include <cbang/iostream/VectorDevice.h>
+#define CBANG_ENUM_NAME FDPoolEPollCommand
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 Event
+#define CBANG_ENUM_PATH cbang/event
+#define CBANG_ENUM_PREFIX 4
+#include <cbang/enum/MakeEnumeration.def>
 
+#endif // CBANG_FDPOOL_EPOLL_COMMAND_H
+#else // CBANG_ENUM
 
-using namespace cb;
-using namespace cb::Event;
-using namespace std;
+CBANG_ENUM(CMD_READ)
+CBANG_ENUM(CMD_WRITE)
+CBANG_ENUM(CMD_FLUSH)
+CBANG_ENUM(CMD_FLUSHED)
+CBANG_ENUM(CMD_COMPLETE)
+CBANG_ENUM(CMD_READ_PROGRESS)
+CBANG_ENUM(CMD_WRITE_PROGRESS)
+CBANG_ENUM(CMD_READ_SIZE)
+CBANG_ENUM(CMD_WRITE_SIZE)
+CBANG_ENUM(CMD_READ_FINISHED)
+CBANG_ENUM(CMD_WRITE_FINISHED)
+CBANG_ENUM(CMD_STATUS)
 
-#undef CBANG_LOG_PREFIX
-#define CBANG_LOG_PREFIX "WS" << getID() << ':'
-
-
-namespace {
-  struct JSONWriter : vector<char>, cb::VectorStream<>, public JSON::Writer {
-    SmartPointer<Websocket> ws;
-
-    JSONWriter(const SmartPointer<Websocket> &ws) :
-      cb::VectorStream<>((vector<char> &)*this),
-      JSON::Writer((ostream &)*this), ws(ws) {}
-
-    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
-
-    unsigned getID() const {return ws->getID();}
-
-    void close() {
-      JSON::Writer::close();
-      ws->send(data(), size());
-    }
-  };
-}
-
-
-void JSONWebsocket::send(const JSON::Value &value) {
-  LOG_DEBUG(6, "Sending: " << value);
-  send(value.toString());
-}
-
-
-SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
-  return new JSONWriter(this);
-}
-
-
-void JSONWebsocket::onMessage(const char *data, uint64_t length) {
-  auto value = JSON::Reader::parse(InputSource(data, length));
-  LOG_DEBUG(6, "Received: " << *value);
-  onMessage(value);
-}
+#endif // CBANG_ENUM

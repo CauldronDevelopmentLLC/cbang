@@ -37,6 +37,7 @@
 #ifdef HAVE_EPOLL
 
 #include "FDPool.h"
+#include "FDPoolEPollCommand.h"
 
 #include <cbang/os/Thread.h>
 #include <cbang/util/SPSCQueue.h>
@@ -50,25 +51,13 @@ namespace cb {
   namespace Event {
     class Base;
 
-    class FDPoolEPoll : public FDPool, public Thread {
+    class FDPoolEPoll :
+      public FDPool, public Thread, public FDPoolEPollCommand::Enum {
       int fd = -1;
 
       SmartPointer<Event> event;
 
-      typedef enum {
-        CMD_READ,
-        CMD_WRITE,
-        CMD_FLUSH,
-        CMD_FLUSHED,
-        CMD_COMPLETE,
-        CMD_READ_PROGRESS,
-        CMD_WRITE_PROGRESS,
-        CMD_READ_SIZE,
-        CMD_WRITE_SIZE,
-        CMD_READ_FINISHED,
-        CMD_WRITE_FINISHED,
-        CMD_STATUS,
-      } cmd_t;
+      typedef FDPoolEPollCommand cmd_t;
 
       enum {
         STATUS_READ_CLOSED    = 1 << 4,

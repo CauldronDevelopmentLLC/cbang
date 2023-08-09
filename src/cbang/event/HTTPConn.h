@@ -92,7 +92,7 @@ namespace cb {
 
     public:
       // From FD
-      void close();
+      void close() override;
     };
   }
 }

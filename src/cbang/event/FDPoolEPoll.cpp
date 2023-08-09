@@ -325,7 +325,7 @@ void FDPoolEPoll::write(const SmartPointer<Transfer> &t) {
 void FDPoolEPoll::open(FD &fd) {
   if (fd.getFD() < 0) THROW("Invalid fd " << fd.getFD());
   if (!fds.insert(fds_t::value_type(fd.getFD(), &fd)).second)
-    THROW("FD already in pool");
+    THROW("FD " << fd.getFD() << " already in pool");
 }
 
 
@@ -372,6 +372,7 @@ void FDPoolEPoll::queueStatus(int fd, int status) {
 
 void FDPoolEPoll::queueCommand(cmd_t cmd, int fd,
                                const SmartPointer<Transfer> &tran) {
+  LOG_DEBUG(5, CBANG_FUNC << "() fd=" << fd << " cmd=" << cmd);
   cmds.push({cmd, fd, tran});
 }
 
@@ -396,6 +397,8 @@ void FDPoolEPoll::processResults() {
     }
 
     FD &fd = *it->second;
+
+    // Drop results from flushing FDs
     auto it2 = flushing.find(cmd.fd);
     if (it2 != flushing.end() && cmd.cmd != CMD_FLUSHED) {
       results.pop();
