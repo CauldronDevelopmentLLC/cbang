@@ -32,31 +32,23 @@
 
 #pragma once
 
-#include <cbang/config/Options.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+
+#include <boost/iostreams/categories.hpp>
+#include <boost/iostreams/char_traits.hpp>
+#include <boost/iostreams/close.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/detail/ios.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/operations.hpp>
+#include <boost/iostreams/positioning.hpp>
+#include <boost/iostreams/stream.hpp>
+
+#pragma GCC diagnostic pop
+
+#include <iosfwd> // streamsize
 
 namespace cb {
-  /**
-   * This class is used to allow different sets of configuration options
-   * to be set in different contexts.  Such as different project runs.
-   * Options which are not "localize" are defered to the parent Options
-   * class.
-   *
-   * Options set here shadow options set in the Options class
-   * passed at construction.
-   */
-  class OptionProxy : public Options {
-    const Options &options;
-
-  public:
-    OptionProxy(const Options &options) : options(options) {}
-
-    // From OptionMap
-    bool has(const std::string &key) const override;
-    /// @return True if the options is local to this proxy.
-    bool local(const std::string &key) const override;
-    /// Make the option local to this proxy.
-    const SmartPointer<Option> &localize(const std::string &key) override;
-    /// Get an option.  Possibly defering to the parent Options.
-    const SmartPointer<Option> &get(const std::string &key) const override;
-  };
+  namespace io = boost::iostreams;
 }

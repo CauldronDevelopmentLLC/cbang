@@ -60,13 +60,12 @@ namespace cb {
     void entityRef(const std::string &name);
 
     // From XMLHandler
-    void startElement(const std::string &name, const std::string &attrs);
     void startElement(const std::string &name,
-                      const XMLAttributes &attrs = XMLAttributes());
-    void endElement(const std::string &name);
-    void text(const std::string &text);
-    void cdata(const std::string &cdata);
-    void comment(const std::string &text);
+                      const XMLAttributes &attrs = XMLAttributes()) override;
+    void endElement(const std::string &name) override;
+    void text(const std::string &text) override;
+    void cdata(const std::string &cdata) override;
+    void comment(const std::string &text) override;
 
     void indent();
     void wrap();

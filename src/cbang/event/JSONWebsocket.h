@@ -49,7 +49,7 @@ namespace cb {
       virtual void onMessage(const JSON::ValuePtr &msg) = 0;
 
       // From Websocket
-      void onMessage(const char *data, uint64_t length);
+      void onMessage(const char *data, uint64_t length) override;
 
     protected:
       using Websocket::send;

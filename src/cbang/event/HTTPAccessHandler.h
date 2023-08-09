@@ -62,7 +62,7 @@ namespace cb {
       bool groupDeny(const std::string &name) const;
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

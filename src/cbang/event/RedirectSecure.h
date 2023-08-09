@@ -48,7 +48,7 @@ namespace cb {
       RedirectSecure(uint32_t port = 443) : port(port) {}
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

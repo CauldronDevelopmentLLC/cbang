@@ -83,7 +83,7 @@ namespace cb {
     iterator end() const {return sessions.end();}
 
     // From JSON::Serializable
-    void read(const JSON::Value &value);
-    void write(JSON::Sink &sink) const;
+    void read(const JSON::Value &value) override;
+    void write(JSON::Sink &sink) const override;
   };
 }

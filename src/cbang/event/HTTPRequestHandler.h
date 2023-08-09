@@ -58,7 +58,7 @@ namespace cb {
       }
 
       // From HTTPRequestHandler
-      bool operator()(Request &req) {return cb(req);}
+      bool operator()(Request &req) override {return cb(req);}
     };
 
 
@@ -75,7 +75,7 @@ namespace cb {
       }
 
       // From HTTPRequestHandler
-      bool operator()(Request &req) {return (*obj.*member)(req);}
+      bool operator()(Request &req) override {return (*obj.*member)(req);}
     };
 
 
@@ -89,7 +89,7 @@ namespace cb {
       }
 
       // From HTTPRequestHandler
-      bool operator()(Request &req) {return (req.cast<T>().*member)();}
+      bool operator()(Request &req) override {return (req.cast<T>().*member)();}
     };
   }
 }

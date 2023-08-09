@@ -49,12 +49,12 @@ namespace cb {
         {return SmartPointer<Undefined>::Phony(&undefined);}
 
       // From Value
-      ValueType getType() const {return JSON_UNDEFINED;}
-      bool isUndefined() const {return true;}
-      ValuePtr copy(bool deep = false) const {return instancePtr();}
-      const Value &getUndefined() const {return *this;}
-      bool canWrite(Sink &sink) const {return false;}
-      void write(Sink &sink) const {}
+      ValueType getType() const override {return JSON_UNDEFINED;}
+      bool isUndefined() const override {return true;}
+      ValuePtr copy(bool deep = false) const override {return instancePtr();}
+      const Value &getUndefined() const override {return *this;}
+      bool canWrite(Sink &sink) const override {return false;}
+      void write(Sink &sink) const override {}
     };
   }
 }

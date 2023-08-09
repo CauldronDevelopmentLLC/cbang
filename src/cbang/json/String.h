@@ -52,22 +52,22 @@ namespace cb {
       operator const std::string &() const {return s;}
 
       // From Value
-      ValueType getType() const {return JSON_STRING;}
-      bool isString() const {return true;}
-      ValuePtr copy(bool deep = false) const {return new String(s);}
-      bool getBoolean() const;
-      double getNumber() const;
+      ValueType getType() const override {return JSON_STRING;}
+      bool isString() const override {return true;}
+      ValuePtr copy(bool deep = false) const override {return new String(s);}
+      bool getBoolean() const override;
+      double getNumber() const override;
 
-#define CBANG_STRING_PT(NAME, TYPE, DESC) TYPE get##NAME() const;
-#include <cbang/StringParseTypes.def>
+#define CBANG_JSON_NVT(NAME, TYPE) TYPE get##NAME() const override;
+#include "NumberValueTypes.def"
 
-#define CBANG_STRING_PT(NAME, TYPE, DESC)                       \
-      TYPE get##NAME##WithDefault(TYPE defaultValue) const;
-#include <cbang/StringParseTypes.def>
+#define CBANG_JSON_NVT(NAME, TYPE)                                      \
+      TYPE get##NAME##WithDefault(TYPE defaultValue) const override;
+#include "NumberValueTypes.def"
 
-      bool toBoolean() const {return getBoolean();}
-      const std::string &getString() const {return s;}
-      void write(Sink &sink) const {sink.write(s);}
+      bool toBoolean() const override {return getBoolean();}
+      const std::string &getString() const override {return s;}
+      void write(Sink &sink) const override {sink.write(s);}
     };
   }
 }

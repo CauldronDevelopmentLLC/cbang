@@ -44,11 +44,6 @@ void XMLWriter::entityRef(const string &name) {
 }
 
 
-void XMLWriter::startElement(const string &name, const std::string &attrs) {
-  startElement(name, XMLAttributes(attrs));
-}
-
-
 void XMLWriter::startElement(const string &name, const XMLAttributes &attrs) {
   startOfLine = false; // Always start element on a new line
 

@@ -31,17 +31,14 @@
 \******************************************************************************/
 
 #include "Connection.h"
-
 #include "Server.h"
 
 #include <cbang/log/Logger.h>
-
-#include <boost/iostreams/filtering_stream.hpp>
+#include <cbang/iostream/Boost.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::Script;
-namespace io = boost::iostreams;
 
 
 bool Connection::isFinished() const {

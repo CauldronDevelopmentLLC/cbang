@@ -44,7 +44,7 @@ namespace cb {
       using std::set<std::string>::set;
 
       // From Filter
-      bool operator()(unsigned index, const std::string &keyword) const
+      bool operator()(unsigned index, const std::string &keyword) const override
       {return find(keyword) != end();}
     };
   }

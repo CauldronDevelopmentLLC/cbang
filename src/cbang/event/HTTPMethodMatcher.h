@@ -52,7 +52,7 @@ namespace cb {
       bool match(RequestMethod method) const;
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

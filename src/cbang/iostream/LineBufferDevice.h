@@ -32,9 +32,7 @@
 
 #pragma once
 
-#include <boost/iostreams/categories.hpp>   // sink_tag
-#include <boost/iostreams/positioning.hpp>  // stream_offset
-#include <boost/iostreams/stream.hpp>
+#include <cbang/iostream/Boost.h>
 
 #include <string>
 

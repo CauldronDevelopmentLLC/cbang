@@ -58,8 +58,8 @@ namespace cb {
     ~BacktraceDebugger();
 
     static bool supported();
-    void getStackTrace(StackTrace &trace, bool resolved);
-    void resolve(StackTrace &trace);
+    void getStackTrace(StackTrace &trace, bool resolved) override;
+    void resolve(StackTrace &trace) override;
 
   protected:
     const FileLocation &resolve(void *addr);

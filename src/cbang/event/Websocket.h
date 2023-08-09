@@ -66,9 +66,10 @@ namespace cb {
       uint64_t getMessagesSent() const {return msgSent;}
       uint64_t getMessagesReceived() const {return msgReceived;}
 
-      void send(const char *data, unsigned length);
-      void send(const std::string &s);
-      void send(const char *s) {send(std::string(s));}
+      // From Request
+      void send(const char *data, unsigned length) override;
+      void send(const std::string &s) override;
+      void send(const char *s) override {send(std::string(s));}
 
       void close(WebsockStatus status, const std::string &msg = "");
       void ping(const std::string &payload = "");
@@ -80,8 +81,8 @@ namespace cb {
       void readBody();
 
       // From Request
-      bool isWebsocket() const {return active;}
-      void onResponse(ConnectionError error);
+      bool isWebsocket() const override {return active;}
+      void onResponse(ConnectionError error) override;
 
       // Callbacks
       virtual bool onUpgrade() {return true;}
@@ -95,7 +96,8 @@ namespace cb {
       using Request::send;
       using Request::reply;
 
-      void writeRequest(Buffer &buf);
+      // From Request
+      void writeRequest(Buffer &buf) override;
 
       void writeFrame(WebsockOpCode opcode, bool finish,
                       const void *data, uint64_t len);

@@ -52,7 +52,7 @@ SmartPointer<JSON::Value>
 GoogleOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   SmartPointer<JSON::Value> p = new JSON::Dict;
 
-  p->insert("provider", getProvider());
+  p->insert("provider", "google");
   p->insert("id", profile->getString("sub"));
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));

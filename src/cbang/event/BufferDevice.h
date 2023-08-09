@@ -34,8 +34,7 @@
 
 #include "Buffer.h"
 
-#include <boost/iostreams/categories.hpp> // bidirectional_device_tag
-#include <boost/iostreams/stream.hpp>
+#include <cbang/iostream/Boost.h>
 
 
 namespace cb {

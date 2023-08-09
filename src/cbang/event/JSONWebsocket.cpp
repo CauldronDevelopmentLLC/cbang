@@ -57,7 +57,8 @@ namespace {
 
     unsigned getID() const {return ws->getID();}
 
-    void close() {
+    // From JSON::Writer
+    void close() override {
       JSON::Writer::close();
       ws->send(data(), size());
     }

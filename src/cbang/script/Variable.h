@@ -45,15 +45,15 @@ namespace cb {
         Entity(name, help), value(value) {}
 
       // From Entity
-      entity_t getType() const {return VARIABLE;}
+      entity_t getType() const override {return VARIABLE;}
 
       const std::string &get() const {return value;}
       std::string &get() {return value;}
       void set(const std::string &value) {this->value = value;}
 
       // From Handler
-      bool eval(const Context &ctx);
-      void validate(const Arguments &args) const;
+      bool eval(const Context &ctx) override;
+      void validate(const Arguments &args) const override;
     };
   }
 }

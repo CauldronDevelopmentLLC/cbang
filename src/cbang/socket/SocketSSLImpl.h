@@ -55,15 +55,16 @@ namespace cb {
     ~SocketSSLImpl();
 
     // From SocketImpl
-    SSL &getSSL() {return *ssl;}
-    SSLContext &getSSLContext() {return *sslCtx;}
-    bool isSecure() {return true;}
-    Socket *createSocket();
-    SmartPointer<Socket> accept(IPAddress *ip);
-    void connect(const IPAddress &ip);
-    std::streamsize write(const char *data, std::streamsize length,
-                          unsigned flags);
-    std::streamsize read(char *data, std::streamsize length, unsigned flags);
-    void close();
+    SSL &getSSL() override {return *ssl;}
+    SSLContext &getSSLContext() override {return *sslCtx;}
+    bool isSecure() override {return true;}
+    Socket *createSocket() override;
+    SmartPointer<Socket> accept(IPAddress *ip) override;
+    void connect(const IPAddress &ip) override;
+    std::streamsize write(
+      const char *data, std::streamsize length, unsigned flags) override;
+    std::streamsize read(
+      char *data, std::streamsize length, unsigned flags) override;
+    void close() override;
   };
 }

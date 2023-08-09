@@ -62,34 +62,35 @@ namespace cb {
       int getType() const;
 
       // From js::Value
-      SmartPointer<js::Value> makePersistent() const;
+      SmartPointer<js::Value> makePersistent() const override;
 
-      bool isArray() const;
-      bool isBoolean() const;
-      bool isFunction() const;
-      bool isNull() const;
-      bool isNumber() const;
-      bool isObject() const;
-      bool isString() const;
-      bool isUndefined() const;
+      bool isArray() const override;
+      bool isBoolean() const override;
+      bool isFunction() const override;
+      bool isNull() const override;
+      bool isNumber() const override;
+      bool isObject() const override;
+      bool isString() const override;
+      bool isUndefined() const override;
 
-      bool toBoolean() const;
-      int toInteger() const;
-      double toNumber() const;
-      std::string toString() const;
+      bool toBoolean() const override;
+      int toInteger() const override;
+      double toNumber() const override;
+      std::string toString() const override;
 
-      unsigned length() const;
-      SmartPointer<js::Value> get(int i) const;
+      unsigned length() const override;
+      SmartPointer<js::Value> get(int i) const override;
 
-      bool has(const std::string &key) const;
-      SmartPointer<js::Value> get(const std::string &key) const;
+      bool has(const std::string &key) const override;
+      SmartPointer<js::Value> get(const std::string &key) const override;
 
-      void set(int i, const js::Value &value);
-      void set(const std::string &key, const js::Value &value);
+      void set(int i, const js::Value &value) override;
+      void set(const std::string &key, const js::Value &value) override;
 
-      void set(int i, const Value &value);
+      void set(int i, const Value &value) override;
       void append(const Value &value);
-      void set(const std::string &key, const Value &value, bool strict = false);
+      void set(const std::string &key, const Value &value,
+               bool strict = false) override;
       SmartPointer<js::Value>
       call(const std::vector<SmartPointer<js::Value> > &args) const;
 

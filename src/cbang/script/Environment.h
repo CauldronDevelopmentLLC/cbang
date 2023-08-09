@@ -90,7 +90,7 @@ namespace cb {
 
       // From Handler
       using Handler::eval;
-      bool eval(const Context &ctx);
+      bool eval(const Context &ctx) override;
 
       virtual void localEval(const Context &ctx, Entity &e);
 

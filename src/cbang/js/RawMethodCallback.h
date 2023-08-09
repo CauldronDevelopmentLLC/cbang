@@ -53,7 +53,7 @@ namespace cb {
         Callback(sig, factory), object(object), member(member) {}
 
       // From Callback
-      SmartPointer<Value> call(Callback &cb, Value &args) {
+      SmartPointer<Value> call(Callback &cb, Value &args) override {
         return (*object.*member)(cb, args);
       }
     };

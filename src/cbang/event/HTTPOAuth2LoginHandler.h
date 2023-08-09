@@ -56,10 +56,10 @@ namespace cb {
 
       // From OAuth2Login
       void processProfile(Request &req,
-                          const SmartPointer<JSON::Value> &profile);
+                          const SmartPointer<JSON::Value> &profile) override;
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

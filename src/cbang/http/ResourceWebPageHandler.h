@@ -46,8 +46,8 @@ namespace cb {
       ResourceWebPageHandler(const Resource *root) : root(root) {}
 
       // From WebPageHandler
-      bool handlePage(WebContext &ctx, std::ostream &stream,
-                      const cb::URI &uri);
+      bool handlePage(
+        WebContext &ctx, std::ostream &stream, const cb::URI &uri) override;
     };
   }
 }

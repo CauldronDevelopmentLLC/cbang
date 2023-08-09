@@ -66,10 +66,11 @@ namespace cb {
                              const std::string &value) = 0;
 
     // From XMLHandler
-    void startElement(const std::string &name, const XMLAttributes &attrs);
-    void endElement(const std::string &name);
-    void text(const std::string &text);
-    void cdata(const std::string &data);
+    void startElement(
+      const std::string &name, const XMLAttributes &attrs) override;
+    void endElement(const std::string &name) override;
+    void text(const std::string &text) override;
+    void cdata(const std::string &data) override;
   };
 
   inline std::istream &operator>>(std::istream &stream, XMLValueMap &o) {

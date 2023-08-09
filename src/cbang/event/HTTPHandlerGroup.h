@@ -133,7 +133,7 @@ namespace cb {
       }
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

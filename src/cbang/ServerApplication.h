@@ -55,10 +55,10 @@ namespace cb {
     virtual void beforeDroppingPrivileges() {}
 
     // From Application
-    void afterCommandLineParse();
-    int init(int argc, char *argv[]);
-    void run() {}
-    bool shouldQuit() const;
+    void afterCommandLineParse() override;
+    int init(int argc, char *argv[]) override;
+    void run() override {}
+    bool shouldQuit() const override;
 
     uint64_t getLifeline() const {return lifeline;}
     bool lostLifeline() const;
@@ -70,6 +70,6 @@ namespace cb {
     int daemonAction();
 
     // From SignalHandler
-    void handleSignal(int sig);
+    void handleSignal(int sig) override;
   };
 }

@@ -74,8 +74,8 @@ namespace cb {
       void setIP(const IPAddress &ip) {this->ip = ip;}
 
       // From JSON::Serializable
-      void read(const JSON::Value &value);
-      void write(JSON::Sink &sink) const;
+      void read(const JSON::Value &value) override;
+      void write(JSON::Sink &sink) const override;
     };
 
     typedef SmartPointer<Session> SessionPtr;

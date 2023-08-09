@@ -40,16 +40,16 @@ namespace cb {
   class EnumConstraint : public Constraint {
   public:
     // From Constraint
-    void validate(const std::string &value) const {T::parse(value);}
+    void validate(const std::string &value) const override {T::parse(value);}
 
-    void validate(int64_t value) const {
+    void validate(int64_t value) const override {
       if (!T::isValid((typename T::enum_t)value))
         CBANG_THROW(value << " is not a member of enumeration "
                      << T::getName());
     }
 
 
-    std::string getHelp() const {
+    std::string getHelp() const override {
       std::string s = "one of";
 
       for (unsigned i = 0; i < T::getCount(); i++) {

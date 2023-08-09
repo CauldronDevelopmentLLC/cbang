@@ -50,7 +50,7 @@ namespace cb {
       using Buffer::write;
 
       // From StreamEventHandler
-      void onEvent(Event &event, int fd, unsigned flags);
+      void onEvent(Event &event, int fd, unsigned flags) override;
     };
   }
 }

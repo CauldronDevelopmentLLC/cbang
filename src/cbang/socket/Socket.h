@@ -58,7 +58,8 @@ namespace cb {
       EndOfStream() {}
 
       // From std::exception
-      virtual const char *what() const throw() {return "End of stream";}
+      virtual const char *what() const throw() override
+      {return "End of stream";}
     };
 
 

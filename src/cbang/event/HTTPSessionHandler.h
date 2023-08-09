@@ -53,7 +53,7 @@ namespace cb {
         sessionManager(sessionManager), header(header) {}
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

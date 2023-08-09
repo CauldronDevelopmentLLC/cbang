@@ -49,7 +49,7 @@ namespace cb {
       void flush();
 
       // From StreamEventHandler
-      void onEvent(Event &event, int fd, unsigned flags);
+      void onEvent(Event &event, int fd, unsigned flags) override;
     };
   }
 }

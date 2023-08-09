@@ -32,8 +32,8 @@
 
 #pragma once
 
-#include <boost/iostreams/categories.hpp>
-#include <boost/iostreams/stream.hpp>
+#include <cbang/iostream/Boost.h>
+
 
 namespace cb {
   template<typename T = char>

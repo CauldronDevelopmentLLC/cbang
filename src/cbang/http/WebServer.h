@@ -64,10 +64,10 @@ namespace cb {
       SessionManager &getSessionManager() {return *sessionManager;}
 
       // From Server & WebHandler
-      void init();
+      void init() override;
 
       // From Handler
-      void buildResponse(Context *ctx);
+      void buildResponse(Context *ctx) override;
     };
   }
 }

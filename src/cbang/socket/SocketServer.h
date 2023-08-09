@@ -101,10 +101,10 @@ namespace cb {
     virtual void cleanupConnections();
 
     // From Thread
-    void start();
+    void start() override;
 
   protected:
     // From Thread
-    void run();
+    void run() override;
   };
 }

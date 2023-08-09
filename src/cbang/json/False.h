@@ -49,12 +49,12 @@ namespace cb {
         {return SmartPointer<False>::Phony(&singleton);}
 
       // From Value
-      ValueType getType() const {return JSON_BOOLEAN;}
-      bool isBoolean() const {return true;}
-      ValuePtr copy(bool deep = false) const {return instancePtr();}
-      bool getBoolean() const {return false;}
-      bool toBoolean() const {return false;}
-      void write(Sink &sink) const {sink.writeBoolean(false);}
+      ValueType getType() const override {return JSON_BOOLEAN;}
+      bool isBoolean() const override {return true;}
+      ValuePtr copy(bool deep = false) const override {return instancePtr();}
+      bool getBoolean() const override {return false;}
+      bool toBoolean() const override {return false;}
+      void write(Sink &sink) const override {sink.writeBoolean(false);}
     };
   }
 }

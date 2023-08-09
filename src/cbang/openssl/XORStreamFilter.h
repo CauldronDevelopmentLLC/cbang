@@ -32,10 +32,10 @@
 
 #pragma once
 
+#include <cbang/iostream/Boost.h>
+
 #include <iosfwd> // streamsize
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/operations.hpp>
-namespace io = boost::iostreams;
+
 
 namespace cb {
   class XORStreamFilter : public io::multichar_dual_use_filter {

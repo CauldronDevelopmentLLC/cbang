@@ -89,14 +89,14 @@ namespace cb {
 
     struct Null : public Value {
       // From Value
-      type_t getType() const {return NULL_TYPE;}
-      bool toBoolean() const {return false;}
-      const char *toCString() const {return "";}
-      std::string toString() const {return "";}
-      uint8_t toByte() const {return 0;}
-      int64_t toInteger() const {return 0;}
-      double toReal() const {return 0;}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return NULL_TYPE;}
+      bool toBoolean() const override {return false;}
+      const char *toCString() const override {return "";}
+      std::string toString() const override {return "";}
+      uint8_t toByte() const override {return 0;}
+      int64_t toInteger() const override {return 0;}
+      double toReal() const override {return 0;}
+      SmartPointer<Value> parse(const std::string &value) override
       {return SmartPointer<Value>::Phony(this);}
     };
 
@@ -107,14 +107,14 @@ namespace cb {
       Boolean(bool value) : value(value) {}
 
       // From Value
-      type_t getType() const {return BOOLEAN_TYPE;}
-      bool toBoolean() const {return value;}
-      const char *toCString() const {return value ? "true" : "false";}
-      std::string toString() const {return toCString();}
-      uint8_t toByte() const {return value;}
-      int64_t toInteger() const {return value;}
-      double toReal() const {return value;}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return BOOLEAN_TYPE;}
+      bool toBoolean() const override {return value;}
+      const char *toCString() const override {return value ? "true" : "false";}
+      std::string toString() const override {return toCString();}
+      uint8_t toByte() const override {return value;}
+      int64_t toInteger() const override {return value;}
+      double toReal() const override {return value;}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Boolean(cb::String::parseBool(value));}
     };
 
@@ -125,14 +125,14 @@ namespace cb {
       String(const std::string &value) : value(value) {}
 
       // From Value
-      type_t getType() const {return STRING_TYPE;}
-      bool toBoolean() const {return cb::String::parseBool(value);}
-      const char *toCString() const {return value.c_str();}
-      std::string toString() const {return value;}
-      uint8_t toByte() const {return cb::String::parseU8(value);}
-      int64_t toInteger() const {return cb::String::parseS64(value);}
-      double toReal() const {return cb::String::parseDouble(value);}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return STRING_TYPE;}
+      bool toBoolean() const override {return cb::String::parseBool(value);}
+      const char *toCString() const override {return value.c_str();}
+      std::string toString() const override {return value;}
+      uint8_t toByte() const override {return cb::String::parseU8(value);}
+      int64_t toInteger() const override {return cb::String::parseS64(value);}
+      double toReal() const override {return cb::String::parseDouble(value);}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new String(value);}
     };
 
@@ -143,13 +143,13 @@ namespace cb {
       Byte(int8_t value) : value(value) {}
 
       // From Value
-      type_t getType() const {return BYTE_TYPE;}
-      bool toBoolean() const {return value;}
-      std::string toString() const {return cb::String(value);}
-      uint8_t toByte() const {return value;}
-      int64_t toInteger() const {return value;}
-      double toReal() const {return value;}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return BYTE_TYPE;}
+      bool toBoolean() const override {return value;}
+      std::string toString() const override {return cb::String(value);}
+      uint8_t toByte() const override {return value;}
+      int64_t toInteger() const override {return value;}
+      double toReal() const override {return value;}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Byte(cb::String::parseU8(value));}
     };
 
@@ -160,13 +160,13 @@ namespace cb {
       Integer(int64_t value) : value(value) {}
 
       // From Value
-      type_t getType() const {return INTEGER_TYPE;}
-      bool toBoolean() const {return value;}
-      std::string toString() const {return cb::String(value);}
-      uint8_t toByte() const {return value;}
-      int64_t toInteger() const {return value;}
-      double toReal() const {return value;}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return INTEGER_TYPE;}
+      bool toBoolean() const override {return value;}
+      std::string toString() const override {return cb::String(value);}
+      uint8_t toByte() const override {return value;}
+      int64_t toInteger() const override {return value;}
+      double toReal() const override {return value;}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Integer(cb::String::parseS64(value));}
     };
 
@@ -177,14 +177,14 @@ namespace cb {
       UInt64(uint64_t value) : value(value) {}
 
       // From Value
-      type_t getType() const {return UINT64_TYPE;}
-      bool toBoolean() const {return value;}
-      std::string toString() const {return cb::String(value);}
-      uint8_t toByte() const {return value;}
-      int64_t toInteger() const {return value;}
-      uint64_t toUInt64() const {return value;}
-      double toReal() const {return value;}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return UINT64_TYPE;}
+      bool toBoolean() const override {return value;}
+      std::string toString() const override {return cb::String(value);}
+      uint8_t toByte() const override {return value;}
+      int64_t toInteger() const  override{return value;}
+      uint64_t toUInt64() const override {return value;}
+      double toReal() const override {return value;}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Integer(cb::String::parseU64(value));}
     };
 
@@ -195,13 +195,13 @@ namespace cb {
       Real(double value) : value(value) {}
 
       // From Value
-      type_t getType() const {return REAL_TYPE;}
-      bool toBoolean() const {return value;}
-      std::string toString() const {return cb::String(value);}
-      uint8_t toByte() const {return value;}
-      int64_t toInteger() const {return (int64_t)value;}
-      double toReal() const {return value;}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return REAL_TYPE;}
+      bool toBoolean() const override {return value;}
+      std::string toString() const override {return cb::String(value);}
+      uint8_t toByte() const override {return value;}
+      int64_t toInteger() const override {return (int64_t)value;}
+      double toReal() const override {return value;}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Real(cb::String::parseDouble(value));}
     };
 
@@ -216,19 +216,19 @@ namespace cb {
       Enum(T value) : value(value) {}
 
       // From Value
-      type_t getType() const {return ENUM_TYPE;}
-      bool toBoolean() const {return value.toInteger();}
-      const char *toCString() const {return value.toString();}
-      std::string toString() const {return value.toString();}
-      uint8_t toByte() const {return value;}
-      int64_t toInteger() const {return value.toInteger();}
-      double toReal() const {return value.toInteger();}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return ENUM_TYPE;}
+      bool toBoolean() const override {return value.toInteger();}
+      const char *toCString() const override {return value.toString();}
+      std::string toString() const override {return value.toString();}
+      uint8_t toByte() const override {return value;}
+      int64_t toInteger() const override {return value.toInteger();}
+      double toReal() const override {return value.toInteger();}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Enum<T>(T::parse(value));}
-      const char *getEnumName() const {return T::getName();}
-      unsigned getEnumCount() const {return T::getCount();}
-      const char *getEnumName(unsigned i) const {return T::getName(i);}
-      unsigned getEnumValue(unsigned i) const {return T::getValue(i);}
+      const char *getEnumName() const override {return T::getName();}
+      unsigned getEnumCount() const override {return T::getCount();}
+      const char *getEnumName(unsigned i) const  override{return T::getName(i);}
+      unsigned getEnumValue(unsigned i) const override {return T::getValue(i);}
     };
 
 
@@ -239,14 +239,14 @@ namespace cb {
       Object(const SmartPointer<T> &value) : value(value) {}
 
       // From Value
-      type_t getType() const {return OBJECT_TYPE;}
-      bool toBoolean() const {return !value.isNull();}
-      std::string toString() const {return value->toString();}
-      void *toObject() const {return value.get();}
-      SmartPointer<Value> parse(const std::string &value)
+      type_t getType() const override {return OBJECT_TYPE;}
+      bool toBoolean() const override {return !value.isNull();}
+      std::string toString() const override {return value->toString();}
+      void *toObject() const override {return value.get();}
+      SmartPointer<Value> parse(const std::string &value) override
       {return new Object(T::parse(value));}
-      const std::type_info &getTypeID() const {return typeid(T);}
-      int compare(const Value &v) const {return Value::compare(v);}
+      const std::type_info &getTypeID() const override {return typeid(T);}
+      int compare(const Value &v) const override {return Value::compare(v);}
     };
 
 

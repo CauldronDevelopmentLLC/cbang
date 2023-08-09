@@ -60,13 +60,14 @@ namespace cb {
 
       static bool _hasFeature(int feature);
 
-      virtual void init();
+      // From WebHandler
+      void init() override;
 
       void evalInfo(const Script::Context &ctx);
       void evalOption(const Script::Context &ctx);
 
       // From Handler
-      Context *createContext(Connection *con);
+      Context *createContext(Connection *con) override;
     };
   }
 }

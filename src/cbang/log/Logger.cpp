@@ -53,13 +53,6 @@
 
 #include <iostream>
 
-#include <boost/ref.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/iostreams/tee.hpp>
-#include <boost/iostreams/device/file.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-namespace io = boost::iostreams;
-
 using namespace std;
 using namespace cb;
 

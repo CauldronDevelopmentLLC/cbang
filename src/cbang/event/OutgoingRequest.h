@@ -66,7 +66,7 @@ namespace cb {
       void send();
 
       // From Request
-      void onResponse(ConnectionError error);
+      void onResponse(ConnectionError error) override;
     };
 
     typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;

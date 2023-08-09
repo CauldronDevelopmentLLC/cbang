@@ -53,6 +53,9 @@
 using namespace std;
 using namespace cb;
 
+#define BOOST_IOS_THROW(x) \
+  throw BOOST_IOSTREAMS_FAILURE(CBANG_SSTR(x << ": " << SysError()))
+
 #define IS_SET(x, y) (((x) & (y)) == (y))
 
 

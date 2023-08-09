@@ -34,9 +34,7 @@
 
 #include <cbang/config.h>
 #include <cbang/SmartPointer.h>
-
-#include <boost/iostreams/categories.hpp>
-#include <boost/iostreams/stream.hpp>
+#include <cbang/iostream/Boost.h>
 
 #include <string>
 

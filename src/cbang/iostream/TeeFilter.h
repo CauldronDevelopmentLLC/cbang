@@ -32,10 +32,7 @@
 
 #pragma once
 
-#include <iosfwd> // streamsize
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/operations.hpp>
-namespace io = boost::iostreams;
+#include <cbang/iostream/Boost.h>
 
 
 namespace cb {

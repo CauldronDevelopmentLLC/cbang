@@ -54,6 +54,6 @@ namespace cb {
 
   private:
     /// Passes the polymorphic call to run on to the target class.
-    virtual void run() {(*obj.*method)();}
+    virtual void run() override {(*obj.*method)();}
   };
 }

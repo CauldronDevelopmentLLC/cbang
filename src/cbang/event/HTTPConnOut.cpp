@@ -48,12 +48,6 @@ using namespace std;
 HTTPConnOut::HTTPConnOut(Base &base) : HTTPConn(base) {}
 
 
-void HTTPConnOut::makeRequest(const SmartPointer<Request> &req) {
-  push(req);
-  if (getNumRequests() == 1) dispatch();
-}
-
-
 void HTTPConnOut::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
                                bool hasMore, std::function<void (bool)> cb) {
   if (!isConnected()) THROW("Cannot write request, not connected");
@@ -73,6 +67,12 @@ void HTTPConnOut::writeRequest(const SmartPointer<Request> &req, Buffer buffer,
    };
 
   write(cb2, buffer);
+}
+
+
+void HTTPConnOut::makeRequest(const SmartPointer<Request> &req) {
+  push(req);
+  if (getNumRequests() == 1) dispatch();
 }
 
 

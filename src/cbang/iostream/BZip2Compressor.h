@@ -33,13 +33,7 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-
-#include <iosfwd> // streamsize
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/operations.hpp>
-#include <boost/iostreams/close.hpp>
-#include <boost/iostreams/detail/ios.hpp>
-namespace io = boost::iostreams;
+#include <cbang/iostream/Boost.h>
 
 #include <cstring>
 

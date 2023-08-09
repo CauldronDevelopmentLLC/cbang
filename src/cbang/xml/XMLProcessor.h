@@ -61,7 +61,8 @@ namespace cb {
     virtual void popContext();
 
     // From XMLHandler
-    void pushFile(const std::string &filename) {fileTracker.pushFile(filename);}
-    void popFile() {fileTracker.popFile();}
+    void pushFile(const std::string &filename) override
+    {fileTracker.pushFile(filename);}
+    void popFile() override {fileTracker.popFile();}
   };
 }

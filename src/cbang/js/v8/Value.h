@@ -69,22 +69,22 @@ namespace cb {
       Value(const char *s, int length = -1);
       Value(const std::string &s);
 
-      SmartPointer<js::Value> makePersistent() const;
+      SmartPointer<js::Value> makePersistent() const override;
 
       // Undefined
       void assertDefined() const
       {if (isUndefined()) CBANG_THROW("Value is undefined");}
-      bool isUndefined() const {return value->IsUndefined();}
+      bool isUndefined() const override {return value->IsUndefined();}
 
       // Null
-      bool isNull() const {return value->IsNull();}
+      bool isNull() const override {return value->IsNull();}
       static Value createNull() {return v8::Null(getIso());}
 
       // Boolean
       void assertBoolean() const
       {if (!isBoolean()) CBANG_THROW("Value is not a boolean");}
-      bool isBoolean() const {return value->IsBoolean();}
-      bool toBoolean() const {
+      bool isBoolean() const override {return value->IsBoolean();}
+      bool toBoolean() const override {
         assertDefined();
 #if V8_MAJOR_VERSION < 7
         return value->BooleanValue(getCtx()).FromJust();
@@ -96,13 +96,13 @@ namespace cb {
       // Number
       void assertNumber() const
       {if (!isNumber()) CBANG_THROW("Value is not a number");}
-      bool isNumber() const {return value->IsNumber();}
-      double toNumber() const {
+      bool isNumber() const override {return value->IsNumber();}
+      double toNumber() const override {
         assertDefined();
         return value->NumberValue(getCtx()).FromJust();
       }
 
-      int toInteger() const {
+      int toInteger() const override {
         assertDefined();
         return value->IntegerValue(getCtx()).FromJust();
       }
@@ -131,8 +131,8 @@ namespace cb {
       static v8::Local<v8::Symbol> createSymbol(const std::string &name);
       void assertString() const
       {if (!isString()) CBANG_THROW("Value is not a string");}
-      bool isString() const {return value->IsString();}
-      std::string toString() const;
+      bool isString() const override {return value->IsString();}
+      std::string toString() const override;
 
       int utf8Length() const {
         return v8::String::Cast(*value)->Utf8Length(getIso());
@@ -142,30 +142,30 @@ namespace cb {
       static Value createObject() {return v8::Object::New(getIso());}
       void assertObject() const
       {if (!isObject()) CBANG_THROW("Value is not a object");}
-      bool isObject() const {return value->IsObject();}
+      bool isObject() const override {return value->IsObject();}
       bool has(uint32_t index) const;
-      bool has(const std::string &key) const;
+      bool has(const std::string &key) const override;
 
-      SmartPointer<js::Value> get(int index) const;
-      SmartPointer<js::Value> get(const std::string &key) const;
-      SmartPointer<js::Value> getOwnPropertyNames() const;
+      SmartPointer<js::Value> get(int index) const override;
+      SmartPointer<js::Value> get(const std::string &key) const override;
+      SmartPointer<js::Value> getOwnPropertyNames() const override;
 
-      void set(int index, const js::Value &value);
-      void set(const std::string &key, const js::Value &value);
+      void set(int index, const js::Value &value) override;
+      void set(const std::string &key, const js::Value &value) override;
 
       // Array
       static Value createArray(unsigned size = 0)
       {return v8::Array::New(getIso(), size);}
       void assertArray() const
       {if (!isArray()) CBANG_THROW("Value is not a array");}
-      bool isArray() const {return value->IsArray();}
-      unsigned length() const;
+      bool isArray() const override {return value->IsArray();}
+      unsigned length() const override;
 
       // Function
-      bool isFunction() const {return value->IsFunction();}
+      bool isFunction() const override {return value->IsFunction();}
       Value call(Value arg0, const std::vector<Value> &args) const;
       SmartPointer<js::Value>
-      call(const std::vector<SmartPointer<js::Value> > &args) const;
+      call(const std::vector<SmartPointer<js::Value> > &args) const override;
       std::string getName() const;
       void setName(const std::string &name);
       int getScriptLineNumber() const;

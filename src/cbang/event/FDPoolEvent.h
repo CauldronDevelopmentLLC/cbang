@@ -106,14 +106,14 @@ namespace cb {
       Base &getBase() {return base;}
 
       // From FDPool
-      void setEventPriority(int priority) {this->priority = priority;}
-      int getEventPriority() const {return priority;}
-      const Rate &getReadRate() const {return readRate;}
-      const Rate &getWriteRate() const {return writeRate;}
-      void read(const SmartPointer<Transfer> &t);
-      void write(const SmartPointer<Transfer> &t);
-      void open(FD &fd);
-      void flush(int fd, std::function <void ()> cb);
+      void setEventPriority(int priority) override {this->priority = priority;}
+      int getEventPriority() const override {return priority;}
+      const Rate &getReadRate() const override {return readRate;}
+      const Rate &getWriteRate() const override {return writeRate;}
+      void read(const SmartPointer<Transfer> &t) override;
+      void write(const SmartPointer<Transfer> &t) override;
+      void open(FD &fd) override;
+      void flush(int fd, std::function <void ()> cb) override;
 
     protected:
       FDRec &get(int fd);

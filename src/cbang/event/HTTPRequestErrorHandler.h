@@ -44,7 +44,7 @@ namespace cb {
       HTTPRequestErrorHandler(HTTPRequestHandler &child) : child(child) {}
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

@@ -59,11 +59,11 @@ namespace cb {
         ~Scope() {ctx->leave();}
 
         // From js::Scope
-        SmartPointer<js::Value> getGlobalObject() {
+        SmartPointer<js::Value> getGlobalObject() override {
           return new Value(Value::getGlobal());
         }
 
-        SmartPointer<js::Value> eval(const InputSource &source) {
+        SmartPointer<js::Value> eval(const InputSource &source) override {
           return new Value(ctx->eval(source));
         }
       };

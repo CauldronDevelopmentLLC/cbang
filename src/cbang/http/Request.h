@@ -51,9 +51,9 @@ namespace cb {
               const URI &uri = URI(), float version = 1.1);
 
       // From Message
-      bool isResponse() const {return false;}
-      std::string getHeaderLine() const;
-      void readHeaderLine(const std::string &line);
+      bool isResponse() const override {return false;}
+      std::string getHeaderLine() const override;
+      void readHeaderLine(const std::string &line) override;
 
       RequestMethod getMethod() const {return method;}
       void setMethod(RequestMethod method) {this->method = method;}

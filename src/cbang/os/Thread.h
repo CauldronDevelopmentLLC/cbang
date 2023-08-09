@@ -156,7 +156,8 @@ namespace cb {
       Thread(destroy), obj(obj), method(method) {}
 
   private:
+    // From Thread
     /// Passes the polymorphic call to run on to the target class.
-    void run() {(*obj.*method)();}
+    void run() override {(*obj.*method)();}
   };
 }

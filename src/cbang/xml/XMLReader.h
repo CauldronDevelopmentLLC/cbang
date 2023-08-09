@@ -62,15 +62,16 @@ namespace cb {
     void read(std::istream &stream, XMLHandler *handler);
 
     // From XMLProcessor
-    void pushContext();
+    void pushContext() override;
 
     // From XMLHandler
-    void pushFile(const std::string &filename);
-    void popFile();
-    void startElement(const std::string &name, const XMLAttributes &attrs);
-    void endElement(const std::string &name);
-    void text(const std::string &text);
-    void cdata(const std::string &data);
+    void pushFile(const std::string &filename) override;
+    void popFile() override;
+    void startElement(
+      const std::string &name, const XMLAttributes &attrs) override;
+    void endElement(const std::string &name) override;
+    void text(const std::string &text) override;
+    void cdata(const std::string &data) override;
 
   protected:
     void push(XMLHandler *handler, XMLHandlerFactory *factory);

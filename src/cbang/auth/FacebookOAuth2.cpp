@@ -53,7 +53,7 @@ SmartPointer<JSON::Value>
 FacebookOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   SmartPointer<JSON::Value> p = new JSON::Dict;
 
-  p->insert("provider", getProvider());
+  p->insert("provider", "facebook");
   p->insert("id", profile->getString("id"));
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));

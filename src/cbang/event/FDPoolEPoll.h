@@ -166,15 +166,15 @@ namespace cb {
       int getFD() const {return fd;}
 
       // From FDPool
-      void setEventPriority(int priority);
-      int getEventPriority() const;
-      const Rate &getReadRate() const {return readRate;}
-      const Rate &getWriteRate() const {return writeRate;}
+      void setEventPriority(int priority) override;
+      int getEventPriority() const override;
+      const Rate &getReadRate() const override {return readRate;}
+      const Rate &getWriteRate() const override {return writeRate;}
 
-      void read(const SmartPointer<Transfer> &t);
-      void write(const SmartPointer<Transfer> &t);
-      void open(FD &fd);
-      void flush(int fd, std::function <void ()> cb);
+      void read(const SmartPointer<Transfer> &t) override;
+      void write(const SmartPointer<Transfer> &t) override;
+      void open(FD &fd) override;
+      void flush(int fd, std::function <void ()> cb) override;
 
       void queueTimeout(uint64_t time, bool read, int fd);
       void queueComplete(const SmartPointer<Transfer> &t);
@@ -188,7 +188,7 @@ namespace cb {
       void processResults();
 
       // From Thread
-      void run();
+      void run() override;
     };
   }
 }

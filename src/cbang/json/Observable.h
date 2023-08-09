@@ -71,7 +71,7 @@ namespace cb {
 
 
       // From Value
-      void append(const ValuePtr &_value) {
+      void append(const ValuePtr &_value) override {
         ValuePtr value = convert(_value);
         int i = T::size();
         T::append(value);
@@ -80,7 +80,7 @@ namespace cb {
       }
 
 
-      void set(unsigned i, const ValuePtr &_value) {
+      void set(unsigned i, const ValuePtr &_value) override {
         // Block operation if value is equal
         ValuePtr current = T::get(i);
         if (*_value == *current) return;
@@ -94,7 +94,7 @@ namespace cb {
       }
 
 
-      unsigned insert(const std::string &key, const ValuePtr &_value) {
+      unsigned insert(const std::string &key, const ValuePtr &_value) override {
         // Block operation if value is equal
         int index = T::indexOf(key);
 
@@ -113,7 +113,7 @@ namespace cb {
       }
 
 
-      void clear() {
+      void clear() override {
         for (unsigned i = 0; i < T::size(); i++)
           T::get(i)->clearParentRef();
 
@@ -125,7 +125,7 @@ namespace cb {
       }
 
 
-      void erase(unsigned i) {
+      void erase(unsigned i) override {
         T::get(i)->clearParentRef();
         T::erase(i);
         for (unsigned j = i; j < T::size(); j++)
@@ -134,24 +134,24 @@ namespace cb {
       }
 
 
-      void erase(const std::string &key) {
+      void erase(const std::string &key) override {
         T::get(key)->clearParentRef();
         T::erase(key);
         notify(key);
       }
 
 
-      void setParentRef(Value *parent, unsigned index) {
+      void setParentRef(Value *parent, unsigned index) override {
         if (parent && this->parent) CBANG_THROW("Parent already set");
         this->parent = parent;
         this->index = index;
       }
 
 
-      void decParentRef() {index--;}
+      void decParentRef() override {index--;}
 
 
-      void notify(std::list<ValuePtr> &change) {
+      void notify(std::list<ValuePtr> &change) override {
         if (!parent) return;
 
         if (parent->isList()) change.push_front(T::create(index));
@@ -188,8 +188,8 @@ namespace cb {
       using Value::insert;
 
       // From Factory
-      ValuePtr createDict() const {return new Observable<Dict>;}
-      ValuePtr createList() const {return new Observable<List>;}
+      ValuePtr createDict() const override {return new Observable<Dict>;}
+      ValuePtr createList() const override {return new Observable<List>;}
     };
 
 

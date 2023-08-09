@@ -53,6 +53,6 @@ namespace cb {
                    int level = CBANG_LOG_INFO_LEVEL(1));
 
     // From KeyGenCallback
-    void operator()(int p) const;
+    void operator()(int p) const override;
   };
 }

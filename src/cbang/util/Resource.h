@@ -75,9 +75,10 @@ namespace cb {
     FileResource(const char *name, const char *data, unsigned length) :
       Resource(name), data(data), length(length) {}
 
-    const char *getData() const {return data;}
-    unsigned getLength() const {return length;}
-    std::string toString() const {return std::string(data, length);}
+    // From Resource
+    const char *getData() const override {return data;}
+    unsigned getLength() const override {return length;}
+    std::string toString() const override {return std::string(data, length);}
   };
 
 
@@ -88,9 +89,10 @@ namespace cb {
     DirectoryResource(const char *name, const Resource **children) :
       Resource(name), children(children) {}
 
-    bool isDirectory() const {return true;}
-    const Resource *find(const std::string &path) const;
-    const Resource *getChild(unsigned i) const {return children[i];}
+    // From Resource
+    bool isDirectory() const override {return true;}
+    const Resource *find(const std::string &path) const override;
+    const Resource *getChild(unsigned i) const  override {return children[i];}
   };
 
 

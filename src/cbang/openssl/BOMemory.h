@@ -47,6 +47,6 @@ namespace cb {
     BOMemory(char *data, uint64_t length);
 
     // From BStream
-    int write(const char *buf, int length);
+    int write(const char *buf, int length) override;
   };
 }

@@ -56,20 +56,20 @@ namespace cb {
       void clear() {stack.clear();}
 
       // From Sink
-      void writeNull();
-      void writeBoolean(bool value);
-      void write(double value);
-      void write(uint64_t value);
-      void write(int64_t value);
-      void write(const std::string &value);
+      void writeNull() override;
+      void writeBoolean(bool value) override;
+      void write(double value) override;
+      void write(uint64_t value) override;
+      void write(int64_t value) override;
+      void write(const std::string &value) override;
       using Sink::write;
-      void beginList(bool simple = false);
-      void beginAppend();
-      void endList();
-      void beginDict(bool simple = false);
-      bool has(const std::string &key) const;
-      void beginInsert(const std::string &key);
-      void endDict();
+      void beginList(bool simple = false) override;
+      void beginAppend() override;
+      void endList() override;
+      void beginDict(bool simple = false) override;
+      bool has(const std::string &key) const override;
+      void beginInsert(const std::string &key) override;
+      void endDict() override;
 
     protected:
       void add(const ValuePtr &value);

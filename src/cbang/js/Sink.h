@@ -66,27 +66,27 @@ namespace cb {
       using JSON::NullSink::insert;
       using JSON::NullSink::write;
 
-      void close();
+      void close() override;
       void reset(const SmartPointer<Value> &root);
-      void reset() {reset(0);}
+      void reset() override {reset(0);}
 
       // Element functions
-      void writeNull();
-      void writeBoolean(bool value);
-      void write(double value);
-      void write(const std::string &value);
+      void writeNull() override;
+      void writeBoolean(bool value) override;
+      void write(double value) override;
+      void write(const std::string &value) override;
       void write(const js::Function &func);
       void write(const SmartPointer<Value> &value);
 
       // List functions
-      void beginList(bool simple = false);
-      void beginAppend();
-      void endList();
+      void beginList(bool simple = false) override;
+      void beginAppend() override;
+      void endList() override;
 
       // Dict functions
-      void beginDict(bool simple = false);
-      void beginInsert(const std::string &key);
-      void endDict();
+      void beginDict(bool simple = false) override;
+      void beginInsert(const std::string &key) override;
+      void endDict() override;
 
 
       template <class T>

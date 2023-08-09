@@ -51,7 +51,7 @@ namespace cb {
     int getReturnCode() const {return ret;}
 
     // From BStream
-    int read(char *buf, int length);
-    int write(const char *buf, int length);
+    int read(char *buf, int length) override;
+    int write(const char *buf, int length) override;
   };
 }

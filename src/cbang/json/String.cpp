@@ -58,15 +58,15 @@ double String::getNumber() const {
 }
 
 
-#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+#define CBANG_JSON_NVT(NAME, TYPE)                                      \
   TYPE String::get##NAME() const {return cb::String::parse##NAME(s, true);}
-#include <cbang/StringParseTypes.def>
+#include "NumberValueTypes.def"
 
 
-#define CBANG_STRING_PT(NAME, TYPE, DESC)                               \
+#define CBANG_JSON_NVT(NAME, TYPE)                                      \
   TYPE String::get##NAME##WithDefault(TYPE defaultValue) const {        \
     TYPE value = 0;                                                     \
     if (cb::String::parse##NAME(s, value, true)) return value;          \
     return defaultValue;                                                \
   }
-#include <cbang/StringParseTypes.def>
+#include "NumberValueTypes.def"

@@ -66,11 +66,11 @@ namespace cb {
       void dispatch(Request &req);
 
       // From Server
-      SmartPointer<Connection> createConnection();
-      void onConnect(const SmartPointer<Connection> &conn);
+      SmartPointer<Connection> createConnection() override;
+      void onConnect(const SmartPointer<Connection> &conn) override;
 
       // From HTTPRequestHandler
-      bool operator()(Request &req) {return handleRequest(req);}
+      bool operator()(Request &req) override {return handleRequest(req);}
     };
   }
 }

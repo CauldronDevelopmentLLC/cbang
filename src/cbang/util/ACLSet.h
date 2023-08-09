@@ -124,8 +124,8 @@ namespace cb {
     void aclDelGroup(const std::string &path, const std::string &group);
 
     // From JSON::Serializable
-    void read(const JSON::Value &value);
-    void write(JSON::Sink &sink) const;
+    void read(const JSON::Value &value) override;
+    void write(JSON::Sink &sink) const override;
     using cb::Serializable::read;
     using cb::Serializable::write;
 

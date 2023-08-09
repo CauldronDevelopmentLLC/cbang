@@ -623,13 +623,14 @@ def generate(env):
         ('ccflags', 'Set extra C and C++ compiler flags', None),
         ('cxxflags', 'Set extra C++ compiler flags', None),
         ('linkflags', 'Set extra linker flags', None),
-        EnumVariable('cxxstd', 'Set C++ language standard', 'c++14',
-                   allowed_values = ('c++98', 'c++11', 'c++14', 'c++17',
-                                     'c++20')),
-        EnumVariable('compiler', 'Select compiler', 'default',
-                   allowed_values = ('default', 'gnu', 'intel', 'mingw', 'msvc',
-                                     'linux-mingw', 'aix', 'posix', 'hp', 'sgi',
-                                     'sun', 'clang')),
+        EnumVariable(
+            'cxxstd', 'Set C++ language standard', 'c++14',
+            allowed_values = ('c++98', 'c++11', 'c++14', 'c++17', 'c++20')),
+        EnumVariable(
+            'compiler', 'Select compiler', 'default',
+            allowed_values = ('default', 'gnu', 'intel', 'mingw', 'msvc',
+                              'linux-mingw', 'aix', 'posix', 'hp', 'sgi',
+                              'sun', 'clang')),
         BoolVariable('static', 'Link to static libraries', 0),
         BoolVariable('mostly_static', 'Prefer static libraries', 0),
         ('prefer_static', 'Libraries where the static version is prefered', ''),
@@ -640,13 +641,14 @@ def generate(env):
         ('osx_min_ver', 'Set minimum support OSX version.', '10.7'),
         ('osx_sdk_root', 'Set OSX SDK root.', None),
         ('osx_archs', 'Set OSX gcc target architectures.', 'x86_64'),
-        EnumVariable('win32_thread', 'Windows thread mode.', 'static',
-                     allowed_values = ('static', 'dynamic')),
+        EnumVariable(
+            'win32_thread', 'Windows thread mode.', 'static',
+            allowed_values = ('static', 'dynamic')),
         BoolVariable('cross_mingw', 'Enable mingw cross compile mode', 0),
         BoolVariable('cross_osx', 'Enable OSX cross compile mode', 0),
-        EnumVariable('subsystem', 'Windows subsystem', 'console',
-                     allowed_values = ('windows', 'console', 'posix',
-                                       'native')),
+        EnumVariable(
+            'subsystem', 'Windows subsystem', 'console',
+            allowed_values = ('windows', 'console', 'posix', 'native')),
         ('subsystem_version', 'Windows subsystem version', 6)
         )
 

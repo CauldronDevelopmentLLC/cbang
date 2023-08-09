@@ -59,21 +59,22 @@ namespace cb {
     bool isListening() const {return listening;}
 
     // From SocketImpl
-    bool isOpen() const {return socketOpen;}
-    void setReuseAddr(bool reuse) {}
-    void setBlocking(bool blocking) {this->blocking = blocking;}
-    bool getBlocking() const {return blocking;}
-    void open() {socketOpen = true;}
-    void bind(const IPAddress &ip);
-    void listen(int backlog) {open(); listening = true;}
-    SmartPointer<Socket> accept(IPAddress *ip);
-    void connect(const IPAddress &ip);
-    std::streamsize write(const char *data, std::streamsize length,
-                          unsigned flags);
-    std::streamsize read(char *data, std::streamsize length, unsigned flags);
-    void close();
-    socket_t get() const {return 0;}
-    void set(socket_t socket) {}
-    socket_t adopt() {return 0;}
+    bool isOpen() const override {return socketOpen;}
+    void setReuseAddr(bool reuse) override {}
+    void setBlocking(bool blocking) override {this->blocking = blocking;}
+    bool getBlocking() const override {return blocking;}
+    void open() override {socketOpen = true;}
+    void bind(const IPAddress &ip) override;
+    void listen(int backlog) override {open(); listening = true;}
+    SmartPointer<Socket> accept(IPAddress *ip) override;
+    void connect(const IPAddress &ip) override;
+    std::streamsize write(
+      const char *data, std::streamsize length, unsigned flags) override;
+    std::streamsize read(
+      char *data, std::streamsize length, unsigned flags) override;
+    void close() override;
+    socket_t get() const override {return 0;}
+    void set(socket_t socket) override {}
+    socket_t adopt() override {return 0;}
   };
 }

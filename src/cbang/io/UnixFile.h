@@ -44,13 +44,14 @@ namespace cb {
     ~UnixFile() {close();}
 
     // From FileInterface
-    void open(const std::string &path, std::ios::openmode mode, int perm);
-    std::streamsize read(char *s, std::streamsize n);
-    std::streamsize write(const char *s, std::streamsize n);
-    std::streampos seek(std::streampos off, std::ios::seekdir way);
-    bool is_open() const {return fd != -1;}
-    void close();
-    std::streamsize size() const;
+    void open(
+      const std::string &path, std::ios::openmode mode, int perm) override;
+    std::streamsize read(char *s, std::streamsize n) override;
+    std::streamsize write(const char *s, std::streamsize n) override;
+    std::streampos seek(std::streampos off, std::ios::seekdir way) override;
+    bool is_open() const override {return fd != -1;}
+    void close() override;
+    std::streamsize size() const override;
 
   protected:
     virtual int _open(const std::string &path, std::ios::openmode mode,
