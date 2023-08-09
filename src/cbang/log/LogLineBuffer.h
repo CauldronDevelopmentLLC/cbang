@@ -52,6 +52,6 @@ namespace cb {
       prefix(prefix), logDomain(logDomain), logLevel(logLevel) {}
 
     // From LineBuffer
-    void line(const char *data, unsigned length);
+    void line(const char *data, unsigned length) override;
   };
 }

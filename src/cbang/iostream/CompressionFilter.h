@@ -39,10 +39,11 @@
 #include <cbang/iostream/LZ4Compressor.h>
 #include <cbang/iostream/LZ4Decompressor.h>
 
-#include <boost/ref.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#pragma GCC diagnostic pop
 
 
 namespace cb {

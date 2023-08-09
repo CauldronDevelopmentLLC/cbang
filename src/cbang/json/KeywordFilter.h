@@ -45,7 +45,7 @@ namespace cb {
 
       // From Filter
       bool operator()(unsigned index, const std::string &keyword,
-                      const Value &value) const
+                      const Value &value) const override
       {return this->keyword == keyword;}
     };
   }

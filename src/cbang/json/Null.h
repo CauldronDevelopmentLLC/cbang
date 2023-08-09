@@ -50,11 +50,11 @@ namespace cb {
         {return SmartPointer<Null>(new Null);}
 
       // From Value
-      ValueType getType() const {return JSON_NULL;}
-      bool isNull() const {return true;}
-      ValuePtr copy(bool deep = false) const {return instancePtr();}
-      const Value &getNull() const {return *this;}
-      void write(Sink &sink) const {sink.writeNull();}
+      ValueType getType() const override {return JSON_NULL;}
+      bool isNull() const override {return true;}
+      ValuePtr copy(bool deep = false) const override {return instancePtr();}
+      const Value &getNull() const override {return *this;}
+      void write(Sink &sink) const override {sink.writeNull();}
     };
   }
 }

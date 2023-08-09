@@ -44,6 +44,6 @@ namespace cb {
     BOStream(std::ostream &stream);
 
     // From BStream
-    int write(const char *buf, int length);
+    int write(const char *buf, int length) override;
   };
 }

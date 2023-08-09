@@ -46,18 +46,18 @@ namespace cb {
       minimum(minimum), maximum(maximum) {}
 
     // From Constraint
-    void validate(int64_t value) const {
+    void validate(int64_t value) const override {
       minimum.validate(value);
       maximum.validate(value);
     }
 
-    void validate(double value) const {
+    void validate(double value) const override {
       minimum.validate(value);
       maximum.validate(value);
     }
 
 
-    std::string getHelp() const {
+    std::string getHelp() const override {
       return minimum.getHelp() + " & " + maximum.getHelp();
     }
   };

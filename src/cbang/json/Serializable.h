@@ -51,8 +51,8 @@ namespace cb {
       SmartPointer<Value> toJSON() const;
 
       // From cb::Serializable
-      void read(std::istream &stream);
-      void write(std::ostream &stream) const;
+      void read(std::istream &stream) override;
+      void write(std::ostream &stream) const override;
     };
 
 

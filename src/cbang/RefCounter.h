@@ -97,9 +97,9 @@ namespace cb {
     }
 
     // From RefCounter
-    unsigned getCount() const {return count;}
+    unsigned getCount() const override {return count;}
 
-    void incCount() {
+    void incCount() override {
       unsigned c = count;
 
       while (!count.compare_exchange_weak(c, c + 1))
@@ -108,7 +108,7 @@ namespace cb {
       log(trace, "incCount() count=%u", c + 1);
     }
 
-    void decCount() {
+    void decCount() override {
       unsigned c = count;
 
       if (!c) raise("Already zero!");
@@ -121,7 +121,7 @@ namespace cb {
       if (c == 1) release();
     }
 
-    void adopted() {
+    void adopted() override {
       if (1 < getCount())
         raise("Can't adopt pointer with multiple references!");
       clearRefPtr(ptr);
@@ -142,10 +142,10 @@ namespace cb {
     static RefCounter *create(void *ptr) {return &singleton;}
 
     // From RefCounter
-    unsigned getCount() const {return 1;}
-    void incCount() {}
-    void decCount() {}
-    void adopted() {}
+    unsigned getCount() const override {return 1;}
+    void incCount() override {}
+    void decCount() override {}
+    void adopted() override {}
 
     static RefCounter *getRefPtr(const RefCounted *ref) {return 0;}
     using RefCounter::getRefPtr;

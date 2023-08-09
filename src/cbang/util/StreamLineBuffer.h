@@ -45,7 +45,7 @@ namespace cb {
     StreamLineBuffer(std::ostream &stream) : stream(stream) {}
 
     // From LineBuffer
-    void line(const char *data, unsigned length) {
+    void line(const char *data, unsigned length) override {
       stream.write(data, length);
       stream << '\n';
     }

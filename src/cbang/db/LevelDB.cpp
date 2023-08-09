@@ -192,13 +192,15 @@ namespace {
     LevelDBComparator(const SmartPointer<LevelDB::Comparator> &comparator) :
       comparator(comparator) {}
 
-    int Compare(const leveldb::Slice &a, const leveldb::Slice &b) const {
+    int Compare(
+      const leveldb::Slice &a, const leveldb::Slice &b) const override {
       return (*comparator)(a.data(), a.size(), b.data(), b.size());
     }
 
-    const char *Name() const {return comparator->getName().c_str();}
-    void FindShortestSeparator(std::string *, const leveldb::Slice &) const {}
-    void FindShortSuccessor(std::string *) const {}
+    const char *Name() const override {return comparator->getName().c_str();}
+    void FindShortestSeparator(
+      std::string *, const leveldb::Slice &) const override {}
+    void FindShortSuccessor(std::string *) const override {}
   };
 }
 

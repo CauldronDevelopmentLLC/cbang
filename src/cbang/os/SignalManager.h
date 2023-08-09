@@ -77,7 +77,7 @@ namespace cb {
 
   protected:
     // From Thread
-    void run();
+    void run() override;
 
     void update();
     void restore();

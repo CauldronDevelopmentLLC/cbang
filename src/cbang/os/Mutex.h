@@ -53,22 +53,23 @@ namespace cb {
 
     bool isLocked() const {return locked;}
 
+    // From Lockable
     /**
      * Aquire this lock.  Will block the current thread until the lock is
      * obtained.
      */
-    bool lock(double timeout = -1) const;
+    bool lock(double timeout = -1) const override;
 
     /**
      * Release the lock.  Assumes the the lock is held.
      * See SmartLock for an exception safe way to unlock Mutexs.
      */
-    void unlock() const;
+    void unlock() const override;
 
     /**
      * Try to aquire this lock.
      * @return False if the lock is not immediately available.
      */
-    bool tryLock() const;
+    bool tryLock() const override;
   };
 }

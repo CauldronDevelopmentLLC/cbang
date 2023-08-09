@@ -52,7 +52,7 @@ namespace cb {
     virtual int operator()() = 0;
 
     // From OptionActionBase
-    int operator()(Option &option) {return operator()();}
+    int operator()(Option &option) override {return operator()();}
   };
 
 
@@ -73,7 +73,7 @@ namespace cb {
       if (!member) CBANG_THROW("Member cannot be NULL");
     }
 
-    int operator()() {return (*obj.*member)();}
+    int operator()() override {return (*obj.*member)();}
   };
 
   template <typename T>
@@ -87,6 +87,6 @@ namespace cb {
       if (!member) CBANG_THROW("Member cannot be NULL");
     }
 
-    int operator()(Option &option) {return (*obj.*member)(option);}
+    int operator()(Option &option) override {return (*obj.*member)(option);}
   };
 }

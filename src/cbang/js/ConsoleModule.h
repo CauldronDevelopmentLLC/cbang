@@ -42,7 +42,7 @@ namespace cb {
       ConsoleModule() : NativeModule("console") {}
 
       // From NativeModule
-      void define(Sink &exports);
+      void define(Sink &exports) override;
 
       // Callbacks
       void log(const Value &args, Sink &sink);

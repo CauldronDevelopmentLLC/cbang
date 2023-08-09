@@ -45,18 +45,18 @@ namespace cb {
     const T &getMin() const {return minimum;}
 
     // From Constraint
-    void validate(int64_t value) const {
+    void validate(int64_t value) const override {
       if (value < minimum)
         CBANG_THROW(value << " is less than minium value " << minimum);
     }
 
-    void validate(double value) const {
+    void validate(double value) const override {
       if (value < minimum)
         CBANG_THROW(value << " is less than minium value " << minimum);
     }
 
 
-    std::string getHelp() const {
+    std::string getHelp() const override {
       return SSTR(">= " << minimum);
     }
   };

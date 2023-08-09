@@ -36,10 +36,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
-
-#include <boost/iostreams/categories.hpp>   // bidirectional_device_tag
-#include <boost/iostreams/positioning.hpp>  // stream_offset
-#include <boost/iostreams/stream.hpp>
+#include <cbang/iostream/Boost.h>
 
 
 namespace cb {

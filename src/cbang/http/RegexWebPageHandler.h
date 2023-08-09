@@ -49,8 +49,8 @@ namespace cb {
         re(pattern), child(child) {}
 
       // From WebPageHandler
-      bool handlePage(WebContext &ctx, std::ostream &stream,
-                      const cb::URI &uri) {
+      bool handlePage(
+        WebContext &ctx, std::ostream &stream, const cb::URI &uri) override {
         if (!re.match(uri.getPath())) return false;
         return child->handlePage(ctx, stream, uri);
       }

@@ -35,12 +35,11 @@
 #include "FileFactory.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/iostream/Boost.h>
 
-#include <boost/iostreams/categories.hpp> // seekable_device_tag
-#include <boost/iostreams/stream.hpp>
 
 namespace cb {
-  class FileDevice {
+  class FileDevice : public FileInterface {
     static SmartPointer<FileFactoryBase> factory;
 
     SmartPointer<FileInterface> impl;
@@ -57,14 +56,18 @@ namespace cb {
     {FileDevice::factory = factory;}
 
     // From FileInterface
-    std::streamsize read(char *s, std::streamsize n) {return impl->read(s, n);}
-    std::streamsize write(const char *s, std::streamsize n)
+    void open(
+      const std::string &path, std::ios::openmode mode, int perm) override
+    {return impl->open(path, mode, perm);}
+    std::streamsize read(char *s, std::streamsize n) override
+    {return impl->read(s, n);}
+    std::streamsize write(const char *s, std::streamsize n) override
     {return impl->write(s, n);}
-    std::streampos seek(std::streampos off, std::ios::seekdir way)
+    std::streampos seek(std::streampos off, std::ios::seekdir way) override
     {return impl->seek(off, way);}
-    bool is_open() const {return impl->is_open();}
-    void close() {impl->close();}
-    std::streamsize size() {return impl->size();}
+    bool is_open() const override {return impl->is_open();}
+    void close() override {impl->close();}
+    std::streamsize size() const override {return impl->size();}
   };
 
 

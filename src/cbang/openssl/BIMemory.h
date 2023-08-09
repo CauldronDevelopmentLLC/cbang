@@ -47,7 +47,7 @@ namespace cb {
     BIMemory(const char *data, uint64_t length);
 
     // From BStream
-    int read(char *buf, int length);
-    int gets(char *buf, int length);
+    int read(char *buf, int length) override;
+    int gets(char *buf, int length) override;
   };
 }

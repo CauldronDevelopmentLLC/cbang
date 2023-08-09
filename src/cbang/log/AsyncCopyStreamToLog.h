@@ -52,6 +52,6 @@ namespace cb {
       in(SmartPointer<std::istream>::Phony(&in)), prefix(prefix) {}
 
     // From Thread
-    void run();
+    void run() override;
   };
 }

@@ -52,7 +52,7 @@ namespace cb {
         BakedCallback(sig, factory), object(object), member(member) {}
 
       // From BakedCallback
-      void operator()(const Value &args, Sink &sink) {
+      void operator()(const Value &args, Sink &sink) override {
         (*object.*member)(args, sink);
       }
     };

@@ -33,16 +33,9 @@
 #pragma once
 
 #include <cbang/SStream.h>
-
 #include <cbang/os/SysError.h>
+#include <cbang/iostream/Boost.h>
 
-#include <boost/iostreams/detail/ios.hpp>   // openmode, seekdir, int types.
-#include <boost/iostreams/positioning.hpp>  // stream_offset
-
-#define BOOST_IOS_THROW(x) \
-  throw BOOST_IOSTREAMS_FAILURE(CBANG_SSTR(x << ": " << SysError()))
-
-namespace io = boost::iostreams;
 
 namespace cb {
   class FileInterface {

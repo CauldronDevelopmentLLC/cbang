@@ -46,7 +46,7 @@ namespace cb {
                     const Buffer &buffer);
 
       // From Transfer
-      int transfer();
+      int transfer() override;
 
     protected:
       int write(Buffer &buffer, unsigned length);

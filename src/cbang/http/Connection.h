@@ -157,7 +157,7 @@ namespace cb {
       virtual std::ostream &print(std::ostream &stream) const;
 
       // From SocketConnection
-      bool isFinished() const {return state == CLOSING;}
+      bool isFinished() const override {return state == CLOSING;}
 
     protected:
       unsigned tryParsingHeader(MemoryBuffer &buffer);

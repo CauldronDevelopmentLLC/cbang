@@ -52,29 +52,29 @@ namespace cb {
       void setRight(const SmartPointer<Sink> &right) {this->right = right;}
 
       // From Sink
-      void writeNull();
-      void writeBoolean(bool value);
-      void write(double value);
-      void write(int8_t value);
-      void write(uint8_t value);
-      void write(int16_t value);
-      void write(uint16_t value);
-      void write(int32_t value);
-      void write(uint32_t value);
-      void write(int64_t value);
-      void write(uint64_t value);
-      void write(const std::string &value);
+      void writeNull() override;
+      void writeBoolean(bool value) override;
+      void write(double value) override;
+      void write(int8_t value) override;
+      void write(uint8_t value) override;
+      void write(int16_t value) override;
+      void write(uint16_t value) override;
+      void write(int32_t value) override;
+      void write(uint32_t value) override;
+      void write(int64_t value) override;
+      void write(uint64_t value) override;
+      void write(const std::string &value) override;
 
       // List functions
-      void beginList(bool simple = false);
-      void beginAppend();
-      void endList();
+      void beginList(bool simple = false) override;
+      void beginAppend() override;
+      void endList() override;
 
       // Dict functions
-      void beginDict(bool simple = false);
-      bool has(const std::string &key) const;
-      void beginInsert(const std::string &key);
-      void endDict();
+      void beginDict(bool simple = false) override;
+      bool has(const std::string &key) const override;
+      void beginInsert(const std::string &key) override;
+      void endDict() override;
     };
   }
 }

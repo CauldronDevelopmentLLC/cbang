@@ -41,28 +41,27 @@
 #include <cbang/String.h>
 
 #include <cbang/io/BufferDevice.h>
-
 #include <cbang/socket/SocketDevice.h>
-
 #include <cbang/packet/Packet.h>
-
 #include <cbang/time/Time.h>
 #include <cbang/util/SmartLock.h>
 #include <cbang/log/Logger.h>
+#include <cbang/iostream/Boost.h>
 
 #ifdef HAVE_VALGRIND
 #include <valgrind/helgrind.h>
 #include <valgrind/drd.h>
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/iostreams/device/array.hpp>
-#include <boost/iostreams/stream.hpp>
+#pragma GCC diagnostic pop
 
 #include <algorithm>
 
 
 using namespace std;
-namespace io = boost::iostreams;
 using namespace cb;
 using namespace cb::HTTP;
 

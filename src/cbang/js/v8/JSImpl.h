@@ -77,11 +77,11 @@ namespace cb {
       void add(const SmartPointer<js::Callback> &cb) {callbacks.push_back(cb);}
 
       // From js::Impl
-      SmartPointer<js::Factory> getFactory();
-      SmartPointer<js::Scope> enterScope();
-      SmartPointer<js::Scope> newScope();
-      void interrupt();
-      SmartPointer<js::StackTrace> getStackTrace(unsigned maxFrames);
+      SmartPointer<js::Factory> getFactory() override;
+      SmartPointer<js::Scope> enterScope() override;
+      SmartPointer<js::Scope> newScope() override;
+      void interrupt() override;
+      SmartPointer<js::StackTrace> getStackTrace(unsigned maxFrames) override;
     };
   }
 }

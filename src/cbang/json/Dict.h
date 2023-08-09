@@ -52,38 +52,37 @@ namespace cb {
       using Super_T::has;
 
       // From Value
-      ValueType getType() const {return JSON_DICT;}
-      bool isDict() const {return true;}
-      ValuePtr copy(bool deep = false) const;
-      bool isSimple() const {return simple;}
+      ValueType getType() const override {return JSON_DICT;}
+      bool isDict() const override {return true;}
+      ValuePtr copy(bool deep = false) const override;
+      bool isSimple() const override {return simple;}
 
       using Value::getDict;
-      Dict &getDict() {return *this;}
-      const Dict &getDict() const {return *this;}
+      Dict &getDict() override {return *this;}
+      const Dict &getDict() const override {return *this;}
 
-      bool toBoolean() const {return size();}
-      unsigned size() const {return Super_T::size();}
-      const std::string &keyAt(unsigned i) const
+      bool toBoolean() const override {return size();}
+      unsigned size() const override {return Super_T::size();}
+      const std::string &keyAt(unsigned i) const override
       {return Super_T::keyAt(i);}
-      int indexOf(const std::string &key) const {return lookup(key);}
-      const ValuePtr &get(unsigned i) const
+      int indexOf(const std::string &key) const override {return lookup(key);}
+      const ValuePtr &get(unsigned i) const override
       {return Super_T::get(i);}
-      const ValuePtr &get(const std::string &key) const
+      const ValuePtr &get(const std::string &key) const override
       {return Super_T::get(key);}
 
-      unsigned insert(const std::string &key, const ValuePtr &value);
+      unsigned insert(const std::string &key, const ValuePtr &value) override;
       using Value::insert;
 
-      void clear() {Super_T::clear();}
-      void erase(unsigned i) {Super_T::erase(i);}
-      void erase(const std::string &key) {Super_T::erase(key);}
+      void clear() override {Super_T::clear();}
+      void erase(unsigned i) override {Super_T::erase(i);}
+      void erase(const std::string &key) override {Super_T::erase(key);}
 
-      void setParent(Value *parent, unsigned index)
-        {CBANG_TYPE_ERROR("Not an ObservableDict");}
-      void write(Sink &sink) const;
+      void write(Sink &sink) const override;
 
-      void visitChildren(const_visitor_t visitor, bool depthFirst = true) const;
-      void visitChildren(visitor_t visitor, bool depthFirst = true);
+      void visitChildren(
+        const_visitor_t visitor, bool depthFirst = true) const override;
+      void visitChildren(visitor_t visitor, bool depthFirst = true) override;
     };
   }
 }

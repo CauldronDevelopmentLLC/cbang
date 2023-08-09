@@ -34,10 +34,7 @@
 
 #include <cbang/String.h>
 #include <cbang/log/Logger.h>
-
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/operations.hpp>
-namespace io = boost::iostreams;
+#include <cbang/iostream/Boost.h>
 
 #include <cstdint>
 #include <iosfwd> // streamsize

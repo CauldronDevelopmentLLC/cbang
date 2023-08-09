@@ -32,7 +32,10 @@
 
 #include "Regex.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/regex.hpp>
+#pragma GCC diagnostic pop
 
 
 using namespace cb;

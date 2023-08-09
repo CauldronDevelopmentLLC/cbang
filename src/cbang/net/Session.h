@@ -72,6 +72,5 @@ namespace cb {
     std::vector<std::string> getGroups() const;
 
     void read(const JSON::Value &value);
-    void write(JSON::Sink &sink) const {JSON::Dict::write(sink);}
   };
 }

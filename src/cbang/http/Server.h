@@ -107,9 +107,9 @@ namespace cb {
       void joinThreadPool() {if (!pool.isNull()) pool->join();}
 
       // From Thread
-      void start();
-      void stop();
-      void join();
+      void start() override;
+      void stop() override;
+      void join() override;
 
     protected:
       void construct();
@@ -121,12 +121,12 @@ namespace cb {
       void limitConnections();
 
       // From SocketServer
-      SocketConnectionPtr
-      createConnection(SmartPointer<Socket> socket, const IPAddress &clientIP);
-      void addConnectionSockets(SocketSet &sockSet);
-      bool connectionsReady() const;
-      void processConnections(SocketSet &sockSet);
-      void closeConnection(const SocketConnectionPtr &con);
+      SocketConnectionPtr createConnection(
+        SmartPointer<Socket> socket, const IPAddress &clientIP) override;
+      void addConnectionSockets(SocketSet &sockSet) override;
+      bool connectionsReady() const override;
+      void processConnections(SocketSet &sockSet) override;
+      void closeConnection(const SocketConnectionPtr &con) override;
 
       std::string getCaptureFilename(const std::string &name, unsigned id);
     };

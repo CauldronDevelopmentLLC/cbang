@@ -92,16 +92,17 @@ namespace cb {
       operator const T &() const {return value;}
 
       // From Value
-      ValueType getType() const {return JSON_NUMBER;}
-      bool isNumber() const {return true;}
-      ValuePtr copy(bool deep = false) const {return new NumberValue<T>(value);}
-      double getNumber() const {return value;}
+      ValueType getType() const override {return JSON_NUMBER;}
+      bool isNumber() const override {return true;}
+      ValuePtr copy(bool deep = false) const override
+      {return new NumberValue<T>(value);}
+      double getNumber() const override {return value;}
 
 
 #define CBANG_NUM_FUNCS(TYPE, SHORT, LONG)                              \
-      bool is##SHORT() const {return Num::InRange<TYPE>(value);}        \
+      bool is##SHORT() const override {return Num::InRange<TYPE>(value);} \
                                                                         \
-      TYPE get##SHORT() const {                                         \
+      TYPE get##SHORT() const override {                                \
         if (!is##SHORT())                                               \
           CBANG_TYPE_ERROR("Value " << value << " is not a " #LONG);    \
                                                                         \
@@ -119,8 +120,8 @@ namespace cb {
 
 #undef CBANG_NUM_FUNCS
 
-      bool toBoolean() const {return value;}
-      void write(Sink &sink) const {sink.write(value);}
+      bool toBoolean() const override {return value;}
+      void write(Sink &sink) const override {sink.write(value);}
     };
 
 

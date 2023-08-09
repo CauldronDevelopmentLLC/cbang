@@ -46,7 +46,7 @@ namespace cb {
   public:
     OptionActionSet(T &ref) : ref(ref) {}
 
-    virtual int operator()(Option &option) {
+    int operator()(Option &option) override {
       set(option.toString());
       return 0;
     }

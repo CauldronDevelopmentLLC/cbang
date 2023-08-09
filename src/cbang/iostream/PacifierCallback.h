@@ -55,6 +55,6 @@ namespace cb {
                      unsigned level = 1);
 
     // From TransferCallback
-    bool transferCallback(std::streamsize count);
+    bool transferCallback(std::streamsize count) override;
   };
 }

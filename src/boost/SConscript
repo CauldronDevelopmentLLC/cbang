@@ -8,9 +8,9 @@ env = env.Clone()
 
 # Remove warnings
 import re
-flags = env.subst('${CCFLAGS}')
-flags = re.sub(r'-W((all)|(error))(=[^\s$]+)?(\s|$)', '', flags)
-env.Replace(CCFLAGS = flags)
+pat = r'-W((all)|(error)|(suggest-override))(=[^\s$]+)?(\s|$)'
+env.Replace(CCFLAGS = re.sub(pat, '', env.subst('${CCFLAGS}')))
+env.Replace(CXXFLAGS = re.sub(pat, '', env.subst('${CXXFLAGS}')))
 
 # Build boost lib
 src = []

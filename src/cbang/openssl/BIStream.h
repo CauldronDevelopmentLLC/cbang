@@ -44,7 +44,7 @@ namespace cb {
     BIStream(std::istream &stream);
 
     // From BStream
-    int read(char *buf, int length);
-    int gets(char *buf, int length);
+    int read(char *buf, int length) override;
+    int gets(char *buf, int length) override;
   };
 }

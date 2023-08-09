@@ -57,7 +57,7 @@ namespace cb {
 
       // From Script::Handler
       using Script::Handler::eval;
-      bool eval(const Script::Context &ctx);
+      bool eval(const Script::Context &ctx) override;
 
       void evalInclude(const Script::Context &ctx);
       void evalGet(const Script::Context &ctx);

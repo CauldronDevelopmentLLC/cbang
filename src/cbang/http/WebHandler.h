@@ -75,13 +75,13 @@ namespace cb {
                              const std::string &message = std::string()) const;
 
       // From WebPageHandlerGroup
-      bool handlePage(WebContext &ctx, std::ostream &stream,
-                      const cb::URI &uri);
+      bool handlePage(
+        WebContext &ctx, std::ostream &stream, const cb::URI &uri) override;
 
       // From Handler
       using Handler::allow;
-      Context *createContext(Connection *con);
-      void buildResponse(Context *ctx);
+      Context *createContext(Connection *con) override;
+      void buildResponse(Context *ctx) override;
     };
   }
 }

@@ -57,7 +57,7 @@ namespace cb {
       uint64_t getTimeout() const {return timeout;}
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

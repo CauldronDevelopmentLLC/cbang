@@ -40,8 +40,10 @@
 #include <cbang/log/Logger.h>
 #include <cbang/Catch.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/ref.hpp>
-#include <boost/iostreams/combine.hpp>
+#pragma GCC diagnostic pop
 
 #include <sstream>
 

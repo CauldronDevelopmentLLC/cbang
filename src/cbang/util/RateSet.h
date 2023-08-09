@@ -115,6 +115,6 @@ namespace cb {
 
     // From JSON::Serializable
     using JSON::Serializable::write;
-    void write(JSON::Sink &sink) const {write(sink, false);}
+    void write(JSON::Sink &sink) const override {write(sink, false);}
   };
 }

@@ -42,7 +42,7 @@ namespace cb {
       virtual void operator()(Request &, const JSON::ValuePtr &) = 0;
 
       // From HTTPRequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
 
 
@@ -59,7 +59,7 @@ namespace cb {
       }
 
       // From HTTPRequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg)
+      void operator()(Request &req, const JSON::ValuePtr &msg) override
         {(*obj.*member)(req, msg);}
     };
 
@@ -74,7 +74,7 @@ namespace cb {
       }
 
       // From HTTPRequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg) {
+      void operator()(Request &req, const JSON::ValuePtr &msg) override {
         (req.cast<T>().*member)(req, msg);
       }
     };

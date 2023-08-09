@@ -50,8 +50,8 @@ namespace cb {
                    const std::string &until = std::string());
 
       // From Transfer
-      bool isPending() const;
-      int transfer();
+      bool isPending() const override;
+      int transfer() override;
 
     protected:
       int read(Buffer &buffer, unsigned length);

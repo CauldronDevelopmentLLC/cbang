@@ -45,9 +45,9 @@ namespace cb {
 
     protected:
       // From SocketServer
-      SocketConnectionPtr
-      createConnection(SmartPointer<Socket> sock, const IPAddress &clientIP);
-      void closeConnection(const SocketConnectionPtr &con);
+      SocketConnectionPtr createConnection(
+        SmartPointer<Socket> sock, const IPAddress &clientIP) override;
+      void closeConnection(const SocketConnectionPtr &con) override;
     };
   }
 }

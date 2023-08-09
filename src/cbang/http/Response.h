@@ -53,9 +53,9 @@ namespace cb {
                     StatusCode::HTTP_TEMPORARY_REDIRECT);
 
       // From Message
-      bool isResponse() const {return true;}
-      std::string getHeaderLine() const;
-      void readHeaderLine(const std::string &line);
+      bool isResponse() const override {return true;}
+      std::string getHeaderLine() const override;
+      void readHeaderLine(const std::string &line) override;
 
       StatusCode getStatus() const {return status;}
       void setStatus(StatusCode status) {this->status = status;}

@@ -56,7 +56,7 @@ namespace cb {
         {this->stream = stream;}
 
       // From NativeModule
-      void define(Sink &exports);
+      void define(Sink &exports) override;
 
       // Callbacks
       SmartPointer<Value> require(Callback &cb, Value &args);

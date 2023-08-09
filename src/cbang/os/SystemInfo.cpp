@@ -44,7 +44,10 @@
 #include <cbang/log/Logger.h>
 #include <cbang/util/HumanSize.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/filesystem/operations.hpp>
+#pragma GCC diagnostic pop
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
@@ -312,7 +315,7 @@ void SystemInfo::detectThreads() {
   struct TestThread : public Thread {
     unsigned pid;
     TestThread() : pid(0) {}
-    void run() {pid = SystemUtilities::getPID();}
+    void run() override {pid = SystemUtilities::getPID();}
   };
 
   TestThread testThread;

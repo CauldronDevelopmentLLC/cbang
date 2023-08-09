@@ -56,6 +56,6 @@ namespace cb {
 
   protected:
     // From SignalHandler
-    void handleSignal(int sig);
+    void handleSignal(int sig) override;
   };
 }

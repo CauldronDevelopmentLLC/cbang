@@ -67,17 +67,17 @@ namespace cb {
       virtual void reset();
 
       // From Sink
-      void writeNull() {assertCanWrite();}
-      void writeBoolean(bool value) {assertCanWrite();}
-      void write(double value) {assertCanWrite();}
-      void write(const std::string &value) {assertCanWrite();}
-      void beginList(bool simple = false);
-      void beginAppend();
-      void endList();
-      void beginDict(bool simple = false);
-      bool has(const std::string &key) const;
-      void beginInsert(const std::string &key);
-      void endDict();
+      void writeNull() override {assertCanWrite();}
+      void writeBoolean(bool value) override {assertCanWrite();}
+      void write(double value) override {assertCanWrite();}
+      void write(const std::string &value) override {assertCanWrite();}
+      void beginList(bool simple = false) override;
+      void beginAppend() override;
+      void endList() override;
+      void beginDict(bool simple = false) override;
+      bool has(const std::string &key) const override;
+      void beginInsert(const std::string &key) override;
+      void endDict() override;
 
     protected:
       void assertCanWrite();

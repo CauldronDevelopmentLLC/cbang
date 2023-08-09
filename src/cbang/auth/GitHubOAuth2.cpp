@@ -52,7 +52,7 @@ SmartPointer<JSON::Value>
 GitHubOAuth2::processProfile(const SmartPointer<JSON::Value> &profile) const {
   SmartPointer<JSON::Value> p = new JSON::Dict;
 
-  p->insert("provider", getProvider());
+  p->insert("provider", "github");
   p->insert("id", String(profile->getNumber("id")));
   p->insert("name", profile->getString("name"));
   p->insert("email", profile->getString("email"));

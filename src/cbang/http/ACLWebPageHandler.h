@@ -46,7 +46,8 @@ namespace cb {
       ACLWebPageHandler(const ACLSet &aclSet) : aclSet(aclSet) {}
 
       // From WebPageHandler
-      bool handlePage(WebContext &ctx, std::ostream &stream, const URI &uri);
+      bool handlePage(
+        WebContext &ctx, std::ostream &stream, const URI &uri) override;
     };
   }
 }

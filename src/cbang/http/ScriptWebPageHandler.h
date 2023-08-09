@@ -46,7 +46,8 @@ namespace cb {
         child(child), evaluating(false) {}
 
       // From WebPageHandler
-      bool handlePage(WebContext &ctx, std::ostream &stream, const URI &uri);
+      bool handlePage(
+        WebContext &ctx, std::ostream &stream, const URI &uri) override;
     };
   }
 }

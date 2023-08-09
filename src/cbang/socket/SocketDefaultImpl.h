@@ -56,28 +56,29 @@ namespace cb {
     SocketDefaultImpl(Socket *parent);
 
     // From SocketImpl
-    bool isOpen() const;
-    void setReuseAddr(bool reuse);
-    void setBlocking(bool blocking);
-    bool getBlocking() const {return blocking;}
-    void setKeepAlive(bool keepAlive);
-    void setSendBuffer(int size);
-    void setReceiveBuffer(int size);
-    void setReceiveLowWater(int size);
-    void setSendTimeout(double timeout);
-    void setReceiveTimeout(double timeout);
-    void open();
-    void bind(const IPAddress &ip);
-    void listen(int backlog);
-    SmartPointer<Socket> accept(IPAddress *ip);
-    void connect(const IPAddress &ip);
-    std::streamsize write(const char *data, std::streamsize length,
-                          unsigned flags);
-    std::streamsize read(char *data, std::streamsize length, unsigned flags);
-    void close();
-    socket_t get() const {return socket;}
-    void set(socket_t socket);
-    socket_t adopt();
+    bool isOpen() const override;
+    void setReuseAddr(bool reuse) override;
+    void setBlocking(bool blocking) override;
+    bool getBlocking() const override {return blocking;}
+    void setKeepAlive(bool keepAlive) override;
+    void setSendBuffer(int size) override;
+    void setReceiveBuffer(int size) override;
+    void setReceiveLowWater(int size) override;
+    void setSendTimeout(double timeout) override;
+    void setReceiveTimeout(double timeout) override;
+    void open() override;
+    void bind(const IPAddress &ip) override;
+    void listen(int backlog) override;
+    SmartPointer<Socket> accept(IPAddress *ip) override;
+    void connect(const IPAddress &ip) override;
+    std::streamsize write(
+      const char *data, std::streamsize length, unsigned flags) override;
+    std::streamsize read(
+      char *data, std::streamsize length, unsigned flags) override;
+    void close() override;
+    socket_t get() const override {return socket;}
+    void set(socket_t socket) override;
+    socket_t adopt() override;
 
   protected:
     void capture(const IPAddress &addr, bool incoming);

@@ -44,7 +44,7 @@ namespace cb {
         Callback(sig, factory) {}
 
       // From Callback
-      SmartPointer<Value> call(Callback &cb, Value &args);
+      SmartPointer<Value> call(Callback &cb, Value &args) override;
 
       virtual void operator()(const Value &args, Sink &sink) = 0;
     };

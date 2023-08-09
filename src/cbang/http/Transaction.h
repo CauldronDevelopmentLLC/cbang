@@ -38,11 +38,8 @@
 
 #include <cbang/socket/SocketDevice.h>
 #include <cbang/iostream/Transfer.h>
-
+#include <cbang/iostream/Boost.h>
 #include <cbang/net/URI.h>
-
-#include <boost/iostreams/filtering_stream.hpp>
-namespace io = boost::iostreams;
 
 #include <iostream>
 
@@ -95,8 +92,8 @@ namespace cb {
                             SmartPointer<TransferCallback> callback = 0);
 
       // From Socket
-      void connect(const IPAddress &ip);
-      void close();
+      void connect(const IPAddress &ip) override;
+      void close() override;
       using Socket::get;
 
       const Response &getResponse() const {return response;}

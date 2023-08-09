@@ -45,18 +45,18 @@ namespace cb {
     const T &getMax() const {return maximum;}
 
     // From Constraint
-    void validate(int64_t value) const {
+    void validate(int64_t value) const override {
       if (maximum < value)
         CBANG_THROW(value << " is greater than maximum value " << maximum);
     }
 
-    void validate(double value) const {
+    void validate(double value) const override {
       if (maximum < value)
         CBANG_THROW(value << " is greater than maximum value " << maximum);
     }
 
 
-    std::string getHelp() const {
+    std::string getHelp() const override {
       return SSTR("<= " << maximum);
     }
   };

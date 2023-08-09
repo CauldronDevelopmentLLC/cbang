@@ -63,8 +63,8 @@ namespace cb {
 
     // From Options
     using Options::add;
-    virtual void add(const std::string &name, SmartPointer<Option> option);
-    virtual const SmartPointer<Option> &get(const std::string &key) const;
+    void add(const std::string &name, SmartPointer<Option> option) override;
+    const SmartPointer<Option> &get(const std::string &key) const override;
 
     void setKeywordOptions(const Options *options) {keywords = options;}
     void setUsageArgs(const std::string &s) {usageArgs = s;}

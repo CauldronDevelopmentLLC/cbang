@@ -56,10 +56,10 @@ namespace cb {
       unsigned getMaxArgs() const {return maxArgs;}
 
       // From Entity
-      std::ostream &printHelpLine(std::ostream &stream) const;
-      entity_t getType() const {return FUNCTION;}
-      void validate(const Arguments &args) const;
-      bool evalArgs() const {return autoEvalArgs;}
+      std::ostream &printHelpLine(std::ostream &stream) const override;
+      entity_t getType() const override {return FUNCTION;}
+      void validate(const Arguments &args) const override;
+      bool evalArgs() const override {return autoEvalArgs;}
     };
   }
 }

@@ -52,7 +52,7 @@ namespace cb {
       }
 
       // From Handler
-      bool eval(const Context &ctx) {(*func)(ctx); return true;}
+      bool eval(const Context &ctx) override {(*func)(ctx); return true;}
     };
   }
 }

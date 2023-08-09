@@ -50,8 +50,8 @@ namespace cb {
   template <typename T>
   class FileFactory : public FileFactoryBase {
   public:
-    FileInterface *create(const std::string &path, std::ios::openmode mode,
-                          int perm) {
+    FileInterface *create(
+      const std::string &path, std::ios::openmode mode, int perm) override {
       return new T(path, mode, perm);
     }
   };

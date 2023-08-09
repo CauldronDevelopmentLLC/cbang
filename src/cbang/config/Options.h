@@ -97,15 +97,15 @@ namespace cb {
 
     // From OptionMap
     using OptionMap::add;
-    virtual void add(const std::string &name, SmartPointer<Option> option);
-    virtual bool remove(const std::string &key);
-    virtual bool has(const std::string &key) const;
-    virtual const SmartPointer<Option> &get(const std::string &key) const;
-    virtual void alias(const std::string &name, const std::string &alias);
+    void add(const std::string &name, SmartPointer<Option> option) override;
+    bool remove(const std::string &key) override;
+    bool has(const std::string &key) const override;
+    const SmartPointer<Option> &get(const std::string &key) const override;
+    void alias(const std::string &name, const std::string &alias) override;
 
     // From JSON::Serializable
-    void read(const JSON::Value &value);
-    void write(JSON::Sink &sink) const {write(sink, false);}
+    void read(const JSON::Value &value) override;
+    void write(JSON::Sink &sink) const override {write(sink, false);}
     using JSON::Serializable::write;
 
     static std::string cleanKey(const std::string &key);

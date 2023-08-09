@@ -47,13 +47,13 @@ namespace cb {
                  bool deallocate = false);
     ~MemoryBuffer();
 
-    // From Buffer
-    unsigned getFill() const {return fill - position;}
-    unsigned getSpace() const {return capacity - fill;}
-    unsigned read(char *dst, unsigned size);
-    unsigned write(const char *src, unsigned size);
-    unsigned writeTo(std::ostream &stream);
-    unsigned readFrom(std::istream &stream);
+    // From IOBuffer
+    unsigned getFill() const override {return fill - position;}
+    unsigned getSpace() const override {return capacity - fill;}
+    unsigned read(char *dst, unsigned size) override;
+    unsigned write(const char *src, unsigned size) override;
+    unsigned writeTo(std::ostream &stream) override;
+    unsigned readFrom(std::istream &stream) override;
 
     bool isClear() const {return fill == 0 && position == 0;}
 

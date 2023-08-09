@@ -44,9 +44,7 @@
 #include <cbang/time/Time.h>
 #include <cbang/util/Regex.h>
 #include <cbang/iostream/CompressionFilter.h>
-
-#include <boost/iostreams/filtering_stream.hpp>
-namespace io = boost::iostreams;
+#include <cbang/iostream/Boost.h>
 
 using namespace cb::Event;
 using namespace cb;
@@ -105,7 +103,7 @@ namespace {
     unsigned getID() const {return req->getID();}
 
     // From JSON::NullSink
-    void close() {
+    void close() override {
       if (closed) return;
       closed = true;
       JSON::Writer::close();
@@ -473,7 +471,8 @@ SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
       getStream() << callback << '(';
     }
 
-    void close() {
+    // FROM JSONWriter
+    void close() override {
       JSON::Writer::close();
       getStream() << ')';
       JSONWriter::close();
@@ -658,7 +657,7 @@ SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
     ~Writer() {TRY_CATCH_ERROR(close(););}
 
     // From JSONWriter
-    void send(Buffer &buffer) {req->sendChunk(buffer);}
+    void send(Buffer &buffer) override {req->sendChunk(buffer);}
   };
 
   return new Writer(this);

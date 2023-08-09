@@ -51,7 +51,8 @@ namespace cb {
         object(object), method(method) {}
 
       // From WebPageHandler
-      bool handlePage(WebContext &ctx, std::ostream &stream, const URI &uri) {
+      bool handlePage(
+        WebContext &ctx, std::ostream &stream, const URI &uri) override {
         return (*object.*method)(ctx, stream, uri);
       }
     };

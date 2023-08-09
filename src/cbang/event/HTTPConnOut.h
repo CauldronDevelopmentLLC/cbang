@@ -41,12 +41,11 @@ namespace cb {
     public:
       HTTPConnOut(Base &base);
 
-      void makeRequest(const SmartPointer<Request> &req);
-
       // From HTTPConn
-      bool isIncoming() const {return false;}
+      bool isIncoming() const override {return false;}
       void writeRequest(const SmartPointer<Request> &req, Buffer buffer,
-                        bool hasMore, std::function<void (bool)> cb);
+                        bool hasMore, std::function<void (bool)> cb) override;
+      void makeRequest(const SmartPointer<Request> &req) override;
 
     protected:
       void fail(ConnectionError err, const std::string &msg);

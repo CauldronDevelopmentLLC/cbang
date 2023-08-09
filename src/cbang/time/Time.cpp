@@ -39,7 +39,10 @@
 #include <locale>
 #include <exception>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <boost/date_time/posix_time/posix_time.hpp>
+#pragma GCC diagnostic pop
 
 using namespace std;
 using namespace cb;

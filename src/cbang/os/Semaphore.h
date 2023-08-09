@@ -32,10 +32,13 @@
 
 #pragma once
 
+#include <cbang/util/Lockable.h>
+
 #include <string>
 
+
 namespace cb {
-  class Semaphore {
+  class Semaphore : public Lockable {
     struct private_t;
     private_t *p;
 
@@ -53,7 +56,7 @@ namespace cb {
     void post(unsigned count = 1) const;
 
     // From Lockable
-    bool lock(double timeout = -1) {return wait(timeout);}
-    void unlock() const {post();}
+    bool lock(double timeout = -1) const override {return wait(timeout);}
+    void unlock() const override {post();}
   };
 }

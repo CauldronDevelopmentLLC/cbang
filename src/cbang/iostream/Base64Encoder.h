@@ -36,11 +36,7 @@
 #include <cbang/Exception.h>
 #include <cbang/net/Base64.h>
 #include <cbang/log/Logger.h>
-
-#include <boost/iostreams/char_traits.hpp> // EOF, WOULD_BLOCK
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/operations.hpp>
-#include <boost/iostreams/close.hpp>
+#include <cbang/iostream/Boost.h>
 
 #include <cstdio>
 

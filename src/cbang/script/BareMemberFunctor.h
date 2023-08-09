@@ -58,7 +58,7 @@ namespace cb {
       }
 
       // From Handler
-      bool eval(const Context &ctx) {(*obj.*member)(); return true;}
+      bool eval(const Context &ctx) override {(*obj.*member)(); return true;}
     };
   }
 }

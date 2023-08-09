@@ -52,12 +52,12 @@ namespace cb {
         SocketConnection(socket, clientIP), server(server) {}
 
       // From SocketConnection
-      bool isFinished() const;
+      bool isFinished() const override;
       using SocketConnection::getID;
 
       // From Thread
-      void run();
-      void stop();
+      void run() override;
+      void stop() override;
     };
   }
 }

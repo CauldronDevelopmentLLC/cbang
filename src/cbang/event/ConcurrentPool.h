@@ -110,7 +110,7 @@ namespace cb {
 
 
         // From Task
-        void success() {
+        void success() override {
           // Flush any remaining data from the queue
           while (!queue.empty()) {
             process(queue.front());
@@ -118,7 +118,7 @@ namespace cb {
           }
         }
 
-        void complete() {event->del();}
+        void complete() override {event->del();}
       };
 
 
@@ -189,11 +189,11 @@ namespace cb {
 
       // From ThreadPool
       using ThreadPool::start;
-      void stop();
-      void join();
+      void stop() override;
+      void join() override;
 
     protected:
-      void run();
+      void run() override;
 
       void complete();
     };

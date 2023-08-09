@@ -49,15 +49,15 @@ namespace cb {
       Factory();
 
       // From js::Factory
-      SmartPointer<js::Value> create(const std::string &value);
-      SmartPointer<js::Value> create(double value);
-      SmartPointer<js::Value> create(int32_t value);
-      SmartPointer<js::Value> create(const js::Function &func);
-      SmartPointer<js::Value> createArray(unsigned size);
-      SmartPointer<js::Value> createObject();
-      SmartPointer<js::Value> createBoolean(bool value);
-      SmartPointer<js::Value> createUndefined();
-      SmartPointer<js::Value> createNull();
+      SmartPointer<js::Value> create(const std::string &value) override;
+      SmartPointer<js::Value> create(double value) override;
+      SmartPointer<js::Value> create(int32_t value) override;
+      SmartPointer<js::Value> create(const js::Function &func) override;
+      SmartPointer<js::Value> createArray(unsigned size) override;
+      SmartPointer<js::Value> createObject() override;
+      SmartPointer<js::Value> createBoolean(bool value) override;
+      SmartPointer<js::Value> createUndefined() override;
+      SmartPointer<js::Value> createNull() override;
     };
   }
 }

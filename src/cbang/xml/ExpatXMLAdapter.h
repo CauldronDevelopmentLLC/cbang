@@ -51,7 +51,8 @@ namespace cb {
     ExpatXMLAdapter();
     ~ExpatXMLAdapter();
 
-    virtual void read(std::istream &stream);
+    // From XMLAdapter
+    void read(std::istream &stream) override;
 
   private:
     void setError(const Exception &e);

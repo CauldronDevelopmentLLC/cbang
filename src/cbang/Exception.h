@@ -94,7 +94,7 @@ namespace cb {
     virtual ~Exception() {}
 
     // From std::exception
-    virtual const char *what() const throw() {return message.c_str();}
+    virtual const char *what() const throw() override {return message.c_str();}
 
     const std::string &getMessage() const {return message;}
     void setMessage(const std::string &message) {this->message = message;}

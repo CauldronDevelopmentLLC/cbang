@@ -43,11 +43,13 @@ namespace cb {
     XMLSkipHandler(XMLHandler &parent) : parent(parent), depth(0) {}
 
     // From XMLHandler
-    void pushFile(const std::string &filename) {parent.pushFile(filename);}
-    void popFile() {parent.popFile();}
-    void startElement(const std::string &name, const XMLAttributes &attrs);
-    void endElement(const std::string &name);
-    void text(const std::string &text);
-    void cdata(const std::string &data);
+    void pushFile(const std::string &filename) override
+    {parent.pushFile(filename);}
+    void popFile() override {parent.popFile();}
+    void startElement(
+      const std::string &name, const XMLAttributes &attrs) override;
+    void endElement(const std::string &name) override;
+    void text(const std::string &text) override;
+    void cdata(const std::string &data) override;
   };
 }

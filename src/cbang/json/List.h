@@ -48,32 +48,29 @@ namespace cb {
       using Super_T::Super_T;
 
       // From Value
-      ValueType getType() const {return JSON_LIST;}
-      bool isList() const {return true;}
-      ValuePtr copy(bool deep = false) const;
-      bool isSimple() const {return simple;}
+      ValueType getType() const override {return JSON_LIST;}
+      bool isList() const override {return true;}
+      ValuePtr copy(bool deep = false) const override;
+      bool isSimple() const override {return simple;}
 
-      Value &getList() {return *this;}
-      const Value &getList() const {return *this;}
+      Value &getList() override {return *this;}
+      const Value &getList() const override {return *this;}
 
-      bool toBoolean() const {return size();}
-      unsigned size() const {return Super_T::size();}
+      bool toBoolean() const override {return size();}
+      unsigned size() const override {return Super_T::size();}
 
-      const ValuePtr &get(unsigned i) const;
-      const ValuePtr &operator[](unsigned i) const {return get(i);}
+      const ValuePtr &get(unsigned i) const override;
 
-      void append(const ValuePtr &value);
-      void set(unsigned i, const ValuePtr &value);
-      void clear() {Super_T::clear();}
-      void erase(unsigned i);
+      void append(const ValuePtr &value) override;
+      void set(unsigned i, const ValuePtr &value) override;
+      void clear() override {Super_T::clear();}
+      void erase(unsigned i) override;
 
-      void setParent(Value *parent, unsigned index)
-        {CBANG_TYPE_ERROR("Not an ObservableList");}
+      void write(Sink &sink) const override;
 
-      void write(Sink &sink) const;
-
-      void visitChildren(const_visitor_t visitor, bool depthFirst = true) const;
-      void visitChildren(visitor_t visitor, bool depthFirst = true);
+      void visitChildren(
+        const_visitor_t visitor, bool depthFirst = true) const override;
+      void visitChildren(visitor_t visitor, bool depthFirst = true) override;
 
       using Value::getList;
       using Value::get;

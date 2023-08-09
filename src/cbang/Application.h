@@ -136,6 +136,6 @@ namespace cb {
     virtual int configAction(Option &option);
 
     // From SignalHandler
-    void handleSignal(int sig);
+    void handleSignal(int sig) override;
   };
 }
