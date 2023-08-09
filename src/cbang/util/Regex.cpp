@@ -32,11 +32,9 @@
 
 #include "Regex.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#include <cbang/boost/StartInclude.h>
 #include <boost/regex.hpp>
-#pragma GCC diagnostic pop
-
+#include <cbang/boost/StartInclude.h>
 
 using namespace cb;
 using namespace std;

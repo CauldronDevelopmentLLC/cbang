@@ -36,14 +36,13 @@
 #include <cbang/Exception.h>
 #include <cbang/net/Base64.h>
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <cstdio>
 
 
 namespace cb {
-  class Base64Encoder :
-    public Base64, public boost::iostreams::dual_use_filter {
+  class Base64Encoder : public Base64, public io::dual_use_filter {
     unsigned count = 0;
     int state = 0;
     unsigned char a = 0, b = 0, c = 0;
@@ -61,9 +60,9 @@ namespace cb {
       }
 
       if (state != 3) {
-        x = boost::iostreams::get(src);
-        if (x == boost::iostreams::WOULD_BLOCK)
-          return boost::iostreams::WOULD_BLOCK;
+        x = io::get(src);
+        if (x == io::WOULD_BLOCK)
+          return io::WOULD_BLOCK;
 
         if (x == EOF && state == 0) return EOF;
       }
@@ -180,13 +179,13 @@ namespace cb {
     template<typename Sink> bool out(Sink &dest, char x) {
       if (getWidth()) {
         if (count == getWidth()) {
-          if (!boost::iostreams::put(dest, '\n')) return false;
+          if (!io::put(dest, '\n')) return false;
           count = 0;
 
         } else count++;
       }
 
-      return boost::iostreams::put(dest, x);
+      return io::put(dest, x);
     }
   };
 }

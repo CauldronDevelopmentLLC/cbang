@@ -34,7 +34,7 @@
 #include "Server.h"
 
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 using namespace std;
 using namespace cb;

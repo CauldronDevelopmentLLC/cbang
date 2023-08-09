@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <cstring>
 
@@ -46,7 +46,7 @@ namespace cb {
 
   public:
     typedef char char_type;
-    typedef boost::iostreams::seekable_device_tag category;
+    typedef io::seekable_device_tag category;
 
 
     ArrayDevice(T *array, std::streamsize size) :
@@ -92,9 +92,9 @@ namespace cb {
 
 
   template <typename T>
-  class ArrayStream : public boost::iostreams::stream<ArrayDevice<T> > {
+  class ArrayStream : public io::stream<ArrayDevice<T> > {
   public:
     ArrayStream(T *array, std::streamsize size) :
-      boost::iostreams::stream<ArrayDevice<T> >(array, size) {}
+      io::stream<ArrayDevice<T> >(array, size) {}
   };
 }

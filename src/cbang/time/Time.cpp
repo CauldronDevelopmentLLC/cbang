@@ -32,17 +32,15 @@
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/time/Time.h>
+
+#include <cbang/boost/StartInclude.h>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <cbang/boost/EndInclude.h>
 
 #include <sstream>
 #include <locale>
 #include <exception>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
-#include <boost/date_time/posix_time/posix_time.hpp>
-#pragma GCC diagnostic pop
 
 using namespace std;
 using namespace cb;

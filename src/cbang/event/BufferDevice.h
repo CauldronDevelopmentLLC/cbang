@@ -34,7 +34,7 @@
 
 #include "Buffer.h"
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {
@@ -45,7 +45,7 @@ namespace cb {
 
     public:
       typedef T char_type;
-      typedef boost::iostreams::bidirectional_device_tag category;
+      typedef io::bidirectional_device_tag category;
 
       BufferDevice(const Buffer &buffer) : buffer(buffer) {}
 
@@ -61,10 +61,10 @@ namespace cb {
 
 
     template <typename T = char>
-    class BufferStream : public boost::iostreams::stream<BufferDevice<T> > {
+    class BufferStream : public io::stream<BufferDevice<T> > {
     public:
       BufferStream(const Buffer &buffer) :
-        boost::iostreams::stream<BufferDevice<T> >(buffer) {}
+        io::stream<BufferDevice<T> >(buffer) {}
     };
   }
 }

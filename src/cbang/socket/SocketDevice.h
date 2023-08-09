@@ -36,7 +36,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {
@@ -45,7 +45,7 @@ namespace cb {
 
   public:
     typedef char char_type;
-    typedef boost::iostreams::bidirectional_device_tag category;
+    typedef io::bidirectional_device_tag category;
 
     SocketDevice(Socket &socket) : socket(socket) {}
 
@@ -72,5 +72,5 @@ namespace cb {
     }
   };
 
-  typedef boost::iostreams::stream<SocketDevice> SocketStream;
+  typedef io::stream<SocketDevice> SocketStream;
 }

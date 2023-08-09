@@ -35,7 +35,7 @@
 #include "FileFactory.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {

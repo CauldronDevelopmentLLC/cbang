@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <vector>
 #include <cstring>
@@ -46,7 +46,7 @@ namespace cb {
 
   public:
     typedef T char_type;
-    typedef boost::iostreams::bidirectional_device_tag category;
+    typedef io::bidirectional_device_tag category;
 
     VectorDevice(std::vector<T> &v) : v(v), readPtr(0) {}
 
@@ -67,9 +67,8 @@ namespace cb {
 
 
   template <typename T = char>
-  class VectorStream : public boost::iostreams::stream<VectorDevice<T> > {
+  class VectorStream : public io::stream<VectorDevice<T> > {
   public:
-    VectorStream(std::vector<T> &v) :
-      boost::iostreams::stream<VectorDevice<T> >(v) {}
+    VectorStream(std::vector<T> &v) : io::stream<VectorDevice<T> >(v) {}
   };
 }

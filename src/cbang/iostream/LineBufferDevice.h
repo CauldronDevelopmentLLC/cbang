@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <string>
 
@@ -45,7 +45,7 @@ namespace cb {
 
   public:
     typedef char char_type;
-    typedef boost::iostreams::sink_tag category;
+    typedef io::sink_tag category;
 
     LineBufferDevice(T &buffer) : buffer(buffer) {}
 
@@ -69,10 +69,9 @@ namespace cb {
 
 
   template <typename T>
-  class LineBufferStream :
-    public boost::iostreams::stream<LineBufferDevice<T> > {
+  class LineBufferStream : public io::stream<LineBufferDevice<T> > {
   public:
     LineBufferStream(T &buffer) :
-    boost::iostreams::stream<LineBufferDevice<T> >(buffer) {}
+    io::stream<LineBufferDevice<T> >(buffer) {}
   };
 }

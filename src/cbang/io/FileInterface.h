@@ -34,7 +34,7 @@
 
 #include <cbang/SStream.h>
 #include <cbang/os/SysError.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {
