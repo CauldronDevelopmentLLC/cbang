@@ -38,11 +38,10 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SysError.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#include <cbang/boost/StartInclude.h>
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#pragma GCC diagnostic pop
+#include <cbang/boost/EndInclude.h>
 
 #ifdef _WIN32
 #include <io.h>

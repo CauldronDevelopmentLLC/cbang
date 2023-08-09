@@ -34,7 +34,7 @@
 #include "SysError.h"
 
 #include <cbang/Exception.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
@@ -45,11 +45,10 @@
 #include <fcntl.h>
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#include <cbang/boost/StartInclude.h>
 #include <boost/version.hpp>
 #include <boost/iostreams/device/file_descriptor.hpp>
-#pragma GCC diagnostic pop
+#include <cbang/boost/StartInclude.h>
 
 #if BOOST_VERSION < 104400
 #define BOOST_CLOSE_HANDLE true

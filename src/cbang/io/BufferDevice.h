@@ -34,7 +34,7 @@
 
 #include "IOBuffer.h"
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {
@@ -43,7 +43,7 @@ namespace cb {
 
   public:
     typedef char char_type;
-    typedef boost::iostreams::bidirectional_device_tag category;
+    typedef io::bidirectional_device_tag category;
 
     BufferDevice(IOBuffer &buffer) : buffer(buffer) {}
 
@@ -53,5 +53,5 @@ namespace cb {
     {return (std::streamsize)buffer.write(s, n);}
   };
 
-  typedef boost::iostreams::stream<BufferDevice> BufferStream;
+  typedef io::stream<BufferDevice> BufferStream;
 }

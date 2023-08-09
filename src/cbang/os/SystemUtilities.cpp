@@ -48,7 +48,7 @@
 #include <cbang/net/URI.h>
 #include <cbang/io/File.h>
 #include <cbang/iostream/CompressionFilter.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <cerrno>
 #include <cstring>
@@ -92,13 +92,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
 #define BOOST_SYSTEM_NO_DEPRECATED
-
+#include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#pragma GCC diagnostic pop
+#include <cbang/boost/EndInclude.h>
 
 using namespace std;
 using namespace cb;

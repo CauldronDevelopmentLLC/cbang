@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {
@@ -40,13 +40,13 @@ namespace cb {
   class NullDevice {
   public:
     typedef T char_type;
-    typedef boost::iostreams::sink_tag category;
+    typedef io::sink_tag category;
 
     std::streamsize write(const char_type *s, std::streamsize n) {return n;}
   };
 
   template<typename T = char>
-  class NullStream : public boost::iostreams::stream<NullDevice<T> > {
+  class NullStream : public io::stream<NullDevice<T> > {
   public:
     NullStream() {this->open(NullDevice<T>());}
   };

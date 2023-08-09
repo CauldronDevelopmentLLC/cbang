@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2023, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -30,25 +29,7 @@
 
 \******************************************************************************/
 
-#pragma once
-
+#if __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-override"
-
-#include <boost/iostreams/categories.hpp>
-#include <boost/iostreams/char_traits.hpp>
-#include <boost/iostreams/close.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/detail/ios.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/operations.hpp>
-#include <boost/iostreams/positioning.hpp>
-#include <boost/iostreams/stream.hpp>
-
-#pragma GCC diagnostic pop
-
-#include <iosfwd> // streamsize
-
-namespace cb {
-  namespace io = boost::iostreams;
-}
+#endif

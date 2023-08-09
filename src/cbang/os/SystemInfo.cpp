@@ -44,10 +44,9 @@
 #include <cbang/log/Logger.h>
 #include <cbang/util/HumanSize.h>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
-#pragma GCC diagnostic pop
+#include <cbang/boost/EndInclude.h>
 
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h

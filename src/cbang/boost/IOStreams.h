@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2019, Cauldron Development LLC
-                   Copyright (c) 2003-2017, Stanford University
+                Copyright (c) 2003-2023, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -32,35 +31,20 @@
 
 #pragma once
 
-#include <cbang/boost/IOStreams.h>
+#include "StartInclude.h"
+#include <boost/iostreams/categories.hpp>
+#include <boost/iostreams/char_traits.hpp>
+#include <boost/iostreams/close.hpp>
+#include <boost/iostreams/concepts.hpp>
+#include <boost/iostreams/detail/ios.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/operations.hpp>
+#include <boost/iostreams/positioning.hpp>
+#include <boost/iostreams/stream.hpp>
+#include "EndInclude.h"
 
+#include <iosfwd> // streamsize
 
 namespace cb {
-  class CountingStreamFilter : public io::multichar_dual_use_filter {
-    unsigned count;
-
-  public:
-    struct category :
-      io::multichar_dual_use_filter::category, io::flushable_tag {};
-
-    CountingStreamFilter() : count(0) {}
-
-    unsigned getByteCount() const {return count;}
-
-    template<typename Source>
-    std::streamsize read(Source &src, char *s, std::streamsize n) {
-      n = io::read(src, s, n);
-      if (n > 0) count += n;
-      return n;
-    }
-
-    template<typename Sink>
-    std::streamsize write(Sink &dest, const char *s, std::streamsize n) {
-      n = io::write(dest, s, n);
-      if (n > 0) count += n;
-      return n;
-    }
-
-    template<typename Sink> bool flush(Sink &snk) {return true;}
-  };
+  namespace io = boost::iostreams;
 }

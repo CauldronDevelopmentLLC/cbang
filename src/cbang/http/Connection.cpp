@@ -46,17 +46,16 @@
 #include <cbang/time/Time.h>
 #include <cbang/util/SmartLock.h>
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #ifdef HAVE_VALGRIND
 #include <valgrind/helgrind.h>
 #include <valgrind/drd.h>
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
+#include <cbang/boost/StartInclude.h>
 #include <boost/iostreams/device/array.hpp>
-#pragma GCC diagnostic pop
+#include <cbang/boost/EndInclude.h>
 
 #include <algorithm>
 

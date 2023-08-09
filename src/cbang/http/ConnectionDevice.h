@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 
 namespace cb {
@@ -44,7 +44,7 @@ namespace cb {
 
     public:
       typedef char char_type;
-      typedef boost::iostreams::bidirectional_device_tag category;
+      typedef io::bidirectional_device_tag category;
 
       ConnectionDevice(Connection &con) : con(con) {}
 
@@ -52,6 +52,6 @@ namespace cb {
       std::streamsize write(const char *s, std::streamsize n);
     };
 
-    typedef boost::iostreams::stream<ConnectionDevice> ConnectionStream;
+    typedef io::stream<ConnectionDevice> ConnectionStream;
   }
 }

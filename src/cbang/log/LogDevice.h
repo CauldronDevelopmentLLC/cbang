@@ -34,7 +34,7 @@
 
 #include <cbang/config.h>
 #include <cbang/SmartPointer.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <string>
 
@@ -45,10 +45,7 @@ namespace cb {
   class LogDevice {
   public:
     typedef char char_type;
-    struct category :
-      boost::iostreams::sink_tag,
-      boost::iostreams::flushable_tag
-    {};
+    struct category : io::sink_tag, io::flushable_tag {};
 
     class impl {
       std::string prefix;
@@ -93,5 +90,5 @@ namespace cb {
     bool flush() {return _impl->flush();}
   };
 
-  typedef boost::iostreams::stream<LogDevice> LogStream;
+  typedef io::stream<LogDevice> LogStream;
 }

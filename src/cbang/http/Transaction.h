@@ -38,7 +38,7 @@
 
 #include <cbang/socket/SocketDevice.h>
 #include <cbang/iostream/Transfer.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 #include <cbang/net/URI.h>
 
 #include <iostream>

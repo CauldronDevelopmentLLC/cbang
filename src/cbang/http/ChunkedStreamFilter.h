@@ -34,7 +34,7 @@
 
 #include <cbang/String.h>
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/Boost.h>
+#include <cbang/boost/IOStreams.h>
 
 #include <cstdint>
 #include <iosfwd> // streamsize

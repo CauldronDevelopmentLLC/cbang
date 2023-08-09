@@ -32,13 +32,11 @@
 
 #include "Directory.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-override"
 #define BOOST_SYSTEM_NO_DEPRECATED
-
+#include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#pragma GCC diagnostic pop
+#include <cbang/boost/EndInclude.h>
 
 namespace fs = boost::filesystem;
 
