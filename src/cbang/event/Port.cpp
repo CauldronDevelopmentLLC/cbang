@@ -91,23 +91,10 @@ void Port::accept() {
     auto newSocket = socket->accept(&peer);
     if (newSocket.isNull()) return;
 
-    // Non-blocking
-    newSocket->setBlocking(false);
-
-    SmartPointer<SSL> ssl;
-#ifdef HAVE_OPENSSL
-    if (sslCtx.isSet()) {
-      ssl = sslCtx->createSSL();
-      ssl->setFD(newSocket->get());
-
-      try {
-        ssl->accept();
-      } catch (const SSLException &e) {
-        LOG_DEBUG(4, e.getMessage());
-      }
+    try {
+      server.accept(peer, newSocket, sslCtx);
+    } catch (const SSLException &e) {
+      LOG_DEBUG(4, e.getMessage());
     }
-#endif // HAVE_OPENSSL
-
-    server.accept(peer, newSocket, ssl);
   }
 }

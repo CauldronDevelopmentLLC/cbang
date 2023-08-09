@@ -51,15 +51,26 @@ Client::~Client() {}
 void Client::send(const SmartPointer<Request> &req) const {
   auto &uri = req->getURI();
 
-  if (!req->hasConnection())
-    req->setConnection(createConnection(uri.schemeRequiresSSL()));
+  if (!req->hasConnection()) req->setConnection(new HTTPConnOut(base));
+  auto &conn = req->getConnection();
+
+  // Configure connection
+  if (!conn->getStats().isSet()) conn->setStats(stats);
+  conn->setReadTimeout(readTimeout);
+  conn->setWriteTimeout(writeTimeout);
 
   // Check if already connected
-  if (req->isConnected()) return req->getConnection()->makeRequest(req);
+  if (req->isConnected()) return conn->makeRequest(req);
+
+  SmartPointer<SSLContext> sslCtx;
+  if (uri.schemeRequiresSSL()) {
+    sslCtx = getSSLContext();
+    if (sslCtx.isNull()) THROW("Client lacks SSLContext");
+  }
 
   // Connect
-  req->getConnection()->connect(
-    dns, uri.getIPAddress(), bindAddr,
+  conn->connect(
+    dns, uri.getIPAddress(), bindAddr, sslCtx,
     [req] (bool success) {
       if (success) req->getConnection()->makeRequest(req);
       else req->onResponse(ConnectionError::CONN_ERR_CONNECT);
@@ -72,7 +83,7 @@ Client::RequestPtr Client::call(
   callback_t cb) {
   auto req = SmartPtr(new OutgoingRequest(*this, uri, method, cb));
 
-  req->setConnection(createConnection(uri.schemeRequiresSSL()));
+  req->setConnection(new HTTPConnOut(base));
 
   if (data) req->getOutputBuffer().add(data, length);
 
@@ -89,23 +100,4 @@ Client::RequestPtr Client::call
 Client::RequestPtr Client::call(
   const URI &uri, RequestMethod method, callback_t cb) {
   return call(uri, method, 0, 0, cb);
-}
-
-
-SmartPointer<HTTPConn> Client::createConnection(bool withSSL) const {
-  SmartPointer<SSLContext> sslCtx;
-  if (withSSL) {
-    sslCtx = getSSLContext();
-    if (sslCtx.isNull()) THROW("Client lacks SSLContext");
-  }
-
-  SmartPointer<HTTPConn> conn = new HTTPConnOut(base, sslCtx);
-
-  conn->setStats(stats);
-  if (stats.isSet()) stats->event("outgoing");
-
-  conn->setReadTimeout(readTimeout);
-  conn->setWriteTimeout(writeTimeout);
-
-  return conn;
 }

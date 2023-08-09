@@ -44,6 +44,7 @@
 
 namespace cb {
   class Socket;
+  class SSLContext;
 
   namespace Event {
     class DNSBase;
@@ -67,6 +68,7 @@ namespace cb {
       void setTTL(double sec);
 
       const SmartPointer<Socket> &getSocket() {return socket;}
+      void setSocket(const SmartPointer<Socket> &socket);
 
       void setPeer(const IPAddress &peer) {this->peer = peer;}
       const IPAddress &getPeer() const {return peer;}
@@ -78,8 +80,9 @@ namespace cb {
 
       bool isConnected() const;
       void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
-                  const SmartPointer<SSL> &ssl);
+                  const SmartPointer<SSLContext> &sslCtx);
       void connect(DNSBase &dns, const IPAddress &peer, const IPAddress &bind,
+                   const SmartPointer<SSLContext> &sslCtx,
                    std::function<void (bool)> cb);
 
     protected:

@@ -36,12 +36,10 @@
 
 
 namespace cb {
-  class SSLContext;
-
   namespace Event {
     class HTTPConnOut : public HTTPConn {
     public:
-      HTTPConnOut(Base &base, const SmartPointer<SSLContext> &sslCtx = 0);
+      HTTPConnOut(Base &base);
 
       void makeRequest(const SmartPointer<Request> &req);
 
