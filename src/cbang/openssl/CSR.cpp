@@ -79,20 +79,12 @@ CSR::~CSR() {
 }
 
 
-void CSR::getPublicKey(KeyPair &key) const {
+KeyPair CSR::getPublicKey() const {
   EVP_PKEY *pkey = X509_REQ_get_pubkey(csr);
   if (!pkey)
     THROW("Error getting public key from CSR: " << SSL::getErrorStr());
 
-  if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
-  key.setEVP_PKEY(pkey);
-}
-
-
-SmartPointer<KeyPair> CSR::getPublicKey() const {
-  SmartPointer<KeyPair> key = new KeyPair(0);
-  getPublicKey(*key);
-  return key;
+  return KeyPair(pkey);
 }
 
 

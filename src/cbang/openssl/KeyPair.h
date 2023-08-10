@@ -62,10 +62,10 @@ namespace cb {
     KeyPair();
     ~KeyPair();
 
-    const KeyPair &operator=(const KeyPair &o);
+    void release();
 
     EVP_PKEY *getEVP_PKEY() const {return key;}
-    void setEVP_PKEY(EVP_PKEY *key) {this->key = key;}
+    void setEVP_PKEY(EVP_PKEY *key);
 
     bool isValid() const;
     bool isRSA() const;
@@ -77,14 +77,11 @@ namespace cb {
     BigNum getRSA_E() const;
     BigNum getRSA_N() const;
 
-    BigNum getPrivate() const;
-    BigNum getPublic() const;
-
-    bool hasPrivate() const;
-    bool hasPublic() const;
-
     unsigned size() const; ///< In bytes
-    bool match(const KeyPair &o) const;
+
+    const KeyPair &operator=(const KeyPair &o);
+    bool operator==(const KeyPair &o) const;
+    bool operator!=(const KeyPair &o) const {return !(*this == o);}
 
     // Generate
     void generateRSA(unsigned bits = 4096, uint64_t pubExp = 65537,
@@ -97,35 +94,30 @@ namespace cb {
                     SmartPointer<KeyGenCallback> callback = 0);
 
     // To DER string
+    std::string toDER(bool pub) const;
     std::string publicToDER() const;
     std::string privateToDER() const;
 
+    // Read keys
+    void read(const std::string &algorithm, bool pub, const std::string &s);
+    void readPublic (const std::string &algorithm, const std::string &s);
+    void readPrivate(const std::string &algorithm, const std::string &s);
+
     // To PEM string
-    std::string publicToString() const;
-    std::string privateToString() const;
-    std::string toString() const;
+    std::string publicToPEMString() const;
+    std::string privateToPEMString() const;
 
     // Read PEM
-    std::istream &readPublic(std::istream &stream);
-    void readPublic(const std::string &pem);
-    std::istream &readPrivate(std::istream &stream,
-                              SmartPointer<PasswordCallback> callback = 0);
-    void readPrivate(const std::string &pem,
-                     SmartPointer<PasswordCallback> callback = 0);
-    void read(const std::string &pem,
-              SmartPointer<PasswordCallback> callback = 0);
-    std::istream &read(std::istream &stream,
-                       SmartPointer<PasswordCallback> callback = 0);
+    std::istream &readPublicPEM(std::istream &stream);
+    void readPublicPEM(const std::string &pem);
+    std::istream &readPrivatePEM(
+      std::istream &stream, SmartPointer<PasswordCallback> callback = 0);
+    void readPrivatePEM(
+      const std::string &pem, SmartPointer<PasswordCallback> callback = 0);
 
     // Write PEM
-    std::ostream &writePublic(std::ostream &stream) const;
-    std::ostream &writePrivate(std::ostream &stream) const;
-    std::ostream &write(std::ostream &stream) const;
-
-    // Print ASN1
-    std::ostream &printPublic(std::ostream &stream, int indent = 0) const;
-    std::ostream &printPrivate(std::ostream &stream, int indent = 0) const;
-    std::ostream &print(std::ostream &stream, int indent = 0) const;
+    std::ostream &writePublicPEM(std::ostream &stream) const;
+    std::ostream &writePrivatePEM(std::ostream &stream) const;
 
     // Signatures
     std::string sign(const std::string &data) const;
@@ -135,13 +127,4 @@ namespace cb {
     void verifyBase64SHA256(const std::string &sig64,
                             const std::string &data) const;
   };
-
-
-  inline std::istream &operator>>(std::istream &stream, KeyPair &key) {
-    return key.read(stream);
-  }
-
-  inline std::ostream &operator<<(std::ostream &stream, const KeyPair &key) {
-    return key.write(stream);
-  }
 }

@@ -82,11 +82,11 @@ namespace cb {
 
     // Key generation
     void keyGenInit();
-    void keyGen(KeyPair &key);
+    KeyPair keyGen() const;
 
     // Parameter generation
     void paramGenInit();
-    void paramGen(KeyPair &key);
+    KeyPair paramGen() const;
 
     // Sign
     void signInit();

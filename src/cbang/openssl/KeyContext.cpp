@@ -57,7 +57,7 @@ KeyContext::KeyContext(int nid, ENGINE *e) : ctx(0), deallocate(true) {
 }
 
 
-KeyContext::KeyContext(const std::string &algorithm, ENGINE *e) :
+KeyContext::KeyContext(const string &algorithm, ENGINE *e) :
   ctx(0), deallocate(true) {
   SSL::init();
 
@@ -192,14 +192,13 @@ void KeyContext::keyGenInit() {
 }
 
 
-void KeyContext::keyGen(KeyPair &key) {
+KeyPair KeyContext::keyGen() const {
   EVP_PKEY *pkey = 0;
 
   if (EVP_PKEY_keygen(ctx, &pkey) <= 0)
     THROW("Error generating key: " << SSL::getErrorStr());
 
-  if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
-  key.setEVP_PKEY(pkey);
+  return KeyPair(pkey);
 }
 
 
@@ -210,14 +209,13 @@ void KeyContext::paramGenInit() {
 }
 
 
-void KeyContext::paramGen(KeyPair &key) {
+KeyPair KeyContext::paramGen() const {
   EVP_PKEY *pkey = 0;
 
   if (EVP_PKEY_paramgen(ctx, &pkey) <= 0)
     THROW("Error generating parameters: " << SSL::getErrorStr());
 
-  if (key.getEVP_PKEY()) EVP_PKEY_free(key.getEVP_PKEY());
-  key.setEVP_PKEY(pkey);
+  return KeyPair(pkey);
 }
 
 

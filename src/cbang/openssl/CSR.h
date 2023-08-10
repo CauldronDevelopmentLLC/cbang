@@ -56,8 +56,7 @@ namespace cb {
 
     X509_REQ *getX509_REQ() const {return csr;}
 
-    void getPublicKey(KeyPair &key) const;
-    SmartPointer<KeyPair> getPublicKey() const;
+    KeyPair getPublicKey() const;
 
     void addNameEntry(const std::string &name, const std::string &value);
     bool hasNameEntry(const std::string &name) const;

@@ -216,7 +216,7 @@ void SSLContext::usePrivateKey(const KeyPair &key) {
 
 void SSLContext::usePrivateKey(const InputSource &source) {
   KeyPair pri;
-  source.getStream() >> pri;
+  pri.readPrivatePEM(source.getStream());
   usePrivateKey(pri);
 }
 

@@ -59,8 +59,7 @@ namespace cb {
     X509 *getX509() const {return cert;}
 
     bool hasPublicKey() const;
-    void getPublicKey(KeyPair &key) const;
-    SmartPointer<KeyPair> getPublicKey() const;
+    KeyPair getPublicKey() const;
     void setPublicKey(const KeyPair &key);
 
     void setVersion(int version);

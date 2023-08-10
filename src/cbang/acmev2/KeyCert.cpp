@@ -51,7 +51,7 @@ KeyCert::KeyCert(const string &domains, const KeyPair &key,
 bool KeyCert::expiredIn(unsigned secs) const {
   // Expired if certificate empty, expired or does not match key
   if (!hasCert() || chain.get(0).expiredIn(secs) ||
-      !chain.get(0).getPublicKey()->match(key)) return true;
+      chain.get(0).getPublicKey() != key) return true;
 
   // Check cert applies to all domains
   auto cert = chain.get(0);

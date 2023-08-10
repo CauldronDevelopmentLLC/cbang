@@ -104,22 +104,26 @@ KeyPair::KeyPair(const string &key, mac_key_t type, ENGINE *e) {
 }
 
 
-KeyPair::~KeyPair() {if (key) EVP_PKEY_free(key);}
+KeyPair::~KeyPair() {release();}
 
 
-const KeyPair &KeyPair::operator=(const KeyPair &o) {
+void KeyPair::release() {
   if (key) EVP_PKEY_free(key);
-  key = o.key;
-  if (key) EVP_PKEY_up_ref(key);
-  return *this;
+  key = 0;
+}
+
+
+void KeyPair::setEVP_PKEY(EVP_PKEY *key) {
+  release();
+  this->key = key;
 }
 
 
 bool KeyPair::isValid() const {return EVP_PKEY_base_id(key) != EVP_PKEY_NONE;}
-bool KeyPair::isRSA() const   {return EVP_PKEY_base_id(key) == EVP_PKEY_RSA;}
-bool KeyPair::isDSA() const   {return EVP_PKEY_base_id(key) == EVP_PKEY_DSA;}
-bool KeyPair::isDH() const    {return EVP_PKEY_base_id(key) == EVP_PKEY_DH;}
-bool KeyPair::isEC() const    {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
+bool KeyPair::isRSA()   const {return EVP_PKEY_base_id(key) == EVP_PKEY_RSA;}
+bool KeyPair::isDSA()   const {return EVP_PKEY_base_id(key) == EVP_PKEY_DSA;}
+bool KeyPair::isDH()    const {return EVP_PKEY_base_id(key) == EVP_PKEY_DH;}
+bool KeyPair::isEC()    const {return EVP_PKEY_base_id(key) == EVP_PKEY_EC;}
 
 
 BigNum KeyPair::getParam(const char *id) const {
@@ -164,74 +168,18 @@ BigNum KeyPair::getRSA_N() const {
 }
 
 
-BigNum KeyPair::getPublic() const  {
-#if OPENSSL_VERSION_NUMBER < 0x3000000fL
-  const BIGNUM *n = 0;
-
-  switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: RSA_get0_key(EVP_PKEY_get0_RSA(key), &n, 0, 0); return n;
-  case EVP_PKEY_DSA: DSA_get0_key(EVP_PKEY_get0_DSA(key), &n, 0);    return n;
-  case EVP_PKEY_DH:  DH_get0_key(EVP_PKEY_get0_DH(key),   &n, 0);    return n;
-  case EVP_PKEY_EC: {
-    const EC_KEY   *ec           = EVP_PKEY_get0_EC_KEY(key);
-    const EC_POINT *pt           = EC_KEY_get0_public_key(ec);
-    const EC_GROUP *group        = EC_KEY_get0_group(ec);
-    point_conversion_form_t form = EC_KEY_get_conv_form(ec);
-
-    if (pt && group) {
-      BIGNUM *n = BN_new();
-      EC_POINT_point2bn(group, pt, form, n, 0);
-      return BigNum(n, true);
-    }
-    return n;
-  }
-  }
-
-#else
-  switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: return getParam(OSSL_PKEY_PARAM_RSA_N);
-  case EVP_PKEY_DSA:
-  case EVP_PKEY_DH:  return getParam(OSSL_PKEY_PARAM_PUB_KEY);
-  case EVP_PKEY_EC:  break; // Cannot get EC pub key as a BigNum
-  }
-#endif
-
-  THROW("Invalid key type");
-}
-
-
-BigNum KeyPair::getPrivate() const {
-#if OPENSSL_VERSION_NUMBER < 0x3000000fL
-  const BIGNUM *n = 0;
-
-  switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: RSA_get0_key(EVP_PKEY_get0_RSA(key), 0, 0, &n); return n;
-  case EVP_PKEY_DSA: DSA_get0_key(EVP_PKEY_get0_DSA(key), 0,    &n); return n;
-  case EVP_PKEY_DH:  DH_get0_key(EVP_PKEY_get0_DH(key),   0,    &n); return n;
-  case EVP_PKEY_EC: return EC_KEY_get0_private_key(EVP_PKEY_get0_EC_KEY(key));
-  }
-
-#else
-  switch (EVP_PKEY_base_id(key)) {
-  case EVP_PKEY_RSA: return getParam(OSSL_PKEY_PARAM_RSA_D);
-  case EVP_PKEY_DSA:
-  case EVP_PKEY_DH:
-  case EVP_PKEY_EC:  return getParam(OSSL_PKEY_PARAM_PRIV_KEY);
-  }
-#endif
-
-  THROW("Invalid key type");
-}
-
-
-bool KeyPair::hasPrivate() const {return getPrivate().get();}
-bool KeyPair::hasPublic() const  {return getPublic().get();}
-
-
 unsigned KeyPair::size() const {return EVP_PKEY_size(key);}
 
 
-bool KeyPair::match(const KeyPair &o) const {
+const KeyPair &KeyPair::operator=(const KeyPair &o) {
+  release();
+  key = o.key;
+  if (key) EVP_PKEY_up_ref(key);
+  return *this;
+}
+
+
+bool KeyPair::operator==(const KeyPair &o) const {
 #if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   int ret = EVP_PKEY_eq(key, o.key);
   if (ret == -1) ret = 0;
@@ -254,7 +202,7 @@ void KeyPair::generateRSA(unsigned bits, uint64_t pubExp,
   ctx.setRSABits(bits);
   ctx.setRSAPubExp(pubExp);
   ctx.setKeyGenCallback(callback.get());
-  ctx.keyGen(*this);
+  *this = ctx.keyGen();
 }
 
 
@@ -264,7 +212,7 @@ void KeyPair::generateDSA(unsigned bits,
   ctx.keyGenInit();
   ctx.setDSABits(bits);
   ctx.setKeyGenCallback(callback.get());
-  ctx.keyGen(*this);
+  *this = ctx.keyGen();
 }
 
 
@@ -275,7 +223,7 @@ void KeyPair::generateDH(unsigned primeLen, int generator,
   ctx.setDHPrimeLen(primeLen);
   ctx.setDHGenerator(generator);
   ctx.setKeyGenCallback(callback.get());
-  ctx.keyGen(*this);
+  *this = ctx.keyGen();
 }
 
 
@@ -285,48 +233,58 @@ void KeyPair::generateEC(const string &curve,
   ctx.keyGenInit();
   ctx.setECCurve(curve);
   ctx.setKeyGenCallback(callback.get());
-  ctx.keyGen(*this);
+  *this = ctx.keyGen();
 }
 
 
-string KeyPair::publicToDER() const {
+string KeyPair::toDER(bool pub) const {
   unsigned char *der = 0;
-  int len = i2d_PublicKey(key, &der);
-  if (!der) THROW("Failed to export public key in DER format");
+  int len = (pub ? i2d_PublicKey : i2d_PrivateKey)(key, &der);
+  if (!der) THROW("Failed to export " << (pub ? "public" : "private")
+                  << " key in DER format");
   return string((char *)der, len);
 }
 
 
-string KeyPair::privateToDER() const {
-  unsigned char *der = 0;
-  int len = i2d_PrivateKey(key, &der);
-  if (!der) THROW("Failed to export private key in DER format");
-  return string((char *)der, len);
+string KeyPair::publicToDER () const {return toDER(true);}
+string KeyPair::privateToDER() const {return toDER(false);}
+
+
+void KeyPair::read(const string &algorithm, bool pub, const string &s) {
+  int nid = SSL::findObject(algorithm);
+  auto *p = (const unsigned char *)s.data();
+  auto *key = (pub ? d2i_PublicKey : d2i_PrivateKey)(nid, 0, &p, s.length());
+  if (!key) THROW("Failed to read " << (pub ? "public" : "private") << " key");
+  release();
+  this->key = key;
 }
 
 
-string KeyPair::publicToString() const {
+void KeyPair::readPublic(const string &algorithm, const string &s) {
+  read(algorithm, true, s);
+}
+
+
+void KeyPair::readPrivate(const string &algorithm, const string &s) {
+  read(algorithm, false, s);
+}
+
+
+string KeyPair::publicToPEMString() const {
   ostringstream str;
-  writePublic(str);
+  writePublicPEM(str);
   return str.str();
 }
 
 
-string KeyPair::privateToString() const {
+string KeyPair::privateToPEMString() const {
   ostringstream str;
-  writePrivate(str);
+  writePrivatePEM(str);
   return str.str();
 }
 
 
-string KeyPair::toString() const {
-  ostringstream str;
-  write(str);
-  return str.str();
-}
-
-
-istream &KeyPair::readPublic(istream &stream) {
+istream &KeyPair::readPublicPEM(istream &stream) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_PUBKEY(bio.getBIO(), &key, 0, 0))
@@ -336,14 +294,14 @@ istream &KeyPair::readPublic(istream &stream) {
 }
 
 
-void KeyPair::readPublic(const string &pem) {
+void KeyPair::readPublicPEM(const string &pem) {
   istringstream str(pem);
-  readPublic(str);
+  readPublicPEM(str);
 }
 
 
-istream &KeyPair::readPrivate(istream &stream,
-                              SmartPointer<PasswordCallback> callback) {
+istream &KeyPair::readPrivatePEM(
+  istream &stream, SmartPointer<PasswordCallback> callback) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_PrivateKey
@@ -354,29 +312,14 @@ istream &KeyPair::readPrivate(istream &stream,
 }
 
 
-void KeyPair::readPrivate(const string &pem,
-                          SmartPointer<PasswordCallback> callback) {
+void KeyPair::readPrivatePEM(
+  const string &pem, SmartPointer<PasswordCallback> callback) {
   istringstream str(pem);
-  readPrivate(str, callback);
+  readPrivatePEM(str, callback);
 }
 
 
-void KeyPair::read(const string &pem, SmartPointer<PasswordCallback> callback) {
-  try {readPrivate(pem, callback);} catch (...) {} // Ignore
-  readPublic(pem);
-}
-
-
-istream &KeyPair::read(istream &stream,
-                       SmartPointer<PasswordCallback> callback) {
-  try {return readPrivate(stream, callback);} catch (...) {} // Ignore
-  stream.clear();
-  stream.seekg(0);
-  return readPublic(stream);
-}
-
-
-ostream &KeyPair::writePublic(ostream &stream) const {
+ostream &KeyPair::writePublicPEM(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_PUBKEY(bio.getBIO(), key))
@@ -386,45 +329,13 @@ ostream &KeyPair::writePublic(ostream &stream) const {
 }
 
 
-ostream &KeyPair::writePrivate(ostream &stream) const {
+ostream &KeyPair::writePrivatePEM(ostream &stream) const {
   BOStream bio(stream);
 
   if (!PEM_write_bio_PrivateKey(bio.getBIO(), key, 0, 0, 0, 0, 0))
     THROW("Failed to write private key: " << SSL::getErrorStr());
 
   return stream;
-}
-
-
-ostream &KeyPair::write(ostream &stream) const {
-  if (hasPrivate()) return writePrivate(stream);
-  return writePublic(stream);
-}
-
-
-ostream &KeyPair::printPublic(ostream &stream, int indent) const {
-  BOStream bio(stream);
-
-  if (!EVP_PKEY_print_public(bio.getBIO(), key, indent, 0))
-    THROW("Failed to print public key: " << SSL::getErrorStr());
-
-  return stream;
-}
-
-
-ostream &KeyPair::printPrivate(ostream &stream, int indent) const {
-  BOStream bio(stream);
-
-  if (!EVP_PKEY_print_private(bio.getBIO(), key, indent, 0))
-    THROW("Failed to print private key: " << SSL::getErrorStr());
-
-  return stream;
-}
-
-
-ostream &KeyPair::print(ostream &stream, int indent) const {
-  if (hasPrivate()) return printPrivate(stream, indent);
-  return printPublic(stream, indent);
 }
 
 
