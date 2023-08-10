@@ -240,8 +240,11 @@ void KeyPair::generateEC(const string &curve,
 string KeyPair::toDER(bool pub) const {
   unsigned char *der = 0;
   int len = (pub ? i2d_PublicKey : i2d_PrivateKey)(key, &der);
-  if (!der) THROW("Failed to export " << (pub ? "public" : "private")
-                  << " key in DER format");
+
+  if (!der || len < 0)
+    THROW("Failed to export " << (pub ? "public" : "private")
+          << " key in DER format: " << SSL::getErrorStr());
+
   return string((char *)der, len);
 }
 
@@ -250,13 +253,20 @@ string KeyPair::publicToDER () const {return toDER(true);}
 string KeyPair::privateToDER() const {return toDER(false);}
 
 
-void KeyPair::read(const string &algorithm, bool pub, const string &s) {
-  int nid = SSL::findObject(algorithm);
+void KeyPair::read(int type, bool pub, const string &s) {
   auto *p = (const unsigned char *)s.data();
-  auto *key = (pub ? d2i_PublicKey : d2i_PrivateKey)(nid, 0, &p, s.length());
-  if (!key) THROW("Failed to read " << (pub ? "public" : "private") << " key");
+  auto *key = (pub ? d2i_PublicKey : d2i_PrivateKey)(type, 0, &p, s.length());
+
+  if (!key) THROW("Failed to read " << (pub ? "public" : "private") << " key: "
+                  << SSL::getErrorStr());
+
   release();
   this->key = key;
+}
+
+
+void KeyPair::read(const string &algorithm, bool pub, const string &s) {
+  read(getAlgorithmType(algorithm), pub, s);
 }
 
 
@@ -377,4 +387,14 @@ void KeyPair::verify(const string &signature, const string &data) const {
 void KeyPair::verifyBase64SHA256(const string &sig64,
                                  const string &data) const {
   verify(Base64().decode(sig64), Digest::hash(data, "sha256"));
+}
+
+
+int KeyPair::getAlgorithmType(const string &algorithm) {
+  if (algorithm == "RSA")  return EVP_PKEY_RSA;
+  if (algorithm == "DSA")  return EVP_PKEY_DSA;
+  if (algorithm == "DH")   return EVP_PKEY_DH;
+  if (algorithm == "EC")   return EVP_PKEY_EC;
+  if (algorithm == "HMAC") return EVP_PKEY_HMAC;
+  THROW("Unknown key algorithm '" << algorithm << "'");
 }
