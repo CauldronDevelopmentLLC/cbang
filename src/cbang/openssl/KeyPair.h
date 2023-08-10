@@ -99,6 +99,7 @@ namespace cb {
     std::string privateToDER() const;
 
     // Read keys
+    void read(int type, bool pub, const std::string &s);
     void read(const std::string &algorithm, bool pub, const std::string &s);
     void readPublic (const std::string &algorithm, const std::string &s);
     void readPrivate(const std::string &algorithm, const std::string &s);
@@ -126,5 +127,7 @@ namespace cb {
     void verify(const std::string &signature, const std::string &data) const;
     void verifyBase64SHA256(const std::string &sig64,
                             const std::string &data) const;
+
+    static int getAlgorithmType(const std::string &algorithm);
   };
 }
