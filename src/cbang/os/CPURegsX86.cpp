@@ -32,6 +32,8 @@
 
 #include "CPURegsX86.h"
 
+#include <cbang/String.h>
+
 #include <cstring>
 
 #if 1500 < _MSC_VER
@@ -95,7 +97,7 @@ string CPURegsX86::getCPUBrand() {
       brand += string((const char *)getRegs(), 16);
     }
 
-    return brand.c_str(); // Strips trailing zeros
+    return String::trim(brand.c_str()); // Strips trailing zeros
   }
 
   return "Unknown";
@@ -111,7 +113,7 @@ string CPURegsX86::getCPUVendor() {
   vendor[1] = EDX();
   vendor[2] = ECX();
 
-  return string((char *)vendor, 12);
+  return String::trim(string((char *)vendor, 12));
 }
 
 
