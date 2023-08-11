@@ -50,18 +50,18 @@ public:
   HTTPServer(Event::Base &base) : Event::HTTPServer(base) {}
 
   // From Event::HTTPServer
-  bool handleRequest(const SmartPointer<Event::Request> &req) {
-    string path = req->getURI().getPath();
+  bool handleRequest(Event::Request &req) {
+    string path = req.getURI().getPath();
 
-    if (path == "/") req->reply("<h1>Hello World!</h1>");
+    if (path == "/") req.reply("<h1>Hello World!</h1>");
     else if (path == "/err") THROW("Error");
     else if (path == "/bad") THROWX("Bad request", HTTP_BAD_REQUEST);
 
     else if (path == "/chunked") {
-      req->startChunked();
+      req.startChunked();
       for (unsigned i = 0; i < 10; i++)
-        req->sendChunk(String::printf("<h2>%d</h2>", i));
-      req->endChunked();
+        req.sendChunk(String::printf("<h2>%d</h2>", i));
+      req.endChunked();
 
     } else return false;
 
