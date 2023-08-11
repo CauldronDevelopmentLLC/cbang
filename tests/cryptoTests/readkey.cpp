@@ -39,19 +39,29 @@ using namespace cb;
 
 int main(int argc, char *argv[]) {
   try {
-    for (int i = 1; i < argc; i++) {
-      KeyPair key;
-      key.read(*SystemUtilities::open(argv[i]));
+    bool pub = true;
 
-      if (key.hasPublic()) {
-        cout << "Public:\n";
-        key.writePublic(cout);
-        cout << endl;
+    for (int i = 1; i < argc; i++) {
+      string arg = argv[i];
+
+      if (arg.length() && arg[0] == '-') {
+        if (arg == "--public") pub = true;
+        else if (arg == "--private") pub = false;
+        else THROW("Invalid argument '" << argv[i] << "'");
       }
 
-      if (key.hasPrivate()) {
+      KeyPair key;
+      auto &stream = *SystemUtilities::open(arg);
+      if (pub) key.readPublicPEM(stream);
+      else key.readPrivatePEM(stream);
+
+      cout << "Public:\n";
+      key.writePublicPEM(cout);
+      cout << endl;
+
+      if (!pub) {
         cout << "Private:\n";
-        key.writePrivate(cout);
+        key.writePrivatePEM(cout);
         cout << endl;
       }
     }

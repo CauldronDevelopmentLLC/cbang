@@ -54,13 +54,13 @@ using namespace std;
 void readKey(KeyPair &key, const string &filename) {
   if (SystemUtilities::exists(filename)) {
     LOG_INFO(1, "Reading " << filename);
-    key.readPrivate(SystemUtilities::read(filename));
+    key.readPrivatePEM(SystemUtilities::read(filename));
 
   } else {
     LOG_INFO(1, "Generating " << filename);
     key.generateRSA(4096, 65537, new KeyGenPacifier(cout));
     cout << endl;
-    key.writePrivate(*SystemUtilities::oopen(filename, 0600));
+    key.writePrivatePEM(*SystemUtilities::oopen(filename, 0600));
   }
 }
 
