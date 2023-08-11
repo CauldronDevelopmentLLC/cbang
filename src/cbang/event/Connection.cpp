@@ -59,7 +59,8 @@ Connection::Connection(cb::Event::Base &base) :
 
 Connection::~Connection() {
   LOG_DEBUG(4, "Connection closed");
-  TRY_CATCH_ERROR(setSocket(0));
+  // Prevent socket from closing FD
+  if (socket.isSet()) TRY_CATCH_ERROR(socket->adopt());
 }
 
 
