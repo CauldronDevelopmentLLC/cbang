@@ -42,85 +42,94 @@ using namespace std;
 using namespace cb;
 
 
-Cipher::Cipher(const string &cipher, bool encrypt, const void *key,
+Cipher::Cipher(const string &algorithm, bool encrypt, const void *key,
                const void *iv, ENGINE *e) :
-  ctx(EVP_CIPHER_CTX_new()), encrypt(encrypt) {
+  ctx(EVP_CIPHER_CTX_new()) {
   SSL::init();
-
-  EVP_CIPHER_CTX_reset(ctx);
-
-  const EVP_CIPHER *c = EVP_get_cipherbyname(cipher.c_str());
-  if (!c) THROW("Unrecognized cipher '" << cipher << "'");
-
-  if (!(encrypt ? EVP_EncryptInit_ex : EVP_DecryptInit_ex)
-      (ctx, c, e, (const unsigned char *)key, (const unsigned char *)iv))
-    THROW("Cipher init failed: " << SSL::getErrorStr());
+  reset();
+  init(lookup(algorithm), encrypt, key, iv, e);
 }
+
+
+Cipher::Cipher(
+  const string &algorithm, const string &key, const string &iv, ENGINE *e) :
+  Cipher(algorithm, true, key.c_str(), iv.c_str()) {}
 
 
 Cipher::~Cipher() {
-  if (ctx) {
-    EVP_CIPHER_CTX_reset(ctx);
-    EVP_CIPHER_CTX_free(ctx);
-  }
+  if (initialized) reset();
+  if (ctx) EVP_CIPHER_CTX_free(ctx);
 }
 
 
-unsigned Cipher::getKeyLength() const {
-  return EVP_CIPHER_CTX_key_length(ctx);
+bool Cipher::isEncrypting() const {return EVP_CIPHER_CTX_is_encrypting(ctx);}
+unsigned Cipher::getKeyLength() const {return EVP_CIPHER_CTX_key_length(ctx);}
+void Cipher::setKey(const void *key) {init(0, isEncrypting(), key, 0, 0);}
+unsigned Cipher::getIVLength() const {return EVP_CIPHER_CTX_iv_length(ctx);}
+void Cipher::setIV(const void *iv) {init(0, isEncrypting(), 0, iv, 0);}
+unsigned Cipher::getBlockSize() const {return EVP_CIPHER_CTX_block_size(ctx);}
+
+
+void Cipher::reset() {
+  if (ctx) EVP_CIPHER_CTX_reset(ctx);
+  initialized = false;
 }
 
 
-void Cipher::setKey(const void *key) {
-  if (!(encrypt ? EVP_EncryptInit_ex : EVP_DecryptInit_ex)
-      (ctx, 0, 0, (const unsigned char *)key, 0))
-    THROW("Failed to set cipher key: " << SSL::getErrorStr());
+void Cipher::init(const EVP_CIPHER *cipher, bool encrypt, const void *key,
+                  const void *iv, ENGINE *e) {
+  if (!EVP_CipherInit_ex(ctx, cipher, e, (const unsigned char *)key,
+                         (const unsigned char *)iv, encrypt))
+    THROW("Cipher init failed: " << SSL::getErrorStr());
+
+  initialized = true;
 }
 
 
-unsigned Cipher::getIVLength() const {
-  return EVP_CIPHER_CTX_iv_length(ctx);
-}
+unsigned Cipher::update(
+  void *out, unsigned outLen, const void *in, unsigned inLen) {
 
+  if (!initialized) THROW("Cipher not initialized");
 
-void Cipher::setIV(const void *iv) {
-  if (!(encrypt ? EVP_EncryptInit_ex : EVP_DecryptInit_ex)
-      (ctx, 0, 0, 0, (const unsigned char *)iv))
-    THROW("Failed to set cipher IV: " << SSL::getErrorStr());
-}
-
-
-unsigned Cipher::getBlockSize() const {
-  return EVP_CIPHER_CTX_block_size(ctx);
-}
-
-
-unsigned Cipher::update(void *out, unsigned length, const void *in,
-                        unsigned inLen) {
+  // Handle inplace operation
   SmartPointer<char>::Array buf;
   if (out == in) {
-    if (inLen < length)
-      THROW("If using cipher in place then the intput buffer length must be "
-            "at least as large as the output buffer");
-
     buf = new char[inLen];
     memcpy(buf.get(), in, inLen);
     in = buf.get();
   }
 
-  if (!(encrypt ? EVP_EncryptUpdate : EVP_DecryptUpdate)
-      (ctx, (unsigned char *)out, (int *)&length,
-       (unsigned char *)in, inLen))
+  if (!EVP_CipherUpdate(
+        ctx, (unsigned char *)out, (int *)&outLen, (unsigned char *)in, inLen))
     THROW("Error updating cipher: " << SSL::getErrorStr());
 
-  return length;
+  return outLen;
 }
 
 
-unsigned Cipher::final(void *out, unsigned length) {
-  if (!(encrypt ? EVP_EncryptFinal_ex : EVP_DecryptFinal_ex)
-      (ctx, (unsigned char *)out, (int *)&length))
+unsigned Cipher::finalize(void *out, unsigned outLen) {
+  if (!initialized) THROW("Cipher not initialized");
+
+  if (!EVP_CipherFinal_ex(ctx, (unsigned char *)out, (int *)&outLen))
     THROW("Error finalizing cipher: " << SSL::getErrorStr());
 
-  return length;
+  return outLen;
+}
+
+
+string Cipher::crypt(const string &data) {
+  unsigned outLen = data.length() + getBlockSize();
+  SmartPointer<char>::Array buf = new char[outLen];
+
+  unsigned bytes = update(buf.get(), outLen, data.data(), data.length());
+  bytes += finalize(buf.get() + bytes, outLen - bytes);
+
+  return string(buf.get(), bytes);
+}
+
+
+const EVP_CIPHER *Cipher::lookup(const string &algorithm) {
+  const EVP_CIPHER *c = EVP_get_cipherbyname(algorithm.c_str());
+  if (!c) THROW("Unrecognized cipher '" << algorithm << "'");
+  return c;
 }

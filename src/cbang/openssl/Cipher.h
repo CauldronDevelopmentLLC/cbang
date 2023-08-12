@@ -33,18 +33,23 @@
 
 #include <string>
 
+typedef struct evp_cipher_st EVP_CIPHER;
 typedef struct evp_cipher_ctx_st EVP_CIPHER_CTX;
 typedef struct engine_st ENGINE;
 
 namespace cb {
   class Cipher {
     EVP_CIPHER_CTX *ctx;
-    bool encrypt;
+    bool initialized = false;
 
   public:
-    Cipher(const std::string &cipher, bool encrypt = true, const void *key = 0,
-           const void *iv = 0, ENGINE *e = 0);
+    Cipher(const std::string &algorithm, bool encrypt = true,
+           const void *key = 0, const void *iv = 0, ENGINE *e = 0);
+    Cipher(const std::string &algorithm, const std::string &key,
+           const std::string &iv, ENGINE *e);
     virtual ~Cipher();
+
+    bool isEncrypting() const;
 
     unsigned getKeyLength() const;
     void setKey(const void *key);
@@ -54,7 +59,15 @@ namespace cb {
 
     unsigned getBlockSize() const;
 
-    unsigned update(void *out, unsigned length, const void *in, unsigned inLen);
-    unsigned final(void *out, unsigned length);
+    void reset();
+    void init(
+      const EVP_CIPHER *cipher, bool encrypt = true, const void *key = 0,
+      const void *iv = 0, ENGINE *e = 0);
+    unsigned update(void *out, unsigned outLen, const void *in, unsigned inLen);
+    unsigned finalize(void *out, unsigned outLen);
+
+    std::string crypt(const std::string &data);
+
+    static const EVP_CIPHER *lookup(const std::string &algorithm);
   };
 }

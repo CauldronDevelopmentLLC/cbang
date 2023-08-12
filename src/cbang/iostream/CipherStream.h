@@ -61,7 +61,7 @@ namespace cb {
       if (0 < bytes) return cipher->update(s, n, buffer.get(), bytes);
       else if (!done) {
         done = true;
-        return cipher->final(s, n);
+        return cipher->finalize(s, n);
       }
       return bytes;
     }
@@ -79,7 +79,7 @@ namespace cb {
     template<typename Sink> void close(Sink &dst, BOOST_IOS::openmode m) {
       if (m & BOOST_IOS::out) {
         char buffer[4096];
-        unsigned bytes = cipher->final(buffer, 4096);
+        unsigned bytes = cipher->finalize(buffer, 4096);
         io::write(dst, buffer, bytes);
       }
     }
