@@ -118,7 +118,7 @@ string Base64::encode(const char *_s, unsigned length) const {
     void append(char c) {
       if (width) {
         if (col == width) {
-          col = 0;
+          col = 1;
           string::append("\r\n");
 
         } else col++;
