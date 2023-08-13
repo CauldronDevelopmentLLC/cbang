@@ -92,32 +92,32 @@ namespace cb {
     void generateEC(const std::string &curve = "secp192k1",
                     SmartPointer<KeyGenCallback> callback = 0);
 
-    // To DER string
+    // Export
     std::string toDER(bool pub) const;
     std::string publicToDER() const;
     std::string privateToDER() const;
 
-    // Read keys
+    std::string publicToSPKI() const;
+    std::string publicToPEMString() const;
+    std::string privateToPEMString() const;
+
+    std::ostream &writePublicPEM(std::ostream &stream) const;
+    std::ostream &writePrivatePEM(std::ostream &stream) const;
+
+    // Import
     void read(int type, bool pub, const std::string &s);
     void read(const std::string &algorithm, bool pub, const std::string &s);
     void readPublic (const std::string &algorithm, const std::string &s);
     void readPrivate(const std::string &algorithm, const std::string &s);
 
-    // To PEM string
-    std::string publicToPEMString() const;
-    std::string privateToPEMString() const;
+    void readPublicSPKI(const std::string &s);
 
-    // Read PEM
     std::istream &readPublicPEM(std::istream &stream);
     void readPublicPEM(const std::string &pem);
     std::istream &readPrivatePEM(
       std::istream &stream, SmartPointer<PasswordCallback> callback = 0);
     void readPrivatePEM(
       const std::string &pem, SmartPointer<PasswordCallback> callback = 0);
-
-    // Write PEM
-    std::ostream &writePublicPEM(std::ostream &stream) const;
-    std::ostream &writePrivatePEM(std::ostream &stream) const;
 
     // Signatures
     std::string sign(const std::string &data) const;
