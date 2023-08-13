@@ -252,6 +252,54 @@ string KeyPair::publicToDER () const {return toDER(true);}
 string KeyPair::privateToDER() const {return toDER(false);}
 
 
+string KeyPair::publicToSPKI() const {
+  string pem = publicToPEMString();
+  vector<string> lines;
+  String::tokenize(pem, lines, "\n\r");
+
+  string result;
+  for (auto &line: lines)
+    if (!line.empty() && line[0] != '-')
+      result += line;
+
+  return Base64().decode(result);
+}
+
+
+string KeyPair::publicToPEMString() const {
+  ostringstream str;
+  writePublicPEM(str);
+  return str.str();
+}
+
+
+string KeyPair::privateToPEMString() const {
+  ostringstream str;
+  writePrivatePEM(str);
+  return str.str();
+}
+
+
+ostream &KeyPair::writePublicPEM(ostream &stream) const {
+  BOStream bio(stream);
+
+  if (!PEM_write_bio_PUBKEY(bio.getBIO(), key))
+    THROW("Failed to write public key: " << SSL::getErrorStr());
+
+  return stream;
+}
+
+
+ostream &KeyPair::writePrivatePEM(ostream &stream) const {
+  BOStream bio(stream);
+
+  if (!PEM_write_bio_PrivateKey(bio.getBIO(), key, 0, 0, 0, 0, 0))
+    THROW("Failed to write private key: " << SSL::getErrorStr());
+
+  return stream;
+}
+
+
 void KeyPair::read(int type, bool pub, const string &s) {
   auto *p = (const unsigned char *)s.data();
   auto *key = (pub ? d2i_PublicKey : d2i_PrivateKey)(type, 0, &p, s.length());
@@ -279,17 +327,11 @@ void KeyPair::readPrivate(const string &algorithm, const string &s) {
 }
 
 
-string KeyPair::publicToPEMString() const {
-  ostringstream str;
-  writePublicPEM(str);
-  return str.str();
-}
-
-
-string KeyPair::privateToPEMString() const {
-  ostringstream str;
-  writePrivatePEM(str);
-  return str.str();
+void KeyPair::readPublicSPKI(const string &s) {
+  readPublicPEM(
+    "-----BEGIN PUBLIC KEY-----\n" +
+    Base64('=', "+", "/", 64).encode(s) +
+    "\n-----END PUBLIC KEY-----");
 }
 
 
@@ -325,26 +367,6 @@ void KeyPair::readPrivatePEM(
   const string &pem, SmartPointer<PasswordCallback> callback) {
   istringstream str(pem);
   readPrivatePEM(str, callback);
-}
-
-
-ostream &KeyPair::writePublicPEM(ostream &stream) const {
-  BOStream bio(stream);
-
-  if (!PEM_write_bio_PUBKEY(bio.getBIO(), key))
-    THROW("Failed to write public key: " << SSL::getErrorStr());
-
-  return stream;
-}
-
-
-ostream &KeyPair::writePrivatePEM(ostream &stream) const {
-  BOStream bio(stream);
-
-  if (!PEM_write_bio_PrivateKey(bio.getBIO(), key, 0, 0, 0, 0, 0))
-    THROW("Failed to write private key: " << SSL::getErrorStr());
-
-  return stream;
 }
 
 
