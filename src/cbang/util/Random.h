@@ -43,6 +43,7 @@ namespace cb {
 
     void addEntropy(const void *buffer, uint32_t bytes, double entropy = 0);
     void bytes(void *buffer, uint32_t bytes);
+    std::string string(unsigned length);
 
     template <class T> T rand() {T x; bytes(&x, sizeof(x)); return x;}
   };

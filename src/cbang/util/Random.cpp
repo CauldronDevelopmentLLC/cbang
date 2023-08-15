@@ -43,6 +43,7 @@
 #endif
 
 using namespace cb;
+using namespace std;
 
 
 Random::Random(Inaccessible) {}
@@ -71,4 +72,11 @@ void Random::bytes(void *buffer, uint32_t bytes) {
 
   if (bytes) *(uint8_t *)buffer = ::rand();
 #endif
+}
+
+
+string Random::string(unsigned length) {
+  char buffer[length];
+  bytes(buffer, length);
+  return std::string(buffer, length);
 }

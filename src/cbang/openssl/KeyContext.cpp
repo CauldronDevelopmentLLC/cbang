@@ -48,6 +48,15 @@ using namespace std;
 using namespace cb;
 
 
+namespace {
+  const EVP_MD *getDigest(const string &digest) {
+    const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
+    if (!md) THROW("Unrecognized message digest '" << digest << "'");
+    return md;
+  }
+}
+
+
 KeyContext::KeyContext(int nid, ENGINE *e) : ctx(0), deallocate(true) {
   SSL::init();
 
@@ -135,6 +144,20 @@ void KeyContext::setRSAPubExp(uint64_t exp) {
 }
 
 
+void KeyContext::setRSAOAEPMD(const string &digest) {
+  if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, getDigest(digest)) <= 0)
+    THROW("Failed to set RSA OAEP MD: " << SSL::getErrorStr());
+
+}
+
+
+void KeyContext::setRSAMGF1MD(const string &digest) {
+  if (EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, getDigest(digest)) <= 0)
+    THROW("Failed to set RSA MGF1 MD: " << SSL::getErrorStr());
+
+}
+
+
 void KeyContext::setDSABits(int bits) {
   if (EVP_PKEY_CTX_set_dsa_paramgen_bits(ctx, bits) <= 0)
     THROW("Failed to set DSA bits: " << SSL::getErrorStr());
@@ -175,10 +198,7 @@ void KeyContext::setKeyGenCallback(KeyGenCallback *callback) {
 
 
 void KeyContext::setSignatureMD(const string &digest) {
-  const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROW("Unrecognized message digest '" << digest << "'");
-
-  if (EVP_PKEY_CTX_set_signature_md(ctx, md) <= 0)
+  if (EVP_PKEY_CTX_set_signature_md(ctx, getDigest(digest)) <= 0)
     THROW("Failed to set signature message digest to '" << digest << "': "
           << SSL::getErrorStr());
 }
