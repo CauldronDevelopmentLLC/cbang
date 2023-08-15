@@ -72,6 +72,8 @@ namespace cb {
     void setRSAPSSSaltLen(int len);
     void setRSABits(int bits);
     void setRSAPubExp(uint64_t exp);
+    void setRSAOAEPMD(const std::string &digest);
+    void setRSAMGF1MD(const std::string &digest);
     void setDSABits(int bits);
     void setDHPrimeLen(int len);
     void setDHGenerator(int gen);
