@@ -427,7 +427,7 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
   if (!enabled(domain, level)) return new NullStream<>;
 
   string rateKey;
-  if (level & logRates) {
+  if ((level & logRates) && rates.isSet()) {
     rateKey = SSTR(getLevelChar(level) << ':' << filename << ':' << line);
     rates->event(rateKey);
   }
