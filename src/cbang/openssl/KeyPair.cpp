@@ -330,7 +330,7 @@ void KeyPair::readPrivate(const string &algorithm, const string &s) {
 void KeyPair::readPublicSPKI(const string &s) {
   readPublicPEM(
     "-----BEGIN PUBLIC KEY-----\n" +
-    Base64('=', "+", "/", 64).encode(s) +
+    Base64("=", "+", "/", 64).encode(s) +
     "\n-----END PUBLIC KEY-----");
 }
 

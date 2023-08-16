@@ -89,8 +89,9 @@ Base64::Base64(char pad, char a, char b, unsigned width) : Base64(width) {
 }
 
 
-Base64::Base64(char pad, const char *a, const char *b, unsigned width) :
-  Base64(pad, *a, *b, width) {
+Base64::Base64(const char *pad, const char *a, const char *b, unsigned width) :
+  Base64(*pad, *a, *b, width) {
+  for (unsigned i = 1; pad[i]; i++) decodeTable[(unsigned)pad[i]] = -2;
   for (unsigned i = 1;   a[i]; i++) decodeTable[(unsigned)a[i]]   = 62;
   for (unsigned i = 1;   b[i]; i++) decodeTable[(unsigned)b[i]]   = 63;
 }
