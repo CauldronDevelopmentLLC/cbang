@@ -407,7 +407,7 @@ void KeyPair::verify(const string &signature, const string &data) const {
 
 void KeyPair::verifyBase64SHA256(const string &sig64,
                                  const string &data) const {
-  verify(Base64().decode(sig64), Digest::hash(data, "sha256"));
+  verify(URLBase64().decode(sig64), Digest::hash(data, "sha256"));
 }
 
 
