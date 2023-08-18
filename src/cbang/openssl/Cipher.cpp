@@ -62,7 +62,7 @@ Cipher::~Cipher() {
 }
 
 
-bool Cipher::isEncrypting() const {return EVP_CIPHER_CTX_is_encrypting(ctx);}
+bool Cipher::isEncrypting() const {return EVP_CIPHER_CTX_encrypting(ctx);}
 unsigned Cipher::getKeyLength() const {return EVP_CIPHER_CTX_key_length(ctx);}
 void Cipher::setKey(const void *key) {init(0, isEncrypting(), key, 0, 0);}
 unsigned Cipher::getIVLength() const {return EVP_CIPHER_CTX_iv_length(ctx);}
