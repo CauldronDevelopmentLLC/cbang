@@ -193,20 +193,16 @@ SSL Request::getSSL() const {return *connection->getSSL();}
 
 
 void Request::parseJSONArgs() {
-  Headers &hdrs = inputHeaders;
-
   switch (method) {
   case HTTP_POST: case HTTP_PUT: case HTTP_DELETE: case HTTP_PATCH:
-    if (hdrs.hasContentType() &&
-        String::startsWith(hdrs.getContentType(), "application/json")) {
-
-      getJSONMessage();
-      if (msg.isSet() && msg->isDict()) args->merge(*msg);
-    }
+    getJSONMessage();
     break;
 
   default: break;
   }
+
+  // Message may have been set with setJSONMessage()
+  if (msg.isSet() && msg->isDict()) args->merge(*msg);
 }
 
 
