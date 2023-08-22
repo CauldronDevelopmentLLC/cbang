@@ -27,7 +27,7 @@ def generate(env):
 
     cmd = [python, testHarness, '-C', 'tests', '--diff-failed', '--view-failed',
            '--view-unfiltered', '--save-failed', '--build']
-    cmd = shlex.join(cmd)
+    cmd = ' '.join([shlex.quote(s) for s in cmd]) # shlex.join() not in < 3.8
 
     env.CBAddVariables(('TEST_COMMAND', '`test` target command line', cmd))
 
