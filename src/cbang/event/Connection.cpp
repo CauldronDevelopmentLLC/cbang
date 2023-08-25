@@ -76,7 +76,7 @@ void Connection::setSocket(const SmartPointer<Socket> &socket) {
 
 
 bool Connection::isConnected() const {
-  return getFD() != -1 && socket.isSet() && socket->isConnected();
+  return getFD() != -1 && socket.isSet() && socket->isOpen();
 }
 
 
@@ -162,7 +162,9 @@ void Connection::connect(
           getSocket()->connect(addr);
 
           // Wait for socket write
-          auto writeCB = [this, cb] (bool success) {if (cb) cb(isConnected());};
+          auto writeCB = [this, cb] (bool success) {
+            if (cb) cb(success && isConnected());
+          };
           canWrite(writeCB);
           return;
 
