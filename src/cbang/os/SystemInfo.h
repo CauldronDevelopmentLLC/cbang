@@ -71,6 +71,8 @@ namespace cb {
 
     Version getOSVersion() const;
 
+    std::string getHostname() const;
+
     void add(Info &info);
 
   protected:
