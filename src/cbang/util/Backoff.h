@@ -47,6 +47,8 @@ namespace cb {
     Backoff(double minDelay, double maxDelay, double multiplier = 1.5) :
       minDelay(minDelay), maxDelay(maxDelay), multiplier(multiplier) {}
 
+    void reset() {retries = 0;}
+
     double next() {
       return std::min(minDelay * ::pow(multiplier, retries++), maxDelay);
     }
