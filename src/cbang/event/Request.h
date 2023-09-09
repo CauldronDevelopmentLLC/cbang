@@ -194,7 +194,8 @@ namespace cb {
                      const std::string &domain = std::string(),
                      const std::string &path = std::string(),
                      uint64_t expires = 0, uint64_t maxAge = 0,
-                     bool httpOnly = false, bool secure = false);
+                     bool httpOnly = false, bool secure = false,
+                     const std::string &sameSite = "Lax");
 
       std::string getInput() const;
       std::string getOutput() const;

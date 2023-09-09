@@ -46,6 +46,7 @@ namespace cb {
       uint64_t maxAge;
       bool httpOnly;
       bool secure;
+      std::string sameSite;
 
     public:
       Cookie(const std::string &name = std::string(),
@@ -53,9 +54,11 @@ namespace cb {
              const std::string &domain = std::string(),
              const std::string &path = std::string(),
              uint64_t expires = 0, uint64_t maxAge = 0,
-             bool httpOnly = false, bool secure = false) :
+             bool httpOnly = false, bool secure = false,
+             const std::string &sameSite = "Lax") :
         name(name), value(value), domain(domain), path(path), expires(expires),
-        maxAge(maxAge), httpOnly(httpOnly), secure(secure) {}
+        maxAge(maxAge), httpOnly(httpOnly), secure(secure),
+        sameSite(sameSite) {}
 
       const std::string &getName() const {return name;}
       void setName(const std::string &name) {this->name = name;}
@@ -80,6 +83,9 @@ namespace cb {
 
       bool getSecure() const {return secure;}
       void setSecure(bool &secure) {this->secure = secure;}
+
+      const std::string &getSameSite() const {return sameSite;}
+      void setSameSite(const std::string &sameSite) {this->sameSite = sameSite;}
 
       std::string toString() const;
       void read(const std::string &s);
