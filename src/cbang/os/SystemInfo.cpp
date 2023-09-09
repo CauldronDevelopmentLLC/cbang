@@ -32,16 +32,18 @@
 #include "SystemInfo.h"
 #include "PowerManagement.h"
 #include "CPUInfo.h"
+#include "Thread.h"
+#include "SystemUtilities.h"
+#include "SysError.h"
 
 #include <cbang/Info.h>
 #include <cbang/SStream.h>
 #include <cbang/String.h>
 
-#include <cbang/os/Thread.h>
-#include <cbang/os/SystemUtilities.h>
-
 #include <cbang/log/Logger.h>
 #include <cbang/util/HumanSize.h>
+#include <cbang/socket/Socket.h>
+#include <cbang/socket/Winsock.h>
 
 #include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
@@ -274,6 +276,17 @@ Version SystemInfo::getOSVersion() const {
 }
 
 
+string SystemInfo::getHostname() const {
+  Socket::initialize(); // Windows needs this
+
+  char name[1024];
+  if (gethostname(name, 1024))
+    THROW("Failed to get hostname: " << SysError());
+
+  return name;
+}
+
+
 void SystemInfo::add(Info &info) {
   const char *category = "System";
   auto cpuInfo = CPUInfo::create();
@@ -298,6 +311,10 @@ void SystemInfo::add(Info &info) {
            String(PowerManagement::instance().hasBattery()));
   info.add(category, "On Battery",
            String(PowerManagement::instance().onBattery()));
+
+  try {
+    info.add(category, "Hostname", getHostname());
+  } catch (...) {}
 }
 
 
