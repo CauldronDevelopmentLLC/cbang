@@ -54,6 +54,7 @@ string Cookie::toString() const {
   if (maxAge) s << "; Max-Age=" << String(maxAge);
   if (httpOnly) s << "; HttpOnly";
   if (secure) s << "; Secure";
+  if (!sameSite.empty()) s << "; SameSite=" << sameSite;
 
   return s.str();
 }
@@ -79,5 +80,6 @@ void Cookie::read(const string &s) {
     else if (name == "Max-Age") expires = String::parseU64(value);
     else if (name == "HttpOnly") httpOnly = true;
     else if (name == "Secure") secure = true;
+    else if (name == "SameSite") sameSite = value;
   }
 }

@@ -412,9 +412,10 @@ string Request::getCookie(const string &name) const {
 void Request::setCookie(const string &name, const string &value,
                         const string &domain, const string &path,
                         uint64_t expires, uint64_t maxAge, bool httpOnly,
-                        bool secure) {
-  outSet("Set-Cookie", cb::HTTP::Cookie(name, value, domain, path, expires,
-                                        maxAge, httpOnly, secure).toString());
+                        bool secure, const string &sameSite) {
+  outSet("Set-Cookie", cb::HTTP::Cookie(
+           name, value, domain, path, expires, maxAge, httpOnly, secure,
+           sameSite).toString());
 }
 
 
