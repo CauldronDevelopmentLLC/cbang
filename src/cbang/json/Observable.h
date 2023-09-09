@@ -93,7 +93,7 @@ namespace cb {
       }
 
 
-      unsigned insert(const std::string &key, const ValuePtr &_value) override {
+      int insert(const std::string &key, const ValuePtr &_value) override {
         // Block operation if value is equal
         int index = T::indexOf(key);
 
@@ -105,9 +105,12 @@ namespace cb {
         }
 
         ValuePtr value = convert(_value);
-        unsigned i = T::insert(key, value);
-        value->setParentRef(this, i);
-        notify(key, value);
+        int i = T::insert(key, value);
+        if (i != -1) {
+          value->setParentRef(this, i);
+          notify(key, value);
+        }
+
         return i;
       }
 
