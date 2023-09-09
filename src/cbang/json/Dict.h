@@ -70,7 +70,7 @@ namespace cb {
       const ValuePtr &get(const std::string &key) const override
       {return Super_T::get(key);}
 
-      unsigned insert(const std::string &key, const ValuePtr &value) override;
+      int insert(const std::string &key, const ValuePtr &value) override;
       using Value::insert;
 
       void clear() override {Super_T::clear();}

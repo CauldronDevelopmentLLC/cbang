@@ -50,9 +50,9 @@ ValuePtr Dict::copy(bool deep) const {
 }
 
 
-unsigned Dict::insert(const string &key, const ValuePtr &value) {
+int Dict::insert(const string &key, const ValuePtr &value) {
   if (value->isList() || value->isDict()) simple = false;
-  return (unsigned)OrderedDict<ValuePtr>::insert(key, value);
+  return OrderedDict<ValuePtr>::insert(key, value);
 }
 
 

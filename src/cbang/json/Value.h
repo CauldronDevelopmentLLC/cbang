@@ -193,31 +193,31 @@ namespace cb {
       virtual const ValuePtr &get(const std::string &key) const
         {CBANG_TYPE_ERROR("Not a Dict");}
 
-      virtual unsigned insert(const std::string &key, const ValuePtr &value)
+      virtual int insert(const std::string &key, const ValuePtr &value)
         {CBANG_TYPE_ERROR("Not a Dict");}
-      unsigned insertDict(const std::string &key);
-      unsigned insertList(const std::string &key);
-      unsigned insertUndefined(const std::string &key);
-      unsigned insertNull(const std::string &key);
-      unsigned insertBoolean(const std::string &key, bool value);
-      unsigned insert(const std::string &key, double value);
-      unsigned insert(const std::string &key, float value)
+      int insertDict(const std::string &key);
+      int insertList(const std::string &key);
+      int insertUndefined(const std::string &key);
+      int insertNull(const std::string &key);
+      int insertBoolean(const std::string &key, bool value);
+      int insert(const std::string &key, double value);
+      int insert(const std::string &key, float value)
       {return insert(key, (double)value);}
-      unsigned insert(const std::string &key, uint8_t value)
+      int insert(const std::string &key, uint8_t value)
       {return insert(key, (uint16_t)value);}
-      unsigned insert(const std::string &key, int8_t value)
+      int insert(const std::string &key, int8_t value)
       {return insert(key, (int16_t)value);}
-      unsigned insert(const std::string &key, uint16_t value)
+      int insert(const std::string &key, uint16_t value)
       {return insert(key, (uint32_t)value);}
-      unsigned insert(const std::string &key, int16_t value)
+      int insert(const std::string &key, int16_t value)
       {return insert(key, (int32_t)value);}
-      unsigned insert(const std::string &key, uint32_t value)
+      int insert(const std::string &key, uint32_t value)
       {return insert(key, (uint64_t)value);}
-      unsigned insert(const std::string &key, int32_t value)
+      int insert(const std::string &key, int32_t value)
       {return insert(key, (int64_t)value);}
-      unsigned insert(const std::string &key, uint64_t value);
-      unsigned insert(const std::string &key, int64_t value);
-      unsigned insert(const std::string &key, const std::string &value);
+      int insert(const std::string &key, uint64_t value);
+      int insert(const std::string &key, int64_t value);
+      int insert(const std::string &key, const std::string &value);
 
       virtual void erase(const std::string &key)
         {CBANG_TYPE_ERROR("Not a Dict");}

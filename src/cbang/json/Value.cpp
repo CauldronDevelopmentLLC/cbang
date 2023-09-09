@@ -81,47 +81,47 @@ void Value::set(unsigned i, uint64_t value)      {set(i, create(value));}
 void Value::set(unsigned i, const string &value) {set(i, create(value));}
 
 
-unsigned Value::insertDict(const string &key) {
+int Value::insertDict(const string &key) {
   return insert(key, createDict());
 }
 
 
-unsigned Value::insertList(const string &key) {
+int Value::insertList(const string &key) {
   return insert(key, createList());
 }
 
 
-unsigned Value::insertUndefined(const string &key) {
+int Value::insertUndefined(const string &key) {
   return insert(key, createUndefined());
 }
 
 
-unsigned Value::insertNull(const string &key) {
+int Value::insertNull(const string &key) {
   return insert(key, createNull());
 }
 
 
-unsigned Value::insertBoolean(const string &key, bool value) {
+int Value::insertBoolean(const string &key, bool value) {
   return insert(key, createBoolean(value));
 }
 
 
-unsigned Value::insert(const string &key, double value) {
+int Value::insert(const string &key, double value) {
   return insert(key, create(value));
 }
 
 
-unsigned Value::insert(const string &key, uint64_t value) {
+int Value::insert(const string &key, uint64_t value) {
   return insert(key, create(value));
 }
 
 
-unsigned Value::insert(const string &key, int64_t value) {
+int Value::insert(const string &key, int64_t value) {
   return insert(key, create(value));
 }
 
 
-unsigned Value::insert(const string &key, const string &value) {
+int Value::insert(const string &key, const string &value) {
   return insert(key, create(value));
 }
 
