@@ -136,15 +136,6 @@ def build_function(target, source, env):
     cmd += [str(target[0])]
 
     env.RunCommandOrRaise(cmd)
-
-    # write package-description.txt before notarize, which may raise
-    desc = env.get('short_description', '').strip()
-    if not desc: desc = env.get('description', '').strip()
-    if not desc: desc = env.get('summary', '').strip()
-    # note: desc may be '', write anyway
-    print('writing package-description.txt')
-    env.WriteStringToFile('package-description.txt', desc)
-
     env.NotarizeWaitStaple(str(target[0]), timeout = 1200)
 
 
