@@ -76,7 +76,7 @@ void Random::bytes(void *buffer, uint32_t bytes) {
 
 
 string Random::string(unsigned length) {
-  char buffer[length];
-  bytes(buffer, length);
-  return std::string(buffer, length);
+  SmartPointer<char>::Array buffer = new char[length];
+  bytes(buffer.get(), length);
+  return std::string(buffer.get(), length);
 }
