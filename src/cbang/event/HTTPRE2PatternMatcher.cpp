@@ -60,17 +60,16 @@ HTTPRE2PatternMatcher::HTTPRE2PatternMatcher
 
   // Regex args
   const auto &names = pri->regex.CapturingGroupNames();
-  for (auto it = names.begin(); it != names.end(); it++)
-    if (!it->second.empty()) args.insert(it->second);
+  for (auto &it: names) if (!it.second.empty()) args.insert(it.second);
 }
 
 
 bool HTTPRE2PatternMatcher::match(const URI &uri,
                                   JSON::ValuePtr resultArgs) const {
   int n = pri->regex.NumberOfCapturingGroups();
-  vector<RE2::Arg> args(n);
+  vector<RE2::Arg>   args(n);
   vector<RE2::Arg *> argPtrs(n);
-  vector<string> results(n);
+  vector<string>     results(n);
 
   // Connect args
   for (int i = 0; i < n; i++) {
@@ -88,13 +87,13 @@ bool HTTPRE2PatternMatcher::match(const URI &uri,
   if (resultArgs.isNull()) return true;
 
   // Store results
-  const map<int, string> &names = pri->regex.CapturingGroupNames();
+  const auto &names = pri->regex.CapturingGroupNames();
   for (int i = 0; i < n; i++) {
     if (results[i].empty()) continue;
 
-    if (names.find(i + 1) != names.end())
-      resultArgs->insert(names.at(i + 1), results[i]);
-    else resultArgs->insert(String(resultArgs->size()), results[i]);
+    auto it = names.find(i + 1);
+    if (it != names.end() && !resultArgs->has(it->second))
+      resultArgs->insert(it->second, results[i]);
   }
 
   return true;
