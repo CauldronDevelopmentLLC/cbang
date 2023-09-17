@@ -583,9 +583,7 @@ void Request::sendFile(const string &path) {outputBuffer.addFile(path);}
 void Request::reply(HTTPStatus code) {
   if (replying && !isWebsocket()) THROW("Request already replying");
 
-  if (code) responseCode = code;
-  else responseCode = HTTP_INTERNAL_SERVER_ERROR;
-
+  responseCode = code ? code : HTTPStatus(HTTP_INTERNAL_SERVER_ERROR);
   write();
   replying = true;
 }
