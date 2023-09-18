@@ -81,7 +81,7 @@ void Response::finalize(unsigned length) {
 
   if (status == StatusCode::HTTP_UNKNOWN) status = StatusCode::HTTP_OK;
 
-  set("Date", Time(TIME_FORMAT));
+  set("Date", Time().toString(TIME_FORMAT));
 
   if (isChunked()) set("Transfer-Encoding", "chunked");
   else if (length) set("Content-Length", String(length));
@@ -93,6 +93,6 @@ void Response::finalize(unsigned length) {
 
 
 void Response::setCacheExpire(unsigned secs) {
-  set("Expires", Time(Time::now() + secs, TIME_FORMAT).toString());
+  set("Expires", Time(Time::now() + secs).toString(TIME_FORMAT));
   set("Cache-Control", "max-age");
 }

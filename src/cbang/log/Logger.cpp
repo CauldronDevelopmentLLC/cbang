@@ -321,8 +321,8 @@ string Logger::getHeader(const string &domain, int level) const {
   // Date & Time
   if (logDate || logTime) {
     uint64_t now = Time::now(); // Must be the same time for both
-    if (logDate) header += Time(now, "%Y-%m-%d:").toString();
-    if (logTime) header += Time(now, "%H:%M:%S:").toString();
+    if (logDate) header += Time(now).toString("%Y-%m-%d:");
+    if (logTime) header += Time(now).toString("%H:%M:%S:");
   }
 
   // Level
@@ -442,7 +442,7 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
   if (logDatePeriodically &&
       lastDate / logDatePeriodically != now / logDatePeriodically) {
     lastDate = now;
-    write(String::bar(Time(lastDate, "Date: %Y-%m-%d").toString()) +
+    write(String::bar(Time(lastDate).toString("Date: %Y-%m-%d")) +
           (logCRLF ? "\r\n" : "\n"));
   }
 

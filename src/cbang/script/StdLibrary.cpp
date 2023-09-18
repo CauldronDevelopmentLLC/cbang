@@ -101,7 +101,7 @@ void StdLibrary::evalClear(const Context &ctx) {
 
 
 void StdLibrary::evalDate(const Context &ctx) {
-  if (1 < ctx.args.size()) ctx.stream << Time(ctx.args[1]);
+  if (1 < ctx.args.size()) ctx.stream << Time().toString(ctx.args[1]);
   else ctx.stream << Time();
 }
 

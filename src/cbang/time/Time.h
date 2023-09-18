@@ -40,13 +40,14 @@ struct tm;
 
 namespace cb {
   /**
-   * Used for printing and parsing times.  Should be 64-bit everywhere and
-   * therefore safe past year 2038.
+   * Used for printing and parsing times.  64-bit so safe past year 2038.
    *
-   * E.g.  cout << Time(Time::now() + Time::SEC_PER_HOUR, "%H:%M:%S") << endl;
+   * E.g/.:
+   *
+   *   Time t(Time::now() + Time::SEC_PER_HOUR);
+   *   cout << t.toString("%H:%M:%S") << endl;
    */
   class Time {
-    std::string format;
     uint64_t time;
 
   public:
@@ -60,12 +61,10 @@ namespace cb {
     static const unsigned SEC_PER_YEAR = Time::SEC_PER_DAY  * 365;
 
     /// @param time In seconds since Janary 1st, 1970
-    Time(uint64_t time = ~(uint64_t)0,
-         const std::string &format = iso8601Format);
-    Time(const struct tm &tm, const std::string &format = iso8601Format);
-    Time(const std::string &format);
+    Time(uint64_t time = ~(uint64_t)0);
+    explicit Time(const struct tm &tm);
 
-    std::string toString() const;
+    std::string toString(const std::string &format = iso8601Format) const;
     operator std::string () const {return toString();}
     operator uint64_t () const {return time;}
 
@@ -76,15 +75,16 @@ namespace cb {
     bool operator> (const Time &o) const {return time >  o.time;}
     bool operator>=(const Time &o) const {return time >= o.time;}
 
-    static Time parse(const std::string &s,
-                      const std::string &format = iso8601Format);
+    static uint64_t parse(const std::string &s,
+                          const std::string &format = iso8601Format);
 
     /// Get current time in seconds since Janary 1st, 1970.
     static uint64_t now();
 
     // UTC offset in seconds
     static int32_t offset();
- };
+  };
+
 
   inline std::ostream &operator<<(std::ostream &stream, const Time &t) {
     return stream << t.toString();

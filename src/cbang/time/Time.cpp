@@ -51,19 +51,14 @@ namespace {
 }
 
 
-Time::Time(uint64_t time, const string &format) :
-  format(format), time(time == ~(uint64_t)0 ? now() : time) {}
+Time::Time(uint64_t time) : time(time == ~(uint64_t)0 ? now() : time) {}
 
 
-Time::Time(const struct tm &tm, const std::string &format) :
-  format(format),
+Time::Time(const struct tm &tm) :
   time((pt::ptime_from_tm(tm) - pt::ptime(epoch)).total_seconds()) {}
 
 
-Time::Time(const string &format) : format(format), time(now()) {}
-
-
-string Time::toString() const {
+string Time::toString(const string &format) const {
   if (!time) return "<invalid>";
 
   try {
@@ -84,7 +79,7 @@ string Time::toString() const {
 }
 
 
-Time Time::parse(const string &s, const string &format) {
+uint64_t Time::parse(const string &s, const string &format) {
   try {
     pt::time_input_facet *facet = new pt::time_input_facet();
     facet->format(format.c_str());
@@ -96,7 +91,7 @@ Time Time::parse(const string &s, const string &format) {
 
     pt::time_duration diff = t - pt::ptime(epoch);
 
-    return Time(diff.total_seconds(), format);
+    return diff.total_seconds();
 
   } catch (const exception &e) {
     THROW("Failed to parse time '" << s << "' with format '" << format
