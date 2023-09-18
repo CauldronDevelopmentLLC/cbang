@@ -47,38 +47,39 @@ using namespace cb;
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
 
-extern "C" void convert_win32_exception(unsigned x, EXCEPTION_POINTERS *e){
-  const char *msg;
-  switch (e->ExceptionRecord->ExceptionCode) {
-  case EXCEPTION_ACCESS_VIOLATION: msg = "Exception access violation"; break;
-  case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: msg = "Array bounds exceeded"; break;
-  case EXCEPTION_BREAKPOINT: msg = "Breakpoint"; break;
-  case EXCEPTION_DATATYPE_MISALIGNMENT: msg = "Datatype misalignment"; break;
-  case EXCEPTION_FLT_DENORMAL_OPERAND:
-    msg = "Floating-point denormal operand"; break;
-  case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-    msg = "Floating-point divide by zero"; break;
-  case EXCEPTION_FLT_INEXACT_RESULT:
-    msg = "Floating-point inexact result"; break;
-  case EXCEPTION_FLT_INVALID_OPERATION:
-    msg = "Floating-point invalid operation"; break;
-  case EXCEPTION_FLT_OVERFLOW: msg = "Floating-point overflow"; break;
-  case EXCEPTION_FLT_STACK_CHECK: msg = "Floating-point stack check"; break;
-  case EXCEPTION_FLT_UNDERFLOW: msg = "Floating-point underflow"; break;
-  case EXCEPTION_ILLEGAL_INSTRUCTION: msg = "Illegal instruction"; break;
-  case EXCEPTION_IN_PAGE_ERROR: msg = "In page error"; break;
-  case EXCEPTION_INT_DIVIDE_BY_ZERO: msg = "Tnteger divide by zero"; break;
-  case EXCEPTION_INT_OVERFLOW: msg = "Integer overflow"; break;
-  case EXCEPTION_INVALID_DISPOSITION: msg = "Invalid disposition"; break;
-  case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-    msg = "Noncontinuable exception"; break;
-  case EXCEPTION_PRIV_INSTRUCTION: msg = "Private instruction"; break;
-  case EXCEPTION_SINGLE_STEP: msg = "Single step"; break;
-  case EXCEPTION_STACK_OVERFLOW: msg = "Stack overflow"; break;
-  default: msg = "Unknown"; break;
+
+namespace {
+  const char *win32_code_to_string(int code) {
+    switch (code) {
+    case EXCEPTION_ACCESS_VIOLATION:         return "Access violation";
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:    return "Array bounds exceeded";
+    case EXCEPTION_BREAKPOINT:               return "Breakpoint";
+    case EXCEPTION_DATATYPE_MISALIGNMENT:    return "Datatype misalignment";
+    case EXCEPTION_FLT_DENORMAL_OPERAND:     return "Float denormal operand";
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:       return "Float divide by zero";
+    case EXCEPTION_FLT_INEXACT_RESULT:       return "Float inexact result";
+    case EXCEPTION_FLT_INVALID_OPERATION:    return "Float invalid operation";
+    case EXCEPTION_FLT_OVERFLOW:             return "Float overflow";
+    case EXCEPTION_FLT_STACK_CHECK:          return "Float stack check";
+    case EXCEPTION_FLT_UNDERFLOW:            return "Float underflow";
+    case EXCEPTION_ILLEGAL_INSTRUCTION:      return "Illegal instruction";
+    case EXCEPTION_IN_PAGE_ERROR:            return "In page error";
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:       return "Tnteger divide by zero";
+    case EXCEPTION_INT_OVERFLOW:             return "Integer overflow";
+    case EXCEPTION_INVALID_DISPOSITION:      return "Invalid disposition";
+    case EXCEPTION_NONCONTINUABLE_EXCEPTION: return "Noncontinuable exception";
+    case EXCEPTION_PRIV_INSTRUCTION:         return "Private instruction";
+    case EXCEPTION_SINGLE_STEP:              return "Single step";
+    case EXCEPTION_STACK_OVERFLOW:           return "Stack overflow";
+    default:                                 return "Unknown";
+    }
   }
 
-  THROW("Win32: 0x" << hex << x << ": " << msg);
+
+  extern "C" void convert_win32_exception(unsigned x, EXCEPTION_POINTERS *e){
+    const char *msg = win32_code_to_string(e->ExceptionRecord->ExceptionCode);
+    THROW("Win32: 0x" << hex << x << ": " << msg);
+  }
 }
 #endif // _WIN32
 
@@ -130,7 +131,7 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
       if (i < 3 && (it->getFunction().find("Debugger") ||
                     it->getFunction().find("Exception")))
         continue;
-      else  stream << "\n  #" << ++count << ' ' << *it;
+      else stream << "\n  #" << ++count << ' ' << *it;
     }
   }
 
@@ -151,7 +152,10 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
 }
 
 
-void Exception::write(cb::JSON::Sink &sink, bool withDebugInfo) const {
+string Exception::toString() const {return SSTR(*this);}
+
+
+void Exception::write(JSON::Sink &sink, bool withDebugInfo) const {
   sink.beginDict();
 
   if (!message.empty()) sink.insert("message", message);

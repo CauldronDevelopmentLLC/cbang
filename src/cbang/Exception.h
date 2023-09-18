@@ -140,6 +140,7 @@ namespace cb {
      */
     std::ostream &print(std::ostream &stream, unsigned level = 0) const;
 
+    std::string toString() const;
 
     void write(cb::JSON::Sink &sink, bool withDebugInfo = true) const;
   };
@@ -151,7 +152,6 @@ namespace cb {
    * . . .
    * } catch (Exception &e) {
    *   cout << e << endl;
-   *   return 0;
    * }
    */
   inline std::ostream &operator<<(std::ostream &stream, const Exception &e) {

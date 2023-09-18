@@ -148,14 +148,16 @@ bool Websocket::upgrade() {
 void Websocket::readHeader() {
   auto cb =
     [this] (bool success) {
-      if (!success) return close(WS_STATUS_PROTOCOL);
+      if (!success)
+        return close(WS_STATUS_PROTOCOL, "Failed to read header start");
 
       uint8_t header[2];
       input.copy((char *)header, 2);
 
       // Client must set mask bit
       bool mask = header[1] & (1 << 7);
-      if (mask != isIncoming()) return close(WS_STATUS_PROTOCOL);
+      if (mask != isIncoming())
+        return close(WS_STATUS_PROTOCOL, "Header mask mismatch");
 
       // Compute header size
       uint8_t bytes = mask ? 6 : 2;
@@ -165,7 +167,8 @@ void Websocket::readHeader() {
 
       auto cb =
         [this, mask, bytes, size] (bool success) {
-          if (!success) return close(WS_STATUS_PROTOCOL);
+          if (!success)
+            return close(WS_STATUS_PROTOCOL, "Failed to read header end");
 
           uint8_t header[14];
           input.remove((char *)header, bytes);
@@ -174,7 +177,8 @@ void Websocket::readHeader() {
           if      (size == 126) bytesToRead = hton16((uint16_t &)header[2]);
           else if (size == 127) bytesToRead = hton64((uint64_t &)header[2]);
           else                  bytesToRead = size;
-          if (bytesToRead & (1ULL << 63)) return close(WS_STATUS_PROTOCOL);
+          if (bytesToRead & (1ULL << 63))
+            return close(WS_STATUS_PROTOCOL, "Invalid frame size");
 
           // Check opcode
           uint8_t opcode = header[0] & 0xf;
@@ -197,7 +201,8 @@ void Websocket::readHeader() {
           wsFinish = header[0] & (1 << 7);
 
           // Control frames must not be fragmented
-          if ((wsOpCode & 8) && !wsFinish) return close(WS_STATUS_PROTOCOL);
+          if ((wsOpCode & 8) && !wsFinish)
+            return close(WS_STATUS_PROTOCOL, "Fragmented control frame");
 
           readBody();
         };
@@ -213,7 +218,7 @@ void Websocket::readHeader() {
 
 void Websocket::readBody() {
   auto cb = [this] (bool success) {
-    if (!success) return close(WS_STATUS_PROTOCOL);
+    if (!success) return close(WS_STATUS_PROTOCOL, "Failed to ready body");
 
     uint64_t offset = wsMsg.size();
     wsMsg.resize(offset + bytesToRead);
@@ -253,7 +258,7 @@ void Websocket::readBody() {
     case WS_OP_PING: onPing(string(wsMsg.begin(), wsMsg.end())); break;
     case WS_OP_PONG: onPong(string(wsMsg.begin(), wsMsg.end())); break;
 
-    default: return close(WS_STATUS_PROTOCOL);
+    default: return close(WS_STATUS_PROTOCOL, "Invalid opcode");
     }
 
     // Read next message
@@ -396,6 +401,12 @@ void Websocket::schedulePing() {
 void Websocket::message(const char *data, uint64_t length) {
   msgReceived++;
   if (pingEvent->isPending()) schedulePing();
-  TRY_CATCH_ERROR(return onMessage(data, length));
-  close(WS_STATUS_UNACCEPTABLE, "Message rejected");
+
+  try {
+    onMessage(data, length);
+
+  } CATCH(LOG_ERROR_LEVEL, [&]() -> string {
+    close(WS_STATUS_UNACCEPTABLE, string("Message rejected: ") + msg);
+    return ": Closing Websocket";
+  }());
 }

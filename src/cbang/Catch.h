@@ -41,34 +41,36 @@
 #endif // DEBUG
 
 
+// NOTE, the variable ``msg`` is made available in all cases during CATCH
+// evaluation.  ``MSG`` may contain expressions that use this variable.
+
 #define CBANG_CATCH_CBANG(LEVEL, MSG)                                   \
   catch (const cb::Exception &e) {                                      \
-    CBANG_LOG_LEVEL_LOCATION(LEVEL, "Exception" << MSG << ": "          \
-                             << e CBANG_CATCH_LOCATION,                 \
-                             e.getLocation().getFilename().c_str(),     \
-                             e.getLocation().getLine());                \
+    std::string msg      = e.toString();                                \
+    const char *filename = e.getLocation().getFilename().c_str();       \
+    CBANG_LOG_LEVEL_LOCATION(                                           \
+      LEVEL, "Exception" << MSG << ": " << msg CBANG_CATCH_LOCATION,    \
+      filename, e.getLocation().getLine());                             \
   }
 
 #define CBANG_CATCH_STD(LEVEL, MSG)                                     \
   catch (const std::exception &e) {                                     \
-    CBANG_LOG_LEVEL(LEVEL, "std::exception" << MSG << ": " << e.what()  \
+    const char *msg = e.what();                                         \
+    CBANG_LOG_LEVEL(LEVEL, "std::exception" << MSG << ": " << msg       \
                     CBANG_CATCH_LOCATION);                              \
   }
 
 #define CBANG_CATCH_UNKNOWN(LEVEL, MSG)                                 \
   catch (...) {                                                         \
-    CBANG_LOG_LEVEL(LEVEL, "unknown exception" << MSG CBANG_CATCH_LOCATION); \
+    const char *msg = "unknown exception";                              \
+    CBANG_LOG_LEVEL(LEVEL, msg << MSG CBANG_CATCH_LOCATION);            \
   }
 
 
-#define CBANG_CATCH_ALL(LEVEL, MSG)                                   \
-  CBANG_CATCH_CBANG(LEVEL, MSG)                                       \
-  CBANG_CATCH_STD(LEVEL, MSG)                                         \
+#define CBANG_CATCH_ALL(LEVEL, MSG)                                     \
+  CBANG_CATCH_CBANG(LEVEL, MSG)                                         \
+  CBANG_CATCH_STD(LEVEL, MSG)                                           \
   CBANG_CATCH_UNKNOWN(LEVEL, MSG)
-
-#define CBANG_CATCH_CS(LEVEL, MSG)                                    \
-  CBANG_CATCH_CBANG(LEVEL, MSG)                                       \
-  CBANG_CATCH_STD(LEVEL, MSG)
 
 
 #ifdef DEBUG
