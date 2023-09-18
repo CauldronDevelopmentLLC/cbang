@@ -543,5 +543,5 @@ void Server::closeConnection(const SocketConnectionPtr &con) {
 
 string Server::getCaptureFilename(const string &name, unsigned id) {
   return captureDir + "/" + name + "." +
-    Time("%Y%m%d-%H%M%S.").toString() + String(id);
+    Time().toString("%Y%m%d-%H%M%S.") + String(id);
 }

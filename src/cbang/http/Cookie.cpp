@@ -50,7 +50,8 @@ string Cookie::toString() const {
 
   if (!domain.empty()) s << "; Domain=" << domain;
   if (!path.empty()) s << "; Path=" << path;
-  if (expires) s << "; Expires=" << Time(expires, Message::TIME_FORMAT);
+  if (expires)
+    s << "; Expires=" << Time(expires).toString(Message::TIME_FORMAT);
   if (maxAge) s << "; Max-Age=" << String(maxAge);
   if (httpOnly) s << "; HttpOnly";
   if (secure) s << "; Secure";

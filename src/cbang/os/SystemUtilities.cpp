@@ -736,7 +736,7 @@ namespace cb {
         target = target.substr(0, target.length() - ext.length());
       }
 
-      target += Time("-%Y%m%d-%H%M%S").toString() + ext;
+      target += Time().toString("-%Y%m%d-%H%M%S") + ext;
 
       // Move it
       rename(path, target);
