@@ -335,6 +335,10 @@ int32_t OpenCLLibrary::getVendorID(void *device) {
   cl_uint vendorID = 0;
   DYNAMIC_CALL(this, clGetDeviceInfo,
                (device, CL_DEVICE_VENDOR_ID, sizeof(vendorID), &vendorID, 0));
+
+  // Integrated AMD cards on Apple return wrong vendor ID
+  if (vendorID == 0x1021d00) vendorID = 0x1002;
+
   return vendorID;
 }
 
@@ -387,6 +391,7 @@ void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
     switch (cd.vendorID) {
     case GPUVendor::VENDOR_AMD:    getAMDPCIInfo   (device, cd); break;
     case GPUVendor::VENDOR_NVIDIA: getNVIDIAPCIInfo(device, cd); break;
+    case GPUVendor::VENDOR_INTEL: // TODO What about Intel?
     default: break;
     }
   } CATCH_DEBUG(3);
