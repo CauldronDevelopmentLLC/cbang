@@ -184,7 +184,7 @@ void Websocket::readHeader() {
           uint8_t opcode = header[0] & 0xf;
           wsOpCode = (WebsockOpCode::enum_t)opcode;
 
-          LOG_DEBUG(4, CBANG_FUNC << "() header opcode=" << wsOpCode
+          LOG_DEBUG(4, CBANG_FUNC << "() opcode=" << wsOpCode
                     << " bytes=" << bytesToRead);
 
           if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
@@ -282,13 +282,18 @@ void Websocket::onResponse(ConnectionError error) {
 
 
 void Websocket::onPing(const string &payload) {
+  LOG_DEBUG(4, CBANG_FUNC << "() payload=" << String::escapeC(payload));
+
   // Schedule pong to aggregate backlogged pings
   pongPayload = payload;
   schedulePong();
 }
 
 
-void Websocket::onPong(const string &payload) {schedulePing();}
+void Websocket::onPong(const string &payload) {
+  LOG_DEBUG(4, CBANG_FUNC << "() payload=" << String::escapeC(payload));
+  schedulePing();
+}
 
 
 void Websocket::writeRequest(Buffer &buf) {
