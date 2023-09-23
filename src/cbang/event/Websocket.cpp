@@ -273,6 +273,7 @@ void Websocket::onResponse(ConnectionError error) {
   Request::onResponse(error);
 
   if (error == CONN_ERR_OK && getResponseCode() == HTTP_SWITCHING_PROTOCOLS) {
+    LOG_DEBUG(4, "Opened new Websocket");
     active = true;
     onOpen();
     readHeader();

@@ -67,6 +67,11 @@ void FDPoolEvent::FDQueue::transfer() {
 }
 
 
+void FDPoolEvent::FDQueue::transferPending() {
+  while (!empty() && front()->isPending()) transfer();
+}
+
+
 void FDPoolEvent::FDQueue::close() {
   closed = true;
   while (!empty()) pop();
@@ -90,8 +95,8 @@ void FDPoolEvent::FDQueue::timeout() {
   uint64_t timeout = getTimeout();
 
   if (timeout && timeout <= Time::now()) {
-    LOG_DEBUG(4, (read ? "Read" : "Write") << " timedout on fd="
-              << front()->getFD());
+    LOG_DEBUG(4, "FD" << front()->getFD() << (read ? ":Read" : ":Write")
+              << " timedout");
     close();
   }
 }
@@ -140,6 +145,12 @@ void FDPoolEvent::FDRec::updateEvent() {
     (readQ.empty()  ? 0 : EF::EVENT_READ) |
     (writeQ.empty() ? 0 : EF::EVENT_WRITE);
 
+  if (readQ.wantsWrite()) events = EF::EVENT_WRITE;
+  if (writeQ.wantsRead()) events = EF::EVENT_READ;
+
+  LOG_DEBUG(4, "FD" << fd << ":old events=" << this->events
+            << " new events=" << events);
+
   if (this->events == events) return;
   this->events = events;
 
@@ -169,14 +180,21 @@ void FDPoolEvent::FDRec::updateTimeout() {
 
 
 void FDPoolEvent::FDRec::update() {
+  readQ.transferPending();
   updateEvent();
   updateTimeout();
 }
 
 
 void FDPoolEvent::FDRec::callback(Event &e, int fd, unsigned events) {
-  if (events & EF::EVENT_READ)  readQ.transfer();
-  if (events & EF::EVENT_WRITE) writeQ.transfer();
+  LOG_DEBUG(4, "FD" << fd << ":callback() events=" << events);
+
+  bool read  = events & EF::EVENT_READ;
+  bool write = events & EF::EVENT_WRITE;
+
+  if (read  || (write && readQ.wantsWrite())) readQ.transfer();
+  if (write || (read  && writeQ.wantsRead())) writeQ.transfer();
+
   update();
 }
 
