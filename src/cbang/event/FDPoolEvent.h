@@ -61,6 +61,7 @@ namespace cb {
         bool wantsWrite() const;
         void add(const SmartPointer<Transfer> &t);
         void transfer();
+        void transferPending();
         void close();
         void flush();
         uint64_t getTimeout() const;
