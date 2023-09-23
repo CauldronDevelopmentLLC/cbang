@@ -68,6 +68,7 @@ namespace cb {
         void timeout();
 
       protected:
+        void popFinished();
         void pop();
       };
 
