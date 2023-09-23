@@ -52,6 +52,7 @@ void FDPoolEvent::FDQueue::add(const cb::SmartPointer<Transfer> &t) {
   else {
     if (empty()) last = Time::now();
     push_back(t);
+    popFinished();
   }
 }
 
@@ -63,7 +64,7 @@ void FDPoolEvent::FDQueue::transfer() {
   last = Time::now();
 
   if (ret < 0) close();
-  else if (!empty() && front()->isFinished()) pop();
+  else popFinished();
 }
 
 
@@ -99,6 +100,11 @@ void FDPoolEvent::FDQueue::timeout() {
               << " timedout");
     close();
   }
+}
+
+
+void FDPoolEvent::FDQueue::popFinished() {
+  while (!empty() && front()->isFinished()) pop();
 }
 
 
