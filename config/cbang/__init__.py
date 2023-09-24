@@ -52,7 +52,6 @@ def configure_deps(conf, local = True, with_openssl = True,
     if conf.CBCheckFunc('epoll_create1'): env.CBConfigDef('HAVE_EPOLL')
 
     if with_openssl: conf.CBConfig('openssl', False, version = '1.1.0')
-    conf.CBConfig('chakra', False)
     conf.CBConfig('v8', False)
 
     if env['PLATFORM'] == 'win32' or int(env.get('cross_mingw', 0)):
@@ -127,7 +126,7 @@ def generate(env):
         ('debug_level', 'Set log debug level', 1))
 
     env.CBLoadTools('''sqlite3 openssl pthreads valgrind osx ZLib bzip2
-        XML chakra v8 event re2 libyaml leveldb'''.split(), GetHome() + '/..')
+        XML v8 event re2 libyaml leveldb'''.split(), GetHome() + '/..')
 
 
 def exists(env):

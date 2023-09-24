@@ -39,10 +39,6 @@
 #include <cbang/js/v8/JSImpl.h>
 #endif
 
-#ifdef HAVE_CHAKRA
-#include <cbang/js/chakra/JSImpl.h>
-#endif
-
 #include <cbang/util/SmartFunctor.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/json/JSON.h>
@@ -59,11 +55,6 @@ Javascript::Javascript(const string &implName,
 #ifdef HAVE_V8
   if (implName == "v8" || (impl.isNull() && implName.empty()))
     impl = new gv8::JSImpl(*this);
-#endif
-
-#ifdef HAVE_CHAKRA
-  if (implName == "chakra" || (impl.isNull() && implName.empty()))
-    impl = new chakra::JSImpl(*this);
 #endif
 
   if (impl.isNull()) {

@@ -83,7 +83,6 @@ subdirs = [
     'auth', 'js', 'gpu', 'pci']
 
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']
-if env.CBConfigEnabled('chakra'): subdirs.append('js/chakra')
 if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
 if not 'libevent' in disable_local: subdirs.append('event')
