@@ -1,4 +1,4 @@
-'''Builds an OSX single application package'''
+'''Builds an OSX single component flat dist package'''
 
 import os
 import shutil
