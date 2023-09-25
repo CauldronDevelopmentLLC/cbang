@@ -21,7 +21,7 @@ namespace date_time {
 
   //! computes exponential math like 2^8 => 256, only works with positive integers
   //Not general purpose, but needed b/c std::pow is not available 
-  //everywehere. Hasn't been tested with negatives and zeros
+  //everywhere. Hasn't been tested with negatives and zeros
   template<class int_type>
   inline
   int_type power(int_type base, int_type exponent)
@@ -79,7 +79,7 @@ namespace date_time {
       case 2: {
         sec = boost::lexical_cast<unsigned short>(*beg);
         break;
-      };
+      }
       case 3: {
         int digits = static_cast<int>(beg->length());
         //Works around a bug in MSVC 6 library that does not support
@@ -183,7 +183,7 @@ namespace date_time {
 
   }
 
-  //! Parse time duration part of an iso time of form: [-]hhmmss[.fff...] (eg: 120259.123 is 12 hours, 2 min, 59 seconds, 123000 microseconds)
+  //! Parse time duration part of an ISO 8601 time of form: [-]hhmmss[.fff...] (eg: 120259.123 is 12 hours, 2 min, 59 seconds, 123000 microseconds)
   template<class time_duration>
   inline
   time_duration
@@ -284,7 +284,7 @@ namespace date_time {
             break;
           }
           default: break;
-      };
+      }
       pos++;
     }
     if(sign) {
@@ -309,7 +309,7 @@ namespace date_time {
     // then from_iso_string should be able to read a special value string
     // the special_values_parser is expensive to set up and not thread-safe
     // so it cannot be static, so we need to be careful about when we use it
-    if (svp_type::likely(s)) {
+    if (svp_type::should_call_match(s)) {
         typedef typename svp_type::stringstream_type ss_type;
         typedef typename svp_type::stream_itr_type itr_type;
         typedef typename svp_type::match_results mr_type;
@@ -334,11 +334,6 @@ namespace date_time {
     return time_type(d, td);
   }
 
-
-
 } }//namespace date_time
-
-
-
 
 #endif

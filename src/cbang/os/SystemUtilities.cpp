@@ -201,7 +201,7 @@ namespace cb {
 
 
     bool isAbsolute(const string &path) {
-      return fs::path(path).is_complete();
+      return fs::path(path).is_absolute();
     }
 
 
