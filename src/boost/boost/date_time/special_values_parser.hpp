@@ -75,11 +75,6 @@ namespace boost { namespace date_time {
       m_sv_strings = parse_tree_type(phrases, static_cast<int>(not_a_date_time));
     }
 
-    special_values_parser(const special_values_parser<date_type,charT>& svp)
-    {
-      this->m_sv_strings = svp.m_sv_strings;
-    }
-
     //! Replace special value strings
     void sv_strings(const string_type& nadt_str,
                     const string_type& neg_inf_str,
@@ -102,7 +97,7 @@ namespace boost { namespace date_time {
     //! match() should be called and return value checked.
     //! \param[in]  str  the string to check
     //! \returns  false if it is definitely not a special value
-    static bool likely(const string_type& str)
+    static bool should_call_match(const string_type& str)
     {
         if (!str.empty()) {
             switch (str[0]) {
