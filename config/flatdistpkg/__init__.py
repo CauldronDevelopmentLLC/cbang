@@ -12,25 +12,20 @@ mimetypes.init()
 from SCons.Script import *
 
 import glob
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 deps = ['codesign', 'notarize', 'compiler']
 
-filename_package_info_json = 'package-parameters.json'
 filename_distribution_xml = 'distribution.xml'
 
 build_dir = 'build/flatdistpkg'
 build_dir_tmp = build_dir + '/tmp'
 build_dir_resources = build_dir + '/Resources'
 build_dir_packages = build_dir + '/Packages'
-build_dir_stage = build_dir + '/stage' # appended with /package_name
 
 build_dirs = [
     build_dir_tmp, build_dir_resources,
-    build_dir_packages, build_dir_stage,
+    build_dir_packages,
     ]
 
 # probably don't need these; info should be passed via FlatDistPackager()
@@ -49,67 +44,22 @@ def clean_old_build(env):
         shutil.rmtree(build_dir)
 
 
-def setup_dirs(env):
-    return
-    # FUTURE USE
-    # build/distpkg/package_name/{tmp,Resources,Packages}
-    # build/flatpkg/package_name/{root,Resources,Scripts}
-    # useful if a project creates multiple distpkg
-    # clean_old_build would need to only rm build/distpkg/thisname
-    # would also want to separate flatpkg building
-    name = env['package_name']
-    env['build_dir'] = 'build'
-    env['build_dir_tmp'] = tmp = \
-        build_dir + '/distpkg/' + name + '/tmp'
-    env['build_dir_resources'] = res = \
-        build_dir + '/distpkg/' + name + '/Resources'
-    env['build_dir_packages'] = packs = \
-        build_dir + '/distpkg/' + name + '/Packages'
-    env['build_dir_stage'] = stage = build_dir + '/flatpkg'
-    env['build_dirs'] = [tmp,res,packs,stage]
-    env['build_dir_distribution_xml'] = \
-        os.path.join(tmp, filename_distribution_xml)
-
-
 def create_dirs(env):
-    #setup_dirs(env)
-    dirs = build_dirs #+ env.get('build_dirs',[])
-    for d in dirs:
+    for d in build_dirs:
         if not os.path.isdir(d):
             os.makedirs(d, 0o755)
-    #env.Dir(build_dir)
-    # above fails with
-    # scons: *** [fah-installer_7.2.12_intel.pkg.zip] TypeError :
-    #   Tried to lookup File 'build' as a Dir.
-
-
-def rename_prepostflight_scripts(scripts_dir):
-    # unless PackageInfo says otherwise,
-    # flat pkgs only use pre/postinstall
-    pre1 = os.path.join(scripts_dir, 'preflight')
-    pre2 = os.path.join(scripts_dir, 'preinstall')
-    post1 = os.path.join(scripts_dir, 'postflight')
-    post2 = os.path.join(scripts_dir, 'postinstall')
-    if os.path.isfile(pre1) and not os.path.exists(pre2):
-        print('renaming %s to %s' % (pre1, pre2))
-        os.rename(pre1, pre2)
-    if os.path.isfile(post1) and not os.path.exists(post2):
-        print('renaming %s to %s' % (post1, post2))
-        os.rename(post1, post2)
 
 
 def build_component_pkg(info, env):
     # FIXME -- possibly incomplete and makes assumptions
     # build component from info using pkgbuild
-    # uses globals build_dir_stage, build_dir_packages
+    # uses globals build_dir_packages
     name = info.get('name')
     home = info.get('home')
     pkg_id = info.get('pkg_id')
     # if no component version, use package version
     version = info.get('version', env.get('version'))
     root = info.get('root')
-    resources = info.get('resources')
-    pkg_resources = info.get('pkg_resources')
     install_to = info.get('install_to', env.get('pkg_install_to', '/'))
     pkg_nopayload = info.get('pkg_nopayload', False)
 
@@ -122,34 +72,14 @@ def build_component_pkg(info, env):
     if not version:
         raise Exception('no version for component %s' % name)
 
-    stage = os.path.join(build_dir_stage, name)
-    stage_resources = os.path.join(stage, 'Resources')
-
     target = os.path.join(build_dir_packages, name + '.pkg')
 
-    # FIXME uses knowledge of how pkg.py works
+    # default value is for benefit of old projects (v7 installer)
     if not root:
         root = home + '/build/pkg/root'
-    if not resources:
-        resources = home + '/build/pkg/Resources'
 
-    # FIXME uses knowledge of layout of most projects
-    # not very important, as component pkgs have no resources
-    if not pkg_resources:
-        d = os.path.join(home,'osx/Resources')
-        if d and os.path.isdir(d):
-            pkg_resources = [[d, '.']]
-
-    # FIXME uses knowledge of how pkg_scripts has been used
-    # doesn't handle pkg_scripts as tuple list, like pkg_resources always is
+    # default value is for benefit of old projects (v7 installer)
     scripts = os.path.join(home, info.get('pkg_scripts', 'osx/scripts'))
-    stage_scripts = None
-    if scripts:
-        scripts_dir_name = os.path.basename(scripts)
-        stage_scripts = os.path.join(stage, scripts_dir_name)
-
-    # make needed dirs
-    if not os.path.isdir(stage): os.makedirs(stage)
 
     # if pkg_files exists, always copy to root, same as pkg module does
     # Note that this creates root if it doesn't yet exist
@@ -159,21 +89,6 @@ def build_component_pkg(info, env):
 
     if not os.path.isdir(root) and not pkg_nopayload:
         raise Exception('%s component root does not exist! %s' % (name, root))
-
-    # try to copy scripts to our stage and use that to avoid most cruft
-    # also allows renaming scripts before pkgbuild
-    if scripts and os.path.isdir(scripts):
-        env.CopyToPackage(scripts, stage, perms = 0o755)
-
-    # copy resources to our stage for future distpkg use
-    if resources and os.path.isdir(resources):
-        env.CopyToPackage(resources, stage)
-    elif pkg_resources:
-        env.CopyToPackage(pkg_resources, stage_resources)
-
-    # pkg_plist might specify non-default script names
-    if not env.get('pkg_plist') and not info.get('pkg_plist'):
-        rename_prepostflight_scripts(stage_scripts)
 
     # if any apps/tools should be codesign'd do that now
     # assumes project didn't do it when creating its distroot
@@ -197,9 +112,7 @@ def build_component_pkg(info, env):
     else:
         cmd += ['--root', root]
 
-    if stage_scripts and os.path.isdir(stage_scripts):
-        cmd += ['--scripts', stage_scripts]
-    elif scripts and os.path.isdir(scripts):
+    if scripts and os.path.isdir(scripts):
         cmd += ['--scripts', scripts]
     cmd += [target]
     env.RunCommandOrRaise(cmd)
@@ -221,21 +134,6 @@ def build_component_pkgs(env):
             name = info.get('name') # might be None at this point
             raise Exception('home not provided for component ' + name)
         # name and pkg_id are also required, but may be in json
-
-        # try to load pkg info json, if exists
-        # merge with components info
-        # FIXME UNTESTED AND MAYBE INCOMPLETE
-        if not info.get('params_json_loaded'):
-            jsonfile = os.path.join(home, filename_package_info_json)
-            if os.path.isfile(jsonfile):
-                print('loading info from %s' % jsonfile)
-                info2 = json.load(jsonfile)
-                # merge
-                # trust what we were passed over what json says
-                # this allows distpkg to override component pkg info
-                info2.update(info)
-                info = info2
-                info['params_json_loaded'] = True
 
         name = info.get('name')
         if not info.get('package_name'):
@@ -628,9 +526,8 @@ def flat_dist_pkg_build(target, source, env):
     patch_expanded_pkg_distribution(target_pkg_expanded, [], env)
     patch_expanded_pkg_distribution_cr(target_pkg_expanded, env)
 
-    # if built any components using home/osx/scripts, we still need to rename
-    for d in glob.glob(os.path.join(target_pkg_expanded, '*.pkg/Scripts')):
-        rename_prepostflight_scripts(d)
+    cmd = ['find',target_pkg_expanded,'-type','f','-name','.DS_Store','-delete']
+    env.RunCommand(cmd)
 
     flatten_to_pkg(target_unsigned, target_pkg_expanded, env)
 
