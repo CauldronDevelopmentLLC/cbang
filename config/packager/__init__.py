@@ -5,7 +5,7 @@ import zipfile
 from SCons.Script import *
 from SCons.Action import CommandAction
 
-deps = ['nsi', 'pkg', 'distpkg', 'flatdistpkg', 'app', 'deb', 'rpm']
+deps = ['nsi', 'pkg', 'flatdistpkg', 'app', 'deb', 'rpm']
 
 
 def get_dist():
@@ -286,11 +286,7 @@ def Packager(env, name, **kwargs):
 
         return (app, pkg)
 
-    elif type == 'mpkg':
-        if 'distpkg_components' in kwargs:
-            return env.FlatDistPkg(target, [], **kwargs)
-        else:
-            return env.DistPkg(target, [], **kwargs)
+    elif type == 'mpkg':return env.FlatDistPkg(target, [], **kwargs)
     elif type == 'deb': return env.Deb(target, [], **kwargs)
     elif type == 'rpm': return env.RPM(target, [], **kwargs)
 
