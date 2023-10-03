@@ -321,6 +321,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
         if (fd != -1) {
           if (flags & NULL_STDOUT) dup2(fd, 1);
           if (flags & NULL_STDERR) dup2(fd, 2);
+          close(fd);
 
         } else {
           if (flags & NULL_STDOUT) close(1);
