@@ -220,18 +220,20 @@ void Websocket::readBody() {
   auto cb = [this] (bool success) {
     if (!success) return close(WS_STATUS_PROTOCOL, "Failed to ready body");
 
-    uint64_t offset = wsMsg.size();
-    wsMsg.resize(offset + bytesToRead);
-    input.remove(&wsMsg[offset], bytesToRead);
+    if (bytesToRead) {
+      uint64_t offset = wsMsg.size();
+      wsMsg.resize(offset + bytesToRead);
+      input.remove(&wsMsg[offset], bytesToRead);
 
-    // Demask client messages
-    if (isIncoming())
-      for (uint64_t i = 0; i < bytesToRead; i++)
-        wsMsg[offset +  i] ^= wsMask[i & 3];
+      // Demask client messages
+      if (isIncoming())
+        for (uint64_t i = 0; i < bytesToRead; i++)
+          wsMsg[offset +  i] ^= wsMask[i & 3];
 
-    LOG_DEBUG(5, "Frame body\n"
-              << String::hexdump(string(wsMsg.begin() + offset, wsMsg.end()))
-              << '\n');
+      LOG_DEBUG(5, "Frame body\n"
+                << String::hexdump(string(wsMsg.begin() + offset, wsMsg.end()))
+                << '\n');
+    }
 
     switch (wsOpCode) {
     case WS_OP_CONTINUE:
