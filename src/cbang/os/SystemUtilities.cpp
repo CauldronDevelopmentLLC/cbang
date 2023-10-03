@@ -34,7 +34,6 @@
 #include "Subprocess.h"
 #include "DirectoryWalker.h"
 #include "SysError.h"
-#include "Win32Utilities.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
@@ -847,7 +846,7 @@ namespace cb {
 #ifdef _WIN32
       if (!pid) pid = (uint64_t)GetCurrentProcessId();
 
-      DWORD pclass = Win32Utilities::priorityToClass(priority);
+      DWORD pclass = Subprocess::priorityToClass(priority);
 
       SmartWin32Handle h = OpenProcess(PROCESS_SET_INFORMATION, pid);
       bool err = !SetPriorityClass(h, pclass);

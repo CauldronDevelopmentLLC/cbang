@@ -95,6 +95,21 @@ void PipeEnd::setBlocking(bool blocking) {
 }
 
 
+void PipeEnd::setInheritFlag(bool inherit) {
+  if (!isOpen()) THROW("Pipe end not open");
+
+#ifdef _WIN32
+
+  DWORD flags = inherit ? HANDLE_FLAG_INHERIT : 0;
+  if (!SetHandleInformation(handle, HANDLE_FLAG_INHERIT, flags))
+    THROW("Failed to set pipe inherit flag: " << SysError());
+
+#else
+  THROW(CBANG_FUNC << "() not supported");
+#endif
+}
+
+
 void PipeEnd::setSize(int size) {
   if (!isOpen()) THROW("Pipe end not open");
 

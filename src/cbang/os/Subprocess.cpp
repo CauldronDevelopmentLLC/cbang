@@ -32,7 +32,6 @@
 #include "Subprocess.h"
 
 #include "SystemUtilities.h"
-#include "Win32Utilities.h"
 #include "SysError.h"
 #include "SystemInfo.h"
 
@@ -180,8 +179,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
 #ifdef _WIN32
     // Don't let child process inherit parent handles
     for (unsigned i = 0; i < pipes.size(); i++)
-      if (!SetHandleInformation(getPipe(i), HANDLE_FLAG_INHERIT, 0))
-        THROW("Failed to clear pipe inherit flag: " << SysError());
+      if (getPipe(i).isOpen())
+        getPipe(i).setInheritFlag(false);
 
     // Clear PROCESS_INFORMATION
     memset(&p->pi, 0, sizeof(PROCESS_INFORMATION));
@@ -272,7 +271,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     if (flags & CREATE_PROCESS_GROUP) cFlags |= CREATE_NEW_PROCESS_GROUP;
 
     // Priority
-    cFlags |= Win32Utilities::priorityToClass(priority);
+    cFlags |= priorityToClass(priority);
 
     // Start process
     if (!CreateProcess(0, (LPSTR)command.c_str(), 0, 0, TRUE, cFlags,
@@ -564,6 +563,24 @@ string Subprocess::assemble(const vector<string> &args) {
   }
 
   return command;
+}
+
+
+unsigned Subprocess::priorityToClass(ProcessPriority priority) {
+#ifdef _WIN32
+  switch (priority) {
+  case PRIORITY_INHERIT:  return 0;
+  case PRIORITY_NORMAL:   return NORMAL_PRIORITY_CLASS;
+  case PRIORITY_IDLE:     return IDLE_PRIORITY_CLASS;
+  case PRIORITY_LOW:      return BELOW_NORMAL_PRIORITY_CLASS;
+  case PRIORITY_HIGH:     return ABOVE_NORMAL_PRIORITY_CLASS;
+  case PRIORITY_REALTIME: return REALTIME_PRIORITY_CLASS;
+  default: THROW("Invalid priority: " << priority);
+  }
+
+#else // _WIN32
+  THROW(CBANG_FUNC << "() not supported outside of Windows");
+#endif // _WIN32
 }
 
 
