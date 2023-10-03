@@ -42,7 +42,7 @@
 
 
 namespace cb {
-  class Subprocess : public StringMap {
+  class Subprocess : public StringMap, public ProcessPriority::Enum {
   public:
     enum {
       SHELL                   = 1 << 0,
@@ -94,9 +94,9 @@ namespace cb {
     void setWorkingDirectory(const std::string &wd) {this->wd = wd;}
 
     void exec(const std::vector<std::string> &args, unsigned flags = 0,
-              ProcessPriority priority = ProcessPriority::PRIORITY_INHERIT);
+              ProcessPriority priority = PRIORITY_INHERIT);
     void exec(const std::string &command, unsigned flags = 0,
-              ProcessPriority priority = ProcessPriority::PRIORITY_INHERIT);
+              ProcessPriority priority = PRIORITY_INHERIT);
 
     bool kill(bool nonblocking = false);
     void interrupt();
@@ -106,6 +106,8 @@ namespace cb {
     static void parse(const std::string &command,
                       std::vector<std::string> &args);
     static std::string assemble(const std::vector<std::string> &args);
+
+    static unsigned priorityToClass(ProcessPriority priority);
 
   protected:
     void closeProcessHandles();

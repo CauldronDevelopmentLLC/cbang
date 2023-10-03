@@ -61,6 +61,7 @@ namespace cb {
 
     void close();
     void setBlocking(bool blocking);
+    void setInheritFlag(bool inherit);
     void setSize(int size);
     bool moveFD(handle_t target);
     SmartPointer<std::iostream> toStream();
