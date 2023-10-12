@@ -232,7 +232,9 @@ def build_distribution_template(env, target=None):
     tree = etree.ElementTree(root)
 
     title = env.get('summary', env.get('package_name'))
-    title = title.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
+    title = title.replace('\n',' ').replace('\t',' ')
+    version = env.get('version')
+    if version and not version in title: title += ' ' + version
     etree.SubElement(root, 'title').text = title
 
     # non-root pkg installs are very buggy, so this should stay True

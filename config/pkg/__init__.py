@@ -109,7 +109,7 @@ def build_function(target, source, env):
             if isinstance(value, (str, bytes)):
                 xenv[key] = xml_escape(str(value))
         with open(dist, 'w') as f: f.write(data % xenv)
-    # TODO else build distribution.xml similar to flastdistpkg
+    # TODO else build distribution.xml similar to flatdistpkg
 
     # productbuild command
     cmd = ['${PRODUCTBUILD}', '--version', version]
