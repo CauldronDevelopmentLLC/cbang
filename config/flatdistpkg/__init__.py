@@ -50,6 +50,22 @@ def create_dirs(env):
             os.makedirs(d, 0o755)
 
 
+def migrate_distpkg_keys(env):
+    # copy all distpkg_* values to pkg_*
+    # do not delete distpkg_* keys; they may be expected elsewhere
+    count = 0
+    for key in env.keys():
+        if key.startswith('distpkg_'):
+            key0 = key[4:] # pkg_
+            if key0 in env:
+                raise Exception(f'error: both {key} and {key0} exist')
+            env[key0] = env[key]
+            print(f'NOTE: copied value of key {key} to {key0}')
+            count += 1
+    if 0 < count:
+        print(f'NOTE: {count} distpkg_ keys copied; such keys are deprecated')
+
+
 def build_component_pkg(info, env):
     # FIXME -- possibly incomplete and makes assumptions
     # build component from info using pkgbuild
@@ -483,6 +499,8 @@ def flat_dist_pkg_build(target, source, env):
     # .mpkg causes errors in log, and does not work on 10.5,
     # so use .pkg for flat package, even if final target is .mpkg.zip
     if ext == '.mpkg': target_pkg = target_base + '.pkg'
+
+    migrate_distpkg_keys(env)
 
     # flat packages require OS X 10.5+
     distpkg_target = env.get('distpkg_target', '10.5')
