@@ -85,6 +85,7 @@ def build_function(target, source, env):
     install_files(env, 'mime', build_dir + '/usr/share/mime/packages')
     install_files(env, 'platform_independent', build_dir + '/usr/share/' + name)
     install_files(env, 'misc', build_dir)
+    install_files(env, 'systemd', build_dir + '/lib/systemd/system')
 
     # Dirs
     docs_dir =  build_dir + '/usr/share/doc/' + name
