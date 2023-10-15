@@ -50,6 +50,22 @@ def create_dirs(env):
             os.makedirs(d, 0o755)
 
 
+def migrate_distpkg_keys(env):
+    # copy all distpkg_* values to pkg_*
+    # do not delete distpkg_* keys; they may be expected elsewhere
+    count = 0
+    for key in env.keys():
+        if key.startswith('distpkg_'):
+            key0 = key[4:] # pkg_
+            if key0 in env:
+                raise Exception(f'error: both {key} and {key0} exist')
+            env[key0] = env[key]
+            print(f'NOTE: copied value of key {key} to {key0}')
+            count += 1
+    if 0 < count:
+        print(f'NOTE: {count} distpkg_ keys copied; such keys are deprecated')
+
+
 def build_component_pkg(info, env):
     # FIXME -- possibly incomplete and makes assumptions
     # build component from info using pkgbuild
@@ -119,12 +135,12 @@ def build_component_pkg(info, env):
 
 
 def build_component_pkgs(env):
-    components = env.get('distpkg_components', None)
+    components = env.get('pkg_components', None)
 
     if not components:
         # TODO: instead create components for single-pkg dist
-        # and set any needed distpkg_/pkg_ vars
-        raise Exception('no distpkg_components specified')
+        # and set any needed pkg_ vars
+        raise Exception('no pkg_components specified')
 
     # validate and fill-in any missing info
     for info in components:
@@ -154,14 +170,14 @@ def build_component_pkgs(env):
             print('unable to build component ' + info.get('name'))
             raise e
 
-    # replace distpkg_components with modified/created info list
-    env['distpkg_components'] = components
+    # replace pkg_components with modified/created info list
+    env['pkg_components'] = components
 
 
 def build_product_pkg(target, source, env):
     version = env.get('version')
     if not version: raise Exception('version is not set')
-    pkg_id = env.get('distpkg_id')
+    pkg_id = env.get('pkg_id')
     cmd = ['productbuild',
         '--distribution', build_dir_distribution_xml,
         '--package-path', build_dir_packages,
@@ -210,21 +226,21 @@ def build_distribution_template(env, target=None):
 
     print('generating ' + target)
 
-    distpkg_target = env.get('distpkg_target', '10.5')
-    ver = tuple([int(x) for x in distpkg_target.split('.')])
-    distpkg_arch = env.get('distpkg_arch')
-    if not distpkg_arch:
-        distpkg_arch = env.get('osx_archs')
+    pkg_target = env.get('pkg_target', '10.5')
+    ver = tuple([int(x) for x in pkg_target.split('.')])
+    pkg_arch = env.get('pkg_arch')
+    if not pkg_arch:
+        pkg_arch = env.get('osx_archs')
 
     # handle some aberrant values
-    if distpkg_arch in (None, '', 'intel'):
-        print('using distpkg_arch i386 instead of "%s"' % distpkg_arch)
-        distpkg_arch = 'i386'
+    if pkg_arch in (None, '', 'intel'):
+        print('using pkg_arch i386 instead of "%s"' % pkg_arch)
+        pkg_arch = 'i386'
     # some projects might be passing package_arch
-    if distpkg_arch == 'universal':
-        distpkg_arch = 'x86_64 arm64'
+    if pkg_arch == 'universal':
+        pkg_arch = 'x86_64 arm64'
 
-    hostArchitectures = ','.join(distpkg_arch.split())
+    hostArchitectures = ','.join(pkg_arch.split())
 
     # generate new tree
     import xml.etree.ElementTree as etree
@@ -232,20 +248,22 @@ def build_distribution_template(env, target=None):
     tree = etree.ElementTree(root)
 
     title = env.get('summary', env.get('package_name'))
-    title = title.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
+    title = title.replace('\n',' ').replace('\t',' ')
+    version = env.get('version')
+    if version and not version in title: title += ' ' + version
     etree.SubElement(root, 'title').text = title
 
     # non-root pkg installs are very buggy, so this should stay True
-    distpkg_root_volume_only = env.get('distpkg_root_volume_only', True)
-    allow_external = env.get('distpkg_allow_external_scripts', False)
+    pkg_root_volume_only = env.get('pkg_root_volume_only', True)
+    allow_external = env.get('pkg_allow_external_scripts', False)
     if allow_external: allow_external = 'yes'
     else: allow_external = 'no'
-    allow_ppc = 'ppc' in distpkg_arch.lower() and ver < (10,6)
-    if distpkg_root_volume_only: rootVolumeOnly = 'true'
+    allow_ppc = 'ppc' in pkg_arch.lower() and ver < (10,6)
+    if pkg_root_volume_only: rootVolumeOnly = 'true'
     else: rootVolumeOnly = 'false'
     opts = {
         'allow-external-scripts': allow_external,
-        'customize': env.get('distpkg_customize', 'allow'),
+        'customize': env.get('pkg_customize', 'allow'),
         # i386 covers both 32 and 64 bit kernel, NOT cpu
         # cpu 64 bit check must be done in script
         'hostArchitectures': hostArchitectures,
@@ -254,7 +272,7 @@ def build_distribution_template(env, target=None):
     etree.SubElement(root, 'options', opts)
 
     # WARNING domains element can be buggy for anything other than root-only.
-    if (10,13) <= ver and distpkg_root_volume_only:
+    if (10,13) <= ver and pkg_root_volume_only:
         etree.SubElement(root, 'domains', {
             'enable_anywhere': 'false',
             'enable_currentUserHome': 'false',
@@ -262,10 +280,10 @@ def build_distribution_template(env, target=None):
             })
 
     for key in 'welcome license readme conclusion'.split():
-        if 'distpkg_' + key in env:
-            etree.SubElement(root, key, {'file': env.get('distpkg_' + key)})
+        if 'pkg_' + key in env:
+            etree.SubElement(root, key, {'file': env.get('pkg_' + key)})
 
-    background = env.get('distpkg_background', None)
+    background = env.get('pkg_background', None)
     if background:
         mtype = mimetypes.guess_type(background)[0]
         etree.SubElement(root, 'background', {
@@ -275,7 +293,7 @@ def build_distribution_template(env, target=None):
             'scaling': 'none',
             })
     # dark mode background; defaults to same image as light
-    background = env.get('distpkg_background_dark', background)
+    background = env.get('pkg_background_dark', background)
     if background:
         mtype = mimetypes.guess_type(background)[0]
         etree.SubElement(root, 'background-darkAqua', {
@@ -290,9 +308,9 @@ def build_distribution_template(env, target=None):
     vc = etree.SubElement(root, 'volume-check', {
         'script': 'volume_check();'})
 
-    if distpkg_target:
+    if pkg_target:
         e = etree.Element('allowed-os-versions')
-        etree.SubElement(e, 'os-version', {'min':distpkg_target})
+        etree.SubElement(e, 'os-version', {'min':pkg_target})
         vc.append(e)
 
     # options hostArchitectures is sufficient on 10.5+, but no clear
@@ -316,9 +334,9 @@ function have_64_bit_cpu() {
   return false;
 }
 function volume_check() {
-  if (!is_min_version('""" + distpkg_target + """')) {
+  if (!is_min_version('""" + pkg_target + """')) {
     my.result.title = 'Unable to Install';
-    my.result.message = 'macOS """ + distpkg_target + \
+    my.result.message = 'macOS """ + pkg_target + \
     """ or later is required.';
     my.result.type = 'Fatal';
     return false;
@@ -336,7 +354,7 @@ function install_check() {"""
     return false;
   }"""
 
-    if distpkg_arch == 'x86_64':
+    if pkg_arch == 'x86_64':
         script_text += """
   if (have_64_bit_cpu() == false) {
     my.result.title = 'Unable to Install';
@@ -352,13 +370,13 @@ function install_check() {"""
 
     outline = etree.SubElement(root, 'choices-outline')
 
-    components = env.get('distpkg_components')
+    components = env.get('pkg_components')
     pkgrefs = []
     for info in components:
         pkg_id = info.get('pkg_id')
         name_lower = info.get('package_name_lower')
-        pkg_target = info.get('pkg_target', distpkg_target)
-        pkg_ver = tuple([int(x) for x in pkg_target.split('.')])
+        cpkg_target = info.get('pkg_target', pkg_target)
+        pkg_ver = tuple([int(x) for x in cpkg_target.split('.')])
         choice_id = name_lower
         # remove any dots or spaces in choice_id for 10.5 compatibility
         choice_id = choice_id.replace('.','').replace(' ','')
@@ -379,7 +397,7 @@ function install_check() {"""
             'id': pkg_id,
             # version and installKBytes will be added by productbuild
             }
-        if distpkg_root_volume_only or info.get('pkg_root_volume_only'):
+        if pkg_root_volume_only or info.get('pkg_root_volume_only'):
             pkg_ref_info['auth'] = 'Root'
         ref = etree.Element('pkg-ref', pkg_ref_info)
         ref.text = pkg_path
@@ -399,7 +417,7 @@ function install_check() {"""
             choice.set('selected', munged_name + '_enabled();')
             script_text += """
 function """ + munged_name + """_enabled() {
-  return is_min_version('""" + pkg_target + """');
+  return is_min_version('""" + cpkg_target + """');
 }
 """
     for ref in pkgrefs: root.append(ref)
@@ -419,8 +437,8 @@ function """ + munged_name + """_enabled() {
 
 def patch_expanded_pkg_distribution(target, source, env):
     # fixup whatever needs changing for < 10.6.6 compatibility
-    distpkg_target = env.get('distpkg_target', '10.5')
-    ver = tuple([int(x) for x in distpkg_target.split('.')])
+    pkg_target = env.get('pkg_target', '10.5')
+    ver = tuple([int(x) for x in pkg_target.split('.')])
     if ver >= (10,6,6):
         return
 
@@ -482,13 +500,15 @@ def flat_dist_pkg_build(target, source, env):
     # so use .pkg for flat package, even if final target is .mpkg.zip
     if ext == '.mpkg': target_pkg = target_base + '.pkg'
 
+    migrate_distpkg_keys(env)
+
     # flat packages require OS X 10.5+
-    distpkg_target = env.get('distpkg_target', '10.5')
-    ver = tuple([int(x) for x in distpkg_target.split('.')])
+    pkg_target = env.get('pkg_target', '10.5')
+    ver = tuple([int(x) for x in pkg_target.split('.')])
     if ver < (10,5):
         raise Exception(
             'incompatible configuration: flat package and osx pre-10.5 (%s)'
-            % distpkg_target)
+            % pkg_target)
 
     clean_old_build(env)
     create_dirs(env)
@@ -500,12 +520,10 @@ def flat_dist_pkg_build(target, source, env):
     # TODO: more validation here ...
 
     name = env.get('package_name')
-    print('Building "%s", target %s' % (name, distpkg_target))
+    print('Building "%s", target %s' % (name, pkg_target))
 
     # copy our own dist Resources
-    if env.get('distpkg_resources'):
-        env.InstallFiles('distpkg_resources', build_dir_resources)
-    elif env.get('pkg_resources'):
+    if env.get('pkg_resources'):
         env.InstallFiles('pkg_resources', build_dir_resources)
 
     env.UnlockKeychain()
@@ -514,8 +532,8 @@ def flat_dist_pkg_build(target, source, env):
 
     # probably not needed
     # I think build_component_pkgs always raises on any failure
-    if not env.get('distpkg_components'):
-        raise Exception('No distpkg_components. Cannot continue.')
+    if not env.get('pkg_components'):
+        raise Exception('No pkg_components. Cannot continue.')
 
     build_or_copy_distribution_template(env)
 
