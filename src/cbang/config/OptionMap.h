@@ -121,7 +121,8 @@ namespace cb {
     void pushFile(const std::string &filename) override
     {fileTracker.pushFile(filename);}
     void popFile() override {fileTracker.popFile();}
-    void startElement(const std::string &name, const XMLAttributes &attrs) override;
+    void startElement(
+      const std::string &name, const XMLAttributes &attrs) override;
     void endElement(const std::string &name) override;
     void text(const std::string &text) override;
     void cdata(const std::string &data) override;

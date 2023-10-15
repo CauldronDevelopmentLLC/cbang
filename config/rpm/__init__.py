@@ -134,9 +134,9 @@ def build_function(target, source, env):
 
     # Build the package
     target = str(target[0])
-    cmd = 'rpmbuild -bb --define "_topdir %s/build" --define "_rpmfilename %s"' \
-          '%s --target %s %s' % (
-          os.getcwd(), target, cmddebug, env.GetPackageArch(), spec_file)
+    cmd = 'rpmbuild -bb --define "_topdir %s/build" --define ' \
+        '"_rpmfilename %s"' '%s --target %s %s' % (
+            os.getcwd(), target, cmddebug, env.GetPackageArch(), spec_file)
     CommandAction(cmd).execute(target, [], env)
 
     # Move the package

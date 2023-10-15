@@ -124,9 +124,10 @@ def build_function(target, source, env):
 
     # Strip exectuables
     if not int(env.get('debug')):
-        for src, dst, mode in get_files(env, 'programs',
-                                        build_dir + '/usr/bin'):
-            CommandAction(env.get('STRIP', 'strip') + ' ' + dst).execute(dst, [dst], env)
+        for src, dst, mode in get_files(
+                env, 'programs', build_dir + '/usr/bin'):
+            CommandAction(
+                env.get('STRIP', 'strip') + ' ' + dst).execute(dst, [dst], env)
 
     # Create debian control
     total_size = get_total_file_size(build_dir)

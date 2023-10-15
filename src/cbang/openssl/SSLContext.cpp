@@ -339,7 +339,8 @@ void SSLContext::loadSystemRootCerts() {
       // OPTIONAL, apparently, for our use
       // set params for validating a root cert
       // see ValidateSystemTrust in
-      // https://github.com/macports/macports-ports/blob/master/security/certsync/files/certsync.m
+      // https://github.com/macports/macports-ports/blob/master/security
+      //   /certsync/files/certsync.m
 
       if (err == errSecSuccess) {
 #if __clang__
