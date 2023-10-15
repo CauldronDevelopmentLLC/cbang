@@ -39,21 +39,37 @@ def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
             f.write(dst[len(build_dir):] + '\n')
 
 
+def install_dirs(f, env, key, build_dir, prefix = None, dperms = 0o755):
+    # Create dirs and write dirs list
+    for dir in env.get(key):
+        target = build_dir + '/' + dir.lstrip('/')
+        print("creating directory %s" % target)
+        os.makedirs(target, dperms)
+        if prefix: f.write(prefix + ' ')
+        else: f.write('%dir ')
+        f.write(target[len(build_dir):] + '\n')
+
+
 def build_function(target, source, env):
     name = env.get('package_name_lower')
 
-    # Create package build dir
-    build_dir = 'build/%s-RPM' % name
-    if os.path.exists(build_dir): shutil.rmtree(build_dir)
-    os.makedirs(build_dir)
+    # Create directories needed by rpmbuild
+    for dir in ['BUILD', 'BUILDROOT', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS']:
+        dir = 'build/' + dir
+        if os.path.exists(dir): shutil.rmtree(dir)
+        os.makedirs(dir)
+
+    # SPEC's %install section is responsible for populating BUILDROOT
+    # (aka %{buildroot} or $RPM_BUILD_ROOT)
+    build_dir = 'build/BUILD'
 
     # Create the SPEC file
-    spec_file = 'build/%s.spec' % name
+    spec_file = 'build/SPECS/%s.spec' % name
     with open(spec_file, 'w') as f:
         # Create the preamble
         write_var = env.WriteVariable
         write_var(env, f, 'Summary', 'summary')
-        write_var(env, f, 'Name', 'package_name_lower', None, replace_dash)
+        write_var(env, f, 'Name', 'package_name_lower')
         write_var(env, f, 'Version', 'version', None, replace_dash)
         write_var(env, f, 'Release', 'package_build', '1', replace_dash)
         write_var(env, f, 'License', 'rpm_license')
@@ -68,15 +84,15 @@ def build_function(target, source, env):
         write_var(env, f, 'Conflicts', 'rpm_conflicts', multi = True)
         write_var(env, f, 'Obsoletes', 'rpm_obsoletes', multi = True)
         write_var(env, f, 'BuildRequires', 'rpm_build_requires', multi = True)
-        write_var(env, f, 'Requires(pre)', 'rpm_pre_requires', multi = True)
         write_var(env, f, 'Requires', 'rpm_requires', multi = True)
+        write_var(env, f, 'Requires(pre)', 'rpm_pre_requires', multi = True)
+        write_var(env, f, 'Requires(preun)', 'rpm_preun_requires', multi = True)
+        write_var(env, f, 'Requires(post)', 'rpm_post_requires', multi = True)
         write_var(env, f, 'Requires(postun)', 'rpm_postun_requires',
                   multi = True)
 
         # Description
         write_spec_text_section(f, env, 'description', 'description')
-
-        f.write('%define strip ' + env.get('STRIP', 'strip') + '\n\n')
 
         # Scripts
         for script in ['prep', 'build', 'install', 'clean', 'pre', 'post',
@@ -87,41 +103,44 @@ def build_function(target, source, env):
         if 'rpm_filelist' in env:
             f.write('%%files -f %s\n' % env.get('rpm_filelist'))
         else: f.write('%files\n')
-        f.write('%defattr(- root root)\n')
 
         for files in [
             ['documents', '/usr/share/doc/' + name, '%doc', None],
-            ['programs', '/usr/bin', '%attr(0775 root root)', 0o755],
-            ['scripts', '/usr/bin', '%attr(0775 root root)', 0o755],
+            ['programs', '/usr/bin', None, 0o755],
+            ['scripts', '/usr/bin', None, 0o755],
             ['desktop_menu', '/usr/share/applications', None, None],
-            ['init_d', '/etc/init.d', '%config %attr(0775 root root)', None],
+            ['init_d', '/etc/init.d', '%config', 0o755],
             ['config', '/etc/' + name, '%config', None],
             ['icons', '/usr/share/pixmaps', None, None],
             ['mime', '/usr/share/mime/packages', None, None],
             ['platform_independent', '/usr/share/' + name, None, None],
+            ['misc', '/', None, None],
+            ['systemd', '/usr/lib/systemd/system', None, None],
             ]:
             install_files(f, env, files[0], build_dir, files[1], files[2],
                           files[3])
 
+        install_dirs(f, env, 'rpm_client_dirs', build_dir,
+                     '%attr(-,' + name + ',' + name + ') %dir')
+
         # ChangeLog
         write_spec_text_section(f, env, 'changelog', 'rpm_changelog')
 
-    # Create directories needed by rpmbuild
-    for dir in ['BUILD', 'BUILDROOT', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS']:
-        dir = 'build/' + dir
-        if not os.path.exists(dir): os.makedirs(dir)
-
+    # rpmbuild strips debug information from binaries by default if %build and
+    # %install sections are present (may be empty)
+    if int(env.get('debug')):
+        cmddebug = ' --define "__strip /usr/bin/true"'
+    else: cmddebug = ''
 
     # Build the package
-    build_dir = os.path.realpath(build_dir)
-    cmd = 'rpmbuild -bb --buildroot %s --define "_topdir %s/build" ' \
-        '--target %s %s' % (
-        build_dir, os.getcwd(), env.GetPackageArch(), spec_file)
-    CommandAction(cmd).execute(target, [build_dir], env)
+    target = str(target[0])
+    cmd = 'rpmbuild -bb --define "_topdir %s/build" --define "_rpmfilename %s"' \
+          '%s --target %s %s' % (
+          os.getcwd(), target, cmddebug, env.GetPackageArch(), spec_file)
+    CommandAction(cmd).execute(target, [], env)
 
     # Move the package
-    target = str(target[0])
-    path = 'build/RPMS/' + env.GetPackageArch() + '/' + target
+    path = 'build/RPMS/' + target
     shutil.move(path, target)
 
 
