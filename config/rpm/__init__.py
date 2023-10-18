@@ -78,7 +78,6 @@ def build_function(target, source, env):
         write_var(env, f, 'Vendor', 'vendor')
         write_var(env, f, 'Packager', 'maintainer')
         write_var(env, f, 'Icon', 'icon')
-        write_var(env, f, 'Prefix', 'prefix')
         #write_var(env, f, 'BuildArch', 'package_arch', env.GetPackageArch())
         write_var(env, f, 'Provides', 'rpm_provides', multi = True)
         write_var(env, f, 'Conflicts', 'rpm_conflicts', multi = True)
@@ -126,8 +125,8 @@ def build_function(target, source, env):
         # ChangeLog
         write_spec_text_section(f, env, 'changelog', 'rpm_changelog')
 
-    # rpmbuild strips debug information from binaries by default if %build and
-    # %install sections are present (may be empty)
+    # rpmbuild strips debug information from binaries by default if %install
+    # section is present (may be empty)
     if int(env.get('debug')):
         cmddebug = ' --define "__strip /usr/bin/true"'
     else: cmddebug = ''
