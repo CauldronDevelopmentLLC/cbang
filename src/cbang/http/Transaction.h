@@ -68,10 +68,10 @@ namespace cb {
       void send(const Request &request);
       void receive(Response &response);
 
-      void get(const URI &uri, float version = 1.0);
+      void get(const URI &uri, float version = 1.1);
       void post(const URI &uri, const char *data, unsigned length,
                 const std::string &contentType = "application/octet-stream",
-                float version = 1.0);
+                float version = 1.1);
       Response &exchange(Request &request);
 
       std::streamsize receiveHeader();
