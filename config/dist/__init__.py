@@ -1,6 +1,7 @@
 import os
 import sys
 import tarfile
+import zipfile
 import re
 import platform
 import time
@@ -53,6 +54,12 @@ def modify_targets_bz2(target, source, env):
     return [target + '.bz2', source]
 
 
+def modify_targets_zip(target, source, env):
+    target, source = modify_targets(target, source, env)
+    target = target[:-3] + 'zip'
+    return [target, source]
+
+
 def build_function(target, source, env):
     target = str(target[0])
 
@@ -73,9 +80,31 @@ def build_function(target, source, env):
                 tar.add(path, dist_name + '/' + name)
 
 
+def build_function_zip(target, source, env):
+    target = str(target[0])
+
+    # Write 'dist.txt'
+    with open('dist.txt', 'w') as f: f.write(target)
+
+    m = re.match(r'^(.*)\.zip$', target)
+    dist_name = m.group(1)
+
+    compression = env.get('compression', zipfile.ZIP_LZMA)
+    if compression is None: compression = zipfile.ZIP_STORED
+
+    with zipfile.ZipFile(target, mode = 'w', compression = compression) as zip:
+        exclude_pats = env.get('DIST_EXCLUDES')
+        exclude_re = re.compile('^((' + ')|('.join(exclude_pats) + '))$')
+
+        for src in map(str, source):
+            for path, name in find_files(src, exclude_re):
+                zip.write(path, dist_name + '/' + name)
+
+
 def generate(env):
     env.SetDefault(DIST_EXCLUDES = [r'\.svn', r'\.sconsign.dblite', r'.*\.obj',
-                                    r'\.sconf_temp', r'.*~', r'.*\.o'])
+                                    r'\.sconf_temp', r'.*~', r'.*\.o',
+                                    r'\.DS_Store'])
 
     env.CBAddVariables(
             ('dist_version', 'Set dist file version', None),
@@ -89,7 +118,12 @@ def generate(env):
                       source_factory = SCons.Node.FS.Entry,
                       source_scanner = SCons.Defaults.DirScanner,
                       emitter = modify_targets_bz2)
+    bld_zip = Builder(action = build_function_zip,
+                      source_factory = SCons.Node.FS.Entry,
+                      source_scanner = SCons.Defaults.DirScanner,
+                      emitter = modify_targets_zip)
 
+    env.Append(BUILDERS = {'ZipDist' : bld_zip})
     env.Append(BUILDERS = {'TarBZ2Dist' : bld_bz2})
     env.Append(BUILDERS = {'TarDist' : bld})
 
