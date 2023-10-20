@@ -26,6 +26,9 @@ def write_spec_script(f, env, name, var):
 def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
                   dperms = 0o755):
     if perms is None: perms = 0o644
+    if key == 'documents':
+        files_section = False
+    else: files_section = True
 
     if key in env:
         target = build_dir + path
@@ -34,9 +37,10 @@ def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
         env.CopyToPackage(env.get(key), target, perms, dperms)
 
         # Write files list
-        for src, dst, mode in env.ResolvePackageFileMap(env.get(key), target):
-            if prefix is not None: f.write(prefix + ' ')
-            f.write(dst[len(build_dir):] + '\n')
+        if files_section:
+            for src, dst, mode in env.ResolvePackageFileMap(env.get(key), target):
+                if prefix is not None: f.write(prefix + ' ')
+                f.write(dst[len(build_dir):] + '\n')
 
 
 def install_dirs(f, env, key, build_dir, prefix = None, dperms = 0o755):
@@ -103,8 +107,12 @@ def build_function(target, source, env):
             f.write('%%files -f %s\n' % env.get('rpm_filelist'))
         else: f.write('%files\n')
 
+        # See https://bugzilla.redhat.com/show_bug.cgi?id=1113233#c3
+        if 'documents' in env:
+            f.write('/usr/share/doc/' + name + '\n')
+
         for files in [
-            ['documents', '/usr/share/doc/' + name, '%doc', None],
+            ['documents', '/usr/share/doc/' + name, None, None],
             ['programs', '/usr/bin', None, 0o755],
             ['scripts', '/usr/bin', None, 0o755],
             ['desktop_menu', '/usr/share/applications', None, None],
