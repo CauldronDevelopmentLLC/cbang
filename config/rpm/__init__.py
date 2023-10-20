@@ -35,7 +35,7 @@ def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
         env.CopyToPackage(value, target, perms, dperms)
 
         # Write files list
-        if key == 'documents':
+        if key != 'documents':
             for src, dst, mode in env.ResolvePackageFileMap(value, target):
                 if prefix is not None: f.write(prefix + ' ')
                 f.write(dst[len(build_dir):] + '\n')
