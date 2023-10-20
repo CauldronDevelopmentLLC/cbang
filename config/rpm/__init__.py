@@ -26,19 +26,17 @@ def write_spec_script(f, env, name, var):
 def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
                   dperms = 0o755):
     if perms is None: perms = 0o644
-    if key == 'documents':
-        files_section = False
-    else: files_section = True
 
     if key in env:
         target = build_dir + path
+        value = env.get(key)
 
         # Copy
-        env.CopyToPackage(env.get(key), target, perms, dperms)
+        env.CopyToPackage(value, target, perms, dperms)
 
         # Write files list
-        if files_section:
-            for src, dst, mode in env.ResolvePackageFileMap(env.get(key), target):
+        if key == 'documents':
+            for src, dst, mode in env.ResolvePackageFileMap(value, target):
                 if prefix is not None: f.write(prefix + ' ')
                 f.write(dst[len(build_dir):] + '\n')
 
