@@ -88,13 +88,11 @@ KeyPair::KeyPair(const KeyPair &o) : key(o.key) {
 
 
 KeyPair::KeyPair() {
-  SSL::init();
   key = EVP_PKEY_new();
 }
 
 
 KeyPair::KeyPair(const string &key, mac_key_t type, ENGINE *e) {
-  SSL::init();
   this->key =
     EVP_PKEY_new_mac_key(type == HMAC_KEY ? EVP_PKEY_HMAC : EVP_PKEY_CMAC,
                          e, (uint8_t *)key.c_str(), key.length());

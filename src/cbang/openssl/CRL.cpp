@@ -53,7 +53,6 @@ using namespace std;
 
 
 CRL::CRL(X509_CRL *crl) : crl(crl) {
-  SSL::init();
   if (!crl)
     if (!(this->crl = X509_CRL_new()))
       THROW("Failed to create new CRL: " << SSL::getErrorStr());
@@ -62,7 +61,6 @@ CRL::CRL(X509_CRL *crl) : crl(crl) {
 
 
 CRL::CRL(const string &pem) : crl(0) {
-  SSL::init();
   if (!(this->crl = X509_CRL_new()))
     THROW("Failed to create new CRL: " << SSL::getErrorStr());
   istringstream stream(pem);

@@ -49,8 +49,6 @@ CertificateStore::CertificateStore(const CertificateStore &o) : store(o.store) {
 
 
 CertificateStore::CertificateStore(X509_STORE *store) : store(store) {
-  SSL::init();
-
   if (store) X509_STORE_up_ref(store);
   else if (!(this->store = X509_STORE_new()))
     THROW("Failed to create new certificate store: " << SSL::getErrorStr());

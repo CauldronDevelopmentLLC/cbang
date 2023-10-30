@@ -58,13 +58,11 @@ struct CSR::private_t {
 
 
 CSR::CSR() : csr(0), pri(new private_t) {
-  SSL::init();
   csr = X509_REQ_new();
 }
 
 
 CSR::CSR(const string &pem) : csr(0), pri(new private_t) {
-  SSL::init();
   csr = X509_REQ_new();
   istringstream stream(pem);
   read(stream);

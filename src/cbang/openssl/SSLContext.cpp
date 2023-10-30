@@ -98,10 +98,7 @@ namespace {
 namespace cb { // avoid namespace collision with Apple Security.framework
 #endif
 
-SSLContext::SSLContext() : ctx(0) {
-  cb::SSL::init();
-  reset();
-}
+SSLContext::SSLContext() : ctx(0) {reset();}
 
 
 SSLContext::~SSLContext() {

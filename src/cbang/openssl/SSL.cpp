@@ -61,6 +61,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
+#include <openssl/provider.h>
 
 
 using namespace std;
@@ -79,13 +80,11 @@ namespace {
 
 
 
-bool cb::SSL::initialized = false;
 unsigned cb::SSL::maxHandshakes = 3;
 
 
 cb::SSL::SSL(_SSL *ssl) : ssl(ssl) {
   if (ssl) SSL_up_ref(ssl);
-  init();
 }
 
 
@@ -93,7 +92,6 @@ cb::SSL::SSL(const SSL &ssl) : SSL(ssl.ssl) {}
 
 
 cb::SSL::SSL(SSL_CTX *ctx, BIO *bio) {
-  init();
   ssl = SSL_new(ctx);
   if (!ssl) THROW("Failed to create new SSL");
   if (bio) setBIO(bio);
@@ -384,15 +382,9 @@ int cb::SSL::findObject(const string &name) {
 }
 
 
-void cb::SSL::init() {
-  if (initialized) return;
-
-  OPENSSL_init_ssl(OPENSSL_INIT_LOAD_SSL_STRINGS |
-                   OPENSSL_INIT_LOAD_CRYPTO_STRINGS, 0);
-  OPENSSL_init_crypto(OPENSSL_INIT_ADD_ALL_CIPHERS |
-                      OPENSSL_INIT_ADD_ALL_DIGESTS, 0);
-
-  initialized = true;
+void cb::SSL::loadProvider(const string &provider) {
+  if (!OSSL_PROVIDER_load(NULL, provider.c_str()))
+    THROW("Failed to load SSL provider: " << provider);
 }
 
 
