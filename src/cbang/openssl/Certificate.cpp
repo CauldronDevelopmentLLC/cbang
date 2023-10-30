@@ -58,7 +58,6 @@ Certificate::Certificate(const Certificate &o) : cert(o.cert) {
 
 
 Certificate::Certificate(X509 *cert) : cert(cert) {
-  SSL::init();
   if (!cert)
     if (!(this->cert = X509_new()))
       THROW("Failed to create new certificate: " << SSL::getErrorStr());
@@ -66,7 +65,6 @@ Certificate::Certificate(X509 *cert) : cert(cert) {
 
 
 Certificate::Certificate(const string &pem) : cert(0) {
-  SSL::init();
   if (!(this->cert = X509_new()))
     THROW("Failed to create new certificate: " << SSL::getErrorStr());
   parse(pem);

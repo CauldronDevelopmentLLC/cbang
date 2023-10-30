@@ -51,7 +51,6 @@ namespace cb {
     _SSL *ssl;
     unsigned handshakes = 0;
 
-    static bool initialized;
     static unsigned maxHandshakes;
 
     enum {
@@ -116,7 +115,7 @@ namespace cb {
                             const std::string &longName);
     static int findObject(const std::string &name);
 
-    static void init();
+    static void loadProvider(const std::string &provider);
 
     void infoCallback(int where, int ret);
     void limitRenegotiation();

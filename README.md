@@ -100,7 +100,8 @@ On Debian based systems the prerequisites can be installed with the following
 command line:
 
     sudo apt-get install -y scons build-essential libssl-dev binutils-dev \
-      libiberty-dev libmariadb-dev-compat libleveldb-dev libsnappy-dev git
+      libiberty-dev libmariadb-dev-compat libleveldb-dev libsnappy-dev git \
+      libzstd-dev
 
 # Build
 

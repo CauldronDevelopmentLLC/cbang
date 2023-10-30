@@ -47,8 +47,6 @@ using namespace std;
 
 
 Digest::Digest(const string &digest) : md(0), ctx(0), initialized(false) {
-  SSL::init();
-
   ctx = EVP_MD_CTX_create();
   if (!ctx) THROW("Failed to created digest context: " << SSL::getErrorStr());
 
@@ -289,7 +287,6 @@ bool Digest::verify(const KeyPair &key, const std::string &s, const string &sig,
 
 
 bool Digest::hasAlgorithm(const string &digest) {
-  SSL::init();
   return EVP_get_digestbyname(digest.c_str());
 }
 

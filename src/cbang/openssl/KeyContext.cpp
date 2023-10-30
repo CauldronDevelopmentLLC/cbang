@@ -58,8 +58,6 @@ namespace {
 
 
 KeyContext::KeyContext(int nid, ENGINE *e) : ctx(0), deallocate(true) {
-  SSL::init();
-
   if (!(ctx = EVP_PKEY_CTX_new_id(nid, e)))
     THROW("Failed to create key context: " << SSL::getErrorStr());
 }
@@ -67,8 +65,6 @@ KeyContext::KeyContext(int nid, ENGINE *e) : ctx(0), deallocate(true) {
 
 KeyContext::KeyContext(const string &algorithm, ENGINE *e) :
   ctx(0), deallocate(true) {
-  SSL::init();
-
   if (!(ctx = EVP_PKEY_CTX_new_id(SSL::findObject(algorithm), e)))
     THROW("Failed to create key context: " << SSL::getErrorStr());
 }
@@ -79,7 +75,7 @@ KeyContext::KeyContext(const KeyPair &keyPair) :
 
 
 KeyContext::KeyContext(EVP_PKEY *pkey, ENGINE *e) :
-  ctx(EVP_PKEY_CTX_new(pkey, e)), deallocate(true) {SSL::init();}
+  ctx(EVP_PKEY_CTX_new(pkey, e)), deallocate(true) {}
 
 
 KeyContext::KeyContext(const KeyContext &kc) :
