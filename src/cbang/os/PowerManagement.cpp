@@ -30,7 +30,6 @@
 \******************************************************************************/
 
 #include "PowerManagement.h"
-#include "DynamicLibrary.h"
 
 #include <cbang/Exception.h>
 #include <cbang/os/SystemUtilities.h>
@@ -49,20 +48,9 @@
 #include <IOKit/pwr_mgt/IOPMLib.h>
 
 #else
-typedef unsigned Window;
-typedef struct {
-  Window window;
-  int state;
-  int kind;
-  unsigned long til_or_since;
-  unsigned long idle;
-  unsigned long eventMask;
-} XScreenSaverInfo;
-
-typedef void *(*XOpenDisplay_t)(char *);
-typedef XScreenSaverInfo *(*XScreenSaverAllocInfo_t)();
-typedef void (*XScreenSaverQueryInfo_t)(void *, unsigned, XScreenSaverInfo *);
-typedef Window (*XDefaultRootWindow_t)(void *);
+#ifdef HAVE_SYSTEMD
+#include <systemd/sd-bus.h>
+#endif
 #endif
 
 #include <cstring>
@@ -77,11 +65,9 @@ struct PowerManagement::private_t {
   IOPMAssertionID systemAssertionID;
 #elif defined(_WIN32)
 #else
-  bool initialized;
-  void *display;
-  Window root;
-  DynamicLibrary *xssLib;
-  XScreenSaverInfo *info;
+#ifdef HAVE_SYSTEMD
+  sd_bus *bus;
+#endif
 #endif
 };
 
@@ -91,6 +77,18 @@ PowerManagement::PowerManagement(Inaccessible) :
   lastIdleSecondsUpdate(0), idleSeconds(0), systemSleepAllowed(true),
   displaySleepAllowed(true), pri(new private_t) {
   memset(pri, 0, sizeof(private_t));
+#ifdef HAVE_SYSTEMD
+  if (sd_bus_open_system(&pri->bus) < 0) pri->bus = NULL;
+#endif
+}
+
+
+void PowerManagement::shutdown() {
+  allowSystemSleep(true);
+  allowDisplaySleep(true);
+#ifdef HAVE_SYSTEMD
+  pri->bus = sd_bus_flush_close_unref(pri->bus);
+#endif
 }
 
 
@@ -218,37 +216,25 @@ void PowerManagement::updateIdleSeconds() {
   }
 
 #else
-  // NOTE We use dynamic library access to avoid a direct dependency on X11
-  try {
-    if (!pri->initialized) {
-      pri->initialized = true;
+#ifdef HAVE_SYSTEMD
+  int r, idle;
 
-      // Get display
-      DynamicLibrary xLib("libX11.so");
-      pri->display = xLib.accessSymbol<XOpenDisplay_t>("XOpenDisplay")(0);
-      if (!pri->display) return;
+  if (!pri->bus) return;
 
-      // Get default root window
-      pri->root = xLib.accessSymbol<XDefaultRootWindow_t>
-        ("XDefaultRootWindow")(pri->display);
+  r = sd_bus_get_property_trivial(pri->bus,
+                                  "org.freedesktop.login1",
+                                  "/org/freedesktop/login1/seat/seat0",
+                                  "org.freedesktop.login1.Seat",
+                                  "IdleHint",
+                                  NULL,
+                                  'b',
+                                  &idle);
 
-      // Get XScreensaver lib
-      pri->xssLib = new DynamicLibrary("libXss.so");
-
-      // Allocate XScreenSaverInfo
-      pri->info = pri->xssLib->accessSymbol<XScreenSaverAllocInfo_t>
-        ("XScreenSaverAllocInfo")();
-    }
-
-    if (!pri->display || !pri->info) return;
-
-    // Query idle state
-    pri->xssLib->accessSymbol<XScreenSaverQueryInfo_t>
-      ("XScreenSaverQueryInfo")(pri->display, pri->root, pri->info);
-
-    idleSeconds = pri->info->idle / 1000; // Convert from ms.
-
-  } catch (...) {} // Ignore
+  if (r >= 0 && idle != 0)
+    // logind API does not exactly match Windows and macOS ones,
+    // if IdleHint is true, assume enough time without input has passed
+    idleSeconds = -1;
+#endif // HAVE_SYSTEMD
 #endif
 }
 
