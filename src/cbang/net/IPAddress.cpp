@@ -126,7 +126,7 @@ unsigned IPAddress::ipsFromString(const string &host, vector<IPAddress> &addrs,
   int err;
 
   memset(&hints, 0, sizeof(hints));
-  hints.ai_family = PF_INET; // Force IPv4 for now
+  hints.ai_family   = PF_INET; // Force IPv4 for now
   hints.ai_socktype = SOCK_STREAM;
 
   if ((err = getaddrinfo(hostname.c_str(), 0, &hints, &res)))
