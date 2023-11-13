@@ -638,9 +638,9 @@ def generate(env):
         ('prefer_dynamic', 'Libraries where the dynamic version is prefered, ' +
          'regardless of "mostly_static"', ''),
         ('num_jobs', 'Set the concurrency level.', -1),
-        ('osx_min_ver', 'Set minimum support OSX version.', '10.7'),
+        ('osx_min_ver', 'Set minimum support OSX version.', None),
         ('osx_sdk_root', 'Set OSX SDK root.', None),
-        ('osx_archs', 'Set OSX gcc target architectures.', 'x86_64'),
+        ('osx_archs', 'Set OSX gcc target architectures.', None),
         EnumVariable(
             'win32_thread', 'Windows thread mode.', 'static',
             allowed_values = ('static', 'dynamic')),
