@@ -31,26 +31,28 @@
 
 #pragma once
 
-#include <cbang/Math.h>
-
 #include <algorithm>
 
 
 namespace cb {
   class Backoff {
-    unsigned retries = 0;
-    double minDelay;
-    double maxDelay;
-    double multiplier;
+    double delay = 0;
+    const double minDelay;
+    const double maxDelay;
+    const double multiplier;
 
   public:
     Backoff(double minDelay, double maxDelay, double multiplier = 1.5) :
       minDelay(minDelay), maxDelay(maxDelay), multiplier(multiplier) {}
 
-    void reset() {retries = 0;}
+
+    void reset() {delay = 0;}
+
 
     double next() {
-      return std::min(minDelay * ::pow(multiplier, retries++), maxDelay);
+      double d = std::min(std::max(delay, minDelay), maxDelay);
+      delay    = d * multiplier;
+      return d;
     }
   };
 }
