@@ -68,8 +68,9 @@ void Client::send(const SmartPointer<Request> &req) const {
   }
 
   // Connect
+  IPAddress peer(0, uri.getHost(), uri.getPort());
   conn->connect(
-    dns, uri.getIPAddress(), bindAddr, sslCtx,
+    dns, peer, bindAddr, sslCtx,
     [req] (bool success) {
       if (success) req->getConnection()->makeRequest(req);
       else req->onResponse(ConnectionError::CONN_ERR_CONNECT);
