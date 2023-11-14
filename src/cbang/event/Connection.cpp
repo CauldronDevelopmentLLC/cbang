@@ -63,7 +63,10 @@ Connection::~Connection() {
 }
 
 
-void Connection::setTTL(double sec) {timeout->add(sec);}
+void Connection::setTTL(double sec) {
+  if (sec <= 0) timeout->del();
+  else timeout->add(sec);
+}
 
 
 void Connection::setSocket(const SmartPointer<Socket> &socket) {
