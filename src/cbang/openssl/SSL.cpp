@@ -61,7 +61,10 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/opensslv.h>
+
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
 #include <openssl/provider.h>
+#endif
 
 
 using namespace std;
@@ -383,8 +386,10 @@ int cb::SSL::findObject(const string &name) {
 
 
 void cb::SSL::loadProvider(const string &provider) {
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   if (!OSSL_PROVIDER_load(NULL, provider.c_str()))
     THROW("Failed to load SSL provider: " << provider);
+#endif
 }
 
 
