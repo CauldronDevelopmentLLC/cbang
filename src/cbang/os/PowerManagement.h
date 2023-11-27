@@ -49,7 +49,7 @@ namespace cb {
     bool displaySleepAllowed;
 
     struct private_t;
-    private_t *pri;
+    private_t *pri = 0;
 
   public:
     PowerManagement(Inaccessible);
