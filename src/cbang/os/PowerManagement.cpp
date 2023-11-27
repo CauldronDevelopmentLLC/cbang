@@ -81,7 +81,7 @@ PowerManagement::PowerManagement(Inaccessible) :
 }
 
 
-void PowerManagement::shutdown() {
+PowerManagement::~PowerManagement() {
   allowSystemSleep(true);
   allowDisplaySleep(true);
 

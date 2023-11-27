@@ -53,14 +53,13 @@ namespace cb {
 
   public:
     PowerManagement(Inaccessible);
+    ~PowerManagement();
 
     bool onBattery();
     bool hasBattery();
     unsigned getIdleSeconds();
     void allowSystemSleep(bool x);
     void allowDisplaySleep(bool x);
-
-    void shutdown();
 
   protected:
     void updateIdleSeconds();
