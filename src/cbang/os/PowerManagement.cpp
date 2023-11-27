@@ -82,12 +82,16 @@ PowerManagement::PowerManagement(Inaccessible) :
 
 
 PowerManagement::~PowerManagement() {
+  if (!pri) return;
+
   allowSystemSleep(true);
   allowDisplaySleep(true);
 
 #if defined(HAVE_SYSTEMD)
   pri->bus = sd_bus_flush_close_unref(pri->bus);
 #endif
+
+  delete pri;
 }
 
 
