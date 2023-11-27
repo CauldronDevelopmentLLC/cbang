@@ -70,6 +70,11 @@ def configure_deps(conf, local = True, with_openssl = True,
             raise SCons.Errors.StopError('Need CoreServices, IOKit, Security '
                                          '& CoreFoundation frameworks')
 
+    # sd-bus
+    if env['PLATFORM'] == 'posix' and conf.CBCheckCHeader('systemd/sd-bus.h') \
+            and conf.CBCheckLib('systemd'):
+        env.CBConfigDef('HAVE_SYSTEMD')
+
     conf.CBConfig('valgrind', False)
 
     # Debug

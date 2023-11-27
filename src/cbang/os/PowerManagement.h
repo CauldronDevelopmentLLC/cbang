@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include <cbang/config.h>
 #include <cbang/util/Singleton.h>
 
 
@@ -59,6 +60,8 @@ namespace cb {
     unsigned getIdleSeconds();
     void allowSystemSleep(bool x);
     void allowDisplaySleep(bool x);
+
+    void shutdown();
 
   protected:
     void updateIdleSeconds();
