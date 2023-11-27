@@ -71,8 +71,8 @@ def configure_deps(conf, local = True, with_openssl = True,
                                          '& CoreFoundation frameworks')
 
     # sd-bus
-    if env['PLATFORM'] == 'posix' and conf.CBCheckCHeader('systemd/sd-bus.h') \
-            and conf.CBCheckLib('systemd'):
+    if (env['PLATFORM'] == 'posix' and
+        conf.CBCheckCHeader('systemd/sd-bus.h') and conf.CBCheckLib('systemd')):
         env.CBConfigDef('HAVE_SYSTEMD')
 
     conf.CBConfig('valgrind', False)

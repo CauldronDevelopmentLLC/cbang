@@ -31,6 +31,7 @@
 
 #include "PowerManagement.h"
 
+#include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/Catch.h>
@@ -47,10 +48,8 @@
 #include <IOKit/ps/IOPowerSources.h>
 #include <IOKit/pwr_mgt/IOPMLib.h>
 
-#else
-#ifdef HAVE_SYSTEMD
+#elif defined(HAVE_SYSTEMD)
 #include <systemd/sd-bus.h>
-#endif
 #endif
 
 #include <cstring>
@@ -63,11 +62,9 @@ struct PowerManagement::private_t {
 #if defined(__APPLE__)
   IOPMAssertionID displayAssertionID;
   IOPMAssertionID systemAssertionID;
-#elif defined(_WIN32)
-#else
-#ifdef HAVE_SYSTEMD
+
+#elif defined(HAVE_SYSTEMD)
   sd_bus *bus;
-#endif
 #endif
 };
 
@@ -77,8 +74,9 @@ PowerManagement::PowerManagement(Inaccessible) :
   lastIdleSecondsUpdate(0), idleSeconds(0), systemSleepAllowed(true),
   displaySleepAllowed(true), pri(new private_t) {
   memset(pri, 0, sizeof(private_t));
-#ifdef HAVE_SYSTEMD
-  if (sd_bus_open_system(&pri->bus) < 0) pri->bus = NULL;
+
+#if defined(HAVE_SYSTEMD)
+  sd_bus_open_system(&pri->bus);
 #endif
 }
 
@@ -86,7 +84,8 @@ PowerManagement::PowerManagement(Inaccessible) :
 void PowerManagement::shutdown() {
   allowSystemSleep(true);
   allowDisplaySleep(true);
-#ifdef HAVE_SYSTEMD
+
+#if defined(HAVE_SYSTEMD)
   pri->bus = sd_bus_flush_close_unref(pri->bus);
 #endif
 }
@@ -124,10 +123,11 @@ void PowerManagement::allowSystemSleep(bool x) {
   IOPMAssertionID &assertionID = pri->systemAssertionID;
 
   if (!x) {
-    if (IOPMAssertionCreateWithName(kIOPMAssertionTypeNoIdleSleep,
-                                    kIOPMAssertionLevelOn,
-                                    CFSTR("FAHClient"), &assertionID) ==
-        kIOReturnSuccess) systemSleepAllowed = false;
+    if (IOPMAssertionCreateWithName(
+          kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn,
+          CFSTR("FAHClient"), &assertionID) == kIOReturnSuccess)
+      systemSleepAllowed = false;
+
     else assertionID = 0;
 
   } else if (assertionID) {
@@ -135,9 +135,6 @@ void PowerManagement::allowSystemSleep(bool x) {
     assertionID = 0;
     systemSleepAllowed = true;
   }
-#else
-
-  // TODO
 #endif
 }
 
@@ -147,19 +144,20 @@ void PowerManagement::allowDisplaySleep(bool x) {
 
 #if defined(_WIN32)
   displaySleepAllowed = x;
-  SetThreadExecutionState(ES_CONTINUOUS |
-                          (systemSleepAllowed ? 0 :
-                           (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)) |
-                          (displaySleepAllowed ? 0 : ES_DISPLAY_REQUIRED));
+  SetThreadExecutionState(
+    ES_CONTINUOUS |
+    (systemSleepAllowed ? 0 : (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)) |
+    (displaySleepAllowed ? 0 : ES_DISPLAY_REQUIRED));
 
 #elif defined(__APPLE__)
   IOPMAssertionID &assertionID = pri->displayAssertionID;
 
   if (!x) {
-    if (IOPMAssertionCreateWithName(kIOPMAssertionTypeNoDisplaySleep,
-                                    kIOPMAssertionLevelOn,
-                                    CFSTR("FAHClient"), &assertionID) ==
-        kIOReturnSuccess) displaySleepAllowed = false;
+    if (IOPMAssertionCreateWithName(
+          kIOPMAssertionTypeNoDisplaySleep, kIOPMAssertionLevelOn,
+          CFSTR("FAHClient"), &assertionID) == kIOReturnSuccess)
+      displaySleepAllowed = false;
+
     else assertionID = 0;
 
   } else if (assertionID) {
@@ -167,9 +165,6 @@ void PowerManagement::allowDisplaySleep(bool x) {
     assertionID = 0;
     displaySleepAllowed = false;
   }
-#else
-
-  // TODO
 #endif
 }
 
@@ -190,52 +185,48 @@ void PowerManagement::updateIdleSeconds() {
 
 #elif defined(__APPLE__)
   io_iterator_t iter = 0;
-  if (IOServiceGetMatchingServices(kIOMasterPortDefault,
-                                   IOServiceMatching("IOHIDSystem"), &iter) ==
-      KERN_SUCCESS) {
+
+  if (IOServiceGetMatchingServices(
+        kIOMasterPortDefault,
+        IOServiceMatching("IOHIDSystem"), &iter) == KERN_SUCCESS) {
 
     io_registry_entry_t entry = IOIteratorNext(iter);
     if (entry)  {
       CFMutableDictionaryRef dict = NULL;
-      if (IORegistryEntryCreateCFProperties(entry, &dict, kCFAllocatorDefault,
-                                            0) == KERN_SUCCESS) {
+      if (IORegistryEntryCreateCFProperties(
+            entry, &dict, kCFAllocatorDefault, 0) == KERN_SUCCESS) {
         CFNumberRef obj =
           (CFNumberRef)CFDictionaryGetValue(dict, CFSTR("HIDIdleTime"));
 
         if (obj) {
           int64_t nanoseconds = 0;
           if (CFNumberGetValue(obj, kCFNumberSInt64Type, &nanoseconds))
-            idleSeconds =
-              (unsigned)(nanoseconds / 1000000000); // Convert from ns.
+            idleSeconds = (unsigned)(nanoseconds / 1000000000); // from ns
         }
+
         CFRelease(dict);
       }
+
       IOObjectRelease(entry);
     }
+
     IOObjectRelease(iter);
   }
 
-#else
-#ifdef HAVE_SYSTEMD
+#elif defined(HAVE_SYSTEMD)
   int r, idle;
 
   if (!pri->bus) return;
 
-  r = sd_bus_get_property_trivial(pri->bus,
-                                  "org.freedesktop.login1",
-                                  "/org/freedesktop/login1/seat/seat0",
-                                  "org.freedesktop.login1.Seat",
-                                  "IdleHint",
-                                  NULL,
-                                  'b',
-                                  &idle);
+  r = sd_bus_get_property_trivial(
+    pri->bus, "org.freedesktop.login1", "/org/freedesktop/login1/seat/seat0",
+    "org.freedesktop.login1.Seat", "IdleHint", 0, 'b', &idle);
 
-  if (r >= 0 && idle != 0)
+  if (0 <= r && idle)
     // logind API does not exactly match Windows and macOS ones,
     // if IdleHint is true, assume enough time without input has passed
     idleSeconds = -1;
 #endif // HAVE_SYSTEMD
-#endif
 }
 
 
@@ -275,9 +266,6 @@ void PowerManagement::updateBatteryInfo() {
 
     CFRelease(info);
   }
-
-#elif defined(__FreeBSD__)
-    // TODO
 
 #else
   try {

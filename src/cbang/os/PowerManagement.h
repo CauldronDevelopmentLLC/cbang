@@ -31,7 +31,6 @@
 
 #pragma once
 
-#include <cbang/config.h>
 #include <cbang/util/Singleton.h>
 
 
