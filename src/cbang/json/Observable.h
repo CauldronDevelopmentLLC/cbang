@@ -42,13 +42,13 @@ namespace cb {
     template <typename T>
     class Observable : public T {
     protected:
-      Value *parent = 0;
+      Observable *parent = 0;
       unsigned index = 0;
 
     public:
       ~Observable() {
         for (unsigned i = 0; i < T::size(); i++)
-          T::get(i)->clearParentRef();
+          _clearParentRef(T::get(i));
       }
 
 
@@ -74,8 +74,8 @@ namespace cb {
         ValuePtr value = convert(_value);
         int i = T::size();
         T::append(value);
-        value->setParentRef(this, i);
-        notify(i, value);
+        _setParentRef(value, this, i);
+        _notify(i, value);
       }
 
 
@@ -84,12 +84,12 @@ namespace cb {
         ValuePtr current = T::get(i);
         if (*_value == *current) return;
 
-        current->clearParentRef();
+        _clearParentRef(current);
 
         ValuePtr value = convert(_value);
         T::set(i, value);
-        value->setParentRef(this, i);
-        notify(i, value);
+        _setParentRef(value, this, i);
+        _notify(i, value);
       }
 
 
@@ -101,14 +101,14 @@ namespace cb {
           const ValuePtr &current = T::get(index);
           if (*_value == *current) return index;
 
-          current->clearParentRef();
+          _clearParentRef(current);
         }
 
         ValuePtr value = convert(_value);
         int i = T::insert(key, value);
         if (i != -1) {
-          value->setParentRef(this, i);
-          notify(key, value);
+          _setParentRef(value, this, i);
+          _notify(key, value);
         }
 
         return i;
@@ -117,74 +117,95 @@ namespace cb {
 
       void clear() override {
         for (unsigned i = 0; i < T::size(); i++)
-          T::get(i)->clearParentRef();
+          _clearParentRef(T::get(i));
 
         T::clear();
 
         std::list<ValuePtr> change;
         change.push_front(T::isList() ? T::createList() : T::createDict());
-        notify(change);
+        _notify(change);
       }
 
 
       void erase(unsigned i) override {
-        T::get(i)->clearParentRef();
+        _clearParentRef(T::get(i));
         T::erase(i);
         for (unsigned j = i; j < T::size(); j++)
-          T::get(j)->decParentRef();
-        notify(i);
+          _decParentRef(T::get(j));
+        _notify(i);
       }
 
 
       void erase(const std::string &key) override {
-        T::get(key)->clearParentRef();
+        _clearParentRef(T::get(key));
         T::erase(key);
-        notify(key);
+        _notify(key);
       }
 
 
-      void setParentRef(Value *parent, unsigned index) override {
-        if (parent && this->parent) CBANG_THROW("Parent already set");
-        this->parent = parent;
-        this->index = index;
+      virtual void notify(const std::list<ValuePtr> &change) {}
+
+
+    private:
+      static void _clearParentRef(const ValuePtr &target) {
+        auto *o = dynamic_cast<Observable *>(target.get());
+        if (o) o->parent = 0;
       }
 
 
-      void decParentRef() override {index--;}
+      static void _setParentRef(
+        const ValuePtr &target, Observable *parent, unsigned index) {
+        auto *o = dynamic_cast<Observable *>(target.get());
+
+        if (o) {
+          if (o->parent) CBANG_THROW("Observable::parent already set");
+          o->parent = parent;
+          o->index  = index;
+        }
+      }
 
 
-      void notify(std::list<ValuePtr> &change) override {
+      static void _decParentRef(const ValuePtr &target) {
+        auto *o = dynamic_cast<Observable *>(target.get());
+        if (o) o->index--;
+      }
+
+
+      void _notify(std::list<ValuePtr> &change) {
+        notify(change);
+
         if (!parent) return;
 
         if (parent->isList()) change.push_front(T::create(index));
         else change.push_front(T::create(parent->keyAt(index)));
 
-        parent->notify(change);
+        parent->_notify(change);
       }
 
 
-      void notify(unsigned index, const ValuePtr &value = 0) {
+      void _notify(unsigned index, const ValuePtr &value = 0) {
         std::list<ValuePtr> change;
 
         if (value.isSet()) change.push_back(value);
         else change.push_back(T::createNull());
 
         change.push_front(T::create(index));
-        notify(change);
+        _notify(change);
       }
 
 
-      void notify(const std::string &key, const ValuePtr &value = 0) {
+      void _notify(const std::string &key, const ValuePtr &value = 0) {
         std::list<ValuePtr> change;
 
         if (value.isSet()) change.push_back(value);
         else change.push_back(T::createNull());
 
         change.push_front(T::create(key));
-        notify(change);
+        _notify(change);
       }
 
 
+    public:
       using Value::append;
       using Value::set;
       using Value::insert;
