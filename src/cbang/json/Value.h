@@ -256,13 +256,6 @@ namespace cb {
         return index == -1 ? defaultValue : get(index)->asString();
       }
 
-      // Observable
-      virtual void setParentRef(Value *parent, unsigned index) {}
-      virtual void decParentRef() {}
-      void clearParentRef() {setParentRef(0, 0);}
-      virtual void notify(std::list<ValuePtr> &change)
-      {CBANG_TYPE_ERROR("Not an Observable");}
-
       // Formatting
       std::string format(char type) const;
       std::string format(char type, int index, const std::string &name,
