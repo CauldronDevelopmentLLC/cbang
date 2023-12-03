@@ -387,7 +387,7 @@ int cb::SSL::findObject(const string &name) {
 
 void cb::SSL::loadProvider(const string &provider) {
 #if 0x3000000fL <= OPENSSL_VERSION_NUMBER
-  if (!OSSL_PROVIDER_load(NULL, provider.c_str()))
+  if (!OSSL_PROVIDER_load(0, provider.c_str()))
     THROW("Failed to load SSL provider: " << provider);
 #endif
 }

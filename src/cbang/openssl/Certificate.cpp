@@ -34,6 +34,7 @@
 #include "CertificateContext.h"
 #include "SSL.h"
 #include "KeyPair.h"
+#include "Digest.h"
 #include "BIStream.h"
 #include "BOStream.h"
 
@@ -314,12 +315,8 @@ bool Certificate::issued(const Certificate &o) const {
 
 
 void Certificate::sign(const KeyPair &key, const string &digest) const {
-  const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROW("Unrecognized message digest '" << digest << "'");
-
-  if (!X509_sign(cert, key.getEVP_PKEY(), md))
+  if (!X509_sign(cert, key.getEVP_PKEY(), Digest::getAlgorithm(digest)))
     THROW("Failed to sign Certificate: " << SSL::getErrorStr());
-
 }
 
 

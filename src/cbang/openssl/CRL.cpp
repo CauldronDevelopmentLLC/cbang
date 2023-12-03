@@ -34,6 +34,7 @@
 #include "SSL.h"
 #include "KeyPair.h"
 #include "Certificate.h"
+#include "Digest.h"
 #include "Extension.h"
 #include "Revoked.h"
 #include "BIStream.h"
@@ -186,12 +187,8 @@ void CRL::sort() {
 
 
 void CRL::sign(KeyPair &key, const string &digest) {
-  const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROW("Unrecognized message digest '" << digest << "'");
-
-  if (!X509_CRL_sign(crl, key.getEVP_PKEY(), md))
+  if (!X509_CRL_sign(crl, key.getEVP_PKEY(), Digest::getAlgorithm(digest)))
     THROW("Failed to sign CRL: " << SSL::getErrorStr());
-
 }
 
 
