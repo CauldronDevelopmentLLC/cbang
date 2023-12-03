@@ -46,12 +46,10 @@ using namespace cb;
 using namespace std;
 
 
-Digest::Digest(const string &digest) : md(0), ctx(0), initialized(false) {
+Digest::Digest(const string &digest) :
+  md(getAlgorithm(digest)), ctx(0), initialized(false) {
   ctx = EVP_MD_CTX_create();
   if (!ctx) THROW("Failed to created digest context: " << SSL::getErrorStr());
-
-  md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROW("Unrecognized digest '" << digest);
 }
 
 
@@ -277,7 +275,7 @@ string Digest::sign(const KeyPair &key, const string &s, const string &digest,
 }
 
 
-bool Digest::verify(const KeyPair &key, const std::string &s, const string &sig,
+bool Digest::verify(const KeyPair &key, const string &s, const string &sig,
                     const string &digest, ENGINE *e) {
   Digest d(digest);
   d.verifyInit(key, e);
@@ -286,8 +284,15 @@ bool Digest::verify(const KeyPair &key, const std::string &s, const string &sig,
 }
 
 
-bool Digest::hasAlgorithm(const string &digest) {
-  return EVP_get_digestbyname(digest.c_str());
+bool Digest::hasAlgorithm(const string &name) {
+  return EVP_get_digestbyname(name.c_str());
+}
+
+
+const EVP_MD *Digest::getAlgorithm(const string &name) {
+  auto md = EVP_get_digestbyname(name.c_str());
+  if (!md) THROW("Unrecognized message digest '" << name);
+  return md;
 }
 
 

@@ -36,6 +36,7 @@
 #include "BOStream.h"
 #include "KeyPair.h"
 #include "Extension.h"
+#include "Digest.h"
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
@@ -194,16 +195,13 @@ void CSR::addExtension(const string &name, const string &value) {
 
 
 void CSR::sign(const KeyPair &key, const string &digest) {
-  const EVP_MD *md = EVP_get_digestbyname(digest.c_str());
-  if (!md) THROW("Unrecognized message digest '" << digest << "'");
-
   if (!X509_REQ_set_pubkey(csr, key.getEVP_PKEY()))
     THROW("Failed to set CSR pub key: " << SSL::getErrorStr());
 
   if (pri->exts && !X509_REQ_add_extensions(csr, pri->exts))
     THROW("Failed to add extensions: " << SSL::getErrorStr());
 
-  if (!X509_REQ_sign(csr, key.getEVP_PKEY(), md))
+  if (!X509_REQ_sign(csr, key.getEVP_PKEY(), Digest::getAlgorithm(digest)))
     THROW("Failed to sign CSR: " << SSL::getErrorStr());
 }
 

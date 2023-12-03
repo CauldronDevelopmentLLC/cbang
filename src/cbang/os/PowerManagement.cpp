@@ -196,7 +196,7 @@ void PowerManagement::updateIdleSeconds() {
 
     io_registry_entry_t entry = IOIteratorNext(iter);
     if (entry)  {
-      CFMutableDictionaryRef dict = NULL;
+      CFMutableDictionaryRef dict = 0;
       if (IORegistryEntryCreateCFProperties(
             entry, &dict, kCFAllocatorDefault, 0) == KERN_SUCCESS) {
         CFNumberRef obj =

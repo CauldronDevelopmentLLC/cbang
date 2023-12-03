@@ -293,8 +293,8 @@ void SSLContext::loadSystemRootCerts() {
 
 #elif __APPLE__
   X509_STORE *verifyStore = SSL_CTX_get_cert_store(ctx);
-  CFArrayRef anchors = NULL;
-  CFIndex trustedCount = 0;
+  CFArrayRef anchors      = 0;
+  CFIndex trustedCount    = 0;
 
   OSStatus err = SecTrustCopyAnchorCertificates(&anchors);
   if (err != errSecSuccess) {
@@ -326,7 +326,7 @@ void SSLContext::loadSystemRootCerts() {
     // on macOS 10.11 and earlier, some root certs will have expired
     valid = false;
 
-    SecTrustRef trust = NULL;
+    SecTrustRef trust       = 0;
     SecPolicyRef x509Policy = SecPolicyCreateBasicX509();
     if (x509Policy) {
       err = SecTrustCreateWithCertificates(cert, x509Policy, &trust);
@@ -346,7 +346,7 @@ void SSLContext::loadSystemRootCerts() {
         Version vers = MacOSUtilities::getMacOSVersion();
         if (vers >= Version(10, 14)) {
 #endif
-          valid = SecTrustEvaluateWithError(trust, NULL);
+          valid = SecTrustEvaluateWithError(trust, 0);
           LOG_DEBUG(5, "Called SecTrustEvaluateWithError()");
         } else {
 #if (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_15)

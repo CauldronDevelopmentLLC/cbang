@@ -48,7 +48,7 @@ void initMacOSVersionViaSysctl(void * unused) {
   // try sysctlbyname "kern.osproductversion"; macos 10.13+
   char str[256];
   size_t size = sizeof(str);
-  int ret = sysctlbyname("kern.osproductversion", str, &size, NULL, 0);
+  int ret = sysctlbyname("kern.osproductversion", str, &size, 0, 0);
   if (ret == 0) {
     int scans = sscanf(&str[0], "%u.%u.%u",
         &versions[0], &versions[1], &versions[2]);
@@ -65,17 +65,17 @@ void initMacOSVersion(void * unused) {
   versionOK = false;
   versions[0] = versions[1] = versions[2] = 0;
 
-  initMacOSVersionViaSysctl(NULL);
+  initMacOSVersionViaSysctl(0);
   if (versionOK) return;
 
   // `Gestalt()` actually gets the system version from this file.
   // `if (@available(macOS 10.x, *))` also gets the version from there.
-  CFURLRef url = CFURLCreateWithFileSystemPath(NULL,
-      CFSTR("/System/Library/CoreServices/SystemVersion.plist"),
-      kCFURLPOSIXPathStyle, false);
+  CFURLRef url = CFURLCreateWithFileSystemPath(
+    0, CFSTR("/System/Library/CoreServices/SystemVersion.plist"),
+    kCFURLPOSIXPathStyle, false);
   if (!url) return;
 
-  CFReadStreamRef readStr = CFReadStreamCreateWithFile(NULL, url);
+  CFReadStreamRef readStr = CFReadStreamCreateWithFile(0, url);
   CFRelease(url);
   if (!readStr) return;
 
@@ -84,9 +84,9 @@ void initMacOSVersion(void * unused) {
     return;
   }
 
-  CFErrorRef outError = NULL;
-  CFPropertyListRef propList = CFPropertyListCreateWithStream(NULL,
-      readStr, 0, kCFPropertyListImmutable, NULL, &outError);
+  CFErrorRef outError = 0;
+  CFPropertyListRef propList = CFPropertyListCreateWithStream(
+    0, readStr, 0, kCFPropertyListImmutable, 0, &outError);
   CFRelease(readStr);
   if (!propList) {
     CFShow(outError);
@@ -122,7 +122,7 @@ void initMacOSVersion(void * unused) {
   }
 
   CFStringGetBytes(verStr, CFRangeMake(0, CFStringGetLength(verStr)),
-      kCFStringEncodingASCII, '?', false, (UInt8 *)cstr, size, NULL);
+                   kCFStringEncodingASCII, '?', false, (UInt8 *)cstr, size, 0);
   CFRelease(verStr);
 
   int scans = sscanf(cstr, "%u.%u.%u",
@@ -148,7 +148,7 @@ namespace cb {
         unsigned *_Nullable outMinor,
         unsigned *_Nullable outPatch) {
       static dispatch_once_t onceToken; // MUST be static
-      dispatch_once_f(&onceToken, NULL, &initMacOSVersion);
+      dispatch_once_f(&onceToken, 0, &initMacOSVersion);
       if (versionOK) {
         if (outMajor) *outMajor = versions[0];
         if (outMinor) *outMinor = versions[1];

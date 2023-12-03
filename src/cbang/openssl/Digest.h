@@ -118,7 +118,9 @@ namespace cb {
     static bool verify(const KeyPair &key, const std::string &s,
                        const std::string &sig, const std::string &digest,
                        ENGINE *e = 0);
-    static bool hasAlgorithm(const std::string &digest);
+
+    static bool hasAlgorithm(const std::string &name);
+    static const EVP_MD *getAlgorithm(const std::string &name);
 
     static std::string signHMAC(const std::string &key, const std::string &s,
                                 const std::string &digest, ENGINE *e = 0);

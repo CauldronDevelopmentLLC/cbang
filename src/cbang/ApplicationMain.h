@@ -34,6 +34,7 @@
 #include <cbang/Exception.h>
 
 #include <cbang/Catch.h>
+#include <cbang/openssl/SSL.h>
 #include <cbang/os/Win32EventLog.h>
 
 
@@ -45,6 +46,9 @@ namespace cb {
   template <class T>
   static int WINAPI doApplication(int argc, char *argv[]) {
     try {
+#ifdef HAVE_OPENSSL
+      SSL::loadProvider("legacy");
+#endif // HAVE_OPENSSL
 
       T app;
       int i = app.init(argc, argv);
