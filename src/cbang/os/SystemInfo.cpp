@@ -35,6 +35,7 @@
 #include "Thread.h"
 #include "SystemUtilities.h"
 #include "SysError.h"
+#include "DynamicLibrary.h"
 
 #include <cbang/Info.h>
 #include <cbang/SStream.h>
@@ -53,7 +54,6 @@
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
 #include <sysinfoapi.h>
-typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
 
 #elif defined(__APPLE__)
 #include <sys/types.h>
@@ -253,17 +253,17 @@ uint64_t SystemInfo::getFreeDiskSpace(const string &path) {
 
 Version SystemInfo::getOSVersion() const {
 #if defined(_WIN32)
-  HMODULE hMod = ::GetModuleHandleW(L"ntdll.dll");
-  if (hMod) {
-    RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)::GetProcAddress(
-      hMod, "RtlGetVersion");
-    if (fxPtr != nullptr) {
-      RTL_OSVERSIONINFOW vi = { 0 };
-      vi.dwOSVersionInfoSize = sizeof(vi);
-      if (0 == fxPtr(&vi))
-        return Version((uint8_t)vi.dwMajorVersion, (uint8_t)vi.dwMinorVersion);
-    }
+  DynamicLibrary ntdll("ntdll.dll");
+  typedef LONG (WINAPI *func_t)(PRTL_OSVERSIONINFOW);
+  auto func = (func_t)ntdll.getSymbol("RtlGetVersion");
+
+  if (func) {
+    RTL_OSVERSIONINFOW vi = {0};
+    vi.dwOSVersionInfoSize = sizeof(vi);
+    if (!func(&vi))
+      return Version((uint8_t)vi.dwMajorVersion, (uint8_t)vi.dwMinorVersion);
   }
+
   THROW("Failed to get Windows version");
 
 #elif defined(__APPLE__)
