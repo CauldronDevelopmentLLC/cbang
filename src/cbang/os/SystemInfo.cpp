@@ -53,6 +53,7 @@
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
 #include <sysinfoapi.h>
+typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
 
 #elif defined(__APPLE__)
 #include <sys/types.h>
@@ -252,12 +253,18 @@ uint64_t SystemInfo::getFreeDiskSpace(const string &path) {
 
 Version SystemInfo::getOSVersion() const {
 #if defined(_WIN32)
-  OSVERSIONINFO info;
-  ZeroMemory(&info, sizeof(info));
-  info.dwOSVersionInfoSize = sizeof(info);
-  if (!GetVersionEx(&info)) THROW("Failed to get Windows version");
-
-  return Version((uint8_t)info.dwMajorVersion, (uint8_t)info.dwMinorVersion);
+  HMODULE hMod = ::GetModuleHandleW(L"ntdll.dll");
+  if (hMod) {
+    RtlGetVersionPtr fxPtr = (RtlGetVersionPtr)::GetProcAddress(
+      hMod, "RtlGetVersion");
+    if (fxPtr != nullptr) {
+      RTL_OSVERSIONINFOW vi = { 0 };
+      vi.dwOSVersionInfoSize = sizeof(vi);
+      if (0 == fxPtr(&vi))
+        return Version((uint8_t)vi.dwMajorVersion, (uint8_t)vi.dwMinorVersion);
+    }
+  }
+  THROW("Failed to get Windows version");
 
 #elif defined(__APPLE__)
   return MacOSUtilities::getMacOSVersion();
