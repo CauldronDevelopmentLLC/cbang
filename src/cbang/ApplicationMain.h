@@ -47,7 +47,8 @@ namespace cb {
   static int WINAPI doApplication(int argc, char *argv[]) {
     try {
 #ifdef HAVE_OPENSSL
-      SSL::loadProvider("legacy");
+      SSL::loadProvider("default");
+      SSL::loadProvider("base");
 #endif // HAVE_OPENSSL
 
       T app;

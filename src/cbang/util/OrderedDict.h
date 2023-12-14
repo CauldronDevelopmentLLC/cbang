@@ -77,7 +77,7 @@ namespace cb {
     }
 
 
-     size_type indexOf(const KEY &key) const {
+    size_type indexOf(const KEY &key) const {
       typename dict_t::const_iterator it = dict.find(key);
       if (it == dict.end()) CBANG_KEY_ERROR("Key '" << key << "' not found");
       return it->second;
