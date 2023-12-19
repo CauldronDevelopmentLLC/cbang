@@ -45,6 +45,7 @@ namespace cb {
       std::vector<ValuePtr> stack;
       bool appendNext;
       std::string nextKey;
+      bool insertNext = false;
 
     public:
       Builder(const ValuePtr &root = 0);
@@ -73,8 +74,6 @@ namespace cb {
     protected:
       void add(const ValuePtr &value);
       void assertNotPending();
-      bool shouldAppend();
-      bool shouldInsert() {return !nextKey.empty();}
     };
 
 

@@ -38,7 +38,7 @@ using namespace cb::JSON;
 
 
 Builder::Builder(const ValuePtr &root) : appendNext(false) {
-  if (!root.isNull()) stack.push_back(root);
+  if (root.isSet()) stack.push_back(root);
 }
 
 
@@ -51,11 +51,11 @@ ValuePtr Builder::build(function<void (Sink &sink)> cb) {
 
 ValuePtr Builder::getRoot() const {return stack.empty() ? 0 : stack.front();}
 
-void Builder::writeNull() {add(createNull());}
-void Builder::writeBoolean(bool value) {add(createBoolean(value));}
-void Builder::write(double value) {add(create(value));}
-void Builder::write(uint64_t value) {add(create(value));}
-void Builder::write(int64_t value) {add(create(value));}
+void Builder::writeNull()                {add(createNull());}
+void Builder::writeBoolean(bool value)   {add(createBoolean(value));}
+void Builder::write(double value)        {add(create(value));}
+void Builder::write(uint64_t value)      {add(create(value));}
+void Builder::write(int64_t value)       {add(create(value));}
 void Builder::write(const string &value) {add(create(value));}
 
 void Builder::beginList(bool simple) {add(createList());}
@@ -88,7 +88,8 @@ bool Builder::has(const string &key) const {
 void Builder::beginInsert(const string &key) {
   if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
   assertNotPending();
-  nextKey = key;
+  nextKey    = key;
+  insertNext = true;
 }
 
 
@@ -101,11 +102,14 @@ void Builder::endDict() {
 
 
 void Builder::add(const ValuePtr &value) {
-  if (shouldAppend()) stack.back()->append(value);
+  if (appendNext) {
+    appendNext = false;
+    stack.back()->append(value);
 
-  else if (shouldInsert()) {
+  } else if (insertNext) {
     stack.back()->insert(nextKey, value);
     nextKey.clear();
+    insertNext = false;
 
   } else if (!stack.empty()) THROW("Cannot add " << value->getType());
 
@@ -116,15 +120,5 @@ void Builder::add(const ValuePtr &value) {
 
 void Builder::assertNotPending() {
   if (appendNext) THROW("Already called append()");
-  if (!nextKey.empty()) THROW("Already called insert()");
-}
-
-
-bool Builder::shouldAppend() {
-  if (appendNext) {
-    appendNext = false;
-    return true;
-  }
-
-  return false;
+  if (insertNext) THROW("Already called insert()");
 }
