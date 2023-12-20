@@ -29,63 +29,43 @@
 
 \******************************************************************************/
 
-#include "Dict.h"
-
-#include <cbang/Exception.h>
+#include <cbang/Catch.h>
 #include <cbang/String.h>
+#include <cbang/json/Value.h>
+#include <cbang/json/Reader.h>
+#include <cbang/json/Observable.h>
+#include <cbang/json/List.h>
+#include <cbang/json/Path.h>
 
-#include <cctype>
+#include <iostream>
 
 using namespace std;
+using namespace cb;
 using namespace cb::JSON;
 
 
-ValuePtr Dict::copy(bool deep) const {
-  ValuePtr c = createDict();
-
-  for (unsigned i = 0; i < size(); i++)
-    c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
-
-  return c;
-}
-
-
-int Dict::insert(const string &key, const ValuePtr &value) {
-  if (value->isList() || value->isDict()) simple = false;
-  return OrderedDict<ValuePtr>::insert(key, value);
-}
-
-
-void Dict::write(Sink &sink) const {
-  sink.beginDict(isSimple());
-
-  for (auto it = Super_T::begin(); it != Super_T::end(); it++) {
-    if (!it->second->canWrite(sink)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
+class A : public ObservableDict {
+public:
+  // From ObservableDict
+  void notify(const list<ValuePtr> &change) override {
+    auto changes = SmartPtr(new JSON::List(change.begin(), change.end()));
+    cout << *changes << endl;
   }
-
-  sink.endDict();
-}
+};
 
 
-void Dict::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
+int main(int argc, char *argv[]) {
+  try {
+    A a;
 
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
-}
+    for (int i = 1; i < argc - 1; i += 2)
+      Path(argv[i]).insert(a, Reader::parseString(argv[i + 1]));
 
+    cout << "FINAL: " << a << endl;
 
-void Dict::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
+    return 0;
 
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
+  } CBANG_CATCH_ERROR;
+
+  return 0;
 }

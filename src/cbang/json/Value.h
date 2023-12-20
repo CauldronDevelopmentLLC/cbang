@@ -35,6 +35,7 @@
 #include "Factory.h"
 #include "Writer.h"
 #include "Path.h"
+#include "KeyIterator.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/Errors.h>
@@ -117,6 +118,19 @@ namespace cb {
       virtual bool toBoolean() const {return false;}
       virtual unsigned size() const {CBANG_TYPE_ERROR("Not a List or Dict");}
       bool empty() const {return !size();}
+
+      // Iterators
+      Iterator begin() const {return Iterator(*this, 0);}
+      Iterator end() const {return Iterator(*this);}
+
+      struct Keys {
+        const Value &value;
+        Keys(const Value &value) : value(value) {}
+        KeyIterator begin() const {return KeyIterator(value, 0);}
+        KeyIterator end() const {return KeyIterator(value);}
+      };
+
+      Keys keys() const {return Keys(*this);}
 
       // List functions
       void appendDict();

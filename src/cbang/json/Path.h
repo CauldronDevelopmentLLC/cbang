@@ -39,17 +39,28 @@
 namespace cb {
   namespace JSON {
     class Path {
-      std::string path;
-      std::vector<std::string> parts;
+      typedef std::vector<std::string> parts_t;
+      parts_t parts;
 
     public:
+      Path(parts_t::const_iterator begin, parts_t::const_iterator end) :
+        parts(begin, end) {}
+      Path(const parts_t &parts) : parts(parts.begin(), parts.end()) {}
       Path(const std::string &path);
 
-      typedef std::function <ValuePtr (const std::string &path)> fail_cb_t;
+      bool empty() const {return parts.empty();}
+      unsigned size() const {return parts.size();}
+      std::string toString(unsigned start = 0, unsigned end = -1) const;
+
+      std::string pop();
+      void push(const std::string &part);
+
+      typedef std::function <ValuePtr (unsigned i)> fail_cb_t;
 
       ValuePtr select(const Value &value, fail_cb_t fail_cb = 0) const;
       ValuePtr select(const Value &value, const ValuePtr &defaultValue) const;
       bool     exists(const Value &value) const;
+      void     insert(Value &target, const ValuePtr &value);
 
 #define CBANG_JSON_VT(NAME, TYPE)                                       \
       TYPE select##NAME(const Value &value) const;                      \
