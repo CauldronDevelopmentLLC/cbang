@@ -39,12 +39,25 @@
 
 namespace cb {
   namespace JSON {
-    template <typename T>
-    class Observable : public T {
-    protected:
-      Observable *parent = 0;
+    class ObservableBase {
+      Value *parent  = 0;
       unsigned index = 0;
 
+    public:
+      void clearParentRef() {parent = 0;}
+      void setParentRef(Value *parent, unsigned index);
+      void decParentRef() {index--;}
+
+      virtual void notify(const std::list<ValuePtr> &change) {}
+
+      void _notify(std::list<ValuePtr> &change);
+      void _notify(unsigned index, const ValuePtr &value = 0);
+      void _notify(const std::string &key, const ValuePtr &value = 0);
+    };
+
+
+    template <typename T>
+    class Observable : public ObservableBase, public T {
     public:
       ~Observable() {
         for (unsigned i = 0; i < T::size(); i++)
@@ -53,13 +66,13 @@ namespace cb {
 
 
       ValuePtr convert(const ValuePtr &value) {
-        if (value.isInstance<Dict>() && !value.isInstance<Observable<Dict>>()) {
+        if (value.isInstance<Dict>() && !value.isInstance<ObservableBase>()) {
           ValuePtr d = createDict();
           d->merge(*value);
           return d;
         }
 
-        if (value.isInstance<List>() && !value.isInstance<Observable<List>>()) {
+        if (value.isInstance<List>() && !value.isInstance<ObservableBase>()) {
           ValuePtr l = createList();
           l->appendFrom(*value);
           return l;
@@ -74,7 +87,7 @@ namespace cb {
         ValuePtr value = convert(_value);
         int i = T::size();
         T::append(value);
-        _setParentRef(value, this, i);
+        _setParentRef(value, i);
         _notify(i, value);
       }
 
@@ -88,7 +101,7 @@ namespace cb {
 
         ValuePtr value = convert(_value);
         T::set(i, value);
-        _setParentRef(value, this, i);
+        _setParentRef(value, i);
         _notify(i, value);
       }
 
@@ -107,7 +120,7 @@ namespace cb {
         ValuePtr value = convert(_value);
         int i = T::insert(key, value);
         if (i != -1) {
-          _setParentRef(value, this, i);
+          _setParentRef(value, i);
           _notify(key, value);
         }
 
@@ -143,65 +156,22 @@ namespace cb {
       }
 
 
-      virtual void notify(const std::list<ValuePtr> &change) {}
-
-
     private:
       static void _clearParentRef(const ValuePtr &target) {
-        auto *o = dynamic_cast<Observable *>(target.get());
-        if (o) o->parent = 0;
+        auto *o = dynamic_cast<ObservableBase *>(target.get());
+        if (o) o->clearParentRef();
       }
 
 
-      static void _setParentRef(
-        const ValuePtr &target, Observable *parent, unsigned index) {
-        auto *o = dynamic_cast<Observable *>(target.get());
-
-        if (o) {
-          if (o->parent) CBANG_THROW("Observable::parent already set");
-          o->parent = parent;
-          o->index  = index;
-        }
+      void _setParentRef(const ValuePtr &target, unsigned index) {
+        auto *o = dynamic_cast<ObservableBase *>(target.get());
+        if (o) o->setParentRef(this, index);
       }
 
 
       static void _decParentRef(const ValuePtr &target) {
-        auto *o = dynamic_cast<Observable *>(target.get());
-        if (o) o->index--;
-      }
-
-
-      void _notify(std::list<ValuePtr> &change) {
-        notify(change);
-
-        if (!parent) return;
-
-        if (parent->isList()) change.push_front(T::create(index));
-        else change.push_front(T::create(parent->keyAt(index)));
-
-        parent->_notify(change);
-      }
-
-
-      void _notify(unsigned index, const ValuePtr &value = 0) {
-        std::list<ValuePtr> change;
-
-        if (value.isSet()) change.push_back(value);
-        else change.push_back(T::createNull());
-
-        change.push_front(T::create(index));
-        _notify(change);
-      }
-
-
-      void _notify(const std::string &key, const ValuePtr &value = 0) {
-        std::list<ValuePtr> change;
-
-        if (value.isSet()) change.push_back(value);
-        else change.push_back(T::createNull());
-
-        change.push_front(T::create(key));
-        _notify(change);
+        auto *o = dynamic_cast<ObservableBase *>(target.get());
+        if (o) o->decParentRef();
       }
 
 
@@ -209,6 +179,8 @@ namespace cb {
       using Value::append;
       using Value::set;
       using Value::insert;
+      using Value::begin;
+      using Value::end;
 
       // From Factory
       ValuePtr createDict() const override {return new Observable<Dict>;}

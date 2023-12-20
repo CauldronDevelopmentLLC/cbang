@@ -40,17 +40,35 @@ using namespace cb;
 using namespace cb::JSON;
 
 
-Path::Path(const string &path) : path(path) {
+Path::Path(const string &path) {
   String::tokenize(path, parts, ".");
-  if (path.empty()) THROW("JSON Path cannot be empty");
+  if (parts.empty()) THROW("JSON Path cannot be empty");
 }
+
+
+string Path::toString(unsigned start, unsigned end) const {
+  if (end < 0) end = size() + end + 1;
+  vector<string> v(parts.begin() + start, parts.begin() + end);
+  return cb::String::join(v, ".");
+}
+
+
+string Path::pop() {
+  if (empty()) THROW("Cannot pop from empty JSON::Path");
+  string part = parts.back();
+  parts.pop_back();
+  return part;
+}
+
+
+void Path::push(const string &part) {parts.push_back(part);}
 
 
 ValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
   ValuePtr ptr;
   unsigned i;
 
-  for (i = 0; i < parts.size(); i++) {
+  for (i = 0; i < size(); i++) {
     const Value &v = i ? *ptr : value;
 
     int index = -1;
@@ -66,25 +84,47 @@ ValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
     ptr = v.get(index);
   }
 
-  if (i == parts.size()) return ptr;
+  if (i == size()) return ptr;
 
-  string path =
-    cb::String::join(vector<string>(parts.begin(), parts.begin() + i + 1), ".");
+  if (fail_cb) return fail_cb(i);
 
-  if (fail_cb) return fail_cb(path);
-  CBANG_KEY_ERROR("At JSON path: " << path);
+  CBANG_KEY_ERROR("At JSON path: " << toString(0, i + 1));
 }
 
 
 ValuePtr Path::select(const Value &value, const ValuePtr &defaultValue) const {
-  auto cb = [&] (const string &path) {return defaultValue;};
+  auto cb = [&] (unsigned i) {return defaultValue;};
   return select(value, cb);
 }
 
 
 bool Path::exists(const Value &value) const {
-  auto cb = [] (const string &path) {return (ValuePtr)0;};
+  auto cb = [] (unsigned i) {return (ValuePtr)0;};
   return select(value, cb).isSet();
+}
+
+
+void Path::insert(Value &target, const ValuePtr &value) {
+  ValuePtr v = SmartPointer<Value>::Phony(&target);
+
+  if (1 < parts.size()) {
+    Path path(parts.begin(), parts.begin() + parts.size() - 1);
+    v = path.select(target);
+  }
+
+  string key = parts.back();
+
+  if (v->isList())
+    try {
+      int index = String::parseS32(key, true);
+      if (index == -1 || index == (int)v->size()) v->append(value);
+      else v->set(index, value);
+
+    } catch (const Exception &e) {
+      CBANG_KEY_ERROR("At JSON path: " << toString());
+    }
+
+  else if (v->isDict()) v->insert(key, value);
 }
 
 
@@ -93,7 +133,7 @@ bool Path::exists(const Value &value) const {
     ValuePtr result = select(value);                                \
                                                                     \
     if (!result->is##NAME())                                        \
-      CBANG_TYPE_ERROR("Not a " #NAME " at " << path);              \
+      CBANG_TYPE_ERROR("Not a " #NAME " at " << toString());        \
                                                                     \
     return result->get##NAME();                                     \
   }                                                                 \
@@ -111,7 +151,7 @@ bool Path::exists(const Value &value) const {
                                                                     \
                                                                     \
   bool Path::exists##NAME(const Value &value) const {               \
-    auto cb = [] (const string &path) {return (ValuePtr)0;};        \
+    auto cb = [] (unsigned i) {return (ValuePtr)0;};                \
     ValuePtr result = select(value, cb);                            \
     return result.isSet() && result->is##NAME();                    \
   }

@@ -29,63 +29,49 @@
 
 \******************************************************************************/
 
-#include "Dict.h"
-
-#include <cbang/Exception.h>
-#include <cbang/String.h>
-
-#include <cctype>
+#include "Observable.h"
 
 using namespace std;
 using namespace cb::JSON;
 
 
-ValuePtr Dict::copy(bool deep) const {
-  ValuePtr c = createDict();
 
-  for (unsigned i = 0; i < size(); i++)
-    c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
-
-  return c;
+void ObservableBase::setParentRef(Value *parent, unsigned index) {
+  if (this->parent) THROW("Parent already set");
+  this->parent = parent;
+  this->index  = index;
 }
 
 
-int Dict::insert(const string &key, const ValuePtr &value) {
-  if (value->isList() || value->isDict()) simple = false;
-  return OrderedDict<ValuePtr>::insert(key, value);
+void ObservableBase::_notify(list<ValuePtr> &change) {
+  notify(change);
+
+  if (!parent) return;
+
+  if (parent->isList()) change.push_front(Factory().create(index));
+  else change.push_front(Factory().create(parent->keyAt(index)));
+
+  dynamic_cast<ObservableBase *>(parent)->_notify(change);
 }
 
 
-void Dict::write(Sink &sink) const {
-  sink.beginDict(isSimple());
+void ObservableBase::_notify(unsigned index, const ValuePtr &value) {
+  list<ValuePtr> change;
 
-  for (auto it = Super_T::begin(); it != Super_T::end(); it++) {
-    if (!it->second->canWrite(sink)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
-  }
+  if (value.isSet()) change.push_back(value);
+  else change.push_back(Factory().createNull());
 
-  sink.endDict();
+  change.push_front(Factory().create(index));
+  _notify(change);
 }
 
 
-void Dict::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
+void ObservableBase::_notify(const string &key, const ValuePtr &value) {
+  list<ValuePtr> change;
 
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
-}
+  if (value.isSet()) change.push_back(value);
+  else change.push_back(Factory().createNull());
 
-
-void Dict::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
+  change.push_front(Factory().create(key));
+  _notify(change);
 }

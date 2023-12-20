@@ -65,14 +65,14 @@ void List::append(const ValuePtr &value) {
 
 void List::erase(unsigned i) {
   check(i);
-  Super_T::erase(begin() + i);
+  Super_T::erase(Super_T::begin() + i);
 }
 
 
 void List::write(Sink &sink) const {
   sink.beginList(isSimple());
 
-  for (const_iterator it = begin(); it != end(); it++) {
+  for (auto it = Super_T::begin(); it != Super_T::end(); it++) {
     if (!(*it)->canWrite(sink)) continue;
     sink.beginAppend();
     (*it)->write(sink);
@@ -83,6 +83,7 @@ void List::write(Sink &sink) const {
 
 
 void List::set(unsigned i, const ValuePtr &value) {
+  if (value.isNull()) THROW("Value cannot be NULL");
   check(i);
   at(i) = value;
 }

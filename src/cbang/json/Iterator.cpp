@@ -29,63 +29,31 @@
 
 \******************************************************************************/
 
-#include "Dict.h"
+#include "Iterator.h"
+#include "Value.h"
 
-#include <cbang/Exception.h>
-#include <cbang/String.h>
-
-#include <cctype>
-
-using namespace std;
+using namespace cb;
 using namespace cb::JSON;
 
 
-ValuePtr Dict::copy(bool deep) const {
-  ValuePtr c = createDict();
-
-  for (unsigned i = 0; i < size(); i++)
-    c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
-
-  return c;
-}
+Iterator::Iterator(const Value &value, int i) :
+  value(value), i(i < (int)value.size() ? i : -1) {}
 
 
-int Dict::insert(const string &key, const ValuePtr &value) {
-  if (value->isList() || value->isDict()) simple = false;
-  return OrderedDict<ValuePtr>::insert(key, value);
-}
+bool Iterator::valid() const {return 0 <= i && i < (int)value.size();}
 
 
-void Dict::write(Sink &sink) const {
-  sink.beginDict(isSimple());
-
-  for (auto it = Super_T::begin(); it != Super_T::end(); it++) {
-    if (!it->second->canWrite(sink)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
+Iterator &Iterator::operator++() {
+  if (valid()) {
+    i++;
+    if (!valid()) i = -1;
   }
 
-  sink.endDict();
+  return *this;
 }
 
 
-void Dict::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
-}
-
-
-void Dict::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
-  }
+const SmartPointer<Value> &Iterator::operator*() const {
+  if (!valid()) CBANG_THROW("Invalid JSON iterator");
+  return value.get(i);
 }
