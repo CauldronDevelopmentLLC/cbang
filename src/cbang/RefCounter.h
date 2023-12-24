@@ -89,10 +89,10 @@ namespace cb {
     static RefCounter *create(T *ptr) {return new RefCounterImpl(ptr);}
 
     void release() {
+      log(trace, "release()");
       T *_ptr = ptr;
       delete this;
       if (_ptr) Dealloc_T::dealloc(_ptr);
-      log(trace, "release()");
     }
 
     // From RefCounter
