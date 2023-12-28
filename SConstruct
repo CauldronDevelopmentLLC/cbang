@@ -36,7 +36,7 @@ env.Replace(PACKAGE_AUTHOR    = author)
 env.Replace(PACKAGE_ORG       = 'Cauldron Development LLC')
 env.Replace(PACKAGE_COPYRIGHT = 'Cauldron Development LLC, 2003-2023')
 env.Replace(PACKAGE_HOMEPAGE  = 'https://cauldrondevelopment.com/')
-env.Replace(PACKAGE_LICENSE   = 'LGPL-2.1+')
+env.Replace(PACKAGE_LICENSE   = 'LGPL-2.1-or-later')
 env.Replace(BUILD_INFO_NS     = 'cb::BuildInfo')
 env.Replace(RESOURCES_NS      = 'cb')
 
