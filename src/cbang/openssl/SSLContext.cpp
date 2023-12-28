@@ -407,11 +407,8 @@ void SSLContext::loadSystemRootCerts() {
   LOG_DEBUG(3, "Trusted certificate count: " << trustedCount);
 
 #else
-  const char *filename = "/etc/ssl/certs/ca-certificates.crt";
-
-  if (SystemUtilities::exists(filename))
-    loadVerifyLocationsFile(filename);
-  else LOG_WARNING("System root certificates not found at " << filename);
+  if (!SSL_CTX_set_default_verify_paths(ctx))
+    LOG_WARNING("System root certificates not found");
 #endif
 }
 
