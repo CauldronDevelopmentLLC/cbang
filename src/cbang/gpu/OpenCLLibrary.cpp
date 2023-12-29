@@ -244,35 +244,29 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
 
     for (cl_uint j = 0; j < numDevices; j++)
       try {
-        ComputeDevice cd = getDeviceInfo(devices[j]);
+        auto device = devices[j];
 
-        cd.platform = "OpenCL: " + platformName;
-
-        // Set indices
-        cd.platformIndex = i;
-        cd.deviceIndex   = j;
+        ComputeDevice cd;
+        cd.platform       = "OpenCL: " + platformName;
+        cd.platformIndex  = i;
+        cd.deviceIndex    = j;
+        cd.driverVersion  = getDriverVersion(device);
+        cd.computeVersion = getComputeVersion(device);
+        cd.name           = getName(device);
+        cd.vendorID       = getVendorID(device);
+        cd.gpu            = isGPU(device);
 
         // UUID
-        if (exts.find("cl_khr_device_uuid") != exts.end()) {
-          uint8_t uuid[16];
-          DYNAMIC_CALL(this, clGetDeviceInfo,
-                       (devices[j], CL_DEVICE_UUID_KHR, 16, uuid, 0));
-          cd.uuid = UUID(uuid);
-        }
+        if (exts.find("cl_khr_device_uuid") != exts.end())
+          getKHRDeviceUUID(device, cd);
 
         // PCI Info
-        if (exts.find("cl_khr_pci_bus_info") != exts.end()) {
-          cl_device_pci_bus_info_khr info = {0xff, 0xff, 0xff, 0xff};
+        if (exts.find("cl_khr_pci_bus_info") != exts.end())
+          getKHRPCIBusInfo(device, cd);
 
-          DYNAMIC_CALL(
-            this, clGetDeviceInfo,
-            (devices[j], CL_DEVICE_PCI_BUS_INFO_KHR, sizeof(info), &info, 0));
+        else TRY_CATCH_DEBUG(3, getPCIInfo(device, cd));
 
-          cd.pciBus      = info.pci_bus;
-          cd.pciSlot     = info.pci_device;
-          cd.pciFunction = info.pci_function;
-        }
-
+        // Add device
         if (cd.isValid()) this->devices.push_back(cd);
       } CATCH_ERROR;
   }
@@ -385,28 +379,31 @@ void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
 
 
 void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
-  if (cd.isPCIValid()) return;
-
-  try {
-    switch (cd.vendorID) {
-    case GPUVendor::VENDOR_AMD:    getAMDPCIInfo   (device, cd); break;
-    case GPUVendor::VENDOR_NVIDIA: getNVIDIAPCIInfo(device, cd); break;
-    case GPUVendor::VENDOR_INTEL: // TODO What about Intel?
-    default: break;
-    }
-  } CATCH_DEBUG(3);
+  switch (cd.vendorID) {
+  case GPUVendor::VENDOR_AMD:    getAMDPCIInfo   (device, cd); break;
+  case GPUVendor::VENDOR_NVIDIA: getNVIDIAPCIInfo(device, cd); break;
+  case GPUVendor::VENDOR_INTEL: // TODO What about Intel?
+  default: break;
+  }
 }
 
 
-ComputeDevice OpenCLLibrary::getDeviceInfo(void *device) {
-  ComputeDevice cd;
+void OpenCLLibrary::getKHRDeviceUUID(void *device, ComputeDevice &cd) {
+  uint8_t uuid[16];
+  DYNAMIC_CALL(
+    this, clGetDeviceInfo, (device, CL_DEVICE_UUID_KHR, 16, uuid, 0));
+  cd.uuid = UUID(uuid);
+}
 
-  cd.driverVersion  = getDriverVersion(device);
-  cd.computeVersion = getComputeVersion(device);
-  cd.name           = getName(device);
-  cd.vendorID       = getVendorID(device);
-  cd.gpu            = isGPU(device);
-  getPCIInfo(device, cd);
 
-  return cd;
+void OpenCLLibrary::getKHRPCIBusInfo(void *device, ComputeDevice &cd) {
+  cl_device_pci_bus_info_khr info = {0xff, 0xff, 0xff, 0xff};
+
+  DYNAMIC_CALL(
+    this, clGetDeviceInfo,
+    (device, CL_DEVICE_PCI_BUS_INFO_KHR, sizeof(info), &info, 0));
+
+  cd.pciBus      = info.pci_bus;
+  cd.pciSlot     = info.pci_device;
+  cd.pciFunction = info.pci_function;
 }
