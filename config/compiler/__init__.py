@@ -638,7 +638,7 @@ def generate(env):
         ('prefer_dynamic', 'Libraries where the dynamic version is prefered, ' +
          'regardless of "mostly_static"', ''),
         ('num_jobs', 'Set the concurrency level.', -1),
-        ('osx_min_ver', 'Set minimum support OSX version.', None),
+        ('osx_min_ver', 'Set minimum supported OSX version.', None),
         ('osx_sdk_root', 'Set OSX SDK root.', None),
         ('osx_archs', 'Set OSX gcc target architectures.', None),
         EnumVariable(

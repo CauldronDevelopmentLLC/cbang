@@ -301,7 +301,7 @@ def generate(env):
 
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         env.CBAddVariables(
-            ('osx_min_ver', 'Set minimum support OSX version.', '10.7'),
+            ('osx_min_ver', 'Set minimum supported OSX version.'),
             )
 
     env.SetDefault(PACKAGE_EXCLUDES = ['.DS_Store', '.svn', '.sconsign.dblite',
