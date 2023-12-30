@@ -51,6 +51,7 @@ namespace cb {
     _SSL *ssl;
     unsigned handshakes = 0;
 
+    static bool initialized;
     static unsigned maxHandshakes;
 
     enum {
@@ -96,6 +97,8 @@ namespace cb {
     unsigned getPending() const;
     int read(char *data, unsigned size);
     unsigned write(const char *data, unsigned size);
+
+    static void init();
 
     static unsigned getMaxHandshakes() {return maxHandshakes;}
     static void setMaxHandshakes(unsigned n) {maxHandshakes = n;}

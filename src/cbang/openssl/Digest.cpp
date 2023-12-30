@@ -291,7 +291,7 @@ bool Digest::hasAlgorithm(const string &name) {
 
 const EVP_MD *Digest::getAlgorithm(const string &name) {
   auto md = EVP_get_digestbyname(name.c_str());
-  if (!md) THROW("Unrecognized message digest '" << name);
+  if (!md) THROW("Unrecognized message digest '" << name << "'");
   return md;
 }
 
