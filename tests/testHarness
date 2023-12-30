@@ -186,15 +186,13 @@ def split_cmd_line(cmd):
 def quote_cmd(command):
   try:
     from shlex import quote
-    return quote(command)
 
   except:
     try:
       from pipes import quote
-      return quote(command)
+    except: quote = str
 
-    except:
-      return ' '.join(command)
+  return ' '.join(map(quote, command))
 
 
 def execute_proc(command, timeout, **kwargs):

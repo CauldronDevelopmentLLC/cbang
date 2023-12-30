@@ -83,6 +83,7 @@ namespace {
 
 
 
+bool     cb::SSL::initialized   = false;
 unsigned cb::SSL::maxHandshakes = 3;
 
 
@@ -309,6 +310,18 @@ unsigned cb::SSL::write(const char *data, unsigned size) {
 
   LOG_DEBUG(5, CBANG_FUNC << "()=" << ret);
   return (unsigned)ret;
+}
+
+
+void cb::SSL::init() {
+  if (initialized) return;
+
+#if 0x3000000fL <= OPENSSL_VERSION_NUMBER
+  loadProvider("default");
+  loadProvider("base");
+#endif
+
+  initialized = true;
 }
 
 

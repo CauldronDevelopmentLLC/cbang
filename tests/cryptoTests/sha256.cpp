@@ -29,44 +29,22 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#include <cbang/Exception.h>
-
+#include <cbang/openssl/Digest.h>
 #include <cbang/Catch.h>
-#include <cbang/openssl/SSL.h>
-#include <cbang/os/Win32EventLog.h>
+
+#include <iostream>
+
+using namespace std;
+using namespace cb;
 
 
-namespace cb {
-#ifndef WINAPI
-#define WINAPI
-#endif
+int main(int argc, char *argv[]) {
+  try {
+    for (int i = 1; i < argc; i++)
+      cout << Digest::hashHex(argv[i], "SHA256") << endl;
 
-  template <class T>
-  static int WINAPI doApplication(int argc, char *argv[]) {
-    try {
-#ifdef HAVE_OPENSSL
-      SSL::init();
-#endif // HAVE_OPENSSL
+    return 0;
+  } CATCH_ERROR;
 
-      T app;
-      int i = app.init(argc, argv);
-      if (i < 0) return i;
-
-      app.run();
-
-      return 0;
-
-    } catch (const Exception &e) {
-      std::string msg = SSTR("Exception: " << e CBANG_CATCH_LOCATION);
-      CBANG_LOG_ERROR(msg);
-#ifdef _WIN32
-      Win32EventLog(argv[0]).log(msg);
-#endif // _WIN32
-      if (e.getCode()) return e.getCode();
-    }
-
-    return 1;
-  }
+  return 1;
 }
