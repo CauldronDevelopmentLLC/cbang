@@ -280,7 +280,8 @@ void Websocket::onResponse(ConnectionError error) {
     onOpen();
     readHeader();
     schedulePing();
-  }
+
+  } else onClose(WS_STATUS_NONE, "Connection failed");
 }
 
 
