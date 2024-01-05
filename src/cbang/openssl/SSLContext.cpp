@@ -120,7 +120,7 @@ void SSLContext::reset() {
   // A session ID is required for session caching to work
   SSL_CTX_set_session_id_context(ctx, (unsigned char *)"cbang", 5);
 
-  setVerifyPeer(false, false, 0);
+  setVerifyNone();
 }
 
 
