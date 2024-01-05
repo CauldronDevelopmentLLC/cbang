@@ -22,6 +22,8 @@ def write_spec_script(f, env, name, var):
 
         f.write('%%%s\n%s\n\n' % (name, contents))
 
+    elif name == 'install': f.write('%install\ncp -a . $RPM_BUILD_ROOT\n\n')
+
 
 def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
                   dperms = 0o755):
