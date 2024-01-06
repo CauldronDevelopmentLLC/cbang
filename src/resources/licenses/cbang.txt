@@ -1,6 +1,6 @@
 -------------------------------- cbang license ---------------------------------
 
-Copyright (c) 2003-2023, Cauldron Development LLC
+Copyright (c) 2003-2024, Cauldron Development LLC
 All rights reserved.
 
 The C! library is free software: you can redistribute it and/or modify it under
