@@ -110,6 +110,7 @@ def build_function(target, source, env):
         write_var(env, f, 'License', 'rpm_license')
         write_var(env, f, 'Group', 'rpm_group')
         write_var(env, f, 'URL', 'url')
+        write_var(env, f, 'BugURL', 'bug_url')
         write_var(env, f, 'Vendor', 'vendor')
         write_var(env, f, 'Packager', 'maintainer')
         write_var(env, f, 'Icon', 'icon')
