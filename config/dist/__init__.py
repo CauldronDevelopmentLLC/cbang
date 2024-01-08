@@ -120,7 +120,7 @@ def build_function_zip(target, source, env):
     m = re.match(r'^(.*)\.zip$', target)
     dist_name = m.group(1)
 
-    compression = env.get('compression', zipfile.ZIP_LZMA)
+    compression = env.get('compression', zipfile.ZIP_DEFLATED)
     if compression is None: compression = zipfile.ZIP_STORED
 
     with zipfile.ZipFile(target, mode = 'w', compression = compression) as zip:
