@@ -126,6 +126,8 @@ def build_function(target, source, env):
         write_var(env, f, 'Requires(postun)', 'rpm_postun_requires',
                   multi = True)
 
+        f.write('\n')
+
         # Description
         write_spec_text_section(f, env, 'description', 'description')
 
