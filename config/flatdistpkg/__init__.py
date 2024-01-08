@@ -70,7 +70,7 @@ build_dir_distribution_xml = \
 
 def clean_old_build(env):
     # rm intermediate build stuff
-    # do not rm old build products, descriptions
+    # do not rm old build products
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
 
@@ -187,12 +187,6 @@ def build_component_pkgs(env):
             info['package_name'] = name
         if not info.get('package_name_lower'):
             info['package_name_lower'] = name.lower()
-
-        # try to get description, if still none
-        desc = info.get('short_description', '').strip()
-        if not desc: desc = info.get('description', '').strip()
-        if not desc: desc = info.get('summary', '').strip()
-        info['short_description'] = desc
 
     for info in components:
         try:
@@ -413,7 +407,7 @@ function install_check() {"""
         choice_id = choice_id.replace('.','').replace(' ','')
         title = info.get('package_name', info.get('summary'))
         title = title.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
-        desc = info.get('short_description', info.get('description', ''))
+        desc = info.get('description', '')
         desc = desc.replace('\\n','\n').replace('\\t','\t').replace('\\"','"')
         desc = desc.replace('\r\n', '\n').replace('\n', '__CR__')
         etree.SubElement(outline, 'line', {'choice':choice_id})
