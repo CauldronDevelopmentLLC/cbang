@@ -113,7 +113,6 @@ def build_function(target, source, env):
         write_var(env, f, 'BugURL', 'bug_url')
         write_var(env, f, 'Vendor', 'vendor')
         write_var(env, f, 'Packager', 'maintainer')
-        write_var(env, f, 'Icon', 'icon')
         #write_var(env, f, 'BuildArch', 'package_arch', env.GetPackageArch())
         write_var(env, f, 'Provides', 'rpm_provides', multi = True)
         write_var(env, f, 'Conflicts', 'rpm_conflicts', multi = True)
