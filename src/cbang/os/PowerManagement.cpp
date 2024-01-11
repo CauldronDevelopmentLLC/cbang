@@ -127,9 +127,12 @@ void PowerManagement::allowSystemSleep(bool x) {
   IOPMAssertionID &assertionID = pri->systemAssertionID;
 
   if (!x) {
+    string name =
+      SystemUtilities::basename(SystemUtilities::getExecutablePath());
+
     if (IOPMAssertionCreateWithName(
           kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn,
-          CFSTR("FAHClient"), &assertionID) == kIOReturnSuccess)
+          CFSTR(name.c_str()), &assertionID) == kIOReturnSuccess)
       systemSleepAllowed = false;
 
     else assertionID = 0;
@@ -157,9 +160,12 @@ void PowerManagement::allowDisplaySleep(bool x) {
   IOPMAssertionID &assertionID = pri->displayAssertionID;
 
   if (!x) {
+    string name =
+      SystemUtilities::basename(SystemUtilities::getExecutablePath());
+
     if (IOPMAssertionCreateWithName(
           kIOPMAssertionTypeNoDisplaySleep, kIOPMAssertionLevelOn,
-          CFSTR("FAHClient"), &assertionID) == kIOReturnSuccess)
+          CFSTR(name.c_str()), &assertionID) == kIOReturnSuccess)
       displaySleepAllowed = false;
 
     else assertionID = 0;
