@@ -46,7 +46,6 @@ namespace cb {
     unsigned idleSeconds;
 
     bool systemSleepAllowed;
-    bool displaySleepAllowed;
 
     struct private_t;
     private_t *pri = 0;
@@ -59,7 +58,6 @@ namespace cb {
     bool hasBattery();
     unsigned getIdleSeconds();
     void allowSystemSleep(bool x);
-    void allowDisplaySleep(bool x);
 
   protected:
     void updateIdleSeconds();

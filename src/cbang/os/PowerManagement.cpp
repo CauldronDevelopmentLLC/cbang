@@ -50,6 +50,7 @@
 
 #elif defined(HAVE_SYSTEMD)
 #include <systemd/sd-bus.h>
+#include <fcntl.h>
 #endif
 
 #include <cstring>
@@ -58,13 +59,222 @@ using namespace cb;
 using namespace std;
 
 
+namespace {
+#if defined(_WIN32)
+  void win32AllowSleep(bool system) {
+    SetThreadExecutionState(
+      ES_CONTINUOUS |
+      (system ? 0 : (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)));
+  }
+
+
+  unsigned win32GetIdleSeconds() {
+    LASTINPUTINFO lif;
+    lif.cbSize = sizeof(LASTINPUTINFO);
+    GetLastInputInfo(&lif);
+
+    return (GetTickCount() - lif.dwTime) / 1000; // Convert from ms.
+  }
+
+
+  void win32GetBatteryInfo(bool &onBattery, bool &hasBattery) {
+    onBattery = hasBattery = false;
+
+    SYSTEM_POWER_STATUS status;
+    if (GetSystemPowerStatus(&status)) {
+      onBattery = status.ACLineStatus == 0;
+      hasBattery = (status.BatteryFlag & 128) == 0;
+    }
+  }
+
+
+#elif defined(__APPLE__)
+  void macOSAllowSleep(bool allow, IOPMAssertionID &aid) {
+    if (!allow) {
+      string name =
+        SystemUtilities::basename(SystemUtilities::getExecutablePath());
+
+      if (IOPMAssertionCreateWithName(
+            kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn,
+            CFSTR(name.c_str()), &aid) != kIOReturnSuccess)
+        aid = 0;
+
+    } else if (aid) {
+      IOPMAssertionRelease(aid);
+      aid = 0;
+    }
+  }
+
+
+  unsigned macOSGetIdleSeconds() {
+    unsigned idleSeconds = 0;
+    io_iterator_t iter = 0;
+
+    if (IOServiceGetMatchingServices(
+          kIOMasterPortDefault,
+          IOServiceMatching("IOHIDSystem"), &iter) == KERN_SUCCESS) {
+
+      io_registry_entry_t entry = IOIteratorNext(iter);
+      if (entry)  {
+        CFMutableDictionaryRef dict = 0;
+        if (IORegistryEntryCreateCFProperties(
+              entry, &dict, kCFAllocatorDefault, 0) == KERN_SUCCESS) {
+          CFNumberRef obj =
+            (CFNumberRef)CFDictionaryGetValue(dict, CFSTR("HIDIdleTime"));
+
+          if (obj) {
+            int64_t nanoseconds = 0;
+            if (CFNumberGetValue(obj, kCFNumberSInt64Type, &nanoseconds))
+              idleSeconds = (unsigned)(nanoseconds / 1000000000); // from ns
+          }
+
+          CFRelease(dict);
+        }
+
+        IOObjectRelease(entry);
+      }
+
+      IOObjectRelease(iter);
+    }
+
+    return idleSeconds;
+  }
+
+
+  void macOSGetBatteryInfo(bool &onBattery, bool &hasBattery) {
+    onBattery = hasBattery = false;
+
+    CFTypeRef info = IOPSCopyPowerSourcesInfo();
+    if (!info) return;
+
+    CFArrayRef list = IOPSCopyPowerSourcesList(info);
+
+    if (list) {
+      CFIndex count = CFArrayGetCount(list);
+      if (count > 0) hasBattery = true;
+
+      for (CFIndex i = 0; i < count; i++) {
+        CFTypeRef item = CFArrayGetValueAtIndex(list, i);
+        CFDictionaryRef battery = IOPSGetPowerSourceDescription(info, item);
+        CFTypeRef value =
+          CFDictionaryGetValue(battery, CFSTR(kIOPSPowerSourceStateKey));
+
+        if (!CFEqual(value, CFSTR(kIOPSACPowerValue))) {
+          onBattery = true;
+          break;
+        }
+      }
+
+      CFRelease(list);
+    }
+
+    CFRelease(info);
+  }
+
+
+#else
+
+#if defined(HAVE_SYSTEMD)
+  void systemdAllowSleep(sd_bus *bus, int &fd, bool allow) {
+    if (!bus) return;
+
+    if (0 < fd) close(fd);
+    fd = -1;
+
+    if (!allow) {
+      sd_bus_message *reply = 0;
+      sd_bus_error    error = SD_BUS_ERROR_NULL;
+      string who =
+        SystemUtilities::basename(SystemUtilities::getExecutablePath());
+
+      if (sd_bus_call_method(
+            bus, "org.freedesktop.login1", "/org/freedesktop/login1",
+            "org.freedesktop.login1.Manager", "Inhibit", &error, &reply, "ssss",
+            "sleep", who.c_str(), "Prevent system sleep", "block") < 0)
+        THROW("Failed to prevent sleep: " << error.message);
+
+      int tmpFD = -1;
+      sd_bus_message_read_basic(reply, SD_BUS_TYPE_UNIX_FD, &tmpFD);
+
+      if (0 < tmpFD) fd = fcntl(tmpFD, F_DUPFD_CLOEXEC, 3);
+
+      sd_bus_error_free(&error);
+      sd_bus_message_unref(reply);
+    }
+  }
+
+
+  unsigned systemdGetIdleSeconds(sd_bus *bus) {
+    int idle = 0;
+
+    // logind API does not exactly match Windows and macOS ones,
+    // if IdleHint is true, assume enough time without input has passed
+    if (!bus || sd_bus_get_property_trivial(
+          bus, "org.freedesktop.login1", "/org/freedesktop/login1/seat/seat0",
+          "org.freedesktop.login1.Seat", "IdleHint", 0, 'b', &idle) < 0)
+      return 0;
+
+    return idle ? -1 : 0;
+  }
+#endif // HAVE_SYSTEMD
+
+
+  void linuxGetBatteryInfo(bool &onBattery, bool &hasBattery) {
+    onBattery = hasBattery = false;
+
+    const char *sysBase = "/sys/class/power_supply";
+    const char *procBase = "/proc/acpi/ac_adapter";
+
+    bool useSys  = SystemUtilities::exists(sysBase);
+    bool useProc = !useSys && SystemUtilities::exists(procBase);
+
+    if (!useSys && !useProc) return;
+
+    string base = useSys ? sysBase : procBase;
+
+    // Has battery
+    const char *batNames[] = {"/BAT", "/BAT0", "/BAT1", 0};
+    for (int i = 0; !hasBattery && batNames[i]; i++)
+      hasBattery = SystemUtilities::exists(base + batNames[i]);
+
+    // On battery
+    if (hasBattery) {
+      if (useSys) {
+        const char *acNames[] = { "/AC0/online", "/AC/online", 0};
+
+        for (int i = 0; acNames[i]; i++) {
+          string path = base + acNames[i];
+
+          if (SystemUtilities::exists(path))
+            onBattery = String::trim(SystemUtilities::read(path)) == "0";
+        }
+
+      } else if (useProc) {
+        string path = base + "/AC0/state";
+
+        if (SystemUtilities::exists(path)) {
+          vector<string> tokens;
+          String::tokenize(SystemUtilities::read(path), tokens);
+
+          if (tokens.size() == 2 && tokens[0] == "state")
+            onBattery = tokens[1] != "on-line";
+        }
+      }
+    }
+  }
+
+#endif
+}
+
+
+
 struct PowerManagement::private_t {
 #if defined(__APPLE__)
-  IOPMAssertionID displayAssertionID;
   IOPMAssertionID systemAssertionID;
 
 #elif defined(HAVE_SYSTEMD)
   sd_bus *bus;
+  int sleepFD;
 #endif
 };
 
@@ -72,7 +282,7 @@ struct PowerManagement::private_t {
 PowerManagement::PowerManagement(Inaccessible) :
   lastBatteryUpdate(0), systemOnBattery(false), systemHasBattery(false),
   lastIdleSecondsUpdate(0), idleSeconds(0), systemSleepAllowed(true),
-  displaySleepAllowed(true), pri(new private_t) {
+  pri(new private_t) {
   memset(pri, 0, sizeof(private_t));
 
 #if defined(HAVE_SYSTEMD)
@@ -85,7 +295,6 @@ PowerManagement::~PowerManagement() {
   if (!pri) return;
 
   allowSystemSleep(true);
-  allowDisplaySleep(true);
 
 #if defined(HAVE_SYSTEMD)
   pri->bus = sd_bus_flush_close_unref(pri->bus);
@@ -115,66 +324,16 @@ unsigned PowerManagement::getIdleSeconds() {
 
 void PowerManagement::allowSystemSleep(bool x) {
   if (systemSleepAllowed == x) return;
-
-#if defined(_WIN32)
   systemSleepAllowed = x;
-  SetThreadExecutionState(ES_CONTINUOUS |
-                          (systemSleepAllowed ? 0 :
-                           (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)) |
-                          (displaySleepAllowed ? 0 : ES_DISPLAY_REQUIRED));
 
-#elif defined(__APPLE__)
-  IOPMAssertionID &assertionID = pri->systemAssertionID;
-
-  if (!x) {
-    string name =
-      SystemUtilities::basename(SystemUtilities::getExecutablePath());
-
-    if (IOPMAssertionCreateWithName(
-          kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn,
-          CFSTR(name.c_str()), &assertionID) == kIOReturnSuccess)
-      systemSleepAllowed = false;
-
-    else assertionID = 0;
-
-  } else if (assertionID) {
-    IOPMAssertionRelease(assertionID);
-    assertionID = 0;
-    systemSleepAllowed = true;
-  }
-#endif
-}
-
-
-void PowerManagement::allowDisplaySleep(bool x) {
-  if (displaySleepAllowed == x) return;
+  LOG_DEBUG(5, (x ? "Allowing" : "Disabling") << " system sleep");
 
 #if defined(_WIN32)
-  displaySleepAllowed = x;
-  SetThreadExecutionState(
-    ES_CONTINUOUS |
-    (systemSleepAllowed ? 0 : (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)) |
-    (displaySleepAllowed ? 0 : ES_DISPLAY_REQUIRED));
-
+  win32AllowSleep(systemSleepAllowed);
 #elif defined(__APPLE__)
-  IOPMAssertionID &assertionID = pri->displayAssertionID;
-
-  if (!x) {
-    string name =
-      SystemUtilities::basename(SystemUtilities::getExecutablePath());
-
-    if (IOPMAssertionCreateWithName(
-          kIOPMAssertionTypeNoDisplaySleep, kIOPMAssertionLevelOn,
-          CFSTR(name.c_str()), &assertionID) == kIOReturnSuccess)
-      displaySleepAllowed = false;
-
-    else assertionID = 0;
-
-  } else if (assertionID) {
-    IOPMAssertionRelease(assertionID);
-    assertionID = 0;
-    displaySleepAllowed = false;
-  }
+  macOSAllowSleep(systemSleepAllowed, false, pri->systemAssertionID);
+#elif defined(HAVE_SYSTEMD)
+  systemdAllowSleep(pri->bus, pri->sleepFD, systemSleepAllowed);
 #endif
 }
 
@@ -184,58 +343,12 @@ void PowerManagement::updateIdleSeconds() {
   if (Time::now() <= lastIdleSecondsUpdate) return;
   lastIdleSecondsUpdate = Time::now();
 
-  idleSeconds = 0;
-
 #if defined(_WIN32)
-  LASTINPUTINFO lif;
-  lif.cbSize = sizeof(LASTINPUTINFO);
-  GetLastInputInfo(&lif);
-
-  idleSeconds = (GetTickCount() - lif.dwTime) / 1000; // Convert from ms.
-
+  idleSeconds = win32GetIdleSeconds();
 #elif defined(__APPLE__)
-  io_iterator_t iter = 0;
-
-  if (IOServiceGetMatchingServices(
-        kIOMasterPortDefault,
-        IOServiceMatching("IOHIDSystem"), &iter) == KERN_SUCCESS) {
-
-    io_registry_entry_t entry = IOIteratorNext(iter);
-    if (entry)  {
-      CFMutableDictionaryRef dict = 0;
-      if (IORegistryEntryCreateCFProperties(
-            entry, &dict, kCFAllocatorDefault, 0) == KERN_SUCCESS) {
-        CFNumberRef obj =
-          (CFNumberRef)CFDictionaryGetValue(dict, CFSTR("HIDIdleTime"));
-
-        if (obj) {
-          int64_t nanoseconds = 0;
-          if (CFNumberGetValue(obj, kCFNumberSInt64Type, &nanoseconds))
-            idleSeconds = (unsigned)(nanoseconds / 1000000000); // from ns
-        }
-
-        CFRelease(dict);
-      }
-
-      IOObjectRelease(entry);
-    }
-
-    IOObjectRelease(iter);
-  }
-
+  idleSeconds = macOSGetIdleSeconds();
 #elif defined(HAVE_SYSTEMD)
-  int r, idle;
-
-  if (!pri->bus) return;
-
-  r = sd_bus_get_property_trivial(
-    pri->bus, "org.freedesktop.login1", "/org/freedesktop/login1/seat/seat0",
-    "org.freedesktop.login1.Seat", "IdleHint", 0, 'b', &idle);
-
-  if (0 <= r && idle)
-    // logind API does not exactly match Windows and macOS ones,
-    // if IdleHint is true, assume enough time without input has passed
-    idleSeconds = -1;
+  idleSeconds = systemdGetIdleSeconds(pri->bus);
 #endif // HAVE_SYSTEMD
 }
 
@@ -245,79 +358,13 @@ void PowerManagement::updateBatteryInfo() {
   if (Time::now() <= lastBatteryUpdate) return;
   lastBatteryUpdate = Time::now();
 
-  systemOnBattery = systemHasBattery  = false;
-
-#if defined(_WIN32)
-  SYSTEM_POWER_STATUS status;
-
-  if (GetSystemPowerStatus(&status)) {
-    systemOnBattery = status.ACLineStatus == 0;
-    systemHasBattery = (status.BatteryFlag & 128) == 0;
-  }
-
-#elif defined(__APPLE__)
-  CFTypeRef info = IOPSCopyPowerSourcesInfo();
-  if (info) {
-    CFArrayRef list = IOPSCopyPowerSourcesList(info);
-    if (list) {
-      CFIndex count = CFArrayGetCount(list);
-      if (count > 0) systemHasBattery = true;
-      for (CFIndex i=0; i < count; i++) {
-        CFTypeRef item = CFArrayGetValueAtIndex(list, i);
-        CFDictionaryRef battery = IOPSGetPowerSourceDescription(info, item);
-        CFTypeRef value =
-          CFDictionaryGetValue(battery, CFSTR(kIOPSPowerSourceStateKey));
-        systemOnBattery = !CFEqual(value, CFSTR(kIOPSACPowerValue));
-        if (systemOnBattery) break;
-      }
-
-      CFRelease(list);
-    }
-
-    CFRelease(info);
-  }
-
-#else
   try {
-    const char *sysBase = "/sys/class/power_supply";
-    const char *procBase = "/proc/acpi/ac_adapter";
-
-    bool useSys = SystemUtilities::exists(sysBase);
-    bool useProc = !useSys && SystemUtilities::exists(procBase);
-
-    if (!useSys && !useProc) return;
-
-    string base = useSys ? sysBase : procBase;
-
-    // Has battery
-    const char *batNames[] = {"/BAT", "/BAT0", "/BAT1", 0};
-    for (int i = 0; !systemHasBattery && batNames[i]; i++)
-      systemHasBattery = SystemUtilities::exists(base + batNames[i]);
-
-    // On battery
-    if (systemHasBattery) {
-      if (useSys) {
-        const char *acNames[] = { "/AC0/online", "/AC/online", 0};
-
-        for (int i = 0; acNames[i]; i++) {
-          string path = base + acNames[i];
-
-          if (SystemUtilities::exists(path))
-            systemOnBattery = String::trim(SystemUtilities::read(path)) == "0";
-        }
-
-      } else if (useProc) {
-        string path = base + "/AC0/state";
-
-        if (SystemUtilities::exists(path)) {
-          vector<string> tokens;
-          String::tokenize(SystemUtilities::read(path), tokens);
-
-          if (tokens.size() == 2 && tokens[0] == "state")
-            systemOnBattery = tokens[1] != "on-line";
-        }
-      }
-    }
-  } CBANG_CATCH_ERROR;
+#if defined(_WIN32)
+    win32GetBatteryInfo(systemOnBattery, systemHasBattery);
+#elif defined(__APPLE__)
+    macOSGetBatteryInfo(systemOnBattery, systemHasBattery);
+#else
+    linuxGetBatteryInfo(systemOnBattery, systemHasBattery);
 #endif
+  } CBANG_CATCH_ERROR;
 }
