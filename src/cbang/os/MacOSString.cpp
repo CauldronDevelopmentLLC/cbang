@@ -29,6 +29,8 @@
 
 \******************************************************************************/
 
+#ifdef __APPLE__
+
 #include "MacOSString.h"
 
 #include <cbang/SmartPointer.h>
@@ -58,3 +60,5 @@ MacOSString::operator string () const {
 
   THROW("Failed to convert CFStringRef");
 }
+
+#endif // __APPLE__
