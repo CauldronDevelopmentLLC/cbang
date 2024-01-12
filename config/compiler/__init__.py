@@ -482,15 +482,18 @@ def configure(conf, cstd = 'c99'):
     # For darwin
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
         env.CBDefine('__APPLE__')
+
         if osx_archs and compiler_mode == 'gnu':
             # note: only apple compilers support multipe -arch options
             for arch in osx_archs.split():
                 env.Append(CCFLAGS = ['-arch', arch])
                 env.Append(LINKFLAGS = ['-arch', arch])
+
         if osx_min_ver:
             flag = '-mmacosx-version-min=' + osx_min_ver
             env.AppendUnique(LINKFLAGS = [flag])
             env.AppendUnique(CCFLAGS = [flag])
+
         if osx_sdk_root:
             env.Append(CCFLAGS = ['-isysroot', osx_sdk_root])
             # intel linker allegedly requires -isyslibroot
@@ -501,6 +504,8 @@ def configure(conf, cstd = 'c99'):
                 # untested
                 #env.Append(LINKFLAGS = ['-Wl,-isyslibroot,' + osx_sdk_root])
                 pass
+
+        env.Replace(ARCOM = 'rm -f $TARGET; $AR $ARFLAGS $TARGET $SOURCES')
 
     if int(env.get('cross_osx', 0)):
         env['FRAMEWORKPATHPREFIX'] = '-F'
