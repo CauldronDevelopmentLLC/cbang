@@ -33,15 +33,20 @@
 
 #ifdef __APPLE__
 
-#include "MacOSString.h"
+#include "MacOSRef.h"
 
-#include <cbang/util/Version.h>
+#include <string>
 
 
 namespace cb {
-  namespace MacOSUtilities {
-    const cb::Version &getOSVersion();
-  }
+  class MacOSString : public MacOSRef<CFStringRef> {
+  public:
+    MacOSString(const CFStringRef &s) : MacOSRef<CFStringRef>(s) {}
+    explicit MacOSString(const char *s);
+    explicit MacOSString(const std::string &s) : MacOSString(s.c_str()) {}
+
+    operator std::string () const;
+  };
 }
 
 #endif // __APPLE__

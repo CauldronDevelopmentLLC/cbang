@@ -310,13 +310,10 @@ void SSLContext::loadSystemRootCerts() {
     string summary = string();
     bool valid;
 
-    cert = (SecCertificateRef) CFArrayGetValueAtIndex(anchors, i);
+    cert = (SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
 
-    CFStringRef summary0 = SecCertificateCopySubjectSummary(cert);
-    if (summary0) {
-      summary = MacOSUtilities::toString(summary0);
-      CFRelease(summary0);
-    }
+    MacOSString summary0 = SecCertificateCopySubjectSummary(cert);
+    if (summary0) summary = summary0;
 
     LOG_DEBUG(5, "Cert " << i << ": " << summary);
 
@@ -343,25 +340,25 @@ void SSLContext::loadSystemRootCerts() {
 #if __clang__
         if (__builtin_available(macOS 10.14, *)) { // macOS 10.14+
 #else
-        Version vers = MacOSUtilities::getMacOSVersion();
-        if (vers >= Version(10, 14)) {
+        if (Version(10, 14) <= MacOSUtilities::getOSVersion()) {
 #endif
           valid = SecTrustEvaluateWithError(trust, 0);
           LOG_DEBUG(5, "Called SecTrustEvaluateWithError()");
+
         } else {
 #if (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_15)
           SecTrustResultType result;
           err = SecTrustEvaluate(trust, &result); // macOS 10.3–10.15
           LOG_DEBUG(5, "Called SecTrustEvaluate()");
+
           if (err == errSecSuccess) {
             switch (result) {
               case kSecTrustResultUnspecified:
               case kSecTrustResultProceed:
                 valid = true;
                 break;
-              default:
-                valid = false;
-                break;
+
+              default: valid = false; break;
             }
           }
 #endif

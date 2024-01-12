@@ -42,6 +42,8 @@
 #include <windows.h>
 
 #elif defined(__APPLE__)
+#include <cbang/os/MacOSString.h>
+
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/ps/IOPSKeys.h>
@@ -91,12 +93,12 @@ namespace {
 #elif defined(__APPLE__)
   void macOSAllowSleep(bool allow, IOPMAssertionID &aid) {
     if (!allow) {
-      string name =
-        SystemUtilities::basename(SystemUtilities::getExecutablePath());
+      MacOSString name(
+        SystemUtilities::basename(SystemUtilities::getExecutablePath()));
 
       if (IOPMAssertionCreateWithName(
-            kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn,
-            CFSTR(name.c_str()), &aid) != kIOReturnSuccess)
+            kIOPMAssertionTypeNoIdleSleep, kIOPMAssertionLevelOn, name, &aid) !=
+          kIOReturnSuccess)
         aid = 0;
 
     } else if (aid) {
@@ -331,7 +333,7 @@ void PowerManagement::allowSystemSleep(bool x) {
 #if defined(_WIN32)
   win32AllowSleep(systemSleepAllowed);
 #elif defined(__APPLE__)
-  macOSAllowSleep(systemSleepAllowed, false, pri->systemAssertionID);
+  macOSAllowSleep(systemSleepAllowed, pri->systemAssertionID);
 #elif defined(HAVE_SYSTEMD)
   systemdAllowSleep(pri->bus, pri->sleepFD, systemSleepAllowed);
 #endif

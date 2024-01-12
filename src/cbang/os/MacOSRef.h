@@ -33,15 +33,30 @@
 
 #ifdef __APPLE__
 
-#include "MacOSString.h"
-
-#include <cbang/util/Version.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 
 namespace cb {
-  namespace MacOSUtilities {
-    const cb::Version &getOSVersion();
-  }
+  template <typename T>
+  class MacOSRef {
+  protected:
+    T ref;
+
+  public:
+    MacOSRef(T ref = 0) : ref(ref) {}
+    virtual ~MacOSRef() {if (ref) CFRelease(ref);}
+
+
+    MacOSRef<T> &operator=(const MacOSRef<T> &o) {
+      if (ref) CFRelease(ref);
+      ref = o.ref;
+      return *this;
+    }
+
+    explicit operator bool() {return ref;}
+    operator T &() {return ref;}
+    operator const T &() const {return ref;}
+  };
 }
 
 #endif // __APPLE__
