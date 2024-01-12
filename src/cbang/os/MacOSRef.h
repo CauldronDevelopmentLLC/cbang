@@ -46,6 +46,9 @@ namespace cb {
     MacOSRef(T ref = 0) : ref(ref) {}
     virtual ~MacOSRef() {if (ref) CFRelease(ref);}
 
+    const T &get() const {return ref;}
+    T &get() {return ref;}
+
 
     MacOSRef<T> &operator=(const MacOSRef<T> &o) {
       if (ref) CFRelease(ref);
