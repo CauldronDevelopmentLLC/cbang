@@ -53,6 +53,7 @@
 #elif defined(HAVE_SYSTEMD)
 #include <systemd/sd-bus.h>
 #include <fcntl.h>
+#include <unistd.h>
 #endif
 
 #include <cstring>
