@@ -29,19 +29,32 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#ifdef __APPLE__
-
 #include "MacOSString.h"
 
-#include <cbang/util/Version.h>
+#include <cbang/SmartPointer.h>
+
+using namespace cb;
+using namespace std;
 
 
-namespace cb {
-  namespace MacOSUtilities {
-    const cb::Version &getOSVersion();
-  }
+MacOSString::MacOSString(const char *s) :
+  MacOSString(CFStringCreateWithCString(0, s, kCFStringEncodingUTF8)) {}
+
+
+MacOSString::operator string () const {
+  if (!ref) return string();
+
+  // Try to avoid an extra copy
+  const char *ptr = CFStringGetCStringPtr(ref, kCFStringEncodingUTF8);
+  if (ptr) return string(ptr);
+
+  // Must copy to buffer
+  CFIndex len = 1 + CFStringGetMaximumSizeForEncoding(
+    CFStringGetLength(ref), kCFStringEncodingUTF8);
+
+  SmartPointer<char>::Array buf = new char[len];
+  if (CFStringGetCString(ref, buf.get(), len, kCFStringEncodingUTF8))
+    return buf.get();
+
+  THROW("Failed to convert CFStringRef");
 }
-
-#endif // __APPLE__

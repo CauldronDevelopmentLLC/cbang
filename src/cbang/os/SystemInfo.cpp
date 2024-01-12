@@ -267,7 +267,7 @@ Version SystemInfo::getOSVersion() const {
   THROW("Failed to get Windows version");
 
 #elif defined(__APPLE__)
-  return MacOSUtilities::getMacOSVersion();
+  return MacOSUtilities::getOSVersion();
 
 #else
   struct utsname i;
