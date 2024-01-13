@@ -119,8 +119,7 @@ void SystemInfo::add(Info &info) {
            HumanSize(getFreeMemory()).toString() + "B");
   info.add(category, "Threads", getThreadsType().toString());
 
-  Version osVersion = getOSVersion();
-  info.add(category, "OS Version", osVersion.toString());
+  info.add(category, "OS Version", getOSVersion().toString());
 
   info.add(category, "Has Battery",
            String(PowerManagement::instance().hasBattery()));
