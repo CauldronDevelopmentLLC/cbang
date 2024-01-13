@@ -49,15 +49,15 @@ PowerManagement *PowerManagement::singleton = 0;
 
 
 PowerManagement &PowerManagement::instance() {
-  if (singleton) THROW("There can be only one instance of PowerManagement");
-
+  if (!singleton) {
 #if defined(_WIN32)
-  singleton = new WinPowerManagement;
+    singleton = new WinPowerManagement;
 #elif defined(__APPLE__)
-  singleton = new MacOSPowerManagement;
+    singleton = new MacOSPowerManagement;
 #else
-  singleton = new LinPowerManagement;
+    singleton = new LinPowerManagement;
 #endif
+  }
 
   return *singleton;
 }

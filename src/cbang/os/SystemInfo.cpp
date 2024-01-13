@@ -63,15 +63,15 @@ SystemInfo *SystemInfo::singleton = 0;
 
 
 SystemInfo &SystemInfo::instance() {
-  if (singleton) THROW("There can be only one instance of SystemInfo");
-
+  if (!singleton) {
 #if defined(_WIN32)
-  singleton = new WinSystemInfo;
+    singleton = new WinSystemInfo;
 #elif defined(__APPLE__)
-  singleton = new MacOSSystemInfo;
+    singleton = new MacOSSystemInfo;
 #else
-  singleton = new LinSystemInfo;
+    singleton = new LinSystemInfo;
 #endif
+  }
 
   return *singleton;
 }
