@@ -97,27 +97,22 @@ SystemInfo::SystemInfo(Inaccessible) {detectThreads();}
 
 uint32_t SystemInfo::getCPUCount() const {
 #if defined(_WIN32)
-  // Count active CPU threads
+  // Count active CPU cores
+  SysError::clear();
   DWORD len = 0;
+  GetLogicalProcessorInformation(0, &len);
+  if (SysError::get() == ERROR_INSUFFICIENT_BUFFER) {
+    typedef SYSTEM_LOGICAL_PROCESSOR_INFORMATION info_t;
+    unsigned count = (unsigned)len / sizeof(info_t);
+    SmartPointer<info_t>::Array buf = new info_t[count];
 
-  if (!GetLogicalProcessorInformationEx(RelationGroup, 0, &len)) {
-    SmartPointer<uint8_t>::Array buffer = new uint8_t[len];
-    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)buffer.get();
+    if (!GetLogicalProcessorInformation(buf.get(), &len)) {
+      uint32_t cores = 0;
+      for (unsigned i = 0; i < count; i++)
+        if (buf[i].Relationship == RelationProcessorCore)
+          cores++;
 
-    if (!GetLogicalProcessorInformationEx(RelationGroup, info, &len)) {
-      uint32_t cpus = 0;
-
-      for (unsigned i = 0; i < len;) {
-        info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)&buffer[i];
-
-        for (unsigned j = 0; j < info->Group.ActiveGroupCount; j++) {
-          cpus += info->Group.GroupInfo[j].ActiveProcessorCount;
-
-          i += info->Size;
-        }
-      }
-
-      if (cpus) return cpus;
+      if (cores) return cores;
     }
   }
 
