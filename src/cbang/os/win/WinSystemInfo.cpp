@@ -43,38 +43,8 @@ using namespace std;
 
 
 uint32_t WinSystemInfo::getCPUCount() const {
-  // Count active CPU cores
-  auto  rel = RelationProcessorCore;
-  DWORD len = 0;
-
-  SysError::clear();
-  GetLogicalProcessorInformationEx(rel, 0, &len);
-
-  if (SysError::get() == ERROR_INSUFFICIENT_BUFFER) {
-    SmartPointer<uint8_t>::Array buf = new uint8_t[len];
-
-    typedef SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX info_t;
-    if (!GetLogicalProcessorInformationEx(rel, (info_t *)buf.get(), &len)) {
-      uint32_t cores = 0;
-
-      for (int i = 0; i < len;) {
-        auto &info = (info_t &)buf[i];
-
-        for (int group = 0; group < info.Processor.GroupCount; group++) {
-          auto mask = info.Processor.GroupMask[group].Mask;
-
-          while (mask) {
-            cores += mask & 1;
-            mask >>= 1;
-          }
-        }
-
-        i += info.Size;
-      }
-
-      if (cores) return cores;
-    }
-  }
+  auto cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+  if (cores) return (uint32_t)cores;
 
   // Fallback to old method
   SYSTEM_INFO sysInfo;
