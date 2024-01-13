@@ -87,6 +87,10 @@ if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
 if not 'libevent' in disable_local: subdirs.append('event')
 
+if env['PLATFORM'] == 'win32': subdirs.append('os/win')
+elif env['PLATFORM'] == 'darwin': subdirs.append('os/osx')
+else: subdirs.append('os/lin')
+
 src = []
 for dir in subdirs:
     dir = 'src/cbang/' + dir

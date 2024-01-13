@@ -29,44 +29,34 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Win32EventLog.h"
 
-#include <cstdint>
+#include <cbang/Exception.h>
 
+#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
+#include <windows.h>
 
-namespace cb {
-  class PowerManagement {
-    static PowerManagement *singleton;
+#pragma comment(lib, "advapi32.lib")
 
-    uint64_t lastBatteryUpdate     = 0;
-    bool systemOnBattery           = false;
-    bool systemHasBattery          = false;
-
-    uint64_t lastIdleSecondsUpdate = 0;
-    unsigned idleSeconds           = 0;
-
-    bool systemSleepAllowed        = false;
+using namespace cb;
+using namespace std;
 
 
-  protected:
-    PowerManagement() {}
-    virtual ~PowerManagement() {}
+Win32EventLog::Win32EventLog(const std::string &source, const string &server) :
+  source(source),
+  handle(RegisterEventSource(server.empty() ? 0 : server.c_str(),
+                             source.c_str())) {
+  if (!handle) THROW("Failed to register WIN32 event source");
+}
 
-  public:
-    static PowerManagement &instance();
 
-    bool onBattery();
-    bool hasBattery();
-    unsigned getIdleSeconds();
-    void allowSystemSleep(bool x);
+Win32EventLog::~Win32EventLog() {
+  if (handle) DeregisterEventSource(handle);
+}
 
-  protected:
-    void updateIdleSeconds();
-    void updateBatteryInfo();
 
-    virtual void _setAllowSleep(bool allow) = 0;
-    virtual unsigned _getIdleSeconds() = 0;
-    virtual bool _getHasBattery() = 0;
-    virtual bool _getOnBattery() = 0;
-  };
+void Win32EventLog::log(string &message, unsigned type, unsigned category,
+                        unsigned id) const {
+  LPCSTR strs[2] = {(LPCSTR)source.c_str(), (LPCSTR)message.c_str()};
+  ReportEvent(handle, (WORD)type, (WORD)category, (DWORD)id, 0, 2, 0, strs, 0);
 }

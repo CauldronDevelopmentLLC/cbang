@@ -31,7 +31,6 @@
 
 #include "SignalManager.h"
 #include "SystemUtilities.h"
-#include "SystemInfo.h"
 
 #include <cbang/Exception.h>
 #include <cbang/Zap.h>
@@ -63,7 +62,6 @@ struct SignalManager::private_t {
 #ifndef _WIN32
   sigset_t currentSet;
   sigset_t nextSet;
-  bool linuxThreads;
   bool dirty;
 #endif // _WIN32
 };
@@ -74,9 +72,6 @@ SignalManager::SignalManager(Inaccessible) :
 #ifndef _WIN32
   sigemptyset(&pri->currentSet);
   sigemptyset(&pri->nextSet);
-
-  pri->linuxThreads =
-    SystemInfo::instance().getThreadsType() == ThreadsType::LINUX_THREADS;
 
   pri->dirty = false;
 

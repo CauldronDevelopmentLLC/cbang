@@ -29,19 +29,40 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "WinPowerManagement.h"
 
-#ifdef __APPLE__
+#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
+#include <windows.h>
 
-#include "MacOSString.h"
-
-#include <cbang/util/Version.h>
+using namespace cb;
 
 
-namespace cb {
-  namespace MacOSUtilities {
-    const cb::Version &getOSVersion();
-  }
+WinPowerManagement::~WinPowerManagement() {_setAllowSleep(true);}
+
+
+void WinPowerManagement::_setAllowSleep(bool allow) {
+  SetThreadExecutionState(
+    ES_CONTINUOUS |
+    (allow ? 0 : (ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)));
 }
 
-#endif // __APPLE__
+
+unsigned WinPowerManagement::_getIdleSeconds() {
+  LASTINPUTINFO lif;
+  lif.cbSize = sizeof(LASTINPUTINFO);
+  GetLastInputInfo(&lif);
+
+  return (GetTickCount() - lif.dwTime) / 1000; // Convert from ms.
+}
+
+
+bool WinPowerManagement::_getHasBattery() {
+  SYSTEM_POWER_STATUS status;
+  return !GetSystemPowerStatus(&status) && !(status.BatteryFlag & 128);
+}
+
+
+bool WinPowerManagement::_getOnBattery() {
+  SYSTEM_POWER_STATUS status;
+  return !GetSystemPowerStatus(&status) && !status.ACLineStatus;
+}

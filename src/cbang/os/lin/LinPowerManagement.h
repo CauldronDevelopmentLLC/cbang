@@ -29,38 +29,30 @@
 
 \******************************************************************************/
 
-#ifdef _WIN32
+#pragma once
 
-#include "Win32EventLog.h"
+#include <cbang/os/PowerManagement.h>
 
-#include <cbang/Exception.h>
-
-#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
-#include <windows.h>
-
-#pragma comment(lib, "advapi32.lib")
-
-using namespace cb;
-using namespace std;
+#include <string>
 
 
-Win32EventLog::Win32EventLog(const std::string &source, const string &server) :
-  source(source),
-  handle(RegisterEventSource(server.empty() ? 0 : server.c_str(),
-                             source.c_str())) {
-  if (!handle) THROW("Failed to register WIN32 event source");
+namespace cb {
+  class LinPowerManagement : public PowerManagement {
+    bool useSys  = false;
+    bool useProc = false;
+    std::string base;
+
+    struct private_t;
+    private_t *pri = 0;
+
+  public:
+    LinPowerManagement();
+    ~LinPowerManagement();
+
+    // From PowerManagement
+    void _setAllowSleep(bool allow);
+    unsigned _getIdleSeconds();
+    bool _getHasBattery();
+    bool _getOnBattery();
+  };
 }
-
-
-Win32EventLog::~Win32EventLog() {
-  if (handle) DeregisterEventSource(handle);
-}
-
-
-void Win32EventLog::log(string &message, unsigned type, unsigned category,
-                        unsigned id) const {
-  LPCSTR strs[2] = {(LPCSTR)source.c_str(), (LPCSTR)message.c_str()};
-  ReportEvent(handle, (WORD)type, (WORD)category, (DWORD)id, 0, 2, 0, strs, 0);
-}
-
-#endif // _WIN32

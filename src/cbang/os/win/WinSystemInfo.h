@@ -31,23 +31,15 @@
 
 #pragma once
 
-#ifdef _WIN32
-#include <string>
-
+#include <cbang/os/SystemInfo.h>
 
 namespace cb {
-  class Win32EventLog {
-    std::string source;
-    void *handle;
-
+  class WinSystemInfo : public SystemInfo {
   public:
-    Win32EventLog(const std::string &source,
-                  const std::string &server = std::string());
-    ~Win32EventLog();
-
-    void log(std::string &message, unsigned type = 1, unsigned category = 0,
-             unsigned id = 0) const;
+    // From SystemInfo
+    uint32_t getCPUCount() const;
+    ThreadsType getThreadsType() {return WINDOWS_THREADS;}
+    uint64_t getMemoryInfo(memory_info_t type) const;
+    Version getOSVersion() const;
   };
 }
-
-#endif // _WIN32
