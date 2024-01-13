@@ -31,42 +31,24 @@
 
 #pragma once
 
-#include <cstdint>
-
+#include <cbang/os/SystemInfo.h>
 
 namespace cb {
-  class PowerManagement {
-    static PowerManagement *singleton;
-
-    uint64_t lastBatteryUpdate     = 0;
-    bool systemOnBattery           = false;
-    bool systemHasBattery          = false;
-
-    uint64_t lastIdleSecondsUpdate = 0;
-    unsigned idleSeconds           = 0;
-
-    bool systemSleepAllowed        = false;
-
-
-  protected:
-    PowerManagement() {}
-    virtual ~PowerManagement() {}
+  class MacOSSystemInfo : public SystemInfo {
+    Version osVersion;
 
   public:
-    static PowerManagement &instance();
+    MacOSSystemInfo();
 
-    bool onBattery();
-    bool hasBattery();
-    unsigned getIdleSeconds();
-    void allowSystemSleep(bool x);
+    // From SystemInfo
+    uint32_t getCPUCount() const;
+    uint32_t getPerformanceCPUCount() const;
+    ThreadsType getThreadsType() {return POSIX_THREADS;}
+    uint64_t getMemoryInfo(memory_info_t type) const;
+    Version getOSVersion() const {return osVersion;}
 
   protected:
-    void updateIdleSeconds();
-    void updateBatteryInfo();
-
-    virtual void _setAllowSleep(bool allow) = 0;
-    virtual unsigned _getIdleSeconds() = 0;
-    virtual bool _getHasBattery() = 0;
-    virtual bool _getOnBattery() = 0;
+    static bool versionBySysCtrl(unsigned ver[3]);
+    static bool versionByPList(unsigned ver[3]);
   };
 }

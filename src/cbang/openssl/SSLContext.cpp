@@ -63,7 +63,7 @@
 
 #ifdef __APPLE__
 #include <Security/Security.h>
-#include <cbang/os/MacOSUtilities.h>
+#include <cbang/os/osx/MacOSString.h>
 #endif
 
 using namespace std;

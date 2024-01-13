@@ -31,42 +31,20 @@
 
 #pragma once
 
-#include <cstdint>
+#include <string>
 
 
 namespace cb {
-  class PowerManagement {
-    static PowerManagement *singleton;
-
-    uint64_t lastBatteryUpdate     = 0;
-    bool systemOnBattery           = false;
-    bool systemHasBattery          = false;
-
-    uint64_t lastIdleSecondsUpdate = 0;
-    unsigned idleSeconds           = 0;
-
-    bool systemSleepAllowed        = false;
-
-
-  protected:
-    PowerManagement() {}
-    virtual ~PowerManagement() {}
+  class Win32EventLog {
+    std::string source;
+    void *handle;
 
   public:
-    static PowerManagement &instance();
+    Win32EventLog(const std::string &source,
+                  const std::string &server = std::string());
+    ~Win32EventLog();
 
-    bool onBattery();
-    bool hasBattery();
-    unsigned getIdleSeconds();
-    void allowSystemSleep(bool x);
-
-  protected:
-    void updateIdleSeconds();
-    void updateBatteryInfo();
-
-    virtual void _setAllowSleep(bool allow) = 0;
-    virtual unsigned _getIdleSeconds() = 0;
-    virtual bool _getHasBattery() = 0;
-    virtual bool _getOnBattery() = 0;
+    void log(std::string &message, unsigned type = 1, unsigned category = 0,
+             unsigned id = 0) const;
   };
 }

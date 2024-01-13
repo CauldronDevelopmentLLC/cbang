@@ -29,12 +29,11 @@
 
 \******************************************************************************/
 
-#ifdef _WIN32
 #include "Win32Registry.h"
-#include "SysError.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
+#include <cbang/os/SysError.h>
 
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>
@@ -205,5 +204,3 @@ void Win32Registry::remove(const string &path) {
   if (ret)
     THROW("Failed to delete registry key '" << path << "': " << SysError(ret));
 }
-
-#endif // _WIN32
