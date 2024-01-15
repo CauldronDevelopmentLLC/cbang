@@ -45,7 +45,7 @@ namespace cb {
     uint64_t lastIdleSecondsUpdate = 0;
     unsigned idleSeconds           = 0;
 
-    bool systemSleepAllowed        = false;
+    bool systemSleepAllowed        = true;
 
 
   protected:
