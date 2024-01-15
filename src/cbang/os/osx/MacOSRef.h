@@ -53,6 +53,17 @@ namespace cb {
     T &get() {return ref;}
 
 
+    MacOSRef<T> &operator=(const T &_ref) {
+      if (ref != _ref) {
+        if (ref) CFRelease(ref);
+        ref = _ref;
+        if (ref) CFRetain(ref);
+      }
+
+      return *this;
+    }
+
+
     MacOSRef<T> &operator=(const MacOSRef<T> &o) {
       if (ref != o.ref) {
         if (ref) CFRelease(ref);
