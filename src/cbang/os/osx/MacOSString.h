@@ -41,7 +41,7 @@
 namespace cb {
   class MacOSString : public MacOSRef<CFStringRef> {
   public:
-    MacOSString(const CFStringRef &s) : MacOSRef<CFStringRef>(s) {}
+    explicit MacOSString(const CFStringRef &s) : MacOSRef<CFStringRef>(s) {}
     explicit MacOSString(const char *s);
     explicit MacOSString(const std::string &s) : MacOSString(s.c_str()) {}
 
