@@ -39,15 +39,30 @@
 namespace cb {
   template <typename T>
   class MacOSRef {
+
   protected:
     T ref;
 
   public:
-    MacOSRef(T ref = 0) : ref(ref) {}
+    explicit MacOSRef(const MacOSRef<T> &o) {*this = o;}
+    explicit MacOSRef(T ref = 0) {}
     virtual ~MacOSRef() {if (ref) CFRelease(ref);}
+
 
     const T &get() const {return ref;}
     T &get() {return ref;}
+
+
+    MacOSRef<T> &operator=(const MacOSRef<T> &o) {
+      if (ref != o.ref) {
+        if (ref) CFRelease(ref);
+        ref = o.ref;
+        if (ref) CFRetain(ref);
+      }
+
+      return *this;
+    }
+
 
     explicit operator bool() {return ref;}
     operator T &() {return ref;}
