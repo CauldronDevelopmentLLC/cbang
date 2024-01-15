@@ -312,7 +312,7 @@ void SSLContext::loadSystemRootCerts() {
 
     cert = (SecCertificateRef)CFArrayGetValueAtIndex(anchors, i);
 
-    MacOSString summary0 = SecCertificateCopySubjectSummary(cert);
+    MacOSString summary0(SecCertificateCopySubjectSummary(cert));
     if (summary0) summary = summary0;
 
     LOG_DEBUG(5, "Cert " << i << ": " << summary);

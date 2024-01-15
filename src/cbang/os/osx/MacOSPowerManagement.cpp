@@ -100,20 +100,20 @@ unsigned MacOSPowerManagement::_getIdleSeconds() {
 
 
 bool MacOSPowerManagement::_getHasBattery() {
-  MacOSRef<CFTypeRef> info = IOPSCopyPowerSourcesInfo();
+  MacOSRef<CFTypeRef> info(IOPSCopyPowerSourcesInfo());
   if (!info) return false;
 
-  MacOSRef<CFArrayRef> list = IOPSCopyPowerSourcesList(info);
+  MacOSRef<CFArrayRef> list(IOPSCopyPowerSourcesList(info));
 
   return list && CFArrayGetCount(list);
 }
 
 
 bool MacOSPowerManagement::_getOnBattery() {
-  MacOSRef<CFTypeRef> info = IOPSCopyPowerSourcesInfo();
+  MacOSRef<CFTypeRef> info(IOPSCopyPowerSourcesInfo());
   if (!info) return false;
 
-  MacOSRef<CFArrayRef> list = IOPSCopyPowerSourcesList(info);
+  MacOSRef<CFArrayRef> list(IOPSCopyPowerSourcesList(info));
 
   if (list)
     for (CFIndex i = 0; i < CFArrayGetCount(list); i++) {

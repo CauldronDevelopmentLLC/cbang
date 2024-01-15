@@ -150,16 +150,16 @@ bool MacOSSystemInfo::versionBySysCtrl(unsigned ver[3]) {
 bool MacOSSystemInfo::versionByPList(unsigned ver[3]) {
   // `Gestalt()` actually gets the system version from this file.
   // `if (@available(macOS 10.x, *))` also gets the version from there.
-  MacOSRef<CFURLRef> url = CFURLCreateWithFileSystemPath(
+  MacOSRef<CFURLRef> url(CFURLCreateWithFileSystemPath(
     0, CFSTR("/System/Library/CoreServices/SystemVersion.plist"),
-    kCFURLPOSIXPathStyle, false);
+    kCFURLPOSIXPathStyle, false));
   if (!url) return false;
 
-  MacOSRef<CFReadStreamRef> stream = CFReadStreamCreateWithFile(0, url);
+  MacOSRef<CFReadStreamRef> stream(CFReadStreamCreateWithFile(0, url));
   if (!stream || !CFReadStreamOpen(stream)) return false;
 
-  MacOSRef<CFPropertyListRef> props = CFPropertyListCreateWithStream(
-    0, stream, 0, kCFPropertyListImmutable, 0, 0);
+  MacOSRef<CFPropertyListRef> props(CFPropertyListCreateWithStream(
+    0, stream, 0, kCFPropertyListImmutable, 0, 0));
   if (!props || CFGetTypeID(props) != CFDictionaryGetTypeID())
     return false;
 
