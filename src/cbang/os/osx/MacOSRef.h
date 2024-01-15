@@ -45,7 +45,7 @@ namespace cb {
 
   public:
     explicit MacOSRef(const MacOSRef<T> &o) {*this = o;}
-    explicit MacOSRef(T ref = 0) {}
+    explicit MacOSRef(T ref = 0) : ref(ref) {}
     virtual ~MacOSRef() {if (ref) CFRelease(ref);}
 
 
