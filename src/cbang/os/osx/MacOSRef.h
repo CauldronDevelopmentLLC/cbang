@@ -57,7 +57,6 @@ namespace cb {
       if (ref != _ref) {
         if (ref) CFRelease(ref);
         ref = _ref;
-        if (ref) CFRetain(ref);
       }
 
       return *this;
