@@ -35,12 +35,9 @@
 
 namespace cb {
   class LinSystemInfo : public SystemInfo {
-    ThreadsType threadsType;
-
   public:
     // From SystemInfo
     uint32_t getCPUCount() const;
-    ThreadsType getThreadsType();
     uint64_t getMemoryInfo(memory_info_t type) const;
     Version getOSVersion() const;
   };

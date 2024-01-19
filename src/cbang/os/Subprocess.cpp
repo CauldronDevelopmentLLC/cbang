@@ -445,17 +445,6 @@ int Subprocess::wait(bool nonblocking) {
     if (flags & SystemUtilities::PROCESS_DUMPED_CORE) dumpedCore = true;
 
   } catch (...) {
-#ifndef _WIN32
-    // Linux Threads, used in 2.4 kernels, uses a different process for each
-    // thread.  Because of this you cannot reap the child process from a
-    // thread other than the one the child process was started from.  This
-    // causes waitpid() to fail when called from another thread.
-    // As a work around we just ignore the error and hope the original thread
-    // will reap the process later.
-    if (SystemInfo::instance().getThreadsType() ==
-        ThreadsType::LINUX_THREADS && errno == ECHILD) return 0;
-#endif // _WIN32
-
     closeProcessHandles();
     running = false;
     throw;

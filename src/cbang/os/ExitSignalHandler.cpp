@@ -57,10 +57,10 @@ static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) {
     ExitSignalHandler &handler = ExitSignalHandler::instance();
 
     switch (dwCtrlType) {
-    case CTRL_C_EVENT: handler.signal(SIGINT); break;
-    case CTRL_BREAK_EVENT: handler.signal(SIGQUIT); break;
-    case CTRL_CLOSE_EVENT: handler.signal(SIGTERM); break;
-    case CTRL_LOGOFF_EVENT: handler.signal(SIGHUP); break;
+    case CTRL_C_EVENT:        handler.signal(SIGINT);  break;
+    case CTRL_BREAK_EVENT:    handler.signal(SIGQUIT); break;
+    case CTRL_CLOSE_EVENT:    handler.signal(SIGTERM); break;
+    case CTRL_LOGOFF_EVENT:   handler.signal(SIGHUP);  break;
     case CTRL_SHUTDOWN_EVENT: handler.signal(SIGTERM); break;
     default: break;
     }
@@ -80,14 +80,12 @@ void ExitSignalHandler::catchExitSignals() {
 
 #else
 #ifndef _WIN32
-  signalManager.addHandler(SIGHUP, this);
+  signalManager.addHandler(SIGHUP,  this);
   signalManager.addHandler(SIGQUIT, this);
 #endif
   signalManager.addHandler(SIGTERM, this);
-  signalManager.addHandler(SIGINT, this);
+  signalManager.addHandler(SIGINT,  this);
 #endif
-
-  signalManager.setEnabled(true);
 }
 
 

@@ -30,17 +30,11 @@
 \******************************************************************************/
 
 #include "SignalManager.h"
-#include "SystemUtilities.h"
 
 #include <cbang/Exception.h>
-#include <cbang/Zap.h>
-
 #include <cbang/log/Logger.h>
-#include <cbang/time/Timer.h>
-#include <cbang/util/SmartLock.h>
 
 #include <csignal>
-#include <cstdlib> // For atexit()
 
 using namespace std;
 using namespace cb;
@@ -48,213 +42,21 @@ using namespace cb;
 
 namespace {
   void sig_handler(int sig) {SignalManager::instance().signal(sig);}
-#ifndef _WIN32
-  void disable() {SignalManager::instance().setEnabled(false);}
-#endif // _WIN32
-}
-
-#ifndef _WIN32
-#include <unistd.h>
-#include <cstring>
-#endif
-
-struct SignalManager::private_t {
-#ifndef _WIN32
-  sigset_t currentSet;
-  sigset_t nextSet;
-  bool dirty;
-#endif // _WIN32
-};
-
-
-SignalManager::SignalManager(Inaccessible) :
-  pri(new private_t), enabled(false) {
-#ifndef _WIN32
-  sigemptyset(&pri->currentSet);
-  sigemptyset(&pri->nextSet);
-
-  pri->dirty = false;
-
-  atexit(disable);
-#endif // _WIN32
-}
-
-
-SignalManager::~SignalManager() {
-  setEnabled(false);
-  zap(pri);
-}
-
-
-void SignalManager::setEnabled(bool x) {
-  if (enabled == x) return;
-  enabled = x;
-
-#ifndef _WIN32
-  // Threaded implementation is safer with LinuxThreads, found in
-  // kernels <= 2.4, as it guarantees that signals are received only once and
-  // avoids some bugs.
-
-  if (enabled) start();
-  else {
-    stop();
-    Condition::signal();
-    join();
-  }
-#endif
 }
 
 
 void SignalManager::addHandler(int sig, SignalHandler *handler) {
-  SmartLock lock(this);
+  if (handler && handlers.find(sig) != handlers.end())
+    THROW("Signal " << sig << " already has handler.");
 
-  if (handler) {
-    handlers_t::iterator it = handlers.find(sig);
-    if (it != handlers.end())
-      THROW("Signal " << sig << " already has handler.");
-  }
-
-#ifdef _WIN32
   ::signal(sig, sig_handler);
-
-#else
-  block(sig); // Block in main & inherited threads
-  sigaddset(&pri->nextSet, sig);
-  pri->dirty = true;
-  Condition::signal();
-#endif
-
   if (handler) handlers[sig] = handler;
 }
 
 
 void SignalManager::removeHandler(int sig) {
-  SmartLock lock(this);
-
   handlers.erase(sig);
-
-#ifdef _WIN32
   ::signal(sig, SIG_DFL);
-
-#else
-  unblock(sig); // Unblock in main & inherited threads
-  sigdelset(&pri->nextSet, sig);
-  pri->dirty = true;
-  Condition::signal();
-#endif
-}
-
-
-void SignalManager::signal(int sig) {
-  LOG_INFO(1, "Caught signal " << signalString(sig) << "(" << sig
-           << ") on PID " << SystemUtilities::getPID());
-
-  if (!enabled) return;
-
-  handlers_t::iterator it = handlers.find(sig);
-  if (it != handlers.end()) it->second->handleSignal(sig);
-}
-
-
-void SignalManager::run() {
-#ifndef _WIN32
-  while (true) {
-    update();
-    {
-      SmartLock lock(this);
-      timedWait(0.1);
-    }
-    if (shouldShutdown()) break;
-  }
-
-  restore();
-#endif // _WIN32
-}
-
-
-void SignalManager::update() {
-#ifndef _WIN32
-  sigset_t oldSet;
-  {
-    SmartLock lock(this);
-
-    if (!pri->dirty) return;
-    pri->dirty = false;
-
-    // Get new signal set
-    oldSet = pri->currentSet;
-    pri->currentSet = pri->nextSet;
-  }
-
-  struct sigaction action;
-  memset(&action, 0, sizeof(action));
-
-  // Update signal handlers
-  //
-  // A handler is needed so that interruptable system calls get
-  // interrupted. This works because SA_RESTART is not set for
-  // these handlers which causes interuptable system calls to
-  // interupt rather than restart when the handler is completed.
-  // See signal(7) 'Interruption of System Calls and Library
-  // Functions by Signal Handlers'.
-  for (int sig = 1; sig < 32; sig++) {
-    // Added signal
-    if (sigismember(&pri->currentSet, sig) && !sigismember(&oldSet, sig)) {
-      action.sa_handler = sig_handler;
-      sigaction(sig, &action, 0);
-    }
-
-    // Removed signal
-    if (!sigismember(&pri->currentSet, sig) && sigismember(&oldSet, sig)) {
-      action.sa_handler = SIG_DFL;
-      sigaction(sig, &action, 0);
-    }
-  }
-
-  // Make sure these signals are unblocked for this thread
-  pthread_sigmask(SIG_UNBLOCK, &pri->currentSet, 0);
-
-#endif // _WIN32
-}
-
-
-void SignalManager::restore() {
-#ifndef _WIN32
-  // Restore default handlers
-  struct sigaction action;
-
-  memset(&action, 0, sizeof(action));
-  action.sa_handler = SIG_DFL;
-
-  for (int sig = 1; sig < 32; sig++)
-    if (sigismember(&pri->currentSet, sig)) sigaction(sig, &action, 0);
-#endif // _WIN32
-}
-
-
-void SignalManager::block(int sig) {
-#ifdef _WIN32
-  THROW("Not supported on Windows");
-
-#else
-  sigset_t mask;
-  pthread_sigmask(SIG_SETMASK, 0, &mask); // Get current signal set
-  sigaddset(&mask, sig); // Add signal
-  pthread_sigmask(SIG_SETMASK, &mask, 0); // Set updated signal set
-#endif
-}
-
-
-void SignalManager::unblock(int sig) {
-#ifdef _WIN32
-  THROW("Not supported on Windows");
-
-#else
-  sigset_t mask;
-  pthread_sigmask(SIG_SETMASK, 0, &mask); // Get current signal set
-  sigdelset(&mask, sig); // Remove signal
-  pthread_sigmask(SIG_SETMASK, &mask, 0); // Set updated signal set
-#endif
 }
 
 
@@ -281,4 +83,12 @@ const char *SignalManager::signalString(int sig) {
 #endif
   default:      return "UNKNOWN";
   }
+}
+
+
+void SignalManager::signal(int sig) {
+  LOG_INFO(1, "Caught signal " << signalString(sig) << '(' << sig << ')');
+
+  auto it = handlers.find(sig);
+  if (it != handlers.end()) it->second->handleSignal(sig);
 }

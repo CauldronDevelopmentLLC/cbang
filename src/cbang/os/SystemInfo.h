@@ -33,7 +33,6 @@
 
 #include <cbang/Exception.h>
 #include <cbang/util/Version.h>
-#include <cbang/enum/ThreadsType.h>
 
 #include <cstdint>
 
@@ -41,7 +40,7 @@
 namespace cb {
   class Info;
 
-  class SystemInfo : public ThreadsType::Enum {
+  class SystemInfo {
     static SystemInfo *singleton;
 
   protected:
@@ -60,7 +59,6 @@ namespace cb {
 
     virtual uint32_t getCPUCount() const = 0;
     virtual uint32_t getPerformanceCPUCount() const {return 0;}
-    virtual ThreadsType getThreadsType() = 0;
 
     virtual uint64_t getMemoryInfo(memory_info_t type) const = 0;
     uint64_t getTotalMemory()    const {return getMemoryInfo(MEM_INFO_TOTAL);}

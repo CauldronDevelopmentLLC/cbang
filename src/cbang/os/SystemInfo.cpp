@@ -117,7 +117,6 @@ void SystemInfo::add(Info &info) {
   info.add(category, "Memory", HumanSize(getTotalMemory()).toString() + "B");
   info.add(category, "Free Memory",
            HumanSize(getFreeMemory()).toString() + "B");
-  info.add(category, "Threads", getThreadsType().toString());
 
   info.add(category, "OS Version", getOSVersion().toString());
 
