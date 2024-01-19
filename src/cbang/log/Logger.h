@@ -64,57 +64,57 @@ namespace cb {
   class Logger : public Mutex, public Singleton<Logger> {
   public:
     enum log_level_t {
-      LEVEL_RAW      = 0,
-      LEVEL_ERROR    = 1 << 0,
-      LEVEL_WARNING  = 1 << 1,
-      LEVEL_INFO     = 1 << 2,
-      LEVEL_DEBUG    = 1 << 3,
-      LEVEL_MASK     = (1 << 4) - 1
+      LEVEL_RAW     = 0,
+      LEVEL_ERROR   = 1 << 0,
+      LEVEL_WARNING = 1 << 1,
+      LEVEL_INFO    = 1 << 2,
+      LEVEL_DEBUG   = 1 << 3,
+      LEVEL_MASK    = (1 << 4) - 1
     };
 
   private:
     std::string logFilename;
 
 #ifdef CBANG_DEBUG_LEVEL
-    unsigned verbosity = CBANG_DEBUG_LEVEL;
+    unsigned    verbosity           = CBANG_DEBUG_LEVEL;
 #else
-    unsigned verbosity = 1;
+    unsigned    verbosity           = 1;
 #endif
-    bool logCRLF = false;
+    bool        logCRLF             = false;
 #ifdef DEBUG
-    bool logDebug = true;
+    bool        logDebug            = true;
 #else
-    bool logDebug = false;
+    bool        logDebug            = false;
 #endif
-    bool logTime = true;
-    bool logDate = false;
-    uint64_t logDatePeriodically = 0;
-    bool logShortLevel = false;
-    bool logLevel = true;
-    bool logPrefix = false;
-    bool logDomain = false;
-    bool logSimpleDomains = true;
-    bool logThreadID = false;
-    bool logHeader = true;
-    bool logNoInfoHeader = false;
-    bool logColor = true;
-    bool logToScreen = true;
-    bool logTrunc = false;
-    bool logRotate = true;
+    bool        logTime             = true;
+    bool        logDate             = false;
+    uint64_t    logDatePeriodically = 0;
+    bool        logShortLevel       = false;
+    bool        logLevel            = true;
+    bool        logPrefix           = false;
+    bool        logDomain           = false;
+    bool        logSimpleDomains    = true;
+    bool        logThreadID         = false;
+    bool        logHeader           = true;
+    bool        logNoInfoHeader     = false;
+    bool        logColor            = true;
+    bool        logToScreen         = true;
+    bool        logTrunc            = false;
+    bool        logRotate           = true;
     Compression logRotateCompression;
-    unsigned logRotateMax = 0;
-    std::string logRotateDir = "logs";
-    uint32_t logRotatePeriod = 0;
-    unsigned logRates = 0;
+    unsigned    logRotateMax        = 0;
+    std::string logRotateDir        = "logs";
+    uint32_t    logRotatePeriod     = 0;
+    unsigned    logRates            = 0;
 
     SmartPointer<RateSet> rates;
     std::map<std::string, std::string> rateMessages;
 
-    SmartPointer<ThreadLocalStorage<unsigned long> > threadIDStorage;
-    SmartPointer<ThreadLocalStorage<std::string> > prefixStorage;
+    SmartPointer<ThreadLocalStorage<unsigned long>> threadIDStorage;
+    SmartPointer<ThreadLocalStorage<std::string>>   prefixStorage;
 
     SmartPointer<std::iostream> logFile;
-    SmartPointer<std::ostream> screenStream;
+    SmartPointer<std::ostream>  screenStream;
 
     mutable unsigned idWidth = 1;
 
