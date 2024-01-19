@@ -35,7 +35,10 @@
 
 #include <cbang/Catch.h>
 #include <cbang/openssl/SSL.h>
+
+#ifdef _WIN32
 #include <cbang/os/win/Win32EventLog.h>
+#endif
 
 
 namespace cb {
