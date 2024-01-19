@@ -31,7 +31,6 @@
 
 #include "LinSystemInfo.h"
 
-#include <cbang/os/Thread.h>
 #include <cbang/os/SystemUtilities.h>
 
 using namespace cb;
@@ -51,35 +50,9 @@ using namespace std;
 #include <unistd.h>
 
 
-namespace {
-  bool isLinuxThreads() {
-    struct TestThread : public Thread {
-      unsigned pid;
-      TestThread() : pid(0) {}
-      void run() override {pid = SystemUtilities::getPID();}
-    };
-
-    TestThread t;
-    t.start();
-    t.join();
-
-    // LinuxThreads has a different PID for each thread
-    return t.pid != SystemUtilities::getPID();
-  }
-}
-
-
 uint32_t LinSystemInfo::getCPUCount() const {
   long cpus = sysconf(_SC_NPROCESSORS_ONLN);
   return cpus < 1 ? 1 : cpus;
-}
-
-
-ThreadsType LinSystemInfo::getThreadsType() {
-  if (!threadsType)
-    threadsType = isLinuxThreads() ? LINUX_THREADS : POSIX_THREADS;
-
-  return threadsType;
 }
 
 

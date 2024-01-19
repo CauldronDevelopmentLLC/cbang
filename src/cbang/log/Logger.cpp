@@ -163,7 +163,7 @@ void Logger::setScreenStream(ostream &stream) {
 }
 
 
-void Logger::setScreenStream(const SmartPointer<std::ostream> &stream) {
+void Logger::setScreenStream(const SmartPointer<ostream> &stream) {
   screenStream = stream;
 }
 
@@ -337,10 +337,10 @@ string Logger::getHeader(const string &domain, int level) const {
 
   } else if (logLevel && (!logNoInfoHeader || level != LEVEL_INFO)) {
     switch (level) {
-    case LEVEL_ERROR:    header += "ERROR";   break;
-    case LEVEL_WARNING:  header += "WARNING"; break;
-    case LEVEL_INFO:     header += "INFO";    break;
-    case LEVEL_DEBUG:    header += "DEBUG";   break;
+    case LEVEL_ERROR:   header += "ERROR";   break;
+    case LEVEL_WARNING: header += "WARNING"; break;
+    case LEVEL_INFO:    header += "INFO";    break;
+    case LEVEL_DEBUG:   header += "DEBUG";   break;
     default: THROW("Unknown log level " << level);
     }
 
@@ -365,9 +365,9 @@ const char *Logger::startColor(int level) const {
   if (!logColor) return "";
 
   switch (level & LEVEL_MASK) {
-  case LEVEL_ERROR:    return "\033[91m";
-  case LEVEL_WARNING:  return "\033[93m";
-  case LEVEL_DEBUG:    return "\033[92m";
+  case LEVEL_ERROR:   return "\033[91m";
+  case LEVEL_WARNING: return "\033[93m";
+  case LEVEL_DEBUG:   return "\033[92m";
   default: return "";
   }
 }
@@ -420,7 +420,7 @@ bool Logger::enabled(const string &domain, int level) const {
 
 
 Logger::LogStream Logger::createStream(const string &_domain, int level,
-                                       const std::string &_prefix,
+                                       const string &_prefix,
                                        const char *filename, int line) {
   string domain = simplifyDomain(_domain);
 

@@ -38,7 +38,6 @@ namespace cb {
   public:
     // From SystemInfo
     uint32_t getCPUCount() const;
-    ThreadsType getThreadsType() {return WINDOWS_THREADS;}
     uint64_t getMemoryInfo(memory_info_t type) const;
     Version getOSVersion() const;
   };

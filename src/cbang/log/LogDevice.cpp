@@ -37,8 +37,8 @@ using namespace std;
 using namespace cb;
 
 
-LogDevice::impl::impl(const std::string &prefix, const std::string &suffix,
-                      const std::string &trailer, const std::string &rateKey) :
+LogDevice::impl::impl(const string &prefix, const string &suffix,
+                      const string &trailer, const string &rateKey) :
   prefix(prefix), suffix(suffix), trailer(trailer), rateKey(rateKey) {}
 
 
@@ -49,7 +49,7 @@ LogDevice::impl::~impl() {
 
 
 streamsize LogDevice::impl::write(const char_type *s, streamsize n) {
-  std::streamsize total = n;
+  streamsize total = n;
 
   while (n) {
     if (startOfLine) {
@@ -59,7 +59,7 @@ streamsize LogDevice::impl::write(const char_type *s, streamsize n) {
     }
 
     // Copy up to EOL to buffer, skipping '\r's
-    std::streamsize i;
+    streamsize i;
     for (i = 0; i < n; i++)
       if (s[i] == '\n') break;
       else if (s[i] != '\r') {

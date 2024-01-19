@@ -43,7 +43,6 @@ namespace cb {
     // From SystemInfo
     uint32_t getCPUCount() const;
     uint32_t getPerformanceCPUCount() const;
-    ThreadsType getThreadsType() {return POSIX_THREADS;}
     uint64_t getMemoryInfo(memory_info_t type) const;
     Version getOSVersion() const {return osVersion;}
 

@@ -34,8 +34,6 @@
 #include <map>
 
 #include "SignalHandler.h"
-#include "Thread.h"
-#include "Condition.h"
 
 #include <cbang/util/Singleton.h>
 
@@ -49,42 +47,20 @@
 #endif
 
 namespace cb {
-  class SignalManager :
-    public Singleton<SignalManager>, protected Thread, public Condition {
+  class SignalManager : public Singleton<SignalManager> {
+    std::map<int, SignalHandler *> handlers;
 
-    struct private_t;
-    private_t *pri;
-
-    bool enabled;
-
-    typedef std::map<int, SignalHandler *> handlers_t;
-    handlers_t handlers;
-
-    ~SignalManager();
+    ~SignalManager() {}
 
   public:
-    SignalManager(Inaccessible);
-
-    void setEnabled(bool x);
-    bool isEnabled() const {return enabled;}
+    SignalManager(Inaccessible) {}
 
     void addHandler(int signal, SignalHandler *handler);
     void ignoreSignal(int signal) {addHandler(signal, 0);}
     void removeHandler(int signal);
 
-    void signal(int sig);
-
-  protected:
-    // From Thread
-    void run() override;
-
-    void update();
-    void restore();
-
-    void block(int sig);
-    void unblock(int sig);
-
-  public:
     static const char *signalString(int sig);
+
+    void signal(int sig);
   };
 }
