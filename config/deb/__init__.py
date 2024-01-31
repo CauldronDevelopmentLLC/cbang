@@ -35,6 +35,7 @@ import os
 import shutil
 import string
 import math
+import subprocess
 
 from SCons.Script import *
 from SCons.Action import CommandAction
@@ -159,6 +160,29 @@ def build_function(target, source, env):
                 env, 'programs', build_dir + '/usr/bin'):
             CommandAction(
                 env.get('STRIP', 'strip') + ' ' + dst).execute(dst, [dst], env)
+
+    # Library dependencies
+    if 'programs' in env:
+        progs = ['usr/bin/' + prog for prog in env.get('programs')]
+
+        # dummy debian/control required
+        os.makedirs(build_dir + '/debian', 0o755)
+        open(build_dir + '/debian/control', 'w').close()
+
+        proc = subprocess.run(['/usr/bin/dpkg-shlibdeps',
+            '--ignore-missing-info', '-O'] + progs,
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            cwd=build_dir, universal_newlines=True)
+
+        if proc.stdout:
+            libdeps = proc.stdout[len('shlibs:Depends='):].strip()
+            print('library dependencies: %s' % libdeps)
+
+            # env.Append() does not appear to work with pre-existing strings
+            if env.get('deb_depends'): env['deb_depends'] += ', ' + libdeps
+            else: env.Append(deb_depends = libdeps)
+
+        shutil.rmtree(build_dir + '/debian')
 
     # Create debian control
     total_size = get_total_file_size(build_dir)
