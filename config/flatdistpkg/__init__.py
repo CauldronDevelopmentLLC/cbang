@@ -137,6 +137,10 @@ def build_component_pkg(info, env):
     if not os.path.isdir(root) and not pkg_nopayload:
         raise Exception('%s component root does not exist! %s' % (name, root))
 
+    callback = info.get('pre_sign_callback')
+    if callback:
+        callback(info)
+
     # if any apps/tools should be codesign'd do that now
     # assumes project didn't do it when creating its distroot
     # TODO clone env and add info so all sign_ vars can be overridden
