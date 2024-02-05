@@ -33,6 +33,7 @@ import textwrap
 import os
 import re
 import sys
+import shutil
 from platform import release
 import subprocess
 from SCons.Script import *
@@ -42,25 +43,8 @@ from collections import OrderedDict
 def escstr(s): return s.replace('\\', '\\\\').replace('"', '\\"')
 
 
-def which(program):
-  def is_exe(fpath): return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
-
-  fpath, fname = os.path.split(program)
-  if fpath:
-    if is_exe(program): return program
-
-  else:
-    for path in os.environ["PATH"].split(os.pathsep):
-      path = path.strip('"')
-      exe_file = os.path.join(path, program)
-      if is_exe(exe_file):
-        return exe_file
-
-  return None
-
-
 def svn_get_info():
-  svn = which('svn')
+  svn = shutil.which('svn')
   if not svn: return None, None
 
   revision, branch = None, None
@@ -83,7 +67,7 @@ def svn_get_info():
 
 
 def git_get_info():
-  if not which('git'): return None, None
+  if not shutil.which('git'): return None, None
 
   revision, branch = None, None
 
