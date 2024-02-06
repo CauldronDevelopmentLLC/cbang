@@ -132,6 +132,8 @@ def build_component_pkg(info, env):
     # Note that this creates root if it doesn't yet exist
     pkg_files = info.get('pkg_files')
     if pkg_files and not pkg_nopayload:
+        if os.path.exists(root):
+            shutil.rmtree(root)
         env.CopyToPackage(pkg_files, root)
 
     if not os.path.isdir(root) and not pkg_nopayload:
