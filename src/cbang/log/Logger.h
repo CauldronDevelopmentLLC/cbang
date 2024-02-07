@@ -113,8 +113,8 @@ namespace cb {
     SmartPointer<ThreadLocalStorage<unsigned long>> threadIDStorage;
     SmartPointer<ThreadLocalStorage<std::string>>   prefixStorage;
 
-    SmartPointer<std::iostream> logFile;
-    SmartPointer<std::ostream>  screenStream;
+    SmartPointer<std::ostream> logFile;
+    SmartPointer<std::ostream> screenStream;
 
     mutable unsigned idWidth = 1;
 
