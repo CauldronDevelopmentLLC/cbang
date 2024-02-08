@@ -245,6 +245,33 @@ def ResolvePackageFileMap(env, sources, target):
     return list(resolve_file_map(sources, target, ignores))
 
 
+def ReplaceVariablesInFiles(env, sources, target, replace_all = False):
+    if not isinstance(sources, (list, tuple)): sources = [sources]
+
+    os.makedirs(target, exist_ok = True)
+
+    for src in sources:
+        replace = src.endswith('.in')
+        dst = target + '/' + os.path.basename(src[:-3] if replace else src)
+
+        if os.path.isdir(src):
+            for name in os.listdir(src):
+                env.ReplaceVariablesInFiles(
+                    src + '/' + name, dst, replace_all or replace)
+
+        elif os.path.isfile(src) and (
+                (replace_all and not os.path.islink(src)) or replace):
+            print('replacing variables "%s" -> "%s"' % (src, dst))
+            with open(src, 'r') as inF:
+                with open(dst, 'w') as outF:
+                    outF.write(inF.read() % env)
+
+            shutil.copymode(src, dst)
+
+        else: shutil.copy2(src, dst)
+
+
+
 def CopyToPackage(env, sources, target, perms = 0o644, dperms = 0o755):
     ignores = ignore_patterns(*env.get('PACKAGE_EXCLUDES'))
 
@@ -351,6 +378,7 @@ def generate(env):
     env.AddMethod(RunCommand)
     env.AddMethod(RunCommandOrRaise)
     env.AddMethod(ResolvePackageFileMap)
+    env.AddMethod(ReplaceVariablesInFiles)
     env.AddMethod(WriteStringToFile)
     env.AddMethod(ZipDir)
     env.AddMethod(Packager)
