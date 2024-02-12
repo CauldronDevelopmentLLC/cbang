@@ -353,9 +353,9 @@ void OpenCLLibrary::getAMDPCIInfo(void *device, ComputeDevice &cd) {
                (device, CL_DEVICE_TOPOLOGY_AMD, sizeof(topo), &topo, 0));
 
   if ((int)topo.raw.type == CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD) {
-    cd.pciBus      = topo.pcie.bus;
-    cd.pciSlot     = topo.pcie.device;
-    cd.pciFunction = topo.pcie.function;
+    cd.pciBus      = (uint8_t)topo.pcie.bus;
+    cd.pciSlot     = (uint8_t)topo.pcie.device;
+    cd.pciFunction = (uint8_t)topo.pcie.function;
   }
 }
 
@@ -397,7 +397,7 @@ void OpenCLLibrary::getKHRDeviceUUID(void *device, ComputeDevice &cd) {
 
 
 void OpenCLLibrary::getKHRPCIBusInfo(void *device, ComputeDevice &cd) {
-  cl_device_pci_bus_info_khr info = {0xff, 0xff, 0xff, 0xff};
+  cl_device_pci_bus_info_khr info = {~0U, ~0U, ~0U, ~0U};
 
   DYNAMIC_CALL(
     this, clGetDeviceInfo,
