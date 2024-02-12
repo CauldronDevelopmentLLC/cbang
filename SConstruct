@@ -64,7 +64,7 @@ env.Append(CPPPATH = ['#/include', '#/src', '#/src/boost'])
 # Build third-party libs
 Export('env conf')
 resources_excludes = []
-for lib in 'zlib bzip2 lz4 sqlite3 expat boost libevent re2 libyaml'.split():
+for lib in 'ZLib bzip2 lz4 sqlite3 expat boost libevent re2 libyaml'.split():
     if lib in disable_local: resources_excludes.append('licenses/%s\\.txt' % lib)
     else:
         if not env.CBConfigEnabled(lib) or lib in force_local:
