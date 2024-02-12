@@ -58,11 +58,11 @@ unsigned WinPowerManagement::_getIdleSeconds() {
 
 bool WinPowerManagement::_getHasBattery() {
   SYSTEM_POWER_STATUS status;
-  return !GetSystemPowerStatus(&status) && !(status.BatteryFlag & 128);
+  return GetSystemPowerStatus(&status) && !(status.BatteryFlag & 128);
 }
 
 
 bool WinPowerManagement::_getOnBattery() {
   SYSTEM_POWER_STATUS status;
-  return !GetSystemPowerStatus(&status) && !status.ACLineStatus;
+  return GetSystemPowerStatus(&status) && !status.ACLineStatus;
 }
