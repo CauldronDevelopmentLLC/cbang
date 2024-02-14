@@ -60,6 +60,17 @@ def ignore_patterns(*patterns):
     return _ignore_patterns
 
 
+def ignore_match(*patterns):
+    import fnmatch
+
+    def _ignore(path):
+        for pattern in patterns:
+            if fnmatch.fnmatch(path, pattern): return True
+        return False
+
+    return _ignore
+
+
 def recursive_zip(path, archive, ignores):
     if os.path.isdir(path): names = os.listdir(path)
     else:
@@ -245,19 +256,25 @@ def ResolvePackageFileMap(env, sources, target):
     return list(resolve_file_map(sources, target, ignores))
 
 
-def ReplaceVariablesInFiles(env, sources, target, replace_all = False):
+def ReplaceVariablesInFiles(
+        env, sources, target, replace_all = False, ignore = None):
+    if ignore is None:
+        ignore = ignore_match(*env.get('PACKAGE_EXCLUDES'))
+
     if not isinstance(sources, (list, tuple)): sources = [sources]
 
     os.makedirs(target, exist_ok = True)
 
     for src in sources:
+        if ignore(os.path.basename(src)): continue
+
         replace = src.endswith('.in')
         dst = target + '/' + os.path.basename(src[:-3] if replace else src)
 
         if os.path.isdir(src):
             for name in os.listdir(src):
                 env.ReplaceVariablesInFiles(
-                    src + '/' + name, dst, replace_all or replace)
+                    src + '/' + name, dst, replace_all or replace, ignore)
 
         elif os.path.isfile(src) and (
                 (replace_all and not os.path.islink(src)) or replace):
