@@ -40,5 +40,6 @@ namespace cb {
     uint32_t getCPUCount() const;
     uint64_t getMemoryInfo(memory_info_t type) const;
     Version getOSVersion() const;
+    std::string getMachineID() const;
   };
 }
