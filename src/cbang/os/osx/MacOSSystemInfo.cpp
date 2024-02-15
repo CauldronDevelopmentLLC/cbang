@@ -45,6 +45,7 @@
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
+#include <IOKit/IOKitLib.h>
 
 
 using namespace cb;
@@ -130,6 +131,18 @@ uint64_t MacOSSystemInfo::getMemoryInfo(memory_info_t type) const {
   }
 
   return 0;
+}
+
+
+string MacOSSystemInfo::getMachineID() const {
+  io_registry_entry_t root =
+    IORegistryEntryFromPath(kIOMasterPortDefault, "IOService:/");
+
+  MacOSString uuid((CFStringRef)IORegistryEntryCreateCFProperty(
+                     root, CFSTR(kIOPlatformUUIDKey), kCFAllocatorDefault, 0));
+  IOObjectRelease(root);
+
+  return uuid;
 }
 
 

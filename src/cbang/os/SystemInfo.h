@@ -69,6 +69,7 @@ namespace cb {
     virtual uint64_t getFreeDiskSpace(const std::string &path);
     virtual Version getOSVersion() const = 0;
     virtual std::string getHostname() const;
+    virtual std::string getMachineID() const = 0;
 
     void add(Info &info);
   };

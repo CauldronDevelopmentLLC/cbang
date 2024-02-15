@@ -30,6 +30,7 @@
 \******************************************************************************/
 
 #include "WinSystemInfo.h"
+#include "Win32Registry.h"
 
 #include <cbang/os/SysError.h>
 #include <cbang/os/DynamicLibrary.h>
@@ -84,4 +85,10 @@ Version WinSystemInfo::getOSVersion() const {
   }
 
   THROW("Failed to get Windows version");
+}
+
+
+string WinSystemInfo::getMachineID() const {
+  return Win32Registry::getString(
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid");
 }

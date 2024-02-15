@@ -84,3 +84,11 @@ Version LinSystemInfo::getOSVersion() const {
 
   return Version(major, minor);
 }
+
+
+string LinSystemInfo::getMachineID() const {
+  if (SystemUtilities::exists("/etc/machine-id"))
+    return String::trim(SystemUtilities::read("/etc/machine-id"));
+
+  THROW("Machine ID not available");
+}
