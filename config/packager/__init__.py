@@ -40,7 +40,6 @@ deps = ['nsi', 'pkg', 'flatdistpkg', 'app', 'deb', 'rpm']
 
 
 def get_dist():
-    if hasattr(platform, 'dist'): return platform.dist()[0].lower()
     if os.path.exists('/etc/os-release'):
         with open('/etc/os-release', 'r') as f:
             for line in f:
