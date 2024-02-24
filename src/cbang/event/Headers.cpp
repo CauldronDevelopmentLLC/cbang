@@ -31,10 +31,10 @@
 
 #include "Headers.h"
 #include "Buffer.h"
+#include "ContentTypes.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-#include <cbang/http/ContentTypes.h>
 
 using namespace cb::Event;
 using namespace std;
@@ -66,7 +66,7 @@ void Headers::setContentType(const string &contentType) {
 
 
 void Headers::guessContentType(const std::string &ext) {
-  setContentType(HTTP::ContentTypes::guess(ext, "text/html; charset=UTF-8"));
+  setContentType(ContentTypes::guess(ext, "text/html; charset=UTF-8"));
 }
 
 

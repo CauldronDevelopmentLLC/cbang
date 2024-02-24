@@ -31,35 +31,20 @@
 
 #pragma once
 
-#include "WebPageHandler.h"
-#include "MethodWebPageHandler.h"
+#include <cbang/util/Singleton.h>
 
+#include <map>
+#include <string>
 
 namespace cb {
-  namespace HTTP {
-    class WebPageHandlerGroup : public WebPageHandler {
-      std::vector<SmartPointer<WebPageHandler> > handlers;
-
+  namespace Event {
+    class ContentTypes : public Singleton<ContentTypes>,
+                         public std::map<std::string, std::string> {
     public:
-      void addHandler(const SmartPointer<WebPageHandler> &handler);
-      void addHandler(const std::string &match,
-                      const SmartPointer<WebPageHandler> &handler);
+      ContentTypes(Inaccessible);
 
-      template <class T>
-      void addMethod(T *obj,
-                      typename MethodWebPageHandler<T>::method_t method) {
-        addHandler(new MethodWebPageHandler<T>(obj, method));
-      }
-
-      template <class T>
-      void addMethod(const std::string &match, T *obj,
-                     typename MethodWebPageHandler<T>::method_t method) {
-        addHandler(match, new MethodWebPageHandler<T>(obj, method));
-      }
-
-      // From WebPageHandler
-      bool handlePage(
-        WebContext &ctx, std::ostream &stream, const cb::URI &uri) override;
+      static std::string guess(const std::string &path,
+                               const std::string &defaultType = "text/plain");
     };
   }
 }

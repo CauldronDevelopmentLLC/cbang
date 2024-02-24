@@ -29,30 +29,6 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#include "WebPageHandler.h"
-
-#include <cbang/util/Regex.h>
-
-
-namespace cb {
-  namespace HTTP {
-    class RegexWebPageHandler : public WebPageHandler {
-      Regex re;
-      SmartPointer<WebPageHandler> child;
-
-    public:
-      RegexWebPageHandler(const std::string &pattern,
-                          const SmartPointer<WebPageHandler> &child) :
-        re(pattern), child(child) {}
-
-      // From WebPageHandler
-      bool handlePage(
-        WebContext &ctx, std::ostream &stream, const cb::URI &uri) override {
-        if (!re.match(uri.getPath())) return false;
-        return child->handlePage(ctx, stream, uri);
-      }
-    };
-  }
-}
+#define CBANG_ENUM_IMPL
+#include "HTTPStatus.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

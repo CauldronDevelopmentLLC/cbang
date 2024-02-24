@@ -52,7 +52,7 @@ namespace cb {
 
   public:
     static constexpr const char *iso8601Format = "%Y-%m-%dT%H:%M:%SZ";
-    static constexpr const char *httpFormat    = "%a, %d %b %Y %H:%M:%S GMT";
+    static constexpr const char *httpFormat    = "%a, %d %b %Y %H:%M:%S %Z";
     static constexpr const char *sqlFormat     = "%Y-%m-%d %H:%M:%S";
 
     static const unsigned SEC_PER_MIN  = 60;

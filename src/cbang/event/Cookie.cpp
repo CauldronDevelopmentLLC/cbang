@@ -29,6 +29,55 @@
 
 \******************************************************************************/
 
-#define DB_TABLE_IMPL
-#include "SessionsTable.h"
-#include <cbang/db/MakeTableImpl.def>
+#include "Cookie.h"
+
+#include <cbang/String.h>
+#include <cbang/time/Time.h>
+#include <cbang/util/StringMap.h>
+
+#include <sstream>
+
+using namespace std;
+using namespace cb;
+using namespace cb::Event;
+
+
+string Cookie::toString() const {
+  ostringstream s;
+  s << name << '=' << value;
+
+  if (!domain.empty()) s << "; Domain=" << domain;
+  if (!path.empty()) s << "; Path=" << path;
+  if (expires)
+    s << "; Expires=" << Time(expires).toString(Time::httpFormat);
+  if (maxAge) s << "; Max-Age=" << String(maxAge);
+  if (httpOnly) s << "; HttpOnly";
+  if (secure) s << "; Secure";
+  if (!sameSite.empty()) s << "; SameSite=" << sameSite;
+
+  return s.str();
+}
+
+
+void Cookie::read(const string &s) {
+  vector<string> tokens;
+  String::tokenize(s, tokens, "; \t\n\r");
+
+  for (unsigned i = 0; i < tokens.size(); i++) {
+    size_t pos = tokens[i].find('=');
+    string name = tokens[i].substr(0, pos);
+    string value = pos == string::npos ? string() : tokens[i].substr(pos + 1);
+
+    if (!i) {
+      this->name = name;
+      this->value = value;
+
+    } else if (name == "Domain") domain = value;
+    else if (name == "Path") path = value;
+    else if (name == "Expires") expires = Time::parse(value, Time::httpFormat);
+    else if (name == "Max-Age") expires = String::parseU64(value);
+    else if (name == "HttpOnly") httpOnly = true;
+    else if (name == "Secure") secure = true;
+    else if (name == "SameSite") sameSite = value;
+  }
+}

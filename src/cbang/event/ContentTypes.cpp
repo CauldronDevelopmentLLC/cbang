@@ -36,7 +36,7 @@
 
 using namespace std;
 using namespace cb;
-using namespace cb::HTTP;
+using namespace cb::Event;
 
 
 #define OPENDOC "application/vnd.oasis.opendocument"
