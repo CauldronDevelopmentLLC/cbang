@@ -48,8 +48,6 @@
 #include <cbang/config/Option.h>
 #include <cbang/json/Writer.h>
 #include <cbang/xml/XMLWriter.h>
-#include <cbang/socket/SocketDebugger.h>
-#include <cbang/script/MemberFunctor.h>
 #include <cbang/enum/EnumerationManager.h>
 
 #include <sstream>
@@ -62,7 +60,6 @@
 
 using namespace std;
 using namespace cb;
-using namespace cb::Script;
 
 
 namespace cb {
@@ -107,8 +104,6 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     options.addTarget("exception-locations", Exception::printLocations,
                       "Enable or disable exception location printing.");
     options.popCategory();
-
-    SocketDebugger::instance().addOptions(options);
   }
 
   if (hasFeature(FEATURE_PROCESS_CONTROL)) {

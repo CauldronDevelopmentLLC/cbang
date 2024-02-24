@@ -31,7 +31,6 @@
 
 #include "SocketDefaultImpl.h"
 #include "Socket.h"
-#include "SocketDebugger.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
@@ -255,7 +254,6 @@ SmartPointer<Socket> SocketDefaultImpl::accept(IPAddress *ip) {
     if (ip) *ip = inAddr;
 
     aSock->connected = true;
-    aSock->capture(inAddr, true);
     aSock->setBlocking(blocking);
 
     LOG_DEBUG(5, "accept() new connection");
@@ -286,7 +284,6 @@ void SocketDefaultImpl::connect(const IPAddress &ip) {
         THROW("Failed to connect to " << ip << ": " << SysError());
 
     connected = true;
-    capture(ip, false);
 
   } catch (const Exception &e) {
     close();
@@ -321,8 +318,6 @@ streamsize SocketDefaultImpl::write(const char *data, streamsize length,
     THROW("Send error: " << err << ": " << SysError(err));
   }
 
-  if (!out.isNull()) out->write(data, ret); // Capture
-
   return ret;
 }
 
@@ -355,8 +350,6 @@ streamsize SocketDefaultImpl::read(char *data, streamsize length,
     THROW("Receive error: " << err << ": " << SysError(err));
   }
 
-  if (!in.isNull()) in->write(data, ret); // Capture
-
   return ret;
 }
 
@@ -376,8 +369,6 @@ void SocketDefaultImpl::close() {
   ::close(socket);
 #endif
 
-  in = out = 0; // Flush capture
-
   socket = INVALID_SOCKET;
 }
 
@@ -390,34 +381,7 @@ void SocketDefaultImpl::set(socket_t socket) {
 
 socket_t SocketDefaultImpl::adopt() {
   socket_t s = socket;
-  in = out = 0; // Flush capture
   socket = INVALID_SOCKET;
   connected = false;
   return s;
-}
-
-
-void SocketDefaultImpl::capture(const IPAddress &addr, bool incoming) {
-  SocketDebugger &debugger = SocketDebugger::instance();
-  if (!debugger.getCapture()) return;
-
-  const string &dir = debugger.getCaptureDirectory();
-  SystemUtilities::ensureDirectory(dir);
-
-  uint64_t id = debugger.getNextConnectionID();
-
-  string prefix = dir + "/" + String(id) + "-" + (incoming ? "in" : "out") +
-    "-" + addr.toString() + "-";
-
-#ifdef _WIN32
-  prefix = String::replace(prefix, ':', '-');
-#endif
-
-  string request = prefix + "request.dat";
-  string response = prefix + "response.dat";
-
-  in =
-    SystemUtilities::open(incoming ? request : response, ios::out | ios::trunc);
-  out =
-    SystemUtilities::open(incoming ? response : request, ios::out | ios::trunc);
 }

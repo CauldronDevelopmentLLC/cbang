@@ -44,9 +44,6 @@ namespace cb {
     bool blocking;
     bool connected;
 
-    SmartPointer<std::iostream> in;
-    SmartPointer<std::iostream> out;
-
     // Don't allow copy constructor or assignment
     SocketDefaultImpl(const SocketDefaultImpl &o) : SocketImpl(0) {}
     SocketDefaultImpl &operator=(const SocketDefaultImpl &o) {return *this;}
