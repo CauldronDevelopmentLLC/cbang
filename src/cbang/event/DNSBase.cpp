@@ -45,8 +45,7 @@ using namespace cb::Event;
 DNSBase::DNSBase(cb::Event::Base &base, bool initialize,
                  bool failRequestsOnExit) :
   dns(evdns_base_new
-      (base.getBase(), (initialize ? EVDNS_BASE_INITIALIZE_NAMESERVERS : 0) |
-       EVDNS_BASE_DISABLE_WHEN_INACTIVE)),
+      (base.getBase(), initialize ? EVDNS_BASE_INITIALIZE_NAMESERVERS : 0)),
   failRequestsOnExit(failRequestsOnExit) {
   if (!dns) THROW("Failed to create DNSBase");
 }
