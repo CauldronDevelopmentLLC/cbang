@@ -78,7 +78,7 @@ if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 # Source
 subdirs = [
     '', 'xml', 'util', 'debug', 'config', 'os', 'script',
-    'struct', 'log', 'iostream', 'time', 'enum', 'packet', 'net', 'buffer',
+    'log', 'iostream', 'time', 'enum', 'net', 'buffer',
     'socket', 'tar', 'io', 'geom', 'parse', 'json', 'db',
     'auth', 'js', 'gpu', 'pci']
 
