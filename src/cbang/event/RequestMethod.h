@@ -29,13 +29,30 @@
 
 \******************************************************************************/
 
-#pragma once
+#ifndef CBANG_ENUM_EXPAND
+#ifndef CBANG_REQUEST_METHOD_H
+#define CBANG_REQUEST_METHOD_H
 
-#include <cbang/http/RequestMethod.h>
+#define CBANG_ENUM_NAME RequestMethod
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 Event
+#define CBANG_ENUM_PATH cbang/event
+#define CBANG_ENUM_PREFIX 5 // The length of the HTTP_ prefix
+#include <cbang/enum/MakeEnumeration.def>
 
+#endif // CBANG_REQUEST_METHOD_H
+#else // CBANG_ENUM_EXPAND
 
-namespace cb {
-  namespace Event {
-    typedef cb::HTTP::RequestMethod RequestMethod;
-  }
-}
+CBANG_ENUM_EXPAND(HTTP_UNKNOWN,      0)
+CBANG_ENUM_EXPAND(HTTP_ANY,         ~0)
+CBANG_ENUM_EXPAND(HTTP_OPTIONS, 1 << 0)
+CBANG_ENUM_EXPAND(HTTP_GET,     1 << 1)
+CBANG_ENUM_EXPAND(HTTP_HEAD,    1 << 2)
+CBANG_ENUM_EXPAND(HTTP_POST,    1 << 3)
+CBANG_ENUM_EXPAND(HTTP_PUT,     1 << 4)
+CBANG_ENUM_EXPAND(HTTP_DELETE,  1 << 5)
+CBANG_ENUM_EXPAND(HTTP_TRACE,   1 << 6)
+CBANG_ENUM_EXPAND(HTTP_CONNECT, 1 << 7)
+CBANG_ENUM_EXPAND(HTTP_PATCH,   1 << 8)
+
+#endif // CBANG_ENUM_EXPAND

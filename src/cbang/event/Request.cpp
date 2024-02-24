@@ -33,12 +33,12 @@
 #include "BufferDevice.h"
 #include "HTTPConn.h"
 #include "Event.h"
+#include "Cookie.h"
 
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
-#include <cbang/http/Cookie.h>
 #include <cbang/json/JSON.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/Regex.h>
@@ -413,7 +413,7 @@ void Request::setCookie(const string &name, const string &value,
                         const string &domain, const string &path,
                         uint64_t expires, uint64_t maxAge, bool httpOnly,
                         bool secure, const string &sameSite) {
-  outSet("Set-Cookie", cb::HTTP::Cookie(
+  outSet("Set-Cookie", Cookie(
            name, value, domain, path, expires, maxAge, httpOnly, secure,
            sameSite).toString());
 }
@@ -580,10 +580,10 @@ void Request::send(const string &s) {outputBuffer.add(s);}
 void Request::sendFile(const string &path) {outputBuffer.addFile(path);}
 
 
-void Request::reply(HTTPStatus code) {
+void Request::reply(HTTPStatus::enum_t code) {
   if (replying && !isWebsocket()) THROW("Request already replying");
 
-  responseCode = code ? code : HTTPStatus(HTTP_INTERNAL_SERVER_ERROR);
+  responseCode = code ? code : HTTP_INTERNAL_SERVER_ERROR;
   write();
   replying = true;
 }

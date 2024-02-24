@@ -36,7 +36,7 @@
 
 
 namespace cb {
-  namespace HTTP {
+  namespace Event {
     class Cookie {
       std::string name;
       std::string value;

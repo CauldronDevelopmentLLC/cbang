@@ -228,7 +228,7 @@ namespace cb {
       virtual void send(const std::string &s);
       virtual void sendFile(const std::string &path);
 
-      virtual void reply(HTTPStatus code = HTTP_OK);
+      virtual void reply(HTTPStatus::enum_t code = HTTP_OK);
       virtual void reply(const Buffer &buf);
       virtual void reply(const char *data, unsigned length);
       virtual void reply(HTTPStatus code, const char *data, unsigned length);
