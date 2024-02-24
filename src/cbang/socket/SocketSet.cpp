@@ -34,7 +34,6 @@
 #include "Winsock.h"
 #include "Socket.h"
 #include "SocketType.h"
-#include "SocketDebugger.h"
 
 #include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
@@ -75,16 +74,12 @@ bool SocketSet::isSet(const Socket &socket, int type) const {
   if (!socket.isOpen()) THROW("Socket not open");
   socket_t s = (socket_t)socket.get();
 
-  if (SocketDebugger::instance().isEnabled()) type &= ~EXCEPT;
-
   auto it = sockets.find(s);
   return it != sockets.end() && it->second & type;
 }
 
 
 bool SocketSet::select(double timeout) {
-  if (SocketDebugger::instance().isEnabled()) return true;
-
 #ifdef _WIN32
   int maxFD = -1;
   fd_set read;

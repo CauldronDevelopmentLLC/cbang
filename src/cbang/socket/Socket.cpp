@@ -33,8 +33,6 @@
 
 #include "Winsock.h"
 #include "SocketDefaultImpl.h"
-#include "SocketDebugImpl.h"
-#include "SocketDebugger.h"
 #include "SocketSet.h"
 
 #include <cbang/config.h>
@@ -63,10 +61,7 @@ Socket::Socket() : Socket(0) {}
 
 
 Socket::Socket(const SmartPointer<SSLContext> &sslCtx) {
-  if (SocketDebugger::instance().isEnabled())
-    impl = new SocketDebugImpl(this);
-
-  else if (sslCtx.isNull()) impl = new SocketDefaultImpl(this);
+  if (sslCtx.isNull()) impl = new SocketDefaultImpl(this);
 #ifdef HAVE_OPENSSL
   else impl = new SocketSSLImpl(this, sslCtx);
 #else
