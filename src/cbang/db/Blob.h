@@ -31,8 +31,6 @@
 
 #pragma once
 
-#include <cbang/packet/Packet.h>
-
 #include <string>
 #include <cstdint>
 
@@ -45,8 +43,6 @@ namespace cb {
 
     public:
       Blob(const void *data, uint32_t length) : data(data), length(length) {}
-      Blob(const Packet &packet) :
-        data(packet.getData()), length(packet.getSize()) {}
 
       uint32_t getLength() const {return length;}
       const void *getData() const {return data;}
