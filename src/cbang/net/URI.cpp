@@ -91,8 +91,9 @@ namespace {
 const char *URI::DEFAULT_UNESCAPED = UNRESERVED_CHARS "/";
 
 
-URI::URI(const string &scheme, const IPAddress &addr, const string &path) :
-  scheme(scheme), host(addr.getHost()), port(addr.getPort()) {setPath(path);}
+URI::URI(
+  const string &scheme, const string &host, unsigned port, const string &path) :
+  scheme(scheme), host(host), port(port) {setPath(path);}
 
 
 unsigned URI::getPort() const {
