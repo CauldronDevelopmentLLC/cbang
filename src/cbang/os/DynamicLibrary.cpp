@@ -69,15 +69,15 @@ DynamicLibrary::DynamicLibrary(const string &path) :
   if (!enabled) THROW("DynamicLibrary disabled globally");
 
 #ifdef _WIN32
-  pri->handle = LoadLibrary(path.c_str());
+  pri->handle =
+    LoadLibraryEx(path.c_str(), 0, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
   if (!pri->handle)
     THROW("Failed to open dynamic library '" << path << "': " << SysError());
 
 #else
   dlerror(); // Clear errors
 
-  if (path.empty())
-    THROW("Library path is ''");
+  if (path.empty()) THROW("Library path is ''");
 
   pri->handle = dlopen(path.c_str(), RTLD_LAZY);
   if (!pri->handle)
