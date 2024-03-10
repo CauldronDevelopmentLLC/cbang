@@ -43,7 +43,7 @@ bool ConcurrentPool::Task::shouldShutdown() {
 }
 
 
-ConcurrentPool::ConcurrentPool(cb::Event::Base &base, unsigned size) :
+ConcurrentPool::ConcurrentPool(Base &base, unsigned size) :
   ThreadPool(size), base(base),
   event(base.newEvent(this, &ConcurrentPool::complete, EF::EVENT_NO_SELF_REF)) {
   if (!Base::threadsEnabled())

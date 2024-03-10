@@ -41,11 +41,11 @@ namespace cb {
     MacOSSystemInfo();
 
     // From SystemInfo
-    uint32_t getCPUCount() const;
-    uint32_t getPerformanceCPUCount() const;
-    uint64_t getMemoryInfo(memory_info_t type) const;
-    Version getOSVersion() const {return osVersion;}
-    std::string getMachineID() const;
+    uint32_t getCPUCount() const override;
+    uint32_t getPerformanceCPUCount() const override;
+    uint64_t getMemoryInfo(memory_info_t type) const override;
+    Version getOSVersion() const override {return osVersion;}
+    std::string getMachineID() const override;
 
   protected:
     static bool versionBySysCtrl(unsigned ver[3]);

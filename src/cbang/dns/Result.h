@@ -29,30 +29,24 @@
 
 \******************************************************************************/
 
-#include "StreamEventBuffer.h"
-#include "Event.h"
+#pragma once
 
-#include <event2/util.h> // For evutil_closesocket()
+#include "Error.h"
 
-using namespace cb;
-using namespace cb::Event;
+#include <cbang/socket/SockAddr.h>
 
-
-StreamEventBuffer::StreamEventBuffer(
-  Base &base, socket_t handle, unsigned flags) :
-  StreamEventHandler(base, handle, flags), handle(handle) {}
+#include <vector>
 
 
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
+namespace cb {
+  namespace DNS {
+    class Result {
+    public:
+      Error error;
+      std::vector<SockAddr>    addrs;
+      std::vector<std::string> names;
 
-
-void StreamEventBuffer::write() {
-  write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
-}
-
-
-void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
-  if (flags & EVENT_READ)   read();
-  if (flags & EVENT_WRITE) write();
+      Result(Error error) : error(error) {}
+    };
+  }
 }

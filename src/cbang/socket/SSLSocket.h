@@ -29,30 +29,41 @@
 
 \******************************************************************************/
 
-#include "StreamEventBuffer.h"
-#include "Event.h"
+#pragma once
 
-#include <event2/util.h> // For evutil_closesocket()
-
-using namespace cb;
-using namespace cb::Event;
+#include "Socket.h"
+#include "SocketBIO.h"
 
 
-StreamEventBuffer::StreamEventBuffer(
-  Base &base, socket_t handle, unsigned flags) :
-  StreamEventHandler(base, handle, flags), handle(handle) {}
+namespace cb {
+  class SSLSocket : public Socket {
+    SocketBIO bio;
+    SmartPointer<SSL> ssl;
+    SmartPointer<SSLContext> sslCtx;
 
+    bool inSSL = false;
 
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
+    // Don't allow copy constructor or assignment
+    SSLSocket(const SSLSocket &o) : bio(*this) {}
+    SSLSocket &operator=(const SSLSocket &o) {return *this;}
 
+  public:
+    SSLSocket(const SmartPointer<SSLContext> &sslCtx);
+    ~SSLSocket();
 
-void StreamEventBuffer::write() {
-  write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
-}
-
-
-void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
-  if (flags & EVENT_READ)   read();
-  if (flags & EVENT_WRITE) write();
+    // From Socket
+    SmartPointer<Socket> create() override {return new SSLSocket(sslCtx);}
+    SSL &getSSL() override {return *ssl;}
+    SSLContext &getSSLContext() override {return *sslCtx;}
+    bool isSecure() override {return true;}
+    SmartPointer<Socket> accept(SockAddr &addr) override;
+    void connect(const SockAddr &addr, const std::string &hostname) override;
+    std::streamsize writeImpl(
+      const uint8_t *data, std::streamsize length, unsigned flags,
+      const SockAddr *addr) override;
+    std::streamsize readImpl(
+      uint8_t *data, std::streamsize length, unsigned flags,
+      SockAddr *addr) override;
+    void close() override;
+  };
 }

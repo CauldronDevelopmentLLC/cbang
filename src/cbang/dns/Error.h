@@ -29,30 +29,49 @@
 
 \******************************************************************************/
 
-#include "StreamEventBuffer.h"
-#include "Event.h"
+#ifndef CBANG_ENUM
+#ifndef CBANG_DNS_ERROR_H
+#define CBANG_DNS_ERROR_H
 
-#include <event2/util.h> // For evutil_closesocket()
+#define CBANG_ENUM_NAME Error
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 DNS
+#define CBANG_ENUM_PATH cbang/dns
+#define CBANG_ENUM_PREFIX 8
+#include <cbang/enum/MakeEnumeration.def>
 
-using namespace cb;
-using namespace cb::Event;
+#endif // CBANG_DNS_ERROR_H
+#else // CBANG_ENUM
 
+CBANG_ENUM_VALUE(DNS_ERR_NOERROR,      0)
+CBANG_ENUM_VALUE(DNS_ERR_FORMAT,       1)
+CBANG_ENUM_VALUE(DNS_ERR_SERVERFAILED, 2)
+CBANG_ENUM_VALUE(DNS_ERR_NOTEXIST,     3)
+CBANG_ENUM_VALUE(DNS_ERR_NOTIMPL,      4)
+CBANG_ENUM_VALUE(DNS_ERR_REFUSED,      5)
+CBANG_ENUM_VALUE(DNS_ERR_YXDOMAIN,     6)
+CBANG_ENUM_VALUE(DNS_ERR_YXRRSET,      7)
+CBANG_ENUM_VALUE(DNS_ERR_NXRRSET,      8)
+CBANG_ENUM_VALUE(DNS_ERR_NOTAUTH,      9)
+CBANG_ENUM_VALUE(DNS_ERR_NOTZONE,     10)
+CBANG_ENUM_VALUE(DNS_ERR_DSOTYPENI,   11)
+CBANG_ENUM_VALUE(DNS_ERR_BADSIG,      16)
+CBANG_ENUM_VALUE(DNS_ERR_BADKEY,      17)
+CBANG_ENUM_VALUE(DNS_ERR_BADTIME,     18)
+CBANG_ENUM_VALUE(DNS_ERR_BADMODE,     19)
+CBANG_ENUM_VALUE(DNS_ERR_BADNAME,     20)
+CBANG_ENUM_VALUE(DNS_ERR_BADALG,      21)
+CBANG_ENUM_VALUE(DNS_ERR_BADTRUNC,    22)
+CBANG_ENUM_VALUE(DNS_ERR_BADCOOKIE,   23)
 
-StreamEventBuffer::StreamEventBuffer(
-  Base &base, socket_t handle, unsigned flags) :
-  StreamEventHandler(base, handle, flags), handle(handle) {}
+// Unofficial codes from libevent
+CBANG_ENUM_VALUE(DNS_ERR_TRUNCATED,   65)
+CBANG_ENUM_VALUE(DNS_ERR_UNKNOWN,     66)
+CBANG_ENUM_VALUE(DNS_ERR_TIMEOUT,     67)
+CBANG_ENUM_VALUE(DNS_ERR_SHUTDOWN,    68)
+CBANG_ENUM_VALUE(DNS_ERR_CANCEL,      69)
+CBANG_ENUM_VALUE(DNS_ERR_NODATA,      70)
 
+CBANG_ENUM_VALUE(DNS_ERR_NOSERVER,   100)
 
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
-
-
-void StreamEventBuffer::write() {
-  write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
-}
-
-
-void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
-  if (flags & EVENT_READ)   read();
-  if (flags & EVENT_WRITE) write();
-}
+#endif // CBANG_ENUM

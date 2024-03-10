@@ -32,6 +32,7 @@
 #include "SocketServer.h"
 
 #include "SocketSet.h"
+#include "SSLSocket.h"
 #include "SocketConnection.h"
 
 #include <cbang/Exception.h>
@@ -39,6 +40,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/Catch.h>
 #include <cbang/time/Timer.h>
+#include <cbang/openssl/SSL.h>
 #include <cbang/openssl/SSLContext.h>
 
 #include <exception>
@@ -47,15 +49,26 @@ using namespace std;
 using namespace cb;
 
 
+SocketServer::ListenPort::ListenPort(
+  const IPAddress &ip, const SmartPointer<SSLContext> &sslCtx) : ip(ip) {
+  if (sslCtx.isNull()) socket = new Socket;
+#ifdef HAVE_OPENSSL
+  else socket = new SSLSocket(sslCtx);
+#else
+  else THROW("C! not built with OpenSSL support");
+#endif
+}
+
+
 SocketServer::~SocketServer() {} // Hide destructor
 
 
-Socket &SocketServer::addListenPort(const IPAddress &ip,
-                                    const SmartPointer<SSLContext> &sslCtx) {
+Socket &SocketServer::addListenPort(
+  const IPAddress &ip, const SmartPointer<SSLContext> &sslCtx) {
   SmartPointer<ListenPort> port = new ListenPort(ip, sslCtx);
   ports.push_back(port);
 
-  return port->socket;
+  return *port->socket;
 }
 
 
@@ -74,9 +87,10 @@ void SocketServer::startup() {
 
   // Open listen ports
   for (unsigned i = 0; i < ports.size(); i++) {
-    Socket &socket = ports[i]->socket;
+    Socket &socket = *ports[i]->socket;
 
     if (!socket.isOpen()) {
+      socket.open();
       socket.setReuseAddr(true);
       socket.bind(ports[i]->ip);
       socket.listen();
@@ -94,7 +108,7 @@ void SocketServer::service() {
   // Add listeners
   SocketSet sockSet;
   for (unsigned i = 0; i < ports.size(); i++)
-    sockSet.add(ports[i]->socket, SocketSet::READ);
+    sockSet.add(*ports[i]->socket, SocketSet::READ);
 
   // Add others
   addConnectionSockets(sockSet);
@@ -106,7 +120,7 @@ void SocketServer::service() {
     // Accept new connections
     for (unsigned i = 0; i < ports.size() && !shouldShutdown(); i++) {
       try {
-        Socket &socket = ports[i]->socket;
+        Socket &socket = *ports[i]->socket;
 
         if (!sockSet.isSet(socket, SocketSet::READ)) continue;
 
@@ -148,7 +162,7 @@ void SocketServer::service() {
 void SocketServer::shutdown() {
   // Close listen ports
   for (unsigned i = 0; i < ports.size(); i++)
-    if (ports[i]->socket.isOpen()) ports[i]->socket.close();
+    if (ports[i]->socket->isOpen()) ports[i]->socket->close();
 
   // Close open connections
   connections_t::iterator it;

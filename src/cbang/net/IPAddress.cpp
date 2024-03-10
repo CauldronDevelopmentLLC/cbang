@@ -37,6 +37,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/socket/Socket.h>
 #include <cbang/os/SysError.h>
+#include <cbang/net/Swab.h>
 
 #include <cstring>
 
@@ -137,7 +138,8 @@ unsigned IPAddress::ipsFromString(const string &host, vector<IPAddress> &addrs,
   struct addrinfo *info;
   for (info = res; info && (!max || count < max); info = info->ai_next) {
     if (!info->ai_addr) continue;
-    uint32_t ip = ntohl(((struct sockaddr_in *)info->ai_addr)->sin_addr.s_addr);
+    uint32_t ip =
+      hton32(((struct sockaddr_in *)info->ai_addr)->sin_addr.s_addr);
     IPAddress addr(ip, port);
     addr.host = hostname;
     addrs.push_back(addr);
@@ -164,8 +166,8 @@ string IPAddress::hostFromIP(const IPAddress &ip) {
   // TODO support IPv6
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
-  addr.sin_port = htons(ip.getPort());
-  addr.sin_addr.s_addr = htonl(ip.getIP());
+  addr.sin_port = hton16(ip.getPort());
+  addr.sin_addr.s_addr = hton32(ip.getIP());
 
   if (getnameinfo((struct sockaddr *)&addr, sizeof(addr), buffer,
                   sizeof(buffer), 0, 0, 0))

@@ -30,53 +30,71 @@
 \******************************************************************************/
 
 #include <cbang/Catch.h>
-
+#include <cbang/String.h>
 #include <cbang/event/Base.h>
 #include <cbang/dns/Base.h>
-#include <cbang/event/Client.h>
-#include <cbang/event/OutgoingRequest.h>
-
 #include <cbang/config/CommandLine.h>
-#include <cbang/openssl/SSLContext.h>
+
+#include <iostream>
 
 using namespace std;
 using namespace cb;
 
 
+void response(DNS::Base &dns, unsigned &count, const std::string &q,
+              DNS::Error error, const vector<string> &results) {
+  if (error) cerr << q << ": " << error << endl;
+  else cout << q << ": " << String::join(results, ", ") << endl;
+  if (!--count) dns.getEventBase().loopExit();
+}
+
+
+void lookup(DNS::Base &dns, unsigned &count, const std::string &q, bool ipv6,
+            bool reverse) {
+  if (reverse) {
+    auto cb =
+      [&] (DNS::Error error, const vector<string> &names) {
+        response(dns, count, q, error, names);
+      };
+
+    dns.reverse(q, cb);
+
+  } else {
+    auto cb =
+      [&] (DNS::Error error, const vector<SockAddr> &addrs) {
+        vector<string> results;
+        for (auto &addr: addrs) results.push_back(addr.toString());
+        response(dns, count, q, error, results);
+      };
+
+    dns.resolve(q, cb, ipv6);
+  }
+}
+
+
 int main(int argc, char *argv[]) {
   try {
-    string method = "GET";
-    string _url;
+    string server;
+    bool ipv6    = false;
+    bool reverse = false;
 
     CommandLine cmdLine;
     Logger::instance().addOptions(cmdLine);
 
-    cmdLine.addTarget("method", method, "HTTP request method", 'x');
-    cmdLine.addTarget("url", _url, "HTTP URL", 'u');
+    cmdLine.addTarget("server",  server,  "Use this nameserver", 's');
+    cmdLine.addTarget("ipv6",    ipv6,    "Use IPv6", '6');
+    cmdLine.addTarget("reverse", reverse, "Do a reverse lookup", 'x');
 
     cmdLine.parse(argc, argv);
-
-    URI url(_url);
-    SmartPointer<SSLContext> sslCtx;
-    if (url.getScheme() == "https") sslCtx = new SSLContext;
+    auto &args = cmdLine.getPositionalArgs();
+    unsigned count = args.size();
 
     Event::Base base;
-    DNS::Base dns(base);
-    Event::Client client(base, dns, sslCtx);
+    DNS::Base dns(base, server.empty());
 
-    auto cb =
-      [&] (Event::Request &req) {
-        if (req.getConnectionError()) LOG_ERROR(req.getConnectionError());
-        else {
-          LOG_INFO(1, req.getInputHeaders() << '\n');
-          LOG_INFO(1, req.getInput());
-        }
+    if (!server.empty()) dns.addNameserver(server);
 
-        base.loopExit();
-      };
-
-    auto req = client.call(url, Event::RequestMethod::parse(method), cb);
-    req->send();
+    for (auto &arg: args) lookup(dns, count, arg, ipv6, reverse);
 
     base.dispatch();
 

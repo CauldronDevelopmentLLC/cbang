@@ -29,66 +29,46 @@
 
 \******************************************************************************/
 
-#include "DNSBase.h"
+#pragma once
 
-#include "Base.h"
+#include "Type.h"
+#include "Result.h"
 
-#include <cbang/Exception.h>
-
-#include <event2/dns.h>
-
-using namespace std;
-using namespace cb;
-using namespace cb::Event;
+#include <cbang/SmartPointer.h>
 
 
-DNSBase::DNSBase(cb::Event::Base &base, bool initialize,
-                 bool failRequestsOnExit) :
-  dns(evdns_base_new
-      (base.getBase(), initialize ? EVDNS_BASE_INITIALIZE_NAMESERVERS : 0)),
-  failRequestsOnExit(failRequestsOnExit) {
-  if (!dns) THROW("Failed to create DNSBase");
-}
+namespace cb {
+  namespace Event {class Event;}
 
+  namespace DNS {
+    class Base;
 
-DNSBase::~DNSBase() {if (dns) evdns_base_free(dns, failRequestsOnExit);}
+    class Request : public RefCounted, public Error::Enum, public Type::Enum {
+    protected:
+      Base &base;
+      std::string request;
 
+      bool cancelled = false;
+      cb::SmartPointer<Result> result;
+      SmartPointer<Event::Event> timeout;
 
-void DNSBase::initSystemNameservers() {
-#ifdef _WIN32
-  int ret = evdns_base_config_windows_nameservers(dns);
-#else
-  int ret =
-    evdns_base_resolv_conf_parse(dns, DNS_OPTIONS_ALL, "/etc/resolv.conf");
-#endif
+    public:
+      Request(Base &base, const std::string &request);
+      virtual ~Request();
 
-  if (ret) THROW("Failed to initialize system nameservers: " << ret);
-}
+      virtual Type getType() const = 0;
+      const std::string &toString() const {return request;}
+      bool isCancelled() const {return cancelled;}
 
+      void cancel();
+      void respond(const cb::SmartPointer<Result> &result);
+      virtual void callback() = 0;
 
-void DNSBase::addNameserver(const string &addr) {
-  evdns_base_nameserver_ip_add(dns, addr.c_str());
-}
+    private:
+      void scheduleResponse();
+      void timedout();
+    };
 
-
-void DNSBase::addNameserver(const IPAddress &ns) {
-  evdns_base_nameserver_add(dns, htonl(ns.getIP()));
-}
-
-
-void DNSBase::setOption(const string &name, const string &value) {
-  if (evdns_base_set_option(dns, name.c_str(), value.c_str()))
-    THROW("Failed to set DNS option " << name << "=" << value);
-}
-
-
-SmartPointer<DNSRequest>
-DNSBase::resolve(const string &name, callback_t cb, bool search) {
-  return new DNSRequest(dns, name, cb, search);
-}
-
-
-SmartPointer<DNSRequest>
-DNSBase::reverse(uint32_t ip, callback_t cb, bool search) {
-  return new DNSRequest(dns, ip, cb, search);
+    typedef SmartPointer<Request> RequestPtr;
+  }
 }

@@ -43,16 +43,17 @@
 using namespace std;
 using namespace cb;
 using namespace cb::MariaDB;
+using namespace cb::Event;
 
 
 namespace {
   unsigned event_flags_to_db_ready(unsigned flags) {
     unsigned ready = 0;
 
-    if (flags & Event::EventFlag::EVENT_READ)    ready |= DB::READY_READ;
-    if (flags & Event::EventFlag::EVENT_WRITE)   ready |= DB::READY_WRITE;
-    if (flags & Event::EventFlag::EVENT_CLOSED)  ready |= DB::READY_EXCEPT;
-    if (flags & Event::EventFlag::EVENT_TIMEOUT) ready |= DB::READY_TIMEOUT;
+    if (flags & EventFlag::EVENT_READ)    ready |= DB::READY_READ;
+    if (flags & EventFlag::EVENT_WRITE)   ready |= DB::READY_WRITE;
+    if (flags & EventFlag::EVENT_CLOSED)  ready |= DB::READY_EXCEPT;
+    if (flags & EventFlag::EVENT_TIMEOUT) ready |= DB::READY_TIMEOUT;
 
     return ready;
   }
@@ -172,7 +173,7 @@ namespace {
 }
 
 
-EventDB::EventDB(Event::Base &base, st_mysql *db) : DB(db), base(base) {}
+EventDB::EventDB(Base &base, st_mysql *db) : DB(db), base(base) {}
 
 
 // TODO Error when EventDB deallocated while events are still outstanding.
@@ -180,14 +181,14 @@ EventDB::EventDB(Event::Base &base, st_mysql *db) : DB(db), base(base) {}
 
 unsigned EventDB::getEventFlags() const {
   return
-    (waitRead()    ? Event::Base::EVENT_READ    : 0) |
-    (waitWrite()   ? Event::Base::EVENT_WRITE   : 0) |
-    (waitExcept()  ? Event::Base::EVENT_CLOSED  : 0) |
-    (waitTimeout() ? Event::Base::EVENT_TIMEOUT : 0);
+    (waitRead()    ? Base::EVENT_READ    : 0) |
+    (waitWrite()   ? Base::EVENT_WRITE   : 0) |
+    (waitExcept()  ? Base::EVENT_CLOSED  : 0) |
+    (waitTimeout() ? Base::EVENT_TIMEOUT : 0);
 }
 
 
-void EventDB::newEvent(Event::Base::callback_t cb) const {
+void EventDB::newEvent(Base::callback_t cb) const {
   assertPending();
   addEvent(*base.newEvent(getSocket(), cb, getEventFlags()));
 }

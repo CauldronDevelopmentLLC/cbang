@@ -45,8 +45,9 @@ namespace cb {
   class Socket;
   class SSLContext;
 
+  namespace DNS {class Base;}
+
   namespace Event {
-    class DNSBase;
     class Server;
 
     class Connection : public FD, public Enum {
@@ -80,7 +81,7 @@ namespace cb {
       bool isConnected() const;
       void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
                   const SmartPointer<SSLContext> &sslCtx);
-      void connect(DNSBase &dns, const IPAddress &peer, const IPAddress &bind,
+      void connect(DNS::Base &dns, const IPAddress &peer, const IPAddress &bind,
                    const SmartPointer<SSLContext> &sslCtx,
                    std::function<void (bool)> cb);
 

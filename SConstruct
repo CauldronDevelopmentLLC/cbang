@@ -77,7 +77,7 @@ if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 
 # Source
 subdirs = [
-    '', 'xml', 'util', 'debug', 'config', 'os',
+    '', 'xml', 'util', 'debug', 'config', 'os', 
     'log', 'iostream', 'time', 'enum', 'net', 'buffer',
     'socket', 'tar', 'io', 'geom', 'parse', 'json', 'db',
     'auth', 'js', 'gpu', 'pci']
@@ -85,7 +85,7 @@ subdirs = [
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']
 if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
-if not 'libevent' in disable_local: subdirs.append('event')
+if not 'libevent' in disable_local: subdirs += ['event', 'dns']
 
 if env['PLATFORM'] == 'win32': subdirs.append('os/win')
 elif env['PLATFORM'] == 'darwin': subdirs.append('os/osx')

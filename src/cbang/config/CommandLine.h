@@ -43,16 +43,16 @@
 namespace cb {
   /// Represents a set of command line options
   class CommandLine : public Options {
-    const Options *keywords;
+    const Options *keywords      = 0;
     std::string name;
     std::string usageArgs;
     std::vector<std::string> usageExtras;
-    bool allowConfigAsFirstArg;
-    bool allowSingleDashLongOpts;
-    bool allowExtraOpts;
-    bool allowPositionalArgs;
-    bool warnOnInvalidArgs;
-    bool showKeywordOpts;
+    bool allowConfigAsFirstArg   = false;
+    bool allowSingleDashLongOpts = false;
+    bool allowExtraOpts          = false;
+    bool allowPositionalArgs     = true;
+    bool warnOnInvalidArgs       = false;
+    bool showKeywordOpts         = true;
 
     std::vector<const char *> licenseText;
     std::vector<std::string> positionalArgs;

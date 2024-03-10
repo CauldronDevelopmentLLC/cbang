@@ -29,28 +29,50 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Request.h"
+#include "Base.h"
 
-#include <cbang/Exception.h>
-#include <cbang/SmartPointer.h>
-#include <cbang/openssl/BStream.h>
+#include <cbang/String.h>
+#include <cbang/event/Base.h>
+#include <cbang/event/Event.h>
 
-namespace cb {
-  class Socket;
 
-  class BIOSocketImpl : public BStream {
-    Socket &socket;
-    SmartPointer<Exception> exception;
-    int ret;
+using namespace cb::DNS;
+using namespace cb;
+using namespace std;
 
-  public:
-    BIOSocketImpl(Socket &socket);
 
-    const SmartPointer<Exception> &getException() const {return exception;}
-    int getReturnCode() const {return ret;}
+Request::Request(Base &base, const std::string &request) :
+  base(base), request(request) {
+  timeout = base.getEventBase().newEvent(this, &Request::timedout, 0);
+  timeout->add(base.getRequestTimeout());
+}
 
-    // From BStream
-    int read(char *buf, int length) override;
-    int write(const char *buf, int length) override;
-  };
+
+Request::~Request() {timeout->del();}
+
+
+void Request::cancel() {
+  cancelled = true;
+  timeout->del();
+}
+
+
+void Request::respond(const cb::SmartPointer<Result> &result) {
+  if (cancelled) return;
+  timeout->del();
+  this->result = result;
+  scheduleResponse();
+}
+
+
+void Request::scheduleResponse() {
+  auto self = SmartPtr(this);
+  base.getEventBase().newEvent([self] {self->callback();}, 0)->activate();
+}
+
+
+void Request::timedout() {
+  result = new Result(DNS_ERR_TIMEOUT);
+  scheduleResponse();
 }

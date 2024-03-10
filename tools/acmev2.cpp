@@ -39,7 +39,7 @@
 
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
-#include <cbang/event/DNSBase.h>
+#include <cbang/dns/Base.h>
 #include <cbang/event/Client.h>
 #include <cbang/event/WebServer.h>
 
@@ -72,7 +72,7 @@ class App : public Application {
   KeyPair clientKey;
 
   Event::Base base;
-  Event::DNSBase dns;
+  DNS::Base dns;
   Event::Client client;
   Event::WebServer server;
 

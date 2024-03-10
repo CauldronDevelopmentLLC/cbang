@@ -63,7 +63,7 @@ namespace {
 }
 
 
-FD::FD(cb::Event::Base &base, int fd, const SmartPointer<SSL> &ssl) :
+FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
   base(base), ssl(ssl) {
   if (0 <= fd) setFD(fd);
   LOG_DEBUG(4, CBANG_FUNC << "()");

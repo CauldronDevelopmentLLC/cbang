@@ -39,7 +39,7 @@ using namespace cb;
 using namespace cb::Event;
 
 
-Client::Client(cb::Event::Base &base, DNSBase &dns,
+Client::Client(Base &base, DNS::Base &dns,
                const SmartPointer<SSLContext> &sslCtx) :
   base(base), dns(dns), sslCtx(sslCtx) {}
 

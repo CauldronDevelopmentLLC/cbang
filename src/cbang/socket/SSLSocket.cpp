@@ -33,9 +33,7 @@
 
 #ifdef HAVE_OPENSSL
 
-#include "SocketSSLImpl.h"
-
-#include "Socket.h"
+#include "SSLSocket.h"
 
 #include <cbang/Exception.h>
 
@@ -48,24 +46,18 @@ using namespace cb;
 using namespace std;
 
 
-SocketSSLImpl::SocketSSLImpl(Socket *parent,
-                             const SmartPointer<SSLContext> &sslCtx) :
-  SocketDefaultImpl(parent), bio(*parent), ssl(sslCtx->createSSL(bio.getBIO())),
-  sslCtx(sslCtx), inSSL(false) {}
+SSLSocket::SSLSocket(const SmartPointer<SSLContext> &sslCtx) :
+  bio(*this), ssl(sslCtx->createSSL(bio.getBIO())), sslCtx(sslCtx) {}
 
 
-SocketSSLImpl::~SocketSSLImpl() {}
+SSLSocket::~SSLSocket() {}
 
 
-Socket *SocketSSLImpl::createSocket() {return new Socket(sslCtx);}
-
-
-SmartPointer<Socket> SocketSSLImpl::accept(IPAddress *ip) {
-  SmartPointer<Socket> socket = SocketDefaultImpl::accept(ip);
+SmartPointer<Socket> SSLSocket::accept(SockAddr &addr) {
+  SmartPointer<Socket> socket = Socket::accept(addr);
   if (socket.isNull()) return 0;
 
-  SocketSSLImpl *impl = dynamic_cast<SocketSSLImpl *>(socket->getImpl());
-  if (!impl) THROW("Expected SSL socket implementation");
+  auto impl = socket.cast<SSLSocket>();
 
   SmartToggle toggle(impl->inSSL);
   impl->ssl->accept();
@@ -74,22 +66,25 @@ SmartPointer<Socket> SocketSSLImpl::accept(IPAddress *ip) {
 }
 
 
-void SocketSSLImpl::connect(const IPAddress &ip) {
-  SocketDefaultImpl::connect(ip);
+void SSLSocket::connect(const SockAddr &addr, const string &hostname) {
+  Socket::connect(addr);
   SmartToggle toggle(inSSL);
-  if (ip.hasHost()) ssl->setTLSExtHostname(ip.getHost());
+  if (!hostname.empty()) ssl->setTLSExtHostname(hostname);
   ssl->connect();
 }
 
 
-streamsize SocketSSLImpl::write(const char *data, streamsize length,
-                                unsigned flags) {
+streamsize SSLSocket::writeImpl(
+  const uint8_t *data, streamsize length, unsigned flags,
+  const SockAddr *addr) {
   if (!length) return 0;
 
-  if (inSSL) return SocketDefaultImpl::write(data, length, flags);
+  if (inSSL) return Socket::writeImpl(data, length, flags, addr);
   else {
+    if (addr) THROW("Address argument not supported in SSLSocket::write()");
+
     SmartToggle toggle(inSSL);
-    streamsize ret = ssl->write(data, length);
+    streamsize ret = ssl->write((char *)data, length);
 
     if (SSL::peekError()) THROW("SSL read error " << SSL::getErrorStr());
 
@@ -99,13 +94,16 @@ streamsize SocketSSLImpl::write(const char *data, streamsize length,
 }
 
 
-streamsize SocketSSLImpl::read(char *data, streamsize length, unsigned flags) {
+streamsize SSLSocket::readImpl(
+  uint8_t *data, streamsize length, unsigned flags, SockAddr *addr) {
   if (!length) return 0;
 
-  if (inSSL) return SocketDefaultImpl::read(data, length, flags);
+  if (inSSL) return Socket::readImpl(data, length, flags, addr);
   else {
+    if (addr) THROW("Address argument not supported in SSLSocket::read()");
+
     SmartToggle toggle(inSSL);
-    streamsize ret = ssl->read(data, length);
+    streamsize ret = ssl->read((char *)data, length);
 
     if (SSL::peekError()) THROW("SSL read error " << SSL::getErrorStr());
 
@@ -115,12 +113,13 @@ streamsize SocketSSLImpl::read(char *data, streamsize length, unsigned flags) {
 }
 
 
-void SocketSSLImpl::close() {
+void SSLSocket::close() {
   if (isOpen()) {
     SmartToggle toggle(inSSL);
     ssl->shutdown();
   }
-  SocketDefaultImpl::close();
+
+  Socket::close();
 }
 
 #endif // HAVE_OPENSSL

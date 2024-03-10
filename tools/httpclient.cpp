@@ -33,7 +33,7 @@
 #include <cbang/String.h>
 
 #include <cbang/event/Base.h>
-#include <cbang/event/DNSBase.h>
+#include <cbang/dns/Base.h>
 #include <cbang/event/Client.h>
 
 #include <cbang/config/CommandLine.h>
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     ::signal(SIGPIPE, SIG_IGN);
 
     Event::Base base(true);
-    Event::DNSBase dnsBase(base);
+    DNS::Base dnsBase(base);
     Event::Client client(base, dnsBase, sslCtx);
 
     auto cb =

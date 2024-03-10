@@ -32,11 +32,11 @@
 #include "Connection.h"
 #include "Event.h"
 #include "Server.h"
-#include "DNSBase.h"
 
 #include <cbang/Catch.h>
 #include <cbang/socket/Socket.h>
 #include <cbang/log/Logger.h>
+#include <cbang/dns/Base.h>
 
 using namespace cb::Event;
 using namespace cb;
@@ -49,8 +49,7 @@ using namespace std;
 uint64_t Connection::nextID = 0;
 
 
-Connection::Connection(cb::Event::Base &base) :
-  FD(base),
+Connection::Connection(Base &base) : FD(base),
   timeout(base.newEvent(this, &Connection::timedout, EVENT_NO_SELF_REF)) {
   LOG_DEBUG(4, "Connection opened");
 }
@@ -111,7 +110,7 @@ void Connection::accept(const IPAddress &peer,
 
 
 void Connection::connect(
-  DNSBase &dns, const IPAddress &peer, const IPAddress &bind,
+  DNS::Base &dns, const IPAddress &peer, const IPAddress &bind,
   const SmartPointer<SSLContext> &sslCtx, function<void (bool)> cb) {
   try {
     if (isConnected()) THROW("Already connected");
@@ -121,8 +120,8 @@ void Connection::connect(
 
     // Open and bind new socket
     SmartPointer<Socket> socket = new Socket;
+    socket->open();
     if (bind.getIP()) socket->bind(bind);
-    else socket->open();
     socket->setBlocking(false);
 
     SmartPointer<SSL> ssl;
@@ -142,23 +141,30 @@ void Connection::connect(
     LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
 
     // DNS request reference
-    struct Ref {SmartPointer<DNSRequest> dnsReq;};
+    struct Ref {SmartPointer<DNS::Request> dnsReq;};
     SmartPointer<Ref> ref = new Ref;
 
     // DNS callback
     auto dnsCB =
-      [this, ref, peer, cb] (int err, vector<IPAddress> &addrs, int ttl) {
+      [this, ref, peer, cb] (DNS::Error error, const vector<SockAddr> &addrs) {
         ref->dnsReq.release();
 
-        if (err || addrs.empty()) {
+        // Find first IPv4 address
+        IPAddress addr(0, peer.getHost(), peer.getPort());
+        for (auto &a: addrs)
+          if (a.isIPv4()) {
+            addr.setIP(a.getIPv4());
+            break;
+          }
+
+        if (error || !addr) {
           LOG_WARNING("DNS lookup failed for " << peer);
           if (cb) cb(false);
           return;
         }
 
         try {
-          // Use first address
-          IPAddress addr(addrs[0].getIP(), peer.getHost(), peer.getPort());
+          // Set address
           setPeer(addr);
 
           // NOTE, Connect timeout is write timeout
@@ -178,9 +184,9 @@ void Connection::connect(
 
     // Skip DNS lookup if we already have an IP
     if (peer.getIP()) {
-      vector<IPAddress> addrs;
-      addrs.push_back(peer);
-      return dnsCB(0, addrs, 0);
+      vector<SockAddr> addrs;
+      addrs.push_back(SockAddr(peer.getIP()));
+      return dnsCB(DNS::Error::DNS_ERR_NOERROR, addrs);
     }
 
     // Start async DNS lookup

@@ -39,8 +39,8 @@
 #include <valgrind/memcheck.h>
 #endif
 
-#include <event2/util.h>
-#include <event2/buffer.h>
+#include <event2/util.h>   // For iovec
+#include <event2/buffer.h> // For evbuffer_iovec on Windows
 
 using namespace cb::Event;
 using namespace cb;

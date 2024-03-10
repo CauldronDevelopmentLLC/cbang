@@ -34,10 +34,14 @@
 
 #include <cbang/os/SysError.h>
 #include <cbang/os/DynamicLibrary.h>
+#include <cbang/socket/Winsock.h>
 
-#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <sysinfoapi.h>
+#include <iphlpapi.h>
+
+#pragma comment(lib, "iphlpapi.lib")
 
 using namespace cb;
 using namespace std;
@@ -91,4 +95,26 @@ Version WinSystemInfo::getOSVersion() const {
 string WinSystemInfo::getMachineID() const {
   return Win32Registry::getString(
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid");
+}
+
+
+void WinSystemInfo::getNameservers(set<SockAddr> &addrs) {
+  // Get buffer size
+  ULONG size = 0;
+  if (GetAdaptersAddresses(0, 0, 0, 0, &size) != ERROR_BUFFER_OVERFLOW)
+    THROW("Failed to get AdapterAddresses buffer size");
+
+  // Allocate buffer
+  SmartPointer<uint8_t>::Array buf = new uint8_t[size]();
+  auto aAddrs = (PIP_ADAPTER_ADDRESSES)buf.get();
+
+  // Get addresses
+  ULONG ret = GetAdaptersAddresses(0, 0, 0, aAddrs, &size);
+  if (ret == ERROR_ADDRESS_NOT_ASSOCIATED || ret == ERROR_NO_DATA) return;
+  if (ret != NO_ERROR) THROW("Failed to get AdapterAddresses");
+
+  // Add addresses
+  for (; aAddrs; aAddrs = aAddrs->Next)
+    for (auto p = aAddrs->FirstDnsServerAddress; p; p = p->Next)
+      addrs.insert(SockAddr(*p->Address.lpSockaddr));
 }

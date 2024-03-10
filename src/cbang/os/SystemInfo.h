@@ -33,6 +33,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/util/Version.h>
+#include <cbang/socket/SockAddr.h>
 
 #include <cstdint>
 
@@ -70,6 +71,8 @@ namespace cb {
     virtual Version getOSVersion() const = 0;
     virtual std::string getHostname() const;
     virtual std::string getMachineID() const = 0;
+
+    virtual void getNameservers(std::set<SockAddr> &addrs);
 
     void add(Info &info);
   };

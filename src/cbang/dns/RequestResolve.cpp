@@ -29,30 +29,22 @@
 
 \******************************************************************************/
 
-#include "StreamEventBuffer.h"
-#include "Event.h"
+#include "RequestResolve.h"
 
-#include <event2/util.h> // For evutil_closesocket()
+#include <cbang/log/Logger.h>
 
-using namespace cb;
-using namespace cb::Event;
-
-
-StreamEventBuffer::StreamEventBuffer(
-  Base &base, socket_t handle, unsigned flags) :
-  StreamEventHandler(base, handle, flags), handle(handle) {}
+using namespace std;
+using namespace cb::DNS;
 
 
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
-
-
-void StreamEventBuffer::write() {
-  write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
+RequestResolve::RequestResolve(
+  Base &base, const string &name, callback_t cb, bool ipv6) :
+  Request(base, name), cb(cb), ipv6(ipv6) {
+  LOG_DEBUG(5, "DNS: resolving '" << name << "'");
 }
 
 
-void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
-  if (flags & EVENT_READ)   read();
-  if (flags & EVENT_WRITE) write();
+void RequestResolve::callback() {
+  LOG_DEBUG(5, "DNS: resolve response: " << result->error);
+  if (cb) cb(result->error, result->addrs);
 }

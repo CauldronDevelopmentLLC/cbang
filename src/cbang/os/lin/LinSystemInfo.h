@@ -37,9 +37,9 @@ namespace cb {
   class LinSystemInfo : public SystemInfo {
   public:
     // From SystemInfo
-    uint32_t getCPUCount() const;
-    uint64_t getMemoryInfo(memory_info_t type) const;
-    Version getOSVersion() const;
-    std::string getMachineID() const;
+    uint32_t getCPUCount() const override;
+    uint64_t getMemoryInfo(memory_info_t type) const override;
+    Version getOSVersion() const override;
+    std::string getMachineID() const override;
   };
 }
