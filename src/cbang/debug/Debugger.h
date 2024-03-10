@@ -36,11 +36,11 @@
 #include "StackTrace.h"
 
 #include <cbang/os/Mutex.h>
+#include <cbang/util/Singleton.h>
 
-#include <cbang/util/Base.h>
 
 namespace cb {
-  class Debugger : public Base, public Mutex {
+  class Debugger : public Mutex, public SingletonBase {
   public:
     unsigned maxStack;
 

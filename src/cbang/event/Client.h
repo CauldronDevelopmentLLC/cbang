@@ -43,14 +43,14 @@
 
 namespace cb {
   class URI;
+  namespace DNS {class Base;}
 
   namespace Event {
     class Base;
-    class DNSBase;
 
     class Client {
       Base &base;
-      DNSBase &dns;
+      DNS::Base &dns;
       SmartPointer<SSLContext> sslCtx;
       IPAddress bindAddr;
       unsigned readTimeout  = 0;
@@ -66,12 +66,12 @@ namespace cb {
 
       typedef OutgoingRequest::callback_t callback_t;
 
-      Client(Base &base, DNSBase &dns,
+      Client(Base &base, DNS::Base &dns,
              const SmartPointer<SSLContext> &sslCtx = 0);
       ~Client();
 
       Base &getBase() const {return base;}
-      DNSBase &getDNS() const {return dns;}
+      DNS::Base &getDNS() const {return dns;}
 
       const cb::SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
       void setSSLContext(const cb::SmartPointer<SSLContext> &sslCtx)

@@ -31,45 +31,25 @@
 
 #pragma once
 
-#include "DNSRequest.h"
-
-struct evdns_base;
+#include "Request.h"
 
 
 namespace cb {
-  namespace Event {
+  namespace DNS {
+    class RequestReverse : public Request {
+    public:
+      typedef std::function<
+      void (Error error, const std::vector<std::string> &names)> callback_t;
 
-    class Base;
-
-    class DNSBase {
-      evdns_base *dns;
-      bool failRequestsOnExit;
+    protected:
+      callback_t cb;
 
     public:
-      DNSBase(Base &base, bool initialize = true,
-              bool failRequestsOnExit = true);
-      ~DNSBase();
+      RequestReverse(Base &base, const SockAddr &addr, callback_t cb);
 
-      evdns_base *getDNSBase() const {return dns;}
-
-      void initSystemNameservers();
-
-      void addNameserver(const std::string &addr);
-      void addNameserver(const IPAddress &ns);
-
-      /// Options are: ndots, timeout, max-timeouts, max-inflight, attempts,
-      ///   randomize-case, bind-to, initial-probe-timeout,
-      ///   getaddrinfo-allow-skew.
-      void setOption(const std::string &name, const std::string &value);
-
-      typedef std::function<void (int, std::vector<IPAddress> &, int)>
-      callback_t;
-
-      SmartPointer<DNSRequest>
-      resolve(const std::string &name, DNSRequest::callback_t cb,
-              bool search = true);
-      SmartPointer<DNSRequest>
-      reverse(uint32_t ip, DNSRequest::callback_t cb, bool search = true);
+      // From Request
+      Type getType() const override {return DNS_PTR;}
+      void callback() override;
     };
   }
 }

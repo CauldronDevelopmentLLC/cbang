@@ -102,6 +102,31 @@ string SystemInfo::getHostname() const {
 }
 
 
+void SystemInfo::getNameservers(set<SockAddr> &addrs) {
+  string path = "/etc/resolv.conf";
+
+#ifdef DEBUG
+  // Allow override in debug mode
+  const char *v = SystemUtilities::getenv("CBANG_RESOLV_CONF");
+  if (v) path = v;
+#endif
+
+  if (SystemUtilities::exists(path)) {
+    string data = SystemUtilities::read(path);
+    vector<string> lines;
+    String::tokenize(data, lines, "\n\r");
+
+    for (string &line: lines) {
+      vector<string> parts;
+      String::tokenize(line, parts, " \t");
+
+      if (1 < parts.size() && parts[0] == "nameserver")
+        addrs.insert(SockAddr::parse(parts[1]));
+    }
+  }
+}
+
+
 void SystemInfo::add(Info &info) {
   const char *category = "System";
   auto cpuInfo = CPUInfo::create();

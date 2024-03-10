@@ -41,11 +41,7 @@ using namespace std;
 using namespace cb;
 
 
-CommandLine::CommandLine() :
-  keywords(0), allowConfigAsFirstArg(false), allowSingleDashLongOpts(false),
-  allowExtraOpts(false), allowPositionalArgs(true), warnOnInvalidArgs(false),
-  showKeywordOpts(true) {
-
+CommandLine::CommandLine() {
   SmartPointer<Option> opt;
 
   pushCategory("Informational");

@@ -42,7 +42,7 @@ using namespace cb;
 using namespace std;
 
 
-HTTPServer::HTTPServer(cb::Event::Base &base) : Server(base) {}
+HTTPServer::HTTPServer(Base &base) : Server(base) {}
 
 
 SmartPointer<Request>

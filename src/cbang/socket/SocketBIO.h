@@ -29,30 +29,28 @@
 
 \******************************************************************************/
 
-#include "StreamEventBuffer.h"
-#include "Event.h"
+#pragma once
 
-#include <event2/util.h> // For evutil_closesocket()
+#include <cbang/Exception.h>
+#include <cbang/SmartPointer.h>
+#include <cbang/openssl/BStream.h>
 
-using namespace cb;
-using namespace cb::Event;
+namespace cb {
+  class Socket;
 
+  class SocketBIO : public BStream {
+    Socket &socket;
+    SmartPointer<Exception> exception;
+    int ret;
 
-StreamEventBuffer::StreamEventBuffer(
-  Base &base, socket_t handle, unsigned flags) :
-  StreamEventHandler(base, handle, flags), handle(handle) {}
+  public:
+    SocketBIO(Socket &socket);
 
+    const SmartPointer<Exception> &getException() const {return exception;}
+    int getReturnCode() const {return ret;}
 
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
-
-
-void StreamEventBuffer::write() {
-  write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
-}
-
-
-void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
-  if (flags & EVENT_READ)   read();
-  if (flags & EVENT_WRITE) write();
+    // From BStream
+    int read(char *buf, int length) override;
+    int write(const char *buf, int length) override;
+  };
 }

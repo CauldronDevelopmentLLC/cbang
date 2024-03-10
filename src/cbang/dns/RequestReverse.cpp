@@ -29,11 +29,57 @@
 
 \******************************************************************************/
 
-#include "SocketImpl.h"
-#include "Socket.h"
+#include "RequestReverse.h"
 
+#include <cbang/String.h>
+#include <cbang/log/Logger.h>
 
+using namespace std;
 using namespace cb;
+using namespace cb::DNS;
 
 
-Socket *SocketImpl::createSocket() {return new Socket;}
+namespace {
+  char nibble(uint8_t x) {return "0123456789abcdef"[x & 0xf];}
+}
+
+
+namespace {
+  string addrToRequest(const SockAddr &addr) {
+    if (addr.isIPv4()) {
+      uint32_t ip = addr.getIPv4();
+
+      return String::printf(
+        "%d.%d.%d.%d.in-addr.arpa",
+        (int)((ip >>  0) & 0xff), (int)((ip >>  8) & 0xff),
+        (int)((ip >> 16) & 0xff), (int)((ip >> 24) & 0xff));
+
+    } else if (addr.isIPv6()) {
+      char buf[73] = "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0."
+        "0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa";
+
+      auto a = addr.getIPv6();
+      for (int i = 0; i < 16; i++) {
+        uint8_t byte = a[15 - i];
+        buf[i * 4 + 0] = nibble(byte >> 0);
+        buf[i * 4 + 2] = nibble(byte >> 4);
+      }
+
+      return buf;
+
+    } else THROW("Unsupported address type");
+  }
+}
+
+
+RequestReverse::RequestReverse(
+  Base &base, const SockAddr &addr, callback_t cb) :
+  Request(base, addrToRequest(addr)), cb(cb) {
+  LOG_DEBUG(5, "DNS: reversing " << addr);
+}
+
+
+void RequestReverse::callback() {
+  LOG_DEBUG(5, "DNS: reverse response: " << result->error);
+  if (cb) cb(result->error, result->names);
+}

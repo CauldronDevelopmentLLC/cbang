@@ -49,11 +49,10 @@ namespace cb {
   class SocketServer : public Thread, public Mutex {
   protected:
     struct ListenPort {
-      Socket socket;
+      SmartPointer<Socket> socket;
       IPAddress ip;
 
-      ListenPort(const IPAddress &ip, const SmartPointer<SSLContext> &sslCtx) :
-        socket(sslCtx), ip(ip) {}
+      ListenPort(const IPAddress &ip, const SmartPointer<SSLContext> &sslCtx);
     };
 
     typedef std::vector<SmartPointer<ListenPort> > ports_t;
@@ -78,7 +77,7 @@ namespace cb {
     unsigned getNumListenPorts() const {return ports.size();}
     const IPAddress &getListenPort(unsigned i) const {return ports[i]->ip;}
     bool isListenPortSecure(unsigned i) const
-    {return ports[i]->socket.isSecure();}
+    {return ports[i]->socket->isSecure();}
 
     unsigned getNumConnections() const {return connections.size();}
     iterator begin() const {return connections.begin();}

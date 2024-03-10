@@ -39,9 +39,9 @@ namespace cb {
     ~WinPowerManagement();
 
     // From PowerManagement
-    void _setAllowSleep(bool allow);
-    unsigned _getIdleSeconds();
-    bool _getHasBattery();
-    bool _getOnBattery();
+    void _setAllowSleep(bool allow) override;
+    unsigned _getIdleSeconds() override;
+    bool _getHasBattery() override;
+    bool _getOnBattery() override;
   };
 }

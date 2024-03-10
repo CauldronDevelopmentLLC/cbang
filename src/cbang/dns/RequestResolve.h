@@ -31,59 +31,30 @@
 
 #pragma once
 
-#include <cbang/SmartPointer.h>
-#include <cbang/net/IPAddress.h>
+#include "Request.h"
 
 #include <functional>
-#include <string>
 #include <vector>
-
-struct evdns_base;
-struct evdns_request;
 
 
 namespace cb {
-  namespace Event {
-    class DNSRequest : public RefCounted {
+  namespace DNS {
+    class RequestResolve : public Request {
     public:
-      typedef enum {
-        DNS_ERR_NONE = 0,
-        DNS_ERR_FORMAT = 1,
-        DNS_ERR_SERVERFAILED = 2,
-        DNS_ERR_NOTEXIST = 3,
-        DNS_ERR_NOTIMPL = 4,
-        DNS_ERR_REFUSED = 5,
-        DNS_ERR_TRUNCATED = 65,
-        DNS_ERR_UNKNOWN = 66,
-        DNS_ERR_TIMEOUT = 67,
-        DNS_ERR_SHUTDOWN = 68,
-        DNS_ERR_CANCEL = 69,
-        DNS_ERR_NODATA = 70,
-      } dns_error_t;
-
-      typedef
-      std::function<void (int error, std::vector<IPAddress> &addrs, int ttl)>
-      callback_t;
+      typedef std::function<
+      void (Error error, const std::vector<SockAddr> &addrs)> callback_t;
 
     protected:
-      evdns_base *dns;
-      evdns_request *req;
       callback_t cb;
-      IPAddress source;
-      SmartPointer<DNSRequest> self;
+      bool ipv6;
 
     public:
-      DNSRequest(evdns_base *dns, const std::string &name,
-                 DNSRequest::callback_t cb, bool search);
-      DNSRequest(evdns_base *dns, uint32_t ip, DNSRequest::callback_t cb,
-                 bool search);
+      RequestResolve(
+        Base &base, const std::string &name, callback_t cb, bool ipv6);
 
-      void cancel();
-      void callback(int error, char type, int count, int ttl, void *addresses);
-
-      static const char *getErrorStr(int error);
+      // From Request
+      Type getType() const override {return ipv6 ? DNS_IPV6 : DNS_IPV4;}
+      void callback() override;
     };
-
-    typedef SmartPointer<DNSRequest> DNSRequestPtr;
   }
 }

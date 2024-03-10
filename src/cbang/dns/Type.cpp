@@ -29,41 +29,6 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#include "SocketDefaultImpl.h"
-#include "BIOSocketImpl.h"
-
-namespace cb {
-  class SSL;
-
-  class SocketSSLImpl : public SocketDefaultImpl {
-    BIOSocketImpl bio;
-    SmartPointer<SSL> ssl;
-    SmartPointer<SSLContext> sslCtx;
-
-    bool inSSL;
-
-    // Don't allow copy constructor or assignment
-    SocketSSLImpl(const SocketSSLImpl &o) :
-      SocketDefaultImpl(0), bio(*o.parent) {}
-    SocketSSLImpl &operator=(const SocketSSLImpl &o) {return *this;}
-
-  public:
-    SocketSSLImpl(Socket *parent, const SmartPointer<SSLContext> &sslCtx);
-    ~SocketSSLImpl();
-
-    // From SocketImpl
-    SSL &getSSL() override {return *ssl;}
-    SSLContext &getSSLContext() override {return *sslCtx;}
-    bool isSecure() override {return true;}
-    Socket *createSocket() override;
-    SmartPointer<Socket> accept(IPAddress *ip) override;
-    void connect(const IPAddress &ip) override;
-    std::streamsize write(
-      const char *data, std::streamsize length, unsigned flags) override;
-    std::streamsize read(
-      char *data, std::streamsize length, unsigned flags) override;
-    void close() override;
-  };
-}
+#define CBANG_ENUM_IMPL
+#include "Type.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

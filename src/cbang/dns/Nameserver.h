@@ -31,10 +31,63 @@
 
 #pragma once
 
+#include "Error.h"
+#include "Type.h"
+
+#include <cbang/socket/Socket.h>
+#include <cbang/event/EventFlag.h>
+
+#include <map>
+
+
 namespace cb {
-  /// Allows polymorphic access to the destructor
-  class Base {
-  public:
-    virtual ~Base() {}
-  };
+  namespace Event {class Event;}
+
+  namespace DNS {
+    class Base;
+    class Request;
+    class Result;
+
+    class Nameserver :
+      public Event::EventFlag, public Error::Enum, public Type::Enum {
+      Base &base;
+      SockAddr addr;
+      bool system;
+
+      SmartPointer<Socket> socket;
+      SmartPointer<Event::Event> event;
+
+      struct Query {
+        Type type;
+        std::string request;
+        SmartPointer<Event::Event> timeout;
+      };
+
+      std::map<uint16_t, Query> active;
+
+      unsigned failures = 0;
+      bool waiting = false;
+
+    public:
+      Nameserver(Base &base, const SockAddr &addr, bool system);
+      ~Nameserver();
+
+      const SockAddr &getAddress() const {return addr;}
+      bool isSystem() const {return system;}
+      unsigned getFailures() const {return failures;}
+
+      void start();
+      void stop();
+
+      bool transmit(Type type, const std::string &request);
+
+    protected:
+      void timeout(uint16_t id);
+      void writeWaiting(bool waiting);
+      void read();
+      void ready(Event::Event &e, int fd, unsigned flags);
+      void respond(const Query &query, const cb::SmartPointer<Result> &result,
+                   unsigned ttl);
+    };
+  }
 }

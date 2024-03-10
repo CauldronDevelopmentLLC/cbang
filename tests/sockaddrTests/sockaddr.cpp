@@ -29,54 +29,38 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#include "SocketImpl.h"
-
+#include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
+#include <cbang/Catch.h>
+#include <cbang/socket/SockAddr.h>
 
 #include <iostream>
+#include <vector>
 
-namespace cb {
-  /// Create a TCP socket connection.
-  class SocketDefaultImpl : public SocketImpl {
-    socket_t socket;
-    bool blocking;
-    bool connected;
+using namespace std;
+using namespace cb;
 
-    // Don't allow copy constructor or assignment
-    SocketDefaultImpl(const SocketDefaultImpl &o) : SocketImpl(0) {}
-    SocketDefaultImpl &operator=(const SocketDefaultImpl &o) {return *this;}
 
-  public:
-    SocketDefaultImpl(Socket *parent);
+int main(int argc, char *argv[]) {
+  try {
+    vector<SockAddr> addrs;
 
-    // From SocketImpl
-    bool isOpen() const override;
-    void setReuseAddr(bool reuse) override;
-    void setBlocking(bool blocking) override;
-    bool getBlocking() const override {return blocking;}
-    void setKeepAlive(bool keepAlive) override;
-    void setSendBuffer(int size) override;
-    void setReceiveBuffer(int size) override;
-    void setReceiveLowWater(int size) override;
-    void setSendTimeout(double timeout) override;
-    void setReceiveTimeout(double timeout) override;
-    void open() override;
-    void bind(const IPAddress &ip) override;
-    void listen(int backlog) override;
-    SmartPointer<Socket> accept(IPAddress *ip) override;
-    void connect(const IPAddress &ip) override;
-    std::streamsize write(
-      const char *data, std::streamsize length, unsigned flags) override;
-    std::streamsize read(
-      char *data, std::streamsize length, unsigned flags) override;
-    void close() override;
-    socket_t get() const override {return socket;}
-    void set(socket_t socket) override;
-    socket_t adopt() override;
+    for (int i = 1; i < argc; i++)
+      addrs.push_back(SockAddr::parse(argv[i]));
 
-  protected:
-    void capture(const IPAddress &addr, bool incoming);
-  };
+    for (unsigned i = 0; i < addrs.size(); i++) {
+      if (i) {
+        int cmp = addrs[i - 1].compare(addrs[i]);
+        cout << ' ' << (cmp < 0 ? '<' : (0 < cmp ? '>' : '=')) << ' ';
+      }
+
+      cout << addrs[i];
+    }
+
+    cout << endl;
+
+    return 0;
+  } CATCH_ERROR;
+
+  return 1;
 }

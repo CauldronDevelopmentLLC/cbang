@@ -33,7 +33,7 @@
 
 #ifdef HAVE_OPENSSL
 
-#include "BIOSocketImpl.h"
+#include "SocketBIO.h"
 
 #include <cbang/Catch.h>
 
@@ -44,17 +44,17 @@
 using namespace cb;
 
 
-BIOSocketImpl::BIOSocketImpl(Socket &socket) : socket(socket), ret(0) {
+SocketBIO::SocketBIO(Socket &socket) : socket(socket), ret(0) {
   setFlags(BIO_FLAGS_WRITE | BIO_FLAGS_READ);
 }
 
 
-int BIOSocketImpl::read(char *buf, int length) {
+int SocketBIO::read(char *buf, int length) {
   try {
     try {
       ret = 0;
       exception = 0;
-      ret = socket.read(buf, length);
+      ret = socket.read((uint8_t *)buf, length);
 
       if (!ret && !socket.getBlocking()) setFlags(BIO_FLAGS_SHOULD_RETRY);
       else clearFlags(BIO_FLAGS_SHOULD_RETRY);
@@ -71,12 +71,12 @@ int BIOSocketImpl::read(char *buf, int length) {
 }
 
 
-int BIOSocketImpl::write(const char *buf, int length) {
+int SocketBIO::write(const char *buf, int length) {
   try {
     try {
       ret = 0;
       exception = 0;
-      ret = socket.write(buf, length);
+      ret = socket.write((uint8_t *)buf, length);
 
       if (!ret && !socket.getBlocking()) setFlags(BIO_FLAGS_SHOULD_RETRY);
       else clearFlags(BIO_FLAGS_SHOULD_RETRY);

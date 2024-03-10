@@ -31,21 +31,30 @@
 
 #pragma once
 
-#include "SocketImpl.h"
+#include "SocketType.h"
+#include "SockAddr.h"
+
+#include <cbang/SmartPointer.h>
+#include <cbang/net/IPAddress.h>
 
 #include <ios>
+#include <cstdint>
+
 
 namespace cb {
+  class SSL;
   class SSLContext;
 
   /// Create a TCP socket connection.
   class Socket {
     static bool initialized;
 
-    SocketImpl *impl;
+    socket_t socket = -1;
+    bool blocking   = true;
+    bool connected  = false;
 
     // Don't allow copy constructor or assignment
-    Socket(const Socket &o) : impl(0) {}
+    Socket(const Socket &o) {}
     Socket &operator=(const Socket &o) {return *this;}
 
   public:
@@ -69,55 +78,72 @@ namespace cb {
 
 
     Socket();
-    Socket(const SmartPointer<SSLContext> &sslCtx);
     virtual ~Socket();
 
     static void initialize();
 
-    virtual SocketImpl *getImpl() {return impl;}
-    virtual bool isSecure() {return impl->isSecure();}
+    virtual SmartPointer<Socket> create() {return new Socket;}
 
-    /// @return True if the socket is open.
-    virtual bool isOpen() const {return impl->isOpen();}
+    virtual SSL &getSSL() {THROW("Not a secure socket");}
+    virtual SSLContext &getSSLContext() {THROW("Not a secure socket");}
+
+    virtual bool isSecure() {return false;}
+    virtual bool isOpen() const;
     virtual bool isConnected() const {return canWrite(0);}
 
     virtual bool canRead(double timeout = 0) const;
     virtual bool canWrite(double timeout = 0) const;
 
-    virtual void setReuseAddr(bool reuse) {impl->setReuseAddr(reuse);}
-    virtual void setBlocking(bool blocking) {impl->setBlocking(blocking);}
-    virtual bool getBlocking() const {return impl->getBlocking();}
-    virtual void setKeepAlive(bool keepAlive) {impl->setKeepAlive(keepAlive);}
-    virtual void setSendBuffer(int size) {impl->setSendBuffer(size);}
-    virtual void setReceiveBuffer(int size) {impl->setReceiveBuffer(size);}
-    virtual void setReceiveLowWater(int size) {impl->setReceiveLowWater(size);}
-    virtual void setReceiveTimeout(double timeout)
-    {impl->setReceiveTimeout(timeout);}
-    virtual void setSendTimeout(double timeout) {impl->setSendTimeout(timeout);}
+    virtual void setReuseAddr(bool reuse);
+    virtual void setBlocking(bool blocking);
+    virtual bool getBlocking() const {return blocking;}
+    virtual void setCloseOnExec(bool closeOnExec);
+    virtual void setKeepAlive(bool keepAlive);
+    virtual void setSendBuffer(int size);
+    virtual void setReceiveBuffer(int size);
+    virtual void setReceiveLowWater(int size);
+    virtual void setReceiveTimeout(double timeout);
+    virtual void setSendTimeout(double timeout);
     virtual void setTimeout(double timeout);
 
-    virtual void open() {impl->open();}
-    virtual void bind(const IPAddress &ip) {impl->bind(ip);}
-    virtual void listen(int backlog = -1) {impl->listen(backlog);}
-    virtual SmartPointer<Socket> accept(IPAddress *ip = 0)
-    {return impl->accept(ip);}
+    virtual void open(bool upd = false);
+    virtual void bind(const SockAddr &addr);
+    void bind(const IPAddress &ip);
+    virtual void listen(int backlog = -1);
+    virtual SmartPointer<Socket> accept(SockAddr &addr);
+    SmartPointer<Socket> accept(IPAddress *ip = 0);
 
-    /// Connect to the specified address and port.
-    virtual void connect(const IPAddress &ip) {impl->connect(ip);}
+    /// Connect to the specified address and port
+    virtual void connect(const SockAddr &addr,
+                         const std::string &hostname = "");
+    void connect(const IPAddress &ip);
 
     /// Write data to an open connection.
-    virtual std::streamsize write(const char *data, std::streamsize length,
-                                  unsigned flags = 0);
+    std::streamsize write(
+      const uint8_t *data, std::streamsize length, unsigned flags = 0,
+      const SockAddr *addr = 0);
 
     /// Read data from an open connection.
-    virtual std::streamsize read(char *data, std::streamsize length,
-                                 unsigned flags = 0);
+    std::streamsize read(
+      uint8_t *data, std::streamsize length, unsigned flags = 0,
+      SockAddr *addr = 0);
 
     /// Close an open connection.
-    virtual void close() {impl->close();}
+    virtual void close();
 
-    virtual socket_t get() const {return impl->get();}
-    virtual void set(socket_t socket) {impl->set(socket);}
-    virtual socket_t adopt() {return impl->adopt();}
+    virtual socket_t get() const {return socket;}
+    virtual void set(socket_t socket);
+    virtual socket_t adopt();
+
+  protected:
+    virtual std::streamsize writeImpl(
+      const uint8_t *data, std::streamsize length, unsigned flags,
+      const SockAddr *addr);
+
+    /// Read data from an open connection.
+    virtual std::streamsize readImpl(
+      uint8_t *data, std::streamsize length, unsigned flags, SockAddr *addr);
+
+    void assertOpen();
   };
 }

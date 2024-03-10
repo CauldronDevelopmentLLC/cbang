@@ -29,30 +29,6 @@
 
 \******************************************************************************/
 
-#include "StreamEventBuffer.h"
-#include "Event.h"
-
-#include <event2/util.h> // For evutil_closesocket()
-
-using namespace cb;
-using namespace cb::Event;
-
-
-StreamEventBuffer::StreamEventBuffer(
-  Base &base, socket_t handle, unsigned flags) :
-  StreamEventHandler(base, handle, flags), handle(handle) {}
-
-
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
-
-
-void StreamEventBuffer::write() {
-  write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
-}
-
-
-void StreamEventBuffer::onEvent(Event &event, int fd, unsigned flags) {
-  if (flags & EVENT_READ)   read();
-  if (flags & EVENT_WRITE) write();
-}
+#define CBANG_ENUM_IMPL
+#include "Error.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

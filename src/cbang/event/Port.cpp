@@ -58,6 +58,7 @@ void Port::setPriority(int priority) {
 
 void Port::open() {
   socket = new Socket;
+  socket->open();
   socket->setReuseAddr(true);
   socket->bind(addr);
   socket->listen(server.getConnectionBacklog());

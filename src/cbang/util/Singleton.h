@@ -31,8 +31,6 @@
 
 #pragma once
 
-#include "Base.h"
-
 #include <cbang/Exception.h>
 #include <cbang/debug/Demangle.h>
 
@@ -46,9 +44,15 @@ namespace cb {
   };
 
 
+  class SingletonBase {
+  public:
+    virtual ~SingletonBase() {}
+  };
+
+
   class SingletonDealloc {
     static SingletonDealloc *singleton;
-    typedef std::vector<Base *> singletons_t;
+    typedef std::vector<SingletonBase *> singletons_t;
     singletons_t singletons;
 
     SingletonDealloc() {}
@@ -56,7 +60,7 @@ namespace cb {
 
     static SingletonDealloc &instance();
 
-    void add(Base *singleton) {singletons.push_back(singleton);}
+    void add(SingletonBase *singleton) {singletons.push_back(singleton);}
     void deallocate();
   };
 
@@ -76,7 +80,7 @@ namespace cb {
    *     . . .
    */
   template <typename T>
-  class Singleton : public Base {
+  class Singleton : public SingletonBase {
   protected:
     static Singleton<T> *singleton;
 

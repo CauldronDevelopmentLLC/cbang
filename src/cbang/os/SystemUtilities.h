@@ -50,7 +50,6 @@
 namespace cb {
   class URI;
 
-  /// Contains system utility functions.  Most of these are OS dependent.
   namespace SystemUtilities {
     extern bool useHardLinks;
 
@@ -58,8 +57,6 @@ namespace cb {
     extern const char path_separator;
     extern const char path_delimiter;
     extern const std::string library_path;
-
-    // TODO document these functions
 
     // Path
     std::string basename(const std::string &path);
@@ -139,7 +136,6 @@ namespace cb {
                 unsigned maxFiles = 0,
                 Compression compression = Compression::COMPRESSION_NONE);
     int openModeToFlags(std::ios::openmode mode);
-
 
     // Process
     enum {

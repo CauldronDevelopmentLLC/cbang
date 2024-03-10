@@ -39,6 +39,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/socket/Socket.h>
+#include <cbang/os/SysError.h>
 
 using namespace cb::Event;
 using namespace cb;
@@ -127,7 +128,13 @@ Base::newSignal(int signal, callback_t cb, unsigned flags) {
 }
 
 
-void Base::dispatch() {if (event_base_dispatch(base)) THROW("Dispatch failed");}
+void Base::dispatch() {
+  int ret = event_base_dispatch(base);
+  if (ret < 0) THROW("Dispatch failed: " << SysError());
+  if (ret == 1) THROW("No pending events");
+}
+
+
 void Base::loop() {if (event_base_loop(base, 0)) THROW("Loop failed");}
 
 

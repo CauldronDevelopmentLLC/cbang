@@ -45,7 +45,7 @@ using namespace std;
 using namespace cb::Event;
 
 
-WebServer::WebServer(cb::Options &options, cb::Event::Base &base,
+WebServer::WebServer(cb::Options &options, Base &base,
                      const cb::SmartPointer<cb::SSLContext> &sslCtx,
                      const cb::SmartPointer<HTTPHandlerFactory> &factory) :
   HTTPHandlerGroup(factory), HTTPServer(base), options(options),

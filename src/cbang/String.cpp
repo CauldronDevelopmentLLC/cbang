@@ -601,6 +601,11 @@ string String::hexdump(const char *data, unsigned size) {
 }
 
 
+string String::hexdump(const uint8_t *data, unsigned size) {
+  return hexdump((char *)data, size);
+}
+
+
 string String::hexdump(const string &s) {
 #ifdef _WIN32
   return hexdump(s.c_str(), s.length());

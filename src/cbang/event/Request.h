@@ -37,7 +37,6 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Version.h>
-#include <cbang/util/Base.h>
 #include <cbang/net/IPAddress.h>
 #include <cbang/net/URI.h>
 #include <cbang/net/Session.h>

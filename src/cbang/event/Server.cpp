@@ -42,7 +42,7 @@ using namespace cb;
 using namespace std;
 
 
-Server::Server(cb::Event::Base &base) : base(base) {}
+Server::Server(Base &base) : base(base) {}
 
 
 void Server::bind(const IPAddress &addr, const SmartPointer<SSLContext> &sslCtx,
