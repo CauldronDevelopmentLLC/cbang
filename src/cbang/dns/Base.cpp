@@ -228,7 +228,7 @@ void Base::pump() {
         pending.pop_front();
         active.insert(id);
         continue;
-      } CATCH_ERROR;
+      } CATCH_DEBUG(4);
 
       // Failed request
       TRY_CATCH_ERROR(req.respond(new Result(DNS_ERR_BADREQ)));

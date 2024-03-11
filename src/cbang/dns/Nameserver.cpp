@@ -205,7 +205,7 @@ bool Nameserver::transmit(Type type, const string &request) {
     writeWaiting(true);
     return false;
 
-  } CATCH_ERROR;
+  } CATCH_DEBUG(4);
 
   failures++;
   return false;
@@ -316,7 +316,7 @@ void Nameserver::read() {
 
         offset += len;
       }
-    } CATCH_WARNING;
+    } CATCH_DEBUG(4);
 
     query.timeout->del();
     respond(query, result, rTTL);
@@ -332,7 +332,7 @@ void Nameserver::ready(Event::Event &e, int fd, unsigned flags) {
     if (flags & EVENT_READ) read();
     if (flags & EVENT_WRITE) writeWaiting(false);
     base.schedule();
-  } CATCH_WARNING;
+  } CATCH_DEBUG(4);
 }
 
 
