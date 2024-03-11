@@ -194,7 +194,7 @@ void Base::pump() {
 
   // Send events
   while (!pending.empty()) {
-    auto &id = pending.front();
+    auto id = pending.front();
 
     if (active.find(id) != active.end()) pending.pop_front(); // Already active
     else {
@@ -214,14 +214,13 @@ void Base::pump() {
       }
 
       // Find a server
-      bool ok = false;
       auto &req = *e.requests.front();
       try {
+        // Transmit request
+        bool ok = false;
         for (unsigned i = 0; i < servers.size() && !ok; i++) {
           auto ns = nextServer->second;
           if (++nextServer == servers.end()) nextServer = servers.begin();
-
-          // Enqueue request
           ok = ns->transmit(req.getType(), req.toString());
         }
 
