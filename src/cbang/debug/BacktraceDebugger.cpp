@@ -50,11 +50,13 @@
 #include <cstdarg>
 
 #include <execinfo.h>
-#include <bfd.h>
 
 #ifdef HAVE_VALGRIND
 #include <valgrind/memcheck.h>
 #endif
+
+#ifdef HAVE_BFD
+#include <bfd.h>
 
 #ifndef bfd_get_section_flags
 #define bfd_get_section_flags(ABFD, SEC) bfd_section_flags(SEC)
@@ -68,12 +70,15 @@
 #define bfd_get_section_size(SEC) bfd_section_size(SEC)
 #endif
 
+#endif // HAVE_BFD
+
 // NOTE Cannot throw cb::Exception here because of the dependency loop
 
 using namespace std;
 using namespace cb;
 
 
+#ifdef HAVE_BFD
 namespace {
 #ifdef HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE
   void _bfd_error_handler(const char *fmt, va_list ap) {
@@ -98,11 +103,14 @@ namespace {
   }
 #endif // _bfd_error_handler
 }
+#endif // HAVE_BFD
 
 
 struct BacktraceDebugger::private_t {
+#ifdef HAVE_BFD
   bfd *abfd;
   asymbol **syms;
+#endif // HAVE_BFD
 };
 
 
@@ -149,11 +157,12 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
   auto it = cache.find(addr);
   if (it != cache.end()) return *it->second;
 
-  bfd_vma pc = (bfd_vma)addr;
-
   string filename;
   string function;
   int line = -1;
+
+#ifdef HAVE_BFD
+  bfd_vma pc = (bfd_vma)addr;
 
   // Find section
   asection *section = 0;
@@ -189,6 +198,7 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
       if (_function) function = _function;
     }
   }
+#endif // HAVE_BFD
 
   // Fallback to backtrace symbols
   if (function.empty() || filename.empty()) {
@@ -203,7 +213,7 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
       // Not really the source file name
       if (filename.empty()) filename = string(sym, ptr - sym);
 
-      if (function.empty()) {
+      if (function.empty() && ptr[1] != ')') {
         char *start = ++ptr;
         while (*ptr && *ptr != '+') ptr++;
         function = string(start, ptr - start);
@@ -234,6 +244,7 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
 void BacktraceDebugger::init() {
   if (!enabled || initialized) return;
 
+#ifdef HAVE_BFD
   try {
     bfd_init();
     bfd_set_error_handler(_bfd_error_handler);
@@ -268,14 +279,17 @@ void BacktraceDebugger::init() {
     cerr << "Failed to initialize BFD for stack traces: " << e.what() << endl;
     enabled = false;
   }
+#endif // HAVE_BFD
 
   initialized = true;
 }
 
 
 void BacktraceDebugger::release() {
+#ifdef HAVE_BFD
   if (p->abfd) bfd_close(p->abfd);
   if (p->syms) delete [] p->syms;
+#endif // HAVE_BFD
 }
 
 
