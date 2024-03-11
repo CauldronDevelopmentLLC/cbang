@@ -255,7 +255,8 @@ void Socket::open(bool udp, bool ipv6) {
   socket = ::socket(ipv6 ? AF_INET6 : AF_INET, flags, 0);
   blocking = true;
 
-  if (socket == INVALID_SOCKET) THROW("Failed to create socket");
+  if (socket == INVALID_SOCKET)
+    THROW("Failed to create socket: " << SysError());
 }
 
 

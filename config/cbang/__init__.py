@@ -110,8 +110,10 @@ def configure_deps(conf, local = True, with_openssl = True,
 
     # Debug
     if env.get('debug', 0):
-        if conf.CBCheckCHeader('execinfo.h') and conf.CBCheckCHeader('bfd.h') \
-           and conf.CBCheckLib('bfd'):
+        if conf.CBCheckCHeader('execinfo.h'):
+            if conf.CBCheckCHeader('bfd.h') and conf.CBCheckLib('bfd'):
+                env.CBConfigDef('HAVE_BFD')
+
             conf.CBCheckLib('iberty')
             conf.CBCheckLib('sframe')
             conf.CBCheckLib('zstd')

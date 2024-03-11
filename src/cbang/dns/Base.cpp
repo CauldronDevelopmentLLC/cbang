@@ -59,7 +59,8 @@ void Base::initSystemNameservers() {
   set<SockAddr> addrs;
   SystemInfo::instance().getNameservers(addrs);
   for (auto &addr: addrs)
-    if (!hasNameserver(addr)) addNameserver(addr, true);
+    if (!hasNameserver(addr))
+      TRY_CATCH_DEBUG(4, addNameserver(addr, true));
 }
 
 
