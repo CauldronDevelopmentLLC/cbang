@@ -49,6 +49,9 @@ using namespace std;
 using namespace cb;
 using namespace cb::DNS;
 
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX "NS:" << addr << ':'
+
 #define CLASS_INET 1
 
 
@@ -222,8 +225,7 @@ void Nameserver::timeout(uint16_t id) {
 void Nameserver::writeWaiting(bool waiting) {
   if (this->waiting == waiting) return;
   this->waiting = waiting;
-  LOG_DEBUG(5, "Nameserver " << addr << " write waiting "
-            << (waiting ? "true" : "false"));
+  LOG_DEBUG(5, "Write waiting " << (waiting ? "true" : "false"));
 
   event->renew(
     socket->get(), EVENT_READ | EVENT_PERSIST | (waiting ? EVENT_WRITE : 0));
@@ -324,8 +326,7 @@ void Nameserver::read() {
 
 void Nameserver::ready(Event::Event &e, int fd, unsigned flags) {
   try {
-    LOG_DEBUG(5, "Nameserver " << addr << " ready "
-              << ((flags & EVENT_READ)  ? "READ"  : "")
+    LOG_DEBUG(5, "Ready " << ((flags & EVENT_READ) ? "READ" : "")
               << ((flags & EVENT_WRITE) ? "WRITE" : ""));
 
     if (flags & EVENT_READ) read();
