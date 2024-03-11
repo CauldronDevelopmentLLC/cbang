@@ -215,18 +215,25 @@ void Base::pump() {
 
       // Find a server
       bool ok = false;
-      for (unsigned i = 0; i < servers.size() && !ok; i++) {
-        auto ns = nextServer->second;
-        if (++nextServer == servers.end()) nextServer = servers.begin();
+      auto &req = *e.requests.front();
+      try {
+        for (unsigned i = 0; i < servers.size() && !ok; i++) {
+          auto ns = nextServer->second;
+          if (++nextServer == servers.end()) nextServer = servers.begin();
 
-        // Enqueue request
-        auto &req = *e.requests.front();
-        ok = ns->transmit(req.getType(), req.toString());
-      }
+          // Enqueue request
+          ok = ns->transmit(req.getType(), req.toString());
+        }
 
-      if (!ok) break;
+        if (!ok) break;
+        pending.pop_front();
+        active.insert(id);
+        continue;
+      } CATCH_ERROR;
+
+      // Failed request
+      TRY_CATCH_ERROR(req.respond(new Result(DNS_ERR_BADREQ)));
       pending.pop_front();
-      active.insert(id);
     }
   }
 }

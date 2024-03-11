@@ -245,14 +245,14 @@ void Socket::setTimeout(double timeout) {
 }
 
 
-void Socket::open(bool udp) {
+void Socket::open(bool udp, bool ipv6) {
   if (isOpen()) THROW("Socket already open");
 
   int flags = udp ? SOCK_DGRAM : SOCK_STREAM;
 #ifndef _WIN32
   flags |= O_CLOEXEC;
 #endif
-  socket = ::socket(AF_INET, flags, 0);
+  socket = ::socket(ipv6 ? AF_INET6 : AF_INET, flags, 0);
   blocking = true;
 
   if (socket == INVALID_SOCKET) THROW("Failed to create socket");

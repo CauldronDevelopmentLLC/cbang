@@ -106,7 +106,7 @@ namespace cb {
     virtual void setSendTimeout(double timeout);
     virtual void setTimeout(double timeout);
 
-    virtual void open(bool upd = false);
+    virtual void open(bool upd = false, bool ipv6 = false);
     virtual void bind(const SockAddr &addr);
     void bind(const IPAddress &ip);
     virtual void listen(int backlog = -1);
