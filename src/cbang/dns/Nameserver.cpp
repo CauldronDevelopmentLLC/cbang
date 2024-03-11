@@ -125,7 +125,7 @@ void Nameserver::start() {
   failures = 0;
   waiting  = false;
 
-  socket->open(true);
+  socket->open(true, addr.isIPv6());
   socket->setBlocking(false);
 
   // Bind outgoing address if not loopback
@@ -191,14 +191,20 @@ bool Nameserver::transmit(Type type, const string &request) {
   i += 4;
 
   // Send it
-  if (socket->write(buf, i, 0, &addr) == i) {
-    query.timeout = base.getEventBase().newEvent([id, this] {timeout(id);}, 0);
-    query.timeout->add(base.getQueryTimeout());
-    active[id] = query;
-    return true;
-  }
+  try {
+    if (socket->write(buf, i, 0, &addr) == i) {
+      query.timeout =
+        base.getEventBase().newEvent([id, this] {timeout(id);}, 0);
+      query.timeout->add(base.getQueryTimeout());
+      active[id] = query;
+      return true;
+    }
+    writeWaiting(true);
+    return false;
 
-  writeWaiting(true);
+  } CATCH_ERROR;
+
+  failures++;
   return false;
 }
 
