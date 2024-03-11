@@ -115,6 +115,7 @@ void WinSystemInfo::getNameservers(set<SockAddr> &addrs) {
 
   // Add addresses
   for (; aAddrs; aAddrs = aAddrs->Next)
-    for (auto p = aAddrs->FirstDnsServerAddress; p; p = p->Next)
-      addrs.insert(SockAddr(*p->Address.lpSockaddr));
+    if (aAddrs->OperStatus == 1)
+      for (auto p = aAddrs->FirstDnsServerAddress; p; p = p->Next)
+        addrs.insert(SockAddr(*p->Address.lpSockaddr));
 }
