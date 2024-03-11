@@ -50,7 +50,7 @@ namespace cb {
 
 
     std::streamsize read(char *s, std::streamsize n) try {
-      return (std::streamsize)socket.read(s, n);
+      return (std::streamsize)socket.read((uint8_t *)s, n);
 
     } catch (const Socket::EndOfStream &) {
       CBANG_LOG_DEBUG(5, "SocketDevice::read() End of stream");
@@ -63,7 +63,7 @@ namespace cb {
 
 
     std::streamsize write(const char *s, std::streamsize n) try {
-      return (std::streamsize)socket.write(s, n);
+      return (std::streamsize)socket.write((uint8_t *)s, n);
 
     } catch (const Exception &e) {
       CBANG_LOG_DEBUG(5, "SocketDevice::write(): " << e);

@@ -80,6 +80,15 @@ namespace CBANG_ENUM_NAMESPACE {
 #include CBANG_ENUM_DEF
 #undef CBANG_ENUM_FINAL
       } enum_t;
+
+      /// Aliases
+#define CBANG_ENUM_FINAL(...)
+#undef CBANG_ENUM_ALIAS
+#define CBANG_ENUM_ALIAS(alias, target) static const enum_t alias = target;
+#include CBANG_ENUM_DEF
+#undef CBANG_ENUM_ALIAS
+#define CBANG_ENUM_ALIAS(alias, target)
+#undef CBANG_ENUM_FINAL
     };
 
 
