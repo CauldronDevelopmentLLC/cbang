@@ -65,7 +65,7 @@ bool ACLHandler::operator()(Request &req) {
 
   LOG_INFO(allow ? 5 : 3, "allow(" << path << ", "
            << (user.empty() ? "@" + group : user) << ", "
-           << req.getClientIP().getHost() << ") = "
+           << req.getClientAddr() << ") = "
            << (allow ? "true" : "false"));
 
   if (!allow) {

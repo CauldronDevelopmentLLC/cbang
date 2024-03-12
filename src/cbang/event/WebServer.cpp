@@ -127,7 +127,7 @@ void WebServer::init() {
   // Configure ports
   Option::strings_t addresses = options["http-addresses"].toStrings();
   for (unsigned i = 0; i < addresses.size(); i++)
-    addListenPort(addresses[i]);
+    addListenPort(SockAddr::parse(addresses[i]));
 
 #ifdef HAVE_OPENSSL
   // SSL
@@ -135,7 +135,7 @@ void WebServer::init() {
     // Configure secure ports
     addresses = options["https-addresses"].toStrings();
     for (unsigned i = 0; i < addresses.size(); i++)
-      addSecureListenPort(addresses[i]);
+      addSecureListenPort(SockAddr::parse(addresses[i]));
 
     // Load server certificate
     // TODO should load file relative to configuration file
@@ -159,7 +159,7 @@ void WebServer::init() {
 
 
 bool WebServer::allow(Request &req) const {
-  return ipFilter.isAllowed(req.getClientIP().getIP());
+  return ipFilter.isAllowed(req.getClientAddr());
 }
 
 
@@ -199,13 +199,13 @@ void WebServer::deny(const string &spec) {
 }
 
 
-void WebServer::addListenPort(const cb::IPAddress &addr) {
+void WebServer::addListenPort(const cb::SockAddr &addr) {
   LOG_INFO(1, "Listening for HTTP on " << addr);
   bind(addr, 0, priority);
 }
 
 
-void WebServer::addSecureListenPort(const cb::IPAddress &addr) {
+void WebServer::addSecureListenPort(const cb::SockAddr &addr) {
   LOG_INFO(1, "Listening for HTTPS on " << addr);
   bind(addr, sslCtx, priority);
 }

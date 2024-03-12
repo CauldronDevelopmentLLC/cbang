@@ -36,6 +36,8 @@
 #include <cbang/net/IPRangeSet.h>
 
 namespace cb {
+  class SockAddr;
+
   /**
    * Used to allow or deny clients by IP address.
    * Used a white (allow) and black (deny) list to filter IPs.
@@ -59,6 +61,7 @@ namespace cb {
 
     /// @return True if the IP address is allowed by the current rules.
     bool isAllowed(const IPAddress &addr) const;
+    bool isAllowed(const SockAddr &addr) const;
 
     /// @return True if the IP address is in the white list
     bool isExplicitlyAllowed(const IPAddress &addr) const;

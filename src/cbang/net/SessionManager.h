@@ -67,12 +67,12 @@ namespace cb {
     const std::string &getSessionCookie() const {return cookie;}
     void setSessionCookie(const std::string &cookie) {this->cookie = cookie;}
 
-    std::string generateID(const IPAddress &ip);
+    std::string generateID(const SockAddr &addr);
 
     virtual bool isExpired(const Session &session) const;
     virtual bool hasSession(const std::string &sid) const;
     virtual SmartPointer<Session> lookupSession(const std::string &sid) const;
-    virtual SmartPointer<Session> openSession(const IPAddress &ip);
+    virtual SmartPointer<Session> openSession(const SockAddr &addr);
     virtual void closeSession(const std::string &sid);
     virtual void addSession(const SmartPointer<Session> &session);
     virtual void cleanup();

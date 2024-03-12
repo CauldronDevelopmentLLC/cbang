@@ -90,7 +90,7 @@ bool HTTPAccessHandler::operator()(Request &req) {
   }
 
   LOG_INFO(allow ? 5 : 3, "allow(" << req.getURI().getPath() << ", "
-           << user << ", " << req.getClientIP().getHost() << ") = "
+           << user << ", " << req.getClientAddr() << ") = "
            << ((allow && !deny) ? "true" : "false"));
 
   if (!allow || deny) THROWX("Access denied", HTTP_UNAUTHORIZED);

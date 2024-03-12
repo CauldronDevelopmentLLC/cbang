@@ -87,7 +87,7 @@ namespace cb {
 
     void clear();
 
-    std::string toString() const;
+    std::string toString(bool withPort = true) const;
 
     static SockAddr parseIPv4(const std::string &s);
     static SockAddr parseIPv6(const std::string &s);

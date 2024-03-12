@@ -34,7 +34,7 @@
 #include "FD.h"
 #include "Enum.h"
 
-#include <cbang/net/IPAddress.h>
+#include <cbang/socket/SockAddr.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/RateSet.h>
 
@@ -54,7 +54,7 @@ namespace cb {
       SmartPointer<Event> timeout;
 
       SmartPointer<Socket> socket;
-      IPAddress peer;
+      SockAddr peerAddr;
 
       static uint64_t nextID;
       uint64_t id = ++nextID;
@@ -70,8 +70,7 @@ namespace cb {
       const SmartPointer<Socket> &getSocket() {return socket;}
       void setSocket(const SmartPointer<Socket> &socket);
 
-      void setPeer(const IPAddress &peer) {this->peer = peer;}
-      const IPAddress &getPeer() const {return peer;}
+      const SockAddr &getPeerAddr() const {return peerAddr;}
 
       uint64_t getID() const {return id;}
 
@@ -79,9 +78,9 @@ namespace cb {
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
       bool isConnected() const;
-      void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
+      void accept(const SockAddr &peer, const SmartPointer<Socket> &socket,
                   const SmartPointer<SSLContext> &sslCtx);
-      void connect(DNS::Base &dns, const IPAddress &peer, const IPAddress &bind,
+      void connect(DNS::Base &dns, const std::string &peer, const SockAddr &bind,
                    const SmartPointer<SSLContext> &sslCtx,
                    std::function<void (bool)> cb);
 

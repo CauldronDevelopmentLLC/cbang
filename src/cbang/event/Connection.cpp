@@ -82,12 +82,12 @@ bool Connection::isConnected() const {
 }
 
 
-void Connection::accept(const IPAddress &peer,
+void Connection::accept(const SockAddr &peerAddr,
                         const SmartPointer<Socket> &socket,
                         const SmartPointer<SSLContext> &sslCtx) {
   if (socket.isNull()) THROW("Socket cannot be null");
 
-  LOG_DEBUG(5, "Accepting from " << peer);
+  LOG_DEBUG(5, "Accepting from " << peerAddr);
   if (stats.isSet()) stats->event("incoming");
 
   socket->setBlocking(false);
@@ -102,7 +102,7 @@ void Connection::accept(const IPAddress &peer,
 #endif // HAVE_OPENSSL
 
   setSSL(ssl);
-  setPeer(peer);
+  this->peerAddr = peerAddr;
   setSocket(socket);
 
   LOG_DEBUG(4, "Connection accepted with fd " << socket->get());
@@ -110,7 +110,7 @@ void Connection::accept(const IPAddress &peer,
 
 
 void Connection::connect(
-  DNS::Base &dns, const IPAddress &peer, const IPAddress &bind,
+  DNS::Base &dns, const string &peer, const SockAddr &bind,
   const SmartPointer<SSLContext> &sslCtx, function<void (bool)> cb) {
   try {
     if (isConnected()) THROW("Already connected");
@@ -121,7 +121,7 @@ void Connection::connect(
     // Open and bind new socket
     SmartPointer<Socket> socket = new Socket;
     socket->open();
-    if (bind.getIP()) socket->bind(bind);
+    if (!bind.isEmpty()) socket->bind(bind);
     socket->setBlocking(false);
 
     SmartPointer<SSL> ssl;
@@ -130,12 +130,11 @@ void Connection::connect(
       ssl = sslCtx->createSSL();
       ssl->setFD(socket->get());
       ssl->setConnectState();
-      if (peer.hasHost()) ssl->setTLSExtHostname(peer.getHost());
+      ssl->setTLSExtHostname(peer);
     }
 #endif // HAVE_OPENSSL
 
     setSSL(ssl);
-    setPeer(peer);
     setSocket(socket);
 
     LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
@@ -149,15 +148,7 @@ void Connection::connect(
       [this, ref, peer, cb] (DNS::Error error, const vector<SockAddr> &addrs) {
         ref->dnsReq.release();
 
-        // Find first IPv4 address
-        IPAddress addr(0, peer.getHost(), peer.getPort());
-        for (auto &a: addrs)
-          if (a.isIPv4()) {
-            addr.setIP(a.getIPv4());
-            break;
-          }
-
-        if (error || !addr) {
+        if (error || !addrs.empty()) {
           LOG_WARNING("DNS lookup failed for " << peer);
           if (cb) cb(false);
           return;
@@ -165,10 +156,10 @@ void Connection::connect(
 
         try {
           // Set address
-          setPeer(addr);
+          peerAddr = addrs.front();
 
           // NOTE, Connect timeout is write timeout
-          getSocket()->connect(addr);
+          getSocket()->connect(peerAddr);
 
           // Wait for socket write
           auto writeCB = [this, cb] (bool success) {
@@ -182,15 +173,8 @@ void Connection::connect(
         if (cb) cb(false);
       };
 
-    // Skip DNS lookup if we already have an IP
-    if (peer.getIP()) {
-      vector<SockAddr> addrs;
-      addrs.push_back(SockAddr(peer.getIP()));
-      return dnsCB(DNS::Error::DNS_ERR_NOERROR, addrs);
-    }
-
     // Start async DNS lookup
-    ref->dnsReq = dns.resolve(peer.getHost(), dnsCB);
+    ref->dnsReq = dns.resolve(peer, dnsCB);
     return;
 
   } CATCH_ERROR;

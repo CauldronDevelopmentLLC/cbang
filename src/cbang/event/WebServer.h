@@ -81,8 +81,8 @@ namespace cb {
       bool handleRequest(Request &req) override;
       void endRequest(Request &req) override;
 
-      void addListenPort(const IPAddress &addr);
-      void addSecureListenPort(const IPAddress &addr);
+      void addListenPort(const SockAddr &addr);
+      void addSecureListenPort(const SockAddr &addr);
 
       void allow(const std::string &spec);
       void deny(const std::string &spec);

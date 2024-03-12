@@ -176,8 +176,8 @@ void SockAddr::setPort(unsigned port) {
 void SockAddr::clear() {memset(data, 0, getCapacity());}
 
 
-string SockAddr::toString() const {
-  unsigned port = getPort();
+string SockAddr::toString(bool withPort) const {
+  unsigned port = withPort ? getPort() : 0;
   string s;
 
   if (isIPv4()) {

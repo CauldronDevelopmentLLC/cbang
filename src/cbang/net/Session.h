@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/net/IPAddress.h>
+#include <cbang/socket/SockAddr.h>
 #include <cbang/json/Serializable.h>
 #include <cbang/json/Dict.h>
 #include <cbang/time/Time.h>
@@ -46,7 +46,7 @@ namespace cb {
   public:
     Session();
     Session(const JSON::Value &value);
-    Session(const std::string &id, const IPAddress &ip);
+    Session(const std::string &id, const SockAddr &addr);
 
     const std::string &getID() const {return getString("id");}
     void setID(const std::string &id) {insert("id", id);}
@@ -62,9 +62,9 @@ namespace cb {
     const std::string &getUser() const {return getString("user");}
     void setUser(const std::string &user) {insert("user", user);}
 
-    IPAddress getIP() const {return getString("ip");}
-    void setIP(const IPAddress &ip) {insert("ip", ip.toString());}
-    void matchIP(const IPAddress &ip) const;
+    SockAddr getAddr() const {return SockAddr::parse(getString("addr"));}
+    void setAddr(const SockAddr &addr) {insert("addr", addr.toString(false));}
+    void matchAddr(const SockAddr &addr) const;
 
     bool hasGroup(const std::string &group) const;
     void addGroup(const std::string &group);

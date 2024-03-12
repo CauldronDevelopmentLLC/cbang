@@ -52,7 +52,7 @@ namespace cb {
       Base &base;
       DNS::Base &dns;
       SmartPointer<SSLContext> sslCtx;
-      IPAddress bindAddr;
+      SockAddr bindAddr;
       unsigned readTimeout  = 0;
       unsigned writeTimeout = 0;
       SmartPointer<RateSet> stats;
@@ -77,8 +77,8 @@ namespace cb {
       void setSSLContext(const cb::SmartPointer<SSLContext> &sslCtx)
         {this->sslCtx = sslCtx;}
 
-      const IPAddress &getBindAddress() const {return bindAddr;}
-      void setBindAddress(const IPAddress &bind) {this->bindAddr = bind;}
+      const SockAddr &getBindAddress() const {return bindAddr;}
+      void setBindAddress(const SockAddr &bind) {this->bindAddr = bind;}
 
       unsigned getReadTimeout() const {return readTimeout;}
       void setReadTimeout(unsigned timeout) {readTimeout = timeout;}

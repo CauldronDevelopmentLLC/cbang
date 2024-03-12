@@ -92,11 +92,11 @@ namespace cb {
 
       unsigned getConnectionCount() const {return connections.size();}
 
-      void bind(const IPAddress &addr,
+      void bind(const SockAddr &addr,
                 const SmartPointer<SSLContext> &sslCtx = 0, int priority = -1);
       void shutdown();
 
-      void accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
+      void accept(const SockAddr &peerAddr, const SmartPointer<Socket> &socket,
                   const SmartPointer<SSLContext> &sslCtx);
       void remove(const SmartPointer<Connection> &conn);
 

@@ -34,7 +34,7 @@
 #include "Enum.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/net/IPAddress.h>
+#include <cbang/socket/SockAddr.h>
 #include <cbang/openssl/SSLContext.h>
 
 
@@ -47,7 +47,7 @@ namespace cb {
 
     class Port : public Enum {
       Server &server;
-      IPAddress addr;
+      SockAddr addr;
       SmartPointer<SSLContext> sslCtx;
       int priority;
 
@@ -55,11 +55,11 @@ namespace cb {
       SmartPointer<Event> event;
 
     public:
-      Port(Server &server, const IPAddress addr,
+      Port(Server &server, const SockAddr addr,
            const SmartPointer<SSLContext> &sslCtx, int priority);
       ~Port();
 
-      const IPAddress &getAddr() const {return addr;}
+      const SockAddr &getAddr() const {return addr;}
       bool isSecure() const {return sslCtx.isSet();}
 
       int getPriority() const {return priority;}

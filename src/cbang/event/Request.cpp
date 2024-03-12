@@ -218,8 +218,8 @@ const JSON::ValuePtr &Request::parseArgs() {
 }
 
 
-IPAddress Request::getClientIP() const {
-  return connection.isSet() ? connection->getPeer() : IPAddress();
+SockAddr Request::getClientAddr() const {
+  return connection.isSet() ? connection->getPeerAddr() : SockAddr();
 }
 
 

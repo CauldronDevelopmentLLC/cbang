@@ -32,8 +32,6 @@
 #include "RedirectSecure.h"
 #include "Request.h"
 
-#include <cbang/net/IPAddress.h>
-
 using namespace cb;
 using namespace cb::Event;
 
@@ -44,7 +42,7 @@ bool RedirectSecure::operator()(Request &req) {
   // Set scheme, host & port
   URI uri = req.getURI();
   uri.setScheme("https");
-  uri.setHost(IPAddress(req.getHost()).getHost());
+  uri.setHost(req.getHost());
   uri.setPort(port == 443 ? 0 : port);
 
   // Redirect

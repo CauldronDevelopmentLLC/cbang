@@ -30,6 +30,7 @@
 \******************************************************************************/
 
 #include <cbang/net/IPAddressFilter.h>
+#include <cbang/socket/SockAddr.h>
 
 using namespace std;
 using namespace cb;
@@ -57,6 +58,13 @@ void IPAddressFilter::allow(IPAddressRange &range) {
 
 bool IPAddressFilter::isAllowed(const IPAddress &addr) const {
   return whiteList.contains(addr) || !blackList.contains(addr);
+}
+
+
+bool IPAddressFilter::isAllowed(const SockAddr &addr) const {
+  if (addr.isEmpty()) return false;
+  // TODO support IPv6
+  return isAllowed(IPAddress(addr.getIPv4()));
 }
 
 
