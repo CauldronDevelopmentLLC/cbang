@@ -44,7 +44,7 @@ bool HTTPRequestErrorHandler::operator()(Request &req) {
 
   } catch (cb::Exception &e) {
     if (400 <= e.getCode() && e.getCode() < 600) {
-      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientIP() << ':'
+      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
                   << e.getMessages());
       req.reply((HTTPStatus::enum_t)e.getCode());
 

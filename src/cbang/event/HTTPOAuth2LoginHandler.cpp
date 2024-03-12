@@ -86,14 +86,14 @@ bool HTTPOAuth2LoginHandler::operator()(Request &req) {
   SmartPointer<Session> session = req.getSession();
   if (session.isNull()) {
     // Open new Session
-    session = sessionManager->openSession(req.getClientIP());
+    session = sessionManager->openSession(req.getClientAddr());
 
     // Set cookie so we can pass anti-forgery test
     const string &cookie = sessionManager->getSessionCookie();
     req.setCookie(cookie, session->getID(), "", "/");
 
     LOG_DEBUG(3, "Opened new login session " << session->getID() << " for "
-              << req.getClientIP() << " with cookie=" << cookie);
+              << req.getClientAddr() << " with cookie=" << cookie);
 
   } else if (session->hasGroup("authenticated")) return false; // Logged in
 

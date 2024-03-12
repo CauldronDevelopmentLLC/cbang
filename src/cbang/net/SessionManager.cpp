@@ -60,11 +60,11 @@ void SessionManager::addOptions(Options &options) {
 }
 
 
-string SessionManager::generateID(const IPAddress &ip) {
+string SessionManager::generateID(const SockAddr &addr) {
 #ifdef HAVE_OPENSSL
   Digest digest("sha256");
 
-  digest.update(ip.toString());
+  digest.update(addr.toString(false));
   digest.updateWith(Time::now());
   digest.updateWith(Random::instance().rand<uint64_t>());
 
@@ -103,9 +103,9 @@ SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
 }
 
 
-SmartPointer<Session> SessionManager::openSession(const IPAddress &ip) {
+SmartPointer<Session> SessionManager::openSession(const SockAddr &addr) {
   // Create new session
-  SmartPointer<Session> session = new Session(generateID(ip), ip);
+  SmartPointer<Session> session = new Session(generateID(addr), addr);
 
   // Insert
   addSession(session);

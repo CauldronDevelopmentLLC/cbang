@@ -46,11 +46,11 @@ Session::Session(const JSON::Value &value) {
 }
 
 
-Session::Session(const string &id, const IPAddress &ip) {
+Session::Session(const string &id, const SockAddr &addr) {
   setID(id);
   setCreationTime(Time::now());
   setLastUsed(Time::now());
-  setIP(ip.getIP());
+  setAddr(addr);
   insertDict("group");
 }
 
@@ -75,9 +75,9 @@ void Session::setLastUsed(uint64_t lastUsed) {
 }
 
 
-void Session::matchIP(const IPAddress &ip) const {
-  if (ip.getIP() != getIP().getIP())
-    THROW("Session IP changed from " << getIP() << " to " << ip);
+void Session::matchAddr(const SockAddr &addr) const {
+  if (addr != getAddr())
+    THROW("Session address changed from " << getAddr() << " to " << addr);
 }
 
 

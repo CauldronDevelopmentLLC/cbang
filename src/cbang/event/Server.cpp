@@ -45,7 +45,7 @@ using namespace std;
 Server::Server(Base &base) : base(base) {}
 
 
-void Server::bind(const IPAddress &addr, const SmartPointer<SSLContext> &sslCtx,
+void Server::bind(const SockAddr &addr, const SmartPointer<SSLContext> &sslCtx,
                   int priority) {
   LOG_DEBUG(4, "Binding " << (sslCtx.isSet() ? "ssl " : "") << addr);
 
@@ -61,13 +61,14 @@ void Server::shutdown() {
 }
 
 
-void Server::accept(const IPAddress &peer, const SmartPointer<Socket> &socket,
+void Server::accept(const SockAddr &peerAddr,
+                    const SmartPointer<Socket> &socket,
                     const SmartPointer<SSLContext> &sslCtx) {
-  LOG_DEBUG(4, "New connection from " << peer);
+  LOG_DEBUG(4, "New connection from " << peerAddr);
 
   auto conn = createConnection();
 
-  conn->accept(peer, socket, sslCtx);
+  conn->accept(peerAddr, socket, sslCtx);
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
   conn->setStats(stats);

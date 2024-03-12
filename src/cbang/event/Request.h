@@ -37,7 +37,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Version.h>
-#include <cbang/net/IPAddress.h>
+#include <cbang/socket/SockAddr.h>
 #include <cbang/net/URI.h>
 #include <cbang/net/Session.h>
 #include <cbang/json/Value.h>
@@ -51,7 +51,6 @@
 
 namespace cb {
   class URI;
-  class IPAddress;
   class SSL;
 
   namespace Event {
@@ -160,7 +159,7 @@ namespace cb {
       void parseQueryArgs();
       const JSON::ValuePtr &parseArgs();
 
-      IPAddress getClientIP() const;
+      SockAddr getClientAddr() const;
 
       bool inHas(const std::string &name) const;
       std::string inFind(const std::string &name) const;

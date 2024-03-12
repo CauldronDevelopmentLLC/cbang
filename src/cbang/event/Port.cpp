@@ -42,7 +42,7 @@ using namespace cb;
 using namespace std;
 
 
-Port::Port(Server &server, const IPAddress addr,
+Port::Port(Server &server, const SockAddr addr,
            const SmartPointer<SSLContext> &sslCtx, int priority) :
   server(server), addr(addr), sslCtx(sslCtx), priority(priority) {}
 
@@ -87,12 +87,12 @@ void Port::accept() {
     if (server.getMaxConnections() <= server.getConnectionCount())
       return event->del();
 
-    IPAddress peer;
-    auto newSocket = socket->accept(&peer);
+    SockAddr peerAddr;
+    auto newSocket = socket->accept(peerAddr);
     if (newSocket.isNull()) return;
 
     try {
-      server.accept(peer, newSocket, sslCtx);
+      server.accept(peerAddr, newSocket, sslCtx);
     } catch (const SSLException &e) {
       LOG_DEBUG(4, e.getMessage());
     }

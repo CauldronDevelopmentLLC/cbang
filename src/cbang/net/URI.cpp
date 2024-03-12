@@ -96,6 +96,18 @@ URI::URI(
   scheme(scheme), host(host), port(port) {setPath(path);}
 
 
+string URI::getAddress() const {
+  if (port) {
+    if (!host.empty() && host.find_first_not_of("1234567890:.") == string::npos)
+      return "[" + host + "]:" + String(port);
+
+    return host + ":" + String(port);
+  }
+
+  return host;
+}
+
+
 unsigned URI::getPort() const {
   if (port || scheme.empty()) return port;
 

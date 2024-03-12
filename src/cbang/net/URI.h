@@ -58,6 +58,7 @@ namespace cb {
         const std::string &path = "/");
 
     const std::string &getScheme() const {return scheme;}
+    std::string getAddress() const;
     const std::string &getHost() const {return host;}
     unsigned getPort() const;
     const std::string &getPath() const {return path;}

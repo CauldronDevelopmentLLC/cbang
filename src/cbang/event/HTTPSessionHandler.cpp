@@ -47,7 +47,7 @@ bool HTTPSessionHandler::operator()(Request &req) {
   // Get session ID
   const string &cookie = sessionManager->getSessionCookie();
   string sid = req.getSessionID(cookie, header);
-  LOG_DEBUG(4, "Client " << req.getClientIP() << " sid=" << sid
+  LOG_DEBUG(4, "Client " << req.getClientAddr() << " sid=" << sid
             << " cookie=" << cookie << " header=" << header);
   if (sid.empty()) return false;
 
