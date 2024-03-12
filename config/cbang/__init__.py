@@ -125,7 +125,7 @@ def configure_deps(conf, local = True, with_openssl = True,
 
         elif env.get('backtrace_debugger', 0):
             raise SCons.Errors.StopError(
-                'execinfo.h, bfd.h and libbfd needed for backtrace_debuger')
+                'execinfo.h needed for backtrace_debuger')
 
         env.CBDefine('CBANG_DEBUG_LEVEL=' + str(env.get('debug_level', 1)))
 
