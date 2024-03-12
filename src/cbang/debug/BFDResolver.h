@@ -31,35 +31,20 @@
 
 #pragma once
 
-#include "Debugger.h"
-#include <cbang/SmartPointer.h>
-
 #include <string>
-#include <map>
-
 
 namespace cb {
-  class BFDResolver;
+  class BFDResolver {
+    struct private_t;
+    private_t *p;
 
-  class BacktraceDebugger : public Debugger {
-    bool initialized;
-    SmartPointer<BFDResolver> bfdResolver;
-
-    typedef std::map<void *, SmartPointer<FileLocation> > cache_t;
-    cache_t cache;
+    std::string path;
 
   public:
-    int parents;
+    BFDResolver(const std::string &path);
+    ~BFDResolver();
 
-    BacktraceDebugger();
-    ~BacktraceDebugger();
-
-    static bool supported();
-    void getStackTrace(StackTrace &trace, bool resolved) override;
-    void resolve(StackTrace &trace) override;
-
-  protected:
-    const FileLocation &resolve(void *addr);
-    void init();
+    void resolve(
+      void *addr, std::string &filename, std::string &function, int &line);
   };
 }

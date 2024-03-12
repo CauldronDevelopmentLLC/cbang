@@ -55,8 +55,6 @@ namespace cb {
     static void printStackTrace(std::ostream &stream);
     static StackTrace getStackTrace();
 
-    static std::string getExecutableName();
-
     virtual void getStackTrace(StackTrace &trace, bool resolved = true) {}
     virtual void resolve(StackTrace &trace) {}
   };

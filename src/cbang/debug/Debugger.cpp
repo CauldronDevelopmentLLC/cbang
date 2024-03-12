@@ -92,28 +92,6 @@ StackTrace Debugger::getStackTrace() {
 }
 
 
-string Debugger::getExecutableName() {
-#ifndef _WIN32
-  char path[4096];
-  ssize_t end;
-
-  if ((end = readlink("/proc/self/exe", path, 4095)) == -1)
-    throw runtime_error("Could not read link /proc/self/exe");
-
-  path[end] = 0;
-
-  struct stat buf;
-  if (stat(path, &buf))
-    throw runtime_error(string("Could not stat '") + path + "'");
-
-  return (char *)path;
-
-#else
-  throw runtime_error("Not supported");
-#endif
-}
-
-
 #ifdef DEBUGGER_TEST
 
 #include <cbang/Exception.h>
