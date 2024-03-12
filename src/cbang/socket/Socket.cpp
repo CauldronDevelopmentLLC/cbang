@@ -248,16 +248,14 @@ void Socket::setTimeout(double timeout) {
 void Socket::open(bool udp, bool ipv6) {
   if (isOpen()) THROW("Socket already open");
 
-  int flags    = udp ? SOCK_DGRAM  : SOCK_STREAM;
-  int protocol = udp ? IPPROTO_UDP : IPPROTO_TCP;
-#ifndef _WIN32
-  flags |= O_CLOEXEC;
-#endif
-  socket = ::socket(ipv6 ? AF_INET6 : AF_INET, flags, protocol);
+  int type = udp ? SOCK_DGRAM  : SOCK_STREAM;
+  socket = ::socket(ipv6 ? AF_INET6 : AF_INET, type, 0);
   blocking = true;
 
   if (socket == INVALID_SOCKET)
     THROW("Failed to create socket: " << SysError());
+
+  setCloseOnExec(true);
 }
 
 
