@@ -34,7 +34,7 @@ from SCons.Script import *
 
 def configure(conf):
     conf.CBCheckHome('event', lib_suffix = ['/src'], inc_suffix = ['/include'])
-    conf.CBRequireHeader('event.h')
+    conf.CBRequireHeader('event2/event.h')
     conf.CBRequireLib('event')
 
 
