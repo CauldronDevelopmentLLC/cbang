@@ -30,24 +30,15 @@
 \******************************************************************************/
 
 #include "BacktraceDebugger.h"
+#include "BFDResolver.h"
 #include "Demangle.h"
 
 #include <cbang/config.h>
 
 #ifdef HAVE_CBANG_BACKTRACE
 
-#include <cbang/String.h>
-#include <cbang/Zap.h>
-
 #include <cbang/util/SmartLock.h>
-
-#include <iostream>
-#include <iomanip>
-#include <stdexcept>
-#include <cstdlib>
-#include <cstring>
-#include <cerrno>
-#include <cstdarg>
+#include <cbang/os/SystemUtilities.h>
 
 #include <execinfo.h>
 
@@ -55,80 +46,19 @@
 #include <valgrind/memcheck.h>
 #endif
 
-#ifdef HAVE_BFD
-#include <bfd.h>
-
-#ifndef bfd_get_section_flags
-#define bfd_get_section_flags(ABFD, SEC) bfd_section_flags(SEC)
-#endif
-
-#ifndef bfd_get_section_vma
-#define bfd_get_section_vma(ABFD, SEC) bfd_section_vma(SEC)
-#endif
-
-#ifndef bfd_get_section_size
-#define bfd_get_section_size(SEC) bfd_section_size(SEC)
-#endif
-
-#endif // HAVE_BFD
-
 // NOTE Cannot throw cb::Exception here because of the dependency loop
 
 using namespace std;
 using namespace cb;
 
 
-#ifdef HAVE_BFD
-namespace {
-#ifdef HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE
-  void _bfd_error_handler(const char *fmt, va_list ap) {
-    // Suppress annoying error message caused by DWARF/libbfd incompatibility
-    if (String::startsWith(fmt, "DWARF error: could not find variable spec"))
-      return;
-
-    LOG_ERROR(String::vprintf(fmt, ap));
-  }
-
-#else // HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE
-  void _bfd_error_handler(const char *fmt, ...) {
-    // Suppress annoying error message caused by DWARF/libbfd incompatibility
-    if (String::startsWith(fmt, "DWARF error: could not find variable spec"))
-      return;
-
-    va_list ap;
-
-    va_start(ap, fmt);
-    LOG_ERROR(String::vprintf(fmt, ap));
-    va_end(ap);
-  }
-#endif // _bfd_error_handler
-}
-#endif // HAVE_BFD
-
-
-struct BacktraceDebugger::private_t {
-#ifdef HAVE_BFD
-  bfd *abfd;
-  asymbol **syms;
-#endif // HAVE_BFD
-};
-
-
-BacktraceDebugger::BacktraceDebugger() :
-  p(new private_t), initialized(false), enabled(true), parents(2) {
-  memset(p, 0, sizeof(private_t));
-}
-
-
+BacktraceDebugger::BacktraceDebugger() : initialized(false), parents(2) {}
 BacktraceDebugger::~BacktraceDebugger() {}
-
-
 bool BacktraceDebugger::supported() {return true;}
 
 
 void BacktraceDebugger::getStackTrace(StackTrace &trace, bool resolved) {
-  init(); // Might set enabled false
-  if (!enabled) return;
+  init();
 
   void *stack[maxStack];
   int n = backtrace(stack, maxStack);
@@ -161,44 +91,8 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
   string function;
   int line = -1;
 
-#ifdef HAVE_BFD
-  bfd_vma pc = (bfd_vma)addr;
-
-  // Find section
-  asection *section = 0;
-  for (asection *s = p->abfd->sections; s; s = s->next) {
-    if ((bfd_get_section_flags(p->abfd, s) & SEC_CODE) == 0)
-      continue;
-
-    bfd_vma vma = bfd_get_section_vma(p->abfd, s);
-    if (pc < vma) {
-      section = s->prev;
-      break;
-    }
-  }
-
-  if (section && p->syms) {
-    const char *_filename = 0;
-    const char *_function = 0;
-    unsigned _line = 0;
-
-    bfd_vma vma = bfd_get_section_vma(p->abfd, section);
-    if (bfd_find_nearest_line(p->abfd, section, p->syms, pc - vma,
-                              &_filename, &_function, &_line)) {
-
-#ifdef VALGRIND_MAKE_MEM_DEFINED
-      if (_filename)
-        (void)VALGRIND_MAKE_MEM_DEFINED(_filename, strlen(_filename));
-      if (_function)
-        (void)VALGRIND_MAKE_MEM_DEFINED(_function, strlen(_function));
-      (void)VALGRIND_MAKE_MEM_DEFINED(&line, sizeof(_line));
-#endif // VALGRIND_MAKE_MEM_DEFINED
-
-      if (_filename) {filename = _filename; line = _line;}
-      if (_function) function = _function;
-    }
-  }
-#endif // HAVE_BFD
+  // BFD symbol resolver
+  if (bfdResolver.isSet()) bfdResolver->resolve(addr, filename, function, line);
 
   // Fallback to backtrace symbols
   if (function.empty() || filename.empty()) {
@@ -206,7 +100,20 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
     char *sym = symbols.isSet() ? symbols[0] : 0;
 
     // Parse symbol string
-    // Expected format: <module>(<function>+0x<offset>)
+#if defined(__APPLE__)
+    // Expected format: # <module> <address> <function> + <offset>
+    if (sym) {
+      vector<string> parts;
+      String::tokenize(sym, parts);
+
+      if (parts.size() == 6) {
+        if (filename.empty()) filename = parts[1];
+        if (function.empty()) function = parts[3];
+      }
+    }
+
+#else
+    // Expected format: <module>(<function>+0x<offset>)[<address>]
     char *ptr = sym;
     while (ptr && *ptr && *ptr != '(') ptr++;
     if (*ptr == '(') {
@@ -219,6 +126,7 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
         function = string(start, ptr - start);
       }
     }
+#endif // !__APPLE__
   }
 
   // Filename
@@ -242,54 +150,14 @@ const FileLocation &BacktraceDebugger::resolve(void *addr) {
 
 
 void BacktraceDebugger::init() {
-  if (!enabled || initialized) return;
+  if (initialized) return;
+  initialized = true;
 
-#ifdef HAVE_BFD
   try {
-    bfd_init();
-    bfd_set_error_handler(_bfd_error_handler);
-
-    executable = getExecutableName();
-
-    if (!(p->abfd = bfd_openr(executable.c_str(), 0)))
-      throw runtime_error(string("Error opening BDF in '") + executable + "'");
-
-    if (bfd_check_format(p->abfd, bfd_archive))
-      throw runtime_error("Not a BFD archive");
-
-    char **matching;
-    if (!bfd_check_format_matches(p->abfd, bfd_object, &matching)) {
-      if (bfd_get_error() == bfd_error_file_ambiguously_recognized)
-        free(matching);
-      throw runtime_error("Does not match BFD object");
-    }
-
-    if ((bfd_get_file_flags(p->abfd) & HAS_SYMS) == 0)
-      throw runtime_error("No symbols");
-
-    long storage = bfd_get_symtab_upper_bound(p->abfd);
-    if (storage <= 0) THROW("Invalid storage size");
-
-    p->syms = (asymbol **)new char[storage];
-
-    long count = bfd_canonicalize_symtab(p->abfd, p->syms);
-    if (count < 0) throw runtime_error("Invalid symbol count");
-
+    bfdResolver = new BFDResolver(SystemUtilities::getExecutablePath());
   } catch (const std::exception &e) {
     cerr << "Failed to initialize BFD for stack traces: " << e.what() << endl;
-    enabled = false;
   }
-#endif // HAVE_BFD
-
-  initialized = true;
-}
-
-
-void BacktraceDebugger::release() {
-#ifdef HAVE_BFD
-  if (p->abfd) bfd_close(p->abfd);
-  if (p->syms) delete [] p->syms;
-#endif // HAVE_BFD
 }
 
 
