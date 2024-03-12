@@ -173,4 +173,8 @@ void BFDResolver::resolve(
   }
 }
 
+#else  // HAVE_BFD
+cb::BFDResolver::BFDResolver(const std::string &) {}
+cb::BFDResolver::~BFDResolver() {}
+void cb::BFDResolver::resolve(void *, std::string &, std::string &, int &) {}
 #endif // HAVE_BFD
