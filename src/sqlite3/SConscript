@@ -8,6 +8,9 @@ flags = env.subst('${CCFLAGS}')
 flags = re.sub(r'-W((all)|(error))(=[^\s$]+)?(\s|$)', '', flags)
 env.Replace(CCFLAGS = flags)
 
+if env.get('compiler_mode', '') == 'gnu':
+    env.Append(CFLAGS = ['-Wno-return-local-addr'])
+
 env.Append(CPPDEFINES = [
   'SQLITE_OMIT_LOAD_EXTENSION',
   'SQLITE_THREADSAFE=2',
