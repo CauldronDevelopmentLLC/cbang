@@ -31,8 +31,10 @@
 
 #pragma once
 
+#include "SockAddr.h"
+#include "IPAddressRange.h"
+
 #include <cbang/SmartPointer.h>
-#include <cbang/net/IPAddressRange.h>
 
 #include <string>
 #include <vector>
@@ -63,7 +65,7 @@ namespace cb {
     void erase(const std::string &spec);
     void erase(const IPAddressRange &range);
     void erase(const IPRangeSet &set);
-    bool contains(const IPAddress &ip) const {return find(ip) & 1;}
+    bool contains(const SockAddr &addr) const;
 
     std::string toString() const;
     void print(std::ostream &stream) const;

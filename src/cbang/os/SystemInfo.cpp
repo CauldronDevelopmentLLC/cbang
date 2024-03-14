@@ -45,8 +45,8 @@
 
 #include <cbang/log/Logger.h>
 #include <cbang/util/HumanSize.h>
-#include <cbang/socket/Socket.h>
-#include <cbang/socket/Winsock.h>
+#include <cbang/net/Socket.h>
+#include <cbang/net/Winsock.h>
 
 #include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>

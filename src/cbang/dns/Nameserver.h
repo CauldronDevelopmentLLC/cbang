@@ -34,7 +34,7 @@
 #include "Error.h"
 #include "Type.h"
 
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 #include <cbang/event/EventFlag.h>
 
 #include <map>

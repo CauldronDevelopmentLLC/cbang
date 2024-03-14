@@ -32,7 +32,6 @@
 #include "SSL.h"
 
 #include "SecurityUtilities.h"
-#include "BStream.h"
 #include "Certificate.h"
 
 #include <cbang/config.h>
@@ -278,7 +277,7 @@ int cb::SSL::read(char *data, unsigned size) {
       return 0;
     }
 
-    string errMsg = getFullSSLErrorStr(ret);
+    string errMsg = getFullSSLErrorStr(lastErr);
     LOG_DEBUG(5, CBANG_FUNC << "() " << errMsg);
     THROW("SSL read failed: " << errMsg);
   }
@@ -305,7 +304,7 @@ unsigned cb::SSL::write(const char *data, unsigned size) {
     lastErr = SSL_get_error(ssl, ret);
     if (lastErr == SSL_ERROR_WANT_READ || lastErr == SSL_ERROR_WANT_WRITE)
       return 0;
-    THROW("SSL write failed: " << getFullSSLErrorStr(ret));
+    THROW("SSL write failed: " << getFullSSLErrorStr(lastErr));
   }
 
   LOG_DEBUG(5, CBANG_FUNC << "()=" << ret);

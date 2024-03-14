@@ -199,13 +199,13 @@ void WebServer::deny(const string &spec) {
 }
 
 
-void WebServer::addListenPort(const cb::SockAddr &addr) {
+void WebServer::addListenPort(const SockAddr &addr) {
   LOG_INFO(1, "Listening for HTTP on " << addr);
   bind(addr, 0, priority);
 }
 
 
-void WebServer::addSecureListenPort(const cb::SockAddr &addr) {
+void WebServer::addSecureListenPort(const SockAddr &addr) {
   LOG_INFO(1, "Listening for HTTPS on " << addr);
   bind(addr, sslCtx, priority);
 }

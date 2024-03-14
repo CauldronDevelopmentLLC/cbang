@@ -34,7 +34,7 @@
 
 #include <cbang/os/SysError.h>
 #include <cbang/os/DynamicLibrary.h>
-#include <cbang/socket/Winsock.h>
+#include <cbang/net/Winsock.h>
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

@@ -34,7 +34,7 @@
 #include "Enum.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/socket/SockAddr.h>
+#include <cbang/net/SockAddr.h>
 #include <cbang/openssl/SSLContext.h>
 
 

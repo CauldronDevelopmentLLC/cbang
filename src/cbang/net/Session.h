@@ -31,7 +31,8 @@
 
 #pragma once
 
-#include <cbang/socket/SockAddr.h>
+#include "SockAddr.h"
+
 #include <cbang/json/Serializable.h>
 #include <cbang/json/Dict.h>
 #include <cbang/time/Time.h>

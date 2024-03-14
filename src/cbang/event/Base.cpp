@@ -38,7 +38,7 @@
 #include <event2/event_struct.h>
 
 #include <cbang/Exception.h>
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 #include <cbang/os/SysError.h>
 
 using namespace cb::Event;

@@ -30,11 +30,11 @@
 \******************************************************************************/
 
 #include "SockAddr.h"
+#include "Swab.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/os/SysError.h>
-#include <cbang/net/Swab.h>
 
 #include <string.h>
 
@@ -203,10 +203,10 @@ string SockAddr::toString(bool withPort) const {
 }
 
 
-SockAddr SockAddr::parseIPv4(const string &_s) {
-  string s = _s;
-  if (!ipv4RE.match(s)) THROW("Invalid address: " << s);
+bool SockAddr::readIPv4(const string &_s) {
+  if (!ipv4RE.match(_s)) return false;
 
+  string s = _s;
   uint16_t port = 0;
   if (s.find_last_of(':') != string::npos) {
     size_t end = s.find_last_of(':');
@@ -214,42 +214,64 @@ SockAddr SockAddr::parseIPv4(const string &_s) {
     s    = s.substr(0, end);
   }
 
-  SockAddr addr;
-  addr.setIPv4(0);
-  addr.setPort(port);
-  if (inet_pton(AF_INET, s.data(), &addr.get4()->sin_addr) != 1)
-    THROW("Invalid address: " << s);
+  if (inet_pton(AF_INET, s.data(), &get4()->sin_addr) == 1) {
+    get()->sa_family = AF_INET;
+    setPort(port);
+    return true;
+  }
 
+  return false;
+}
+
+
+bool SockAddr::readIPv6(const string &_s) {
+  if (!ipv6RE.match(_s)) return false;
+
+  string s = _s;
+  unsigned port = 0;
+  if (s[0] == '[') {
+    size_t end = s.find_last_of(']');
+    if (end + 1 < s.length()) port = String::parseU16(s.substr(end + 2));
+    s = s.substr(1, end - 1);
+  }
+
+  if (inet_pton(AF_INET6, s.data(), &get6()->sin6_addr) == 1) {
+    get()->sa_family = AF_INET6;
+    setPort(port);
+    return true;
+  }
+
+  return false;
+}
+
+
+bool SockAddr::read(const string &s) {return readIPv4(s) || readIPv6(s);}
+
+
+SockAddr SockAddr::parseIPv4(const string &s) {
+  SockAddr addr;
+  if (!addr.readIPv4(s)) THROW("Invalid IPv4 address: " << s);
   return addr;
 }
 
 
-SockAddr SockAddr::parseIPv6(const string &_s) {
-  string s = _s;
-  if (!ipv6RE.match(s)) THROW("Invalid address: " << s);
-
-  unsigned port = 0;
-  if (s[0] == '[') {
-    size_t end = s.find_last_of(']');
-    if (end + 1 < s.length())
-      port = String::parseU16(s.substr(end + 2));
-    s = s.substr(1, end - 1);
-  }
-
+SockAddr SockAddr::parseIPv6(const string &s) {
   SockAddr addr;
-  addr.setIPv6(0);
-  addr.setPort(port);
-  if (inet_pton(AF_INET6, s.data(), &addr.get6()->sin6_addr) != 1)
-    THROW("Invalid address: " << s);
-
+  if (!addr.readIPv6(s)) THROW("Invalid IPv6 address: " << s);
   return addr;
 }
 
 
 SockAddr SockAddr::parse(const string &s) {
-  if (ipv4RE.match(s)) return parseIPv4(s);
-  return parseIPv6(s);
+  SockAddr addr;
+  if (!addr.read(s)) THROW("Invalid socket address: " << s);
+  return addr;
 }
+
+
+bool SockAddr::isIPv4Address(const string &s) {return SockAddr().readIPv4(s);}
+bool SockAddr::isIPv6Address(const string &s) {return SockAddr().readIPv6(s);}
+bool SockAddr::isAddress(const string &s)     {return SockAddr().read(s);}
 
 
 SockAddr &SockAddr::operator=(const SockAddr &o) {
@@ -258,30 +280,24 @@ SockAddr &SockAddr::operator=(const SockAddr &o) {
 }
 
 
-bool SockAddr::operator<(const SockAddr &o) const {
+int SockAddr::cmp(const SockAddr &o) const {
+  if (isEmpty())   return o.isEmpty() ? 0 : -1;
+  if (o.isEmpty()) return 1;
+
   if (get()->sa_family != o.get()->sa_family)
-    return get()->sa_family < o.get()->sa_family;
+    return get()->sa_family - o.get()->sa_family;
 
-  if (isEmpty()) return false;
+  if (isIPv4() && getIPv4() != o.getIPv4())
+    return (int)getIPv4() - (int)o.getIPv4();
 
-  if (isIPv4() && getIPv4() != o.getIPv4()) return getIPv4() < o.getIPv4();
   if (isIPv6()) {
     auto a = getIPv6();
     auto b = o.getIPv6();
-    int cmp = memcmp(a, b, 16);
-    if (cmp) return cmp < 0;
+    int ret = memcmp(a, b, 16);
+    if (ret) return ret;
   }
 
-  if (getPort() != o.getPort()) return getPort() < o.getPort();
-
-  return false;
-}
-
-
-int SockAddr::compare(const SockAddr &o) const {
-  if (*this < o) return -1;
-  if (o < *this) return  1;
-  return 0;
+  return (int)getPort() - (int)o.getPort();
 }
 
 

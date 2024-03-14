@@ -32,7 +32,7 @@
 #include <cbang/Exception.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/Catch.h>
-#include <cbang/socket/SockAddr.h>
+#include <cbang/net/SockAddr.h>
 
 #include <iostream>
 #include <vector>
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
     for (unsigned i = 0; i < addrs.size(); i++) {
       if (i) {
-        int cmp = addrs[i - 1].compare(addrs[i]);
+        int cmp = addrs[i - 1].cmp(addrs[i]);
         cout << ' ' << (cmp < 0 ? '<' : (0 < cmp ? '>' : '=')) << ' ';
       }
 

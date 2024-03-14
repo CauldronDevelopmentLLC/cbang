@@ -34,7 +34,7 @@
 #include <ctime>
 
 #ifdef _WIN32
-#include <cbang/socket/Winsock.h> // For timeval
+#include <cbang/net/Winsock.h> // For timeval
 
 #define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
 #include <windows.h>

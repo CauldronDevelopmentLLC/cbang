@@ -89,17 +89,33 @@ namespace cb {
 
     std::string toString(bool withPort = true) const;
 
+    bool readIPv4(const std::string &s);
+    bool readIPv6(const std::string &s);
+    bool read(const std::string &s);
+
     static SockAddr parseIPv4(const std::string &s);
     static SockAddr parseIPv6(const std::string &s);
     static SockAddr parse(const std::string &s);
 
+    static bool isIPv4Address(const std::string &s);
+    static bool isIPv6Address(const std::string &s);
+    static bool isAddress(const std::string &s);
+
     SockAddr &operator=(const SockAddr &o);
 
-    bool operator<(const SockAddr &o) const;
-    bool operator!=(const SockAddr &o) const {return *this < o || o < *this;}
-    bool operator==(const SockAddr &o) const {return !(*this != o);}
+    int cmp(const SockAddr &o) const;
+    bool operator< (const SockAddr &a) const {return cmp(a) <  0;}
+    bool operator<=(const SockAddr &a) const {return cmp(a) <= 0;}
+    bool operator> (const SockAddr &a) const {return cmp(a) >  0;}
+    bool operator>=(const SockAddr &a) const {return cmp(a) >= 0;}
+    bool operator==(const SockAddr &a) const {return cmp(a) == 0;}
+    bool operator!=(const SockAddr &a) const {return cmp(a) != 0;}
 
-    int compare(const SockAddr &o) const;
+    void clearSuffix(uint8_t bits);
+    void setSuffix(uint8_t bits);
+    uint8_t getRangeBits(const SockAddr &end) const;
+
+    bool adjacent(const SockAddr &o) const;
 
     void bind(socket_t socket) const;
     socket_t accept(socket_t socket);

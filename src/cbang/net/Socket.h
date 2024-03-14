@@ -35,7 +35,6 @@
 #include "SockAddr.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/net/IPAddress.h>
 
 #include <ios>
 #include <cstdint>
@@ -108,15 +107,12 @@ namespace cb {
 
     virtual void open(bool upd = false, bool ipv6 = false);
     virtual void bind(const SockAddr &addr);
-    void bind(const IPAddress &ip);
     virtual void listen(int backlog = -1);
     virtual SmartPointer<Socket> accept(SockAddr &addr);
-    SmartPointer<Socket> accept(IPAddress *ip = 0);
 
     /// Connect to the specified address and port
     virtual void connect(const SockAddr &addr,
                          const std::string &hostname = "");
-    void connect(const IPAddress &ip);
 
     /// Write data to an open connection.
     std::streamsize write(

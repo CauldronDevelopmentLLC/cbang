@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   cout << set << endl;
 
   if (argc == 3) {
-    bool contains = set.contains(IPAddress(argv[2]));
+    bool contains = set.contains(SockAddr::parse(argv[2]));
     cout << (contains ? "true" : "false") << endl;
     return contains ? 0 : 1;
   }

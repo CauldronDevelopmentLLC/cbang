@@ -33,7 +33,7 @@
 #include "Server.h"
 #include "Event.h"
 
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
 

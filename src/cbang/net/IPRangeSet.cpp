@@ -29,11 +29,10 @@
 
 \******************************************************************************/
 
-#include <cbang/net/IPRangeSet.h>
+#include "IPRangeSet.h"
 
 #include <cbang/String.h>
 #include <cbang/SStream.h>
-#include <cbang/Zap.h>
 #include <cbang/json/Sink.h>
 
 using namespace std;
@@ -82,6 +81,12 @@ void IPRangeSet::erase(const IPAddressRange &range) {
 void IPRangeSet::erase(const IPRangeSet &set) {
   for (unsigned i = 0; i < set.rangeSet.size(); i++)
     erase(set.rangeSet[i], set.rangeSet[i + 1]);
+}
+
+
+bool IPRangeSet::contains(const SockAddr &addr) const {
+  // TODO support IPv6
+  return addr.isIPv4() && (find(addr.getIPv4()) & 1);
 }
 
 

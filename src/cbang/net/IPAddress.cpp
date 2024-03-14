@@ -30,14 +30,14 @@
 \******************************************************************************/
 
 #include "IPAddress.h"
+#include "Socket.h"
+#include "Winsock.h"
+#include "Swab.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-#include <cbang/socket/Winsock.h>
 #include <cbang/log/Logger.h>
-#include <cbang/socket/Socket.h>
 #include <cbang/os/SysError.h>
-#include <cbang/net/Swab.h>
 
 #include <cstring>
 
