@@ -68,7 +68,7 @@ void WebServer::addOptions(cb::Options &options) {
   opt->setDefault("0.0.0.0:80");
 
   options.add("allow", "Client addresses which are allowed to connect to this "
-              "server.  This option overrides IPs which are denied in the "
+              "server.  This option overrides addresses which are denied in the "
               "deny option.  The pattern 0/0 matches all addresses."
               )->setDefault("0/0");
   options.add("deny", "Client address which are not allowed to connect to this "
@@ -106,9 +106,9 @@ void WebServer::addOptions(cb::Options &options) {
 
 
 void WebServer::init() {
-  // IP filters
-  ipFilter.allow(options["allow"]);
-  ipFilter.deny(options["deny"]);
+  // Address filters
+  addrFilter.allow(options["allow"]);
+  addrFilter.deny(options["deny"]);
 
   // Configure HTTP
   if (options["http-max-body-size"].hasValue())
@@ -159,7 +159,7 @@ void WebServer::init() {
 
 
 bool WebServer::allow(Request &req) const {
-  return ipFilter.isAllowed(req.getClientAddr());
+  return addrFilter.isAllowed(req.getClientAddr());
 }
 
 
@@ -189,13 +189,13 @@ void WebServer::endRequest(Request &req) {
 
 void WebServer::allow(const string &spec) {
   LOG_INFO(5, "Allowing HTTP access to " << spec);
-  ipFilter.allow(spec);
+  addrFilter.allow(spec);
 }
 
 
 void WebServer::deny(const string &spec) {
   LOG_INFO(5, "Denying HTTP access to " << spec);
-  ipFilter.deny(spec);
+  addrFilter.deny(spec);
 }
 
 

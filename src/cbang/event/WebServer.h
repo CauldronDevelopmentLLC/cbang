@@ -34,7 +34,7 @@
 #include "HTTPServer.h"
 #include "HTTPHandlerGroup.h"
 
-#include <cbang/net/IPAddressFilter.h>
+#include <cbang/net/AddressFilter.h>
 
 
 namespace cb {
@@ -53,7 +53,7 @@ namespace cb {
       bool logPrefix = false;
       int priority = -1;
 
-      IPAddressFilter ipFilter;
+      AddressFilter addrFilter;
 
     public:
       WebServer(Options &options, Base &base,

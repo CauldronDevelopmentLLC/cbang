@@ -121,7 +121,7 @@ void Connection::connect(
     // Open and bind new socket
     SmartPointer<Socket> socket = new Socket;
     socket->open();
-    if (!bind.isEmpty()) socket->bind(bind);
+    if (!bind.isNull()) socket->bind(bind);
     socket->setBlocking(false);
 
     SmartPointer<SSL> ssl;
