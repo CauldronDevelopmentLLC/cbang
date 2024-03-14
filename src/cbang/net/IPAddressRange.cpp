@@ -29,7 +29,7 @@
 
 \******************************************************************************/
 
-#include <cbang/net/IPAddressRange.h>
+#include "IPAddressRange.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>

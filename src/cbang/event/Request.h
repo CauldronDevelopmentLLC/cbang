@@ -37,7 +37,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Version.h>
-#include <cbang/socket/SockAddr.h>
+#include <cbang/net/SockAddr.h>
 #include <cbang/net/URI.h>
 #include <cbang/net/Session.h>
 #include <cbang/json/Value.h>

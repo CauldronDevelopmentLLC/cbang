@@ -112,7 +112,16 @@ void Base::add(const SmartPointer<Request> &req) {
 SmartPointer<Request> Base::resolve(
   const string &name, RequestResolve::callback_t cb, bool ipv6) {
   auto req = SmartPtr(new RequestResolve(*this, name, cb, ipv6));
-  add(req);
+
+  SockAddr addr;
+  if ((ipv6 && addr.readIPv6(name)) || (!ipv6 && addr.readIPv4(name))) {
+    // This is an already resolved address
+    auto result = SmartPtr(new Result(DNS_ERR_NOERROR));
+    result->addrs.push_back(addr);
+    TRY_CATCH_ERROR(req->respond(result));
+
+  } else add(req);
+
   return req;
 }
 

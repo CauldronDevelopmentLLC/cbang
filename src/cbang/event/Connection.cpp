@@ -34,7 +34,7 @@
 #include "Server.h"
 
 #include <cbang/Catch.h>
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 #include <cbang/log/Logger.h>
 #include <cbang/dns/Base.h>
 
@@ -110,12 +110,12 @@ void Connection::accept(const SockAddr &peerAddr,
 
 
 void Connection::connect(
-  DNS::Base &dns, const string &peer, const SockAddr &bind,
+  DNS::Base &dns, const string &hostname, uint32_t port, const SockAddr &bind,
   const SmartPointer<SSLContext> &sslCtx, function<void (bool)> cb) {
   try {
     if (isConnected()) THROW("Already connected");
 
-    LOG_DEBUG(5, "Connecting to " << peer);
+    LOG_DEBUG(5, "Connecting to " << hostname << ":" << port);
     if (stats.isSet()) stats->event("outgoing");
 
     // Open and bind new socket
@@ -130,14 +130,14 @@ void Connection::connect(
       ssl = sslCtx->createSSL();
       ssl->setFD(socket->get());
       ssl->setConnectState();
-      ssl->setTLSExtHostname(peer);
+      ssl->setTLSExtHostname(hostname);
     }
 #endif // HAVE_OPENSSL
 
     setSSL(ssl);
     setSocket(socket);
 
-    LOG_DEBUG(4, "Connection connecting with fd " << socket->get());
+    LOG_DEBUG(4, "Connection with fd " << socket->get());
 
     // DNS request reference
     struct Ref {SmartPointer<DNS::Request> dnsReq;};
@@ -145,11 +145,12 @@ void Connection::connect(
 
     // DNS callback
     auto dnsCB =
-      [this, ref, peer, cb] (DNS::Error error, const vector<SockAddr> &addrs) {
+      [this, ref, hostname, port, cb] (
+        DNS::Error error, const vector<SockAddr> &addrs) {
         ref->dnsReq.release();
 
-        if (error || !addrs.empty()) {
-          LOG_WARNING("DNS lookup failed for " << peer);
+        if (error || addrs.empty()) {
+          LOG_WARNING("DNS lookup failed for " << hostname);
           if (cb) cb(false);
           return;
         }
@@ -157,6 +158,8 @@ void Connection::connect(
         try {
           // Set address
           peerAddr = addrs.front();
+          peerAddr.setPort(port);
+          LOG_DEBUG(4, "Connecting to " << peerAddr);
 
           // NOTE, Connect timeout is write timeout
           getSocket()->connect(peerAddr);
@@ -174,7 +177,7 @@ void Connection::connect(
       };
 
     // Start async DNS lookup
-    ref->dnsReq = dns.resolve(peer, dnsCB);
+    ref->dnsReq = dns.resolve(hostname, dnsCB);
     return;
 
   } CATCH_ERROR;

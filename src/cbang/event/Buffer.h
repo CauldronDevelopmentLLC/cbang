@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/socket/SocketType.h>
+#include <cbang/net/SocketType.h>
 
 #include <string>
 #include <ostream>

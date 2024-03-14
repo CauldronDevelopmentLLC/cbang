@@ -265,11 +265,6 @@ void Socket::bind(const SockAddr &addr) {
 }
 
 
-void Socket::bind(const IPAddress &ip) {
-  bind(SockAddr((uint32_t)ip, ip.getPort()));
-}
-
-
 void Socket::listen(int backlog) {
   assertOpen();
 
@@ -300,17 +295,7 @@ SmartPointer<Socket> Socket::accept(SockAddr &addr) {
 }
 
 
-SmartPointer<Socket> Socket::accept(IPAddress *ip) {
-  SockAddr addr;
-  auto s = accept(addr);
-
-  if (s.isSet() && ip) *ip = IPAddress(addr.getIPv4(), addr.getPort());
-
-  return s;
-}
-
-
-void Socket::connect(const SockAddr &addr, const std::string &hostname) {
+void Socket::connect(const SockAddr &addr, const string &hostname) {
   assertOpen();
 
   LOG_DEBUG(4, "Connecting to " << addr);
@@ -327,14 +312,9 @@ void Socket::connect(const SockAddr &addr, const std::string &hostname) {
 }
 
 
-void Socket::connect(const IPAddress &ip) {
-  string hostname = ip.hasHost() ? ip.getHost() : "";
-  connect(SockAddr((uint32_t)ip, ip.getPort()), hostname);
-}
-
-
 streamsize Socket::write(
-  const uint8_t *data, streamsize length, unsigned flags, const SockAddr *addr) {
+  const uint8_t *data, streamsize length, unsigned flags,
+  const SockAddr *addr) {
   assertOpen();
   bool blocking = !(flags & NONBLOCKING) && getBlocking();
   LOG_DEBUG(5, "Socket start " << (blocking ? "" : "non-")

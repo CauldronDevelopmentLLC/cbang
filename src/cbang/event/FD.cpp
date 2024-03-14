@@ -40,7 +40,7 @@
 
 // For close()
 #ifdef _WIN32
-#include <cbang/socket/Winsock.h>
+#include <cbang/net/Winsock.h>
 #else
 #include <unistd.h>
 #endif

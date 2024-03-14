@@ -38,7 +38,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 #include <cbang/net/Swab.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/Random.h>

@@ -33,7 +33,7 @@
 
 #include "Error.h"
 
-#include <cbang/socket/SockAddr.h>
+#include <cbang/net/SockAddr.h>
 
 #include <vector>
 

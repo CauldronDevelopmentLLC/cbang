@@ -34,7 +34,7 @@
 #include "FD.h"
 #include "Enum.h"
 
-#include <cbang/socket/SockAddr.h>
+#include <cbang/net/SockAddr.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/RateSet.h>
 
@@ -80,8 +80,8 @@ namespace cb {
       bool isConnected() const;
       void accept(const SockAddr &peer, const SmartPointer<Socket> &socket,
                   const SmartPointer<SSLContext> &sslCtx);
-      void connect(DNS::Base &dns, const std::string &peer, const SockAddr &bind,
-                   const SmartPointer<SSLContext> &sslCtx,
+      void connect(DNS::Base &dns, const std::string &hostname, uint32_t port,
+                   const SockAddr &bind, const SmartPointer<SSLContext> &sslCtx,
                    std::function<void (bool)> cb);
 
     protected:

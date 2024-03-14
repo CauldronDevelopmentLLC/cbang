@@ -33,7 +33,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/util/Version.h>
-#include <cbang/socket/SockAddr.h>
+#include <cbang/net/SockAddr.h>
 
 #include <cstdint>
 

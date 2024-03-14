@@ -33,7 +33,7 @@
 #include "Client.h"
 
 #include <cbang/Catch.h>
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 #include <cbang/log/Logger.h>
 
 using namespace cb::Event;

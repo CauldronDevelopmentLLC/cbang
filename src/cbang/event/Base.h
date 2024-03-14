@@ -34,7 +34,7 @@
 #include "EventFlag.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/socket/SocketType.h>
+#include <cbang/net/SocketType.h>
 
 #include <functional>
 #include <map>

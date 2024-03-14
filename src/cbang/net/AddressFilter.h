@@ -31,22 +31,39 @@
 
 #pragma once
 
-#include "BStream.h"
+#include "AddressRangeSet.h"
 
-#include <cstdint>
+#include <string>
 
 
 namespace cb {
-  class BIMemory : virtual public BStream {
-    const char *data;
-    uint64_t length;
-    uint64_t readPos;
+  class SockAddr;
+
+  /**
+   * Used to allow or deny clients by IP address.
+   * Used a white (allow) and black (deny) list to filter IPs.
+   *
+   * @see AddressRangeSet
+   */
+  class AddressFilter {
+    AddressRangeSet whiteList;
+    AddressRangeSet blackList;
 
   public:
-    BIMemory(const char *data, uint64_t length);
+    /// Add a IP address specification to the deny list.
+    void deny(const std::string &spec);
+    /// Add a IP address specification to the allow list.
+    void allow(const std::string &spec);
 
-    // From BStream
-    int read(char *buf, int length) override;
-    int gets(char *buf, int length) override;
+    /// Add a IP address range to the deny list.
+    void deny(AddressRange &range);
+    /// Add a IP address range to the allow list.
+    void allow(AddressRange &range);
+
+    /// @return True if the IP address is allowed by the current rules.
+    bool isAllowed(const SockAddr &addr) const;
+
+    /// @return True if the IP address is in the white list
+    bool isExplicitlyAllowed(const SockAddr &addr) const;
   };
 }

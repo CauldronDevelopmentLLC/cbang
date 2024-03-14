@@ -35,7 +35,7 @@
 #include <cbang/Catch.h>
 #include <cbang/openssl/SSLContext.h>
 #include <cbang/log/Logger.h>
-#include <cbang/socket/Socket.h>
+#include <cbang/net/Socket.h>
 
 using namespace cb::Event;
 using namespace cb;

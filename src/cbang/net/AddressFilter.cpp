@@ -29,10 +29,24 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "AddressFilter.h"
+#include "SockAddr.h"
 
-#if defined(_WIN32)
-#define PACK(DECL) __pragma(pack(push, 1)) DECL __pragma(pack(pop))
-#else
-#define PACK(DECL) DECL __attribute__((packed))
-#endif
+using namespace std;
+using namespace cb;
+
+
+void AddressFilter::deny(const string &spec) {blackList.insert(spec);}
+void AddressFilter::allow(const string &spec) {whiteList.insert(spec);}
+void AddressFilter::deny(AddressRange &range) {blackList.insert(range);}
+void AddressFilter::allow(AddressRange &range) {whiteList.insert(range);}
+
+
+bool AddressFilter::isAllowed(const SockAddr &addr) const {
+  return whiteList.contains(addr) || !blackList.contains(addr);
+}
+
+
+bool AddressFilter::isExplicitlyAllowed(const SockAddr &addr) const {
+  return whiteList.contains(addr);
+}
