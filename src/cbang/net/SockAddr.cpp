@@ -71,18 +71,12 @@ using namespace cb;
 #define IPV4_RE U8_RE "\\." U8_RE "\\." U8_RE "\\." U8_RE
 #define IPV6_RE "([\\da-fA-F:\\.]+)" // Imprecise
 
-Regex SockAddr::ipv4RE(IPV4_RE PORT_RE "?");
+Regex SockAddr::ipv4RE("((" IPV4_RE ")|(\\d+))" PORT_RE "?");
 Regex SockAddr::ipv6RE("(" IPV6_RE ")|(\\[" IPV6_RE "\\]" PORT_RE "?)");
 
 
 SockAddr::SockAddr() : data(new uint8_t[getCapacity()]()) {}
-
-
-SockAddr::SockAddr(const sockaddr &addr) : SockAddr() {
-  if (addr.sa_family == AF_INET6) memcpy(data, &addr, sizeof(sockaddr_in6));
-  else if (addr.sa_family == AF_INET) memcpy(data, &addr, sizeof(sockaddr_in));
-  else THROW("Unsupported sockaddr family: " << addr.sa_family);
-}
+SockAddr::SockAddr(const sockaddr &addr) : SockAddr() {*this = addr;}
 
 
 SockAddr::SockAddr(uint32_t ip, uint16_t port) : SockAddr() {
@@ -91,7 +85,7 @@ SockAddr::SockAddr(uint32_t ip, uint16_t port) : SockAddr() {
 }
 
 
-SockAddr::SockAddr(uint8_t *ip, uint16_t port) : SockAddr() {
+SockAddr::SockAddr(const uint8_t *ip, uint16_t port) : SockAddr() {
   setIPv6(ip);
   setPort(port);
 }
@@ -100,7 +94,23 @@ SockAddr::SockAddr(uint8_t *ip, uint16_t port) : SockAddr() {
 SockAddr::~SockAddr() {delete [] data;}
 
 
-bool SockAddr::isEmpty() const {return !getLength();}
+bool SockAddr::isNull() const {return !getLength();}
+
+
+bool SockAddr::isZero() const {
+  if (isIPv4()) return !getIPv4();
+
+  if (isIPv6()) {
+    auto addr = getIPv6();
+
+    for (int i = 0; i < 16; i++)
+      if (addr[i]) return false;
+
+    return true;
+  }
+
+  return isNull();
+}
 
 
 unsigned SockAddr::getLength() const {
@@ -214,6 +224,13 @@ bool SockAddr::readIPv4(const string &_s) {
     s    = s.substr(0, end);
   }
 
+  // Special case
+  if (s.find_first_not_of("1234567890") == string::npos) {
+    setIPv4(String::parseU32(s));
+    setPort(port);
+    return true;
+  }
+
   if (inet_pton(AF_INET, s.data(), &get4()->sin_addr) == 1) {
     get()->sa_family = AF_INET;
     setPort(port);
@@ -275,14 +292,35 @@ bool SockAddr::isAddress(const string &s)     {return SockAddr().read(s);}
 
 
 SockAddr &SockAddr::operator=(const SockAddr &o) {
-  memcpy(data, o.data, getCapacity());
+  memcpy(data, o.data, o.getCapacity());
+  return *this;
+}
+
+
+SockAddr &SockAddr::operator=(const sockaddr &addr) {
+  switch (addr.sa_family) {
+  case AF_INET:  return *this = (sockaddr_in  &)addr;
+  case AF_INET6: return *this = (sockaddr_in6 &)addr;
+  default: THROW("Unsupported sockaddr family: " << addr.sa_family);
+  }
+}
+
+
+SockAddr &SockAddr::operator=(const sockaddr_in &addr) {
+  memcpy(data, &addr, sizeof(addr));
+  return *this;
+}
+
+
+SockAddr &SockAddr::operator=(const sockaddr_in6 &addr) {
+  memcpy(data, &addr, sizeof(addr));
   return *this;
 }
 
 
 int SockAddr::cmp(const SockAddr &o) const {
-  if (isEmpty())   return o.isEmpty() ? 0 : -1;
-  if (o.isEmpty()) return 1;
+  if (isNull())   return o.isNull() ? 0 : -1;
+  if (o.isNull()) return 1;
 
   if (get()->sa_family != o.get()->sa_family)
     return get()->sa_family - o.get()->sa_family;
@@ -301,8 +339,93 @@ int SockAddr::cmp(const SockAddr &o) const {
 }
 
 
+void SockAddr::setCIDRBits(uint8_t bits, bool on) {
+  if (isIPv4()) {
+    bits = 32 - bits;
+    auto addr     = getIPv4();
+    uint32_t mask = (1 << bits) - 1;
+
+    if (on) addr |= mask;
+    else addr &= ~mask;
+
+    get4()->sin_addr.s_addr = hton32(addr);
+
+  } else if (isIPv6()) {
+    bits = 128 - bits;
+    auto addr = get6()->sin6_addr.s6_addr;
+
+    for (int i = 15; 0 <= i && bits; i--) {
+      if (8 <= bits) {
+        addr[i] = on ? 0xff : 0;
+        bits -= 8;
+
+      } else {
+        uint8_t mask = (1 << bits) - 1;
+        if (on) addr[i] |= mask;
+        else addr[i] &= ~mask;
+        break;
+      }
+    }
+
+  } else THROW("Cannot set range bits on " << *this);
+}
+
+
+uint8_t SockAddr::getCIDRBits(const SockAddr &o) const {
+  if (isIPv4() && o.isIPv4()) {
+    uint32_t s = getIPv4();
+    uint32_t e = o.getIPv4();
+
+    bool inMask = false;
+    uint8_t prefix = 0;
+
+    for (int i = 31; 0 <= i; i--) {
+      uint32_t mask = 1 << i;
+
+      if (!inMask) {
+        if ((s & mask) == (e & mask)) prefix++;
+        else inMask = true;
+      }
+
+      if (inMask && ((s & mask) || !(e & mask))) return 0;
+    }
+
+    return prefix;
+  }
+
+  if (isIPv6() && o.isIPv6()) {
+    auto *s = getIPv6();
+    auto *e = o.getIPv6();
+
+    bool inMask = false;
+    uint8_t prefix = 0;
+
+    for (int i = 0; i < 16; i++)
+      for (int j = 7; 0 <= j; j--) {
+        uint8_t mask = 1 << j;
+
+        if (!inMask) {
+          if ((s[i] & mask) == (e[i] & mask)) prefix++;
+          else inMask = true;
+        }
+
+        if (inMask && ((s[i] & mask) || !(e[i] & mask))) return 0;
+      }
+
+    return prefix;
+  }
+
+  THROW("Cannot get range bits from " << *this << " and " << o);
+}
+
+
+bool SockAddr::adjacent(const SockAddr &o) const {
+  return (!o.isZero() && *this == o.dec()) || (!isZero() && dec() == o);
+}
+
+
 void SockAddr::bind(socket_t socket) const {
-  if (isEmpty()) THROW("Cannot bind to empty SockAddr");
+  if (isNull()) THROW("Cannot bind to null SockAddr");
 
   SysError::clear();
   if (::bind(socket, get(), getLength()))
@@ -317,10 +440,29 @@ socket_t SockAddr::accept(socket_t socket) {
 
 
 void SockAddr::connect(socket_t socket) const {
-  if (isEmpty()) THROW("Cannot connect to empty SockAddr");
+  if (isNull()) THROW("Cannot connect to null SockAddr");
 
   SysError::clear();
   if (::connect(socket, get(), getLength()) == -1)
     if (SysError::get() != SOCKET_INPROGRESS)
       THROW("Failed to connect to " << *this << ": " << SysError());
+}
+
+
+SockAddr SockAddr::dec() const {
+  if (isIPv4()) return SockAddr(getIPv4() - 1, getPort());
+
+  if (isIPv6()) {
+    uint8_t addr[16];
+    memcpy(addr, getIPv6(), 16);
+
+    for (int i = 15; 0 <= i; i--) {
+      if (addr[i]) {addr[i]--; break;}
+      else addr[i] = 0xff;
+    }
+
+    return SockAddr(addr, getPort());
+  }
+
+  THROW("Cannot decrement address " << *this);
 }

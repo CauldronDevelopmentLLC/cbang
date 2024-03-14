@@ -32,60 +32,54 @@
 #pragma once
 
 #include "SockAddr.h"
-#include "IPAddressRange.h"
-
-#include <cbang/SmartPointer.h>
 
 #include <string>
-#include <vector>
-#include <iostream>
-
-namespace cb {namespace JSON {class Sink;}}
+#include <ostream>
 
 
 namespace cb {
-  /// Maintains a set of IP address ranges
-  class IPRangeSet {
-    typedef std::vector<uint32_t> rangeSet_t;
-    rangeSet_t rangeSet;
+  /**
+   * Represents an IP address range.
+   *
+   * This class parses IP address range strings of the following format:
+   *
+   *   <address>[/BB]
+   *     or
+   *   <address>-<address>
+   *
+   * Where an <address> is either an IPv4 or IPv6 format address string.
+   */
+  class AddressRange {
+    SockAddr start;
+    SockAddr end;
 
   public:
-    IPRangeSet() {}
-    IPRangeSet(const std::string &spec) {insert(spec);}
-    ~IPRangeSet() {clear();}
+    AddressRange() {}
+    AddressRange(const std::string &spec);
+    AddressRange(const SockAddr &addr) : start(addr), end(addr) {}
+    AddressRange(const SockAddr &start, const SockAddr &end);
 
-    void clear() {rangeSet.clear();}
-    bool empty() {return rangeSet.empty();}
-    unsigned size() {return rangeSet.size() / 2;}
-    IPAddressRange get(unsigned i) const;
-
-    void insert(const std::string &spec);
-    void insert(const IPAddressRange &range);
-    void insert(const IPRangeSet &set);
-    void erase(const std::string &spec);
-    void erase(const IPAddressRange &range);
-    void erase(const IPRangeSet &set);
-    bool contains(const SockAddr &addr) const;
+    SockAddr &getStart() {return start;}
+    const SockAddr &getStart() const {return start;}
+    void setStart(const SockAddr &start) {this->start = start;}
+    SockAddr &getEnd() {return end;}
+    const SockAddr &getEnd() const {return end;}
+    void setEnd(const SockAddr &end) {this->end = end;}
 
     std::string toString() const;
-    void print(std::ostream &stream) const;
-    void write(JSON::Sink &sink) const;
+    uint8_t getCIDRBits() const {return start.getCIDRBits(end);}
 
-    static SmartPointer<IPRangeSet> parse(const std::string &s)
-    {return new IPRangeSet(s);}
-
-  private:
-    void insert(uint32_t start, uint32_t end);
-    void erase(uint32_t start, uint32_t end);
-
-    unsigned find(uint32_t ip) const;
-    void shift(int amount, unsigned position);
+    int cmp(const SockAddr &addr) const;
+    bool contains(const SockAddr &addr) const {return cmp(addr) == 0;}
+    bool overlaps(const AddressRange &o) const;
+    bool adjacent(const SockAddr &addr) const;
+    bool adjacent(const AddressRange &o) const;
+    void add(const AddressRange &o);
   };
 
 
   static inline
-  std::ostream &operator<<(std::ostream &stream, const IPRangeSet &s) {
-    s.print(stream);
-    return stream;
+  std::ostream &operator<<(std::ostream &stream, const AddressRange &r) {
+    return stream << r.toString();
   }
 }

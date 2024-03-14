@@ -133,7 +133,7 @@ void Nameserver::start() {
 
   // Bind outgoing address if not loopback
   auto &bind = base.getBindAddress();
-  if (!bind.isEmpty() && !addr.isLoopback()) socket->bind(bind);
+  if (!bind.isNull() && !addr.isLoopback()) socket->bind(bind);
 
   event = base.getEventBase().newEvent(
     socket->get(), this, &Nameserver::ready,

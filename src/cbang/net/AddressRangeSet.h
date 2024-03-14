@@ -31,52 +31,49 @@
 
 #pragma once
 
-#include "IPAddress.h"
+#include "AddressRange.h"
+
+#include <cbang/SmartPointer.h>
 
 #include <string>
-#include <ostream>
+#include <vector>
+#include <iostream>
+
+namespace cb {namespace JSON {class Sink;}}
+
 
 namespace cb {
-  /**
-   * Represents an IP address range.
-   *
-   * This class parses IP address range strings of the following format:
-   *
-   *  <domainname>
-   *    or
-   *  <XXX.XXX.XXX.XXX>[/BB]
-   *    or
-   *  <XXX.XXX.XXX.XXX>-<XXX.XXX.XXX.XXX>
-   *
-   * Domain names are resolved with a DSN lookup.
-   */
-  class IPAddressRange {
-    IPAddress start;
-    IPAddress end;
+  class AddressRangeSet {
+    typedef std::vector<AddressRange> ranges_t;
+    ranges_t ranges;
 
   public:
-    IPAddressRange(const std::string &spec);
-    IPAddressRange(IPAddress ip) : start(ip), end(ip) {}
-    IPAddressRange(IPAddress start, IPAddress end);
+    AddressRangeSet() {}
+    AddressRangeSet(const std::string &spec) {insert(spec);}
+
+    void clear() {ranges.clear();}
+    bool empty() {return ranges.empty();}
+
+    void insert(const std::string &spec);
+    void insert(const AddressRange &range);
+    void insert(const AddressRangeSet &set);
+    bool contains(const SockAddr &addr) const {return find(addr);}
 
     std::string toString() const;
-    const IPAddress &getStart() const {return start;}
-    const IPAddress &getEnd() const {return end;}
+    void print(std::ostream &stream) const;
+    void write(JSON::Sink &sink) const;
 
-    bool contains(const IPAddress &ip) const;
-    bool overlaps(const IPAddressRange &range) const;
-    bool adjacent(const IPAddressRange &range) const;
-    void add(const IPAddressRange &range);
+    static SmartPointer<AddressRangeSet> parse(const std::string &s)
+    {return new AddressRangeSet(s);}
 
-    bool operator<(const IPAddressRange &range) const;
-
-  protected:
-    static IPAddress parseIP(const char *&s);
+  private:
+    bool find(const SockAddr &addr, unsigned *pos = 0) const;
   };
 
 
   static inline
-  std::ostream &operator<<(std::ostream &stream, const IPAddressRange &r) {
-    return stream << r.toString();
+  std::ostream &operator<<(std::ostream &stream, const AddressRangeSet &s) {
+    s.print(stream);
+    return stream;
   }
 }

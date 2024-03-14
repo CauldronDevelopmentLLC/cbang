@@ -1169,11 +1169,11 @@ class Unit:
     if options.command_prefix: command = options.command_prefix + command
 
     # Args
-    command += self.get_args()
+    command = command + self.get_args()
 
     # Resolve command vars refs
     try:
-      command = list(map(lambda s: s % self.config, command))
+      command = [s % self.config for s in command]
     except Exception as e:
       raise HarnessError('Error resolving command "%s": %s' % (command, e))
 

@@ -55,10 +55,11 @@ namespace cb {
     SockAddr(const SockAddr &o) : SockAddr() {*this = o;}
     SockAddr(const sockaddr &addr);
     SockAddr(uint32_t ip, uint16_t port = 0);
-    SockAddr(uint8_t *ip, uint16_t port = 0);
+    SockAddr(const uint8_t *ip, uint16_t port = 0);
     ~SockAddr();
 
-    bool isEmpty() const;
+    bool isNull() const;
+    bool isZero() const;
     unsigned getLength() const;
     static unsigned getCapacity();
 
@@ -102,6 +103,9 @@ namespace cb {
     static bool isAddress(const std::string &s);
 
     SockAddr &operator=(const SockAddr &o);
+    SockAddr &operator=(const sockaddr &addr);
+    SockAddr &operator=(const sockaddr_in &addr);
+    SockAddr &operator=(const sockaddr_in6 &addr);
 
     int cmp(const SockAddr &o) const;
     bool operator< (const SockAddr &a) const {return cmp(a) <  0;}
@@ -111,15 +115,17 @@ namespace cb {
     bool operator==(const SockAddr &a) const {return cmp(a) == 0;}
     bool operator!=(const SockAddr &a) const {return cmp(a) != 0;}
 
-    void clearSuffix(uint8_t bits);
-    void setSuffix(uint8_t bits);
-    uint8_t getRangeBits(const SockAddr &end) const;
+    void setCIDRBits(uint8_t bits, bool on);
+    uint8_t getCIDRBits(const SockAddr &end) const;
 
     bool adjacent(const SockAddr &o) const;
 
     void bind(socket_t socket) const;
     socket_t accept(socket_t socket);
     void connect(socket_t socket) const;
+
+  protected:
+    SockAddr dec() const;
   };
 
 
