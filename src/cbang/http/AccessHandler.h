@@ -31,16 +31,37 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <set>
+#include <string>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class Request;
+
+    class AccessHandler : public RequestHandler {
+      std::set<std::string> userAllowed;
+      std::set<std::string> userDenied;
+      std::set<std::string> groupAllowed;
+      std::set<std::string> groupDenied;
+
+    public:
+      AccessHandler() {}
+
+      void allowUser (const std::string &name) {userAllowed.insert(name);}
+      void denyUser  (const std::string &name) {userDenied.insert(name);}
+      void allowGroup(const std::string &name) {groupAllowed.insert(name);}
+      void denyGroup (const std::string &name) {groupDenied.insert(name);}
+
+      bool userAllow (const std::string &name) const;
+      bool userDeny  (const std::string &name) const;
+      bool groupAllow(const std::string &name) const;
+      bool groupDeny (const std::string &name) const;
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

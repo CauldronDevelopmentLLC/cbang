@@ -34,6 +34,8 @@
 
 #include <cbang/Catch.h>
 
+using namespace std;
+using namespace cb;
 using namespace cb::Event;
 
 
@@ -234,7 +236,7 @@ void FDPoolEvent::open(FD &_fd) {
 }
 
 
-void FDPoolEvent::flush(int fd, std::function <void ()> cb) {
+void FDPoolEvent::flush(int fd, function <void ()> cb) {
   get(fd).flush();
 
   // Defer FDRec deallocation, it may be executing

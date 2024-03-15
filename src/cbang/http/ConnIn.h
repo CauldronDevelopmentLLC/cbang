@@ -31,16 +31,31 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Conn.h"
+#include "Status.h"
 
-#include <cbang/enum/Compression.h>
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class ConnIn : public Conn {
+      Server &server;
+
+    public:
+      ConnIn(Server &server);
+
+      // From Conn
+      bool isIncoming() const override {return true;}
+      void writeRequest(const SmartPointer<Request> &req, Event::Buffer buffer,
+                        bool hasMore, std::function<void (bool)> cb) override;
+
+      void readHeader();
+
+    protected:
+      void processHeader();
+      void checkChunked(const SmartPointer<Request> &req);
+      void processRequest(const SmartPointer<Request> &req);
+      void processIfNext(const SmartPointer<Request> &req);
+      void error(Status code, const std::string &message);
+    };
   }
 }

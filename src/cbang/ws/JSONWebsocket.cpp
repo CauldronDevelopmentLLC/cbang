@@ -29,18 +29,55 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "JSONWebsocket.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/Catch.h>
+#include <cbang/log/Logger.h>
+#include <cbang/iostream/VectorDevice.h>
 
-#include <cbang/enum/Compression.h>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+using namespace cb;
+using namespace cb::WS;
+using namespace std;
+
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX "WS" << getID() << ':'
+
+
+namespace {
+  struct JSONWriter : vector<char>, cb::VectorStream<>, public JSON::Writer {
+    SmartPointer<Websocket> ws;
+
+    JSONWriter(const SmartPointer<Websocket> &ws) :
+      cb::VectorStream<>((vector<char> &)*this),
+      JSON::Writer((ostream &)*this), ws(ws) {}
+
+    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
+
+    unsigned getID() const {return ws->getID();}
+
+    // From JSON::Writer
+    void close() override {
+      JSON::Writer::close();
+      ws->send(data(), size());
+    }
+  };
+}
+
+
+void JSONWebsocket::send(const JSON::Value &value) {
+  LOG_DEBUG(6, "Sending: " << value);
+  send(value.toString());
+}
+
+
+SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
+  return new JSONWriter(this);
+}
+
+
+void JSONWebsocket::onMessage(const char *data, uint64_t length) {
+  auto value = JSON::Reader::parse(InputSource(data, length));
+  LOG_DEBUG(6, "Received: " << *value);
+  onMessage(value);
 }

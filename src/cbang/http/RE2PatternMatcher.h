@@ -31,16 +31,33 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <set>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class Request;
+
+    class RE2PatternMatcher : public RequestHandler {
+      struct Private;
+
+      SmartPointer<Private> pri;
+      SmartPointer<RequestHandler> child;
+      std::set<std::string> args;
+
+    public:
+      RE2PatternMatcher(const std::string &pattern,
+                            const SmartPointer<RequestHandler> &child);
+
+      const SmartPointer<RequestHandler> &getChild() const {return child;}
+      const std::set<std::string> &getArgs() const {return args;}
+
+      bool match(const URI &uri, JSON::ValuePtr args) const;
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

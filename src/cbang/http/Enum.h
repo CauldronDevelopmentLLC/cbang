@@ -31,16 +31,16 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Status.h"
+#include "Method.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/event/Enum.h>
 
 namespace cb {
-  namespace Event {
+  namespace HTTP {
     class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+      public Event::Enum,
+      public Status::Enum,
+      public Method::Enum {};
   }
 }

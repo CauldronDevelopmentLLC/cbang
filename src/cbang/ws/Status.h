@@ -29,18 +29,31 @@
 
 \******************************************************************************/
 
-#pragma once
+#ifndef CBANG_ENUM
+#ifndef CBANG_WS_STATUS_H
+#define CBANG_WS_STATUS_H
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#define CBANG_ENUM_NAME Status
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 WS
+#define CBANG_ENUM_PATH cbang/ws
+#define CBANG_ENUM_PREFIX 10
+#include <cbang/enum/MakeEnumeration.def>
 
-#include <cbang/enum/Compression.h>
+#endif // CBANG_WS_STATUS_H
+#else // CBANG_ENUM
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
-}
+CBANG_ENUM_VALUE(WS_STATUS_NORMAL,       1000)
+CBANG_ENUM_VALUE(WS_STATUS_GOING_AWAY,   1001)
+CBANG_ENUM_VALUE(WS_STATUS_PROTOCOL,     1002)
+CBANG_ENUM_VALUE(WS_STATUS_UNACCEPTABLE, 1003)
+CBANG_ENUM_VALUE(WS_STATUS_NONE,         1005)
+CBANG_ENUM_VALUE(WS_STATUS_DIRTY_CLOSE,  1006)
+CBANG_ENUM_VALUE(WS_STATUS_INCONSISTENT, 1007)
+CBANG_ENUM_VALUE(WS_STATUS_VIOLATION,    1008)
+CBANG_ENUM_VALUE(WS_STATUS_TOO_BIG,      1009)
+CBANG_ENUM_VALUE(WS_STATUS_MISSING_EXTN, 1010)
+CBANG_ENUM_VALUE(WS_STATUS_UNEXPECTED,   1011)
+CBANG_ENUM_VALUE(WS_STATUS_TLS_FAILED,   1015)
+
+#endif // CBANG_ENUM

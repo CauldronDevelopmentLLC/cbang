@@ -31,16 +31,28 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/SmartPointer.h>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  class SessionManager;
+
+  namespace HTTP {
+    class Request;
+
+    class SessionHandler : public RequestHandler {
+      SmartPointer<SessionManager> sessionManager;
+      std::string header;
+
+    public:
+      SessionHandler(const SmartPointer<SessionManager> &sessionManager,
+                         const std::string &header = "Authorization") :
+        sessionManager(sessionManager), header(header) {}
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

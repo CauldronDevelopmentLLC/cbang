@@ -29,18 +29,25 @@
 
 \******************************************************************************/
 
-#pragma once
+#ifndef CBANG_ENUM
+#ifndef CBANG_WS_OP_H
+#define CBANG_WS_OP_H
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#define CBANG_ENUM_NAME OpCode
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 WS
+#define CBANG_ENUM_PATH cbang/ws
+#define CBANG_ENUM_PREFIX 6
+#include <cbang/enum/MakeEnumeration.def>
 
-#include <cbang/enum/Compression.h>
+#endif // CBANG_WS_OP_H
+#else // CBANG_ENUM
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
-}
+CBANG_ENUM_VALUE(WS_OP_CONTINUE, 0x0)
+CBANG_ENUM_VALUE(WS_OP_TEXT,     0x1)
+CBANG_ENUM_VALUE(WS_OP_BINARY,   0x2)
+CBANG_ENUM_VALUE(WS_OP_CLOSE,    0x8)
+CBANG_ENUM_VALUE(WS_OP_PING,     0x9)
+CBANG_ENUM_VALUE(WS_OP_PONG,     0xa)
+
+#endif // CBANG_ENUM

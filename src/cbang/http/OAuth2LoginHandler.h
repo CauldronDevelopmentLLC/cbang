@@ -31,16 +31,34 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
+#include "OAuth2Login.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/SmartPointer.h>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  class SessionManager;
+
+  namespace HTTP {
+    class Request;
+
+    class OAuth2LoginHandler :
+      public OAuth2Login, public RequestHandler {
+      SmartPointer<SessionManager> sessionManager;
+
+    public:
+      OAuth2LoginHandler
+      (Client &client, const SmartPointer<OAuth2> &auth,
+       const SmartPointer<SessionManager> &sessionManager);
+      ~OAuth2LoginHandler();
+
+      // From OAuth2Login
+      void processProfile(Request &req,
+                          const SmartPointer<JSON::Value> &profile) override;
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

@@ -29,18 +29,24 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "OutgoingRequest.h"
+#include "Client.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
 
-#include <cbang/enum/Compression.h>
+using namespace cb;
+using namespace cb::HTTP;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+
+OutgoingRequest::OutgoingRequest(
+  Client &client, const SmartPointer<Conn> &connection, const URI &uri,
+  Method method, callback_t cb) :
+  Request(connection, method, uri), client(client), cb(cb) {}
+
+
+void OutgoingRequest::send() {client.send(this);}
+
+
+void OutgoingRequest::onResponse(Event::ConnectionError error) {
+  Request::onResponse(error);
+  if (cb) cb(*this);
 }

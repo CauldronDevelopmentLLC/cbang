@@ -31,16 +31,33 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/SmartPointer.h>
+
+#include <string>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  class Resource;
+
+  namespace HTTP {
+    class HandlerFactory {
+      bool autoIndex;
+
+    public:
+      HandlerFactory(bool autoIndex = true) : autoIndex(autoIndex) {}
+      virtual ~HandlerFactory() {}
+
+      void setAutoIndex(bool autoIndex) {this->autoIndex = autoIndex;}
+
+      virtual SmartPointer<RequestHandler>
+      createMatcher(unsigned methods, const std::string &search,
+                    const SmartPointer<RequestHandler> &child);
+      virtual SmartPointer<RequestHandler>
+      createHandler(const Resource &res);
+      virtual SmartPointer<RequestHandler>
+      createHandler(const std::string &path);
+    };
   }
 }

@@ -31,16 +31,51 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/json/Value.h>
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    struct RequestJSONHandler : public RequestHandler {
+      virtual void operator()(Request &, const JSON::ValuePtr &) = 0;
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
+
+
+    template <class T>
+    struct RequestJSONMemberHandler : public RequestJSONHandler {
+      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
+      T *obj;
+      member_t member;
+
+      RequestJSONMemberHandler(T *obj, member_t member) :
+        obj(obj), member(member) {
+        if (!obj) CBANG_THROW("Object cannot be NULL");
+        if (!member) CBANG_THROW("Member cannot be NULL");
+      }
+
+      // From RequestJSONHandler
+      void operator()(Request &req, const JSON::ValuePtr &msg) override
+        {(*obj.*member)(req, msg);}
+    };
+
+
+    template <class T>
+    struct RequestJSONRecastHandler : public RequestJSONHandler {
+      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
+      member_t member;
+
+      RequestJSONRecastHandler(member_t member) : member(member) {
+        if (!member) CBANG_THROW("Member cannot be NULL");
+      }
+
+      // From RequestJSONHandler
+      void operator()(Request &req, const JSON::ValuePtr &msg) override {
+        (req.cast<T>().*member)(req, msg);
+      }
+    };
   }
 }

@@ -31,16 +31,27 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Websocket.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/json/JSON.h>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace WS {
+    class JSONWebsocket : public Websocket {
+    public:
+      using Websocket::Websocket;
+
+      virtual void send(const JSON::Value &msg);
+      SmartPointer<JSON::Writer> getJSONWriter();
+
+      virtual void onMessage(const JSON::ValuePtr &msg) = 0;
+
+      // From Websocket
+      void onMessage(const char *data, uint64_t length) override;
+
+    protected:
+      using Websocket::send;
+    };
   }
 }

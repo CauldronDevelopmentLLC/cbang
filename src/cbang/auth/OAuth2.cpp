@@ -38,7 +38,7 @@
 #include <cbang/net/URI.h>
 #include <cbang/config/Options.h>
 #include <cbang/log/Logger.h>
-#include <cbang/event/HTTPStatus.h>
+#include <cbang/http/Status.h>
 #include <cbang/io/StringInputSource.h>
 
 using namespace std;
@@ -155,5 +155,5 @@ string OAuth2::verifyToken(const SmartPointer<JSON::Value> &json) const {
 void OAuth2::validateOption(const string &option, const string &name) const {
   if (option.empty())
     THROWC(provider + "-" + name + " not configured",
-           Event::HTTPStatus::HTTP_UNAUTHORIZED);
+           HTTP::Status::HTTP_UNAUTHORIZED);
 }

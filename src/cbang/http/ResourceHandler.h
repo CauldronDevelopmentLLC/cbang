@@ -31,16 +31,30 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/time/Time.h>
+#include <cbang/util/Resource.h>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class Request;
+
+    class ResourceHandler : public RequestHandler {
+      const Resource &root;
+      uint64_t timeout;
+
+    public:
+      ResourceHandler(const Resource &root,
+                          uint64_t timeout = Time::SEC_PER_HOUR) :
+        root(root), timeout(timeout) {}
+
+      void setTimeout(uint64_t timeout) {this->timeout = timeout;}
+      uint64_t getTimeout() const {return timeout;}
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

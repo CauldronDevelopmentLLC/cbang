@@ -29,18 +29,54 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "HandlerGroup.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+using namespace cb::HTTP;
+using namespace cb;
+using namespace std;
 
-#include <cbang/enum/Compression.h>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+void HandlerGroup::addHandler
+(const SmartPointer<RequestHandler> &handler) {handlers.push_back(handler);}
+
+
+void HandlerGroup::addHandler
+(unsigned methods, const string &pattern,
+ const SmartPointer<RequestHandler> &handler) {
+  addHandler(factory->createMatcher(methods, prefix + pattern, handler));
+}
+
+
+void HandlerGroup::addHandler(const string &pattern, const Resource &res) {
+  addHandler(HTTP_GET, pattern, factory->createHandler(res));
+}
+
+
+void HandlerGroup::addHandler(const string &pattern, const string &path) {
+  addHandler(HTTP_GET, pattern, factory->createHandler(path));
+}
+
+
+SmartPointer<HandlerGroup> HandlerGroup::addGroup() {
+  SmartPointer<HandlerGroup> group = new HandlerGroup(factory);
+  addHandler(group);
+  return group;
+}
+
+
+SmartPointer<HandlerGroup>
+HandlerGroup::addGroup(unsigned methods, const string &pattern,
+                           const string &prefix) {
+  SmartPointer<HandlerGroup> group = new HandlerGroup(factory);
+  group->setPrefix(this->prefix + prefix);
+  addHandler(methods, pattern, group);
+  return group;
+}
+
+
+bool HandlerGroup::operator()(Request &req) {
+  for (unsigned i = 0; i < handlers.size(); i++)
+    if ((*handlers[i])(req)) return true;
+
+  return false;
 }

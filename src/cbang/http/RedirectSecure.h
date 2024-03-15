@@ -31,16 +31,23 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cstdint>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class Request;
+
+    class RedirectSecure : public RequestHandler {
+      uint32_t port;
+
+    public:
+      RedirectSecure(uint32_t port = 443) : port(port) {}
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

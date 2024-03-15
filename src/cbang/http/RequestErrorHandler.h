@@ -31,16 +31,19 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class RequestErrorHandler : public RequestHandler {
+      RequestHandler &child;
+
+    public:
+      RequestErrorHandler(RequestHandler &child) : child(child) {}
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

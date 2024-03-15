@@ -41,8 +41,9 @@
 #include <cbang/net/Socket.h>
 #include <cbang/os/SysError.h>
 
-using namespace cb::Event;
+using namespace std;
 using namespace cb;
+using namespace cb::Event;
 
 
 namespace {
@@ -51,9 +52,9 @@ namespace {
     if (!(event->ev_evcallback.evcb_flags &
           (EVLIST_ACTIVE | EVLIST_ACTIVE_LATER))) return 0;
 
-    std::map<int, unsigned> &counts = *(std::map<int, unsigned> *)arg;
+    map<int, unsigned> &counts = *(map<int, unsigned> *)arg;
     int priority = event_get_priority(event);
-    counts.insert(std::pair<int, unsigned>(priority, 0)).first->second++;
+    counts.insert(pair<int, unsigned>(priority, 0)).first->second++;
     return 0;
   }
 }
@@ -104,7 +105,7 @@ int Base::getNumActiveEvents() const {
 }
 
 
-void Base::countActiveEventsByPriority(std::map<int, unsigned> &counts) const {
+void Base::countActiveEventsByPriority(map<int, unsigned> &counts) const {
   event_base_foreach_event(base, count_events_by_priority, &counts);
 }
 

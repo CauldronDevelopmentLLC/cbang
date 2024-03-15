@@ -29,18 +29,63 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "FileHandler.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/event/Buffer.h>
+#include <cbang/os/SystemUtilities.h>
+#include <cbang/log/Logger.h>
 
-#include <cbang/enum/Compression.h>
+using namespace std;
+using namespace cb;
+using namespace cb::HTTP;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+
+FileHandler::FileHandler(const string &root, unsigned pathPrefix,
+                         uint64_t timeout) :
+  root(root), pathPrefix(pathPrefix), timeout(timeout),
+  directory(SystemUtilities::isDirectory(root)) {}
+
+
+bool FileHandler::operator()(Request &req) {
+  string path;
+
+  if (directory) {
+    string orig = req.getURI().getPath();
+    if (orig.length() <= pathPrefix) return false;
+    orig = orig.substr(pathPrefix);
+
+    // Remove unsafe parts
+    vector<string> parts;
+    String::tokenize(orig, parts, "/");
+    vector<string> result;
+
+    for (unsigned i = 0; i < parts.size(); i++) {
+      if (parts[i] == ".") continue;
+      if (parts[i] == "..") {
+        if (result.empty()) THROWX("Invalid path", HTTP_UNAUTHORIZED);
+        result.pop_back();
+
+      } else result.push_back(parts[i]);
+    }
+
+    // Relative to root
+    path = SystemUtilities::joinPath(root, String::join(result, "/"));
+    if (path.back() != '/' && orig.back() == '/') path += "/";
+
+  } else path = root; // Single file
+
+  LOG_INFO(5, "FileHandler() " << path);
+
+  if (!SystemUtilities::isFile(path)) return false;
+
+  // Send file
+  Event::Buffer buf;
+  buf.addFile(path);
+  req.reply(buf);
+
+  if (!req.outHas("Cache-Control"))
+    req.outSet("Cache-Control", "max-age=" + String(timeout));
+
+  return true;
 }

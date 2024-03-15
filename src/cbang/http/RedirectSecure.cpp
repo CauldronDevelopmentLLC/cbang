@@ -29,18 +29,24 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "RedirectSecure.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+using namespace cb;
+using namespace cb::HTTP;
 
-#include <cbang/enum/Compression.h>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+bool RedirectSecure::operator()(Request &req) {
+  if (req.isSecure()) return false; // Pass it on
+
+  // Set scheme, host & port
+  URI uri = req.getURI();
+  uri.setScheme("https");
+  uri.setHost(req.getHost());
+  uri.setPort(port == 443 ? 0 : port);
+
+  // Redirect
+  req.redirect(uri);
+
+  return true;
 }

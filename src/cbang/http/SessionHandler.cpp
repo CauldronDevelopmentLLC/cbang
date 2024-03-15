@@ -29,18 +29,32 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "SessionHandler.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Request.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/net/SessionManager.h>
+#include <cbang/log/Logger.h>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+using namespace std;
+using namespace cb::HTTP;
+
+
+bool SessionHandler::operator()(Request &req) {
+  // Check if Session is already loaded
+  if (req.getSession().isSet()) return false;
+
+  // Get session ID
+  const string &cookie = sessionManager->getSessionCookie();
+  string sid = req.getSessionID(cookie, header);
+  LOG_DEBUG(4, "Client " << req.getClientAddr() << " sid=" << sid
+            << " cookie=" << cookie << " header=" << header);
+  if (sid.empty()) return false;
+
+  // Get session
+  try {
+    req.setSession(sessionManager->lookupSession(sid));
+  } catch (const Exception &) {}
+
+  return false;
 }
