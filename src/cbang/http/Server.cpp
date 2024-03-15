@@ -29,18 +29,44 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Server.h"
+#include "RequestErrorHandler.h"
+#include "ConnIn.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/Catch.h>
+#include <cbang/log/Logger.h>
 
-#include <cbang/enum/Compression.h>
+using namespace cb::HTTP;
+using namespace cb;
+using namespace std;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+
+Server::Server(Event::Base &base) : Event::Server(base) {}
+
+
+SmartPointer<Request>
+Server::createRequest(
+  const SmartPointer<Conn> &connection, Method method,
+  const URI &uri, const Version &version) {
+  return new Request(connection, method, uri, version);
+}
+
+
+void Server::dispatch(Request &req) {
+  RequestErrorHandler(*this)(req);
+  TRY_CATCH_ERROR(endRequest(req));
+}
+
+
+SmartPointer<Event::Connection> Server::createConnection() {
+  return new ConnIn(*this);
+}
+
+
+void Server::onConnect(const SmartPointer<Event::Connection> &conn) {
+  auto c = conn.cast<ConnIn>();
+  c->setMaxHeaderSize(maxHeaderSize);
+  c->setMaxBodySize(maxBodySize);
+  c->readHeader();
 }

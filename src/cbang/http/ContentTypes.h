@@ -31,16 +31,20 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/util/Singleton.h>
 
-#include <cbang/enum/Compression.h>
+#include <map>
+#include <string>
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class ContentTypes : public Singleton<ContentTypes>,
+                         public std::map<std::string, std::string> {
+    public:
+      ContentTypes(Inaccessible);
+
+      static std::string guess(const std::string &path,
+                               const std::string &defaultType = "text/plain");
+    };
   }
 }

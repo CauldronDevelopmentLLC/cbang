@@ -35,8 +35,8 @@
 
 #include "KeyCert.h"
 
-#include <cbang/event/Client.h>
-#include <cbang/event/RequestMethod.h>
+#include <cbang/http/Client.h>
+#include <cbang/http/Method.h>
 #include <cbang/net/URI.h>
 #include <cbang/openssl/KeyPair.h>
 #include <cbang/json/Sink.h>
@@ -47,11 +47,8 @@
 
 namespace cb {
   class Options;
-
-  namespace Event {
-    class Event;
-    class HTTPHandlerGroup;
-  }
+  namespace Event {class Event;}
+  namespace HTTP {class HandlerGroup;}
 
   namespace ACMEv2 {
     static std::string letsencrypt_base =
@@ -59,8 +56,8 @@ namespace cb {
     static std::string letsencrypt_staging =
       "https://acme-staging-v02.api.letsencrypt.org/directory";
 
-    class Account : public Event::RequestMethod::Enum {
-      Event::Client &client;
+    class Account : public HTTP::Method::Enum {
+      HTTP::Client &client;
       KeyPair key;
 
       std::string uriBase = letsencrypt_staging;
@@ -105,7 +102,7 @@ namespace cb {
       SmartPointer<Event::Event> retryEvent;
 
     public:
-      Account(Event::Client &client);
+      Account(HTTP::Client &client);
 
       const KeyPair &getKey() const {return key;}
       void setKey(const KeyPair &key) {this->key = key;}
@@ -119,10 +116,10 @@ namespace cb {
       void simpleInit(const KeyPair &key, const KeyPair &clientKey,
                       const std::string &domains,
                       const std::string &clientChain,
-                      Event::HTTPHandlerGroup &group, listener_t cb,
+                      HTTP::HandlerGroup &group, listener_t cb,
                       unsigned updateRate = 60);
       void addListener(listener_t listener);
-      void addHandler(Event::HTTPHandlerGroup &group);
+      void addHandler(HTTP::HandlerGroup &group);
       bool needsRenewal(const KeyCert &keyCert) const;
       unsigned certsReadyForRenewal() const;
       void add(const SmartPointer<KeyCert> &keyCert);
@@ -145,12 +142,12 @@ namespace cb {
       std::string getNewOrderPayload() const;
       std::string getFinalizePayload() const;
 
-      bool challengeRequest(Event::Request &req);
+      bool challengeRequest(HTTP::Request &req);
 
     protected:
       std::string getProblemString(const JSON::Value &problem) const;
 
-      void call(const std::string &url, Event::RequestMethod method);
+      void call(const std::string &url, HTTP::Method method);
       void head(const std::string &url) {call(url, HTTP_HEAD);}
       void get(const std::string &url) {call(url, HTTP_GET);}
       void post(const std::string &url, const std::string &payload);
@@ -159,9 +156,9 @@ namespace cb {
       void nextKeyCert();
       void nextAuth();
       void next();
-      void retry(Event::Request &req, double delay);
+      void retry(HTTP::Request &req, double delay);
       void fail(double delay);
-      void responseHandler(Event::Request &req);
+      void responseHandler(HTTP::Request &req);
     };
   }
 }

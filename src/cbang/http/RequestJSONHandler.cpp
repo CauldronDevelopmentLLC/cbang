@@ -29,18 +29,42 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "RequestJSONHandler.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/json/Writer.h>
+#include <cbang/log/Logger.h>
 
-#include <cbang/enum/Compression.h>
+using namespace cb::HTTP;
+using namespace std;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+
+bool RequestJSONHandler::operator()(Request &req) {
+  try {
+    // Parse JSON message
+    JSON::ValuePtr msg = req.getJSONMessage();
+    if (msg.isNull()) msg = req.parseArgs();
+
+    // Log JSON call
+    LOG_DEBUG(5, "JSON Call: " << req.getURI().getPath() << '(' << *msg << ')');
+
+    // Dispatch JSON call
+    (*this)(req, msg);
+
+    // Send reply
+    req.reply();
+
+  } catch (const Exception &e) {
+    req.setContentType("application/json");
+
+    if (400 <= e.getCode() && e.getCode() < 600) {
+      LOG_WARNING(e.getMessages());
+      req.sendJSONError((Status::enum_t)e.getCode(), e.getMessage());
+
+    } else {
+      LOG_ERROR(e);
+      req.sendError(e);
+    }
   }
+
+  return true;
 }

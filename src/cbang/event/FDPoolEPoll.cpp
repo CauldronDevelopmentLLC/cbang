@@ -328,7 +328,7 @@ void FDPoolEPoll::open(FD &fd) {
 }
 
 
-void FDPoolEPoll::flush(int fd, std::function <void ()> cb) {
+void FDPoolEPoll::flush(int fd, function <void ()> cb) {
   if (fd < 0) THROW("Invalid fd " << fd);
   if (flushing.find(fd) != flushing.end())
     THROW("FD " << fd << " already flushing");

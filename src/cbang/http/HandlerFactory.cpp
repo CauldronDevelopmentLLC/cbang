@@ -29,18 +29,43 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "HandlerFactory.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "MethodMatcher.h"
+#include "RE2PatternMatcher.h"
+#include "ResourceHandler.h"
+#include "FileHandler.h"
+#include "IndexHandler.h"
 
-#include <cbang/enum/Compression.h>
+using namespace std;
+using namespace cb;
+using namespace cb::HTTP;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+
+SmartPointer<RequestHandler>
+HandlerFactory::createMatcher
+(unsigned methods, const string &pattern,
+ const SmartPointer<RequestHandler> &child) {
+  SmartPointer<RequestHandler> handler = child;
+
+  if (!pattern.empty()) handler = new RE2PatternMatcher(pattern, handler);
+
+  if (methods != (unsigned)Method::HTTP_ANY)
+    handler = new MethodMatcher(methods, handler);
+
+  return handler;
+}
+
+
+SmartPointer<RequestHandler>
+HandlerFactory::createHandler(const Resource &res) {
+  SmartPointer<RequestHandler> handler = new ResourceHandler(res);
+  return autoIndex ? new IndexHandler(handler) : handler;
+}
+
+
+SmartPointer<RequestHandler>
+HandlerFactory::createHandler(const string &path) {
+  SmartPointer<RequestHandler> handler = new FileHandler(path);
+  return autoIndex ? new IndexHandler(handler) : handler;
 }

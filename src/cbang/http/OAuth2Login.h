@@ -31,16 +31,44 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Method.h"
+#include "Status.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/SmartPointer.h>
+
+#include <string>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  class OAuth2;
+  namespace JSON {class Value;}
+
+  namespace HTTP {
+    class Client;
+    class Request;
+
+    class OAuth2Login : public Method, public Status {
+      Client &client;
+      SmartPointer<OAuth2> oauth2;
+
+    public:
+      OAuth2Login(Client &client, const SmartPointer<OAuth2> &oauth2 = 0);
+      virtual ~OAuth2Login();
+
+      const SmartPointer<OAuth2> &getOAuth2() {return oauth2;}
+      void setOAuth2(const SmartPointer<OAuth2> &oauth2)
+      {this->oauth2 = oauth2;}
+
+      virtual void processProfile(Request &req,
+                                  const SmartPointer<JSON::Value> &profile) = 0;
+
+      bool authorize(Request &req, const std::string &state);
+      bool authRedirect(Request &req, const std::string &state);
+      bool requestToken(Request &req, const std::string &state,
+                        const std::string &redirect_uri = std::string());
+
+    protected:
+      void verifyToken(Request &req, const std::string &response);
+    };
   }
 }

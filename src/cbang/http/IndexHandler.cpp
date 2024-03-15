@@ -29,18 +29,32 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "IndexHandler.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Request.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/os/SystemUtilities.h>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+using namespace std;
+using namespace cb;
+using namespace cb::HTTP;
+
+
+bool IndexHandler::operator()(Request &req) {
+  URI uri = req.getURI();
+
+  if (String::endsWith(uri.getPath(), "/")) {
+    uri.setPath(uri.getPath() + filename);
+    req.setURI(uri);
   }
+
+  if ((*child)(req)) return true;
+
+  if (SystemUtilities::extension(uri.getPath()).empty()) {
+    uri.setPath(uri.getPath() + "/" + filename);
+    req.setURI(uri);
+    return (*child)(req);
+  }
+
+  return false;
 }

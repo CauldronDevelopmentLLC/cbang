@@ -29,18 +29,41 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "URLPatternMatcher.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/String.h>
 
-#include <cbang/enum/Compression.h>
+using namespace std;
+using namespace cb::HTTP;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+
+URLPatternMatcher::URLPatternMatcher
+(const string &pattern, const cb::SmartPointer<RequestHandler> &child) :
+  RE2PatternMatcher(toRE2Pattern(pattern), child) {}
+
+
+string URLPatternMatcher::toRE2Pattern(const string &pattern) {
+  if (!pattern.empty() && pattern[0] == '^') return pattern;
+
+  vector<string> parts;
+  String::tokenize(pattern, parts, "/");
+
+  string rePattern;
+  for (unsigned i = 0; i < parts.size(); i++)
+    if (1 < parts[i].size() && parts[i][0] == ':') {
+      size_t end;
+
+      for (end = 1; end < parts[i].size(); end++) {
+        char c = parts[i][end];
+        if (!isalnum(c) && c != '-' && c != '_') break;
+      }
+
+      string part = parts[i].substr(1, end - 1);
+      string tail = parts[i].substr(end);
+
+      rePattern += "/(?P<" + part + ">[^/]*)" + tail;
+
+    } else rePattern += "/" + parts[i];
+
+  return rePattern;
 }

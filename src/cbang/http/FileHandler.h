@@ -31,16 +31,32 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/time/Time.h>
+
+#include <string>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class Request;
+
+    class FileHandler : public RequestHandler {
+      std::string root;
+      unsigned pathPrefix;
+      uint64_t timeout;
+      bool directory;
+
+    public:
+      FileHandler(const std::string &root, unsigned pathPrefix = 0,
+                  uint64_t timeout = Time::SEC_PER_HOUR);
+
+      void setTimeout(uint64_t timeout) {this->timeout = timeout;}
+      uint64_t getTimeout() const {return timeout;}
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

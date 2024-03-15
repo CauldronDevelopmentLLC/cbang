@@ -29,18 +29,41 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "RequestErrorHandler.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/Catch.h>
+#include <cbang/log/Logger.h>
 
-#include <cbang/enum/Compression.h>
+using namespace std;
+using namespace cb::HTTP;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+
+bool RequestErrorHandler::operator()(Request &req) {
+  try {
+    if (!child(req)) req.sendError(Status::HTTP_NOT_FOUND);
+
+  } catch (cb::Exception &e) {
+    if (400 <= e.getCode() && e.getCode() < 600) {
+      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
+                  << e.getMessages());
+      req.reply((Status::enum_t)e.getCode());
+
+    } else {
+      if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessages());
+      LOG_DEBUG(3, e);
+      req.sendError(e);
+    }
+
+  } catch (exception &e) {
+    LOG_ERROR(e.what());
+    req.sendError(e);
+
+  } catch (...) {
+    LOG_ERROR(Status(Status::HTTP_INTERNAL_SERVER_ERROR)
+              .getDescription());
+    req.sendError(Status::HTTP_INTERNAL_SERVER_ERROR);
   }
+
+  return true;
 }

@@ -31,16 +31,64 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Request.h"
+#include "Enum.h"
 
-#include <cbang/enum/Compression.h>
+#include <functional>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    struct RequestHandler : public Enum {
+      virtual ~RequestHandler() {}
+      virtual bool operator()(Request &req) {return false;};
+    };
+
+
+    typedef SmartPointer<RequestHandler> RequestHandlerPtr;
+
+
+    struct RequestFunctionHandler : public RequestHandler {
+      typedef std::function<bool (Request &)> callback_t;
+      callback_t cb;
+
+      RequestFunctionHandler(callback_t cb) : cb(cb) {
+        if (!cb) CBANG_THROW("Callback cannot be NULL");
+      }
+
+      // From RequestHandler
+      bool operator()(Request &req) override {return cb(req);}
+    };
+
+
+    template <class T>
+    struct RequestMemberHandler : public RequestHandler {
+      typedef bool (T::*member_t)(Request &);
+      T *obj;
+      member_t member;
+
+      RequestMemberHandler(T *obj, member_t member) :
+        obj(obj), member(member) {
+        if (!obj) CBANG_THROW("Object cannot be NULL");
+        if (!member) CBANG_THROW("Member cannot be NULL");
+      }
+
+      // From RequestHandler
+      bool operator()(Request &req) override {return (*obj.*member)(req);}
+    };
+
+
+    template <class T>
+    struct RequestRecastHandler : public RequestHandler {
+      typedef bool (T::*member_t)();
+      member_t member;
+
+      RequestRecastHandler(member_t member) : member(member) {
+        if (!member) CBANG_THROW("Member cannot be NULL");
+      }
+
+      // From RequestHandler
+      bool operator()(Request &req) override {return (req.cast<T>().*member)();}
+    };
   }
 }

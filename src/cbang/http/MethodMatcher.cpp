@@ -29,18 +29,24 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "MethodMatcher.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+using namespace cb::HTTP;
 
-#include <cbang/enum/Compression.h>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+MethodMatcher::MethodMatcher(
+  unsigned methods, const cb::SmartPointer<RequestHandler> &child) :
+  methods(methods), child(child) {
+  if (child.isNull()) THROW("Child cannot be NULL");
+}
+
+
+bool MethodMatcher::match(Method method) const {
+  return methods & method;
+}
+
+
+bool MethodMatcher::operator()(Request &req) {
+  return match(req.getMethod()) && (*child)(req);
 }

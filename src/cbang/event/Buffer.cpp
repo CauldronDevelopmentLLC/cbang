@@ -264,7 +264,7 @@ void Buffer::commit(vector<iovec> &space) {
 void Buffer::commit(iovec &space) {evbuffer_commit_space(evb, &space, 1);}
 
 
-bool Buffer::readLine(std::string &s, unsigned maxLength, const string &eol) {
+bool Buffer::readLine(string &s, unsigned maxLength, const string &eol) {
   int index = indexOf(eol);
   if (index < 0 || (maxLength && maxLength < (unsigned)index)) return false;
 
@@ -334,7 +334,7 @@ void Buffer::callback(int added, int deleted, int orig) {
 }
 
 
-int Buffer::indexOf(const std::string &s) const {
+int Buffer::indexOf(const string &s) const {
   struct evbuffer_ptr ptr = evbuffer_search(evb, s.c_str(), s.length(), 0);
   return ptr.pos;
 }

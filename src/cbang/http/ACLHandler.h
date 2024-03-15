@@ -31,16 +31,27 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <functional>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  class ACLSet;
+
+  namespace HTTP {
+    class Request;
+
+    class ACLHandler : public RequestHandler {
+      const ACLSet &aclSet;
+      std::function<void (Request &)> cb;
+
+    public:
+      ACLHandler(const ACLSet &aclSet, std::function<void (Request &)> cb = 0) :
+        aclSet(aclSet), cb(cb) {}
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

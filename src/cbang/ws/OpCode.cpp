@@ -29,18 +29,6 @@
 
 \******************************************************************************/
 
-#pragma once
-
-#include "EventFlag.h"
-#include "ConnectionError.h"
-
-#include <cbang/enum/Compression.h>
-
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
-}
+#define CBANG_ENUM_IMPL
+#include "OpCode.h"
+#include <cbang/enum/MakeEnumerationImpl.def>

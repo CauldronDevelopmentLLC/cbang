@@ -31,16 +31,26 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/Exception.h>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class IndexHandler : public RequestHandler {
+      SmartPointer<RequestHandler> child;
+      std::string filename;
+
+    public:
+      IndexHandler(const SmartPointer<RequestHandler> &child,
+                       const std::string &filename = "index.html") :
+        child(child), filename(filename) {
+        if (!child) CBANG_THROW("Child handler cannot be NULL");
+      }
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

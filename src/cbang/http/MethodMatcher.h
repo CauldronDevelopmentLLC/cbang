@@ -31,16 +31,27 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RequestHandler.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/SmartPointer.h>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class MethodMatcher : public RequestHandler {
+      unsigned methods;
+      SmartPointer<RequestHandler> child;
+
+    public:
+      MethodMatcher(unsigned methods,
+                        const SmartPointer<RequestHandler> &child);
+
+      const SmartPointer<RequestHandler> &getChild() const {return child;}
+
+      bool match(Method method) const;
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
+    };
   }
 }

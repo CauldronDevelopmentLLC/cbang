@@ -115,7 +115,7 @@ void ConcurrentPool::run() {
       } catch (const Exception &e) {
         task->setException(e);
 
-      } catch (const std::exception &e) {
+      } catch (const exception &e) {
         task->setException(string(e.what()));
 
       } catch (...) {

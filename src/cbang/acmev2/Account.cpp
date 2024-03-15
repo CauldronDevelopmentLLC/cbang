@@ -48,15 +48,15 @@
 
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
-#include <cbang/event/Request.h>
-#include <cbang/event/HTTPHandlerGroup.h>
+#include <cbang/http/Request.h>
+#include <cbang/http/HandlerGroup.h>
 
 using namespace cb;
 using namespace cb::ACMEv2;
 using namespace std;
 
 
-Account::Account(Event::Client &client) :
+Account::Account(HTTP::Client &client) :
   client(client),
   retryEvent(client.getBase()
              .newEvent(this, &Account::next, EF::EVENT_NO_SELF_REF)) {}
@@ -78,7 +78,7 @@ void Account::addOptions(Options &options) {
 
 void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
                          const string &domains, const string &clientChain,
-                         Event::HTTPHandlerGroup &group, listener_t cb,
+                         HTTP::HandlerGroup &group, listener_t cb,
                          unsigned updateRate) {
   SmartPointer<ACMEv2::KeyCert> keyCert = new KeyCert(domains, clientKey);
   if (!clientChain.empty()) keyCert->getChain().parse(clientChain);
@@ -98,8 +98,8 @@ void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
 void Account::addListener(listener_t listener) {listeners.push_back(listener);}
 
 
-void Account::addHandler(Event::HTTPHandlerGroup &group) {
-  group.addMember(Event::RequestMethod::HTTP_GET,
+void Account::addHandler(HTTP::HandlerGroup &group) {
+  group.addMember(HTTP::Method::HTTP_GET,
                   "^/\\.well-known/acme-challenge/.*", this,
                   &Account::challengeRequest);
 }
@@ -302,7 +302,7 @@ string Account::getFinalizePayload() const {
 }
 
 
-bool Account::challengeRequest(Event::Request &req) {
+bool Account::challengeRequest(HTTP::Request &req) {
   if (matchChallengePath(req.getURI().getPath())) {
     req.reply(getKeyAuthorization());
     if (retryEvent->isPending()) retryEvent->activate();
@@ -333,7 +333,7 @@ string Account::getProblemString(const JSON::Value &problem) const {
 }
 
 
-void Account::call(const string &url, Event::RequestMethod method) {
+void Account::call(const string &url, HTTP::Method method) {
   auto req = client.call(getURL(url), method, this, &Account::responseHandler);
   client.send(req);
 }
@@ -431,7 +431,7 @@ void Account::next() {
 }
 
 
-void Account::retry(Event::Request &req, double delay) {
+void Account::retry(HTTP::Request &req, double delay) {
   // Check for rate limit
   if (req.inHas("Retry-After")) {
     string s = req.inGet("Retry-After");
@@ -461,7 +461,7 @@ void Account::fail(double delay) {
 
 
 
-void Account::responseHandler(Event::Request &req) {
+void Account::responseHandler(HTTP::Request &req) {
   if (!req.isOk()) LOG_ERROR(req.getInput());
   else try {
       LOG_DEBUG(5, "state=" << state << " response=" << req.getInput());
@@ -480,7 +480,7 @@ void Account::responseHandler(Event::Request &req) {
         return;
       }
 
-      if (req.getResponseCode() == Event::HTTPStatus::HTTP_TOO_MANY_REQUESTS)
+      if (req.getResponseCode() == HTTP::Status::HTTP_TOO_MANY_REQUESTS)
         return fail(Time::SEC_PER_HOUR);
 
       switch (state) {

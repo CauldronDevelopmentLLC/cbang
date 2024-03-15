@@ -31,16 +31,19 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "RE2PatternMatcher.h"
 
-#include <cbang/enum/Compression.h>
+#include <set>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  namespace HTTP {
+    class URLPatternMatcher : public RE2PatternMatcher {
+    public:
+      URLPatternMatcher(const std::string &pattern,
+                            const SmartPointer<RequestHandler> &child);
+
+      static std::string toRE2Pattern(const std::string &pattern);
+    };
   }
 }

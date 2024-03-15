@@ -31,16 +31,43 @@
 
 #pragma once
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include "Request.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/SmartPointer.h>
+
+#include <functional>
+
 
 namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+  class URI;
+
+  namespace HTTP {
+    class Client;
+    class HTTPHandler;
+    class ConnOut;
+
+    class OutgoingRequest : public Request {
+    public:
+      typedef std::function<void (Request &)> callback_t;
+      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+
+    protected:
+      Client &client;
+      callback_t cb;
+
+    public:
+      OutgoingRequest(Client &client, const SmartPointer<Conn> &connection,
+                      const URI &uri, Method method, callback_t cb);
+
+      void setCallback(callback_t cb) {this->cb = cb;}
+
+      using Request::send;
+      void send();
+
+      // From Request
+      void onResponse(Event::ConnectionError error) override;
+    };
+
+    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }

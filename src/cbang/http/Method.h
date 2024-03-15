@@ -29,18 +29,30 @@
 
 \******************************************************************************/
 
-#pragma once
+#ifndef CBANG_ENUM_EXPAND
+#ifndef CBANG_HTTP_METHOD_H
+#define CBANG_HTTP_METHOD_H
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#define CBANG_ENUM_NAME Method
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_NAMESPACE2 HTTP
+#define CBANG_ENUM_PATH cbang/http
+#define CBANG_ENUM_PREFIX 5 // The length of the HTTP_ prefix
+#include <cbang/enum/MakeEnumeration.def>
 
-#include <cbang/enum/Compression.h>
+#endif // CBANG_HTTP_METHOD_H
+#else // CBANG_ENUM_EXPAND
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
-}
+CBANG_ENUM_EXPAND(HTTP_UNKNOWN,      0)
+CBANG_ENUM_EXPAND(HTTP_ANY,         ~0)
+CBANG_ENUM_EXPAND(HTTP_OPTIONS, 1 << 0)
+CBANG_ENUM_EXPAND(HTTP_GET,     1 << 1)
+CBANG_ENUM_EXPAND(HTTP_HEAD,    1 << 2)
+CBANG_ENUM_EXPAND(HTTP_POST,    1 << 3)
+CBANG_ENUM_EXPAND(HTTP_PUT,     1 << 4)
+CBANG_ENUM_EXPAND(HTTP_DELETE,  1 << 5)
+CBANG_ENUM_EXPAND(HTTP_TRACE,   1 << 6)
+CBANG_ENUM_EXPAND(HTTP_CONNECT, 1 << 7)
+CBANG_ENUM_EXPAND(HTTP_PATCH,   1 << 8)
+
+#endif // CBANG_ENUM_EXPAND

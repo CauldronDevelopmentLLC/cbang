@@ -29,18 +29,27 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "ResourceHandler.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/String.h>
 
-#include <cbang/enum/Compression.h>
+using namespace cb;
+using namespace cb::HTTP;
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
-  }
+
+bool ResourceHandler::operator()(Request &req) {
+  const Resource *res;
+
+  if (root.isDirectory()) res = root.find(req.getURI().getPath());
+  else res = &root;
+
+  if (!res || res->isDirectory()) return false;
+
+  req.reply(HTTP_OK, res->getData(), res->getLength());
+
+  if (!req.outHas("Cache-Control"))
+    req.outSet("Cache-Control", "max-age=" + String(timeout));
+
+  return true;
 }

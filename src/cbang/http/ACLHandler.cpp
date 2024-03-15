@@ -29,18 +29,50 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "ACLHandler.h"
+#include "Request.h"
 
-#include "EventFlag.h"
-#include "ConnectionError.h"
+#include <cbang/util/ACLSet.h>
+#include <cbang/log/Logger.h>
 
-#include <cbang/enum/Compression.h>
+#include <string>
 
-namespace cb {
-  namespace Event {
-    class Enum :
-      public EventFlag::Enum,
-      public ConnectionError::Enum,
-      public Compression::Enum {};
+using namespace std;
+using namespace cb;
+using namespace cb::HTTP;
+
+
+bool ACLHandler::operator()(Request &req) {
+  string path = req.getURI().getPath();
+  string user = req.getUser();
+  string group;
+  bool allow;
+
+  if (user.empty())
+    allow = aclSet.allowGroup(path, group = "unauthenticated");
+
+  else {
+    allow = aclSet.allow(path, user);
+    if (!allow) allow = aclSet.allowGroup(path, group = "authenticated");
+    if (!allow) allow = aclSet.allowGroup(path, group = "unauthenticated");
   }
+
+  if (!allow && req.getSession().isSet()) {
+    auto groups = req.getSession()->getGroups();
+    for (unsigned i = 0; i < groups.size(); i++)
+      if (aclSet.allowGroup(path, group = groups[i])) {allow = true; break;}
+  }
+
+  LOG_INFO(allow ? 5 : 3, "allow(" << path << ", "
+           << (user.empty() ? "@" + group : user) << ", "
+           << req.getClientAddr() << ") = "
+           << (allow ? "true" : "false"));
+
+  if (!allow) {
+    if (cb) cb(req);
+    else req.reply(HTTP_UNAUTHORIZED);
+    return true;
+  }
+
+  return false;
 }
