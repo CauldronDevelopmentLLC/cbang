@@ -30,11 +30,9 @@
 \******************************************************************************/
 
 #include "DynamicLibrary.h"
-
 #include "SysError.h"
 
 #include <cbang/Exception.h>
-#include <cbang/Zap.h>
 
 #undef CBANG_EXCEPTION
 #define CBANG_EXCEPTION DynamicLibraryException
@@ -94,7 +92,7 @@ DynamicLibrary::~DynamicLibrary() {
   if (pri->handle) dlclose(pri->handle);
 #endif
 
-  zap(pri);
+  delete pri;
 }
 
 

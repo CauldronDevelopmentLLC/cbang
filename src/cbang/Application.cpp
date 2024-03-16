@@ -31,7 +31,6 @@
 
 #include "Application.h"
 
-#include <cbang/Zap.h>
 #include <cbang/Info.h>
 #include <cbang/Catch.h>
 
@@ -43,7 +42,6 @@
 #include <cbang/time/Time.h>
 
 #include <cbang/util/Resource.h>
-
 #include <cbang/log/Logger.h>
 #include <cbang/config/Option.h>
 #include <cbang/json/Writer.h>
@@ -166,7 +164,7 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
 
 
 Application::~Application() {
-  zap(enumMan);
+  delete enumMan;
 
 #ifdef DEBUG_LEAKS
   // Deallocate singletons

@@ -32,8 +32,6 @@
 #include "Semaphore.h"
 
 #include <cbang/Exception.h>
-#include <cbang/Zap.h>
-
 #include <cbang/time/Timer.h>
 #include <cbang/os/SysError.h>
 
@@ -125,12 +123,12 @@ Semaphore::~Semaphore() {
 
   } else if (p->sem) {
     sem_destroy(p->sem);
-    zap(p->sem);
+    delete p->sem;
   }
 #endif // __APPLE__
 #endif // _WIN32
 
-  zap(p);
+  delete p;
 }
 
 
