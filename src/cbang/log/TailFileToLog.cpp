@@ -100,6 +100,4 @@ void TailFileToLog::run() {
 }
 
 
-void TailFileToLog::log() {
-  LOG(logDomain, logLevel, prefix + buffer);
-}
+void TailFileToLog::log() {LOG(logDomain, logLevel, prefix + buffer);}
