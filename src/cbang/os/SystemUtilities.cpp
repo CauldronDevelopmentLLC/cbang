@@ -104,7 +104,7 @@ namespace fs = boost::filesystem;
 namespace {
   SmartPointer<iostream> defaultCreateFile(
     const string &path, ios::openmode mode) {
-    return new fstream(path, mode);
+    return new fstream(path, mode | ios::binary);
   }
 }
 
