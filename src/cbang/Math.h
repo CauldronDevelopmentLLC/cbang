@@ -37,7 +37,7 @@
 
 namespace cb {
   namespace Math {
-    static const double PI = 3.14159265358979323846;
+    constexpr double PI = 3.14159265358979323846;
 
     inline static double nextUp(double x) {
       return std::nextafter(x, std::numeric_limits<double>::infinity());
