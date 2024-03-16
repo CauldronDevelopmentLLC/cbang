@@ -98,7 +98,7 @@ Base64::Base64(const char *pad, const char *a, const char *b, unsigned width) :
 
 
 string Base64::encode(const string &s) const {
-  return encode(s.c_str(), s.length());
+  return encode(s.data(), s.length());
 }
 
 

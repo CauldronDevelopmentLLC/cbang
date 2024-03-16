@@ -91,7 +91,7 @@ Client::RequestPtr Client::call(
 
 Client::RequestPtr Client::call
 (const URI &uri, Method method, const string &data, callback_t cb) {
-  return call(uri, method, CPP_TO_C_STR(data), data.length(), cb);
+  return call(uri, method, data.data(), data.length(), cb);
 }
 
 

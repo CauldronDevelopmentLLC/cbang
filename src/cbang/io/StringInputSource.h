@@ -41,6 +41,6 @@ namespace cb {
   public:
     StringInputSource(const std::string &s,
                       const std::string &name = "<memory>") :
-      InputSource(CBANG_CPP_TO_C_STR(s), s.length(), name) {}
+      InputSource(s.data(), s.length(), name) {}
   };
 }

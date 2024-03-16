@@ -295,7 +295,7 @@ void Buffer::add(const char *data, unsigned length) {
 
 
 void Buffer::add(const char *s) {add(s, strlen(s));}
-void Buffer::add(const string &s) {add(CBANG_CPP_TO_C_STR(s), s.length());}
+void Buffer::add(const string &s) {add(s.data(), s.length());}
 
 
 void Buffer::addFile(const string &path) {
@@ -322,11 +322,7 @@ void Buffer::prepend(const char *data, unsigned length) {
 
 
 void Buffer::prepend(const char *s) {prepend(s, strlen(s));}
-
-
-void Buffer::prepend(const string &s) {
-  prepend(CBANG_CPP_TO_C_STR(s), s.length());
-}
+void Buffer::prepend(const string &s) {prepend(s.data(), s.length());}
 
 
 void Buffer::callback(int added, int deleted, int orig) {
@@ -335,6 +331,6 @@ void Buffer::callback(int added, int deleted, int orig) {
 
 
 int Buffer::indexOf(const string &s) const {
-  struct evbuffer_ptr ptr = evbuffer_search(evb, s.c_str(), s.length(), 0);
+  auto ptr = evbuffer_search(evb, s.data(), s.length(), 0);
   return ptr.pos;
 }

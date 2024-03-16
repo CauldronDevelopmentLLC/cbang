@@ -132,7 +132,7 @@ v8::Local<v8::String> Value::createString(const char *s, unsigned length) {
 
 
 v8::Local<v8::String> Value::createString(const string &s) {
-  return createString(s.c_str(), s.length());
+  return createString(s.data(), s.length());
 }
 
 

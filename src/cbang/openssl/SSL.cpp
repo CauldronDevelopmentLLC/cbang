@@ -332,7 +332,7 @@ int cb::SSL::passwordCallback(char *buf, int num, int rwflags, void *data) {
 
   string pass = SecurityUtilities::getpass(msg);
 
-  strncpy(buf, pass.c_str(), pass.length());
+  strncpy(buf, pass.data(), pass.length());
   return pass.length();
 }
 

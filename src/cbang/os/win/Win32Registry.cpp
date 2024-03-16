@@ -184,7 +184,7 @@ void Win32Registry::set(const string &path, uint64_t value) {
 
 
 void Win32Registry::set(const string &path, const string &value) {
-  setRegKey(path, REG_SZ, value.c_str(), value.length() + 1);
+  setRegKey(path, REG_SZ, value.data(), value.length() + 1);
 }
 
 

@@ -72,7 +72,7 @@ namespace {
       string pw = (*(PasswordCallback *)cb)(rwflag, (unsigned)size);
 
       int length = std::min(size, (int)pw.length());
-      memcpy(buf, pw.c_str(), length);
+      memcpy(buf, pw.data(), length);
       return length;
 
     } CATCH_ERROR;
@@ -95,7 +95,7 @@ KeyPair::KeyPair() {
 KeyPair::KeyPair(const string &key, mac_key_t type, ENGINE *e) {
   this->key =
     EVP_PKEY_new_mac_key(type == HMAC_KEY ? EVP_PKEY_HMAC : EVP_PKEY_CMAC,
-                         e, (uint8_t *)key.c_str(), key.length());
+                         e, (uint8_t *)key.data(), key.length());
 
   if (!this->key) THROW("Failed to create MAC key: " << SSL::getErrorStr());
 }

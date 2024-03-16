@@ -293,7 +293,7 @@ void Certificate::addExtensionAlias(const string &alias, const string &name) {
 
 
 bool Certificate::checkHost(const string &hostname) const {
-  int ret = X509_check_host(cert, hostname.c_str(), hostname.length(), 0, 0);
+  int ret = X509_check_host(cert, hostname.data(), hostname.length(), 0, 0);
   if (ret == -1) THROW("Failed to check certificate for host '" << hostname
                        << "': " << SSL::getErrorStr());
   return ret;
@@ -301,7 +301,7 @@ bool Certificate::checkHost(const string &hostname) const {
 
 
 bool Certificate::checkEmail(const string &email) const {
-  int ret = X509_check_email(cert, email.c_str(), email.length(), 0);
+  int ret = X509_check_email(cert, email.data(), email.length(), 0);
   if (ret == -1) THROW("Failed to check certificate for email '" << email
                        << "': " << SSL::getErrorStr());
   return ret;

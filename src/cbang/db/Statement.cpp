@@ -51,7 +51,7 @@ Statement::Statement(Database &db, const string &sql) :
 
   LOG_DEBUG(5, "SQL: " << sql);
 
-  if (sqlite3_prepare_v2(db.getDB(), sql.c_str(), sql.length(), &stmt, 0))
+  if (sqlite3_prepare_v2(db.getDB(), sql.data(), sql.length(), &stmt, 0))
     THROW("Failed to prepare statement: " << sql << ": "
            << sqlite3_errmsg(db.getDB()));
 }
