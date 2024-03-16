@@ -30,7 +30,6 @@
 \******************************************************************************/
 
 #include "Reader.h"
-
 #include "HandlerFactory.h"
 #include "Adapter.h"
 #include "SkipHandler.h"
@@ -38,10 +37,7 @@
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-#include <cbang/Zap.h>
-
 #include <cbang/log/Logger.h>
-
 #include <cbang/os/SystemUtilities.h>
 
 using namespace std;
@@ -66,9 +62,7 @@ Reader::Reader(bool skipRoot) :
 }
 
 
-Reader::~Reader() {
-  zap(xIncludeHandler);
-}
+Reader::~Reader() {delete xIncludeHandler;}
 
 
 void Reader::read(const string &filename, Handler *handler) {

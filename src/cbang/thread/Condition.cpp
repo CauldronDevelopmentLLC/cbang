@@ -34,8 +34,6 @@
 #include "SmartLock.h"
 
 #include <cbang/Exception.h>
-#include <cbang/Zap.h>
-
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
@@ -88,8 +86,7 @@ Condition::~Condition() {
 #ifndef _WIN32 // pthreads
   if (p) pthread_cond_destroy(&p->cond);
 #endif
-
-  zap(p);
+  delete p;
 }
 
 void Condition::wait() const {

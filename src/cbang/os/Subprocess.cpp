@@ -30,7 +30,6 @@
 \******************************************************************************/
 
 #include "Subprocess.h"
-
 #include "SystemUtilities.h"
 #include "SysError.h"
 #include "SystemInfo.h"
@@ -38,8 +37,6 @@
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
 #include <cbang/String.h>
-#include <cbang/Zap.h>
-
 #include <cbang/time/Timer.h>
 #include <cbang/log/Logger.h>
 
@@ -116,7 +113,7 @@ Subprocess::Subprocess() : p(new Private) {
 
 Subprocess::~Subprocess() {
   closeHandles();
-  zap(p);
+  delete p;
 }
 
 
