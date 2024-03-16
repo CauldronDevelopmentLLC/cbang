@@ -34,7 +34,7 @@
 #include "Vector.h"
 #include "AxisAngle.h"
 
-#include <cbang/Math.h>
+#include <cmath>
 
 
 namespace cb {
@@ -55,11 +55,11 @@ namespace cb {
     Quaternion(const AxisAngle<T> &aa) {
       double hAngle = aa.angle() / 2;
       Vector3D v = aa.getVector().normalize();
-      T s = sin(hAngle);
+      T s = std::sin(hAngle);
       x() = v.x() * s;
       y() = v.y() * s;
       z() = v.z() * s;
-      w() = cos(hAngle);
+      w() = std::cos(hAngle);
     }
 
     const T &w() const {return data[3];}
@@ -69,8 +69,8 @@ namespace cb {
 
     AxisAngle<T> toAxisAngle() const {
       if (!w()) return AxisAngle<T>();
-      T s = sqrt(1 - w() * w());
-      return AxisAngle<T>(2 * acos(w()), x() / s, y() / s, z() / s);
+      T s = std::sqrt(1 - w() * w());
+      return AxisAngle<T>(2 * std::acos(w()), x() / s, y() / s, z() / s);
     }
 
     Vector<3, T> rotate(const Vector<3, T> &p) const {

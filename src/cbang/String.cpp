@@ -30,22 +30,21 @@
 \******************************************************************************/
 
 #include "String.h"
-
-#include "Math.h"
 #include "SStream.h"
 #include "Errors.h"
 
 #include <cbang/util/Regex.h>
 
+#include <algorithm>
+#include <limits>
+#include <locale>
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
 #include <cstdarg>
 #include <cctype>
-#include <algorithm>
-#include <limits>
-#include <locale>
 #include <cstdarg>
+#include <cmath>
 
 using namespace std;
 using namespace cb;

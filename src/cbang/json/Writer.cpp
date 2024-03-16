@@ -35,11 +35,11 @@
 
 #include <cbang/String.h>
 #include <cbang/SStream.h>
-#include <cbang/Math.h>
 
 #include <cctype>
 #include <iomanip>
 #include <sstream>
+#include <cmath>
 
 
 using namespace std;
