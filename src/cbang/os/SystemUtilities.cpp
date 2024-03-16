@@ -42,10 +42,10 @@
 #include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
 #include <cbang/log/Logger.h>
-#include <cbang/util/SmartLock.h>
+#include <cbang/thread/SmartLock.h>
 #include <cbang/net/URI.h>
 #include <cbang/io/File.h>
-#include <cbang/iostream/CompressionFilter.h>
+#include <cbang/comp/CompressionFilter.h>
 #include <cbang/boost/IOStreams.h>
 
 #include <cerrno>

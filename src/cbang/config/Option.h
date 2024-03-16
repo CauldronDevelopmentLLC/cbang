@@ -35,7 +35,7 @@
 #include "Constraint.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/xml/XMLHandler.h>
+#include <cbang/xml/Handler.h>
 
 #include <ostream>
 #include <string>
@@ -260,9 +260,9 @@ namespace cb {
                     const std::string &delims = DEFAULT_DELIMS) const;
     void write(JSON::Sink &sink, bool config = false,
                const std::string &delims = DEFAULT_DELIMS) const;
-    void write(XMLHandler &handler, uint32_t flags) const;
-    void printHelpTOC(XMLHandler &handler, const std::string &prefix) const;
-    void printHelp(XMLHandler &handler, const std::string &prefix) const;
+    void write(XML::Handler &handler, uint32_t flags) const;
+    void printHelpTOC(XML::Handler &handler, const std::string &prefix) const;
+    void printHelp(XML::Handler &handler, const std::string &prefix) const;
 
   protected:
     void setDefault(const std::string &value, type_t type);

@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/util/Singleton.h>
+#include "Singleton.h"
 
 #include <cstdint>
 

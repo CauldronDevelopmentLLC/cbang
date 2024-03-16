@@ -566,8 +566,8 @@ void Option::write(JSON::Sink &sink, bool config, const string &delims) const {
 }
 
 
-void Option::write(XMLHandler &handler, uint32_t flags) const {
-  XMLAttributes attrs;
+void Option::write(XML::Handler &handler, uint32_t flags) const {
+  XML::Attributes attrs;
 
   string value = toString();
   if (isObscured() && !(flags & OBSCURED_FLAG)) value = string(5, '*');
@@ -581,10 +581,10 @@ void Option::write(XMLHandler &handler, uint32_t flags) const {
 }
 
 
-void Option::printHelpTOC(XMLHandler &handler, const string &prefix) const {
+void Option::printHelpTOC(XML::Handler &handler, const string &prefix) const {
   handler.startElement("li");
 
-  XMLAttributes attrs;
+  XML::Attributes attrs;
   attrs["href"] = "#" + prefix + "option-" + getName();
   handler.startElement("a", attrs);
   handler.text(getName());
@@ -594,8 +594,8 @@ void Option::printHelpTOC(XMLHandler &handler, const string &prefix) const {
 }
 
 
-void Option::printHelp(XMLHandler &handler, const string &prefix) const {
-  XMLAttributes attrs;
+void Option::printHelp(XML::Handler &handler, const string &prefix) const {
+  XML::Attributes attrs;
 
   attrs["class"] = "option";
   attrs["id"] = prefix + "option-" + getName();

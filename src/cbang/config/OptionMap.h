@@ -39,16 +39,16 @@
 #include "Option.h"
 #include "OptionActionSet.h"
 
-#include <cbang/xml/XMLHandlerFactory.h>
-#include <cbang/xml/XMLFileTracker.h>
+#include <cbang/xml/HandlerFactory.h>
+#include <cbang/xml/FileTracker.h>
 
 
 namespace cb {
   class Option;
 
   /// A base class for configuration option handling
-  class OptionMap : public XMLHandler {
-    XMLFileTracker fileTracker;
+  class OptionMap : public XML::Handler {
+    XML::FileTracker fileTracker;
 
     std::string xmlValue;
     bool xmlValueSet;
@@ -117,12 +117,12 @@ namespace cb {
     virtual const SmartPointer<Option> &get(const std::string &key) const = 0;
     virtual void alias(const std::string &name, const std::string &alias) = 0;
 
-    // From XMLHandler
+    // From XML::Handler
     void pushFile(const std::string &filename) override
     {fileTracker.pushFile(filename);}
     void popFile() override {fileTracker.popFile();}
     void startElement(
-      const std::string &name, const XMLAttributes &attrs) override;
+      const std::string &name, const XML::Attributes &attrs) override;
     void endElement(const std::string &name) override;
     void text(const std::string &text) override;
     void cdata(const std::string &data) override;

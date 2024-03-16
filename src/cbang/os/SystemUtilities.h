@@ -31,20 +31,16 @@
 
 #pragma once
 
-#include <cbang/SmartPointer.h>
+#include "ProcessPriority.h"
 
+#include <cbang/SmartPointer.h>
+#include <cbang/Math.h>
 #include <cbang/util/StringMap.h>
-#include <cbang/enum/ProcessPriority.h>
-#include <cbang/enum/Compression.h>
+#include <cbang/comp/Compression.h>
 
 #include <string>
-#include <limits>
 #include <functional>
 #include <cstdint>
-
-#if defined(_WIN32) && defined(max)
-#undef max
-#endif
 
 
 namespace cb {

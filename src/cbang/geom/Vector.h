@@ -42,14 +42,6 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
-#include <limits>
-
-#if defined(_WIN32) && defined(max)
-#undef max
-#endif
-#if defined(_WIN32) && defined(min)
-#undef min
-#endif
 
 
 namespace cb {
@@ -230,9 +222,9 @@ namespace cb {
     T angleBetween(const Vector<DIM, T> &v) const {
       if (DIM == 2) {
         T angle = atan2(v.y(), v.x()) - atan2(y(), x());
-        if (angle < 0) angle += 2 * M_PI;
+        if (angle < 0) angle += 2 * Math::PI;
 
-        return fmod(2 * M_PI - angle, 2 * M_PI);
+        return fmod(2 * Math::PI - angle, 2 * Math::PI);
       }
 
       return acos(normalize().dotProduct(v.normalize()));
@@ -453,7 +445,7 @@ namespace cb {
 
     bool isReal() const {
       for (unsigned i = 0; i < DIM; i++)
-        if (!cb::Math::isfinite(data[i])) return false;
+        if (!std::isfinite(data[i])) return false;
       return true;
     }
 

@@ -214,7 +214,7 @@ void Options::popCategory() {
 }
 
 
-void Options::write(XMLHandler &handler, uint32_t flags) const {
+void Options::write(XML::Handler &handler, uint32_t flags) const {
   categories_t::const_iterator it;
 
   for (it = categories.begin(); it != categories.end(); it++)
@@ -222,7 +222,7 @@ void Options::write(XMLHandler &handler, uint32_t flags) const {
 }
 
 
-void Options::printHelpTOC(XMLHandler &handler, const string &prefix) const {
+void Options::printHelpTOC(XML::Handler &handler, const string &prefix) const {
   handler.startElement("ul");
 
   categories_t::const_iterator it;
@@ -234,7 +234,7 @@ void Options::printHelpTOC(XMLHandler &handler, const string &prefix) const {
 }
 
 
-void Options::printHelp(XMLHandler &handler, const string &prefix) const {
+void Options::printHelp(XML::Handler &handler, const string &prefix) const {
   categories_t::const_iterator it;
 
   for (it = categories.begin(); it != categories.end(); it++)
@@ -277,11 +277,11 @@ const char *Options::getHelpStyle() const {
 }
 
 
-void Options::printHelpPage(XMLHandler &handler) const {
+void Options::printHelpPage(XML::Handler &handler) const {
   handler.startElement("html");
   handler.startElement("head");
 
-  XMLAttributes attrs;
+  XML::Attributes attrs;
   attrs["charset"] = "utf-8";
   handler.startElement("meta", attrs);
   handler.endElement("meta");

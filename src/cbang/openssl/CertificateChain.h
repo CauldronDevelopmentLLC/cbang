@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/iostream/Serializable.h>
+#include <cbang/util/Serializable.h>
 
 #include <iostream>
 

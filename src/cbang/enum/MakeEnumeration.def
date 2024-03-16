@@ -65,7 +65,7 @@
 
 #include <string>
 
-#include <cbang/enum/Enumeration.h>
+#include "Enumeration.h"
 
 namespace CBANG_ENUM_NAMESPACE {
 #ifdef CBANG_ENUM_NAMESPACE2

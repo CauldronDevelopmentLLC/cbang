@@ -29,7 +29,7 @@
 
 \******************************************************************************/
 
-#include <cbang/config/OptionProxy.h>
+#include "OptionProxy.h"
 
 #include <cbang/Exception.h>
 

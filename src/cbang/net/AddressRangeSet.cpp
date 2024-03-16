@@ -29,8 +29,6 @@
 
 \******************************************************************************/
 
-#undef DEBUG
-
 #include "AddressRangeSet.h"
 
 #include <cbang/String.h>

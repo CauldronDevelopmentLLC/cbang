@@ -76,10 +76,10 @@ if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 
 
 # Source
-subdirs = [
-    '', 'xml', 'util', 'debug', 'config', 'os', 'log', 'iostream', 'time',
-    'enum', 'net', 'buffer', 'tar', 'io', 'geom', 'parse', 'json', 'db',
-    'auth', 'js', 'gpu', 'pci']
+subdirs = [''] + '''
+  auth boost comp config db debug enum geom hw io js json log net os parse
+  thread time util xml
+'''.split()
 
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']
 if env.CBConfigEnabled('v8'): subdirs.append('js/v8')

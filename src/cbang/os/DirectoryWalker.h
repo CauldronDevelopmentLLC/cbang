@@ -31,12 +31,13 @@
 
 #pragma once
 
-#include <vector>
-#include <string>
+#include "Directory.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Regex.h>
-#include <cbang/os/Directory.h>
+
+#include <vector>
+#include <string>
 
 
 namespace cb {

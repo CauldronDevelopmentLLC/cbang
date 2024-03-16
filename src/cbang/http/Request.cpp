@@ -42,7 +42,7 @@
 #include <cbang/json/JSON.h>
 #include <cbang/time/Time.h>
 #include <cbang/util/Regex.h>
-#include <cbang/iostream/CompressionFilter.h>
+#include <cbang/comp/CompressionFilter.h>
 #include <cbang/boost/IOStreams.h>
 
 using namespace cb::HTTP;

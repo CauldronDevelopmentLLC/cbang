@@ -32,9 +32,9 @@
 #pragma once
 
 #include "Pipe.h"
+#include "ProcessPriority.h"
 
 #include <cbang/util/StringMap.h>
-#include <cbang/enum/ProcessPriority.h>
 
 #include <string>
 #include <iostream>

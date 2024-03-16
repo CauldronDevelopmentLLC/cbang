@@ -31,9 +31,10 @@
 
 #pragma once
 
+#include "Logger.h"
+
 #include <cbang/SmartPointer.h>
-#include <cbang/os/Thread.h>
-#include <cbang/log/Logger.h>
+#include <cbang/thread/Thread.h>
 
 #include <string>
 #include <iostream>

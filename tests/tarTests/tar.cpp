@@ -29,7 +29,7 @@
 
 \******************************************************************************/
 
-#include <cbang/tar/TarFileReader.h>
+#include <cbang/comp/TarFileReader.h>
 #include <cbang/Catch.h>
 
 #include <iostream>

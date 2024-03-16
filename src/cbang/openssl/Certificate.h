@@ -33,7 +33,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/String.h>
-#include <cbang/iostream/Serializable.h>
+#include <cbang/util/Serializable.h>
 
 #include <iostream>
 

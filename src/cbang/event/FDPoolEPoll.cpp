@@ -35,7 +35,7 @@
 
 #include "Event.h"
 
-#include <cbang/util/SmartLock.h>
+#include <cbang/thread/SmartLock.h>
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
 

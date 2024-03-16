@@ -29,9 +29,10 @@
 
 \******************************************************************************/
 
-#include <cbang/time/TimeInterval.h>
+#include "TimeInterval.h"
+#include "Time.h"
+
 #include <cbang/String.h>
-#include <cbang/time/Time.h>
 
 using namespace std;
 using namespace cb;

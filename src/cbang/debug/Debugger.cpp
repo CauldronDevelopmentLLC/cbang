@@ -34,7 +34,7 @@
 
 #include <cbang/config.h>
 #include <cbang/util/Singleton.h>
-#include <cbang/util/SmartLock.h>
+#include <cbang/thread/SmartLock.h>
 
 #include <stdexcept>
 #include <cstdlib>

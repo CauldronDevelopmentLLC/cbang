@@ -30,7 +30,7 @@
 \******************************************************************************/
 
 #include <cbang/openssl/Cipher.h>
-#include <cbang/iostream/CipherStream.h>
+#include <cbang/openssl/CipherStream.h>
 #include <cbang/os/SystemUtilities.h>
 
 #include <iostream>

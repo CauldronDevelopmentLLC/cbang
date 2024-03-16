@@ -41,8 +41,7 @@
 
 namespace cb {
   namespace JSON {class Value; class Sink;}
-
-  class XMLWriter;
+  namespace XML {class Writer;}
 
   class Info : public Singleton<Info> {
     // TODO Could probably replace this with cb::OrderedDict<>
@@ -90,7 +89,7 @@ namespace cb {
 
     std::ostream &print(std::ostream &stream, unsigned width = 80,
                         bool wrap = true) const;
-    void write(XMLWriter &writer) const;
+    void write(XML::Writer &writer) const;
     void writeList(JSON::Sink &sink) const;
     void write(JSON::Sink &sink) const;
   };
