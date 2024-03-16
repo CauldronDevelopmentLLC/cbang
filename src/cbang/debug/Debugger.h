@@ -35,23 +35,31 @@
 
 #include "StackTrace.h"
 
-#include <cbang/thread/Mutex.h>
+#include <cbang/thread/Lockable.h>
 #include <cbang/util/Singleton.h>
 
 
 namespace cb {
-  class Debugger : public Mutex, public SingletonBase {
+  class Mutex;
+
+  class Debugger : public Lockable, public SingletonBase {
   public:
     unsigned maxStack;
 
   protected:
-    static Mutex lock;
+    static Mutex mutex;
     static Debugger *singleton;
 
     Debugger() : maxStack(256) {}
 
   public:
     static Debugger &instance();
+
+    // From Lockable
+    bool lock(double timeout = -1) const override;
+    void unlock() const override;
+    bool tryLock() const override;
+
     static void printStackTrace(std::ostream &stream);
     static StackTrace getStackTrace();
 

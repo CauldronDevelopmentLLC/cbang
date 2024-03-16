@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/thread/Mutex.h>
+#include "Mutex.h"
 
 namespace cb {
   template <class T, unsigned firstID = 0>

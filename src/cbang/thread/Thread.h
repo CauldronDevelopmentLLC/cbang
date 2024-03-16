@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/util/UniqueID.h>
+#include "UniqueID.h"
 
 #include <atomic>
 #include <cstdint>
