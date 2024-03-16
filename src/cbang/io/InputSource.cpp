@@ -31,7 +31,6 @@
 
 #include "InputSource.h"
 #include "BufferDevice.h"
-#include "File.h"
 
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/util/ArrayDevice.h>
@@ -44,41 +43,31 @@ using namespace cb;
 
 
 InputSource::InputSource(IOBuffer &buffer, const string &name) :
-  Named(name), stream(new BufferStream(buffer)), length(buffer.getFill()) {}
+  Named(name), stream(new BufferStream(buffer)) {}
 
 
 InputSource::InputSource(const char *array, streamsize length,
                          const string &name) :
-  Named(name), stream(new ArrayStream<const char>(array, length)),
-  length(length) {}
+  Named(name), stream(new ArrayStream<const char>(array, length)) {}
 
 
 InputSource::InputSource(const string &filename) :
-  Named(filename), stream(SystemUtilities::iopen(filename)), length(-1) {}
+  Named(filename), stream(SystemUtilities::iopen(filename)) {}
 
 
-InputSource::InputSource(istream &stream, const string &name,
-                         streamsize length) :
-  Named(name), stream(SmartPointer<istream>::Phony(&stream)), length(length) {}
+InputSource::InputSource(istream &stream, const string &name) :
+  Named(name), stream(SmartPointer<istream>::Phony(&stream)) {}
 
 
-InputSource::InputSource(const SmartPointer<istream> &stream,
-                         const string &name, streamsize length) :
-  Named(name), stream(stream), length(length) {}
+InputSource::InputSource(
+  const SmartPointer<istream> &stream, const string &name) :
+  Named(name), stream(stream) {}
 
 
 InputSource::InputSource(const Resource &resource) :
   Named(resource.getName()),
   stream(new ArrayStream<const char>(resource.getData(), resource.getLength()))
 {}
-
-
-streamsize InputSource::getLength() const {
-  if (length == -1 && stream.isInstance<io::stream<FileDevice>>())
-    return (*stream.cast<io::stream<FileDevice>>())->size();
-
-  return length;
-}
 
 
 string InputSource::toString() const {

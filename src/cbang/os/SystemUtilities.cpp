@@ -43,7 +43,6 @@
 #include <cbang/time/Time.h>
 #include <cbang/log/Logger.h>
 #include <cbang/net/URI.h>
-#include <cbang/io/File.h>
 #include <cbang/comp/CompressionFilter.h>
 #include <cbang/boost/IOStreams.h>
 
@@ -100,6 +99,16 @@ using namespace cb;
 using namespace cb::SystemUtilities;
 
 namespace fs = boost::filesystem;
+
+
+namespace {
+  SmartPointer<iostream> defaultCreateFile(
+    const string &path, ios::openmode mode) {
+    return new fstream(path, mode);
+  }
+}
+
+static createFile_t createFile = defaultCreateFile;
 
 
 namespace cb {
@@ -570,6 +579,11 @@ namespace cb {
         if (!isDirectory(filename) || isLink(filename)) (void)unlink(filename);
         else rmdir(filename);
       }
+    }
+
+
+    void setCreateFileCallback(createFile_t cb) {
+      createFile = cb;
     }
 
 
@@ -1104,7 +1118,7 @@ namespace cb {
 
       SysError::clear();
       try {
-        return new File(filename, mode, perm);
+        return createFile(filename, mode);
 
       } catch (const exception &e) {
         THROW("Failed to open '" << filename << "': " << e.what()
@@ -1113,10 +1127,9 @@ namespace cb {
     }
 
 
-    class IStream : public io::filtering_istream {
-      SmartPointer<File> file;
-    public:
-      IStream(const SmartPointer<File> &file) : file(file) {}
+    struct IStream : public io::filtering_istream {
+      SmartPointer<iostream> file;
+      IStream(const SmartPointer<iostream> &file) : file(file) {}
       ~IStream() {reset();}
     };
 
@@ -1124,7 +1137,7 @@ namespace cb {
     SmartPointer<istream> iopen(const string &filename, bool autoCompression) {
       SysError::clear();
       try {
-        SmartPointer<File> file = new File(filename, ios::in);
+        auto file = createFile(filename, ios::in);
 
         if (autoCompression) {
           Compression compression = compressionFromPath(filename);
@@ -1147,10 +1160,9 @@ namespace cb {
     }
 
 
-    class OStream : public io::filtering_ostream {
-      SmartPointer<File> file;
-    public:
-      OStream(const SmartPointer<File> &file) : file(file) {}
+    struct OStream : public io::filtering_ostream {
+      SmartPointer<iostream> file;
+      OStream(const SmartPointer<iostream> &file) : file(file) {}
       ~OStream() {reset();}
     };
 
@@ -1161,7 +1173,7 @@ namespace cb {
 
       SysError::clear();
       try {
-        SmartPointer<File> file = new File(filename, ios::out, perm);
+        auto file = createFile(filename, ios::out);
 
         if (autoCompression) {
           Compression compression = compressionFromPath(filename);

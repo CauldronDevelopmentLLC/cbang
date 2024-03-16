@@ -41,6 +41,6 @@ namespace cb {
   public:
     StringStreamInputSource(const std::string &data = std::string(),
                             const std::string &name = "<memory>") :
-      InputSource(new std::istringstream(data), name, data.length()) {}
+      InputSource(new std::istringstream(data), name) {}
   };
 }
