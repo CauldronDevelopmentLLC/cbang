@@ -30,11 +30,11 @@
 \******************************************************************************/
 
 #include "ExitSignalHandler.h"
+#include "SystemUtilities.h"
+#include "SignalManager.h"
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
-#include <cbang/os/SystemUtilities.h>
-#include <cbang/os/SignalManager.h>
 
 #include <csignal>
 

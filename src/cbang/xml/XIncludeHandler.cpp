@@ -31,9 +31,9 @@
 
 #include "XIncludeHandler.h"
 
-#include "XMLProcessor.h"
-#include "XMLAdapter.h"
-#include "XMLSkipHandler.h"
+#include "Processor.h"
+#include "Adapter.h"
+#include "SkipHandler.h"
 
 #include <cbang/Exception.h>
 
@@ -41,19 +41,20 @@
 
 using namespace std;
 using namespace cb;
+using namespace cb::XML;
 
 
-XMLHandler *XIncludeHandler::getHandler(XMLProcessor &processor,
-                                        const XMLAttributes &attrs) {
+Handler *XIncludeHandler::getHandler(
+  Processor &processor, const Attributes &attrs) {
   if (attrs["file"].empty()) THROW("Empty 'file' attribute");
 
   string filename =
     SystemUtilities::absolute(processor.getCurrentFile(), attrs["file"]);
 
-  SmartPointer<XMLAdapter> adapter = XMLAdapter::create();
+  SmartPointer<Adapter> adapter = Adapter::create();
   adapter->pushHandler(&processor);
 
-  XMLSkipHandler skipper(processor);
+  SkipHandler skipper(processor);
   if (attrs.has("children") && attrs["children"] == "true")
     adapter->pushHandler(&skipper);
 

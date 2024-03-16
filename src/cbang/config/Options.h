@@ -78,13 +78,13 @@ namespace cb {
     virtual void write(JSON::Sink &sink, bool config,
                        const std::string &delims =
                        Option::DEFAULT_DELIMS) const;
-    virtual void write(XMLHandler &handler, uint32_t flags = 0) const;
-    virtual void printHelpTOC(XMLHandler &handler,
+    virtual void write(XML::Handler &handler, uint32_t flags = 0) const;
+    virtual void printHelpTOC(XML::Handler &handler,
                               const std::string &prefix = std::string()) const;
-    virtual void printHelp(XMLHandler &handler,
+    virtual void printHelp(XML::Handler &handler,
                            const std::string &prefix = std::string()) const;
     virtual const char *getHelpStyle() const;
-    virtual void printHelpPage(XMLHandler &handler) const;
+    virtual void printHelpPage(XML::Handler &handler) const;
     virtual SmartPointer<JSON::Value> getDict(bool defaults = false,
                                               bool all = false) const;
 

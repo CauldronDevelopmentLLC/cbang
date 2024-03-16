@@ -72,7 +72,7 @@ void OptionCategory::write(JSON::Sink &sink, bool config,
 }
 
 
-void OptionCategory::write(XMLHandler &handler, uint32_t flags) const {
+void OptionCategory::write(XML::Handler &handler, uint32_t flags) const {
   bool first = true;
 
   options_t::const_iterator it;
@@ -99,11 +99,11 @@ void OptionCategory::write(XMLHandler &handler, uint32_t flags) const {
 }
 
 
-void OptionCategory::printHelpTOC(XMLHandler &handler,
+void OptionCategory::printHelpTOC(XML::Handler &handler,
                                   const string &prefix) const {
   if (options.empty()) return;
 
-  XMLAttributes attrs;
+  XML::Attributes attrs;
 
   attrs["class"] = "option-category";
   handler.startElement("li", attrs);
@@ -127,11 +127,11 @@ void OptionCategory::printHelpTOC(XMLHandler &handler,
 }
 
 
-void OptionCategory::printHelp(XMLHandler &handler,
+void OptionCategory::printHelp(XML::Handler &handler,
                                const string &prefix) const {
   if (options.empty()) return;
 
-  XMLAttributes attrs;
+  XML::Attributes attrs;
 
   attrs["class"] = "option-category";
   attrs["id"] = prefix + "option-category-" + name;

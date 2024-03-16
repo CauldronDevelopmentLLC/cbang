@@ -32,7 +32,7 @@
 #include "MacOSSystemInfo.h"
 #include "MacOSString.h"
 
-#include <cbang/os/CPUInfo.h>
+#include <cbang/hw/CPUInfo.h>
 
 #include <sys/types.h>
 #include <sys/param.h>

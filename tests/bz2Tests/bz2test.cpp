@@ -29,7 +29,7 @@
 
 \******************************************************************************/
 
-#include <cbang/util/BZip2.h>
+#include <cbang/comp/BZip2.h>
 
 #include <sstream>
 

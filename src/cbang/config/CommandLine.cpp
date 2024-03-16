@@ -32,7 +32,7 @@
 #include "CommandLine.h"
 
 #include <cbang/Exception.h>
-#include <cbang/xml/XMLWriter.h>
+#include <cbang/xml/Writer.h>
 #include <cbang/log/Logger.h>
 
 #include <cstdlib>
@@ -184,7 +184,7 @@ int CommandLine::usageAction(Option &option) {
 
 int CommandLine::htmlHelpAction() {
   if (keywords) {
-    XMLWriter writer(cout);
+    XML::Writer writer(cout);
     keywords->printHelpPage(writer);
   }
 

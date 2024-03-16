@@ -31,7 +31,6 @@
 
 #include "SystemInfo.h"
 #include "PowerManagement.h"
-#include "CPUInfo.h"
 #include "SystemUtilities.h"
 #include "SysError.h"
 
@@ -43,6 +42,7 @@
 #include <cbang/SStream.h>
 #include <cbang/String.h>
 
+#include <cbang/hw/CPUInfo.h>
 #include <cbang/log/Logger.h>
 #include <cbang/util/HumanSize.h>
 #include <cbang/net/Socket.h>

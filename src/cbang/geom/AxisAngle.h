@@ -68,7 +68,7 @@ namespace cb {
     Quaternion<T> toQuaternion() const;
 
     void toGLRotation(T rotation[4]) const {
-      rotation[0] = (angle() * 180 / M_PI); // To degrees
+      rotation[0] = (angle() * 180 / Math::PI); // To degrees
       rotation[1] = Super_T::x();
       rotation[2] = Super_T::y();
       rotation[3] = Super_T::z();

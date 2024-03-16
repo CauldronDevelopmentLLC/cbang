@@ -36,7 +36,7 @@
 #include <cbang/config/Options.h>
 #include <cbang/config/CommandLine.h>
 
-#include <cbang/xml/XMLReader.h>
+#include <cbang/xml/Reader.h>
 
 #include <cbang/util/Version.h>
 #include <cbang/util/Features.h>
@@ -53,8 +53,8 @@ namespace cb {
 
 
 namespace cb {
+  namespace XML {class Writer;}
   class EnumerationManager;
-  class XMLWriter;
 
   class Application : public Features, protected ExitSignalHandler {
   public:
@@ -72,7 +72,7 @@ namespace cb {
   protected:
     Options options; // Must be first
     CommandLine cmdLine;
-    XMLReader configReader;
+    XML::Reader configReader;
     Logger &logger;
     EnumerationManager *enumMan;
 
@@ -101,7 +101,7 @@ namespace cb {
     const Options &getOptions() const {return options;}
     CommandLine &getCommandLine() {return cmdLine;}
     Logger &getLogger() {return logger;}
-    XMLReader &getXMLReader() {return configReader;}
+    XML::Reader &getXMLReader() {return configReader;}
     EnumerationManager &getEnumerationManager() {return *enumMan;}
 
     const std::string &getName() const {return name;}
@@ -119,7 +119,7 @@ namespace cb {
     virtual void initialize() {}
     virtual void run() {}
     virtual void printInfo() const;
-    virtual void write(XMLWriter &writer, uint32_t flags = 0) const;
+    virtual void write(XML::Writer &writer, uint32_t flags = 0) const;
     virtual std::ostream &print(std::ostream &stream) const;
     virtual void usage(std::ostream &stream, const std::string &name) const;
     virtual void openConfig(const std::string &filename = std::string());

@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include <cbang/config/Options.h>
+#include "Options.h"
 
 namespace cb {
   /**

@@ -37,7 +37,7 @@
 
 #ifdef HAVE_CBANG_BACKTRACE
 
-#include <cbang/util/SmartLock.h>
+#include <cbang/thread/SmartLock.h>
 #include <cbang/os/SystemUtilities.h>
 
 #include <execinfo.h>

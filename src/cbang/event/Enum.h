@@ -34,7 +34,7 @@
 #include "EventFlag.h"
 #include "ConnectionError.h"
 
-#include <cbang/enum/Compression.h>
+#include <cbang/comp/Compression.h>
 
 namespace cb {
   namespace Event {

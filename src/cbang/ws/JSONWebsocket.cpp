@@ -33,7 +33,7 @@
 
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
-#include <cbang/iostream/VectorDevice.h>
+#include <cbang/util/VectorDevice.h>
 
 
 using namespace cb;

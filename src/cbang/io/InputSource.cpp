@@ -34,7 +34,7 @@
 #include "File.h"
 
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/iostream/ArrayDevice.h>
+#include <cbang/util/ArrayDevice.h>
 #include <cbang/util/Resource.h>
 
 #include <sstream>

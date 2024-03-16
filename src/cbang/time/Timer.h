@@ -31,12 +31,6 @@
 
 #pragma once
 
-#ifdef _WIN32
-#undef max
-#undef min
-#endif // _WIN32
-
-
 struct timeval;
 struct timespec;
 

@@ -38,14 +38,14 @@
 #include <cbang/String.h>
 
 #include <cbang/time/Time.h>
-#include <cbang/iostream/NullDevice.h>
-#include <cbang/util/SmartLock.h>
+#include <cbang/util/NullDevice.h>
+#include <cbang/thread/SmartLock.h>
 #include <cbang/util/RateSet.h>
 #include <cbang/debug/Debugger.h>
 #include <cbang/json/Sink.h>
 
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/os/ThreadLocalStorage.h>
+#include <cbang/thread/ThreadLocalStorage.h>
 
 #include <cbang/config/Options.h>
 #include <cbang/config/OptionActionSet.h>

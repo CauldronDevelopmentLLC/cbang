@@ -34,10 +34,10 @@
 #include "Base.h"
 #include "Event.h"
 
-#include <cbang/os/ThreadPool.h>
-#include <cbang/os/Condition.h>
-#include <cbang/util/SmartLock.h>
-#include <cbang/util/SmartUnlock.h>
+#include <cbang/thread/ThreadPool.h>
+#include <cbang/thread/Condition.h>
+#include <cbang/thread/SmartLock.h>
+#include <cbang/thread/SmartUnlock.h>
 #include <cbang/time/Time.h>
 
 #include <queue>

@@ -34,7 +34,7 @@
 #include <cbang/SmartPointer.h>
 #include <cbang/Errors.h>
 
-#include <cbang/iostream/Serializable.h>
+#include <cbang/util/Serializable.h>
 
 
 namespace cb {

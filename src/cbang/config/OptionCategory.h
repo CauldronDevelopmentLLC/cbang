@@ -39,8 +39,7 @@
 #include <string>
 
 namespace cb {
-  class XMLHandler;
-
+  namespace XML {class Handler;}
   namespace JSON {class Sink;}
 
   class OptionCategory {
@@ -72,9 +71,9 @@ namespace cb {
 
     void write(JSON::Sink &sink, bool config = false,
                const std::string &delims = Option::DEFAULT_DELIMS) const;
-    void write(XMLHandler &handler, uint32_t flags) const;
-    void printHelpTOC(XMLHandler &handler, const std::string &prefix) const;
-    void printHelp(XMLHandler &handler, const std::string &prefix) const;
+    void write(XML::Handler &handler, uint32_t flags) const;
+    void printHelpTOC(XML::Handler &handler, const std::string &prefix) const;
+    void printHelp(XML::Handler &handler, const std::string &prefix) const;
     void printHelp(std::ostream &stream, bool cmdLine = false) const;
   };
 }

@@ -31,21 +31,23 @@
 
 #pragma once
 
-#include "XMLHandler.h"
-#include "XMLHandlerFactory.h"
+#include "Handler.h"
+#include "HandlerFactory.h"
 
 namespace cb {
-  class XIncludeHandler : public XMLHandler, public XMLHandlerFactory {
-  public:
-    // From XMLHandlerFactory
-    XMLHandler *getHandler(
-      XMLProcessor &processor, const XMLAttributes &attrs) override;
+  namespace XML {
+    class XIncludeHandler : public Handler, public HandlerFactory {
+    public:
+      // From HandlerFactory
+      Handler *getHandler(
+        Processor &processor, const Attributes &attrs) override;
 
-    // From XMLHandler
-    void startElement(
-      const std::string &name, const XMLAttributes &attrs) override {}
-    void endElement(const std::string &name) override {}
-    void text(const std::string &text) override {}
-    void cdata(const std::string &data) override {}
-  };
+      // From Handler
+      void startElement(
+        const std::string &name, const Attributes &attrs) override {}
+      void endElement(const std::string &name) override {}
+      void text(const std::string &text) override {}
+      void cdata(const std::string &data) override {}
+    };
+  }
 }

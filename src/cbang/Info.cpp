@@ -35,7 +35,7 @@
 #include <cbang/String.h>
 #include <cbang/Zap.h>
 
-#include <cbang/xml/XMLWriter.h>
+#include <cbang/xml/Writer.h>
 
 #include <cbang/json/JSON.h>
 
@@ -124,8 +124,8 @@ ostream &Info::print(ostream &stream, unsigned width, bool wrap) const {
 }
 
 
-void Info::write(XMLWriter &writer) const {
-  XMLAttributes attrs;
+void Info::write(XML::Writer &writer) const {
+  XML::Attributes attrs;
   attrs["class"] = "info";
   writer.startElement("table", attrs);
 
@@ -134,7 +134,7 @@ void Info::write(XMLWriter &writer) const {
     if ((*it)->first != "") {
       writer.startElement("tr");
 
-      XMLAttributes attrs;
+      XML::Attributes attrs;
       attrs["colspan"] = "2";
       attrs["class"] = "category";
       writer.startElement("th", attrs);

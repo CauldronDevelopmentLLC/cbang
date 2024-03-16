@@ -42,7 +42,7 @@
 #include <cbang/net/Session.h>
 #include <cbang/json/Value.h>
 #include <cbang/json/Writer.h>
-#include <cbang/enum/Compression.h>
+#include <cbang/comp/Compression.h>
 #include <cbang/debug/Demangle.h>
 
 #include <string>

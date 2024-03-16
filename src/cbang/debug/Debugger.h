@@ -35,7 +35,7 @@
 
 #include "StackTrace.h"
 
-#include <cbang/os/Mutex.h>
+#include <cbang/thread/Mutex.h>
 #include <cbang/util/Singleton.h>
 
 

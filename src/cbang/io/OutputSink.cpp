@@ -32,7 +32,7 @@
 #include "OutputSink.h"
 
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/iostream/ArrayDevice.h>
+#include <cbang/util/ArrayDevice.h>
 
 using namespace std;
 using namespace cb;

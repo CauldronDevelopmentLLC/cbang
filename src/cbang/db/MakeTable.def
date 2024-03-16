@@ -29,11 +29,10 @@
 
 \******************************************************************************/
 
+#include "TableDef.h"
+#include "Statement.h"
+
 #include <cbang/SmartPointer.h>
-
-#include <cbang/db/TableDef.h>
-#include <cbang/db/Statement.h>
-
 #include <cbang/util/MacroUtils.h>
 
 #include <string>

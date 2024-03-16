@@ -31,8 +31,9 @@
 
 #pragma once
 
-#include <cbang/config/Option.h>
-#include <cbang/config/Options.h>
+#include "Option.h"
+#include "Options.h"
+
 #include <cbang/SmartPointer.h>
 
 #include <string>

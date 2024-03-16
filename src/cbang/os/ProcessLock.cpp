@@ -30,12 +30,12 @@
 \******************************************************************************/
 
 #include "ProcessLock.h"
+#include "SystemUtilities.h"
+#include "SysError.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/time/Time.h>
-#include <cbang/os/SystemUtilities.h>
-#include <cbang/os/SysError.h>
 
 #include <cbang/boost/StartInclude.h>
 #include <boost/interprocess/sync/file_lock.hpp>

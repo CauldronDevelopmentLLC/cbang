@@ -38,7 +38,7 @@
 #include "FDPool.h"
 #include "FDPoolEPollCommand.h"
 
-#include <cbang/os/Thread.h>
+#include <cbang/thread/Thread.h>
 #include <cbang/util/SPSCQueue.h>
 
 #include <map>

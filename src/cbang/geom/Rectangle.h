@@ -35,14 +35,6 @@
 #include "Segment.h"
 
 #include <algorithm>
-#include <limits>
-
-#if defined(_WIN32) && defined(max)
-#undef max
-#endif
-#if defined(_WIN32) && defined(min)
-#undef min
-#endif
 
 
 namespace cb {

@@ -31,52 +31,29 @@
 
 #pragma once
 
-#include <cmath>
-#include <cmath>
 #include <limits>
+#include <cmath>
 #include <cfloat>
+
+#if defined(_WIN32) && defined(max)
+#undef max
+#endif
+#if defined(_WIN32) && defined(min)
+#undef min
+#endif
 
 
 namespace cb {
   namespace Math {
-#if defined(_WIN32) && !defined(__MINGW32__)
-
-    // Windows doesn't have round()
-    inline static double round(double x) {return floor(x + 0.5);}
-    inline static float round(float x) {return floorf(x + 0.5);}
-
-    // Or isnan
-    inline static bool isnan(double x) {return _isnan(x);}
-    inline static bool isnan(float x) {return _isnan(x);}
-
-    // Or isinf
-    inline static bool isinf(double x) {return !_finite(x) && !_isnan(x);}
-    inline static bool isinf(float x) {return !_finite(x) && !_isnan(x);}
-
-#else
-    inline static double round(double x) {return ::round(x);}
-    inline static float round(float x) {return roundf(x);}
-    inline static bool isnan(double x) {return std::isnan(x);}
-    inline static bool isnan(float x) {return std::isnan(x);}
-    inline static bool isinf(double x) {return std::isinf(x);}
-    inline static bool isinf(float x) {return std::isinf(x);}
-#endif
-
-    inline static bool isfinite(double x) {return !(isnan(x) || isinf(x));}
-    inline static bool isfinite(float x) {return !(isnan(x) || isinf(x));}
-
+    static const double PI = 3.14159265358979323846;
 
     inline static double nextUp(double x) {
-      return nextafter(x, std::numeric_limits<double>::infinity());
+      return std::nextafter(x, std::numeric_limits<double>::infinity());
     }
 
 
     inline static double nextDown(double x) {
-      return nextafter(x, -std::numeric_limits<double>::infinity());
+      return std::nextafter(x, -std::numeric_limits<double>::infinity());
     }
   }
 }
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif

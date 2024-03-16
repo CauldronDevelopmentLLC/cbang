@@ -47,7 +47,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/config/Option.h>
 #include <cbang/json/Writer.h>
-#include <cbang/xml/XMLWriter.h>
+#include <cbang/xml/Writer.h>
 #include <cbang/enum/EnumerationManager.h>
 
 #include <sstream>
@@ -276,7 +276,7 @@ void Application::printInfo() const {
 }
 
 
-void Application::write(XMLWriter &writer, uint32_t flags) const {
+void Application::write(XML::Writer &writer, uint32_t flags) const {
   getOptions().write(writer, flags);
 }
 
@@ -320,7 +320,7 @@ void Application::saveConfig(const string &_filename) const {
 
 
 void Application::writeConfig(ostream &stream, uint32_t flags) const {
-  XMLWriter writer(stream, true);
+  XML::Writer writer(stream, true);
   writer.startElement("config");
   write(writer, flags);
   writer.endElement("config");

@@ -36,8 +36,8 @@
 #include <cbang/Exception.h>
 
 #include <cbang/util/Singleton.h>
-#include <cbang/enum/Compression.h>
-#include <cbang/os/Mutex.h>
+#include <cbang/comp/Compression.h>
+#include <cbang/thread/Mutex.h>
 
 #include <ostream>
 #include <string>
