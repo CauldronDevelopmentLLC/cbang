@@ -34,12 +34,12 @@
 #include "ProcessPriority.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/Math.h>
 #include <cbang/util/StringMap.h>
 #include <cbang/comp/Compression.h>
 
 #include <string>
 #include <functional>
+#include <limits>
 #include <cstdint>
 
 

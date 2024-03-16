@@ -33,7 +33,6 @@
 
 #include "Vector.h"
 
-#include <cbang/Math.h>
 
 namespace cb {
   template <typename T> class Quaternion;
@@ -58,8 +57,8 @@ namespace cb {
 
     Vector<3, T> rotate(const Vector<3, T> &v) const {
       Vector<3, T> k(Super_T::x(), Super_T::y(), Super_T::z());
-      T c = cos(angle());
-      T s = sin(angle());
+      T c = std::cos(angle());
+      T s = std::sin(angle());
 
       // Rodrigues' rotation forumla
       return v * c + (k.cross(v) * s) + k * k.dot(v) * (1 - c);

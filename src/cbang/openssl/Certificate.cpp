@@ -39,7 +39,6 @@
 #include "BOStream.h"
 
 #include <cbang/Exception.h>
-#include <cbang/Math.h>
 #include <cbang/time/Time.h>
 
 #include <openssl/pem.h>

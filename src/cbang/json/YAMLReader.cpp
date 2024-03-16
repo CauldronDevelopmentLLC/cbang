@@ -36,11 +36,12 @@
 #include "YAMLMergeSink.h"
 #include "Dict.h"
 
-#include <cbang/Math.h>
 #include <cbang/io/StringInputSource.h>
 #include <cbang/util/Regex.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/log/Logger.h>
+
+#include <cmath>
 
 #include <yaml.h>
 
