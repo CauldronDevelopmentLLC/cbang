@@ -37,7 +37,7 @@
 
 #include <cbang/util/Singleton.h>
 #include <cbang/comp/Compression.h>
-#include <cbang/thread/Mutex.h>
+#include <cbang/thread/Lockable.h>
 
 #include <ostream>
 #include <string>
@@ -50,6 +50,7 @@ namespace cb {
   class Options;
   class CommandLine;
   class RateSet;
+  class Mutex;
   template <typename T> class ThreadLocalStorage;
 
   namespace JSON {class Sink;}
@@ -61,7 +62,7 @@ namespace cb {
    * The logging macros allow C++ iostreaming.  For example.
    *   LOG_INFO(3, "The value was " << x << ".");
    */
-  class Logger : public Mutex, public Singleton<Logger> {
+  class Logger : public Lockable, public Singleton<Logger> {
   public:
     enum log_level_t {
       LEVEL_RAW     = 0,
@@ -73,6 +74,7 @@ namespace cb {
     };
 
   private:
+    static Mutex mutex;
     std::string logFilename;
 
 #ifdef CBANG_DEBUG_LEVEL
@@ -131,6 +133,11 @@ namespace cb {
   public:
     Logger(Inaccessible);
     ~Logger();
+
+    // From Lockable
+    bool lock(double timeout = -1) const override;
+    void unlock() const override;
+    bool tryLock() const override;
 
     void addOptions(Options &options);
     void setOptions(Options &options);

@@ -35,6 +35,7 @@
 #include <cbang/config.h>
 #include <cbang/util/Singleton.h>
 #include <cbang/thread/SmartLock.h>
+#include <cbang/thread/Mutex.h>
 
 #include <stdexcept>
 #include <cstdlib>
@@ -47,12 +48,12 @@
 using namespace std;
 using namespace cb;
 
-Mutex Debugger::lock;
+Mutex Debugger::mutex;
 Debugger *Debugger::singleton = 0;
 
 
 Debugger &Debugger::instance() {
-  SmartLock l(&lock);
+  SmartLock l(&mutex);
 
   if (!singleton) {
 #ifdef HAVE_CBANG_BACKTRACE
@@ -67,6 +68,11 @@ Debugger &Debugger::instance() {
 
   return *singleton;
 }
+
+
+bool Debugger::lock(double timeout) const {return mutex.lock(timeout);}
+void Debugger::unlock() const {mutex.unlock();}
+bool Debugger::tryLock() const {return mutex.tryLock();}
 
 
 void Debugger::printStackTrace(ostream &stream) {

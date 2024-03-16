@@ -30,23 +30,19 @@
 \******************************************************************************/
 
 #include "Logger.h"
-
 #include "LogDevice.h"
 
 #include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/String.h>
-
 #include <cbang/time/Time.h>
 #include <cbang/util/NullDevice.h>
 #include <cbang/thread/SmartLock.h>
 #include <cbang/util/RateSet.h>
 #include <cbang/debug/Debugger.h>
 #include <cbang/json/Sink.h>
-
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/thread/ThreadLocalStorage.h>
-
 #include <cbang/config/Options.h>
 #include <cbang/config/OptionActionSet.h>
 
@@ -54,6 +50,9 @@
 
 using namespace std;
 using namespace cb;
+
+
+Mutex Logger::mutex;
 
 
 Logger::Logger(Inaccessible) :
@@ -69,6 +68,11 @@ Logger::Logger(Inaccessible) :
 
 
 Logger::~Logger() {}
+
+
+bool Logger::lock(double timeout) const {return mutex.lock(timeout);}
+void Logger::unlock() const {mutex.unlock();}
+bool Logger::tryLock() const {return mutex.tryLock();}
 
 
 void Logger::addOptions(Options &options) {

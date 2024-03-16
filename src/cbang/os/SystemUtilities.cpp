@@ -42,7 +42,6 @@
 #include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
 #include <cbang/log/Logger.h>
-#include <cbang/thread/SmartLock.h>
 #include <cbang/net/URI.h>
 #include <cbang/io/File.h>
 #include <cbang/comp/CompressionFilter.h>
@@ -519,10 +518,6 @@ namespace cb {
 
 
     string createTempDir(const string &parent) {
-      // Make sure this is thread safe
-      static Mutex mutex;
-      SmartLock lock(&mutex);
-
       ensureDirectory(parent);
 
       SmartPointer<char>::Array buf = new char[parent.length() + 8];
@@ -540,6 +535,7 @@ namespace cb {
 
       return buf.get();
     }
+
 
     void listDirectory(
       const std::string &path,

@@ -66,10 +66,9 @@ Export('env conf')
 resources_excludes = []
 for lib in 'ZLib bzip2 lz4 sqlite3 expat boost libevent re2 libyaml'.split():
     if lib in disable_local: resources_excludes.append('licenses/%s\\.txt' % lib)
-    else:
-        if not env.CBConfigEnabled(lib) or lib in force_local:
-            Default(SConscript('src/%s/SConscript' % lib,
-                            variant_dir = 'build/' + lib))
+    elif not env.CBConfigEnabled(lib) or lib in force_local:
+        Default(SConscript(
+            'src/%s/SConscript' % lib, variant_dir = 'build/' + lib))
 env.Append(RESOURCES_EXCLUDES = resources_excludes)
 
 if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
@@ -77,14 +76,13 @@ if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 
 # Source
 subdirs = [''] + '''
-  auth boost comp config db debug enum geom hw io js json log net os parse
-  thread time util xml
+  auth boost comp config db debug dns enum event geom http hw io js json log
+  net os parse thread time util ws xml
 '''.split()
 
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']
 if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'): subdirs.append('db/maria')
-if not 'libevent' in disable_local: subdirs += ['event', 'dns', 'http', 'ws']
 
 if env['PLATFORM'] == 'win32': subdirs.append('os/win')
 elif env['PLATFORM'] == 'darwin': subdirs.append('os/osx')
