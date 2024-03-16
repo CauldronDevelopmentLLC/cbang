@@ -43,10 +43,10 @@ struct TarFileWriter::private_t {
 };
 
 
-TarFileWriter::TarFileWriter(const string &path, ios::openmode mode, int perm,
+TarFileWriter::TarFileWriter(const string &path, ios::openmode mode,
                              Compression compression) :
   pri(new private_t),
-  stream(SystemUtilities::open(path, mode | ios::out, perm)) {
+  stream(SystemUtilities::open(path, mode | ios::out)) {
 
   if (compression == COMPRESSION_AUTO) compression = compressionFromPath(path);
   pushCompression(compression, pri->filter);

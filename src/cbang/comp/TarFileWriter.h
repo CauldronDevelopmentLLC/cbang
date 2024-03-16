@@ -46,7 +46,7 @@ namespace cb {
 
   public:
     TarFileWriter(const std::string &path, std::ios::openmode mode,
-                  int perm = 0644, Compression compression = COMPRESSION_AUTO);
+                  Compression compression = COMPRESSION_AUTO);
     TarFileWriter(std::ostream &stream, Compression compression);
     ~TarFileWriter();
 

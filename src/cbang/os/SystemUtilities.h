@@ -103,6 +103,10 @@ namespace cb {
     void rmtree(const std::string &path);
 
     // File
+    typedef SmartPointer<std::iostream> (* createFile_t)
+      (const std::string &, std::ios::openmode);
+    void setCreateFileCallback(createFile_t cb);
+
     unsigned getMaxFiles();
     void setMaxFiles(unsigned files);
     uint64_t getFileSize(const std::string &filename);
