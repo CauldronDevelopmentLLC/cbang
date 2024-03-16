@@ -231,7 +231,7 @@ bool TarHeader::isEOF() const {return readNumber(checksum, 6) == 0;}
 
 
 void TarHeader::writeString(const string &s, char *buf, unsigned length) {
-  strncpy(buf, s.c_str(), length);
+  strncpy(buf, s.data(), length);
   for (unsigned i = s.length(); i < length; i++)
     buf[i] = 0;
 }

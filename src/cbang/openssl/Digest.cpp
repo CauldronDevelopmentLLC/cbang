@@ -80,7 +80,7 @@ void Digest::update(istream &stream) {
 
 
 void Digest::update(const string &data) {
-  update((const uint8_t *)data.c_str(), data.length());
+  update((const uint8_t *)data.data(), data.length());
 }
 
 
@@ -163,7 +163,7 @@ bool Digest::verify(const uint8_t *sigData, size_t sigLen) {
 
 
 bool Digest::verify(const string &sig) {
-  return verify((const uint8_t *)sig.c_str(), sig.size());
+  return verify((const uint8_t *)sig.data(), sig.length());
 }
 
 

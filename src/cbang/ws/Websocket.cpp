@@ -79,7 +79,7 @@ void Websocket::send(const char *data, unsigned length) {
 }
 
 
-void Websocket::send(const string &s) {send(CBANG_CPP_TO_C_STR(s), s.length());}
+void Websocket::send(const string &s) {send(s.data(), s.length());}
 
 
 void Websocket::close(Status status, const string &msg) {

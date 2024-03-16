@@ -282,7 +282,7 @@ void DB::query(const string &s) {
   assertConnected();
   assertNotPending();
 
-  if (mysql_real_query(db, CPP_TO_C_STR(s), s.length()))
+  if (mysql_real_query(db, s.data(), s.length()))
     RAISE_DB_ERROR("Query failed");
 }
 
@@ -293,7 +293,7 @@ bool DB::queryNB(const string &s) {
   assertNonBlocking();
 
   int ret = 0;
-  status = mysql_real_query_start(&ret, db, CPP_TO_C_STR(s), s.length());
+  status = mysql_real_query_start(&ret, db, s.data(), s.length());
 
   LOG_DEBUG(5, CBANG_FUNC << "() status=" << status << " ret=" << ret);
 
@@ -788,7 +788,7 @@ string DB::escape(const string &s) const {
   SmartPointer<char>::Array to = new char[s.length() * 2 + 1];
 
   unsigned len =
-    mysql_real_escape_string(db, to.get(), CPP_TO_C_STR(s), s.length());
+    mysql_real_escape_string(db, to.get(), s.data(), s.length());
 
   return string(to.get(), len);
 }
@@ -797,7 +797,7 @@ string DB::escape(const string &s) const {
 string DB::toHex(const string &s) {
   SmartPointer<char>::Array to = new char[s.length() * 2 + 1];
 
-  unsigned len = mysql_hex_string(to.get(), CPP_TO_C_STR(s), s.length());
+  unsigned len = mysql_hex_string(to.get(), s.data(), s.length());
 
   return string(to.get(), len);
 }

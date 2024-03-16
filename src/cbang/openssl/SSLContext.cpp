@@ -225,7 +225,7 @@ void SSLContext::addTrustedCA(const Certificate &cert) {
 
 
 void SSLContext::addTrustedCAStr(const string &data) {
-  addTrustedCA(InputSource(data.c_str(), data.length()));
+  addTrustedCA(InputSource(data.data(), data.length()));
 }
 
 
@@ -422,7 +422,7 @@ void SSLContext::addCRL(const CRL &crl) {
 
 
 void SSLContext::addCRLStr(const string &data) {
-  addCRL(InputSource(data.c_str(), data.length()));
+  addCRL(InputSource(data.data(), data.length()));
 }
 
 

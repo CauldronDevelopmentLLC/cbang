@@ -280,8 +280,8 @@ void KeyContext::verify(const uint8_t *sigData, size_t sigLen,
 
 
 void KeyContext::verify(const string &sig, const string &msg) {
-  verify((const uint8_t *)sig.c_str(), sig.size(),
-         (const uint8_t *)msg.c_str(), msg.size());
+  verify((const uint8_t *)sig.data(), sig.length(),
+         (const uint8_t *)msg.data(), msg.length());
 }
 
 
