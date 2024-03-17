@@ -33,13 +33,13 @@
 
 #include "Enum.h"
 #include "Headers.h"
+#include "Session.h"
 
 #include <cbang/event/Buffer.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Version.h>
 #include <cbang/net/SockAddr.h>
 #include <cbang/net/URI.h>
-#include <cbang/net/Session.h>
 #include <cbang/json/Value.h>
 #include <cbang/json/Writer.h>
 #include <cbang/comp/Compression.h>

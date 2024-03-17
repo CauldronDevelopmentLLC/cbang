@@ -30,11 +30,10 @@
 \******************************************************************************/
 
 #include "AccessHandler.h"
-
 #include "Request.h"
+#include "Session.h"
 
 #include <cbang/log/Logger.h>
-#include <cbang/net/Session.h>
 
 using namespace std;
 using namespace cb;

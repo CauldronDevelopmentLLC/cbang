@@ -47,6 +47,7 @@ namespace cb {
     class Event;
 
     class SubprocessPool {
+      Base &base;
       unsigned maxActive;
 
       struct cmp {
@@ -71,6 +72,8 @@ namespace cb {
 
     public:
       SubprocessPool(Base &base);
+
+      Base &getBase() {return base;}
 
       unsigned getMaxActive() const {return maxActive;}
       void setMaxActive(unsigned maxActive) {this->maxActive = maxActive;}

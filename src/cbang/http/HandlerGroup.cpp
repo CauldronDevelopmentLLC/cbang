@@ -30,44 +30,47 @@
 \******************************************************************************/
 
 #include "HandlerGroup.h"
+#include "RE2PatternMatcher.h"
+#include "MethodMatcher.h"
+#include "ResourceHandler.h"
+#include "IndexHandler.h"
+#include "FileHandler.h"
 
 using namespace cb::HTTP;
 using namespace cb;
 using namespace std;
 
 
-void HandlerGroup::addHandler
-(const SmartPointer<RequestHandler> &handler) {handlers.push_back(handler);}
+void HandlerGroup::addHandler(
+  const SmartPointer<RequestHandler> &handler) {handlers.push_back(handler);}
 
 
-void HandlerGroup::addHandler
-(unsigned methods, const string &pattern,
- const SmartPointer<RequestHandler> &handler) {
-  addHandler(factory->createMatcher(methods, prefix + pattern, handler));
+void HandlerGroup::addHandler(unsigned methods, const string &pattern,
+                              const SmartPointer<RequestHandler> &handler) {
+  addHandler(createMatcher(methods, prefix + pattern, handler));
 }
 
 
 void HandlerGroup::addHandler(const string &pattern, const Resource &res) {
-  addHandler(HTTP_GET, pattern, factory->createHandler(res));
+  addHandler(HTTP_GET, pattern, createHandler(res));
 }
 
 
 void HandlerGroup::addHandler(const string &pattern, const string &path) {
-  addHandler(HTTP_GET, pattern, factory->createHandler(path));
+  addHandler(HTTP_GET, pattern, createHandler(path));
 }
 
 
 SmartPointer<HandlerGroup> HandlerGroup::addGroup() {
-  SmartPointer<HandlerGroup> group = new HandlerGroup(factory);
+  SmartPointer<HandlerGroup> group = new HandlerGroup;
   addHandler(group);
   return group;
 }
 
 
-SmartPointer<HandlerGroup>
-HandlerGroup::addGroup(unsigned methods, const string &pattern,
-                           const string &prefix) {
-  SmartPointer<HandlerGroup> group = new HandlerGroup(factory);
+SmartPointer<HandlerGroup> HandlerGroup::addGroup(
+  unsigned methods, const string &pattern, const string &prefix) {
+  SmartPointer<HandlerGroup> group = new HandlerGroup;
   group->setPrefix(this->prefix + prefix);
   addHandler(methods, pattern, group);
   return group;
@@ -79,4 +82,31 @@ bool HandlerGroup::operator()(Request &req) {
     if ((*handlers[i])(req)) return true;
 
   return false;
+}
+
+
+SmartPointer<RequestHandler> HandlerGroup::createMatcher(
+  unsigned methods, const string &pattern,
+  const SmartPointer<RequestHandler> &child) {
+  SmartPointer<RequestHandler> handler = child;
+
+  if (!pattern.empty()) handler = new RE2PatternMatcher(pattern, handler);
+
+  if (methods != (unsigned)Method::HTTP_ANY)
+    handler = new MethodMatcher(methods, handler);
+
+  return handler;
+}
+
+
+SmartPointer<RequestHandler> HandlerGroup::createHandler(
+  const Resource &res) {
+  SmartPointer<RequestHandler> handler = new ResourceHandler(res);
+  return autoIndex ? new IndexHandler(handler) : handler;
+}
+
+
+SmartPointer<RequestHandler> HandlerGroup::createHandler(const string &path) {
+  SmartPointer<RequestHandler> handler = new FileHandler(path);
+  return autoIndex ? new IndexHandler(handler) : handler;
 }

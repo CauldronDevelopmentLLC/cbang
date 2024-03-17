@@ -47,12 +47,8 @@ using namespace cb::HTTP;
 
 
 WebServer::WebServer(
-  Options &options, Event::Base &base, const SmartPointer<SSLContext> &sslCtx,
-  const SmartPointer<HandlerFactory> &factory) :
-  HandlerGroup(factory), Server(base), options(options),
-  sslCtx(sslCtx) {
-  addOptions(options);
-}
+  Options &options, Event::Base &base, const SmartPointer<SSLContext> &sslCtx) :
+  Server(base), options(options), sslCtx(sslCtx) {addOptions(options);}
 
 
 WebServer::~WebServer() {}
