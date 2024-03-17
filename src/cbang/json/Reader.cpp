@@ -34,7 +34,6 @@
 
 #include <cbang/String.h>
 #include <cbang/log/Logger.h>
-#include <cbang/io/StringInputSource.h>
 
 #include <vector>
 #include <cctype>
@@ -100,8 +99,8 @@ SmartPointer<Value> Reader::parse(const InputSource &src, bool strict) {
 }
 
 
-SmartPointer<Value> Reader::parseString(const string &s, bool strict) {
-  return parse(StringInputSource(s), strict);
+SmartPointer<Value> Reader::parseFile(const string &path, bool strict) {
+  return parse(InputSource::open(path), strict);
 }
 
 
@@ -110,8 +109,8 @@ void Reader::parse(const InputSource &src, Sink &sink, bool strict) {
 }
 
 
-void Reader::parseString(const string &s, Sink &sink, bool strict) {
-  parse(StringInputSource(s), sink, strict);
+void Reader::parseFile(const string &path, Sink &sink, bool strict) {
+  parse(InputSource::open(path), sink, strict);
 }
 
 

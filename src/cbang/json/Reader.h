@@ -53,7 +53,7 @@ namespace cb {
 
     public:
       Reader(const InputSource &src, bool strict = false) :
-        src(src), stream(src.getStream()), strict(strict) {}
+        src(src), stream(src), strict(strict) {}
 
       bool getStrict() const {return strict;}
       void setStrict(bool strict) {this->strict = strict;}
@@ -61,11 +61,11 @@ namespace cb {
       void parse(Sink &sink, unsigned depth = 0);
       ValuePtr parse();
       static ValuePtr parse(const InputSource &src, bool strict = false);
-      static ValuePtr parseString(const std::string &s, bool strict = false);
+      static ValuePtr parseFile(const std::string &path, bool strict = false);
       static void parse(const InputSource &src, Sink &sink,
                         bool strict = false);
-      static void parseString(const std::string &s, Sink &sink,
-                              bool strict = false);
+      static void parseFile(const std::string &path, Sink &sink,
+                            bool strict = false);
 
       unsigned getLine() const {return line;}
       unsigned getColumn() const {return column;}
@@ -91,10 +91,6 @@ namespace cb {
 
     static inline ValuePtr parse(const InputSource &src) {
       return JSON::Reader::parse(src);
-    }
-
-    static inline ValuePtr parseString(const std::string &s) {
-      return JSON::Reader::parseString(s);
     }
   }
 }

@@ -29,7 +29,7 @@
 
 \******************************************************************************/
 
-#include "LogDevice.h"
+#include "LogStream.h"
 
 #include "Logger.h"
 

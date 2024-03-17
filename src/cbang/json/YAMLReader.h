@@ -64,12 +64,12 @@ namespace cb {
 
       SmartPointer<Value> parse();
       static SmartPointer<Value> parse(const InputSource &src);
-      static SmartPointer<Value> parseString(const std::string &s);
+      static SmartPointer<Value> parseFile(const std::string &path);
 
       typedef std::vector<SmartPointer<Value> > docs_t;
       void parse(docs_t &docs);
       static void parse(const InputSource &src, docs_t &docs);
-      static void parseString(const std::string &s, docs_t &docs);
+      static void parseFile(const std::string &path, docs_t &docs);
 
     private:
       void _parse(Sink &sink);

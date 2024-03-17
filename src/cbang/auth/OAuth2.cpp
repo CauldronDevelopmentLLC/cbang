@@ -39,7 +39,6 @@
 #include <cbang/config/Options.h>
 #include <cbang/log/Logger.h>
 #include <cbang/http/Status.h>
-#include <cbang/io/StringInputSource.h>
 
 using namespace std;
 using namespace cb;
@@ -142,7 +141,7 @@ string OAuth2::verifyToken(const string &data) const {
     return uri.get("access_token");
   }
 
-  return verifyToken(JSON::Reader(StringInputSource(data)).parse());
+  return verifyToken(JSON::Reader::parse(data));
 }
 
 

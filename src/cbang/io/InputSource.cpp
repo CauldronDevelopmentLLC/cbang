@@ -30,29 +30,26 @@
 \******************************************************************************/
 
 #include "InputSource.h"
-#include "BufferDevice.h"
+#include "ArrayStream.h"
 
 #include <cbang/os/SystemUtilities.h>
-#include <cbang/util/ArrayDevice.h>
 #include <cbang/util/Resource.h>
 
 #include <sstream>
+#include <cstring>
 
 using namespace std;
 using namespace cb;
 
 
-InputSource::InputSource(IOBuffer &buffer, const string &name) :
-  Named(name), stream(new BufferStream(buffer)) {}
+InputSource::InputSource(
+  const char *array, streamsize length, const string &name) :
+  Named(name), stream(
+    new ArrayStream<const char>(array, length < 0 ? strlen(array) : length)) {}
 
 
-InputSource::InputSource(const char *array, streamsize length,
-                         const string &name) :
-  Named(name), stream(new ArrayStream<const char>(array, length)) {}
-
-
-InputSource::InputSource(const string &filename) :
-  Named(filename), stream(SystemUtilities::iopen(filename)) {}
+InputSource::InputSource(const string &s, const string &name) :
+  InputSource(s.data(), s.length(), name) {}
 
 
 InputSource::InputSource(istream &stream, const string &name) :
@@ -65,20 +62,23 @@ InputSource::InputSource(
 
 
 InputSource::InputSource(const Resource &resource) :
-  Named(resource.getName()),
-  stream(new ArrayStream<const char>(resource.getData(), resource.getLength()))
-{}
+  InputSource(resource.getData(), resource.getLength(), resource.getName()) {}
+
+
+InputSource InputSource::open(const string &filename) {
+  return InputSource(SystemUtilities::iopen(filename), filename);
+}
 
 
 string InputSource::toString() const {
   ostringstream str;
-  SystemUtilities::cp(getStream(), str);
+  SystemUtilities::cp(*stream, str);
   return str.str();
 }
 
 
 string InputSource::getLine(unsigned maxLength) const {
   SmartPointer<char>::Array line = new char[maxLength];
-  getStream().getline(line.get(), maxLength);
+  stream->getline(line.get(), maxLength);
   return string(line.get());
 }

@@ -33,7 +33,7 @@
 
 #include "Writer.h"
 
-#include <cbang/util/VectorDevice.h>
+#include <cbang/io/VectorStream.h>
 
 #include <vector>
 

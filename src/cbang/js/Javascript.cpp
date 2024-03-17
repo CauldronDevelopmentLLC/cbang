@@ -161,7 +161,7 @@ SmartPointer<Value> Javascript::require(const string &id) {
 
   // Handle package.json
   if (String::endsWith(path, "/package.json")) {
-    JSON::ValuePtr package = JSON::Reader(path).parse();
+    JSON::ValuePtr package = JSON::Reader(InputSource::open(path)).parse();
     path = SystemUtilities::absolute(path, package->getString("main"));
   }
 
@@ -178,7 +178,7 @@ SmartPointer<Value> Javascript::require(const string &id) {
   if (String::endsWith(path, ".json")) {
     // Read JSON data
     js::Sink sink(factory);
-    JSON::Reader(path).parse(sink);
+    JSON::Reader::parseFile(path, sink);
     sink.close();
     exports = sink.getRoot();
 
@@ -209,7 +209,7 @@ SmartPointer<Value> Javascript::require(const string &id) {
     module->setExports(exports);
 
     // Compile & eval code
-    scope->eval(path);
+    scope->eval(InputSource::open(path));
 
     // Get exports, it may have been reassigned
     exports = obj->get("exports");

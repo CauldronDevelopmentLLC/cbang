@@ -121,7 +121,7 @@ void Scanner::skipWhiteSpace(const int *s) {
 
 
 int Scanner::next() {
-  istream &stream = source.getStream();
+  istream &stream = source;
 
   if (!stream.good()) return -1;
 

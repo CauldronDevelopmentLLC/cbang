@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
   try {
     if (argc != 3) THROW("Usage " << argv[0] << " <json> <format>");
 
-    ValuePtr data = Reader::parseString(argv[1]);
+    ValuePtr data = Reader::parse(argv[1]);
     cout << data->format(argv[2]) << endl;
 
     return 0;
