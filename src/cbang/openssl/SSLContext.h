@@ -32,8 +32,9 @@
 #pragma once
 
 #include <cbang/config.h>
-#include <cbang/io/InputSource.h>
+#include <cbang/SmartPointer.h>
 
+#include <istream>
 #include <string>
 
 #ifdef HAVE_OPENSSL
@@ -76,11 +77,11 @@ namespace cb {
     void useCertificateChainFile(const std::string &filename);
     void useCertificateChain(const CertificateChain &chain);
     void usePrivateKey(const KeyPair &key);
-    void usePrivateKey(const InputSource &source);
+    void usePrivateKey(std::istream &stream);
 
     void addTrustedCA(const Certificate &cert);
     void addTrustedCAStr(const std::string &data);
-    void addTrustedCA(const InputSource &source);
+    void addTrustedCA(std::istream &stream);
     void addTrustedCA(BIO *bio);
 
     void loadVerifyLocationsFile(const std::string &path);
@@ -89,7 +90,7 @@ namespace cb {
 
     void addCRL(const CRL &crl);
     void addCRLStr(const std::string &data);
-    void addCRL(const InputSource &source);
+    void addCRL(std::istream &stream);
     void addCRL(BIO *bio);
 
     void setVerifyDepth(unsigned depth);

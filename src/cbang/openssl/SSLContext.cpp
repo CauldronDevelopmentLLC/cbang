@@ -42,6 +42,7 @@
 #include <cbang/log/Logger.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SysError.h>
+#include <cbang/io/InputSource.h>
 
 // This avoids a conflict with OCSP_RESPONSE in wincrypt.h
 #ifdef OCSP_RESPONSE
@@ -210,9 +211,9 @@ void SSLContext::usePrivateKey(const KeyPair &key) {
 }
 
 
-void SSLContext::usePrivateKey(const InputSource &source) {
+void SSLContext::usePrivateKey(istream &stream) {
   KeyPair pri;
-  pri.readPrivatePEM(source.getStream());
+  pri.readPrivatePEM(stream);
   usePrivateKey(pri);
 }
 
@@ -229,8 +230,8 @@ void SSLContext::addTrustedCAStr(const string &data) {
 }
 
 
-void SSLContext::addTrustedCA(const InputSource &source) {
-  BIStream bio(source.getStream());
+void SSLContext::addTrustedCA(istream &stream) {
+  BIStream bio(stream);
   addTrustedCA(bio.getBIO());
 }
 
@@ -426,8 +427,8 @@ void SSLContext::addCRLStr(const string &data) {
 }
 
 
-void SSLContext::addCRL(const InputSource &source) {
-  BIStream bio(source.getStream());
+void SSLContext::addCRL(istream &stream) {
+  BIStream bio(stream);
   addCRL(bio.getBIO());
 }
 

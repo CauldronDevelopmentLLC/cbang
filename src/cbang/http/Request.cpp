@@ -33,10 +33,10 @@
 #include "Conn.h"
 #include "Cookie.h"
 
-#include <cbang/event/Event.h>
-#include <cbang/event/BufferDevice.h>
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
+#include <cbang/event/Event.h>
+#include <cbang/event/BufferStream.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 #include <cbang/json/JSON.h>

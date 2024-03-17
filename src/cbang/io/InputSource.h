@@ -39,23 +39,25 @@
 
 
 namespace cb {
-  class IOBuffer;
   class Resource;
 
   class InputSource : public Named {
     cb::SmartPointer<std::istream> stream;
 
   public:
-    InputSource(IOBuffer &buffer, const std::string &name = "<buffer>");
-    InputSource(const char *array, std::streamsize length,
+    InputSource() : Named("<null>") {}
+    InputSource(const InputSource &o) : Named(o.getName()), stream(o.stream) {}
+    InputSource(const char *array, std::streamsize length = -1,
                 const std::string &name = "<memory>");
-    InputSource(const std::string &filename);
+    InputSource(const std::string &s, const std::string &name = "<memory>");
     InputSource(std::istream &stream, const std::string &name = std::string());
     InputSource(const SmartPointer<std::istream> &stream,
                 const std::string &name = std::string());
     InputSource(const Resource &resource);
 
-    std::istream &getStream() const {return *stream;}
+    static InputSource open(const std::string &filename);
+
+    operator std::istream &() const {return *stream;}
     std::string toString() const;
     std::string getLine(unsigned maxLength = 4096) const;
   };

@@ -144,7 +144,7 @@ bool NameValueTable::getBoolean(const string &name) const {
 
 
 SmartPointer<JSON::Value> NameValueTable::getJSON(const string &name) const {
-  return JSON::Reader::parseString(getString(name));
+  return JSON::Reader::parse(getString(name));
 }
 
 

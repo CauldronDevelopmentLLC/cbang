@@ -151,7 +151,7 @@ void WebServer::init() {
     if (options["private-key-file"].hasValue()) {
       string priKeyFile = options["private-key-file"].toString();
       if (SystemUtilities::exists(priKeyFile))
-        sslCtx->usePrivateKey(priKeyFile);
+        sslCtx->usePrivateKey(*SystemUtilities::open(priKeyFile));
       else LOG_WARNING("Private key file not found " << priKeyFile);
     }
   }

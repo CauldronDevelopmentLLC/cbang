@@ -36,7 +36,6 @@
 #include "YAMLMergeSink.h"
 #include "Dict.h"
 
-#include <cbang/io/StringInputSource.h>
 #include <cbang/util/Regex.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/log/Logger.h>
@@ -98,7 +97,7 @@ public:
     if (!yaml_parser_initialize(&parser))
       THROW("Failed to initialize YAML parser");
 
-    yaml_parser_set_input(&parser, _yaml_read_handler, &src.getStream());
+    yaml_parser_set_input(&parser, _yaml_read_handler, &(std::istream &)src);
   }
 
 
@@ -160,8 +159,8 @@ SmartPointer<Value> YAMLReader::parse(const InputSource &src) {
 }
 
 
-SmartPointer<Value> YAMLReader::parseString(const string &s) {
-  return parse(StringInputSource(s));
+SmartPointer<Value> YAMLReader::parseFile(const string &path) {
+  return parse(InputSource::open(path));
 }
 
 
@@ -179,8 +178,8 @@ void YAMLReader::parse(const InputSource &src, docs_t &docs) {
 }
 
 
-void YAMLReader::parseString(const string &s, docs_t &docs) {
-  parse(StringInputSource(s), docs);
+void YAMLReader::parseFile(const string &path, docs_t &docs) {
+  parse(InputSource::open(path), docs);
 }
 
 
@@ -370,7 +369,7 @@ void YAMLReader::_parse(Sink &sink) {
         } else if (tag == "!include") {
           string path = SystemUtilities::absolute(src.getName(), value);
           LOG_DEBUG(5, "YAML: !include " << path);
-          YAMLReader reader(path);
+          YAMLReader reader(InputSource::open(path));
           reader.parse(*target);
 
         } else target->write(value);

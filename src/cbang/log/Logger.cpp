@@ -30,13 +30,13 @@
 \******************************************************************************/
 
 #include "Logger.h"
-#include "LogDevice.h"
+#include "LogStream.h"
 
 #include <cbang/config.h>
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/time/Time.h>
-#include <cbang/util/NullDevice.h>
+#include <cbang/io/NullStream.h>
 #include <cbang/thread/SmartLock.h>
 #include <cbang/util/RateSet.h>
 #include <cbang/debug/Debugger.h>
