@@ -37,9 +37,8 @@
 
 
 namespace cb {
-  class SessionManager;
-
   namespace HTTP {
+    class SessionManager;
     class Request;
 
     class SessionHandler : public RequestHandler {
@@ -48,7 +47,7 @@ namespace cb {
 
     public:
       SessionHandler(const SmartPointer<SessionManager> &sessionManager,
-                         const std::string &header = "Authorization") :
+                     const std::string &header = "Authorization") :
         sessionManager(sessionManager), header(header) {}
 
       // From RequestHandler

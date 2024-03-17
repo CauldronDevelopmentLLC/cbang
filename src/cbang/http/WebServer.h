@@ -56,10 +56,8 @@ namespace cb {
       AddressFilter addrFilter;
 
     public:
-      WebServer(
-        Options &options, Event::Base &base,
-        const SmartPointer<SSLContext> &sslCtx = 0,
-        const SmartPointer<HandlerFactory> &factory = new HandlerFactory);
+      WebServer(Options &options, Event::Base &base,
+                const SmartPointer<SSLContext> &sslCtx = 0);
       virtual ~WebServer();
 
       void addOptions(Options &options);

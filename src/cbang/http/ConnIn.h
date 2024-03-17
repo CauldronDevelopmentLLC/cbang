@@ -43,6 +43,8 @@ namespace cb {
     public:
       ConnIn(Server &server);
 
+      Server &getServer() {return server;}
+
       // From Conn
       bool isIncoming() const override {return true;}
       void writeRequest(const SmartPointer<Request> &req, Event::Buffer buffer,

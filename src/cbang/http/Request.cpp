@@ -59,7 +59,11 @@ namespace {
   public:
     JSONWriter(callback_t cb, unsigned indent = 0, bool compact = false) :
       Event::JSONBufferWriter(indent, compact), cb(cb) {}
-    ~JSONWriter() {TRY_CATCH_ERROR(if (cb) cb(*this));}
+
+    ~JSONWriter() {
+      close();
+      TRY_CATCH_ERROR(if (cb) cb(*this));
+    }
   };
 
 

@@ -76,8 +76,9 @@ if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 
 # Source
 subdirs = [''] + '''
-  auth boost comp config db debug dns enum event geom http hw io js json log
-  net os parse thread time util ws xml
+  api api/arg api/handler
+  oauth2 boost comp config db debug dns enum event geom http hw io js json log net
+  os parse thread time util ws xml
 '''.split()
 
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']

@@ -30,10 +30,9 @@
 \******************************************************************************/
 
 #include "SessionHandler.h"
-
+#include "SessionManager.h"
 #include "Request.h"
 
-#include <cbang/net/SessionManager.h>
 #include <cbang/log/Logger.h>
 
 using namespace std;

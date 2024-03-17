@@ -31,7 +31,6 @@
 
 #pragma once
 
-#include "HandlerFactory.h"
 #include "RequestJSONHandler.h"
 
 #include <vector>
@@ -42,27 +41,22 @@ namespace cb {
 
   namespace HTTP {
     class HandlerGroup : public RequestHandler {
-      SmartPointer<HandlerFactory> factory;
-
       typedef std::vector<SmartPointer<RequestHandler> > handlers_t;
       handlers_t handlers;
 
       std::string prefix;
+      bool autoIndex = true;
 
     public:
-      HandlerGroup(const SmartPointer<HandlerFactory> &factory =
-                       new HandlerFactory) : factory(factory) {}
-      HandlerGroup(const std::string &prefix,
-                       const SmartPointer<HandlerFactory> &factory =
-                       new HandlerFactory) :
-        factory(factory), prefix(prefix) {}
+      HandlerGroup() {}
+      HandlerGroup(const std::string &prefix) : prefix(prefix) {}
       virtual ~HandlerGroup() {}
-
-      const SmartPointer<HandlerFactory> &getHandlerFactory() const
-        {return factory;}
 
       const std::string &getPrefix() const {return prefix;}
       void setPrefix(const std::string &prefix) {this->prefix = prefix;}
+
+      bool getAutoIndex() const {return autoIndex;}
+      void setAutoIndex(bool autoIndex) {this->autoIndex = autoIndex;}
 
       void addHandler(const SmartPointer<RequestHandler> &handler);
       void addHandler(unsigned methods, const std::string &pattern,
@@ -133,6 +127,15 @@ namespace cb {
 
       // From RequestHandler
       bool operator()(Request &req) override;
+
+      // Factory callbacks
+      virtual SmartPointer<RequestHandler>
+      createMatcher(unsigned methods, const std::string &search,
+                    const SmartPointer<RequestHandler> &child);
+      virtual SmartPointer<RequestHandler>
+      createHandler(const Resource &res);
+      virtual SmartPointer<RequestHandler>
+      createHandler(const std::string &path);
     };
   }
 }

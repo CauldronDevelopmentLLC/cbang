@@ -367,17 +367,17 @@ namespace cb {
   };
 
 
-  template<typename T> inline static
-  SmartPointer<T> SmartPtr(T *ptr)    {return ptr;}
+  template<typename T> inline static SmartPointer<T> SmartPtr(T *ptr)
+  {return ptr;}
 
-  template<typename T> inline static
-  SmartPointer<T> SmartPhony(T *ptr)  {return SmartPointer<T>::Phony(ptr);}
+  template<typename T> inline static SmartPointer<T> SmartPhony(T *ptr)
+  {return typename SmartPointer<T>::Phony(ptr);}
 
-  template<typename T> inline static
-  SmartPointer<T> SmartMalloc(T *ptr) {return SmartPointer<T>::Malloc(ptr);}
+  template<typename T> inline static SmartPointer<T> SmartMalloc(T *ptr)
+  {return typename SmartPointer<T>::Malloc(ptr);}
 
-  template<typename T> inline static
-  SmartPointer<T> SmartArray(T *ptr)  {return SmartPointer<T>::Array(ptr);}
+  template<typename T> inline static SmartPointer<T> SmartArray(T *ptr)
+  {return typename SmartPointer<T>::Array(ptr);}
 }
 
 #define CBANG_SP(T)        cb::SmartPointer<T>
