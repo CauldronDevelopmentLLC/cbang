@@ -29,7 +29,7 @@
 
 \******************************************************************************/
 
-#include <cbang/os/CPUInfo.h>
+#include <cbang/hw/CPUInfo.h>
 #include <cbang/os/SystemInfo.h>
 #include <cbang/json/Writer.h>
 

@@ -34,7 +34,7 @@
 
 #include <cbang/event/Base.h>
 #include <cbang/dns/Base.h>
-#include <cbang/event/Client.h>
+#include <cbang/http/Client.h>
 
 #include <cbang/config/CommandLine.h>
 #include <cbang/openssl/SSLContext.h>
@@ -66,17 +66,16 @@ int main(int argc, char *argv[]) {
     if (String::toLower(URI(url).getScheme()) == "https")
       sslCtx = new SSLContext;
 
-    Event::RequestMethod method =
-      Event::RequestMethod::parse(cmdLine["--method"]);
+    auto method = HTTP::Method::parse(cmdLine["--method"]);
 
     ::signal(SIGPIPE, SIG_IGN);
 
     Event::Base base(true);
     DNS::Base dnsBase(base);
-    Event::Client client(base, dnsBase, sslCtx);
+    HTTP::Client client(base, dnsBase, sslCtx);
 
     auto cb =
-      [&base] (Event::Request &req) {
+      [&base] (HTTP::Request &req) {
         LOG_INFO(1, req.getInputHeaders() << '\n' << req.getInput());
         base.loopExit();
       };
