@@ -58,6 +58,8 @@ namespace cb {
         : NullSink(allowDuplicates), stream(stream), indentSpace(indentSpace),
           indentStart(indentStart), compact(compact), precision(precision) {}
 
+      ~Writer();
+
       unsigned getIndentSpace() const {return indentSpace;}
       void setIndentSpace(unsigned x) {indentSpace = x;}
 

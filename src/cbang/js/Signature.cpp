@@ -77,7 +77,7 @@ bool Signature::isNameChar(char c) {
 void Signature::parse(const string &sig) {
   name.clear();
   unsigned state = 0;
-  string::const_iterator it = sig.begin();
+  auto it = sig.begin();
   string args;
 
   while (true) {
@@ -143,7 +143,7 @@ void Signature::parseArgs(const string &args) {
 
   clear();
   variable = false;
-  string::const_iterator it = args.begin();
+  auto it = args.begin();
 
   while (true) {
     switch (state) {

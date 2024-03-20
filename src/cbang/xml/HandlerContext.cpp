@@ -44,7 +44,7 @@ void HandlerContext::add(const string &name, HandlerFactory *factory) {
 
 
 HandlerFactory *HandlerContext::get(const string &name) {
-  factories_t::iterator it = factories.find(name);
+  auto it = factories.find(name);
   if (it != factories.end()) return it->second;
   return 0;
 }

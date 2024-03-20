@@ -182,8 +182,8 @@ namespace cb {
                   typename TaskFunctions<Data>::success_cb_t success = 0,
                   typename TaskFunctions<Data>::error_cb_t error = 0,
                   typename TaskFunctions<Data>::complete_cb_t complete = 0) {
-        submit(new TaskFunctions<Data>
-               (priority, run, success, error, complete));
+        submit(
+          new TaskFunctions<Data>(priority, run, success, error, complete));
       }
 
       // From ThreadPool

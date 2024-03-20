@@ -52,9 +52,9 @@ bool ACLSet::allow(const string &path, const string &user) const {
 
   // Check cache
   if (!flushDirtyCache()) {
-    cache_t::const_iterator it = cache.find(path);
+    auto it = cache.find(path);
     if (it != cache.end()) {
-      cache_users_t::const_iterator it2 = it->second.find(user);
+      auto it2 = it->second.find(user);
       if (it2 != it->second.end()) return it2->second;
     }
   }
@@ -68,9 +68,9 @@ bool ACLSet::allowGroup(const string &path, const string &group) const {
 
   // Check cache
   if (!flushDirtyCache()) {
-    cache_t::const_iterator it = groupCache.find(path);
+    auto it = groupCache.find(path);
     if (it != groupCache.end()) {
-      cache_users_t::const_iterator it2 = it->second.find(group);
+      auto it2 = it->second.find(group);
       if (it2 != it->second.end()) return it2->second;
     }
   }
@@ -95,12 +95,12 @@ void ACLSet::delUser(const string &user) {
   users.erase(user);
 
   // Remove from groups
-  for (groups_t::iterator it = groups.begin(); it != groups.end(); it++)
-    it->second.users.erase(user);
+  for (auto &p: groups)
+    p.second.users.erase(user);
 
   // Remove from ACLS
-  for (acls_t::iterator it = acls.begin(); it != acls.end(); it++)
-    it->second.users.erase(user);
+  for (auto &p: acls)
+    p.second.users.erase(user);
 }
 
 
@@ -121,13 +121,13 @@ void ACLSet::delGroup(const string &group) {
   groups.erase(group);
 
   // Remove from ACLS
-  for (acls_t::iterator it = acls.begin(); it != acls.end(); it++)
-    it->second.groups.erase(group);
+  for (auto &p: acls)
+    p.second.groups.erase(group);
 }
 
 
 bool ACLSet::groupHasUser(const string &groupName, const string &user) const {
-  groups_t::const_iterator it = groups.find(groupName);
+  auto it = groups.find(groupName);
   if (it == groups.end()) return false;
 
   const Group &group = it->second;
@@ -145,7 +145,7 @@ void ACLSet::groupAddUser(const string &group, const string &user) {
 
 void ACLSet::groupDelUser(const string &groupName, const string &user) {
   dirty = true;
-  groups_t::iterator it = groups.find(groupName);
+  auto it = groups.find(groupName);
   if (it == groups.end()) THROW("Group '" << groupName << "' does not exist");
   Group &group = it->second;
 
@@ -171,7 +171,7 @@ void ACLSet::delACL(const string &path) {
 
 
 bool ACLSet::aclHasUser(const string &path, const string &user) const {
-  acls_t::const_iterator it = acls.find(path);
+  auto it = acls.find(path);
   if (it == acls.end()) return false;
 
   const ACL &acl = it->second;
@@ -189,7 +189,7 @@ void ACLSet::aclAddUser(const string &path, const string &user) {
 
 void ACLSet::aclDelUser(const string &path, const string &user) {
   dirty = true;
-  acls_t::iterator it = acls.find(path);
+  auto it = acls.find(path);
   if (it == acls.end()) THROW("ACL '" << path << "' does not exist");
   ACL &acl = it->second;
 
@@ -198,7 +198,7 @@ void ACLSet::aclDelUser(const string &path, const string &user) {
 
 
 bool ACLSet::aclHasGroup(const string &path, const string &group) const {
-  acls_t::const_iterator it = acls.find(path);
+  auto it = acls.find(path);
   if (it == acls.end()) return false;
 
   const ACL &acl = it->second;
@@ -216,7 +216,7 @@ void ACLSet::aclAddGroup(const string &path, const string &group) {
 
 void ACLSet::aclDelGroup(const string &path, const string &group) {
   dirty = true;
-  acls_t::iterator it = acls.find(path);
+  auto it = acls.find(path);
   if (it == acls.end()) THROW("ACL '" << path << "' does not exist");
   ACL &acl = it->second;
 
@@ -281,23 +281,19 @@ void ACLSet::write(JSON::Sink &sink) const {
   // Users
   if (!users.empty()) {
     sink.insertList("users");
-    for (users_t::const_iterator it = users.begin(); it != users.end(); it++)
-      sink.append(*it);
+    for (auto &user: users) sink.append(user);
     sink.endList();
   }
 
   // Groups
   if (!groups.empty()) {
     sink.insertDict("groups");
-    groups_t::const_iterator it;
-    for (it = groups.begin(); it != groups.end(); it++) {
-      sink.insertList(it->first);
+    for (auto &p: groups) {
+      sink.insertList(p.first);
 
       // Users
-      const string_set_t &users = it->second.users;
-      string_set_t::const_iterator it2;
-      for (it2 = users.begin(); it2 != users.end(); it2++)
-        sink.append(*it2);
+      for (auto &user: p.second.users)
+        sink.append(user);
 
       sink.endList();
     }
@@ -307,29 +303,27 @@ void ACLSet::write(JSON::Sink &sink) const {
   // ACLS
   if (!acls.empty()) {
     sink.insertDict("acls");
-    for (acls_t::const_iterator it = acls.begin(); it != acls.end(); it++) {
-      sink.insertDict(it->first);
+    for (auto &p: acls) {
+      sink.insertDict(p.first);
 
       // Users
-      const string_set_t &users = it->second.users;
+      auto &users = p.second.users;
       if (!users.empty()) {
         sink.insertList("users");
 
-        string_set_t::const_iterator it2;
-        for (it2 = users.begin(); it2 != users.end(); it2++)
-          sink.append(*it2);
+        for (auto &user: users)
+          sink.append(user);
 
         sink.endList();
       }
 
       // Groups
-      const string_set_t &groups = it->second.groups;
+      auto &groups = p.second.groups;
       if (!groups.empty()) {
         sink.insertList("groups");
 
-        string_set_t::const_iterator it2;
-        for (it2 = groups.begin(); it2 != groups.end(); it2++)
-          sink.append(*it2);
+        for (auto &group: groups)
+          sink.append(group);
 
         sink.endList();
       }
@@ -371,7 +365,7 @@ bool ACLSet::allowNoCache(const string &_path, const string &user) const {
   for (string path = _path; !path.empty(); path = parentPath(path)) {
     LOG_DEBUG(5, CBANG_FUNC << '(' << path << ", " << user << ')');
 
-    acls_t::const_iterator it = acls.find(path);
+    auto it = acls.find(path);
     if (it != acls.end()) {
       const ACL &acl = it->second;
 
@@ -379,13 +373,12 @@ bool ACLSet::allowNoCache(const string &_path, const string &user) const {
       if (acl.users.find(user) != acl.users.end()) return true;
 
       // Check groups
-      string_set_t::const_iterator it2;
-      for (it2 = acl.groups.begin(); it2 != acl.groups.end(); it2++) {
-        groups_t::const_iterator it3 = groups.find(*it2);
-        if (it3 == groups.end())
-          THROW("ACL contains non-existant group '" << *it2);
+      for (auto &name: acl.groups) {
+        auto it2 = groups.find(name);
+        if (it2 == groups.end())
+          THROW("ACL contains non-existant group '" << name);
 
-        const Group &group = it3->second;
+        const Group &group = it2->second;
         if (group.users.find(user) != group.users.end()) return true;
       }
 
@@ -405,7 +398,7 @@ bool ACLSet::allowGroupNoCache(const string &_path, const string &group) const {
   for (string path = _path; !path.empty(); path = parentPath(path)) {
     LOG_DEBUG(5, CBANG_FUNC << '(' << path << ", @" << group << ')');
 
-    acls_t::const_iterator it = acls.find(path);
+    auto it = acls.find(path);
     if (it != acls.end()) {
       const ACL &acl = it->second;
 

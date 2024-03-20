@@ -37,6 +37,7 @@
 #include <cbang/Catch.h>
 #include <cbang/event/Event.h>
 #include <cbang/event/BufferStream.h>
+#include <cbang/event/JSONBufferWriter.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 #include <cbang/json/JSON.h>
@@ -51,25 +52,15 @@ using namespace std;
 
 
 namespace {
-  struct FilteringOStreamWithRef : public io::filtering_ostream {
-    SmartPointer<ostream> ref;
-    virtual ~FilteringOStreamWithRef() {reset();}
+  class JSONWriter : public Event::JSONBufferWriter {
+    typedef std::function<void (Event::Buffer &buffer)> callback_t;
+    callback_t cb;
+
+  public:
+    JSONWriter(callback_t cb, unsigned indent = 0, bool compact = false) :
+      Event::JSONBufferWriter(indent, compact), cb(cb) {}
+    ~JSONWriter() {TRY_CATCH_ERROR(if (cb) cb(*this));}
   };
-
-
-  SmartPointer<ostream> compressBufferStream
-  (Event::Buffer buffer, Compression compression) {
-    SmartPointer<ostream> target = new Event::BufferStream<>(buffer);
-    SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
-
-    if (compression == Compression::COMPRESSION_NONE) return target;
-
-    pushCompression(compression, *out);
-    out->ref = target;
-    out->push(*target);
-
-    return out;
-  }
 
 
   const char *getContentEncoding(Compression compression) {
@@ -81,38 +72,6 @@ namespace {
     default: return 0;
     }
   }
-
-
-  struct JSONWriter :
-    Event::Buffer, SmartPointer<ostream>, public JSON::Writer {
-    SmartPointer<Request> req;
-    bool closed = false;
-
-    JSONWriter(const SmartPointer<Request> &req, unsigned indent, bool compact,
-               Compression compression) :
-      SmartPointer<ostream>(compressBufferStream(*this, compression)),
-      JSON::Writer(*SmartPointer<ostream>::get(), indent, compact), req(req) {
-      req->outSetContentEncoding(compression);
-    }
-
-    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
-
-    ostream &getStream() {return *SmartPointer<ostream>::get();}
-    bool isIncoming() const {return req->isIncoming();}
-    unsigned getID() const {return req->getID();}
-
-    // From JSON::NullSink
-    void close() override {
-      if (closed) return;
-      closed = true;
-      JSON::Writer::close();
-      SmartPointer<ostream>::release();
-      if (!getLength()) req->outRemove("Content-Type");
-      send(*this);
-    }
-
-    virtual void send(Event::Buffer &buffer) {req->send(buffer);}
-  };
 }
 
 
@@ -447,46 +406,17 @@ const SmartPointer<JSON::Value> &Request::getJSONMessage() {
 }
 
 
-SmartPointer<JSON::Writer>
-Request::getJSONWriter(unsigned indent, bool compact, Compression compression) {
+SmartPointer<JSON::Writer> Request::getJSONWriter() {
   outputBuffer.clear();
-  setContentType("application/json");
 
-  if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
+  auto cb = [this] (Event::Buffer &buffer) {
+    if (!buffer.getLength()) return;
 
-  return new JSONWriter(this, indent, compact, compression);
-}
-
-
-SmartPointer<JSON::Writer> Request::getJSONWriter(Compression compression) {
-  return getJSONWriter(0, !uri.has("pretty"), compression);
-}
-
-
-SmartPointer<JSON::Writer> Request::getJSONPWriter(const string &callback) {
-  struct Writer : public JSONWriter {
-    Writer(const SmartPointer<Request> &req, const string &callback) :
-      JSONWriter(req, 0, true, COMPRESSION_NONE) {
-      getStream() << callback << '(';
-    }
-
-    // FROM JSONWriter
-    void close() override {
-      JSON::Writer::close();
-      getStream() << ')';
-      JSONWriter::close();
-    }
+    setContentType("application/json");
+    send(buffer);
   };
 
-  if (!Regex("^\\w+$").match(callback))
-    THROWX("Invalid callback '" << String::escapeC(callback) << "'",
-           HTTP_BAD_REQUEST);
-
-  outputBuffer.clear();
-  setContentType("application/javascript");
-  outSet("X-Content-Type-Options", "nosniff");
-
-  return new Writer(this, callback);
+  return new JSONWriter(cb, 0, !uri.has("pretty"));
 }
 
 
@@ -499,7 +429,22 @@ SmartPointer<ostream> Request::getOutputStream(Compression compression) {
   // Auto select compression type based on Accept-Encoding
   if (compression == COMPRESSION_AUTO) compression = getRequestedCompression();
   outSetContentEncoding(compression);
-  return compressBufferStream(outputBuffer, compression);
+
+  SmartPointer<ostream> target = new Event::BufferStream<>(outputBuffer);
+
+  if (compression == Compression::COMPRESSION_NONE) return target;
+
+  struct FilteringOStreamWithRef : public io::filtering_ostream {
+    SmartPointer<ostream> ref;
+    virtual ~FilteringOStreamWithRef() {reset();}
+  };
+
+  SmartPointer<FilteringOStreamWithRef> out = new FilteringOStreamWithRef;
+  pushCompression(compression, *out);
+  out->ref = target;
+  out->push(*target);
+
+  return out;
 }
 
 
@@ -646,18 +591,11 @@ void Request::sendChunk(const char *data, unsigned length) {
 
 
 SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
-  struct Writer : public JSONWriter {
-    Writer(const SmartPointer<Request> &req) :
-      JSONWriter(req, 0, true, COMPRESSION_NONE) {}
-
-    // NOTE, destructor must be duplicated so virtual function call works
-    ~Writer() {TRY_CATCH_ERROR(close(););}
-
-    // From JSONWriter
-    void send(Event::Buffer &buffer) override {req->sendChunk(buffer);}
+  auto cb = [this] (Event::Buffer &buffer) {
+    if (buffer.getLength()) sendChunk(buffer);
   };
 
-  return new Writer(this);
+  return new JSONWriter(cb);
 }
 
 

@@ -67,10 +67,7 @@ namespace cb {
     }
 
 
-    void reset() {
-      for (auto it = rates.begin(); it != rates.end(); it++)
-        it->second.reset();
-    }
+    void reset() {for (auto &p: rates)p.second.reset();}
 
 
     bool has(const std::string &key) const {
@@ -95,12 +92,12 @@ namespace cb {
 
 
     void insert(JSON::Sink &sink, bool withTotals = false) const {
-      for (auto it = begin(); it != end(); it++)
-        if (!withTotals) sink.insert(it->first, it->second.get());
+      for (auto &p: *this)
+        if (!withTotals) sink.insert(p.first, p.second.get());
         else {
-          sink.insertDict(it->first);
-          sink.insert("rate", it->second.get());
-          sink.insert("total", it->second.getTotal());
+          sink.insertDict(p.first);
+          sink.insert("rate", p.second.get());
+          sink.insert("total", p.second.getTotal());
           sink.endDict();
         }
     }

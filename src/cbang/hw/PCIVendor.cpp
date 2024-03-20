@@ -42,7 +42,7 @@ PCIVendor::vendors_t PCIVendor::vendors;
 
 const PCIVendor *PCIVendor::find(uint16_t id) {
   if (vendors.empty()) load();
-  vendors_t::iterator it = vendors.find(PCIVendor(id, ""));
+  auto it = vendors.find(PCIVendor(id, ""));
   return it == vendors.end() ? 0 : &*it;
 }
 

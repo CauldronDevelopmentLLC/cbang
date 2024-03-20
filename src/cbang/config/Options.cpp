@@ -59,7 +59,7 @@ Options::~Options() {}
 
 void Options::add(const string &_key, SmartPointer<Option> option) {
   string key = cleanKey(_key);
-  iterator it = map.find(key);
+  auto it = map.find(key);
 
   if (it != map.end()) THROW("Option '" << key << "' already exists.");
 
@@ -81,7 +81,7 @@ bool Options::has(const string &key) const {
 const SmartPointer<Option> &Options::get(const string &_key) const {
   string key = cleanKey(_key);
 
-  const_iterator it = map.find(key);
+  auto it = map.find(key);
 
   if (it == map.end()) {
     if (getAutoAdd()) {
@@ -103,7 +103,7 @@ void Options::alias(const string &_key, const string &_alias) {
 
   const SmartPointer<Option> &option = localize(key);
 
-  iterator it = map.find(alias);
+  auto it = map.find(alias);
   if (it != map.end())
     THROW("Cannot alias, option '" << alias << "' already exists.");
 
@@ -114,12 +114,11 @@ void Options::alias(const string &_key, const string &_alias) {
 
 void Options::insert(JSON::Sink &sink, bool config,
                      const string &delims) const {
-  categories_t::const_iterator it;
-  for (it = categories.begin(); it != categories.end(); it++)
-    if (!it->second->getHidden() && !it->second->isEmpty() &&
-        (!config || it->second->hasSetOption())) {
-      if (!config) sink.beginInsert(it->first);
-      it->second->write(sink, config, delims);
+  for (auto &p: categories)
+    if (!p.second->getHidden() && !p.second->isEmpty() &&
+        (!config || p.second->hasSetOption())) {
+      if (!config) sink.beginInsert(p.first);
+      p.second->write(sink, config, delims);
     }
 }
 
@@ -132,22 +131,21 @@ void Options::write(JSON::Sink &sink, bool config, const string &delims) const {
 
 
 ostream &Options::print(ostream &stream) const {
-  const_iterator it;
   unsigned width = 30;
 
   // Determine max width
-  for (it = begin(); it != end(); it++)
-    if (!it->second->isHidden()) {
-      unsigned len = it->second->getName().length();
+  for (auto &p: *this)
+    if (!p.second->isHidden()) {
+      unsigned len = p.second->getName().length();
       if (width < len) width = len;
     }
 
   // Print
-  for (it = begin(); it != end(); it++)
-    if (!it->second->isHidden()) {
-      stream << setw(width) << it->second->getName() << " = ";
+  for (auto &p: *this)
+    if (!p.second->isHidden()) {
+      stream << setw(width) << p.second->getName() << " = ";
 
-      if (it->second->hasValue()) stream << *it->second << '\n';
+      if (p.second->hasValue()) stream << *p.second << '\n';
       else stream << "<undefined>" << '\n';
     }
 
@@ -156,14 +154,12 @@ ostream &Options::print(ostream &stream) const {
 
 
 void Options::printHelp(ostream &stream, bool cmdLine) const {
-  categories_t::const_iterator it;
-
   bool first = true;
-  for (it = categories.begin(); it != categories.end(); it++)
-    if (!it->second->getHidden()) {
+  for (auto &p: categories)
+    if (!p.second->getHidden()) {
       if (first) first = false;
       else stream << "\n\n";
-      it->second->printHelp(stream, cmdLine);
+      p.second->printHelp(stream, cmdLine);
     }
 }
 
@@ -173,8 +169,8 @@ SmartPointer<JSON::Value> Options::getDict(bool defaults, bool all) const {
 
   sink.beginDict();
 
-  for (const_iterator it = begin(); it != end(); it++) {
-    Option &option = *it->second;
+  for (auto &p: *this) {
+    Option &option = *p.second;
 
     if (!all && !option.isSet() && (!defaults || !option.hasValue()))
       continue;
@@ -191,11 +187,11 @@ SmartPointer<JSON::Value> Options::getDict(bool defaults, bool all) const {
 
 
 const SmartPointer<OptionCategory> &Options::getCategory(const string &name) {
-  categories_t::iterator it = categories.find(name);
+  auto it = categories.find(name);
 
   if (it == categories.end())
-    it = categories.insert
-      (categories_t::value_type(name, new OptionCategory(name))).first;
+    it = categories.insert(
+      categories_t::value_type(name, new OptionCategory(name))).first;
 
   return it->second;
 }
@@ -215,30 +211,19 @@ void Options::popCategory() {
 
 
 void Options::write(XML::Handler &handler, uint32_t flags) const {
-  categories_t::const_iterator it;
-
-  for (it = categories.begin(); it != categories.end(); it++)
-    it->second->write(handler, flags);
+  for (auto &p: categories) p.second->write(handler, flags);
 }
 
 
 void Options::printHelpTOC(XML::Handler &handler, const string &prefix) const {
   handler.startElement("ul");
-
-  categories_t::const_iterator it;
-
-  for (it = categories.begin(); it != categories.end(); it++)
-    it->second->printHelpTOC(handler, prefix);
-
+  for (auto &p: categories) p.second->printHelpTOC(handler, prefix);
   handler.endElement("ul");
 }
 
 
 void Options::printHelp(XML::Handler &handler, const string &prefix) const {
-  categories_t::const_iterator it;
-
-  for (it = categories.begin(); it != categories.end(); it++)
-    it->second->printHelp(handler, prefix);
+  for (auto &p: categories) p.second->printHelp(handler, prefix);
 }
 
 

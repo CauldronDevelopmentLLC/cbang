@@ -98,9 +98,9 @@ void JSImpl::interrupt() {isolate->TerminateExecution();}
 
 SmartPointer<js::StackTrace> JSImpl::getStackTrace(unsigned maxFrames) {
   v8::StackTrace::StackTraceOptions options =
-    static_cast<v8::StackTrace::StackTraceOptions>
-    (v8::StackTrace::kOverview |
-     v8::StackTrace::kExposeFramesAcrossSecurityOrigins);
+    static_cast<v8::StackTrace::StackTraceOptions>(
+      v8::StackTrace::kOverview |
+      v8::StackTrace::kExposeFramesAcrossSecurityOrigins);
   v8::Local<v8::StackTrace> v8Trace =
     v8::StackTrace::CurrentStackTrace(isolate, maxFrames, options);
   SmartPointer<js::StackTrace> trace = new js::StackTrace;

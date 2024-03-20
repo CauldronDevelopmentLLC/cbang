@@ -43,8 +43,8 @@ using namespace cb;
 using namespace std;
 
 
-OAuth2LoginHandler::OAuth2LoginHandler
-(Client &client, const SmartPointer<OAuth2> &oauth2,
+OAuth2LoginHandler::OAuth2LoginHandler(
+  Client &client, const SmartPointer<OAuth2> &oauth2,
  const SmartPointer<SessionManager> &sessionManager) :
   OAuth2Login(client, oauth2), sessionManager(sessionManager) {}
 
@@ -52,8 +52,8 @@ OAuth2LoginHandler::OAuth2LoginHandler
 OAuth2LoginHandler::~OAuth2LoginHandler() {}
 
 
-void OAuth2LoginHandler::processProfile(Request &req,
-                                            const JSON::ValuePtr &profile) {
+void OAuth2LoginHandler::processProfile(
+  Request &req, const JSON::ValuePtr &profile) {
   if (profile.isNull()) return req.reply(HTTP_UNAUTHORIZED);
 
   // Fill session
@@ -98,8 +98,8 @@ bool OAuth2LoginHandler::operator()(Request &req) {
   } else if (session->hasGroup("authenticated")) return false; // Logged in
 
   if (req.getURI().has("state") &&
-      OAuth2Login::requestToken
-      (req, session->getID(), session->getString("redirect_uri", "")))
+      OAuth2Login::requestToken(
+        req, session->getID(), session->getString("redirect_uri", "")))
     return true;
 
   URI redirectURI =

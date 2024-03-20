@@ -114,9 +114,9 @@ public:
 
   void parse(yaml_event_t &event) {
     if (!yaml_parser_parse(&parser, &event))
-      throw ParseError
-        (SSTR("YAML: " << parser.problem), parser.error,
-         location(parser.problem_mark));
+      throw ParseError(
+        SSTR("YAML: " << parser.problem), parser.error,
+        location(parser.problem_mark));
   }
 };
 

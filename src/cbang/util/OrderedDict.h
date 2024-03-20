@@ -66,19 +66,18 @@ namespace cb {
 
 
     void update(const OrderedDict<T> &o) {
-      for (iterator it = o.begin(); it != o.end(); it++)
-        insert(it->first, it->second);
+      for (auto &p: o) insert(p.first, p.second);
     }
 
 
     int lookup(const KEY &key) const {
-      typename dict_t::const_iterator it = dict.find(key);
+      auto it = dict.find(key);
       return it == dict.end() ? -1 : it->second;
     }
 
 
     size_type indexOf(const KEY &key) const {
-      typename dict_t::const_iterator it = dict.find(key);
+      auto it = dict.find(key);
       if (it == dict.end()) CBANG_KEY_ERROR("Key '" << key << "' not found");
       return it->second;
     }
@@ -125,7 +124,7 @@ namespace cb {
     const typename OrderedDict::type_t &
     get(const KEY &key,
         const typename OrderedDict::type_t &defaultValue) const {
-      typename dict_t::const_iterator it = dict.find(key);
+      auto it = dict.find(key);
       if (it == dict.end() || size() <= it->second)
         return defaultValue;
       return this->at(it->second).second;
@@ -133,7 +132,7 @@ namespace cb {
 
 
     size_type insert(const KEY &key, const type_t &value) {
-      typename dict_t::const_iterator it = dict.find(key);
+      auto it = dict.find(key);
       if (it == dict.end()) {
         dict.insert(typename dict_t::value_type(key, size()));
         vector_t::push_back(typename vector_t::value_type(key, value));
@@ -159,7 +158,7 @@ namespace cb {
 
 
     typename OrderedDict::type_t &operator[](const KEY &key) {
-      typename dict_t::iterator it = dict.find(key);
+      auto it = dict.find(key);
       if (it == dict.end()) {
         dict[key] = size();
         vector_t::push_back(typename vector_t::value_type(key, T()));
@@ -184,8 +183,8 @@ namespace cb {
       dict.erase(key);
       vector_t::erase(vector_t::begin() + i);
 
-      for (auto it = dict.begin(); it != dict.end(); it++)
-        if (i < it->second) it->second--;
+      for (auto &p: dict)
+        if (i < p.second) p.second--;
     }
   };
 }

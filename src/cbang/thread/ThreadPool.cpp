@@ -41,58 +41,33 @@ ThreadPool::ThreadPool(unsigned size) {
 }
 
 
-void ThreadPool::start() {
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->start();
-}
-
-
-void ThreadPool::stop() {
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->stop();
-}
+void ThreadPool::start() {for (auto &t: *this) t->start();}
+void ThreadPool::stop()  {for (auto &t: *this) t->stop();}
 
 
 void ThreadPool::join() {
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->stop();
-
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->wait();
+  for (auto &t: *this) t->stop();
+  for (auto &t: *this) t->wait();
 }
 
 
-void ThreadPool::wait() {
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->wait();
-}
+void ThreadPool::wait() {for (auto &t: *this) t->wait();}
 
 
 void ThreadPool::getStates(vector<Thread::state_t> &states) const {
-  for (iterator it = begin(); it != end(); it++)
-    states.push_back((*it)->getState());
+  for (auto &t: *this) states.push_back(t->getState());
 }
 
 
 void ThreadPool::getIDs(vector<unsigned> &ids) const {
-  for (iterator it = begin(); it != end(); it++)
-    ids.push_back((*it)->getID());
+  for (auto &t: *this) ids.push_back(t->getID());
 }
 
 
 void ThreadPool::getExitStatuses(vector<int> &statuses) const {
-  for (iterator it = begin(); it != end(); it++)
-    statuses.push_back((*it)->getExitStatus());
+  for (auto &t: *this) statuses.push_back(t->getExitStatus());
 }
 
 
-void ThreadPool::cancel() {
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->cancel();
-}
-
-
-void ThreadPool::kill(int signal) {
-  for (iterator it = begin(); it != end(); it++)
-    (*it)->kill(signal);
-}
+void ThreadPool::cancel()         {for (auto &t: *this) t->cancel();}
+void ThreadPool::kill(int signal) {for (auto &t: *this) t->kill(signal);}

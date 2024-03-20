@@ -189,8 +189,8 @@ void Logger::startLogFile(const string &filename) {
                             logRotateCompression);
   }
 
-  logFile = SystemUtilities::open(filename, ios::out |
-                                  (logTrunc ? ios::trunc : ios::app));
+  logFile = SystemUtilities::open(
+    filename, ios::out | (logTrunc ? ios::trunc : ios::app));
   logBar("Log Started", lastDate);
   logFile->flush();
 }
@@ -395,13 +395,13 @@ void Logger::writeRates(JSON::Sink &sink) const {
 
   sink.beginDict();
 
-  for (auto it = rates->begin(); it != rates->end(); it++) {
-    sink.insertDict(it->first);
-    sink.insert("rate", it->second.get());
-    sink.insert("total", it->second.getTotal());
+  for (auto &p: *rates) {
+    sink.insertDict(p.first);
+    sink.insert("rate",  p.second.get());
+    sink.insert("total", p.second.getTotal());
 
-    auto it2 = rateMessages.find(it->first);
-    if (it2 != rateMessages.end()) sink.insert("msg", it2->second);
+    auto it = rateMessages.find(p.first);
+    if (it != rateMessages.end()) sink.insert("msg", it->second);
     sink.endDict();
   }
 
@@ -463,8 +463,8 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
   }
 #endif
 
-  return new cb::LogStream
-    (new cb::LogDevice::impl(prefix, suffix, trailer, rateKey));
+  return new cb::LogStream(
+    new cb::LogDevice::impl(prefix, suffix, trailer, rateKey));
 }
 
 

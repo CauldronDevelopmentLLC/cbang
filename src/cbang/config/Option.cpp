@@ -350,8 +350,8 @@ Option::integers_t Option::parseIntegers(const string &value,
 
   String::tokenize(value, tokens, delims);
 
-  for (strings_t::iterator it = tokens.begin(); it != tokens.end(); it++)
-    result.push_back(String::parseS32(*it));
+  for (auto &token: tokens)
+    result.push_back(String::parseS32(token));
 
   return result;
 }
@@ -364,8 +364,8 @@ Option::doubles_t Option::parseDoubles(const string &value,
 
   String::tokenize(value, tokens, delims);
 
-  for (strings_t::iterator it = tokens.begin(); it != tokens.end(); it++)
-    result.push_back(String::parseDouble(*it));
+  for (auto &token: tokens)
+    result.push_back(String::parseDouble(token));
 
   return result;
 }

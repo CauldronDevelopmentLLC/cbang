@@ -86,7 +86,7 @@ void OptionMap::set(const string &name, const string &value, bool setDefault) {
 void OptionMap::startElement(const string &name, const XML::Attributes &attrs) {
   setDefault = attrs.has("default") && attrs["default"] == "true";
 
-  XML::Attributes::const_iterator it = attrs.find("v");
+  auto it = attrs.find("v");
   if (it == attrs.end()) it = attrs.find("value");
   xmlValueSet = it != attrs.end();
 

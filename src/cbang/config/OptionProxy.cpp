@@ -56,9 +56,8 @@ const SmartPointer<Option> &OptionProxy::localize(const string &key) {
 
   // Localize any aliases
   const string &name = option->getName(); // Get the non-aliased name
-  Option::iterator it;
-  for (it = option->aliasesBegin(); it != option->aliasesEnd(); it++)
-    Options::alias(name, *it);
+  for (auto &alias: option->getAliases())
+    Options::alias(name, alias);
 
   return Options::get(key); // Get a const reference to the SmartPointer
 }

@@ -53,7 +53,7 @@ namespace cb {
 
 
     void set(const std::string &key, const std::string &value) {
-      std::pair<iterator, bool> result = insert(value_type(key, value));
+      auto result = insert(value_type(key, value));
       if (!result.second) result.first->second = value;
     }
 
@@ -62,14 +62,14 @@ namespace cb {
 
 
     void append(const std::string &key, const std::string &value) {
-      iterator it = find(key);
+      auto it = find(key);
       if (it == end()) set(key, value);
       else it->second += value;
     }
 
 
     const std::string &get(const std::string &key) const {
-      const_iterator it = find(key);
+      auto it = find(key);
       if (it == end()) CBANG_THROW("'" << key << "' not set");
       return it->second;
     }
@@ -77,7 +77,7 @@ namespace cb {
 
     const std::string &get(const std::string &key,
                            const std::string &defaultValue) const {
-      const_iterator it = Super_T::find(key);
+      auto it = Super_T::find(key);
       return it == end() ? defaultValue : it->second;
     }
 
@@ -95,8 +95,8 @@ namespace cb {
   struct string_ci_less {
     bool operator()(const std::string &s1, const std::string &s2) const {
       // This is longwinded but avoids making copies of the strings
-      std::string::const_iterator it1 = s1.begin();
-      std::string::const_iterator it2 = s2.begin();
+      auto it1 = s1.begin();
+      auto it2 = s2.begin();
 
       while (true) {
         if (it1 == s1.end()) return it2 != s2.end();

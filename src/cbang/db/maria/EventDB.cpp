@@ -263,7 +263,7 @@ void EventDB::close(callback_t cb) {
 void EventDB::query(callback_t cb, const string &s,
                     const SmartPointer<const JSON::Value> &dict) {
   string query = dict.isNull() ? s : format(s, dict->getDict());
-  SmartPointer<QueryCallback> queryCB = new QueryCallback(*this, cb, query);
+  auto queryCB = SmartPtr(new QueryCallback(*this, cb, query));
 
   // By wrapping the event callback in a lambda the SmartPointer is kept alive
   auto reply =

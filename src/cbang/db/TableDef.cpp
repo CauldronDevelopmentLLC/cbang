@@ -67,7 +67,7 @@ void TableDef::add(const ColumnDef &column) {
 
 
 unsigned TableDef::getIndex(const std::string &column) const {
-  columnMap_t::const_iterator it = columnMap.find(column);
+  auto it = columnMap.find(column);
   if (it == columnMap.end())
     THROW("Index for column '" << column << "' not found");
   return it->second;
@@ -79,7 +79,7 @@ void TableDef::create(Database &db) const {
 
   sql << "CREATE TABLE IF NOT EXISTS " << getEscapedName() << " (";
 
-  for (iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (it != begin()) sql << ",";
     sql << '"' << it->getName() << "\" " << it->getType() << " "
         << it->getConstraints();
@@ -137,10 +137,10 @@ void TableDef::rebuild(Database &db, const columnRemap_t &_columnRemap) const {
   string escName = getEscapedName();
   string sql = "INSERT INTO " + escName + " SELECT ";
 
-  for (iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (it != begin()) sql += ", ";
 
-    columnRemap_t::iterator it2 = columnRemap.find(it->getName());
+    auto it2 = columnRemap.find(it->getName());
     if (it2 == columnRemap.end()) {
       string type = String::toLower(it->getType());
 
@@ -182,14 +182,14 @@ TableDef::makeWriteStmt(Database &db, const string &suffix) const {
 
   sql << "REPLACE INTO " << getEscapedName() << " (";
 
-  for (iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (it != begin()) sql << ", ";
     sql << '"' << it->getName() << '"';
   }
 
   sql << ") VALUES (";
 
-  for (iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (it != begin()) sql << ", ";
 
     sql << "@" << String::toUpper(it->getName());
@@ -208,7 +208,7 @@ TableDef::makeReadStmt(Database &db, const string &suffix) const {
   sql << "SELECT ";
 
   // This is actually faster than '*' and guarantees the correct order
-  for (iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (it != begin()) sql << ", ";
     sql << '"' << it->getName() << '"';
   }

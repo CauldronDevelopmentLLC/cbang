@@ -203,12 +203,7 @@ namespace cb {
       void setJSONMessage(const SmartPointer<JSON::Value> &msg)
         {this->msg = msg;}
       const SmartPointer<JSON::Value> &getJSONMessage();
-      SmartPointer<JSON::Writer>
-      getJSONWriter(unsigned indent, bool compact,
-                    Compression compression = COMPRESSION_NONE);
-      SmartPointer<JSON::Writer>
-      getJSONWriter(Compression compression = COMPRESSION_NONE);
-      SmartPointer<JSON::Writer> getJSONPWriter(const std::string &callback);
+      SmartPointer<JSON::Writer> getJSONWriter();
 
       SmartPointer<std::istream> getInputStream() const;
       SmartPointer<std::ostream>

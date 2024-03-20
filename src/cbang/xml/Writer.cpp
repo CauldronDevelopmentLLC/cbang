@@ -52,9 +52,8 @@ void Writer::startElement(const string &name, const Attributes &attrs) {
 
   stream << '<' << escape(name);
 
-  Attributes::const_iterator it;
-  for (it = attrs.begin(); it != attrs.end(); it++)
-    stream << ' ' << escape(it->first) << "='" << escape(it->second) << '\'';
+  for (auto &p: attrs)
+    stream << ' ' << escape(p.first) << "='" << escape(p.second) << '\'';
 
   closed = false;
   depth++;
@@ -80,7 +79,7 @@ void Writer::endElement(const string &name) {
 void Writer::text(const string &text) {
   if (!text.length()) return;
 
-  string::const_iterator it = text.begin();
+  auto it = text.begin();
 
   if (!closed) {
     stream << '>';
@@ -130,8 +129,8 @@ void Writer::comment(const string &text) {
   stream << "<!-- ";
 
   bool dash = false;
-  for (string::const_iterator it = text.begin(); it != text.end(); it++) {
-    if (*it == '-') {
+  for (auto c: text) {
+    if (c == '-') {
       if (dash) {
         // Drop double dash
         stream.put(' ');
@@ -141,12 +140,12 @@ void Writer::comment(const string &text) {
       dash = true;
     } else dash = false;
 
-    switch (*it) {
+    switch (c) {
     case '\r': break;
 #ifdef _WIN32
     case '\n': stream.put('\r');
 #endif
-    default: stream.put(*it);
+    default: stream.put(c);
     }
   }
 
@@ -183,26 +182,26 @@ void Writer::wrap() {
 const string Writer::escape(const string &name) {
   string result;
 
-  for (string::const_iterator it = name.begin(); it != name.end(); it++)
-    switch (*it) {
-    case '<': result += "&lt;"; break;
-    case '>': result += "&gt;"; break;
-    case '&': result += "&amp;"; break;
-    case '"': result += "&quot;"; break;
+  for (auto c: name)
+    switch (c) {
+    case '<':  result += "&lt;";   break;
+    case '>':  result += "&gt;";   break;
+    case '&':  result += "&amp;";  break;
+    case '"':  result += "&quot;"; break;
     case '\'': result += "&apos;"; break;
     case '\r': break;
 #ifdef _WIN32
-    case '\n': result += "\r\n"; break;
+    case '\n': result += "\r\n";   break;
 #endif
-    default: result += *it; break;
+    default:   result += c;        break;
     }
 
   return result;
 }
 
 
-void Writer::simpleElement(const string &name, const string &content,
-                              const Attributes &attrs) {
+void Writer::simpleElement(
+  const string &name, const string &content, const Attributes &attrs) {
   startElement(name, attrs);
   text(content);
   endElement(name);

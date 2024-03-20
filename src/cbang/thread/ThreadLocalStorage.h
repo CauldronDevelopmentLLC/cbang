@@ -50,10 +50,10 @@ namespace cb {
     T &get() {
       SmartLock lock(this);
 
-      typename storage_t::iterator it = storage.find(Thread::self());
+      auto it = storage.find(Thread::self());
       if (it == storage.end())
-        it = storage.insert
-          (typename storage_t::value_type(Thread::self(), T())).first;
+        it = storage.insert(
+          typename storage_t::value_type(Thread::self(), T())).first;
 
       return it->second;
     }
@@ -61,10 +61,10 @@ namespace cb {
     T &get(T defaultValue) {
       SmartLock lock(this);
 
-      typename storage_t::iterator it = storage.find(Thread::self());
+      auto it = storage.find(Thread::self());
       if (it == storage.end())
-        it = storage.insert
-          (typename storage_t::value_type(Thread::self(), defaultValue)).first;
+        it = storage.insert(
+          typename storage_t::value_type(Thread::self(), defaultValue)).first;
 
       return it->second;
     }
@@ -77,7 +77,7 @@ namespace cb {
     void set(const T &value) {
       SmartLock lock(this);
 
-      typename storage_t::iterator it = storage.find(Thread::self());
+      auto it = storage.find(Thread::self());
       if (it == storage.end())
         storage.insert(typename storage_t::value_type(Thread::self(), value));
       else it->second = value;
@@ -85,7 +85,7 @@ namespace cb {
 
     void clear() {
       SmartLock lock(this);
-      typename storage_t::iterator it = storage.find(Thread::self());
+      auto it = storage.find(Thread::self());
       if (it != storage.end()) storage.erase(it);
     }
   };

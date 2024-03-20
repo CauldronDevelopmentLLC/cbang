@@ -58,7 +58,7 @@ EnumerationManager::EnumerationManager(Application &app) {
 
 
 void EnumerationManager::print(ostream &stream, const string &name) const {
-  enums_t::const_iterator it = enums.find(name);
+  auto it = enums.find(name);
   if (it == enums.end()) THROW("Enumeration '" << name << "' not found");
 
   for (unsigned i = 0; i < it->second.getCount(); i++)
@@ -68,8 +68,7 @@ void EnumerationManager::print(ostream &stream, const string &name) const {
 
 int EnumerationManager::action(Option &option) {
   if (option.hasValue()) print(cout, String::toLower(option.toString()));
-  else for (enums_t::iterator it = enums.begin(); it != enums.end(); it++)
-         cout << it->first << '\n';
+  else for (auto &p: enums) cout << p.first << '\n';
 
   cout << flush;
 

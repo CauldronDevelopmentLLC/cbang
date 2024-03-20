@@ -159,7 +159,7 @@ string Base64::decode(const string &s) const {
   string result;
   result.reserve(s.length() / 4 * 3 + 1);
 
-  string::const_iterator it = s.begin();
+  auto it = s.begin();
   while (it != s.end() && isspace(*it)) it++;
 
   while (it != s.end()) {

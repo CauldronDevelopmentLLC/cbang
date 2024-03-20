@@ -59,8 +59,8 @@ namespace {
   void buffer_cb(struct evbuffer *buffer,
                  const struct evbuffer_cb_info *info, void *arg) {
     try {
-      ((Buffer *)arg)->
-        callback(info->n_added, info->n_deleted, info->orig_size);
+      ((Buffer *)arg)->callback(
+        info->n_added, info->n_deleted, info->orig_size);
     } CATCH_ERROR;
   }
 }

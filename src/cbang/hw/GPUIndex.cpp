@@ -63,9 +63,9 @@ void GPUIndex::read(const JSON::Value &value) {
 void GPUIndex::write(JSON::Sink &sink) const {
   sink.beginList();
 
-  for (auto it = gpus.begin(); it != gpus.end(); it++) {
+  for (auto &gpu: gpus) {
     sink.beginAppend();
-    it->write(sink);
+    gpu.write(sink);
   }
 
   sink.endList();

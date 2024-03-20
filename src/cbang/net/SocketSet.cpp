@@ -90,11 +90,11 @@ bool SocketSet::select(double timeout) {
   FD_ZERO(&write);
   FD_ZERO(&except);
 
-  for (auto it = sockets.begin(); it != sockets.end(); it++) {
-    if (maxFD < it->first)   maxFD = it->first;
-    if (it->second & READ)   FD_SET(it->first, &read);
-    if (it->second & WRITE)  FD_SET(it->first, &write);
-    if (it->second & EXCEPT) FD_SET(it->first, &except);
+  for (auto &p: sockets) {
+    if (maxFD < p.first)   maxFD = p.first;
+    if (p.second & READ)   FD_SET(p.first, &read);
+    if (p.second & WRITE)  FD_SET(p.first, &write);
+    if (p.second & EXCEPT) FD_SET(p.first, &except);
   }
 
   struct timeval t;
@@ -106,11 +106,11 @@ bool SocketSet::select(double timeout) {
 
   if (ret < 0) THROW("select() " << SysError());
 
-  for (auto it = sockets.begin(); it != sockets.end(); it++) {
-    it->second = 0;
-    if (FD_ISSET(it->first, &read))   it->second |= READ;
-    if (FD_ISSET(it->first, &write))  it->second |= WRITE;
-    if (FD_ISSET(it->first, &except)) it->second |= EXCEPT;
+  for (auto &p: sockets) {
+    p.second = 0;
+    if (FD_ISSET(p.first, &read))   p.second |= READ;
+    if (FD_ISSET(p.first, &write))  p.second |= WRITE;
+    if (FD_ISSET(p.first, &except)) p.second |= EXCEPT;
   }
 
   return ret;
@@ -121,11 +121,11 @@ bool SocketSet::select(double timeout) {
   struct pollfd fds[sockets.size()];
 
   int i = 0;
-  for (auto it = sockets.begin(); it != sockets.end(); it++) {
-    fds[i].fd = it->first;
+  for (auto &p: sockets) {
+    fds[i].fd = p.first;
     fds[i].events =
-      ((it->second & READ)  ? POLLIN  : 0) |
-      ((it->second & WRITE) ? POLLOUT : 0);
+      ((p.second & READ)  ? POLLIN  : 0) |
+      ((p.second & WRITE) ? POLLOUT : 0);
     fds[i].revents = 0;
     i++;
   }
@@ -136,14 +136,14 @@ bool SocketSet::select(double timeout) {
 
   bool found = false;
   i = 0;
-  for (auto it = sockets.begin(); it != sockets.end(); it++) {
-    int mask = it->second;
-    it->second =
+  for (auto &p: sockets) {
+    int mask = p.second;
+    p.second =
       ((fds[i].revents & POLLIN)               ? READ   : 0) |
       ((fds[i].revents & POLLOUT)              ? WRITE  : 0) |
       ((fds[i].revents & (POLLERR | POLLNVAL)) ? EXCEPT : 0);
-    it->second &= mask;
-    if (it->second) found = true;
+    p.second &= mask;
+    if (p.second) found = true;
     i++;
   }
 

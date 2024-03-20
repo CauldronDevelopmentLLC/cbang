@@ -67,9 +67,7 @@ namespace cb {
       void setMaxHeaderSize(unsigned size) {maxHeaderSize = size;}
 
       unsigned getNumRequests() const {return requests.size();}
-      typedef requests_t::const_iterator iterator;
-      iterator beginRequests() const {return requests.begin();}
-      iterator endRequests() const {return requests.end();}
+      const requests_t &getRequests() const {return requests;}
 
       virtual bool isIncoming() const = 0;
       virtual void writeRequest(const SmartPointer<Request> &req,

@@ -287,8 +287,8 @@ namespace cb {
       void visit(const_visitor_t visitor, bool depthFirst = true) const;
       void visit(visitor_t visitor, bool depthFirst = true);
 
-      virtual void visitChildren
-      (const_visitor_t visitor, bool depthFirst = true) const {}
+      virtual void visitChildren(
+        const_visitor_t visitor, bool depthFirst = true) const {}
       virtual void visitChildren(visitor_t visitor, bool depthFirst = true) {}
 
       // Operators

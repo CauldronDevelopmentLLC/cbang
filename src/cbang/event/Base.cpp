@@ -47,8 +47,8 @@ using namespace cb::Event;
 
 
 namespace {
-  extern "C" int count_events_by_priority
-  (const struct event_base *base, const struct event *event, void *arg) {
+  extern "C" int count_events_by_priority(
+    const struct event_base *base, const struct event *event, void *arg) {
     if (!(event->ev_evcallback.evcb_flags &
           (EVLIST_ACTIVE | EVLIST_ACTIVE_LATER))) return 0;
 

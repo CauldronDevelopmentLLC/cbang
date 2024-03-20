@@ -34,6 +34,7 @@
 #include "Integer.h"
 
 #include <cbang/String.h>
+#include <cbang/Catch.h>
 #include <cbang/SStream.h>
 
 #include <cctype>
@@ -44,6 +45,9 @@
 
 using namespace std;
 using namespace cb::JSON;
+
+
+Writer::~Writer() {TRY_CATCH_ERROR(close());}
 
 
 void Writer::close() {
@@ -196,7 +200,7 @@ string Writer::escape(const string &s, const char *fmt) {
   string result;
   result.reserve(s.length());
 
-  for (string::const_iterator it = s.begin(); it != s.end(); it++) {
+  for (auto it = s.begin(); it != s.end(); it++) {
     unsigned char c = *it;
 
     switch (c) {

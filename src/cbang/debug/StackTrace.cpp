@@ -46,8 +46,8 @@ StackTrace StackTrace::get() {return Debugger::getStackTrace();}
 ostream &StackTrace::print(ostream &stream) const {
   unsigned count = 0;
 
-  for (auto it = begin(); it != end(); it++)
-    stream << '#' << count++ << ' ' << *it << endl;
+  for (auto &frame: *this)
+    stream << '#' << count++ << ' ' << frame << endl;
 
   return stream;
 }
@@ -56,9 +56,9 @@ ostream &StackTrace::print(ostream &stream) const {
 void StackTrace::write(JSON::Sink &sink) const {
   sink.beginList();
 
-  for (auto it = begin(); it != end(); it++) {
+  for (auto &frame: *this) {
     sink.beginAppend();
-    it->write(sink);
+    frame.write(sink);
   }
 
   sink.endList();

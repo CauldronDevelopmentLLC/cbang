@@ -105,7 +105,7 @@ void Javascript::import(const string &id, const string &as) {
   SmartPointer<Scope> scope = impl->enterScope();
 
   // Find module
-  modules_t::iterator it = modules.find(id);
+  auto it = modules.find(id);
   if (it == modules.end()) return THROW("Module '" << id << "' not found");
 
   // Get target object
@@ -153,7 +153,7 @@ string Javascript::stringify(Value &value) {
 
 
 SmartPointer<Value> Javascript::require(const string &id) {
-  modules_t::iterator it = modules.find(id);
+  auto it = modules.find(id);
   if (it != modules.end()) return it->second->getExports();
 
   string path = searchPath(id);

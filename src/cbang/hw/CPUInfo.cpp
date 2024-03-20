@@ -74,8 +74,8 @@ void CPUInfo::print(ostream &stream) const {
     << setw(w) << "Logical: "   << getLogicalCPUCount()        << '\n'
     << setw(w) << "Features: "  << String::join(getFeatures()) << '\n';
 
-  for (auto it = registers.begin(); it != registers.end(); it++)
-    stream << setw(w) << (it->first + ": ") << Hex(it->second, 16) << '\n';
+  for (auto &p: registers)
+    stream << setw(w) << (p.first + ": ") << Hex(p.second, 16) << '\n';
 }
 
 
@@ -94,14 +94,12 @@ void CPUInfo::write(JSON::Sink &sink) const {
   // Features
   sink.insertList("features");
   auto &features = getFeatures();
-  for (auto it = features.begin(); it != features.end(); it++)
-    sink.append(*it);
+  for (auto &feature: features) sink.append(feature);
   sink.endList();
 
   // Registers
   sink.insertDict("registers");
-  for (auto it = registers.begin(); it != registers.end(); it++)
-    sink.insert(it->first, it->second);
+  for (auto &p: registers) sink.insert(p.first, p.second);
   sink.endDict();
 
   sink.endDict();

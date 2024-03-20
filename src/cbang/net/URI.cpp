@@ -304,7 +304,7 @@ ostream &URI::write(ostream &stream) const {
 
 
 ostream &URI::writeQuery(ostream &stream) const {
-  for (const_iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (it != begin()) stream << '&';
 
     stream << encode(it->first, NAME_CHARS);

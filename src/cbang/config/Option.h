@@ -145,9 +145,7 @@ namespace cb {
 
     /// This function should only be called by Options::alias()
     void addAlias(const std::string &alias) {aliases.insert(alias);}
-    typedef aliases_t::const_iterator iterator;
-    iterator aliasesBegin() const {return aliases.begin();}
-    iterator aliasesEnd() const {return aliases.end();}
+    const aliases_t &getAliases() const {return aliases;}
 
     void setAction(const SmartPointer<OptionActionBase> &action)
     {this->action = action;}

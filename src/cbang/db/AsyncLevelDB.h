@@ -109,7 +109,7 @@ namespace cb {
                  const std::string &seek = std::string(),
                  bool reverse = false, int options = 0,
                  int batchSize = 1000) const {
-      LevelDB::Iterator it = iterator(options);
+      auto it = iterator(options);
       bool first = true;
 
       typedef std::vector<std::pair<std::string, std::string> > results_t;

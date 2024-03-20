@@ -116,9 +116,9 @@ CUDALibrary::CUDALibrary(Inaccessible) : DynamicLibrary(cudaLib) {
       DYNAMIC_CALL(cuDeviceGet, (&device, i));
 
       cd.driverVersion = driverVersion;
-      cd.computeVersion = VersionU16
-        (getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device),
-         getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
+      cd.computeVersion = VersionU16(
+        getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device),
+        getAttribute(CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device));
       cd.vendorID = GPUVendor::VENDOR_NVIDIA; // Only vendor for CUDA
       cd.pciBus  = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
       cd.pciSlot = getAttribute(CU_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);

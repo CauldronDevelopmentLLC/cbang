@@ -111,9 +111,9 @@ namespace cb {
         return std::bind(member, obj, _1, _2, _3);
       }
 
-      template <class T> SmartPointer<Event> newEvent
-      (T *obj, typename Callback<T>::member_t member,
-       unsigned flags = EVENT_PERSIST)
+      template <class T> SmartPointer<Event> newEvent(
+        T *obj, typename Callback<T>::member_t member,
+        unsigned flags = EVENT_PERSIST)
       {return newEvent(bind(obj, member), flags);}
 
       template <class T>
@@ -135,9 +135,9 @@ namespace cb {
       }
 
       template <class T>
-      SmartPointer<Event> newEvent
-      (T *obj, typename Callback<T>::bare_member_t member,
-       unsigned flags = EVENT_PERSIST)
+      SmartPointer<Event> newEvent(
+        T *obj, typename Callback<T>::bare_member_t member,
+        unsigned flags = EVENT_PERSIST)
       {return newEvent(bind(obj, member), flags);}
 
       template <class T>
@@ -146,9 +146,9 @@ namespace cb {
                                    unsigned flags)
         {return newEvent(fd, bind(obj, member), flags);}
 
-      template <class T> SmartPointer<Event> newSignal
-      (int signal, T *obj, typename Callback<T>::bare_member_t member,
-       unsigned flags = EVENT_PERSIST)
+      template <class T> SmartPointer<Event> newSignal(
+        int signal, T *obj, typename Callback<T>::bare_member_t member,
+        unsigned flags = EVENT_PERSIST)
       {return newSignal(signal, bind(obj, member), flags);}
 
 
