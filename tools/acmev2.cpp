@@ -40,8 +40,8 @@
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
 #include <cbang/dns/Base.h>
-#include <cbang/event/Client.h>
-#include <cbang/event/WebServer.h>
+#include <cbang/http/Client.h>
+#include <cbang/http/WebServer.h>
 
 #include <cbang/acmev2/Account.h>
 #include <cbang/os/SystemUtilities.h>
@@ -73,8 +73,8 @@ class App : public Application {
 
   Event::Base base;
   DNS::Base dns;
-  Event::Client client;
-  Event::WebServer server;
+  HTTP::Client client;
+  HTTP::WebServer server;
 
   ACMEv2::Account account;
 

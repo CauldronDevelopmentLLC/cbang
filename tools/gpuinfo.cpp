@@ -30,8 +30,8 @@
 \******************************************************************************/
 
 #include <cbang/Catch.h>
-#include <cbang/gpu/CUDALibrary.h>
-#include <cbang/gpu/OpenCLLibrary.h>
+#include <cbang/hw/CUDALibrary.h>
+#include <cbang/hw/OpenCLLibrary.h>
 
 #include <iostream>
 

@@ -33,8 +33,8 @@
 
 #include <cbang/event/Base.h>
 #include <cbang/dns/Base.h>
-#include <cbang/event/Client.h>
-#include <cbang/event/OutgoingRequest.h>
+#include <cbang/http/Client.h>
+#include <cbang/http/OutgoingRequest.h>
 
 #include <cbang/config/CommandLine.h>
 #include <cbang/openssl/SSLContext.h>
@@ -62,10 +62,10 @@ int main(int argc, char *argv[]) {
 
     Event::Base base;
     DNS::Base dns(base);
-    Event::Client client(base, dns, sslCtx);
+    HTTP::Client client(base, dns, sslCtx);
 
     auto cb =
-      [&] (Event::Request &req) {
+      [&] (HTTP::Request &req) {
         if (req.getConnectionError()) LOG_ERROR(req.getConnectionError());
         else {
           LOG_INFO(1, req.getInputHeaders() << '\n');
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
         base.loopExit();
       };
 
-    auto req = client.call(url, Event::RequestMethod::parse(method), cb);
+    auto req = client.call(url, HTTP::Method::parse(method), cb);
     req->send();
 
     base.dispatch();

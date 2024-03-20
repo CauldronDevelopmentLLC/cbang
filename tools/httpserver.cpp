@@ -33,10 +33,11 @@
 #include <cbang/String.h>
 
 #include <cbang/event/Base.h>
-#include <cbang/event/HTTPServer.h>
-#include <cbang/event/Request.h>
+#include <cbang/http/Server.h>
+#include <cbang/http/Request.h>
 
 #include <cbang/config/CommandLine.h>
+#include <cbang/os/SystemUtilities.h>
 #include <cbang/log/Logger.h>
 
 #include <signal.h>
@@ -45,12 +46,12 @@ using namespace std;
 using namespace cb;
 
 
-class HTTPServer : public Event::HTTPServer {
+class HTTPServer : public HTTP::Server {
 public:
-  HTTPServer(Event::Base &base) : Event::HTTPServer(base) {}
+  HTTPServer(Event::Base &base) : HTTP::Server(base) {}
 
-  // From Event::HTTPServer
-  bool handleRequest(Event::Request &req) {
+  // From HTTP::Server
+  bool operator()(HTTP::Request &req) override {
     string path = req.getURI().getPath();
 
     if (path == "/") req.reply("<h1>Hello World!</h1>");
@@ -93,7 +94,7 @@ int main(int argc, char *argv[]) {
       sslCtx->useCertificateChainFile(certFile);
 
       LOG_INFO(1, "Loading private key");
-      sslCtx->usePrivateKey(priFile);
+      sslCtx->usePrivateKey(*SystemUtilities::open(priFile));
     }
 
     ::signal(SIGPIPE, SIG_IGN);
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
     Event::Base base(true);
     HTTPServer server(base);
 
-    server.bind(bind, sslCtx);
+    server.bind(SockAddr::parse(bind), sslCtx);
 
     base.dispatch();
 

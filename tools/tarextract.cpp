@@ -30,7 +30,7 @@
 \******************************************************************************/
 
 #include <cbang/Catch.h>
-#include <cbang/tar/TarFileReader.h>
+#include <cbang/comp/TarFileReader.h>
 
 using namespace std;
 using namespace cb;

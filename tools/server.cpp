@@ -38,6 +38,7 @@
 
 #include <cbang/config/CommandLine.h>
 #include <cbang/log/Logger.h>
+#include <cbang/os/SystemUtilities.h>
 
 #include <signal.h>
 
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
       sslCtx->useCertificateChainFile(certFile);
 
       LOG_INFO(1, "Loading private key");
-      sslCtx->usePrivateKey(priFile);
+      sslCtx->usePrivateKey(*SystemUtilities::open(priFile));
     }
 
     ::signal(SIGPIPE, SIG_IGN);
@@ -124,7 +125,7 @@ int main(int argc, char *argv[]) {
     Event::Base base(true);
     Server server(base);
 
-    server.bind(bind, sslCtx);
+    server.bind(SockAddr::parse(bind), sslCtx);
 
     base.dispatch();
 
