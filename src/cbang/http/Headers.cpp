@@ -121,6 +121,5 @@ bool Headers::parse(Event::Buffer &buf, unsigned maxSize) {
 
 
 void Headers::write(ostream &stream) const {
-  for (auto it = begin(); it != end(); it++)
-    stream << it->first << ": " << it->second << '\n';
+  for (auto &p: *this) stream << p.first << ": " << p.second << '\n';
 }

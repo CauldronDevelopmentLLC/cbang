@@ -49,24 +49,13 @@ namespace cb {
     class ordered_map :
       public std::map<Key, Value>,
       public std::list<typename std::map<Key, Value>::value_type *> {
+
     public:
       typedef std::map<Key, Value> map_t;
       typedef std::list<typename map_t::value_type *> list_t;
-
-      typedef typename list_t::iterator iterator;
-      typedef typename list_t::const_iterator const_iterator;
-      typedef typename map_t::iterator map_iterator;
-      typedef typename map_t::const_iterator const_map_iterator;
       typedef typename map_t::value_type value_type;
-
       using list_t::begin;
       using list_t::end;
-
-      map_iterator map_begin() {return map_t::begin();}
-      const_map_iterator map_begin() const {return map_t::begin();}
-      map_iterator map_end() {return map_t::end();}
-      const_map_iterator map_end() const {return map_t::end();}
-
       using map_t::insert;
     };
 

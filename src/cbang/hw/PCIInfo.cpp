@@ -58,8 +58,8 @@ PCIInfo::PCIInfo(Inaccessible) {detect();}
 
 void PCIInfo::add(uint16_t vendorID, uint16_t deviceID, uint8_t busID,
                   uint8_t slotID, uint8_t functionID, const string &name) {
-  devices.push_back
-    (PCIDevice(vendorID, deviceID, busID, slotID, functionID, name));
+  devices.push_back(
+    PCIDevice(vendorID, deviceID, busID, slotID, functionID, name));
 }
 
 
@@ -82,8 +82,8 @@ static string getDevRegProp(HDEVINFO &info, SP_DEVINFO_DATA &dev, DWORD prop) {
 
 #if defined(__APPLE__)
 static CFDataRef getIORegistryProperty(io_service_t dev, CFStringRef name) {
-  CFDataRef ref = (CFDataRef)IORegistryEntryCreateCFProperty
-    (dev, name, kCFAllocatorDefault, 0);
+  CFDataRef ref = (CFDataRef)IORegistryEntryCreateCFProperty(
+    dev, name, kCFAllocatorDefault, 0);
 
   if (ref && CFDataGetTypeID() != CFGetTypeID(ref)) {
     CFRelease(ref);
@@ -167,8 +167,8 @@ void PCIInfo::detect() {
     // Detect PCI devices on OSX
     io_iterator_t iter;
     kern_return_t kr;
-    if (IOServiceGetMatchingServices
-        (kIOMasterPortDefault, IOServiceMatching("IOPCIDevice"), &iter) ==
+    if (IOServiceGetMatchingServices(
+          kIOMasterPortDefault, IOServiceMatching("IOPCIDevice"), &iter) ==
         kIOReturnSuccess) {
 
       // Iterate through PCI device results

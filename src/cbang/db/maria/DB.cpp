@@ -166,9 +166,9 @@ void DB::connect(const string &host, const string &user, const string &password,
                  const string &dbName, unsigned port, const string &socketName,
                  flags_t flags) {
   assertNotPending();
-  MYSQL *db = mysql_real_connect
-    (this->db, host.c_str(), user.c_str(), password.c_str(), dbName.c_str(),
-     port, socketName.empty() ? 0 : socketName.c_str(), flags);
+  MYSQL *db = mysql_real_connect(
+    this->db, host.c_str(), user.c_str(), password.c_str(), dbName.c_str(),
+    port, socketName.empty() ? 0 : socketName.c_str(), flags);
 
   if (!db) RAISE_DB_ERROR("Failed to connect");
   connected = true;
@@ -184,9 +184,9 @@ bool DB::connectNB(const string &host, const string &user,
   assertNonBlocking();
 
   MYSQL *db = 0;
-  status = mysql_real_connect_start
-    (&db, this->db, host.c_str(), user.c_str(), password.c_str(),
-     dbName.c_str(), port, socketName.empty() ? 0 : socketName.c_str(), flags);
+  status = mysql_real_connect_start(
+    &db, this->db, host.c_str(), user.c_str(), password.c_str(),
+    dbName.c_str(), port, socketName.empty() ? 0 : socketName.c_str(), flags);
 
   if (status) {
     continueFunc = &DB::connectContinue;

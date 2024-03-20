@@ -126,8 +126,8 @@ SmartPointer<js::Value> Value::makePersistent() const {
 
 
 v8::Local<v8::String> Value::createString(const char *s, unsigned length) {
-  return v8::String::NewFromUtf8
-    (getIso(), s, v8::NewStringType::kNormal, length).ToLocalChecked();
+  return v8::String::NewFromUtf8(
+    getIso(), s, v8::NewStringType::kNormal, length).ToLocalChecked();
 }
 
 

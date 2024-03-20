@@ -44,9 +44,9 @@ namespace {
   ComputeDevice match(int16_t busID, int16_t slotID, int16_t functionID) {
     try {
       auto &lib = LIB::instance();
-      for (auto it = lib.begin(); it != lib.end(); it++)
-        if (it->gpu && busID == it->pciBus && slotID == it->pciSlot)
-          return *it;
+      for (auto &dev: lib)
+        if (dev.gpu && busID == dev.pciBus && slotID == dev.pciSlot)
+          return dev;
 
     } catch (const DynamicLibraryException &e) {}
 

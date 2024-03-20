@@ -87,13 +87,13 @@ bool SessionManager::isExpired(const Session &session) const {
 
 
 bool SessionManager::hasSession(const string &sid) const {
-  sessions_t::const_iterator it = sessions.find(sid);
+  auto it = sessions.find(sid);
   return it != sessions.end() && !isExpired(*it->second);
 }
 
 
 SmartPointer<Session> SessionManager::lookupSession(const string &sid) const {
-  iterator it = sessions.find(sid);
+  auto it = sessions.find(sid);
   if (it == end() || isExpired(*it->second))
     THROW("Session ID '" << sid << "' does not exist");
 
@@ -120,7 +120,7 @@ void SessionManager::closeSession(const string &sid) {sessions.erase(sid);}
 void SessionManager::addSession(const SmartPointer<Session> &session) {
   if (isExpired(*session)) return;
 
-  pair<sessions_t::iterator, bool> result =
+  auto result =
     sessions.insert(sessions_t::value_type(session->getID(), session));
 
   if (!result.second) result.first->second = session;
@@ -133,7 +133,7 @@ void SessionManager::cleanup() {
   lastCleanup = Time::now();
 
   // Remove expired Sessions
-  for (sessions_t::iterator it = sessions.begin(); it != sessions.end();)
+  for (auto it = sessions.begin(); it != sessions.end();)
     if (isExpired(*it->second)) sessions.erase(it++);
     else it++;
 }
@@ -151,10 +151,10 @@ void SessionManager::read(const JSON::Value &value) {
 void SessionManager::write(JSON::Sink &sink) const {
   sink.beginDict();
 
-  for (iterator it = begin(); it != end(); it++) {
-    if (isExpired(*it->second)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
+  for (auto &p: *this) {
+    if (isExpired(*p.second)) continue;
+    sink.beginInsert(p.first);
+    p.second->write(sink);
   }
 
   sink.endDict();

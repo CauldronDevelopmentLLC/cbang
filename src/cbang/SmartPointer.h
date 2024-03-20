@@ -297,8 +297,8 @@ namespace cb {
 
     template <typename CastT>
     SmartPointer<CastT, DeallocT, CounterT> cast() const {
-      return SmartPointer<CastT, DeallocT, CounterT>
-        (castPtr<CastT>(), refCounter);
+      return SmartPointer<CastT, DeallocT, CounterT>(
+        castPtr<CastT>(), refCounter);
     }
 
     // Type check

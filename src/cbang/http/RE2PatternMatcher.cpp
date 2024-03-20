@@ -50,8 +50,8 @@ struct RE2PatternMatcher::Private {
 };
 
 
-RE2PatternMatcher::RE2PatternMatcher
-(const string &pattern, const SmartPointer<RequestHandler> &child) :
+RE2PatternMatcher::RE2PatternMatcher(
+  const string &pattern, const SmartPointer<RequestHandler> &child) :
   pri(new Private(pattern)), child(child) {
   if (pri->regex.error_code())
     THROW("Failed to compile RE2: " << pri->regex.error());
@@ -64,8 +64,8 @@ RE2PatternMatcher::RE2PatternMatcher
 }
 
 
-bool RE2PatternMatcher::match(const URI &uri,
-                                  JSON::ValuePtr resultArgs) const {
+bool RE2PatternMatcher::match(
+  const URI &uri, JSON::ValuePtr resultArgs) const {
   int n = pri->regex.NumberOfCapturingGroups();
   vector<RE2::Arg>   args(n);
   vector<RE2::Arg *> argPtrs(n);

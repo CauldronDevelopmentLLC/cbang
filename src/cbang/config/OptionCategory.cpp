@@ -39,9 +39,8 @@ using namespace cb;
 
 
 bool OptionCategory::hasSetOption() const {
-  options_t::const_iterator it;
-  for (it = options.begin(); it != options.end(); it++)
-    if (it->second->isSet()) return true;
+  for (auto &p: options)
+    if (p.second->isSet()) return true;
 
   return false;
 }
@@ -56,9 +55,8 @@ void OptionCategory::write(JSON::Sink &sink, bool config,
                            const string &delims) const {
   if (!config) sink.beginDict();
 
-  options_t::const_iterator it;
-  for (it = options.begin(); it != options.end(); it++) {
-    Option &option = *it->second;
+  for (auto &p: options) {
+    Option &option = *p.second;
 
     if (config && !option.isSet()) continue;
 
@@ -75,9 +73,8 @@ void OptionCategory::write(JSON::Sink &sink, bool config,
 void OptionCategory::write(XML::Handler &handler, uint32_t flags) const {
   bool first = true;
 
-  options_t::const_iterator it;
-  for (it = options.begin(); it != options.end(); it++) {
-    Option &option = *it->second;
+  for (auto &p: options) {
+    Option &option = *p.second;
 
     // Don't print options set on the command line
     if (option.isCommandLine() && !(flags & Option::COMMAND_LINE_FLAG) &&
@@ -117,10 +114,9 @@ void OptionCategory::printHelpTOC(XML::Handler &handler,
 
   handler.startElement("ul");
 
-  options_t::const_iterator it;
-  for (it = options.begin(); it != options.end(); it++)
-    if (!it->second->isHidden())
-      it->second->printHelpTOC(handler, prefix);
+  for (auto &p: options)
+    if (!p.second->isHidden())
+      p.second->printHelpTOC(handler, prefix);
 
   handler.endElement("ul");
   handler.endElement("li");
@@ -151,10 +147,9 @@ void OptionCategory::printHelp(XML::Handler &handler,
     handler.endElement("div");
   }
 
-  options_t::const_iterator it;
-  for (it = options.begin(); it != options.end(); it++)
-    if (!it->second->isHidden())
-      it->second->printHelp(handler, prefix);
+  for (auto &p: options)
+    if (!p.second->isHidden())
+      p.second->printHelp(handler, prefix);
 
   handler.endElement("div");
 }
@@ -165,11 +160,10 @@ void OptionCategory::printHelp(ostream &stream, bool cmdLine) const {
   if (!description.empty()) stream << description << "\n";
 
   bool first = true;
-  options_t::const_iterator it;
-  for (it = options.begin(); it != options.end(); it++)
-    if (!it->second->isHidden()) {
+  for (auto &p: options)
+    if (!p.second->isHidden()) {
       if (first) first = false;
       else stream << "\n\n";
-      it->second->printHelp(stream, cmdLine);
+      p.second->printHelp(stream, cmdLine);
     }
 }

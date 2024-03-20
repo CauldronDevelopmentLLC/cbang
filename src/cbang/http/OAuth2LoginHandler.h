@@ -48,14 +48,14 @@ namespace cb {
       SmartPointer<SessionManager> sessionManager;
 
     public:
-      OAuth2LoginHandler
-      (Client &client, const SmartPointer<OAuth2> &auth,
-       const SmartPointer<SessionManager> &sessionManager);
+      OAuth2LoginHandler(
+        Client &client, const SmartPointer<OAuth2> &auth,
+        const SmartPointer<SessionManager> &sessionManager);
       ~OAuth2LoginHandler();
 
       // From OAuth2Login
-      void processProfile(Request &req,
-                          const SmartPointer<JSON::Value> &profile) override;
+      void processProfile(
+        Request &req, const SmartPointer<JSON::Value> &profile) override;
 
       // From RequestHandler
       bool operator()(Request &req) override;

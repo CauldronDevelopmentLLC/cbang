@@ -353,8 +353,8 @@ istream &KeyPair::readPrivatePEM(
   istream &stream, SmartPointer<PasswordCallback> callback) {
   BIStream bio(stream);
 
-  if (!PEM_read_bio_PrivateKey
-      (bio.getBIO(), &key, callback.isNull() ? 0 : password_cb, callback.get()))
+  if (!PEM_read_bio_PrivateKey(
+        bio.getBIO(), &key, callback.isNull() ? 0 : password_cb, callback.get()))
     THROW("Failed to read private key: " << SSL::getErrorStr());
 
   return stream;

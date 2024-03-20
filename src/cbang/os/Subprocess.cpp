@@ -235,9 +235,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       copy.insert(StringMap::begin(), StringMap::end());
 
       // Load into vector
-      StringMap::const_iterator it;
-      for (it = copy.begin(); it != copy.end(); it++) {
-        string s = it->first + '=' + it->second;
+      for (auto &p: copy) {
+        string s = p.first + '=' + p.second;
         newEnv.insert(newEnv.end(), s.begin(), s.end());
         newEnv.push_back(0); // Terminate string
       }
@@ -338,8 +337,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
       // Setup environment
       if (flags & CLEAR_ENVIRONMENT) SystemUtilities::clearenv();
 
-      for (iterator it = begin(); it != end(); it++)
-        SystemUtilities::setenv(it->first, it->second);
+      for (auto &p: *this)
+        SystemUtilities::setenv(p.first, p.second);
 
       SysError::clear();
 
@@ -533,16 +532,15 @@ void Subprocess::parse(const string &command, vector<string> &args) {
 string Subprocess::assemble(const vector<string> &args) {
   string command;
 
-  vector<string>::const_iterator it;
-  for (it = args.begin(); it != args.end(); it++) {
+  for (auto it = args.begin(); it != args.end(); it++) {
     const string &arg = *it;
 
     if (it != args.begin()) command += " ";
 
     // Check if we need to quote this arg
     bool quote = false;
-    for (string::const_iterator it2 = arg.begin(); it2 != arg.end(); it2++)
-      if (isspace(*it2) || *it2 == '"') {quote = true; break;}
+    for (auto c: arg)
+      if (isspace(c) || c == '"') {quote = true; break;}
 
     if (quote) command += '"';
     command += String::replace(arg, "\"", "\\\\\"");

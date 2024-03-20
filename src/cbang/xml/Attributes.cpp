@@ -46,7 +46,7 @@ Attributes::Attributes(const string &attrs) {
   unsigned state = 0;
   unsigned count = 0;
 
-  string::const_iterator it = attrs.begin();
+  auto it = attrs.begin();
   while (true) {
     if (it == attrs.end()) {
       if (state == 0) break;
@@ -105,8 +105,8 @@ Attributes::Attributes(const string &attrs) {
 
 const string Attributes::toString() const {
   vector<string> attrs;
-  for (const_iterator it = begin(); it != end(); it++)
-    attrs.push_back(it->first + "=" + it->second);
+  for (auto &p: *this)
+    attrs.push_back(p.first + "=" + p.second);
 
   return String::join(attrs);
 }

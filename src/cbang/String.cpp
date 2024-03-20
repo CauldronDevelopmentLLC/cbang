@@ -618,9 +618,9 @@ string String::hexEncode(const string &s) {
   string result;
   result.reserve(s.length() * 2);
 
-  for (string::const_iterator it = s.begin(); it != s.end(); it++) {
-    result.append(1, hexNibble(*it >> 4));
-    result.append(1, hexNibble(*it));
+  for (auto c: s) {
+    result.append(1, hexNibble(c >> 4));
+    result.append(1, hexNibble(c));
   }
 
   return result;
@@ -651,8 +651,8 @@ string String::escapeMySQL(const string &s) {
   string result;
   result.reserve(s.length());
 
-  for (string::const_iterator it = s.begin(); it != s.end(); it++)
-    switch (*it) {
+  for (auto c: s)
+    switch (c) {
     case 0:    result.append("\\0");  break;
     case '\'': result.append("\\'");  break;
     case '\"': result.append("\\\""); break;
@@ -662,7 +662,7 @@ string String::escapeMySQL(const string &s) {
     case '\t': result.append("\\t");  break;
     case 26:   result.append("\\Z");  break;
     case '\\': result.append("\\\\"); break;
-    default: result.push_back(*it);   break;
+    default: result.push_back(c);   break;
     }
 
   return result;
@@ -705,8 +705,7 @@ string String::escapeC(const string &s) {
   string result;
   result.reserve(s.length());
 
-  for (string::const_iterator it = s.begin(); it != s.end(); it++)
-    escapeC(result, *it);
+  for (auto c: s) escapeC(result, c);
 
   return result;
 }
@@ -726,10 +725,10 @@ namespace {
   }
 
 
-  string::const_iterator parseOctalEscape(string &result,
-                                          string::const_iterator start,
-                                          string::const_iterator end) {
-    string::const_iterator it = start + 1;
+  string::const_iterator parseOctalEscape(
+    string &result, string::const_iterator start,
+    string::const_iterator end) {
+    auto it = start + 1;
 
     string s;
     while (it != end && is_oct(*it) && s.length() < 3) s.push_back(*it++);
@@ -742,10 +741,10 @@ namespace {
   }
 
 
-  string::const_iterator parseHexEscape(string &result,
-                                        string::const_iterator start,
-                                        string::const_iterator end) {
-    string::const_iterator it = start + 1;
+  string::const_iterator parseHexEscape(
+    string &result, string::const_iterator start,
+    string::const_iterator end) {
+    auto it = start + 1;
 
     string s;
     while (it != end && is_hex(*it) && s.length() < 2) s.push_back(*it++);
@@ -758,10 +757,10 @@ namespace {
   }
 
 
-  string::const_iterator parseUnicodeEscape(string &result,
-                                            string::const_iterator start,
-                                            string::const_iterator end) {
-    string::const_iterator it = start + 1;
+  string::const_iterator parseUnicodeEscape(
+    string &result, string::const_iterator start,
+    string::const_iterator end) {
+    auto it = start + 1;
 
     string s;
     while (it != end && is_hex(*it) && s.length() < 4) s.push_back(*it++);
@@ -793,7 +792,7 @@ string String::unescapeC(const string &s) {
 
   bool escape = false;
 
-  for (string::const_iterator it = s.begin(); it != s.end();) {
+  for (auto it = s.begin(); it != s.end();) {
     if (escape) {
       escape = false;
 
@@ -849,8 +848,8 @@ size_t String::find(const string &s, const string &pattern,
 string String::replace(const string &s, char search, char replace) {
   string result(s);
 
-  for (string::iterator it = result.begin(); it != result.end(); it++)
-    if (*it == search) *it = replace;
+  for (auto &c: result)
+    if (c == search) c = replace;
 
   return result;
 }
@@ -863,18 +862,18 @@ string String::replace(const string &s, const string &search,
 }
 
 
-string String::transcode(const string &s, const string &search,
-                         const string &replace) {
+string String::transcode(
+  const string &s, const string &search, const string &replace) {
   if (search.length() != replace.length())
     THROW("Search string must be the same length as the replace string");
 
   string result(s.length(), ' ');
 
   unsigned i = 0;
-  for (string::const_iterator it = s.begin(); it != s.end(); it++) {
-    size_t pos = search.find(*it);
+  for (auto c: s) {
+    size_t pos = search.find(c);
     if (pos != string::npos) result[i++] = replace[pos];
-    else result[i++] = *it;
+    else result[i++] = c;
   }
 
   return result;
@@ -888,13 +887,13 @@ string String::format(format_cb_t cb) {
   int index = 0;
   bool escape = false;
 
-  for (string::const_iterator it = begin(); it != end(); it++) {
+  for (auto it = begin(); it != end(); it++) {
     if (escape) {
       escape  = false;
 
       switch (*it) {
       case '(': {
-        string::const_iterator it2 = it + 1;
+        auto it2 = it + 1;
 
         string name;
         while (it2 != end() && *it2 != ')') name.push_back(*it2++);

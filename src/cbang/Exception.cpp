@@ -126,12 +126,11 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
     unsigned count = 0;
     unsigned i = 0;
 
-    StackTrace::iterator it;
-    for (it = trace->begin(); it != trace->end(); it++, i++) {
-      if (i < 3 && (it->getFunction().find("Debugger") ||
-                    it->getFunction().find("Exception")))
+    for (auto &frame: *trace) {
+      if (i++ < 3 && (frame.getFunction().find("Debugger") ||
+                      frame.getFunction().find("Exception")))
         continue;
-      else stream << "\n  #" << ++count << ' ' << *it;
+      else stream << "\n  #" << ++count << ' ' << frame;
     }
   }
 

@@ -164,31 +164,6 @@ bool WebServer::allow(Request &req) const {
 }
 
 
-SmartPointer<Request> WebServer::createRequest(
-  const SmartPointer<Conn> &connection, Method method,
-  const URI &uri, const Version &version) {
-  return new Request(connection, method, uri, version);
-}
-
-
-bool WebServer::handleRequest(Request &req) {
-  if (logPrefix) {
-    string prefix = String::printf("REQ%" PRIu64 ":", req.getID());
-    Logger::instance().setPrefix(prefix);
-  }
-
-  // TODO call allow() on the connection before handling any requests
-  if (!allow(req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
-
-  return HandlerGroup::operator()(req);
-}
-
-
-void WebServer::endRequest(Request &req) {
-  if (logPrefix) Logger::instance().setPrefix("");
-}
-
-
 void WebServer::allow(const string &spec) {
   LOG_INFO(5, "Allowing HTTP access to " << spec);
   addrFilter.allow(spec);
@@ -216,4 +191,29 @@ void WebServer::addSecureListenPort(const SockAddr &addr) {
 void WebServer::setTimeout(int timeout) {
   setReadTimeout(timeout);
   setWriteTimeout(timeout);
+}
+
+
+SmartPointer<Request> WebServer::createRequest(
+  const SmartPointer<Conn> &connection, Method method,
+  const URI &uri, const Version &version) {
+  return new Request(connection, method, uri, version);
+}
+
+
+void WebServer::endRequest(Request &req) {
+  if (logPrefix) Logger::instance().setPrefix("");
+}
+
+
+bool WebServer::operator()(Request &req) {
+  if (logPrefix) {
+    string prefix = String::printf("REQ%" PRIu64 ":", req.getID());
+    Logger::instance().setPrefix(prefix);
+  }
+
+  // TODO call allow() on the connection before handling any requests
+  if (!allow(req)) THROWX("Unauthorized", HTTP_UNAUTHORIZED);
+
+  return HandlerGroup::operator()(req);
 }

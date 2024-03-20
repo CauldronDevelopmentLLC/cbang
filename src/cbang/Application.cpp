@@ -247,8 +247,8 @@ int Application::init(int argc, char *argv[]) {
   if (hasFeature(FEATURE_PROCESS_CONTROL))
     try {
       if (options["priority"].hasValue())
-        SystemUtilities::setPriority(ProcessPriority::parse
-                                     (options["priority"]));
+        SystemUtilities::setPriority(
+          ProcessPriority::parse(options["priority"]));
     } CBANG_CATCH_WARNING;
 
   if (hasFeature(FEATURE_SIGNAL_HANDLER))
@@ -264,8 +264,8 @@ int Application::init(int argc, char *argv[]) {
 void Application::printInfo() const {
   // Print Info
   if (hasFeature(FEATURE_INFO))
-    Info::instance().print
-      (*LOG_INFO_STREAM(1), 80 - Logger::instance().getHeaderWidth());
+    Info::instance().print(
+      *LOG_INFO_STREAM(1), 80 - Logger::instance().getHeaderWidth());
 
   // Write config to log
   if (hasFeature(FEATURE_CONFIG_FILE))

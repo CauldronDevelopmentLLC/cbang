@@ -103,17 +103,17 @@ namespace {
   } cl_device_pci_bus_info_khr;
 
   // OpenCL functions
-  typedef cl_int (CL_API_CALL *clGetPlatformInfo_t)
-    (cl_platform_id, cl_platform_info, size_t, void *, size_t *);
+  typedef cl_int (CL_API_CALL *clGetPlatformInfo_t)(
+    cl_platform_id, cl_platform_info, size_t, void *, size_t *);
 
-  typedef cl_int (CL_API_CALL *clGetDeviceInfo_t)
-    (cl_device_id, cl_device_info, size_t, void *, size_t *);
+  typedef cl_int (CL_API_CALL *clGetDeviceInfo_t)(
+    cl_device_id, cl_device_info, size_t, void *, size_t *);
 
-  typedef cl_int (CL_API_CALL *clGetPlatformIDs_t)
-    (cl_uint, cl_platform_id *, cl_uint *);
+  typedef cl_int (CL_API_CALL *clGetPlatformIDs_t)(
+    cl_uint, cl_platform_id *, cl_uint *);
 
-  typedef cl_int (CL_API_CALL *clGetDeviceIDs_t)
-    (cl_platform_id, cl_device_type, cl_uint, cl_device_id *, cl_uint *);
+  typedef cl_int (CL_API_CALL *clGetDeviceIDs_t)(
+    cl_platform_id, cl_device_type, cl_uint, cl_device_id *, cl_uint *);
 
 
   // OpenCL defines
@@ -224,8 +224,8 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
 
     // Get extensions
     vector<string> extVec;
-    String::tokenize
-      (getPlatformInfo(this, platform, CL_PLATFORM_EXTENSIONS), extVec);
+    String::tokenize(
+      getPlatformInfo(this, platform, CL_PLATFORM_EXTENSIONS), extVec);
     set<string> exts(extVec.begin(), extVec.end());
 
     // Get devices

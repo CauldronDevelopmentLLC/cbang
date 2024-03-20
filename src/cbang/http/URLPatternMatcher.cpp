@@ -37,8 +37,8 @@ using namespace std;
 using namespace cb::HTTP;
 
 
-URLPatternMatcher::URLPatternMatcher
-(const string &pattern, const cb::SmartPointer<RequestHandler> &child) :
+URLPatternMatcher::URLPatternMatcher(
+  const string &pattern, const cb::SmartPointer<RequestHandler> &child) :
   RE2PatternMatcher(toRE2Pattern(pattern), child) {}
 
 

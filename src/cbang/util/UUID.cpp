@@ -43,9 +43,9 @@ UUID::UUID(const uint8_t data[16]) {memcpy(this->data, data, 16);}
 
 
 UUID::operator string () const {
-  return String::printf
-    ("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-     data[15], data[14], data[13], data[12], data[11], data[10], data[9],
-     data[ 8], data[ 7], data[ 6], data[ 5], data[ 4], data[ 3], data[ 2],
-     data[ 1], data[ 0]);
+  return String::printf(
+    "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+    data[15], data[14], data[13], data[12], data[11], data[10], data[9],
+    data[ 8], data[ 7], data[ 6], data[ 5], data[ 4], data[ 3], data[ 2],
+    data[ 1], data[ 0]);
 }

@@ -43,7 +43,7 @@ namespace cb {
     class Request;
     class Conn;
 
-    class Server : public Event::Server, private RequestHandler {
+    class Server : public Event::Server, public RequestHandler {
       unsigned maxBodySize   = std::numeric_limits<int>::max();
       unsigned maxHeaderSize = std::numeric_limits<int>::max();
 
@@ -59,7 +59,6 @@ namespace cb {
       virtual SmartPointer<Request>
       createRequest(const SmartPointer<Conn> &conn, Method method,
                     const URI &uri, const Version &version);
-      virtual bool handleRequest(Request &req) = 0;
       virtual void endRequest(Request &req) {}
 
       void dispatch(Request &req);
@@ -67,9 +66,6 @@ namespace cb {
       // From Event::Server
       SmartPointer<Event::Connection> createConnection() override;
       void onConnect(const SmartPointer<Event::Connection> &conn) override;
-
-      // From RequestHandler
-      bool operator()(Request &req) override {return handleRequest(req);}
     };
   }
 }

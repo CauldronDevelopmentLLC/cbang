@@ -294,14 +294,13 @@ namespace cb {
 
       // Normalize
       vector<string> parts;
-      fs::path::iterator it;
-      for (it = p.begin(); it != p.end(); it++)
-        if (*it == ".." && !parts.empty()) parts.pop_back();
-        else if (*it != "" && *it != "." && *it != "..") {
+      for (auto &part: p)
+        if (part == ".." && !parts.empty()) parts.pop_back();
+        else if (part != "" && part != "." && part != "..") {
 #if BOOST_FILESYSTEM_VERSION < 3
-          parts.push_back(*it);
+          parts.push_back(part);
 #else
-          parts.push_back(it->string());
+          parts.push_back(part.string());
 #endif
         }
 
@@ -781,8 +780,7 @@ namespace cb {
 
         if (maxFiles < files.size()) {
           unsigned count = files.size() - maxFiles;
-          set<string>::iterator it;
-          for (it = files.begin(); it != files.end() && count; it++) {
+          for (auto it = files.begin(); it != files.end() && count; it++) {
             LOG_INFO(3, "Removing old file '" << *it << "'");
             unlink(*it);
             count--;

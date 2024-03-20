@@ -44,8 +44,7 @@ SingletonDealloc &SingletonDealloc::instance() {
 
 
 void SingletonDealloc::deallocate() {
-  singletons_t::reverse_iterator it;
-  for (it = singletons.rbegin(); it != singletons.rend(); it++)
+  for (auto it = singletons.rbegin(); it != singletons.rend(); it++)
     delete *it;
 
   singleton = 0;

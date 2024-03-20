@@ -43,11 +43,11 @@ static const int BUFFER_SIZE = 4096;
 
 
 ExpatAdapter::ExpatAdapter() : parser(XML_ParserCreate("UTF-8")) {
-  XML_SetElementHandler
-    ((XML_Parser)parser, (XML_StartElementHandler)&ExpatAdapter::start,
-     (XML_EndElementHandler)&ExpatAdapter::end);
-  XML_SetCharacterDataHandler
-    ((XML_Parser)parser, (XML_CharacterDataHandler)&ExpatAdapter::text);
+  XML_SetElementHandler(
+    (XML_Parser)parser, (XML_StartElementHandler)&ExpatAdapter::start,
+    (XML_EndElementHandler)&ExpatAdapter::end);
+  XML_SetCharacterDataHandler(
+    (XML_Parser)parser, (XML_CharacterDataHandler)&ExpatAdapter::text);
   XML_SetUserData((XML_Parser)parser, this);
 }
 

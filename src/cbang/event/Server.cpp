@@ -55,10 +55,7 @@ void Server::bind(const SockAddr &addr, const SmartPointer<SSLContext> &sslCtx,
 }
 
 
-void Server::shutdown() {
-  for (auto it = ports.begin(); it != ports.end(); it++)
-    (*it)->close();
-}
+void Server::shutdown() {for (auto &port: ports) port->close();}
 
 
 void Server::accept(const SockAddr &peerAddr,
@@ -92,8 +89,7 @@ void Server::remove(const SmartPointer<Connection> &conn) {
 
   connections.erase(conn);
 
-  for (auto it = ports.begin(); it != ports.end(); it++)
-    (*it)->activate();
+  for (auto &port: ports) port->activate();
 }
 
 

@@ -82,11 +82,11 @@ void Debugger::printStackTrace(ostream &stream) {
   unsigned count = 0;
   bool skip = true;
 
-  for (auto it = trace.begin(); it != trace.end(); it++) {
+  for (auto &frame: trace) {
     if (skip) {
-      if (it->getFunction().find("cb::Debugger::printStackTrace"))
+      if (frame.getFunction().find("cb::Debugger::printStackTrace"))
         skip = false;
-    } else  stream << "\n  #" << ++count << ' ' << *it;
+    } else  stream << "\n  #" << ++count << ' ' << frame;
   }
 }
 

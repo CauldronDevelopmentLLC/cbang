@@ -98,7 +98,7 @@ void SubprocessPool::exec() {
 void SubprocessPool::childSignal() {
   if (quit) return;
 
-  for (active_t::iterator it = active.begin(); it != active.end();) {
+  for (auto it = active.begin(); it != active.end();) {
     AsyncSubprocess &proc = **it;
 
     try {

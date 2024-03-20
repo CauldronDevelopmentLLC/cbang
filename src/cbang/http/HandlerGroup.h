@@ -106,27 +106,27 @@ namespace cb {
       }
 
       // JSON member callbacks
-      template <class T> void addMember
-      (T *obj, typename RequestJSONMemberHandler<T>::member_t member) {
+      template <class T> void addMember(
+        T *obj, typename RequestJSONMemberHandler<T>::member_t member) {
         addHandler(new RequestJSONMemberHandler<T>(obj, member));
       }
 
-      template <class T> void addMember
-      (unsigned methods, const std::string &pattern,
-       T *obj, typename RequestJSONMemberHandler<T>::member_t member) {
+      template <class T> void addMember(
+        unsigned methods, const std::string &pattern,
+        T *obj, typename RequestJSONMemberHandler<T>::member_t member) {
         addHandler(methods, pattern,
                    new RequestJSONMemberHandler<T>(obj, member));
       }
 
       // JSON Recast member callbacks
-      template <class T> void addMember
-      (typename RequestJSONRecastHandler<T>::member_t member) {
+      template <class T> void addMember(
+        typename RequestJSONRecastHandler<T>::member_t member) {
         addHandler(new RequestJSONRecastHandler<T>(member));
       }
 
-      template <class T> void addMember
-      (unsigned methods, const std::string &pattern,
-       typename RequestJSONRecastHandler<T>::member_t member) {
+      template <class T> void addMember(
+        unsigned methods, const std::string &pattern,
+        typename RequestJSONRecastHandler<T>::member_t member) {
         addHandler(methods, pattern,
                    new RequestJSONRecastHandler<T>(member));
       }

@@ -75,20 +75,22 @@ namespace cb {
       virtual void init();
       virtual bool allow(Request &req) const;
 
-      // From Server
-      SmartPointer<Request> createRequest
-      (const SmartPointer<Conn> &connection, Method method,
-       const URI &uri, const Version &version) override;
-      bool handleRequest(Request &req) override;
-      void endRequest(Request &req) override;
+      void allow(const std::string &spec);
+      void deny(const std::string &spec);
 
       void addListenPort(const SockAddr &addr);
       void addSecureListenPort(const SockAddr &addr);
 
-      void allow(const std::string &spec);
-      void deny(const std::string &spec);
-
       void setTimeout(int timeout);
+
+      // From Server
+      SmartPointer<Request> createRequest(
+        const SmartPointer<Conn> &connection, Method method,
+        const URI &uri, const Version &version) override;
+      void endRequest(Request &req) override;
+
+      // From RequestHandler
+      bool operator()(Request &req) override;
     };
   }
 }
