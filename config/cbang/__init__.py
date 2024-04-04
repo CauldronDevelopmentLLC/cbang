@@ -104,6 +104,7 @@ def configure_deps(conf, local = True, with_openssl = True,
     # sd-bus
     if (env['PLATFORM'] == 'posix' and
         conf.CBCheckCHeader('systemd/sd-bus.h') and conf.CBCheckLib('systemd')):
+        conf.CBCheckLib('cap')
         env.CBConfigDef('HAVE_SYSTEMD')
 
     conf.CBConfig('valgrind', False)
