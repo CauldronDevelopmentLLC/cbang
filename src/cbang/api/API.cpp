@@ -79,7 +79,7 @@ namespace {
 }
 
 
-string API::API::getEndpointType(const JSON::ValuePtr &config) const {
+string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
   string type = config->getString("handler", "");
 
   if (type.empty()) {
@@ -92,7 +92,7 @@ string API::API::getEndpointType(const JSON::ValuePtr &config) const {
 
 
 SmartPointer<HTTP::RequestHandler>
-API::API::createAccessHandler(const JSON::ValuePtr &config) {
+cb::API::API::createAccessHandler(const JSON::ValuePtr &config) {
   auto handler = SmartPtr(new HTTP::AccessHandler);
 
   if (config->has("allow")) {
@@ -120,7 +120,7 @@ API::API::createAccessHandler(const JSON::ValuePtr &config) {
 
 
 SmartPointer<HTTP::RequestHandler>
-API::API::createEndpoint(const JSON::ValuePtr &config) {
+cb::API::API::createEndpoint(const JSON::ValuePtr &config) {
   string type = getEndpointType(config);
 
   if (type == "pass")     return new PassHandler;
@@ -146,7 +146,7 @@ API::API::createEndpoint(const JSON::ValuePtr &config) {
 
 
 SmartPointer<HTTP::RequestHandler>
-API::API::createValidationHandler(const JSON::ValuePtr &config) {
+cb::API::API::createValidationHandler(const JSON::ValuePtr &config) {
   auto group = SmartPtr(new HTTP::HandlerGroup);
 
   // Endpoint Auth
@@ -162,7 +162,7 @@ API::API::createValidationHandler(const JSON::ValuePtr &config) {
 
 
 SmartPointer<HTTP::RequestHandler>
-API::API::createAPIHandler(const string &pattern, const JSON::ValuePtr &api,
+cb::API::API::createAPIHandler(const string &pattern, const JSON::ValuePtr &api,
                          const RequestHandlerPtr &parentValidation) {
   // Patterns
   auto patterns = SmartPtr(new HTTP::HandlerGroup);
@@ -223,7 +223,7 @@ API::API::createAPIHandler(const string &pattern, const JSON::ValuePtr &api,
 }
 
 
-void API::API::loadCategory(const string &name, const JSON::ValuePtr &cat) {
+void cb::API::API::loadCategory(const string &name, const JSON::ValuePtr &cat) {
   auto group = SmartPtr(new HTTP::HandlerGroup);
   string base = cat->getString("base", "");
 
@@ -244,13 +244,13 @@ void API::API::loadCategory(const string &name, const JSON::ValuePtr &cat) {
 }
 
 
-void API::API::loadCategories(const JSON::ValuePtr &config) {
+void cb::API::API::loadCategories(const JSON::ValuePtr &config) {
   for (unsigned i = 0; i < config->size(); i++)
     loadCategory(config->keyAt(i), config->get(i));
 }
 
 
-void API::API::load(const JSON::ValuePtr &config) {
+void cb::API::API::load(const JSON::ValuePtr &config) {
   if (this->config.isSet()) THROW("API already loaded");
   this->config = config;
 
