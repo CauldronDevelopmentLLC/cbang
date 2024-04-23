@@ -31,6 +31,8 @@
 
 #pragma once
 
+#include "Context.h"
+
 #include <cbang/http/Client.h>
 #include <cbang/http/HandlerGroup.h>
 
@@ -42,11 +44,19 @@
 #include <cbang/http/SessionManager.h>
 #include <cbang/db/maria/Connector.h>
 
+#include <functional>
+
 
 namespace cb {
+  class Options;
+
   namespace API {
+    class Docs;
+
     class API : public HTTP::HandlerGroup {
+      Options &options;
       JSON::ValuePtr config;
+      SmartPointer<Docs> docs;
 
       SmartPointer<HTTP::Client>          client;
       SmartPointer<OAuth2::Providers>     oauth2Providers;
@@ -54,7 +64,16 @@ namespace cb {
       SmartPointer<MariaDB::Connector>    connector;
       SmartPointer<Event::SubprocessPool> procPool;
 
+      typedef HTTP::RequestHandlerPtr RequestHandlerPtr;
+      typedef std::map<std::string, RequestHandlerPtr> callbacks_t;
+      callbacks_t callbacks;
+
     public:
+      API(Options &options);
+      ~API();
+
+      Options &getOptions() const {return options;}
+
       void setClient(const SmartPointer<HTTP::Client> &x) {client = x;}
       void setOAuth2Providers(const SmartPointer<OAuth2::Providers> &x)
         {oauth2Providers = x;}
@@ -71,21 +90,29 @@ namespace cb {
       MariaDB::Connector    &getDBConnector()     {return *connector;}
       Event::SubprocessPool &getProcPool()        {return *procPool;}
 
-      typedef SmartPointer<HTTP::RequestHandler> RequestHandlerPtr;
+      void load(const JSON::ValuePtr &config);
+
+      void bind(const std::string &key, const RequestHandlerPtr &handler);
+
+      template <class T, typename MEMBER_T>
+      void bind(const std::string &key, T *obj, MEMBER_T member) {
+        bind(key, HTTP::RequestHandlerFactory::create(obj, member));
+      }
+
+      template <class T, typename MEMBER_T>
+      void bind(const std::string &key, MEMBER_T member) {
+        bind(key, HTTP::RequestHandlerFactory::create<T>(member));
+      }
+
+    protected:
+      typedef SmartPointer<Context> CtxPtr;
 
       virtual std::string getEndpointType(const JSON::ValuePtr &config) const;
-      virtual RequestHandlerPtr createAccessHandler(
-        const JSON::ValuePtr &config);
-      virtual RequestHandlerPtr createEndpoint(const JSON::ValuePtr &config);
-      virtual RequestHandlerPtr createValidationHandler(
-        const JSON::ValuePtr &config);
-      virtual RequestHandlerPtr createAPIHandler(
-        const std::string &pattern, const JSON::ValuePtr &config,
-        const RequestHandlerPtr &parentValidation = 0);
-
-      void loadCategory(const std::string &name, const JSON::ValuePtr &cat);
-      void loadCategories(const JSON::ValuePtr &config);
-      void load(const JSON::ValuePtr &config);
-     };
+      virtual RequestHandlerPtr createEndpointHandler(
+        const std::string &type, const JSON::ValuePtr &config);
+      virtual RequestHandlerPtr createMethodsHandler(
+        const std::string &methods, const CtxPtr &ctx);
+      virtual RequestHandlerPtr createAPIHandler(const CtxPtr &ctx);
+    };
   }
 }

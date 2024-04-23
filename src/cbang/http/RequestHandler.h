@@ -59,36 +59,5 @@ namespace cb {
       // From RequestHandler
       bool operator()(Request &req) override {return cb(req);}
     };
-
-
-    template <class T>
-    struct RequestMemberHandler : public RequestHandler {
-      typedef bool (T::*member_t)(Request &);
-      T *obj;
-      member_t member;
-
-      RequestMemberHandler(T *obj, member_t member) :
-        obj(obj), member(member) {
-        if (!obj) CBANG_THROW("Object cannot be NULL");
-        if (!member) CBANG_THROW("Member cannot be NULL");
-      }
-
-      // From RequestHandler
-      bool operator()(Request &req) override {return (*obj.*member)(req);}
-    };
-
-
-    template <class T>
-    struct RequestRecastHandler : public RequestHandler {
-      typedef bool (T::*member_t)();
-      member_t member;
-
-      RequestRecastHandler(member_t member) : member(member) {
-        if (!member) CBANG_THROW("Member cannot be NULL");
-      }
-
-      // From RequestHandler
-      bool operator()(Request &req) override {return (req.cast<T>().*member)();}
-    };
   }
 }

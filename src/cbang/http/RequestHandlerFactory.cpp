@@ -29,49 +29,47 @@
 
 \******************************************************************************/
 
-#include "EnumerationManager.h"
-
-#include <cbang/Exception.h>
-#include <cbang/Application.h>
-#include <cbang/String.h>
-
-#include <cbang/config/CommandLine.h>
+#include "RequestHandlerFactory.h"
 
 using namespace std;
 using namespace cb;
-using namespace cb;
+using namespace cb::HTTP;
 
 
-EnumerationManager::EnumerationManager(Application &app) {
-  if (!app.hasFeature(Application::FEATURE_ENUMERATION_MANAGER)) return;
-
-  CommandLine &cmdLine = app.getCommandLine();
-
-  typedef OptionAction<EnumerationManager> action_t;
-  cb::SmartPointer<Option> opt;
-  opt = cmdLine.add("enum", 0, new action_t(this, &EnumerationManager::action),
-                    "Either list all available enumerations or the members of "
-                    "an enumeration and exit.");
-  opt->setType(Option::STRING_TYPE);
-  opt->setOptional();
+SmartPointer<RequestHandler> RequestHandlerFactory::create(callback_t cb) {
+  return new RequestFunctionHandler(cb);
 }
 
 
-void EnumerationManager::print(ostream &stream, const string &name) const {
-  auto it = enums.find(name);
-  if (it == enums.end()) THROW("Enumeration '" << name << "' not found");
+SmartPointer<RequestHandler> RequestHandlerFactory::create(msg_callback_t cb) {
+  return create([cb] (Request &req) {
+    JSON::ValuePtr msg = req.getJSONMessage();
+    if (msg.isNull()) msg = req.parseArgs();
 
-  for (unsigned i = 0; i < it->second.getCount(); i++)
-    stream << it->second.getName(i) << '\n';
+    cb(req, msg);
+    req.reply();
+    return true;
+  });
 }
 
 
-int EnumerationManager::action(Option &option) {
-  if (option.hasValue()) print(cout, String::toLower(option.toString()));
-  else for (auto &p: enums) cout << p.first << '\n';
+SmartPointer<RequestHandler> RequestHandlerFactory::create(sink_callback_t cb) {
+  return create([cb] (Request &req) {
+    cb(req, *req.getJSONWriter());
+    req.reply();
+    return true;
+  });
+}
 
-  cout << flush;
 
-  exit(0); // TODO Option calls the action so we have to exit(). FIXME!
-  return -1;
+SmartPointer<RequestHandler>
+RequestHandlerFactory::create(msg_sink_callback_t cb) {
+  return create([cb] (Request &req) {
+    JSON::ValuePtr msg = req.getJSONMessage();
+    if (msg.isNull()) msg = req.parseArgs();
+
+    cb(req, msg, *req.getJSONWriter());
+    req.reply();
+    return true;
+  });
 }

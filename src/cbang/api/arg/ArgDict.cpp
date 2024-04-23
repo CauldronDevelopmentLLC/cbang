@@ -36,7 +36,7 @@ using namespace std;
 using namespace cb::API;
 
 
-ArgDict::ArgDict(const JSON::ValuePtr &args) {
+void ArgDict::add(const JSON::ValuePtr &args) {
   for (unsigned i = 0; i < args->size(); i++)
     validators[args->keyAt(i)] = new ArgValidator(args->get(i));
 }

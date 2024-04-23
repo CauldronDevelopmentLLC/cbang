@@ -60,9 +60,9 @@ bool RequestErrorHandler::operator()(Request &req) {
     req.sendError(e);
 
   } catch (...) {
-    LOG_ERROR(Status(Status::HTTP_INTERNAL_SERVER_ERROR)
-              .getDescription());
-    req.sendError(Status::HTTP_INTERNAL_SERVER_ERROR);
+    Status status(Status::HTTP_INTERNAL_SERVER_ERROR);
+    LOG_ERROR(status.getDescription());
+    req.sendError(status);
   }
 
   return true;

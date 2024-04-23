@@ -36,6 +36,7 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/net/AddressFilter.h>
 
 #include <list>
 #include <set>
@@ -44,6 +45,8 @@
 
 namespace cb {
   class Socket;
+  class Options;
+
 
   namespace Event {
     class Server : public Enum {
@@ -60,6 +63,8 @@ namespace cb {
       unsigned maxConnections = std::numeric_limits<unsigned>::max();
       unsigned maxConnectionTTL = 0;
       unsigned connectionBacklog = 128;
+
+      AddressFilter addrFilter;
 
       SmartPointer<RateSet> stats;
 
@@ -78,6 +83,8 @@ namespace cb {
       int getWriteTimeout() const {return writeTimeout;}
       void setWriteTimeout(unsigned t) {writeTimeout = t;}
 
+      void setTimeout(int timeout);
+
       unsigned getMaxConnections() const {return maxConnections;}
       void setMaxConnections(unsigned x) {maxConnections = x;}
 
@@ -87,10 +94,16 @@ namespace cb {
       unsigned getConnectionBacklog() const {return connectionBacklog;}
       void setConnectionBacklog(unsigned x) {connectionBacklog = x;}
 
+      void allow(const std::string &spec);
+      void deny(const std::string &spec);
+
       const SmartPointer<RateSet> &getStats() const {return stats;}
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
       unsigned getConnectionCount() const {return connections.size();}
+
+      virtual void addOptions(Options &options);
+      virtual void init(Options &options);
 
       void bind(const SockAddr &addr,
                 const SmartPointer<SSLContext> &sslCtx = 0, int priority = -1);
@@ -100,8 +113,8 @@ namespace cb {
                   const SmartPointer<SSLContext> &sslCtx);
       void remove(const SmartPointer<Connection> &conn);
 
+      virtual bool isAllowed(const SockAddr &peerAddr) const;
       virtual SmartPointer<Connection> createConnection();
-      virtual void onConnect(const SmartPointer<Connection> &conn) = 0;
     };
   }
 }

@@ -59,5 +59,11 @@ namespace cb {
     std::string getHelp() const override {
       return minimum.getHelp() + " & " + maximum.getHelp();
     }
+
+
+    void dump(JSON::Sink &sink) const {
+      minimum.dump(sink);
+      maximum.dump(sink);
+    }
   };
 }

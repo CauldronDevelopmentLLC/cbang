@@ -40,6 +40,7 @@
 #include <cbang/Exception.h>
 #include <cbang/net/Socket.h>
 #include <cbang/os/SysError.h>
+#include <cbang/dns/Base.h>
 
 using namespace std;
 using namespace cb;
@@ -62,7 +63,8 @@ namespace {
 bool Base::_threadsEnabled = false;
 
 
-Base::Base(bool withThreads, int priorities) {
+Base::Base(bool withThreads, bool useSystemNS, int priorities) :
+  useSystemNS(useSystemNS) {
   Socket::initialize(); // Windows needs this
 
   if (withThreads) enableThreads();
@@ -75,6 +77,12 @@ Base::Base(bool withThreads, int priorities) {
 Base::~Base() {
   pool.release(); // Must be before base is freed
   if (base) event_base_free(base);
+}
+
+
+DNS::Base &Base::getDNS() {
+  if (dns.isNull()) dns = new DNS::Base(*this, useSystemNS);
+  return *dns;
 }
 
 

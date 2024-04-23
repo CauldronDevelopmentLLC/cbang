@@ -33,6 +33,9 @@
 
 #include "Constraint.h"
 
+#include <cbang/json/Sink.h>
+
+
 namespace cb {
   template <typename T>
   class MinConstraint : public Constraint {
@@ -58,5 +61,8 @@ namespace cb {
     std::string getHelp() const override {
       return SSTR(">= " << minimum);
     }
+
+
+    void dump(JSON::Sink &sink) const {sink.insert("min", minimum);}
   };
 }

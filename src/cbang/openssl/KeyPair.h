@@ -84,13 +84,13 @@ namespace cb {
 
     // Generate
     void generateRSA(unsigned bits = 4096, uint64_t pubExp = 65537,
-                     SmartPointer<KeyGenCallback> callback = 0);
+                     const SmartPointer<KeyGenCallback> &cb = 0);
     void generateDSA(unsigned bits = 4096,
-                     SmartPointer<KeyGenCallback> callback = 0);
+                     const SmartPointer<KeyGenCallback> &cb = 0);
     void generateDH(unsigned primeLen, int generator = 2,
-                    SmartPointer<KeyGenCallback> callback = 0);
+                    const SmartPointer<KeyGenCallback> &cb = 0);
     void generateEC(const std::string &curve = "secp192k1",
-                    SmartPointer<KeyGenCallback> callback = 0);
+                    const SmartPointer<KeyGenCallback> &cb = 0);
 
     // Export
     std::string toDER(bool pub) const;
@@ -115,9 +115,9 @@ namespace cb {
     std::istream &readPublicPEM(std::istream &stream);
     void readPublicPEM(const std::string &pem);
     std::istream &readPrivatePEM(
-      std::istream &stream, SmartPointer<PasswordCallback> callback = 0);
+      std::istream &stream, const SmartPointer<PasswordCallback> &cb = 0);
     void readPrivatePEM(
-      const std::string &pem, SmartPointer<PasswordCallback> callback = 0);
+      const std::string &pem, const SmartPointer<PasswordCallback> &cb = 0);
 
     // Signatures
     std::string sign(const std::string &data) const;

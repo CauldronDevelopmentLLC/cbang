@@ -41,8 +41,7 @@ using namespace cb::API;
 
 
 CORSHandler::CORSHandler(const JSON::ValuePtr &config) :
-  HeadersHandler(config->has("headers") ?
-                 config->get("headers") : new JSON::Dict) {
+  HeadersHandler(config->get("headers", new JSON::Dict)) {
   // Explicit origins
   if (config->has("origins")) {
     auto &l = *config->get("origins");

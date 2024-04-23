@@ -43,7 +43,7 @@ namespace cb {
     class JSONBufferWriter :
       public Buffer, SmartPointer<std::ostream>, public JSON::Writer {
     public:
-      JSONBufferWriter(unsigned indent = 0, bool compact = false);
+      JSONBufferWriter(unsigned indent = 0, bool compact = true);
 
       // From JSON::Writer
       using JSON::Writer::write;

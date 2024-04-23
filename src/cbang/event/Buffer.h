@@ -76,6 +76,7 @@ namespace cb {
       evbuffer *getBuffer() const {return evb;}
 
       unsigned getLength() const;
+      bool isEmpty() const {return !getLength();}
 
       const char *toCString() const;
       std::string toString() const;

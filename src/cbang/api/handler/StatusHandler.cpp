@@ -39,7 +39,8 @@ using namespace cb;
 using namespace cb::API;
 
 
-StatusHandler::StatusHandler(const JSON::ValuePtr &config) {
+StatusHandler::StatusHandler(const JSON::ValuePtr &config) :
+  text(config->getString("text", "")) {
   if (config->hasNumber("code"))
     code = (HTTP::Status::enum_t)config->getU16("code");
   else code = HTTP::Status::parse(config->getString("code"));
@@ -47,7 +48,7 @@ StatusHandler::StatusHandler(const JSON::ValuePtr &config) {
 
 
 bool StatusHandler::operator()(HTTP::Request &req) {
-  req.send(code.toString());
+  req.send(text.empty() ? code.toString() : text);
   req.reply(code);
 
   return true;

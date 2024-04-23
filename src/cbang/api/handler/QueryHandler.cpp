@@ -32,7 +32,6 @@
 #include "QueryHandler.h"
 
 #include <cbang/api/Query.h>
-#include <cbang/api/Resolver.h>
 
 using namespace std;
 using namespace cb;

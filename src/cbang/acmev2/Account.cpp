@@ -67,7 +67,7 @@ void Account::addOptions(Options &options) {
   options.addTarget("acmev2-base", uriBase, "The ACME v2 URI base.");
   options.addTarget("acmev2-emails", emails, "Space separated list of "
                     "certificate contact emails."
-                    )->setType(Option::STRINGS_TYPE);
+                    )->setType(Option::TYPE_STRINGS);
   options.addTarget("acmev2-retry-wait", retryWait, "The time in seconds to "
                     "wait between retries.");
   options.addTarget("acmev2-renewal-period", renewPeriod, "Renew certificates "

@@ -32,7 +32,7 @@
 #include "CommandLine.h"
 
 #include <cbang/Exception.h>
-#include <cbang/xml/Writer.h>
+#include <cbang/json/Writer.h>
 #include <cbang/log/Logger.h>
 
 #include <cstdlib>
@@ -48,11 +48,11 @@ CommandLine::CommandLine() {
 
   opt = add("help", 0, this, &CommandLine::usageAction,
             "Print help screen or help on a particular option and exit.");
-  opt->setType(Option::STRING_TYPE);
+  opt->setType(Option::TYPE_STRING);
   opt->setOptional();
 
-  add("html-help", 0, this, &CommandLine::htmlHelpAction,
-      "Print help in HTML format and exit.");
+  add("json-help", 0, this, &CommandLine::jsonHelpAction,
+      "Print help in JSON format and exit.");
 
   add("verbose", 'v', this, &CommandLine::incVerbosityAction,
       "Increase verbosity level.");
@@ -68,7 +68,7 @@ CommandLine::CommandLine() {
 
 
 void CommandLine::add(const string &name, SmartPointer<Option> option) {
-  option->setType(Option::BOOLEAN_TYPE); // The default for command line opts
+  option->setType(Option::TYPE_BOOLEAN); // The default for command line opts
 
   // Short name
   if (option->getShortName())
@@ -177,18 +177,18 @@ int CommandLine::usageAction(Option &option) {
 
   } else usage(cout, name);
 
-  exit(0); // TODO cb::Option calls this action so we have to exit(0). FIXME!
+  exit(0);
   return -1;
 }
 
 
-int CommandLine::htmlHelpAction() {
+int CommandLine::jsonHelpAction() {
   if (keywords) {
-    XML::Writer writer(cout);
-    keywords->printHelpPage(writer);
+    JSON::Writer writer(cout);
+    keywords->dump(writer);
   }
 
-  exit(0); // TODO cb::Option calls this action so we have to exit(0). FIXME!
+  exit(0);
   return -1;
 }
 
@@ -244,7 +244,7 @@ int CommandLine::licenseAction() {
   for (unsigned i = 0; i < licenseText.size(); i++)
     cout << licenseText[i] << endl << endl;
 
-  exit(0); // TODO Option calls the action so we have to exit(). FIXME!
+  exit(0);
   return -1;
 }
 

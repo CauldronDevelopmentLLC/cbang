@@ -31,32 +31,33 @@
 
 #pragma once
 
-#include <cbang/http/RequestHandler.h>
 #include <cbang/json/Value.h>
 
-#include <set>
-
-
 namespace cb {
+  namespace HTTP {class HandlerGroup; class AccessHandler;}
+
   namespace API {
-    class APIHandler : public HTTP::RequestHandler {
-      JSON::ValuePtr api;
+    class ArgsHandler;
+
+    class Context : public RefCounted {
+      JSON::ValuePtr config;
+      std::string pattern;
+      SmartPointer<Context> parent;
+
+      SmartPointer<HTTP::AccessHandler> accessHandler;
+      SmartPointer<ArgsHandler> argsHandler;
 
     public:
-      APIHandler(const JSON::ValuePtr &config, const JSON::ValuePtr &apiConfig);
+      Context(const JSON::ValuePtr &config, const std::string &pattern = "",
+              SmartPointer<Context> parent = 0);
+      virtual ~Context();
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      const std::string &getPattern() const {return pattern;}
+      const JSON::ValuePtr &getConfig() const {return config;}
 
-    protected:
-      JSON::ValuePtr loadCategories(const JSON::Value &cats);
-      JSON::ValuePtr loadCategory(const JSON::Value &cat);
-      void loadEndpoints(const JSON::ValuePtr &endpoints,
-                         const std::string &pattern,
-                         const JSON::Value &config);
-      JSON::ValuePtr loadMethod(const JSON::Value &method,
-                                const std::set<std::string> &urlArgs,
-                                const JSON::Value &endpointArgs);
+      SmartPointer<Context> createChild(
+        const JSON::ValuePtr &config, const std::string &pattern);
+      void addValidation(HTTP::HandlerGroup &group);
     };
   }
 }

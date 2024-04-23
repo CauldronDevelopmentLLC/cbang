@@ -29,26 +29,21 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "DocsHandler.h"
 
-#include "RequestHandler.h"
+#include <cbang/http/Request.h>
 
-#include <cbang/util/Resource.h>
+using namespace cb::API;
+using namespace cb;
+using namespace std;
 
 
-namespace cb {
-  namespace HTTP {
-    class Request;
+DocsHandler::DocsHandler(
+  const JSON::ValuePtr &config, const JSON::ValuePtr &docs) : docs(docs) {}
 
-    class ResourceHandler : public RequestHandler {
-      const Resource &root;
 
-    public:
-      ResourceHandler(const Resource &root) : root(root) {}
-      ResourceHandler(const std::string &path);
-
-      // From RequestHandler
-      bool operator()(Request &req) override;
-    };
-  }
+bool DocsHandler::operator()(HTTP::Request &req) {
+  docs->write(*req.getJSONWriter());
+  req.reply();
+  return true;
 }

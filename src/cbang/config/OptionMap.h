@@ -40,7 +40,6 @@
 #include "OptionActionSet.h"
 
 #include <cbang/xml/HandlerFactory.h>
-#include <cbang/xml/FileTracker.h>
 
 
 namespace cb {
@@ -48,19 +47,13 @@ namespace cb {
 
   /// A base class for configuration option handling
   class OptionMap : public XML::Handler {
-    XML::FileTracker fileTracker;
-
     std::string xmlValue;
-    bool xmlValueSet;
-    bool setDefault;
-    bool autoAdd;
-    bool allowReset;
+    bool xmlValueSet = false;
+    bool setDefault  = false;
+    bool autoAdd     = false;
+    bool allowReset  = false;
 
   public:
-    OptionMap() : xmlValueSet(false), setDefault(false), autoAdd(false),
-                  allowReset(false) {}
-    virtual ~OptionMap() {}
-
     bool getAutoAdd() const {return autoAdd;}
     void setAutoAdd(bool x) {autoAdd = x;}
     bool getAllowReset() const {return allowReset;}
@@ -77,9 +70,7 @@ namespace cb {
     SmartPointer<Option> add(const std::string &name, const char shortName,
                              T *obj, typename OptionAction<T>::member_t member,
                              const std::string &help = "") {
-      SmartPointer<Option> option = add(name, shortName, 0, help);
-      option->setAction(obj, member);
-      return option;
+      return add(name, shortName, new OptionAction<T>(obj, member), help);
     }
 
     template <typename T>
@@ -87,19 +78,25 @@ namespace cb {
                              T *obj,
                              typename BareOptionAction<T>::member_t member,
                              const std::string &help = "") {
-      SmartPointer<Option> option = add(name, shortName, 0, help);
-      option->setAction(obj, member);
-      return option;
+      return add(name, shortName, new BareOptionAction<T>(obj, member), help);
+    }
+
+    template <typename T>
+    void bind(const std::string &name, T &target) {
+      auto action = SmartPtr(new OptionActionSet<T>(target));
+      auto option = get(name);
+      option->setAction(action);
+      option->setDefaultSetAction(action);
+      if (option->hasValue()) (*action)(*option);
     }
 
     template <typename T>
     SmartPointer<Option> addTarget(const std::string &name, T &target,
                                    const std::string &help = "",
                                    char shortName = 0) {
-      SmartPointer<OptionActionBase> action = new OptionActionSet<T>(target);
-      SmartPointer<Option> option = add(name, shortName, action, help);
+      auto option = add(name, shortName, 0, help);
+      bind(name, target);
       option->setDefault(target);
-      option->setDefaultSetAction(action);
       return option;
     }
 
@@ -118,9 +115,6 @@ namespace cb {
     virtual void alias(const std::string &name, const std::string &alias) = 0;
 
     // From XML::Handler
-    void pushFile(const std::string &filename) override
-    {fileTracker.pushFile(filename);}
-    void popFile() override {fileTracker.popFile();}
     void startElement(
       const std::string &name, const XML::Attributes &attrs) override;
     void endElement(const std::string &name) override;

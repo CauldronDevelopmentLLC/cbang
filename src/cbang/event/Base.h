@@ -43,6 +43,8 @@ struct event_base;
 
 
 namespace cb {
+  namespace DNS {class Base;}
+
   namespace Event {
     class Event;
     class FDPool;
@@ -52,6 +54,8 @@ namespace cb {
 
       event_base *base;
 
+      bool useSystemNS;
+      SmartPointer<DNS::Base> dns;
       SmartPointer<FDPool> pool;
 
     public:
@@ -63,11 +67,13 @@ namespace cb {
       typedef std::function<void (Event &, int, unsigned)> callback_t;
       typedef std::function<void ()> bare_callback_t;
 
-      Base(bool withThreads = false, int priorities = -1);
+      Base(bool withThreads = false, bool useSystemNS = true,
+           int priorities = -1);
       ~Base();
 
       struct event_base *getBase() const {return base;}
 
+      DNS::Base &getDNS();
       FDPool &getPool();
 
       void initPriority(int num);

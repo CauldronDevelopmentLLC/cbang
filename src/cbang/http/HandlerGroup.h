@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "RequestJSONHandler.h"
+#include "RequestHandlerFactory.h"
 
 #include <vector>
 
@@ -51,6 +51,8 @@ namespace cb {
       HandlerGroup() {}
       HandlerGroup(const std::string &prefix) : prefix(prefix) {}
       virtual ~HandlerGroup() {}
+
+      bool isEmpty() const {return handlers.empty();}
 
       const std::string &getPrefix() const {return prefix;}
       void setPrefix(const std::string &prefix) {this->prefix = prefix;}
@@ -74,55 +76,28 @@ namespace cb {
                const std::string &prefix = std::string());
 
       // Member callbacks
-      template <class T>
-      void addMember(T *obj,
-                     typename RequestMemberHandler<T>::member_t member) {
-        addHandler(new RequestMemberHandler<T>(obj, member));
+      template <class T, typename MEMBER_T>
+      void addMember(T *obj, MEMBER_T member) {
+        addHandler(RequestHandlerFactory::create(obj, member));
       }
 
-      template <class T>
+      template <class T, typename MEMBER_T>
       void addMember(unsigned methods, const std::string &pattern, T *obj,
-                     typename RequestMemberHandler<T>::member_t member) {
-        addHandler(methods, pattern,
-                   new RequestMemberHandler<T>(obj, member));
+                     MEMBER_T member) {
+        addHandler(
+          methods, pattern, RequestHandlerFactory::create(obj, member));
       }
 
       // Recast member callbacks
-      template <class T>
-      void addMember(typename RequestRecastHandler<T>::member_t member) {
-        addHandler(new RequestRecastHandler<T>(member));
+      template <class T, typename MEMBER_T>
+      void addMember(MEMBER_T member) {
+        addHandler(RequestHandlerFactory::create<T>(member));
       }
 
-      template <class T>
+      template <class T, typename MEMBER_T>
       void addMember(unsigned methods, const std::string &pattern,
-                     typename RequestRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern, new RequestRecastHandler<T>(member));
-      }
-
-      // JSON member callbacks
-      template <class T> void addMember(
-        T *obj, typename RequestJSONMemberHandler<T>::member_t member) {
-        addHandler(new RequestJSONMemberHandler<T>(obj, member));
-      }
-
-      template <class T> void addMember(
-        unsigned methods, const std::string &pattern,
-        T *obj, typename RequestJSONMemberHandler<T>::member_t member) {
-        addHandler(methods, pattern,
-                   new RequestJSONMemberHandler<T>(obj, member));
-      }
-
-      // JSON Recast member callbacks
-      template <class T> void addMember(
-        typename RequestJSONRecastHandler<T>::member_t member) {
-        addHandler(new RequestJSONRecastHandler<T>(member));
-      }
-
-      template <class T> void addMember(
-        unsigned methods, const std::string &pattern,
-        typename RequestJSONRecastHandler<T>::member_t member) {
-        addHandler(methods, pattern,
-                   new RequestJSONRecastHandler<T>(member));
+                     MEMBER_T member) {
+        addHandler(methods, pattern, RequestHandlerFactory::create<T>(member));
       }
 
       // From RequestHandler
@@ -132,8 +107,7 @@ namespace cb {
       virtual SmartPointer<RequestHandler>
       createMatcher(unsigned methods, const std::string &search,
                     const SmartPointer<RequestHandler> &child);
-      virtual SmartPointer<RequestHandler>
-      createHandler(const Resource &res);
+      virtual SmartPointer<RequestHandler> createHandler(const Resource &res);
       virtual SmartPointer<RequestHandler>
       createHandler(const std::string &path);
     };

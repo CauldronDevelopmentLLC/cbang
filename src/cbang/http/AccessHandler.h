@@ -33,6 +33,8 @@
 
 #include "RequestHandler.h"
 
+#include <cbang/json/Value.h>
+
 #include <set>
 #include <string>
 
@@ -49,9 +51,15 @@ namespace cb {
 
     public:
       AccessHandler() {}
+      AccessHandler(const JSON::ValuePtr &config) {read(config);}
 
+      void read(const JSON::ValuePtr &config);
+      void read(const JSON::ValuePtr &config, bool allow);
+
+      void setUser   (const std::string &name, bool allow);
       void allowUser (const std::string &name) {userAllowed.insert(name);}
       void denyUser  (const std::string &name) {userDenied.insert(name);}
+      void setGroup  (const std::string &name, bool allow);
       void allowGroup(const std::string &name) {groupAllowed.insert(name);}
       void denyGroup (const std::string &name) {groupDenied.insert(name);}
 
@@ -59,6 +67,8 @@ namespace cb {
       bool userDeny  (const std::string &name) const;
       bool groupAllow(const std::string &name) const;
       bool groupDeny (const std::string &name) const;
+
+      bool checkGroup(const std::string &name, bool &allow, bool &deny) const;
 
       // From RequestHandler
       bool operator()(Request &req) override;

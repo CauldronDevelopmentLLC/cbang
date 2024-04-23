@@ -40,8 +40,8 @@ using namespace cb::HTTP;
 
 
 Client::Client(
-  Event::Base &base, DNS::Base &dns, const SmartPointer<SSLContext> &sslCtx) :
-  base(base), dns(dns), sslCtx(sslCtx) {}
+  Event::Base &base, const SmartPointer<SSLContext> &sslCtx) :
+  base(base), sslCtx(sslCtx) {}
 
 
 Client::~Client() {}
@@ -69,7 +69,7 @@ void Client::send(const SmartPointer<Request> &req) const {
 
   // Connect
   conn->connect(
-    dns, uri.getHost(), uri.getPort(), bindAddr, sslCtx,
+    uri.getHost(), uri.getPort(), bindAddr, sslCtx,
     [req] (bool success) {
       if (success) req->getConnection()->makeRequest(req);
       else req->onResponse(Event::ConnectionError::CONN_ERR_CONNECT);

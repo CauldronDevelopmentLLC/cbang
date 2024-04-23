@@ -36,13 +36,57 @@
 #include <cbang/openssl/SSLContext.h>
 #include <cbang/log/Logger.h>
 #include <cbang/net/Socket.h>
+#include <cbang/config/Options.h>
 
 using namespace cb::Event;
 using namespace cb;
 using namespace std;
 
 
-Server::Server(Base &base) : base(base) {}
+Server::Server(Base &base) : base(base), addrFilter(&base.getDNS()) {}
+
+
+void Server::setTimeout(int timeout) {
+  setReadTimeout(timeout);
+  setWriteTimeout(timeout);
+}
+
+
+void Server::allow(const string &spec) {addrFilter.allow(spec);}
+void Server::deny (const string &spec) {addrFilter.deny(spec);}
+
+
+void Server::addOptions(Options &options) {
+  options.pushCategory("Server");
+
+  options.add("allow", "Client addresses which are allowed to connect to this "
+              "server.  This option overrides addresses which are denied in "
+              "the deny option.  The pattern 0/0 matches all addresses."
+              )->setDefault("0/0");
+  options.add("deny", "Client address which are not allowed to connect to this "
+              "server.")->setDefault("");
+
+  options.add("connection-timeout", "Maximum time in seconds before a client "
+              "connection times out.  Zero indicates no timeout.");
+  options.addTarget("connection-backlog", connectionBacklog,
+                    "Size of the connection backlog queue.  Once this is full "
+                    "connections are rejected.");
+  options.addTarget("max-connections", maxConnections,
+                    "Maximum simultaneous client connections per port");
+  options.addTarget("max-ttl", maxConnectionTTL,
+                    "Maximum client connection time in seconds");
+
+  options.popCategory();
+}
+
+
+void Server::init(Options &options) {
+  allow(options["allow"]);
+  deny(options["deny"]);
+
+  if (options["connection-timeout"].hasValue())
+    setTimeout(options["connection-timeout"].toInteger());
+}
 
 
 void Server::bind(const SockAddr &addr, const SmartPointer<SSLContext> &sslCtx,
@@ -61,6 +105,11 @@ void Server::shutdown() {for (auto &port: ports) port->close();}
 void Server::accept(const SockAddr &peerAddr,
                     const SmartPointer<Socket> &socket,
                     const SmartPointer<SSLContext> &sslCtx) {
+  if (!isAllowed(peerAddr)) {
+    LOG_DEBUG(3, "Denying connection from " << peerAddr);
+    return;
+  }
+
   LOG_DEBUG(4, "New connection from " << peerAddr);
 
   auto conn = createConnection();
@@ -80,7 +129,7 @@ void Server::accept(const SockAddr &peerAddr,
 
   connections.insert(conn);
 
-  TRY_CATCH_ERROR(onConnect(conn));
+  TRY_CATCH_ERROR(conn->onConnect());
 }
 
 
@@ -90,6 +139,11 @@ void Server::remove(const SmartPointer<Connection> &conn) {
   connections.erase(conn);
 
   for (auto &port: ports) port->activate();
+}
+
+
+bool Server::isAllowed(const SockAddr &peerAddr) const {
+  return addrFilter.isAllowed(peerAddr);
 }
 
 

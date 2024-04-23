@@ -33,6 +33,7 @@
 
 #include "RequestHandler.h"
 
+#include <cbang/json/Value.h>
 #include <cbang/time/Time.h>
 
 #include <string>
@@ -44,16 +45,12 @@ namespace cb {
 
     class FileHandler : public RequestHandler {
       std::string root;
-      unsigned pathPrefix;
-      uint64_t timeout;
-      bool directory;
+      unsigned    pathPrefix;
+      bool        directory;
 
     public:
-      FileHandler(const std::string &root, unsigned pathPrefix = 0,
-                  uint64_t timeout = Time::SEC_PER_HOUR);
-
-      void setTimeout(uint64_t timeout) {this->timeout = timeout;}
-      uint64_t getTimeout() const {return timeout;}
+      FileHandler(const JSON::ValuePtr &config);
+      FileHandler(const std::string &root, unsigned pathPrefix = 0);
 
       // From RequestHandler
       bool operator()(Request &req) override;

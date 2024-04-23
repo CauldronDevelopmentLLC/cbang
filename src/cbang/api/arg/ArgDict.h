@@ -44,7 +44,10 @@ namespace cb {
       std::map<std::string, SmartPointer<ArgValidator> > validators;
 
     public:
-      ArgDict(const JSON::ValuePtr &args);
+      ArgDict() {}
+      ArgDict(const JSON::ValuePtr &args) {add(args);}
+
+      void add(const JSON::ValuePtr &args);
 
       // From ArgConstraint
       void operator()(HTTP::Request &req, JSON::Value &value) const;

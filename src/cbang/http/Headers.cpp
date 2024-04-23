@@ -41,7 +41,7 @@ using namespace std;
 
 
 string Headers::find(const string &key) const {return has(key) ? get(key) : "";}
-void Headers::remove(const string &key) {if (has(key)) insert(key, "");}
+void Headers::remove(const string &key) {if (has(key)) erase(key);}
 
 
 bool Headers::keyContains(const string &key, const string &value) const{
@@ -58,6 +58,11 @@ bool Headers::keyContains(const string &key, const string &value) const{
 
 
 string Headers::getContentType() const {return find("Content-Type");}
+
+
+bool Headers::isJSONContentType() const {
+  return String::startsWith(getContentType(), "application/json");
+}
 
 
 void Headers::setContentType(const string &contentType) {

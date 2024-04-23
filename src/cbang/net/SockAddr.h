@@ -107,7 +107,7 @@ namespace cb {
     SockAddr &operator=(const sockaddr_in &addr);
     SockAddr &operator=(const sockaddr_in6 &addr);
 
-    int cmp(const SockAddr &o) const;
+    int cmp(const SockAddr &o, bool cmpPorts = true) const;
     bool operator< (const SockAddr &a) const {return cmp(a) <  0;}
     bool operator<=(const SockAddr &a) const {return cmp(a) <= 0;}
     bool operator> (const SockAddr &a) const {return cmp(a) >  0;}
@@ -116,7 +116,7 @@ namespace cb {
     bool operator!=(const SockAddr &a) const {return cmp(a) != 0;}
 
     void setCIDRBits(uint8_t bits, bool on);
-    uint8_t getCIDRBits(const SockAddr &end) const;
+    int8_t getCIDRBits(const SockAddr &end) const;
 
     bool adjacent(const SockAddr &o) const;
 

@@ -43,25 +43,24 @@ using namespace std;
 using namespace cb;
 
 
-AddressRange::AddressRange(const string &spec) {
+void AddressRange::set(const string &spec) {
   try {
     auto dash = spec.find('-');
 
-    if (dash != string::npos) {
-      start = SockAddr::parse(spec.substr(0, dash));
-      end   = SockAddr::parse(spec.substr(dash + 1));
-      if (end < start) swap(start, end);
+    if (dash != string::npos)
+      set(SockAddr::parse(spec.substr(0, dash)),
+          SockAddr::parse(spec.substr(dash + 1)));
 
-    } else {
+    else {
       auto slash = spec.find('/');
 
       if (slash != string::npos) {
         uint8_t bits = String::parseU8(spec.substr(slash + 1), true);
-        start = end = SockAddr::parse(spec.substr(0, slash));
+        setBoth(SockAddr::parse(spec.substr(0, slash)));
         start.setCIDRBits(bits, 0);
         end  .setCIDRBits(bits, 1);
 
-      } else start = end = SockAddr::parse(spec);
+      } else setBoth(SockAddr::parse(spec));
     }
 
   } catch (const Exception &e) {
@@ -70,9 +69,22 @@ AddressRange::AddressRange(const string &spec) {
 }
 
 
-AddressRange::AddressRange(const SockAddr &start, const SockAddr &end) {
-  if (start < end) {this->start = start; this->end = end;}
-  else {this->start = end; this->end = start;}
+void AddressRange::set(const SockAddr &start, const SockAddr &end) {
+  setStart(start);
+  setEnd(end);
+  if (this->end < this->start) swap(this->start, this->end);
+}
+
+
+void AddressRange::setStart(const SockAddr &start) {
+  this->start = start;
+  this->start.setPort(0);
+}
+
+
+void AddressRange::setEnd(const SockAddr &end) {
+  this->end = end;
+  this->end.setPort(0);
 }
 
 
@@ -80,14 +92,14 @@ string AddressRange::toString() const {
   if (start == end) return start.toString();
 
   auto bits = getCIDRBits();
-  if (bits) return start.toString() + String::printf("/%u", bits);
+  if (0 <= bits) return start.toString() + String::printf("/%u", bits);
 
   return start.toString() + "-" + end.toString();
 }
 
 
 int AddressRange::cmp(const SockAddr &addr) const {
-  return addr < start ? -1 : (end < addr ? 1 : 0);
+  return addr.cmp(start, false) < 0 ? -1 : (end.cmp(addr, false) < 0 ? 1 : 0);
 }
 
 

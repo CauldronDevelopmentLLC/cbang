@@ -39,7 +39,10 @@
 #include <vector>
 #include <iostream>
 
-namespace cb {namespace JSON {class Sink;}}
+namespace cb {
+  namespace JSON {class Sink;}
+  namespace DNS  {class Base;}
+}
 
 
 namespace cb {
@@ -54,7 +57,7 @@ namespace cb {
     void clear() {ranges.clear();}
     bool empty() {return ranges.empty();}
 
-    void insert(const std::string &spec);
+    void insert(const std::string &spec, DNS::Base *dns = 0);
     void insert(const AddressRange &range);
     void insert(const AddressRangeSet &set);
     bool contains(const SockAddr &addr) const {return find(addr);}

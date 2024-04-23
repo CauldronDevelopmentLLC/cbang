@@ -52,6 +52,9 @@ namespace cb {
 
       void readHeader();
 
+      // From Event::Connection
+      void onConnect() {readHeader();}
+
     protected:
       void processHeader();
       void checkChunked(const SmartPointer<Request> &req);

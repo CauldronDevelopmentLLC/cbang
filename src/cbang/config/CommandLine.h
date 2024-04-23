@@ -71,12 +71,12 @@ namespace cb {
     void addUsageLine(const std::string &line) {usageExtras.push_back(line);}
     void addLicenseText(const char *text) {licenseText.push_back(text);}
 
-    void setAllowConfigAsFirstArg(bool x) {allowConfigAsFirstArg = x;}
+    void setAllowConfigAsFirstArg  (bool x) {allowConfigAsFirstArg = x;}
     void setAllowSingleDashLongOpts(bool x) {allowSingleDashLongOpts = x;}
-    void setAllowExtraOpts(bool x) {allowExtraOpts = x;}
-    void setAllowPositionalArgs(bool x) {allowPositionalArgs = x;}
-    void setWarnOnInvalidArgs(bool x) {warnOnInvalidArgs = x;}
-    void setShowKeywordOpts(bool x) {showKeywordOpts = x;}
+    void setAllowExtraOpts         (bool x) {allowExtraOpts = x;}
+    void setAllowPositionalArgs    (bool x) {allowPositionalArgs = x;}
+    void setWarnOnInvalidArgs      (bool x) {warnOnInvalidArgs = x;}
+    void setShowKeywordOpts        (bool x) {showKeywordOpts = x;}
 
     const std::vector<std::string> &getPositionalArgs() const
     {return positionalArgs;}
@@ -89,7 +89,7 @@ namespace cb {
 
   private:
     int usageAction(Option &option);
-    int htmlHelpAction();
+    int jsonHelpAction();
     int licenseAction();
     int incVerbosityAction();
     int quietAction();

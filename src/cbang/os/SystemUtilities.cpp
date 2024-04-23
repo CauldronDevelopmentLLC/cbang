@@ -45,6 +45,7 @@
 #include <cbang/net/URI.h>
 #include <cbang/comp/CompressionFilter.h>
 #include <cbang/boost/IOStreams.h>
+#include <cbang/util/ResourceManager.h>
 
 #include <cerrno>
 #include <cstring>
@@ -317,6 +318,9 @@ namespace cb {
 
     bool exists(const string &path) {
       try {
+        if (String::startsWith(path, "resource://"))
+          return ResourceManager::instance().find(path.substr(11));
+
         return fs::exists(path);
       } catch (const exception &e) {
         THROW(e.what());
@@ -1126,8 +1130,8 @@ namespace cb {
 
 
     struct IStream : public io::filtering_istream {
-      SmartPointer<iostream> file;
-      IStream(const SmartPointer<iostream> &file) : file(file) {}
+      SmartPointer<istream> file;
+      IStream(const SmartPointer<istream> &file) : file(file) {}
       ~IStream() {reset();}
     };
 
@@ -1135,7 +1139,11 @@ namespace cb {
     SmartPointer<istream> iopen(const string &filename, bool autoCompression) {
       SysError::clear();
       try {
-        auto file = createFile(filename, ios::in);
+        SmartPointer<istream> file;
+
+        if (String::startsWith(filename, "resource://"))
+          file = ResourceManager::instance().open(filename.substr(11));
+        else file = createFile(filename, ios::in);
 
         if (autoCompression) {
           Compression compression = compressionFromPath(filename);
@@ -1159,8 +1167,8 @@ namespace cb {
 
 
     struct OStream : public io::filtering_ostream {
-      SmartPointer<iostream> file;
-      OStream(const SmartPointer<iostream> &file) : file(file) {}
+      SmartPointer<ostream> file;
+      OStream(const SmartPointer<ostream> &file) : file(file) {}
       ~OStream() {reset();}
     };
 

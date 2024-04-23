@@ -55,7 +55,7 @@ ServerApplication::ServerApplication(const string &name,
   if (hasFeature(FEATURE_LIFELINE))
     cmdLine.addTarget("lifeline", lifeline, "The application will watch for "
                       "this process ID and exit if it goes away.  Usually the "
-                      "calling process' PID.")->setType(Option::INTEGER_TYPE);
+                      "calling process' PID.")->setType(Option::TYPE_INTEGER);
 
   if (!hasFeature(FEATURE_SERVER)) return;
 
@@ -63,7 +63,7 @@ ServerApplication::ServerApplication(const string &name,
               "Change directory before starting server.  All files opened "
               "after this point, such as the configuration file, must have "
               "paths relative to the new directory."
-              )->setType(Option::STRING_TYPE);
+              )->setType(Option::TYPE_STRING);
 
   options.pushCategory("Process Control");
 #ifndef _WIN32

@@ -65,5 +65,7 @@ string URLPatternMatcher::toRE2Pattern(const string &pattern) {
 
     } else rePattern += "/" + parts[i];
 
+  if (!pattern.empty() && pattern.back() == '/') rePattern += "/";
+
   return rePattern;
 }

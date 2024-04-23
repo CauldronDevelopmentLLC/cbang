@@ -51,8 +51,7 @@ void OptionCategory::add(const SmartPointer<Option> &option) {
 }
 
 
-void OptionCategory::write(JSON::Sink &sink, bool config,
-                           const string &delims) const {
+void OptionCategory::write(JSON::Sink &sink, bool config) const {
   if (!config) sink.beginDict();
 
   for (auto &p: options) {
@@ -62,7 +61,7 @@ void OptionCategory::write(JSON::Sink &sink, bool config,
 
     if (!option.isHidden()) {
       sink.beginInsert(option.getName());
-      option.write(sink, config, delims);
+      option.write(sink, config);
     }
   }
 
@@ -96,68 +95,8 @@ void OptionCategory::write(XML::Handler &handler, uint32_t flags) const {
 }
 
 
-void OptionCategory::printHelpTOC(XML::Handler &handler,
-                                  const string &prefix) const {
-  if (options.empty()) return;
-
-  XML::Attributes attrs;
-
-  attrs["class"] = "option-category";
-  handler.startElement("li", attrs);
-
-  string catName = name.empty() ? "Uncategorized" : name;
-  attrs.clear();
-  attrs["href"] = "#" + prefix + "option-category-" + catName;
-  handler.startElement("a", attrs);
-  handler.text(catName);
-  handler.endElement("a");
-
-  handler.startElement("ul");
-
-  for (auto &p: options)
-    if (!p.second->isHidden())
-      p.second->printHelpTOC(handler, prefix);
-
-  handler.endElement("ul");
-  handler.endElement("li");
-}
-
-
-void OptionCategory::printHelp(XML::Handler &handler,
-                               const string &prefix) const {
-  if (options.empty()) return;
-
-  XML::Attributes attrs;
-
-  attrs["class"] = "option-category";
-  attrs["id"] = prefix + "option-category-" + name;
-  handler.startElement("div", attrs);
-
-  if (!name.empty()) {
-    attrs["class"] = "option-category-name";
-    handler.startElement("div", attrs);
-    handler.text(name);
-    handler.endElement("div");
-  }
-
-  if (!description.empty()) {
-    attrs["class"] = "option-category-description";
-    handler.startElement("div", attrs);
-    handler.text(description);
-    handler.endElement("div");
-  }
-
-  for (auto &p: options)
-    if (!p.second->isHidden())
-      p.second->printHelp(handler, prefix);
-
-  handler.endElement("div");
-}
-
-
 void OptionCategory::printHelp(ostream &stream, bool cmdLine) const {
   if (!name.empty()) stream << name << ":\n";
-  if (!description.empty()) stream << description << "\n";
 
   bool first = true;
   for (auto &p: options)

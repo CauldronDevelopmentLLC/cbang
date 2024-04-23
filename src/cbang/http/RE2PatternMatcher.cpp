@@ -64,8 +64,7 @@ RE2PatternMatcher::RE2PatternMatcher(
 }
 
 
-bool RE2PatternMatcher::match(
-  const URI &uri, JSON::ValuePtr resultArgs) const {
+bool RE2PatternMatcher::match(const URI &uri, JSON::ValuePtr resultArgs) const {
   int n = pri->regex.NumberOfCapturingGroups();
   vector<RE2::Arg>   args(n);
   vector<RE2::Arg *> argPtrs(n);
@@ -73,27 +72,30 @@ bool RE2PatternMatcher::match(
 
   // Connect args
   for (int i = 0; i < n; i++) {
-    args[i] = &results[i];
+    args[i]    = &results[i];
     argPtrs[i] = &args[i];
   }
 
   // Attempt match
   string path = uri.getPath();
-  if (!RE2::FullMatchN(path, pri->regex, argPtrs.data(), n))
+  if (!RE2::FullMatchN(path, pri->regex, argPtrs.data(), n)) {
+    LOG_DEBUG(6, path << " did not match " << pri->regex.pattern());
     return false;
+  }
 
   LOG_DEBUG(5, path << " matched " << pri->regex.pattern());
 
-  if (resultArgs.isNull()) return true;
-
   // Store results
-  const auto &names = pri->regex.CapturingGroupNames();
-  for (int i = 0; i < n; i++) {
-    if (results[i].empty()) continue;
+  if (resultArgs.isSet()) {
+    auto &names = pri->regex.CapturingGroupNames();
 
-    auto it = names.find(i + 1);
-    if (it != names.end() && !resultArgs->has(it->second))
-      resultArgs->insert(it->second, results[i]);
+    for (int i = 0; i < n; i++)
+      if (!results[i].empty()) {
+        auto it = names.find(i + 1);
+
+        if (it != names.end() && !resultArgs->has(it->second))
+          resultArgs->insert(it->second, results[i]);
+      }
   }
 
   return true;

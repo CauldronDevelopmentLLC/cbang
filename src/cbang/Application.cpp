@@ -41,12 +41,11 @@
 #include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
 
-#include <cbang/util/Resource.h>
+#include <cbang/util/ResourceManager.h>
 #include <cbang/log/Logger.h>
 #include <cbang/config/Option.h>
 #include <cbang/json/Writer.h>
 #include <cbang/xml/Writer.h>
-#include <cbang/enum/EnumerationManager.h>
 
 #include <sstream>
 #include <set>
@@ -61,8 +60,7 @@ using namespace cb;
 
 
 namespace cb {
-  extern const DirectoryResource resource0;
-
+  extern void loadResources();
   namespace BuildInfo {
     void addBuildInfo(const char *category);
   }
@@ -70,10 +68,10 @@ namespace cb {
 
 
 Application::Application(const string &name, hasFeature_t hasFeature) :
-  Features(hasFeature), logger(Logger::instance()),
-  enumMan(new EnumerationManager(*this)), name(name), configRotate(true),
-  configRotateMax(16), configRotateDir("configs"), initialized(false),
-  configured(false), quit(false), startTime(Timer::now()) {
+  Features(hasFeature), logger(Logger::instance()), name(name),
+  quit(false), startTime(Timer::now()) {
+
+  loadResources();
 
   // Core dumps
 #if defined(DEBUG) && !defined(_WIN32)
@@ -149,23 +147,19 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     // Add to info
     SystemInfo::instance().add(info);
     info.add("System", "UTC Offset", String(Time::offset() / 3600));
-    info.add("System", "PID", String(SystemUtilities::getPID()));
-    info.add("System", "CWD", SystemUtilities::getcwd());
-    info.add("System", "Exec", SystemUtilities::getExecutablePath());
+    info.add("System", "PID",        String(SystemUtilities::getPID()));
+    info.add("System", "CWD",        SystemUtilities::getcwd());
+    info.add("System", "Exec",       SystemUtilities::getExecutablePath());
   }
 
   // Load licenses
-  const Resource *licenses = resource0.find("licenses");
-  if (licenses)
-    for (unsigned i = 0; licenses->getChild(i); i++)
-      cmdLine.addLicenseText(licenses->getChild(i)->getData());
-  else LOG_ERROR("Error loading licenses");
+  auto &licenses = ResourceManager::instance().get("cb/licenses");
+  for (unsigned i = 0; licenses.getChild(i); i++)
+    cmdLine.addLicenseText(licenses.getChild(i)->getData());
 }
 
 
 Application::~Application() {
-  delete enumMan;
-
 #ifdef DEBUG_LEAKS
   // Deallocate singletons
   SingletonDealloc::instance().deallocate();
@@ -242,7 +236,6 @@ int Application::init(int argc, char *argv[]) {
     configAction(cmdLine["--config"]);
 
   logger.setOptions(options);
-  LOG_DEBUG(3, "Initializing " << name);
 
   if (hasFeature(FEATURE_PROCESS_CONTROL))
     try {

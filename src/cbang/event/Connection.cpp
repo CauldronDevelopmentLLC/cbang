@@ -110,7 +110,7 @@ void Connection::accept(const SockAddr &peerAddr,
 
 
 void Connection::connect(
-  DNS::Base &dns, const string &hostname, uint32_t port, const SockAddr &bind,
+  const string &hostname, uint32_t port, const SockAddr &bind,
   const SmartPointer<SSLContext> &sslCtx, function<void (bool)> cb) {
   try {
     if (isConnected()) THROW("Already connected");
@@ -177,7 +177,7 @@ void Connection::connect(
       };
 
     // Start async DNS lookup
-    ref->dnsReq = dns.resolve(hostname, dnsCB);
+    ref->dnsReq = getBase().getDNS().resolve(hostname, dnsCB);
     return;
 
   } CATCH_ERROR;

@@ -45,8 +45,6 @@ namespace cb {
   class Socket;
   class SSLContext;
 
-  namespace DNS {class Base;}
-
   namespace Event {
     class Server;
 
@@ -80,9 +78,11 @@ namespace cb {
       bool isConnected() const;
       void accept(const SockAddr &peer, const SmartPointer<Socket> &socket,
                   const SmartPointer<SSLContext> &sslCtx);
-      void connect(DNS::Base &dns, const std::string &hostname, uint32_t port,
+      void connect(const std::string &hostname, uint32_t port,
                    const SockAddr &bind, const SmartPointer<SSLContext> &sslCtx,
                    std::function<void (bool)> cb);
+
+      virtual void onConnect() {}
 
     protected:
       void timedout();

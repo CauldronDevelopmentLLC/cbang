@@ -30,14 +30,15 @@
 \******************************************************************************/
 
 #include "API.h"
+#include "Docs.h"
+#include "Resolver.h"
 
 #include <cbang/api/handler/ArgsParser.h>
 #include <cbang/api/handler/StatusHandler.h>
 #include <cbang/api/handler/QueryHandler.h>
 #include <cbang/api/handler/LoginHandler.h>
 #include <cbang/api/handler/LogoutHandler.h>
-#include <cbang/api/handler/APIHandler.h>
-#include <cbang/api/handler/ArgsHandler.h>
+#include <cbang/api/handler/DocsHandler.h>
 #include <cbang/api/handler/ArgFilterHandler.h>
 #include <cbang/api/handler/PassHandler.h>
 #include <cbang/api/handler/HeadersHandler.h>
@@ -49,15 +50,12 @@
 #include <cbang/http/HandlerGroup.h>
 #include <cbang/http/URLPatternMatcher.h>
 #include <cbang/http/MethodMatcher.h>
-#include <cbang/http/AccessHandler.h>
 #include <cbang/http/FileHandler.h>
-#include <cbang/http/IndexHandler.h>
+#include <cbang/http/ResourceHandler.h>
 
 #include <cbang/openssl/SSLContext.h>
 #include <cbang/json/Value.h>
-#include <cbang/json/String.h>
 #include <cbang/log/Logger.h>
-#include <cbang/config/Options.h>
 
 using namespace cb;
 using namespace std;
@@ -65,69 +63,109 @@ using namespace cb::API;
 
 
 namespace {
-  unsigned parseMethods(const std::string &s) {
+  unsigned parseMethods(const string &s) {
     unsigned methods = HTTP::Method::HTTP_UNKNOWN;
     vector<string> tokens;
 
-    String::tokenize(String::toUpper(s), tokens, "| \n\r\t");
-    for (unsigned i = 0; i < tokens.size(); i++)
-      methods |= HTTP::Method::parse(
-        tokens[i], HTTP::Method::HTTP_UNKNOWN);
+    String::tokenize(s, tokens, "|");
+    for (auto &token: tokens)
+      methods |= HTTP::Method::parse(token, HTTP::Method::HTTP_UNKNOWN);
 
     return methods;
   }
 }
 
 
+cb::API::API::API(Options &options) : options(options) {}
+cb::API::API::~API() {}
+
+
+void cb::API::API::load(const JSON::ValuePtr &config) {
+  if (this->config.isSet()) THROW("API already loaded");
+  this->config = config;
+
+  // Resolve variables
+  Resolver(*this, 0).resolve(*config);
+
+  docs = new Docs(config);
+
+  // Check API version
+  const Version minVer("1.0.0");
+  Version version(config->getString("version", "0.0.0"));
+  if (version < minVer) THROW("API version must be at least " << minVer);
+
+  // Always parse args
+  addHandler(new ArgsParser);
+
+  // API
+  addHandler(createAPIHandler(new Context(config->get("api"))));
+}
+
+
+void cb::API::API::bind(const string &key, const RequestHandlerPtr &handler) {
+  if (!callbacks.insert(callbacks_t::value_type(key, handler)).second)
+    THROW("API binding for '" << key << "' already exists");
+}
+
+
 string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
+  if (config->isString()) return "bind";
+
   string type = config->getString("handler", "");
+  if (!type.empty()) return type;
 
-  if (type.empty()) {
-    if (config->has("sql")) return "query";
-    return "pass";
+  if (config->has("bind"))     return "bind";
+  if (config->has("sql"))      return "query";
+  if (config->has("path"))     return "file";
+  if (config->has("resource")) return "resource";
+
+  if (config->has("handlers")) {
+    type = "handlers(";
+
+    auto &handlers = config->getList("handlers");
+    for (unsigned i = 0; i < handlers.size(); i++) {
+      if (i) type += ", ";
+      type += getEndpointType(handlers.get(i));
+    }
+
+    return type + ")";
   }
 
-  return type;
+  return "pass";
 }
 
 
-SmartPointer<HTTP::RequestHandler>
-cb::API::API::createAccessHandler(const JSON::ValuePtr &config) {
-  auto handler = SmartPtr(new HTTP::AccessHandler);
-
-  if (config->has("allow")) {
-    JSON::ValuePtr list = config->get("allow");
-    for (unsigned i = 0; i < list->size(); i++) {
-      string name = list->getAsString(i);
-      if (name.empty()) continue;
-      if (name[0] == '$') handler->allowGroup(name.substr(1));
-      else handler->allowUser(name);
-    }
+HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
+  const string &type, const JSON::ValuePtr &config) {
+  if (type == "bind") {
+    auto key = config->isString() ? config->getString() :
+      config->getString("bind", "<default>");
+    auto it  = callbacks.find(key);
+    if (it == callbacks.end()) THROW("Bind callback '" << key << "' not found");
+    return it->second;
   }
 
-  if (config->has("deny")) {
-    JSON::ValuePtr list = config->get("deny");
-    for (unsigned i = 0; i < list->size(); i++) {
-      string name = list->getAsString(i);
-      if (name.empty()) continue;
-      if (name[0] == '$') handler->denyGroup(name.substr(1));
-      else handler->denyUser(name);
+  if (String::startsWith(type, "handlers(")) {
+    auto group     = SmartPtr(new HandlerGroup);
+    auto &handlers = config->getList("handlers");
+
+    for (unsigned i = 0; i < handlers.size(); i++) {
+      auto config = handlers.get(i);
+      string type = getEndpointType(config);
+      group->addHandler(createEndpointHandler(type, config));
     }
+
+    return group;
   }
-
-  return handler;
-}
-
-
-SmartPointer<HTTP::RequestHandler>
-cb::API::API::createEndpoint(const JSON::ValuePtr &config) {
-  string type = getEndpointType(config);
 
   if (type == "pass")     return new PassHandler;
   if (type == "cors")     return new CORSHandler(config);
   if (type == "status")   return new StatusHandler(config);
   if (type == "redirect") return new RedirectHandler(config);
-  if (type == "api")      return new APIHandler(config, this->config);
+  if (type == "docs")     return new DocsHandler(config, docs);
+  if (type == "file")     return new HTTP::FileHandler(config);
+  if (type == "resource")
+    return new HTTP::ResourceHandler(config->getString("resource"));
 
   if (client.isSet() && oauth2Providers.isSet() && sessionManager.isSet()) {
     if (config->hasString("sql") && connector.isNull())
@@ -145,37 +183,48 @@ cb::API::API::createEndpoint(const JSON::ValuePtr &config) {
 }
 
 
-SmartPointer<HTTP::RequestHandler>
-cb::API::API::createValidationHandler(const JSON::ValuePtr &config) {
-  auto group = SmartPtr(new HTTP::HandlerGroup);
+HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
+  const string &methods, const CtxPtr &ctx) {
+  auto group   = SmartPtr(new HTTP::HandlerGroup);
+  auto &config = ctx->getConfig();
 
-  // Endpoint Auth
-  if (config->has("allow") || config->has("deny"))
-    group->addHandler(createAccessHandler(config));
+  string type = getEndpointType(config);
+  LOG_INFO(3, "Adding endpoint " << methods << " " << ctx->getPattern()
+           << " (" << type << ")");
 
-  // Args
-  if (config->has("args"))
-    group->addHandler(new ArgsHandler(config->get("args")));
+  // Validation
+  ctx->addValidation(*group);
+
+  // Headers
+  if (config->isDict() && config->has("headers"))
+    group->addHandler(new HeadersHandler(config->get("headers")));
+
+  // Handler
+  auto handler = createEndpointHandler(type, config);
+
+  // Arg filter
+  if (config->isDict() && config->has("arg-filter")) {
+    if (procPool.isNull())
+      THROW("API cannot have 'arg-filter' without Event::SubprocessPool");
+
+    auto filter = config->get("arg-filter");
+    handler = new ArgFilterHandler(*this, filter, handler);
+  }
+
+  group->addHandler(handler);
+
+  // Docs
+  docs->loadMethod(methods, type, config);
 
   return group;
 }
 
 
-SmartPointer<HTTP::RequestHandler>
-cb::API::API::createAPIHandler(const string &pattern, const JSON::ValuePtr &api,
-                         const RequestHandlerPtr &parentValidation) {
-  // Patterns
-  auto patterns = SmartPtr(new HTTP::HandlerGroup);
-
-  // Group
-  auto group = SmartPtr(new HTTP::HandlerGroup);
-  auto root  = SmartPtr(new HTTP::URLPatternMatcher(pattern, group));
-  patterns->addHandler(root);
-
-  // Request validation
-  auto validation = group->addGroup();
-  if (parentValidation.isSet()) group->addHandler(parentValidation);
-  validation->addHandler(createValidationHandler(api));
+HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
+  auto children = SmartPtr(new HTTP::HandlerGroup);
+  auto methods  = SmartPtr(new HTTP::HandlerGroup);
+  auto &api     = ctx->getConfig();
+  auto &pattern = ctx->getPattern();
 
   // Children
   for (unsigned i = 0; i < api->size(); i++) {
@@ -184,84 +233,30 @@ cb::API::API::createAPIHandler(const string &pattern, const JSON::ValuePtr &api,
 
     // Child
     if (!key.empty() && key[0] == '/') {
-      auto child = createAPIHandler(pattern + key, config, validation);
-      patterns->addHandler(child);
+      children->addHandler(createAPIHandler(ctx->createChild(config, key)));
       continue;
     }
 
     // Methods
-    unsigned methods = parseMethods(key);
-    if (!methods) continue; // Ignore non-methods
-
-    LOG_INFO(3, "Adding endpoint " << key << " " << pattern
-             << " (" << getEndpointType(config) << ")");
-
-    auto handler = createEndpoint(config);
-    if (handler.isNull()) continue;
-
-    auto methodGroup = SmartPtr(new HTTP::HandlerGroup);
-    methodGroup->addHandler(createValidationHandler(config));
-
-    // Headers
-    if (config->has("headers") && !handler.isInstance<HeadersHandler>())
-      methodGroup->addHandler(new HeadersHandler(config->get("headers")));
-
-    // Arg filter
-    if (config->has("arg-filter")) {
-      if (procPool.isNull())
-        THROW("API cannot have 'arg-filter' without Event::SubprocessPool");
-
-      handler = new ArgFilterHandler(*this, config->get("arg-filter"), handler);
+    unsigned methodTypes = parseMethods(key);
+    if (methodTypes) {
+      auto handler = createMethodsHandler(key, ctx->createChild(config, ""));
+      methods->addHandler(new HTTP::MethodMatcher(methodTypes, handler));
     }
-
-    // Method(s)
-    methodGroup->addHandler(handler);
-    group->addHandler(new HTTP::MethodMatcher(methods, methodGroup));
   }
 
-  return patterns;
-}
-
-
-void cb::API::API::loadCategory(const string &name, const JSON::ValuePtr &cat) {
   auto group = SmartPtr(new HTTP::HandlerGroup);
-  string base = cat->getString("base", "");
 
-  // Category Auth
-  if (cat->has("allow") || cat->has("deny"))
-    group->addHandler(createAccessHandler(cat));
-
-  // Endpoints
-  if (cat->hasDict("endpoints")) {
-    auto &endpoints = *cat->get("endpoints");
-
-    for (unsigned i = 0; i < endpoints.size(); i++)
-      group->addHandler(
-        createAPIHandler(base + endpoints.keyAt(i), endpoints.get(i)));
+  if (!methods->isEmpty()) {
+    if (pattern.empty()) group->addHandler(methods);
+    else group->addHandler(new HTTP::URLPatternMatcher(pattern, methods));
   }
 
-  addHandler(group);
-}
+  if (!children->isEmpty()) {
+    if (pattern.empty()) group->addHandler(children);
+    else group->addHandler(
+      new HTTP::URLPatternMatcher(pattern + ".+", children));
+  }
 
-
-void cb::API::API::loadCategories(const JSON::ValuePtr &config) {
-  for (unsigned i = 0; i < config->size(); i++)
-    loadCategory(config->keyAt(i), config->get(i));
-}
-
-
-void cb::API::API::load(const JSON::ValuePtr &config) {
-  if (this->config.isSet()) THROW("API already loaded");
-  this->config = config;
-
-  // Check version
-  const Version minVersion("1.0.0");
-  Version version(config->getString("version", "0.0.0"));
-  if (version < minVersion)
-    THROW("API version must be at least " << minVersion);
-
-  // Always parse args
-  addHandler(new ArgsParser);
-
-  if (config->has("api")) loadCategories(config->get("api"));
+  return group;
 }

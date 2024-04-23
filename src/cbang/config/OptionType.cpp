@@ -29,43 +29,6 @@
 
 \******************************************************************************/
 
-#ifndef CBANG_ENUMERATION_MANAGER_H
-#define CBANG_ENUMERATION_MANAGER_H
-
-#include <map>
-#include <string>
-#include <ostream>
-
-namespace cb {
-  class Option;
-}
-
-namespace cb {
-  class Application;
-
-  class EnumerationManager {
-    struct EnumFuncs {
-      unsigned (*getCount)();
-      const char *(*getName)(unsigned index);
-    };
-
-    typedef std::map<std::string, EnumFuncs> enums_t;
-    enums_t enums;
-
-  public:
-    EnumerationManager(Application &app);
-
-    template<typename T>
-    void add(const std::string &name) {
-      EnumFuncs funcs = {&T::getCount, &T::getName};
-      enums[name] = funcs;
-    }
-
-    void print(std::ostream &stream, const std::string &name) const;
-
-  protected:
-    int action(cb::Option &option);
-  };
-}
-
-#endif // CBANG_ENUMERATION_MANAGER_H
+#define CBANG_ENUM_IMPL
+#include "OptionType.h"
+#include <cbang/enum/MakeEnumerationImpl.def>
