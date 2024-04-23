@@ -180,6 +180,7 @@ namespace cb {
 
       bool hasContentType() const;
       std::string getContentType() const;
+      bool isJSONContentType() const;
       void setContentType(const std::string &contentType);
       void guessContentType();
 
@@ -209,9 +210,9 @@ namespace cb {
       SmartPointer<std::ostream>
       getOutputStream(Compression compression = COMPRESSION_NONE);
 
-      virtual void sendError(Status code);
-      virtual void sendError(Status code, const std::string &message);
       virtual void sendJSONError(Status code, const std::string &message);
+      virtual void sendError(Status code, const std::string &message);
+      virtual void sendError(Status code);
       virtual void sendError(Status code, const Exception &e);
       virtual void sendError(const Exception &e);
       virtual void sendError(const std::exception &e);

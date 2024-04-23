@@ -47,33 +47,27 @@ namespace cb {
     options_t options;
 
     const std::string name;
-    std::string description;
     bool hidden;
 
   public:
-    OptionCategory(const std::string &name,
-                   const std::string &description = std::string(),
-                   bool hidden = false) :
-      name(name), description(description), hidden(hidden) {}
+    OptionCategory(const std::string &name, bool hidden = false) :
+      name(name), hidden(hidden) {}
+
+    options_t::const_iterator begin() const {return options.begin();}
+    options_t::const_iterator end()   const {return options.end();}
 
     const std::string &getName() const {return name;}
 
     bool isEmpty() const {return options.empty();}
     bool hasSetOption() const;
 
-    void setDescription(const std::string &x) {description = x;}
-    const std::string &getDescription() const {return description;}
-
     void setHidden(bool x) {hidden = x;}
     bool getHidden() const {return hidden;}
 
     void add(const SmartPointer<Option> &option);
 
-    void write(JSON::Sink &sink, bool config = false,
-               const std::string &delims = Option::DEFAULT_DELIMS) const;
+    void write(JSON::Sink &sink, bool config = false) const;
     void write(XML::Handler &handler, uint32_t flags) const;
-    void printHelpTOC(XML::Handler &handler, const std::string &prefix) const;
-    void printHelp(XML::Handler &handler, const std::string &prefix) const;
     void printHelp(std::ostream &stream, bool cmdLine = false) const;
   };
 }

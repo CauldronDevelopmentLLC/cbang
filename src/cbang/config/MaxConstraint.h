@@ -58,5 +58,8 @@ namespace cb {
     std::string getHelp() const override {
       return SSTR("<= " << maximum);
     }
+
+
+    void dump(JSON::Sink &sink) const {sink.insert("max", maximum);}
   };
 }

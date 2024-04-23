@@ -29,26 +29,51 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "ResourceManager.h"
 
-#include "RequestHandler.h"
+#include <cbang/log/Logger.h>
+#include <cbang/io/ArrayStream.h>
 
-#include <cbang/util/Resource.h>
+using namespace std;
+using namespace cb;
 
 
-namespace cb {
-  namespace HTTP {
-    class Request;
+ResourceManager *ResourceManager::singleton = 0;
 
-    class ResourceHandler : public RequestHandler {
-      const Resource &root;
 
-    public:
-      ResourceHandler(const Resource &root) : root(root) {}
-      ResourceHandler(const std::string &path);
+ResourceManager &ResourceManager::instance() {
+  if (!singleton) singleton = new ResourceManager;
+  return *singleton;
+}
 
-      // From RequestHandler
-      bool operator()(Request &req) override;
-    };
-  }
+
+void ResourceManager::add(const string &ns, const Resource *res) {
+  if (!resources.insert(resources_t::value_type(ns, res)).second)
+    THROW("Resource with namespace '" << ns << "' already exists");
+}
+
+
+const Resource *ResourceManager::find(const string &path) const {
+  auto slash = path.find('/');
+  string ns = slash == string::npos ? path : path.substr(0, slash);
+
+  auto it = resources.find(ns);
+  if (it == resources.end()) return 0;
+
+  if (slash == string::npos) return it->second;
+
+  return it->second->find(path.substr(slash));
+}
+
+
+const Resource &ResourceManager::get(const string &path) const {
+  auto res = find(path);
+  if (!res) THROW("Resource '" << path << "' not found");
+  return *res;
+}
+
+
+SmartPointer<istream> ResourceManager::open(const string &path) const {
+  auto &res = get(path);
+  return new ArrayStream<const char>(res.getData(), res.getLength());
 }

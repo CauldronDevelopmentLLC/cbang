@@ -30,10 +30,12 @@
 \******************************************************************************/
 
 #include "Resolver.h"
+#include "API.h"
 
 #include <cbang/log/Logger.h>
 #include <cbang/json/Null.h>
 #include <cbang/json/String.h>
+#include <cbang/config/Options.h>
 
 #include <set>
 
@@ -89,6 +91,9 @@ JSON::ValuePtr Resolver::select(const string &name) const {
     }
   }
 
+  if (String::startsWith(name, "options."))
+    return new JSON::String(api.getOptions()[name.substr(8)]);
+
   if (ctx.isSet()) {
     if (String::startsWith(name, "./")) return ctx->select(name.substr(2), 0);
     return ctx->select(name, 0);
@@ -111,7 +116,7 @@ string Resolver::format(const string &s,
       if (default_cb) return default_cb(type, index, name, matched);
 
       matched = false;
-      return string();
+      return String::printf("%%(%s)%c", name.c_str(), type);
     };
 
   return String(s).format(cb);

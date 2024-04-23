@@ -33,9 +33,15 @@
 #include "Request.h"
 
 #include <cbang/String.h>
+#include <cbang/util/ResourceManager.h>
 
+using namespace std;
 using namespace cb;
 using namespace cb::HTTP;
+
+
+ResourceHandler::ResourceHandler(const string &path) :
+  root(ResourceManager::instance().get(path)) {}
 
 
 bool ResourceHandler::operator()(Request &req) {
@@ -47,9 +53,6 @@ bool ResourceHandler::operator()(Request &req) {
   if (!res || res->isDirectory()) return false;
 
   req.reply(HTTP_OK, res->getData(), res->getLength());
-
-  if (!req.outHas("Cache-Control"))
-    req.outSet("Cache-Control", "max-age=" + String(timeout));
 
   return true;
 }

@@ -31,64 +31,22 @@
 
 #pragma once
 
-#include "Server.h"
-#include "HandlerGroup.h"
+#include <cbang/http/RequestHandler.h>
+#include <cbang/json/Value.h>
 
-#include <cbang/net/AddressFilter.h>
+#include <set>
 
 
 namespace cb {
-  class SSLContext;
-  class Options;
-  namespace Event {class Base;}
-
-  namespace HTTP {
-    class HTTP;
-    class Request;
-
-    class WebServer : public HandlerGroup, public Server {
-      Options &options;
-      SmartPointer<SSLContext> sslCtx;
-
-      bool logPrefix = false;
-      int priority = -1;
-
-      AddressFilter addrFilter;
+  namespace API {
+    class DocsHandler : public HTTP::RequestHandler {
+      JSON::ValuePtr docs;
 
     public:
-      WebServer(Options &options, Event::Base &base,
-                const SmartPointer<SSLContext> &sslCtx = 0);
-      virtual ~WebServer();
+      DocsHandler(const JSON::ValuePtr &config, const JSON::ValuePtr &docs);
 
-      void addOptions(Options &options);
-
-      const SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
-
-      bool getLogPrefix() const {return logPrefix;}
-      void setLogPrefix(bool logPrefix) {this->logPrefix = logPrefix;}
-
-      int getEventPriority() const {return priority;}
-      void setEventPriority(int priority) {this->priority = priority;}
-
-      virtual void init();
-      virtual bool allow(Request &req) const;
-
-      void allow(const std::string &spec);
-      void deny(const std::string &spec);
-
-      void addListenPort(const SockAddr &addr);
-      void addSecureListenPort(const SockAddr &addr);
-
-      void setTimeout(int timeout);
-
-      // From Server
-      SmartPointer<Request> createRequest(
-        const SmartPointer<Conn> &connection, Method method,
-        const URI &uri, const Version &version) override;
-      void endRequest(Request &req) override;
-
-      // From RequestHandler
-      bool operator()(Request &req) override;
+      // From HTTP::RequestHandler
+      bool operator()(HTTP::Request &req);
     };
   }
 }

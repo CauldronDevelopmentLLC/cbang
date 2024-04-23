@@ -29,26 +29,53 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Context.h"
 
-#include "RequestHandler.h"
+#include <cbang/http/HandlerGroup.h>
+#include <cbang/http/AccessHandler.h>
+#include <cbang/api/handler/ArgsHandler.h>
 
-#include <cbang/util/Resource.h>
+using namespace std;
+using namespace cb;
+using namespace cb::API;
 
 
-namespace cb {
-  namespace HTTP {
-    class Request;
+Context::Context(const JSON::ValuePtr &config, const string &pattern,
+                 SmartPointer<Context> parent) :
+  config(config), pattern(pattern), parent(parent) {
 
-    class ResourceHandler : public RequestHandler {
-      const Resource &root;
+  if (parent.isSet()) {
+    if (parent->argsHandler.isSet())
+      argsHandler = new ArgsHandler(*parent->argsHandler);
 
-    public:
-      ResourceHandler(const Resource &root) : root(root) {}
-      ResourceHandler(const std::string &path);
-
-      // From RequestHandler
-      bool operator()(Request &req) override;
-    };
+    if (parent->accessHandler.isSet())
+      accessHandler = new HTTP::AccessHandler(*parent->accessHandler);
   }
+
+  if (!config->isDict()) return;
+
+  if (config->has("args")) {
+    if (argsHandler.isNull()) argsHandler = new ArgsHandler;
+    argsHandler->add(config->get("args"));
+  }
+
+  if (config->has("allow") || config->has("deny")) {
+    if (accessHandler.isNull()) accessHandler = new HTTP::AccessHandler;
+    accessHandler->read(config);
+  }
+}
+
+
+Context::~Context() {}
+
+
+SmartPointer<Context> Context::createChild(
+  const JSON::ValuePtr &config, const string &pattern) {
+  return new Context(config, this->pattern + pattern, this);
+}
+
+
+void Context::addValidation(HTTP::HandlerGroup &group) {
+  if (accessHandler.isSet()) group.addHandler(accessHandler);
+  if (argsHandler.isSet())   group.addHandler(argsHandler);
 }

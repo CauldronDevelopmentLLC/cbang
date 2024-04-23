@@ -31,6 +31,7 @@
 
 #include "Option.h"
 #include "Options.h"
+#include "MinMaxConstraint.h"
 
 #include <cbang/String.h>
 
@@ -38,43 +39,44 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/Catch.h>
 #include <cbang/json/Sink.h>
+#include <cbang/json/Value.h>
 #include <cbang/json/Integer.h>
 
 using namespace std;
 using namespace cb;
 
-const string Option::DEFAULT_DELIMS = " \t\r\n";
-
 // Proxy constructor
 Option::Option(const SmartPointer<Option> &parent) :
   name(parent->name), shortName(parent->shortName), type(parent->type),
   help(parent->help), flags(parent->flags & ~(SET_FLAG | DEFAULT_SET_FLAG)),
-  filename(parent->filename), aliases(parent->aliases), parent(parent),
-  action(parent->action), defaultSetAction(parent->defaultSetAction) {
+  aliases(parent->aliases), parent(parent), action(parent->action),
+  defaultSetAction(parent->defaultSetAction) {
 }
 
 
 Option::Option(const string &name, const char shortName,
                SmartPointer<OptionActionBase> action, const string &help) :
-  name(name), shortName(shortName), type(STRING_TYPE), help(help), flags(0),
-  filename(0), action(action) {}
+  name(name), shortName(shortName), help(help), action(action) {}
 
 
 Option::Option(const string &name, const string &help,
                const SmartPointer<Constraint> &constraint) :
-  name(name), shortName(0), type(STRING_TYPE), help(help), flags(0),
-  filename(0), constraint(constraint) {}
+  name(name), help(help), constraint(constraint) {}
+
+
+Option::Option(const string &name, const JSON::Value &config) :
+  name(name) {configure(config);}
 
 
 const string Option::getTypeString() const {
   switch (type) {
-  case BOOLEAN_TYPE:  return "boolean";
-  case STRING_TYPE:   return "string";
-  case INTEGER_TYPE:  return "integer";
-  case DOUBLE_TYPE:   return "double";
-  case STRINGS_TYPE:  return "string ...";
-  case INTEGERS_TYPE: return "integer ...";
-  case DOUBLES_TYPE:  return "double ...";
+  case TYPE_BOOLEAN:  return "boolean";
+  case TYPE_STRING:   return "string";
+  case TYPE_INTEGER:  return "integer";
+  case TYPE_DOUBLE:   return "double";
+  case TYPE_STRINGS:  return "string ...";
+  case TYPE_INTEGERS: return "integer ...";
+  case TYPE_DOUBLES:  return "double ...";
   default: THROW("Invalid type " << type);
   }
 }
@@ -88,27 +90,49 @@ const string &Option::getDefault() const {
 
 
 void Option::setDefault(const string &defaultValue) {
-  setDefault(defaultValue, STRING_TYPE);
+  setDefault(defaultValue, TYPE_STRING);
 }
 
 
 void Option::setDefault(const char *defaultValue) {
-  setDefault(string(defaultValue), STRING_TYPE);
+  setDefault(string(defaultValue), TYPE_STRING);
 }
 
 
 void Option::setDefault(int64_t defaultValue) {
-  setDefault(String(defaultValue), INTEGER_TYPE);
+  setDefault(String(defaultValue), TYPE_INTEGER);
 }
 
 
 void Option::setDefault(double defaultValue) {
-  setDefault(String(defaultValue), DOUBLE_TYPE);
+  setDefault(String(defaultValue), TYPE_DOUBLE);
 }
 
 
 void Option::setDefault(bool defaultValue) {
-  setDefault(String(defaultValue), BOOLEAN_TYPE);
+  setDefault(String(defaultValue), TYPE_BOOLEAN);
+}
+
+
+void Option::setDefault(const JSON::Value &value) {
+  switch (value.getType()) {
+  case JSON::ValueType::JSON_LIST: {
+    string defaultValue;
+
+    for (unsigned i = 0; i < value.size(); i++) {
+      if (i) defaultValue += " ";
+      defaultValue += value.getAsString(i);
+    }
+
+    setDefault(defaultValue);
+    type = TYPE_STRINGS;
+    break;
+  }
+
+  case JSON::ValueType::JSON_BOOLEAN: setDefault(value.getBoolean()); break;
+  case JSON::ValueType::JSON_NUMBER:  setDefault(value.getNumber());  break;
+  default:                            setDefault(value.asString());   break;
+  }
 }
 
 
@@ -128,20 +152,76 @@ bool Option::isDefault() const {
 }
 
 
-void Option::setDeprecated() {
-  flags |= DEPRECATED_FLAG;
-  clearDefault();
-}
-
-
-void Option::setReadOnly(bool set) {
-  if (set) flags |= READ_ONLY_FLAG;
-  else flags &= ~READ_ONLY_FLAG;
-}
-
-
 bool Option::isHidden() const {
-  return isDeprecated() || isReadOnly() || name.empty() || name[0] == '_';
+  return isDeprecated() || name.empty() || name[0] == '_';
+}
+
+
+void Option::setAction(const SmartPointer<OptionActionBase> &action) {
+  if (this->action.isSet()) THROW("Option " << name << " action already set");
+  this->action = action;
+}
+
+void Option::setDefaultSetAction(const SmartPointer<OptionActionBase> &action) {
+  if (defaultSetAction.isSet())
+    THROW("Option " << name << " default set action already set");
+  defaultSetAction = action;
+}
+
+
+void Option::setConstraint(const SmartPointer<Constraint> &constraint) {
+  if (this->constraint.isSet())
+    THROW("Option " << name << " constraint already set");
+  this->constraint = constraint;
+}
+
+
+void Option::configure(const JSON::Value &config) {
+  help = config.getString("help", "");
+
+  if (config.hasString("short"))
+    shortName = config.getString("short").c_str()[0];
+
+  if (config.has("default")) {
+    auto type = this->type;
+    setDefault(*config.get("default"));
+    // Don't change previously set type
+    if (type != TYPE_STRING) this->type = type;
+  }
+
+  if (config.has("type")) type = OptionType::parse(config.getString("type"));
+
+  if (config.getBoolean("optional",   false)) setOptional();
+  if (config.getBoolean("obscured",   false)) setObscured();
+  if (config.getBoolean("deprecated", false)) setDeprecated();
+
+  if (config.hasList("aliases")) {
+    auto &aliases = config.getList("aliases");
+    for (unsigned i = 0; i < aliases.size(); i++)
+      addAlias(aliases.getAsString(i));
+  }
+
+  bool hasMin = config.hasNumber("min");
+  bool hasMax = config.hasNumber("max");
+
+  if (hasMin || hasMax) {
+    if (type == TYPE_INTEGER) {
+      auto min = config.getS64("min", 0);
+      auto max = config.getS64("max", 0);
+
+      if      (!hasMin) setConstraint(new MaxConstraint<int64_t>(max));
+      else if (!hasMax) setConstraint(new MinConstraint<int64_t>(min));
+      else              setConstraint(new MinMaxConstraint<int64_t>(min, max));
+
+    } else {
+      auto min = config.getNumber("min", 0);
+      auto max = config.getNumber("max", 0);
+
+      if      (!hasMin) setConstraint(new MaxConstraint<double>(max));
+      else if (!hasMax) setConstraint(new MinConstraint<double>(min));
+      else              setConstraint(new MinMaxConstraint<double>(min, max));
+    }
+  }
 }
 
 
@@ -163,7 +243,6 @@ void Option::unset() {
 
 
 void Option::set(const string &value) {
-  if (isReadOnly()) THROW("Option '" << name << "' is read only");
   if (isDeprecated()) {
     LOG_WARNING("Option '" << name << "' has been deprecated: " << help);
     return;
@@ -258,7 +337,7 @@ bool Option::toBoolean() const {return parseBoolean(toString());}
 const string &Option::toString() const {
   if (isSet()) return value;
   else if (hasDefault()) return getDefault();
-  else if (getType() == STRINGS_TYPE) return value;
+  else if (getType() == TYPE_STRINGS) return value;
   THROW("Option '" << name << "' has no default and is not set.");
 }
 
@@ -267,19 +346,15 @@ int64_t Option::toInteger() const {return parseInteger(toString());}
 double Option::toDouble() const {return parseDouble(toString());}
 
 
-Option::strings_t Option::toStrings(const string &delims) const {
-  return parseStrings(toString(), delims);
+Option::strings_t Option::toStrings() const {return parseStrings(toString());}
+
+
+Option::integers_t Option::toIntegers() const {
+  return parseIntegers(toString());
 }
 
 
-Option::integers_t Option::toIntegers(const string &delims) const {
-  return parseIntegers(toString(), delims);
-}
-
-
-Option::doubles_t Option::toDoubles(const string &delims) const {
-  return parseDoubles(toString(), delims);
-}
+Option::doubles_t Option::toDoubles() const {return parseDoubles(toString());}
 
 
 bool Option::toBoolean(bool defaultValue) const {
@@ -302,21 +377,18 @@ double Option::toDouble(double defaultValue) const {
 }
 
 
-Option::strings_t Option::toStrings(const strings_t &defaultValue,
-                                    const string &delims) const {
-  return hasValue() ? toStrings(delims) : defaultValue;
+Option::strings_t Option::toStrings(const strings_t &defaultValue) const {
+  return hasValue() ? toStrings() : defaultValue;
 }
 
 
-Option::integers_t Option::toIntegers(const integers_t &defaultValue,
-                                      const string &delims) const {
-  return hasValue() ? toIntegers(delims) : defaultValue;
+Option::integers_t Option::toIntegers(const integers_t &defaultValue) const {
+  return hasValue() ? toIntegers() : defaultValue;
 }
 
 
-Option::doubles_t Option::toDoubles(const doubles_t &defaultValue,
-                                    const string &delims) const {
-  return hasValue() ? toDoubles(delims) : defaultValue;
+Option::doubles_t Option::toDoubles(const doubles_t &defaultValue) const {
+  return hasValue() ? toDoubles() : defaultValue;
 }
 
 
@@ -335,20 +407,18 @@ double Option::parseDouble(const string &value) {
 }
 
 
-Option::strings_t Option::parseStrings(const string &value,
-                                       const string &delims) {
+Option::strings_t Option::parseStrings(const string &value) {
   strings_t result;
-  String::tokenize(value, result, delims);
+  String::tokenize(value, result, " \t\r\n");
   return result;
 }
 
 
-Option::integers_t Option::parseIntegers(const string &value,
-                                         const string &delims) {
+Option::integers_t Option::parseIntegers(const string &value) {
   integers_t result;
   strings_t tokens;
 
-  String::tokenize(value, tokens, delims);
+  String::tokenize(value, tokens);
 
   for (auto &token: tokens)
     result.push_back(String::parseS32(token));
@@ -357,12 +427,11 @@ Option::integers_t Option::parseIntegers(const string &value,
 }
 
 
-Option::doubles_t Option::parseDoubles(const string &value,
-                                       const string &delims) {
+Option::doubles_t Option::parseDoubles(const string &value) {
   doubles_t result;
   strings_t tokens;
 
-  String::tokenize(value, tokens, delims);
+  String::tokenize(value, tokens);
 
   for (auto &token: tokens)
     result.push_back(String::parseDouble(token));
@@ -373,13 +442,13 @@ Option::doubles_t Option::parseDoubles(const string &value,
 
 void Option::validate() const {
   switch (type) {
-  case BOOLEAN_TYPE: checkConstraint(toBoolean()); break;
-  case STRING_TYPE: checkConstraint(value); break;
-  case INTEGER_TYPE: checkConstraint(toInteger()); break;
-  case DOUBLE_TYPE: checkConstraint(toDouble()); break;
-  case STRINGS_TYPE: checkConstraint(toStrings()); break;
-  case INTEGERS_TYPE: checkConstraint(toIntegers()); break;
-  case DOUBLES_TYPE: checkConstraint(toDoubles()); break;
+  case TYPE_BOOLEAN:  checkConstraint(toBoolean());  break;
+  case TYPE_STRING:   checkConstraint(value);        break;
+  case TYPE_INTEGER:  checkConstraint(toInteger());  break;
+  case TYPE_DOUBLE:   checkConstraint(toDouble());   break;
+  case TYPE_STRINGS:  checkConstraint(toStrings());  break;
+  case TYPE_INTEGERS: checkConstraint(toIntegers()); break;
+  case TYPE_DOUBLES:  checkConstraint(toDoubles());  break;
   default: THROW("Invalid type " << type);
   }
 }
@@ -402,7 +471,7 @@ void Option::parse(unsigned &i, const vector<string> &args) {
   // Required
   if (hasValue) set(value);
 
-  else if (type == BOOLEAN_TYPE) set(true);
+  else if (type == TYPE_BOOLEAN) set(true);
 
   else if (!isOptional()) {
     if (i == args.size()) {
@@ -433,7 +502,7 @@ ostream &Option::printHelp(ostream &stream, bool cmdLine) const {
   }
 
   // Arg
-  if (type != BOOLEAN_TYPE || !cmdLine) {
+  if (type != TYPE_BOOLEAN || !cmdLine) {
     stream << ' ' << (isOptional() ? '[' : '<');
     stream << getTypeString();
     if (hasDefault()) stream << '=' << getDefault();
@@ -482,9 +551,8 @@ void Option::writeDouble(JSON::Sink &sink, const string &value) {
 }
 
 
-void Option::writeStrings(JSON::Sink &sink, const string &value,
-                          const string &delims) {
-  strings_t l = parseStrings(value, delims);
+void Option::writeStrings(JSON::Sink &sink, const string &value) {
+  strings_t l = parseStrings(value);
 
   sink.beginList();
   for (unsigned i = 0; i < l.size(); i++) sink.append(l[i]);
@@ -492,9 +560,8 @@ void Option::writeStrings(JSON::Sink &sink, const string &value,
 }
 
 
-void Option::writeIntegers(JSON::Sink &sink, const string &value,
-                           const string &delims) {
-  integers_t l = parseIntegers(value, delims);
+void Option::writeIntegers(JSON::Sink &sink, const string &value) {
+  integers_t l = parseIntegers(value);
 
   sink.beginList();
   for (unsigned i = 0; i < l.size(); i++) {
@@ -506,9 +573,8 @@ void Option::writeIntegers(JSON::Sink &sink, const string &value,
 }
 
 
-void Option::writeDoubles(JSON::Sink &sink, const string &value,
-                          const string &delims) {
-  doubles_t l = parseDoubles(value, delims);
+void Option::writeDoubles(JSON::Sink &sink, const string &value) {
+  doubles_t l = parseDoubles(value);
 
   sink.beginList();
   for (unsigned i = 0; i < value.size(); i++) {
@@ -519,26 +585,22 @@ void Option::writeDoubles(JSON::Sink &sink, const string &value,
 }
 
 
-void Option::writeValue(JSON::Sink &sink, const string &value,
-                        const string &delims) const {
+void Option::writeValue(JSON::Sink &sink, const string &value) const {
   switch (type) {
-  case BOOLEAN_TYPE: writeBoolean(sink, value); break;
-  case STRING_TYPE: sink.write(value); break;
-  case INTEGER_TYPE: writeInteger(sink, value); break;
-  case DOUBLE_TYPE: writeDouble(sink, value); break;
-  case STRINGS_TYPE: writeStrings(sink, value, delims); break;
-  case INTEGERS_TYPE: writeIntegers(sink, value, delims); break;
-  case DOUBLES_TYPE: writeDoubles(sink, value, delims); break;
+  case TYPE_BOOLEAN:  writeBoolean(sink,  value); break;
+  case TYPE_STRING:   sink.write(         value); break;
+  case TYPE_INTEGER:  writeInteger(sink,  value); break;
+  case TYPE_DOUBLE:   writeDouble(sink,   value); break;
+  case TYPE_STRINGS:  writeStrings(sink,  value); break;
+  case TYPE_INTEGERS: writeIntegers(sink, value); break;
+  case TYPE_DOUBLES:  writeDoubles(sink,  value); break;
   default: THROW("Invalid type " << type);
   }
 }
 
 
-void Option::write(JSON::Sink &sink, bool config, const string &delims) const {
-  if (config) {
-    writeValue(sink, toString(), delims);
-    return;
-  }
+void Option::write(JSON::Sink &sink, bool config) const {
+  if (config) return writeValue(sink, toString());
 
   sink.beginDict();
 
@@ -546,21 +608,22 @@ void Option::write(JSON::Sink &sink, bool config, const string &delims) const {
 
   if (hasValue()) {
     sink.beginInsert("value");
-    writeValue(sink, toString(), delims);
+    writeValue(sink, toString());
   }
 
   if (hasDefault()) {
     sink.beginInsert("default");
-    writeValue(sink, getDefault(), delims);
+    writeValue(sink, getDefault());
   }
 
   sink.insert("type", getTypeString());
-  if (isOptional()) sink.insertBoolean("optional", true);
-  if (shortName) sink.insert("short", string(1, shortName));
-  if (isSet()) sink.insertBoolean("set", true);
-  if (isCommandLine()) sink.insertBoolean("command_line", true);
-  if (isDeprecated()) sink.insertBoolean("deprecated", true);
-  if (!constraint.isNull()) sink.insert("constraint", constraint->getHelp());
+  if (shortName)          sink.insert("short", string(1, shortName));
+  if (isOptional())       sink.insertBoolean("optional",     true);
+  if (isObscured())       sink.insertBoolean("obscured",     true);
+  if (isSet())            sink.insertBoolean("set",          true);
+  if (isCommandLine())    sink.insertBoolean("command_line", true);
+  if (isDeprecated())     sink.insertBoolean("deprecated",   true);
+  if (constraint.isSet()) sink.insert("constraint", constraint->getHelp());
 
   sink.endDict();
 }
@@ -581,76 +644,63 @@ void Option::write(XML::Handler &handler, uint32_t flags) const {
 }
 
 
-void Option::printHelpTOC(XML::Handler &handler, const string &prefix) const {
-  handler.startElement("li");
+void Option::dump(JSON::Sink &sink) const {
+  sink.beginDict();
 
-  XML::Attributes attrs;
-  attrs["href"] = "#" + prefix + "option-" + getName();
-  handler.startElement("a", attrs);
-  handler.text(getName());
-  handler.endElement("a");
+  if (type != TYPE_STRING)
+    sink.insert("type", String::toLower(type.toString()));
 
-  handler.endElement("li");
-}
+  if (shortName)      sink.insert("short",   string(1, shortName));
+  if (!help.empty())  sink.insert("help",    help);
+  if (isOptional())   sink.insertBoolean("optional",   true);
+  if (isObscured())   sink.insertBoolean("obscured",   true);
+  if (isDeprecated()) sink.insertBoolean("deprecated", true);
 
-
-void Option::printHelp(XML::Handler &handler, const string &prefix) const {
-  XML::Attributes attrs;
-
-  attrs["class"] = "option";
-  attrs["id"] = prefix + "option-" + getName();
-  handler.startElement("div", attrs);
-
-  // Name
-  attrs.clear();
-  attrs["class"] = "name";
-  handler.startElement("span", attrs);
-  handler.text(getName());
-  handler.endElement("span");
-
-  // Type
-  attrs["class"] = "type";
-  handler.startElement("span", attrs);
-  handler.text(isOptional() ? "[" : "<");
-  handler.text(getTypeString());
-
-  // Default
   if (hasDefault()) {
-    handler.text(" = ");
+    sink.beginInsert("default");
 
-    bool isString = type == STRING_TYPE || type == STRINGS_TYPE;
+    switch (type) {
+    case TYPE_BOOLEAN: sink.writeBoolean(toBoolean()); break;
+    case TYPE_INTEGER: sink.writeBoolean(toInteger()); break;
+    case TYPE_DOUBLE:  sink.writeBoolean(toDouble());  break;
+    default:
+      if (isPlural()) {
+        sink.beginList();
+        auto strings = toStrings();
 
-    attrs["class"] = "default";
-    handler.startElement("span", attrs);
-    handler.text((isString ? "\"" : "") + getDefault() +
-                 (isString ? "\"" : ""));
-    handler.endElement("span");
+        for (auto &s: strings) {
+          switch (type) {
+          case TYPE_STRINGS:  sink.append(s);               break;
+          case TYPE_INTEGERS: sink.append(parseInteger(s)); break;
+          case TYPE_DOUBLES:  sink.append(parseDouble(s));  break;
+          default: THROW("Unsupported plural option type: " << type);
+          }
+        }
+
+        sink.endList();
+
+      } else sink.write(defaultValue);
+      break;
+    }
   }
 
-  handler.text(isOptional() ? "]" : ">");
-  handler.endElement("span");
-
-  // Help
-  if (getHelp() != "") {
-    attrs["class"] = "help";
-    handler.startElement("div", attrs);
-    string help = getHelp();
-    vector<string> tokens;
-    String::tokenize(help, tokens, "\t");
-    handler.text(String::join(tokens, "  "));
-    handler.text(" ");
-    handler.endElement("div");
+  if (aliases.size()) {
+    sink.insertList("aliases");
+    for (auto &alias: aliases)
+      sink.append(alias);
+    sink.endList();
   }
 
+  if (constraint.isSet()) constraint->dump(sink);
 
-  handler.endElement("div");
+  sink.endDict();
 }
 
 
-void Option::setDefault(const string &value, type_t type) {
+void Option::setDefault(const string &value, OptionType type) {
   defaultValue = value;
   flags |= DEFAULT_SET_FLAG;
   this->type = type;
 
-  if (defaultSetAction.get()) (*defaultSetAction)(*this);
+  if (defaultSetAction.isSet()) (*defaultSetAction)(*this);
 }

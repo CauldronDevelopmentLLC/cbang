@@ -44,7 +44,6 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/thread/ThreadLocalStorage.h>
 #include <cbang/config/Options.h>
-#include <cbang/config/OptionActionSet.h>
 
 #include <iostream>
 
@@ -107,8 +106,7 @@ void Logger::addOptions(Options &options) {
                     "leading directories and trailing file extensions from "
                     "domains so that source code file names can be easily used "
                     "as log domains.");
-  options.add("log-domain-levels", 0,
-              new OptionAction<Logger>(this, &Logger::domainLevelsAction),
+  options.add("log-domain-levels", 0, this, &Logger::domainLevelsAction,
               "Set log levels by domain.  Format is:\n"
               "\t<domain>[:i|d|t]:<level> ...\n"
               "Entries are separated by white-space and or commas.\n"
@@ -128,7 +126,7 @@ void Logger::addOptions(Options &options) {
               "the system wide log verbosity level.\n"
               "If <level> is negative it is relative to the system wide "
               "verbosity."
-              )->setType(Option::STRINGS_TYPE);
+              )->setType(Option::TYPE_STRINGS);
   options.addTarget("log-thread-id", logThreadID, "Print id with log entries.");
   options.addTarget("log-header", logHeader, "Enable log message headers.");
   options.addTarget("log-no-info-header", logNoInfoHeader,
@@ -198,7 +196,7 @@ void Logger::startLogFile(const string &filename) {
 
 void Logger::setLogDomainLevels(const string &levels) {
   Option::strings_t entries;
-  String::tokenize(levels, entries, Option::DEFAULT_DELIMS + ",");
+  String::tokenize(levels, entries, ", \t\r\n");
 
   for (unsigned i = 0; i < entries.size(); i++) {
     bool invalid = false;

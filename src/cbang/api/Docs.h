@@ -31,51 +31,24 @@
 
 #pragma once
 
-#include "RequestHandler.h"
-
 #include <cbang/json/Value.h>
+#include <cbang/json/Dict.h>
 
 namespace cb {
-  namespace HTTP {
-    struct RequestJSONHandler : public RequestHandler {
-      virtual void operator()(Request &, const JSON::ValuePtr &) = 0;
+  namespace API {
+    class Docs : public JSON::Dict {
+      JSON::ValuePtr category;
+      JSON::ValuePtr methods;
+      std::set<std::string> urlArgs;
+      JSON::ValuePtr endpointArgs;
 
-      // From RequestHandler
-      bool operator()(Request &req) override;
-    };
+    public:
+      Docs(const JSON::ValuePtr &config);
 
-
-    template <class T>
-    struct RequestJSONMemberHandler : public RequestJSONHandler {
-      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
-      T *obj;
-      member_t member;
-
-      RequestJSONMemberHandler(T *obj, member_t member) :
-        obj(obj), member(member) {
-        if (!obj) CBANG_THROW("Object cannot be NULL");
-        if (!member) CBANG_THROW("Member cannot be NULL");
-      }
-
-      // From RequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg) override
-        {(*obj.*member)(req, msg);}
-    };
-
-
-    template <class T>
-    struct RequestJSONRecastHandler : public RequestJSONHandler {
-      typedef void (T::*member_t)(Request &, const JSON::ValuePtr &);
-      member_t member;
-
-      RequestJSONRecastHandler(member_t member) : member(member) {
-        if (!member) CBANG_THROW("Member cannot be NULL");
-      }
-
-      // From RequestJSONHandler
-      void operator()(Request &req, const JSON::ValuePtr &msg) override {
-        (req.cast<T>().*member)(req, msg);
-      }
+      void loadCategory(const std::string &name, const JSON::ValuePtr &config);
+      void loadEndpoint(const std::string &path, const JSON::ValuePtr &config);
+      void loadMethod(const std::string &method, const std::string &handler,
+                      const JSON::ValuePtr &config);
     };
   }
 }

@@ -54,12 +54,10 @@ namespace cb {
 
 namespace cb {
   namespace XML {class Writer;}
-  class EnumerationManager;
 
   class Application : public Features, protected ExitSignalHandler {
   public:
     enum {
-      FEATURE_ENUMERATION_MANAGER,
       FEATURE_PROCESS_CONTROL,
       FEATURE_CONFIG_FILE,
       FEATURE_DEBUGGING,
@@ -71,21 +69,20 @@ namespace cb {
 
   protected:
     Options options; // Must be first
-    CommandLine cmdLine;
     XML::Reader configReader;
     Logger &logger;
-    EnumerationManager *enumMan;
+    CommandLine cmdLine;
 
     const std::string name;
     Version version;
     std::string runDirectoryRegKey;
 
-    bool configRotate;
-    uint32_t configRotateMax;
-    std::string configRotateDir;
+    bool configRotate           = true;
+    uint32_t configRotateMax    = 16;
+    std::string configRotateDir = "configs";
 
-    bool initialized;
-    bool configured;
+    bool initialized = false;
+    bool configured  = false;
     std::atomic<bool> quit;
 
     double startTime;
@@ -102,7 +99,6 @@ namespace cb {
     CommandLine &getCommandLine() {return cmdLine;}
     Logger &getLogger() {return logger;}
     XML::Reader &getXMLReader() {return configReader;}
-    EnumerationManager &getEnumerationManager() {return *enumMan;}
 
     const std::string &getName() const {return name;}
     const Version &getVersion() const {return version;}

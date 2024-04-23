@@ -33,37 +33,31 @@
 
 #include "AddressRangeSet.h"
 
-#include <string>
-
 
 namespace cb {
-  class SockAddr;
+  namespace DNS {class Base;}
 
-  /**
-   * Used to allow or deny clients by IP address.
-   * Used a white (allow) and black (deny) list to filter IPs.
-   *
-   * @see AddressRangeSet
-   */
   class AddressFilter {
-    AddressRangeSet whiteList;
-    AddressRangeSet blackList;
+    DNS::Base *dns;
+    AddressRangeSet allowList;
+    AddressRangeSet denyList;
 
   public:
-    /// Add a IP address specification to the deny list.
-    void deny(const std::string &spec);
-    /// Add a IP address specification to the allow list.
-    void allow(const std::string &spec);
+    AddressFilter(DNS::Base *dns = 0) : dns(dns) {}
 
-    /// Add a IP address range to the deny list.
+    void deny(const std::string &spec);
+    void allow(const std::string &spec);
     void deny(AddressRange &range);
-    /// Add a IP address range to the allow list.
     void allow(AddressRange &range);
 
-    /// @return True if the IP address is allowed by the current rules.
     bool isAllowed(const SockAddr &addr) const;
 
-    /// @return True if the IP address is in the white list
-    bool isExplicitlyAllowed(const SockAddr &addr) const;
+    std::string toString() const;
   };
+
+
+  static inline
+  std::ostream &operator<<(std::ostream &stream, const AddressFilter &f) {
+    return stream << f.toString();
+  }
 }

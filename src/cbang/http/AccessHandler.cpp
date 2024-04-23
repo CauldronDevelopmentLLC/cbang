@@ -40,6 +40,40 @@ using namespace cb;
 using namespace cb::HTTP;
 
 
+void AccessHandler::read(const JSON::ValuePtr &config) {
+  if (config->has("allow")) read(config->get("allow"), true);
+  if (config->has("deny"))  read(config->get("deny"),  false);
+}
+
+
+void AccessHandler::read(const JSON::ValuePtr &config, bool allow) {
+  if (config->isList())
+    for (unsigned i = 0; i < config->size(); i++)
+      read(config->get(i), allow);
+
+  else {
+    string name = config->asString();
+
+    if (name.empty()) return;
+    if (name == "*") setGroup("*", allow);
+    if (name[0] == '$' || name[0] == '@') setGroup(name.substr(1), allow);
+    else setUser(name, allow);
+  }
+}
+
+
+void AccessHandler::setUser(const std::string &name, bool allow) {
+  if (allow) allowUser(name);
+  else denyUser(name);
+}
+
+
+void AccessHandler::setGroup(const std::string &name, bool allow) {
+  if (allow) allowGroup(name);
+  else denyGroup(name);
+}
+
+
 bool AccessHandler::userAllow(const string &name) const {
   return userAllowed.find(name) != userAllowed.end();
 }
@@ -60,36 +94,53 @@ bool AccessHandler::groupDeny(const string &name) const {
 }
 
 
+bool AccessHandler::checkGroup(
+  const string &name, bool &allow, bool &deny) const {
+  bool matched = false;
+
+  if (!allow) {
+    allow = groupAllow(name);
+    if (allow) matched = true;
+  }
+
+  if (!deny) {
+    deny = groupDeny(name);
+    if (deny) matched = true;
+  }
+
+  return matched;
+}
+
+
 bool AccessHandler::operator()(Request &req) {
   SmartPointer<Session> session = req.getSession();
   string user = req.getUser();
+  string group;
   bool allow;
   bool deny;
 
+  if (checkGroup("*", allow, deny)) group = "@*";
+
   if (session.isNull()) {
-    user  = "@unauthenticted";
-    allow = groupAllow("unauthenticted");
-    deny  = groupDeny("unauthenticted");
+    user = "anonymous";
+    if (checkGroup("unauthenticated", allow, deny)) group = "@unauthenticated";
 
   } else {
-
     allow = userAllow(user);
-    deny = userDeny(user);
+    deny  = userDeny(user);
 
     auto &groups = *session->get("group");
     for (unsigned i = 0; i < groups.size(); i++)
       if (groups.getBoolean(i)) {
-        string group = groups.keyAt(i);
-        if (!allow) allow = groupAllow(group);
-        if (!deny) deny = groupDeny(group);
+        auto &name = groups.keyAt(i);
+        if (checkGroup(name, allow, deny)) group = "@" + name;
       }
 
-    if (!allow) allow = groupAllow("authenticated");
-    if (!deny)   deny = groupDeny("authenticated");
+    if (checkGroup("authenticated", allow, deny)) group = "@authenticated";
   }
 
   LOG_INFO(allow ? 5 : 3, "allow(" << req.getURI().getPath() << ", "
-           << user << ", " << req.getClientAddr() << ") = "
+           << user << ", " << group << ", " << req.getClientAddr() << ") = "
            << ((allow && !deny) ? "true" : "false"));
 
   if (!allow || deny) THROWX("Access denied", HTTP_UNAUTHORIZED);

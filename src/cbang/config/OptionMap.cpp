@@ -69,7 +69,6 @@ void OptionMap::set(const string &name, const string &value, bool setDefault) {
   }
 
   Option &option = *localize(name);
-  if (fileTracker.hasFile()) option.setFilename(&fileTracker.getCurrentFile());
 
   if (setDefault) option.setDefault(value);
   else if (!allowReset && option.isPlural()) option.append(value);
@@ -102,7 +101,7 @@ void OptionMap::endElement(const string &name) {
   if (xmlValue.empty()) {
     // If value not set and type is boolean, set true
     if (!xmlValueSet && has(name) &&
-        get(name)->getType() == Option::BOOLEAN_TYPE) set(name, "true");
+        get(name)->getType() == Option::TYPE_BOOLEAN) set(name, "true");
 
   } else set(name, xmlValue, setDefault);
 }

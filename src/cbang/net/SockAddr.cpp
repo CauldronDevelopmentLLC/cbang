@@ -43,7 +43,7 @@
 #include <ws2tcpip.h>
 #include <ws2ipdef.h>
 
-typedef int socklen_t;  // Unix socket length
+typedef int socklen_t;
 #define SOCKET_INPROGRESS WSAEWOULDBLOCK
 
 #else // !_WIN32
@@ -51,14 +51,21 @@ typedef int socklen_t;  // Unix socket length
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define INVALID_SOCKET -1        // WinSock invalid socket
-#define SOCKET_ERROR   -1        // Basic WinSock error
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
 #define SOCKET_INPROGRESS EINPROGRESS
 
 #endif // !_WIN32
 
 using namespace std;
 using namespace cb;
+
+
+namespace {
+  template <typename T> int compare(const T &a, const T &b) {
+    return a < b ? -1 : (b < a ? 1 : 0);
+  }
+}
 
 
 #define U8_RE "((2((5[0-5])|([0-4]\\d)))|(1\\d\\d)|([1-9]?\\d))"
@@ -69,7 +76,7 @@ using namespace cb;
 
 #define PORT_RE "(:" U16_RE ")"
 #define IPV4_RE U8_RE "\\." U8_RE "\\." U8_RE "\\." U8_RE
-#define IPV6_RE "([\\da-fA-F:\\.]+)" // Imprecise
+#define IPV6_RE "([\\da-fA-F:\\.]+)(%.+)?" // Imprecise
 
 Regex SockAddr::ipv4RE("((" IPV4_RE ")|(\\d+))" PORT_RE "?");
 Regex SockAddr::ipv6RE("(" IPV6_RE ")|(\\[" IPV6_RE "\\]" PORT_RE "?)");
@@ -244,6 +251,7 @@ bool SockAddr::readIPv4(const string &_s) {
 bool SockAddr::readIPv6(const string &_s) {
   if (!ipv6RE.match(_s)) return false;
 
+  // Parse port
   string s = _s;
   unsigned port = 0;
   if (s[0] == '[') {
@@ -252,6 +260,12 @@ bool SockAddr::readIPv6(const string &_s) {
     s = s.substr(1, end - 1);
   }
 
+  // Strip zone ID, inet_pton() does not handle zone ID
+  // TODO use getaddrinfo() with AI_NUMERICHOST which handles zone IDs
+  size_t percent = s.find('%');
+  if (percent != string::npos) s = s.substr(0, percent);
+
+  // Parse address
   if (inet_pton(AF_INET6, s.data(), &get6()->sin6_addr) == 1) {
     get()->sa_family = AF_INET6;
     setPort(port);
@@ -318,24 +332,25 @@ SockAddr &SockAddr::operator=(const sockaddr_in6 &addr) {
 }
 
 
-int SockAddr::cmp(const SockAddr &o) const {
+int SockAddr::cmp(const SockAddr &o, bool cmpPorts) const {
   if (isNull())   return o.isNull() ? 0 : -1;
   if (o.isNull()) return 1;
 
   if (get()->sa_family != o.get()->sa_family)
-    return get()->sa_family - o.get()->sa_family;
+    return compare(get()->sa_family, o.get()->sa_family);
 
   if (isIPv4() && getIPv4() != o.getIPv4())
-    return (int)getIPv4() - (int)o.getIPv4();
+    return compare(getIPv4(), o.getIPv4());
 
   if (isIPv6()) {
-    auto a = getIPv6();
-    auto b = o.getIPv6();
+    auto a  = getIPv6();
+    auto b  = o.getIPv6();
     int ret = memcmp(a, b, 16);
     if (ret) return ret;
   }
 
-  return (int)getPort() - (int)o.getPort();
+  if (cmpPorts) return compare(getPort(), o.getPort());
+  return 0;
 }
 
 
@@ -343,7 +358,7 @@ void SockAddr::setCIDRBits(uint8_t bits, bool on) {
   if (isIPv4()) {
     bits = 32 - bits;
     auto addr     = getIPv4();
-    uint32_t mask = (1 << bits) - 1;
+    uint32_t mask = (1ULL << bits) - 1;
 
     if (on) addr |= mask;
     else addr &= ~mask;
@@ -371,7 +386,7 @@ void SockAddr::setCIDRBits(uint8_t bits, bool on) {
 }
 
 
-uint8_t SockAddr::getCIDRBits(const SockAddr &o) const {
+int8_t SockAddr::getCIDRBits(const SockAddr &o) const {
   if (isIPv4() && o.isIPv4()) {
     uint32_t s = getIPv4();
     uint32_t e = o.getIPv4();
@@ -387,7 +402,7 @@ uint8_t SockAddr::getCIDRBits(const SockAddr &o) const {
         else inMask = true;
       }
 
-      if (inMask && ((s & mask) || !(e & mask))) return 0;
+      if (inMask && ((s & mask) || !(e & mask))) return -1;
     }
 
     return prefix;
@@ -409,7 +424,7 @@ uint8_t SockAddr::getCIDRBits(const SockAddr &o) const {
           else inMask = true;
         }
 
-        if (inMask && ((s[i] & mask) || !(e[i] & mask))) return 0;
+        if (inMask && ((s[i] & mask) || !(e[i] & mask))) return -1;
       }
 
     return prefix;
@@ -420,7 +435,8 @@ uint8_t SockAddr::getCIDRBits(const SockAddr &o) const {
 
 
 bool SockAddr::adjacent(const SockAddr &o) const {
-  return (!o.isZero() && *this == o.dec()) || (!isZero() && dec() == o);
+  return (!o.isZero() && cmp(o.dec(), false) == 0) ||
+    (!isZero() && dec().cmp(o, false) == 0);
 }
 
 

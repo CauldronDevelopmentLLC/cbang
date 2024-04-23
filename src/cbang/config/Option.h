@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include "OptionType.h"
 #include "OptionAction.h"
 #include "Constraint.h"
 
@@ -45,56 +46,43 @@
 
 
 namespace cb {
-  namespace JSON {class Sink;}
+  namespace JSON {class Sink; class Value;}
 
   /**
    * A Configuration option.  Holds option defaults, user values, and parses
    * option strings.  Can also call an OptionAction when an option is set.
    */
-  class Option {
+  class Option : public OptionType::Enum {
   public:
-    static const std::string DEFAULT_DELIMS;
-
     typedef std::vector<std::string> strings_t;
-    typedef std::vector<int64_t> integers_t;
-    typedef std::vector<double> doubles_t;
-    typedef enum {
-      BOOLEAN_TYPE,
-      STRING_TYPE,
-      INTEGER_TYPE,
-      DOUBLE_TYPE,
-      STRINGS_TYPE,
-      INTEGERS_TYPE,
-      DOUBLES_TYPE,
-    } type_t;
+    typedef std::vector<int64_t>     integers_t;
+    typedef std::vector<double>      doubles_t;
 
     typedef enum {
       DEFAULT_SET_FLAG  = 1 << 0,
       SET_FLAG          = 1 << 1,
-      OPTIONAL_FLAG     = 1 << 2,
+      OPTIONAL_FLAG     = 1 << 2, // Only used for command line options
       OBSCURED_FLAG     = 1 << 3,
       COMMAND_LINE_FLAG = 1 << 4,
-      DEPRECATED_FLAG  = 1 << 5,
-      READ_ONLY_FLAG    = 1 << 6,
+      DEPRECATED_FLAG   = 1 << 5,
     } flags_t;
 
   protected:
     std::string name;
-    char shortName;
-    type_t type;
+    char        shortName = 0;
+    OptionType  type = TYPE_STRING;
     std::string defaultValue;
     std::string help;
     std::string value;
-    uint32_t flags;
-    const std::string *filename;
+    uint32_t    flags = 0;
 
     typedef std::set<std::string> aliases_t;
     aliases_t aliases;
 
-    SmartPointer<Option> parent;
+    SmartPointer<Option>           parent;
     SmartPointer<OptionActionBase> action;
     SmartPointer<OptionActionBase> defaultSetAction;
-    SmartPointer<Constraint> constraint;
+    SmartPointer<Constraint>       constraint;
 
   public:
     Option(const SmartPointer<Option> &parent);
@@ -103,91 +91,63 @@ namespace cb {
            const std::string &help = "");
     Option(const std::string &name, const std::string &help,
            const SmartPointer<Constraint> &constraint = 0);
+    Option(const std::string &name, const JSON::Value &config);
 
     const std::string &getName() const {return name;}
     char getShortName() const {return shortName;}
 
-    void setType(type_t type) {this->type = type;}
-    type_t getType() const {return type;}
+    void setType(OptionType type) {this->type = type;}
+    OptionType getType() const {return type;}
     const std::string getTypeString() const;
 
     const std::string &getDefault() const;
     void setDefault(const std::string &defaultValue);
     void setDefault(const char *defaultValue);
-    void setDefault(int64_t defaultValue);
+    void setDefault(int64_t  defaultValue);
     void setDefault(uint64_t defaultValue) {setDefault((int64_t)defaultValue);}
-    void setDefault(int32_t defaultValue) {setDefault((int64_t)defaultValue);}
+    void setDefault(int32_t  defaultValue) {setDefault((int64_t)defaultValue);}
     void setDefault(uint32_t defaultValue) {setDefault((int64_t)defaultValue);}
-    void setDefault(double defaultValue);
-    void setDefault(bool defaultValue);
+    void setDefault(double   defaultValue);
+    void setDefault(bool     defaultValue);
+    void setDefault(const JSON::Value &value);
     void clearDefault();
     bool hasDefault() const;
     bool isDefault() const;
 
-    void setOptional() {flags |= OPTIONAL_FLAG;}
-    bool isOptional() const {return flags & OPTIONAL_FLAG;}
-    void setObscured() {flags |= OBSCURED_FLAG;}
-    bool isObscured() const {return flags & OBSCURED_FLAG;}
-    bool isPlural() const {return type >= STRINGS_TYPE;}
+    void setOptional()    {flags |= OPTIONAL_FLAG;}
+    void setObscured()    {flags |= OBSCURED_FLAG;}
     void setCommandLine() {flags |= COMMAND_LINE_FLAG;}
+    void setDeprecated()  {flags |= DEPRECATED_FLAG; clearDefault();}
+
+    bool isOptional()    const {return flags & OPTIONAL_FLAG;}
+    bool isObscured()    const {return flags & OBSCURED_FLAG;}
+    bool isPlural()      const {return type >= TYPE_STRINGS;}
     bool isCommandLine() const {return flags & COMMAND_LINE_FLAG;}
-    void setDeprecated();
-    bool isDeprecated() const {return flags & DEPRECATED_FLAG;}
-    void setReadOnly(bool set = true);
-    bool isReadOnly() const {return flags & READ_ONLY_FLAG;}
-    bool isHidden() const;
+    bool isDeprecated()  const {return flags & DEPRECATED_FLAG;}
+    bool isHidden()      const;
 
     const std::string &getHelp() const {return help;}
     void setHelp(const std::string &help) {this->help = help;}
-
-    void setFilename(const std::string *filename) {this->filename = filename;}
-    const std::string *getFilename() const {return filename;}
 
     /// This function should only be called by Options::alias()
     void addAlias(const std::string &alias) {aliases.insert(alias);}
     const aliases_t &getAliases() const {return aliases;}
 
-    void setAction(const SmartPointer<OptionActionBase> &action)
-    {this->action = action;}
+    void setAction(const SmartPointer<OptionActionBase> &action);
+    void setDefaultSetAction(const SmartPointer<OptionActionBase> &action);
+    void setConstraint(const SmartPointer<Constraint> &constraint);
 
-    template <class T>
-    void setAction(T *obj, typename OptionAction<T>::member_t member) {
-      setAction(new OptionAction<T>(obj, member));
-    }
-
-    template <class T>
-    void setAction(T *obj, typename BareOptionAction<T>::member_t member) {
-      setAction(new BareOptionAction<T>(obj, member));
-    }
-
-    void setDefaultSetAction(const SmartPointer<OptionActionBase> &action)
-    {defaultSetAction = action;}
-
-    template <class T>
-    void setDefaultSetAction(T *obj,
-                             typename OptionAction<T>::member_t member) {
-      setDefaultSetAction(new OptionAction<T>(obj, member));
-    }
-
-    template <class T>
-    void setDefaultSetAction(T *obj,
-                             typename BareOptionAction<T>::member_t member) {
-      setDefaultSetAction(new BareOptionAction<T>(obj, member));
-    }
-
-    void setConstraint(const SmartPointer<Constraint> &constraint)
-    {this->constraint = constraint;}
-
+    void configure(const JSON::Value &value);
     void reset();
     void unset();
     void set(const std::string &value);
     void set(const char *value) {set(std::string(value));}
-    void set(int64_t value);
+    void set(int64_t  value);
     void set(uint64_t value) {set((int64_t)value);}
-    void set(int32_t value) {set((int64_t)value);}
+    void set(int32_t  value) {set((int64_t)value);}
     void set(uint32_t value) {set((int64_t)value);}
-    void set(double value);
-    void set(bool value);
+    void set(double   value);
+    void set(bool     value);
     void set(const strings_t &values);
     void set(const integers_t &values);
     void set(const doubles_t &values);
@@ -199,44 +159,38 @@ namespace cb {
     bool isSet() const {return flags & SET_FLAG;}
     bool hasValue() const;
 
-    bool toBoolean() const;
+    bool       toBoolean()  const;
     const std::string &toString() const;
-    int64_t toInteger() const;
-    double toDouble() const;
-    strings_t toStrings(const std::string &delims = DEFAULT_DELIMS) const;
-    integers_t toIntegers(const std::string &delims = DEFAULT_DELIMS) const;
-    doubles_t toDoubles(const std::string &delims = DEFAULT_DELIMS) const;
+    int64_t    toInteger()  const;
+    double     toDouble()   const;
+    strings_t  toStrings()  const;
+    integers_t toIntegers() const;
+    doubles_t  toDoubles()  const;
 
-    bool toBoolean(bool defaultValue) const;
+    bool       toBoolean(bool defaultValue) const;
     const std::string &toString(const std::string &defaultValue) const;
-    int64_t toInteger(int64_t defaultValue) const;
-    double toDouble(double defaultValue) const;
-    strings_t toStrings(const strings_t &defaultValue,
-                        const std::string &delims = DEFAULT_DELIMS) const;
-    integers_t toIntegers(const integers_t &defaultValue,
-                          const std::string &delims = DEFAULT_DELIMS) const;
-    doubles_t toDoubles(const doubles_t &defaultValue,
-                        const std::string &delims = DEFAULT_DELIMS) const;
+    int64_t    toInteger(int64_t defaultValue) const;
+    double     toDouble(double defaultValue) const;
+    strings_t  toStrings(const strings_t &defaultValue) const;
+    integers_t toIntegers(const integers_t &defaultValue) const;
+    doubles_t  toDoubles(const doubles_t &defaultValue) const;
 
-    static bool parseBoolean(const std::string &value);
-    static int64_t parseInteger(const std::string &value);
-    static double parseDouble(const std::string &value);
-    static strings_t parseStrings(const std::string &value,
-                                  const std::string &delims = DEFAULT_DELIMS);
-    static integers_t parseIntegers(const std::string &value,
-                                    const std::string &delims = DEFAULT_DELIMS);
-    static doubles_t parseDoubles(const std::string &value,
-                                  const std::string &delims = DEFAULT_DELIMS);
+    static bool       parseBoolean (const std::string &value);
+    static int64_t    parseInteger (const std::string &value);
+    static double     parseDouble  (const std::string &value);
+    static strings_t  parseStrings (const std::string &value);
+    static integers_t parseIntegers(const std::string &value);
+    static doubles_t  parseDoubles (const std::string &value);
 
     template <typename T>
     void checkConstraint(T value) const {
-      if (!constraint.isNull()) constraint->validate(value);
-      if (!parent.isNull()) parent->checkConstraint(value);
+      if (constraint.isSet()) constraint->validate(value);
+      if (parent.isSet()) parent->checkConstraint(value);
     }
 
     void validate() const;
 
-    bool hasAction() const {return action.get();}
+    bool hasAction() const {return action.isSet();}
 
     void parse(unsigned &i, const std::vector<std::string> &args);
     std::ostream &printHelp(std::ostream &stream, bool cmdLine = true) const;
@@ -244,26 +198,20 @@ namespace cb {
 
     operator const std::string &() const {return toString();}
 
-    static void writeBoolean(JSON::Sink &sink, const std::string &value);
-    static void writeInteger(JSON::Sink &sink, const std::string &value);
-    static void writeDouble(JSON::Sink &sink, const std::string &value);
-    static void writeStrings(JSON::Sink &sink, const std::string &value,
-                             const std::string &delims = DEFAULT_DELIMS);
-    static void writeIntegers(JSON::Sink &sink, const std::string &value,
-                              const std::string &delims = DEFAULT_DELIMS);
-    static void writeDoubles(JSON::Sink &sink, const std::string &value,
-                             const std::string &delims = DEFAULT_DELIMS);
+    static void writeBoolean (JSON::Sink &sink, const std::string &value);
+    static void writeInteger (JSON::Sink &sink, const std::string &value);
+    static void writeDouble  (JSON::Sink &sink, const std::string &value);
+    static void writeStrings (JSON::Sink &sink, const std::string &value);
+    static void writeIntegers(JSON::Sink &sink, const std::string &value);
+    static void writeDoubles (JSON::Sink &sink, const std::string &value);
 
-    void writeValue(JSON::Sink &sink, const std::string &value,
-                    const std::string &delims = DEFAULT_DELIMS) const;
-    void write(JSON::Sink &sink, bool config = false,
-               const std::string &delims = DEFAULT_DELIMS) const;
+    void writeValue(JSON::Sink &sink, const std::string &value) const;
+    void write(JSON::Sink &sink, bool config = false) const;
     void write(XML::Handler &handler, uint32_t flags) const;
-    void printHelpTOC(XML::Handler &handler, const std::string &prefix) const;
-    void printHelp(XML::Handler &handler, const std::string &prefix) const;
+    void dump(JSON::Sink &sink) const;
 
   protected:
-    void setDefault(const std::string &value, type_t type);
+    void setDefault(const std::string &value, OptionType type);
   };
 
   inline std::ostream &operator<<(std::ostream &stream, const Option &o) {

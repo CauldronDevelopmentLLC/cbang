@@ -36,17 +36,17 @@ using namespace std;
 using namespace cb;
 
 
-void AddressFilter::deny(const string &spec) {blackList.insert(spec);}
-void AddressFilter::allow(const string &spec) {whiteList.insert(spec);}
-void AddressFilter::deny(AddressRange &range) {blackList.insert(range);}
-void AddressFilter::allow(AddressRange &range) {whiteList.insert(range);}
+void AddressFilter::deny (const string &spec)  {denyList .insert(spec, dns);}
+void AddressFilter::allow(const string &spec)  {allowList.insert(spec, dns);}
+void AddressFilter::deny (AddressRange &range) {denyList .insert(range);}
+void AddressFilter::allow(AddressRange &range) {allowList.insert(range);}
 
 
 bool AddressFilter::isAllowed(const SockAddr &addr) const {
-  return whiteList.contains(addr) || !blackList.contains(addr);
+  return allowList.contains(addr) || !denyList.contains(addr);
 }
 
 
-bool AddressFilter::isExplicitlyAllowed(const SockAddr &addr) const {
-  return whiteList.contains(addr);
+string AddressFilter::toString() const {
+  return SSTR("allow=" << allowList << " deny=" << denyList);
 }

@@ -82,18 +82,19 @@ namespace cb {
 
       Event::Base &getEventBase() {return base;}
 
-      const SockAddr &getBindAddress() const    {return bindAddr;}
-      void setBindAddress(const SockAddr &addr) {bindAddr = addr;}
-      unsigned getMaxActive() const             {return maxActive;}
-      void setMaxActive(unsigned x)             {maxActive = x;}
-      unsigned getQueryTimeout() const          {return queryTimeout;}
-      void setQueryTimeout(unsigned x)          {queryTimeout = x;}
-      unsigned getRequestTimeout() const        {return requestTimeout;}
-      void setRequestTimeout(unsigned x)        {requestTimeout = x;}
-      unsigned getMaxAttempts() const           {return maxAttempts;}
-      void setMaxAttempts(unsigned x)           {maxAttempts = x;}
-      unsigned getMaxFailures() const           {return maxFailures;}
-      void setMaxFailures(unsigned x)           {maxFailures = x;}
+      const SockAddr &getBindAddress   () const {return bindAddr;}
+      unsigned        getMaxActive     () const {return maxActive;}
+      unsigned        getQueryTimeout  () const {return queryTimeout;}
+      unsigned        getRequestTimeout() const {return requestTimeout;}
+      unsigned        getMaxAttempts   () const {return maxAttempts;}
+      unsigned        getMaxFailures   () const {return maxFailures;}
+
+      void setBindAddress   (const SockAddr &addr) {bindAddr = addr;}
+      void setMaxActive     (unsigned x)           {maxActive = x;}
+      void setQueryTimeout  (unsigned x)           {queryTimeout = x;}
+      void setRequestTimeout(unsigned x)           {requestTimeout = x;}
+      void setMaxAttempts   (unsigned x)           {maxAttempts = x;}
+      void setMaxFailures   (unsigned x)           {maxFailures = x;}
 
       void initSystemNameservers();
       bool hasNameserver(const SockAddr &addr) const;

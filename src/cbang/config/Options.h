@@ -69,30 +69,21 @@ namespace cb {
     virtual const_iterator begin() const {return map.begin();}
     virtual const_iterator end() const {return map.end();}
 
+    virtual void insert(JSON::Sink &sink, bool config = false) const;
+    virtual void write(JSON::Sink &sink, bool config) const;
+    virtual void write(XML::Handler &handler, uint32_t flags = 0) const;
+
     virtual std::ostream &print(std::ostream &stream) const;
     virtual void printHelp(std::ostream &stream, bool cmdLine = false) const;
-
-    virtual void insert(JSON::Sink &sink, bool config = false,
-                        const std::string &delims =
-                        Option::DEFAULT_DELIMS) const;
-    virtual void write(JSON::Sink &sink, bool config,
-                       const std::string &delims =
-                       Option::DEFAULT_DELIMS) const;
-    virtual void write(XML::Handler &handler, uint32_t flags = 0) const;
-    virtual void printHelpTOC(XML::Handler &handler,
-                              const std::string &prefix = std::string()) const;
-    virtual void printHelp(XML::Handler &handler,
-                           const std::string &prefix = std::string()) const;
-    virtual const char *getHelpStyle() const;
-    virtual void printHelpPage(XML::Handler &handler) const;
-    virtual SmartPointer<JSON::Value> getDict(bool defaults = false,
-                                              bool all = false) const;
 
     virtual const SmartPointer<OptionCategory> &
     getCategory(const std::string &name);
     virtual const SmartPointer<OptionCategory> &
     pushCategory(const std::string &name);
     virtual void popCategory();
+
+    void load(const JSON::Value &config);
+    void dump(JSON::Sink &sink) const;
 
     // From OptionMap
     using OptionMap::add;

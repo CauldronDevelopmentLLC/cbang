@@ -46,7 +46,10 @@ namespace cb {
       ArgDict validator;
 
     public:
+      ArgsHandler() {}
       ArgsHandler(const JSON::ValuePtr &args) : validator(args) {}
+
+      void add(const JSON::ValuePtr &args) {validator.add(args);}
 
       // From HTTP::RequestHandler
       bool operator()(HTTP::Request &req);

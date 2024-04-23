@@ -57,8 +57,7 @@ namespace {
     callback_t cb;
 
   public:
-    JSONWriter(callback_t cb, unsigned indent = 0, bool compact = false) :
-      Event::JSONBufferWriter(indent, compact), cb(cb) {}
+    JSONWriter(callback_t cb) : cb(cb) {}
 
     ~JSONWriter() {
       close();
@@ -263,6 +262,11 @@ bool Request::hasContentType() const {return outputHeaders.hasContentType();}
 string Request::getContentType() const {return outputHeaders.getContentType();}
 
 
+bool Request::isJSONContentType() const {
+  return outputHeaders.isJSONContentType();
+}
+
+
 void Request::setContentType(const string &contentType) {
   outputHeaders.setContentType(contentType);
 }
@@ -400,10 +404,7 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
 const SmartPointer<JSON::Value> &Request::getJSONMessage() {
   if (msg.isNull()) {
     const Headers &hdrs = inputHeaders;
-
-    if (hdrs.hasContentType() &&
-        String::startsWith(hdrs.getContentType(), "application/json"))
-      msg = getInputJSON();
+    if (hdrs.hasContentType() && hdrs.isJSONContentType()) msg = getInputJSON();
   }
 
   return msg;
@@ -420,7 +421,7 @@ SmartPointer<JSON::Writer> Request::getJSONWriter() {
     send(buffer);
   };
 
-  return new JSONWriter(cb, 0, !uri.has("pretty"));
+  return new JSONWriter(cb);
 }
 
 
@@ -452,34 +453,40 @@ SmartPointer<ostream> Request::getOutputStream(Compression compression) {
 }
 
 
-void Request::sendError(Status code) {
-  if (getContentType() == "application/json") return sendJSONError(code, "");
+void Request::sendJSONError(Status code, const string &message) {
+  auto writer = getJSONWriter();
 
-  outSet("Content-Type", "text/html");
-  outSet("Connection", "close");
-
-  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
-  string msg = String((int)code) + " " + code.getDescription();
-
-  send(SSTR("<html><head><title>" << msg << "</title></head><body><h1>"
-            << msg << "</h1></body></html>"));
+  writer->beginDict();
+  writer->insert("error", message);
+  writer->endDict();
+  writer->close();
 
   reply(code);
 }
 
 
 void Request::sendError(Status code, const string &msg) {
-  if (getContentType() == "application/json") return sendJSONError(code, msg);
+  if (isJSONContentType()) return sendJSONError(code, msg);
+
+  outSet("Content-Type", "text/plain");
+  outSet("Connection", "close");
 
   outputBuffer.clear();
-  setContentType("text/plain");
   send(msg);
-  sendError(code);
+  reply(code);
+}
+
+
+
+void Request::sendError(Status code) {
+  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
+  string msg = String((int)code) + " " + code.getDescription();
+  sendError(code, msg);
 }
 
 
 void Request::sendError(Status code, const Exception &e) {
-  if (getContentType() == "application/json") {
+  if (isJSONContentType()) {
     auto writer = getJSONWriter();
 
     writer->beginDict();
@@ -495,27 +502,12 @@ void Request::sendError(Status code, const Exception &e) {
 
 
 void Request::sendError(const Exception &e) {
-  Status code = (Status::enum_t)e.getTopCode();
-  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
-  sendError(code, e);
+  sendError((Status::enum_t)e.getTopCode(), e);
 }
 
 
 void Request::sendError(const exception &e) {
-  sendError(Status::HTTP_INTERNAL_SERVER_ERROR, e.what());
-}
-
-
-void Request::sendJSONError(Status code, const string &message) {
-  auto writer = getJSONWriter();
-
-  writer->beginDict();
-  writer->insert("error", message);
-  writer->endDict();
-  writer->close();
-
-  if (!code) code = HTTP_INTERNAL_SERVER_ERROR;
-  reply(code);
+  sendError((Status::enum_t)0, e.what());
 }
 
 
@@ -535,7 +527,7 @@ void Request::sendFile(const string &path) {outputBuffer.addFile(path);}
 void Request::reply(Status::enum_t code) {
   if (replying && !isWebsocket()) THROW("Request already replying");
 
-  responseCode = code ? code : HTTP_INTERNAL_SERVER_ERROR;
+  responseCode = code ? code : (Status::enum_t)HTTP_INTERNAL_SERVER_ERROR;
   write();
   replying = true;
 }
@@ -673,7 +665,6 @@ void Request::write() {
   if (connection.isNull()) return onWriteComplete(false); // Ignore write
 
   Event::Buffer out;
-
   writeHeaders(out);
   if (outputBuffer.getLength()) out.add(outputBuffer);
 
@@ -691,7 +682,7 @@ void Request::writeResponse(Event::Buffer &buf) {
     if (1 <= version.getMinor() && !outHas("Date"))
       outSet("Date", Time().toString("%a, %d %b %Y %H:%M:%S GMT"));
 
-    // If the protocol is 1.0 and connection was keep-alive add keep-alive
+    // If the protocol is 1.0 and onnection was keep-alive add keep-alive
     bool keepAlive = inputHeaders.connectionKeepAlive();
     if (!version.getMinor() && keepAlive) outSet("Connection", "keep-alive");
 
@@ -699,6 +690,10 @@ void Request::writeResponse(Event::Buffer &buf) {
         !outHas("Transfer-Encoding") && !outHas("Content-Length"))
       outSet("Content-Length", String(outputBuffer.getLength()));
   }
+
+  // Don't reply with empty JSON
+  if (outputBuffer.isEmpty() && isJSONContentType())
+    outputHeaders.remove("Content-Type");
 
   // Add Content-Type
   if (mustHaveBody() && !hasContentType()) guessContentType();

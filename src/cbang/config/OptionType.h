@@ -29,26 +29,25 @@
 
 \******************************************************************************/
 
-#pragma once
+#ifndef CBANG_ENUM
+#ifndef CBANG_OPTION_TYPE_H
+#define CBANG_OPTION_TYPE_H
 
-#include "RequestHandler.h"
+#define CBANG_ENUM_NAME OptionType
+#define CBANG_ENUM_NAMESPACE cb
+#define CBANG_ENUM_PATH cbang/config
+#define CBANG_ENUM_PREFIX 5
+#include <cbang/enum/MakeEnumeration.def>
 
-#include <cbang/util/Resource.h>
+#endif // CBANG_OPTION_TYPE_H
+#else // CBANG_ENUM
 
+CBANG_ENUM(TYPE_BOOLEAN)
+CBANG_ENUM(TYPE_STRING)
+CBANG_ENUM(TYPE_INTEGER)
+CBANG_ENUM(TYPE_DOUBLE)
+CBANG_ENUM(TYPE_STRINGS)
+CBANG_ENUM(TYPE_INTEGERS)
+CBANG_ENUM(TYPE_DOUBLES)
 
-namespace cb {
-  namespace HTTP {
-    class Request;
-
-    class ResourceHandler : public RequestHandler {
-      const Resource &root;
-
-    public:
-      ResourceHandler(const Resource &root) : root(root) {}
-      ResourceHandler(const std::string &path);
-
-      // From RequestHandler
-      bool operator()(Request &req) override;
-    };
-  }
-}
+#endif // CBANG_ENUM

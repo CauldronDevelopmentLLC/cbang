@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "RequestHandler.h"
+#include "HandlerGroup.h"
 
 #include <cbang/event/Server.h>
 #include <cbang/net/URI.h>
@@ -39,16 +39,34 @@
 
 
 namespace cb {
+  class SSLContext;
+
   namespace HTTP {
-    class Request;
     class Conn;
 
-    class Server : public Event::Server, public RequestHandler {
+    class Server : public Event::Server, public HandlerGroup {
+      SmartPointer<SSLContext> sslCtx;
+
+      bool logPrefix = false;
+      int priority = -1;
+      int securePriority = -1;
+
       unsigned maxBodySize   = std::numeric_limits<int>::max();
       unsigned maxHeaderSize = std::numeric_limits<int>::max();
 
     public:
-      Server(Event::Base &base);
+      Server(Event::Base &base, const SmartPointer<SSLContext> &sslCtx = 0);
+
+      const SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
+
+      bool getLogPrefix() const {return logPrefix;}
+      void setLogPrefix(bool logPrefix) {this->logPrefix = logPrefix;}
+
+      int getPortPriority() const {return priority;}
+      void setPortPriority(int priority) {this->priority = priority;}
+
+      int getSecurePortPriority() const {return securePriority;}
+      void setSecurePortPriority(int p) {this->securePriority = p;}
 
       unsigned getMaxBodySize() const {return maxBodySize;}
       void setMaxBodySize(unsigned size) {maxBodySize = size;}
@@ -56,16 +74,23 @@ namespace cb {
       unsigned getMaxHeaderSize() const {return maxHeaderSize;}
       void setMaxHeaderSize(unsigned size) {maxHeaderSize = size;}
 
+      void addListenPort(const SockAddr &addr);
+      void addSecureListenPort(const SockAddr &addr);
+
+      // From Event::Server
+      void addOptions(Options &options);
+      void init(Options &options);
+      SmartPointer<Event::Connection> createConnection() override;
+
       virtual SmartPointer<Request>
       createRequest(const SmartPointer<Conn> &conn, Method method,
                     const URI &uri, const Version &version);
-      virtual void endRequest(Request &req) {}
+      virtual void endRequest(Request &req);
 
       void dispatch(Request &req);
 
-      // From Event::Server
-      SmartPointer<Event::Connection> createConnection() override;
-      void onConnect(const SmartPointer<Event::Connection> &conn) override;
+      // From RequestHandler
+      bool operator()(Request &req);
     };
   }
 }

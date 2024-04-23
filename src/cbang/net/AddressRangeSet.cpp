@@ -34,17 +34,33 @@
 #include <cbang/String.h>
 #include <cbang/SStream.h>
 #include <cbang/json/Sink.h>
+#include <cbang/dns/Base.h>
 
 using namespace std;
 using namespace cb;
 
 
-void AddressRangeSet::insert(const string &spec) {
+void AddressRangeSet::insert(const string &spec, DNS::Base *dns) {
   vector<string> tokens;
   String::tokenize(spec, tokens, " \r\n\t,;");
 
   for (auto &token: tokens)
-    insert(AddressRange(token));
+    try {
+      insert(AddressRange(token));
+
+    } catch (const Exception &e) {
+      if (!dns) throw;
+
+      auto cb = [this, token] (
+        DNS::Error error, const vector<SockAddr> &addrs) {
+        for (auto &addr: addrs)
+          insert(AddressRange(addr));
+      };
+
+      auto colon  = spec.find_last_of(':');
+      string addr = token.substr(0, colon);
+      dns->resolve(addr, cb);
+    }
 }
 
 

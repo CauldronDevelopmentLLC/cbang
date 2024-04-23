@@ -193,43 +193,43 @@ bool KeyPair::operator==(const KeyPair &o) const {
 
 
 void KeyPair::generateRSA(unsigned bits, uint64_t pubExp,
-                          SmartPointer<KeyGenCallback> callback) {
+                          const SmartPointer<KeyGenCallback> &cb) {
   KeyContext ctx(EVP_PKEY_RSA);
   ctx.keyGenInit();
   ctx.setRSABits(bits);
   ctx.setRSAPubExp(pubExp);
-  ctx.setKeyGenCallback(callback.get());
+  ctx.setKeyGenCallback(cb.get());
   *this = ctx.keyGen();
 }
 
 
 void KeyPair::generateDSA(unsigned bits,
-                          SmartPointer<KeyGenCallback> callback) {
+                          const SmartPointer<KeyGenCallback> &cb) {
   KeyContext ctx(EVP_PKEY_DSA);
   ctx.keyGenInit();
   ctx.setDSABits(bits);
-  ctx.setKeyGenCallback(callback.get());
+  ctx.setKeyGenCallback(cb.get());
   *this = ctx.keyGen();
 }
 
 
 void KeyPair::generateDH(unsigned primeLen, int generator,
-                         SmartPointer<KeyGenCallback> callback) {
+                         const SmartPointer<KeyGenCallback> &cb) {
   KeyContext ctx(EVP_PKEY_DH);
   ctx.keyGenInit();
   ctx.setDHPrimeLen(primeLen);
   ctx.setDHGenerator(generator);
-  ctx.setKeyGenCallback(callback.get());
+  ctx.setKeyGenCallback(cb.get());
   *this = ctx.keyGen();
 }
 
 
 void KeyPair::generateEC(const string &curve,
-                         SmartPointer<KeyGenCallback> callback) {
+                         const SmartPointer<KeyGenCallback> &cb) {
   KeyContext ctx(EVP_PKEY_DH);
   ctx.keyGenInit();
   ctx.setECCurve(curve);
-  ctx.setKeyGenCallback(callback.get());
+  ctx.setKeyGenCallback(cb.get());
   *this = ctx.keyGen();
 }
 
@@ -350,11 +350,11 @@ void KeyPair::readPublicPEM(const string &pem) {
 
 
 istream &KeyPair::readPrivatePEM(
-  istream &stream, SmartPointer<PasswordCallback> callback) {
+  istream &stream, const SmartPointer<PasswordCallback> &cb) {
   BIStream bio(stream);
 
   if (!PEM_read_bio_PrivateKey(
-        bio.getBIO(), &key, callback.isNull() ? 0 : password_cb, callback.get()))
+        bio.getBIO(), &key, cb.isNull() ? 0 : password_cb, cb.get()))
     THROW("Failed to read private key: " << SSL::getErrorStr());
 
   return stream;
@@ -362,9 +362,9 @@ istream &KeyPair::readPrivatePEM(
 
 
 void KeyPair::readPrivatePEM(
-  const string &pem, SmartPointer<PasswordCallback> callback) {
+  const string &pem, const SmartPointer<PasswordCallback> &cb) {
   istringstream str(pem);
-  readPrivatePEM(str, callback);
+  readPrivatePEM(str, cb);
 }
 
 

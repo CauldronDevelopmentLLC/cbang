@@ -38,6 +38,8 @@
 
 
 namespace cb {
+  namespace JSON {class Sink;}
+
   class Constraint {
   public:
     virtual ~Constraint() {}
@@ -58,5 +60,7 @@ namespace cb {
     }
 
     virtual std::string getHelp() const = 0;
+
+    virtual void dump(JSON::Sink &sink) const {}
   };
 }

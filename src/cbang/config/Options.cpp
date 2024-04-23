@@ -57,76 +57,25 @@ Options::Options() {
 Options::~Options() {}
 
 
-void Options::add(const string &_key, SmartPointer<Option> option) {
-  string key = cleanKey(_key);
-  auto it = map.find(key);
-
-  if (it != map.end()) THROW("Option '" << key << "' already exists.");
-
-  map[key] = option;
-  categoryStack.back()->add(option);
-}
-
-
-bool Options::remove(const string &key) {
-  return map.erase(cleanKey(key));
-}
-
-
-bool Options::has(const string &key) const {
-  return map.find(cleanKey(key)) != map.end();
-}
-
-
-const SmartPointer<Option> &Options::get(const string &_key) const {
-  string key = cleanKey(_key);
-
-  auto it = map.find(key);
-
-  if (it == map.end()) {
-    if (getAutoAdd()) {
-      const SmartPointer<Option> &option =
-        const_cast<Options *>(this)->map[key] = new Option(key);
-      categoryStack.back()->add(option);
-      return option;
-
-    } else THROW("Option '" << key << "' does not exist.");
-  }
-
-  return it->second;
-}
-
-
-void Options::alias(const string &_key, const string &_alias) {
-  string key = cleanKey(_key);
-  string alias = cleanKey(_alias);
-
-  const SmartPointer<Option> &option = localize(key);
-
-  auto it = map.find(alias);
-  if (it != map.end())
-    THROW("Cannot alias, option '" << alias << "' already exists.");
-
-  option->addAlias(alias);
-  map[alias] = option;
-}
-
-
-void Options::insert(JSON::Sink &sink, bool config,
-                     const string &delims) const {
+void Options::insert(JSON::Sink &sink, bool config) const {
   for (auto &p: categories)
     if (!p.second->getHidden() && !p.second->isEmpty() &&
         (!config || p.second->hasSetOption())) {
       if (!config) sink.beginInsert(p.first);
-      p.second->write(sink, config, delims);
+      p.second->write(sink, config);
     }
 }
 
 
-void Options::write(JSON::Sink &sink, bool config, const string &delims) const {
+void Options::write(JSON::Sink &sink, bool config) const {
   sink.beginDict();
-  insert(sink, config, delims);
+  insert(sink, config);
   sink.endDict();
+}
+
+
+void Options::write(XML::Handler &handler, uint32_t flags) const {
+  for (auto &p: categories) p.second->write(handler, flags);
 }
 
 
@@ -164,28 +113,6 @@ void Options::printHelp(ostream &stream, bool cmdLine) const {
 }
 
 
-SmartPointer<JSON::Value> Options::getDict(bool defaults, bool all) const {
-  JSON::Builder sink;
-
-  sink.beginDict();
-
-  for (auto &p: *this) {
-    Option &option = *p.second;
-
-    if (!all && !option.isSet() && (!defaults || !option.hasValue()))
-      continue;
-
-    sink.beginInsert(option.getName());
-    if (option.hasValue()) option.write(sink, true);
-    else sink.writeNull();
-  }
-
-  sink.endDict();
-
-  return sink.getRoot();
-}
-
-
 const SmartPointer<OptionCategory> &Options::getCategory(const string &name) {
   auto it = categories.find(name);
 
@@ -210,80 +137,95 @@ void Options::popCategory() {
 }
 
 
-void Options::write(XML::Handler &handler, uint32_t flags) const {
-  for (auto &p: categories) p.second->write(handler, flags);
+void Options::load(const JSON::Value &config) {
+  for (unsigned i = 0; i < config.size(); i++) {
+    auto category = config.keyAt(i);
+    if (!category.empty()) pushCategory(category);
+
+    auto &opts = *config.get(i);
+    for (unsigned j = 0; j < opts.size(); j++) {
+      auto name    = cleanKey(opts.keyAt(j));
+      auto &config = *opts.get(j);
+
+      if (has(name)) get(name)->configure(config);
+      else add(name, new Option(name, config));
+    }
+
+    if (!category.empty()) popCategory();
+  }
 }
 
 
-void Options::printHelpTOC(XML::Handler &handler, const string &prefix) const {
-  handler.startElement("ul");
-  for (auto &p: categories) p.second->printHelpTOC(handler, prefix);
-  handler.endElement("ul");
+void Options::dump(JSON::Sink &sink) const {
+  sink.beginDict();
+
+  for (auto &cat: categories) {
+    if (cat.second->isEmpty()) continue;
+
+    sink.insertDict(cat.first);
+
+    for (auto &o: *cat.second) {
+      sink.beginInsert(o.first);
+      o.second->dump(sink);
+    }
+
+    sink.endDict();
+  }
+
+  sink.endDict();
 }
 
 
-void Options::printHelp(XML::Handler &handler, const string &prefix) const {
-  for (auto &p: categories) p.second->printHelp(handler, prefix);
+void Options::add(const string &_key, SmartPointer<Option> option) {
+  auto key = cleanKey(_key);
+  auto it  = map.find(key);
+
+  if (it != map.end()) THROW("Option '" << key << "' already exists.");
+
+  map[key] = option;
+  categoryStack.back()->add(option);
 }
 
 
-const char *Options::getHelpStyle() const {
-  return
-    ".option {"
-    "  padding: 1.5em;"
-    "  text-align: left;"
-    "}"
-    ""
-    ".option .name {"
-    "  font-weight: bold;"
-       "  margin-right: 1em;"
-    "}"
-    ""
-    ".option .type {"
-    "  color: green;"
-    "}"
-    ""
-    ".option .default {"
-       "  color: red;"
-    "}"
-    ""
-    ".option .help {"
-    "  margin-top: 1em;"
-    "  white-space: pre-wrap;"
-    "}"
-       ""
-    ".options td {"
-    "  text-align: left;"
-    "}"
-    ".option-category-name {"
-    "  font-size: 20pt;"
-    "  margin: 2em 0 1em 0;"
-    "}";
+bool Options::remove(const string &key) {return map.erase(cleanKey(key));}
+
+
+bool Options::has(const string &key) const {
+  return map.find(cleanKey(key)) != map.end();
 }
 
 
-void Options::printHelpPage(XML::Handler &handler) const {
-  handler.startElement("html");
-  handler.startElement("head");
+const SmartPointer<Option> &Options::get(const string &_key) const {
+  string key = cleanKey(_key);
 
-  XML::Attributes attrs;
-  attrs["charset"] = "utf-8";
-  handler.startElement("meta", attrs);
-  handler.endElement("meta");
+  auto it = map.find(key);
 
-  handler.startElement("style");
-  handler.text(getHelpStyle());
+  if (it == map.end()) {
+    if (getAutoAdd()) {
+      const SmartPointer<Option> &option =
+        const_cast<Options *>(this)->map[key] = new Option(key);
+      categoryStack.back()->add(option);
+      return option;
 
-  handler.endElement("style");
-  handler.endElement("head");
+    } else THROW("Option '" << key << "' does not exist.");
+  }
 
-  handler.startElement("body");
+  return it->second;
+}
 
-  printHelpTOC(handler, "");
-  printHelp(handler, "");
 
-  handler.endElement("body");
-  handler.endElement("html");
+void Options::alias(const string &_key, const string &_alias) {
+  string key   = cleanKey(_key);
+  string alias = cleanKey(_alias);
+
+  const SmartPointer<Option> &option = localize(key);
+
+  auto it = map.find(alias);
+  if (it != map.end())
+    THROW("Cannot alias, option '" << alias << "' already exists.");
+
+  option->addAlias(alias);
+  map[alias] = option;
 }
 
 

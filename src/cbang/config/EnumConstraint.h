@@ -58,5 +58,13 @@ namespace cb {
 
       return s;
     }
+
+
+    void dump(JSON::Sink &sink) const {
+      sink.insertList("enum");
+      for (unsigned i = 0; i < T::getCount(); i++)
+        sink.append(T::getName(i));
+      sink.endList();
+    }
   };
 }

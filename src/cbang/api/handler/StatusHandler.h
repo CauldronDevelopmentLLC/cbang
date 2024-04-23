@@ -39,9 +39,11 @@ namespace cb {
   namespace API {
     class StatusHandler : public HTTP::RequestHandler {
       HTTP::Status code;
+      std::string text;
 
     public:
-      StatusHandler(HTTP::Status code) : code(code) {}
+      StatusHandler(HTTP::Status code, const std::string &text = "") :
+        code(code), text(text) {}
       StatusHandler(const JSON::ValuePtr &config);
 
       // From HTTP::RequestHandler

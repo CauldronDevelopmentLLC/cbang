@@ -41,9 +41,12 @@ using namespace cb;
 using namespace cb::HTTP;
 
 
-FileHandler::FileHandler(const string &root, unsigned pathPrefix,
-                         uint64_t timeout) :
-  root(root), pathPrefix(pathPrefix), timeout(timeout),
+FileHandler::FileHandler(const JSON::ValuePtr &config) :
+  FileHandler(config->getString("path"), config->getU32("prefix", 0)) {}
+
+
+FileHandler::FileHandler(const string &root, unsigned pathPrefix) :
+  root(root), pathPrefix(pathPrefix),
   directory(SystemUtilities::isDirectory(root)) {}
 
 
@@ -83,9 +86,6 @@ bool FileHandler::operator()(Request &req) {
   Event::Buffer buf;
   buf.addFile(path);
   req.reply(buf);
-
-  if (!req.outHas("Cache-Control"))
-    req.outSet("Cache-Control", "max-age=" + String(timeout));
 
   return true;
 }

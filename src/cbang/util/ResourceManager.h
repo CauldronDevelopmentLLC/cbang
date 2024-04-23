@@ -29,42 +29,33 @@
 
 \******************************************************************************/
 
-#include "RequestJSONHandler.h"
+#pragma once
 
-#include <cbang/json/Writer.h>
-#include <cbang/log/Logger.h>
+#include "Resource.h"
 
-using namespace cb::HTTP;
-using namespace std;
+#include <cbang/SmartPointer.h>
+
+#include <map>
+#include <iostream>
 
 
-bool RequestJSONHandler::operator()(Request &req) {
-  try {
-    // Parse JSON message
-    JSON::ValuePtr msg = req.getJSONMessage();
-    if (msg.isNull()) msg = req.parseArgs();
+namespace cb {
+  class ResourceManager {
+    static ResourceManager *singleton;
 
-    // Log JSON call
-    LOG_DEBUG(5, "JSON Call: " << req.getURI().getPath() << '(' << *msg << ')');
+    typedef std::map<std::string, const Resource *> resources_t;
+    resources_t resources;
 
-    // Dispatch JSON call
-    (*this)(req, msg);
+    ResourceManager() {}
+    ~ResourceManager() {}
 
-    // Send reply
-    req.reply();
+  public:
+    static ResourceManager &instance();
 
-  } catch (const Exception &e) {
-    req.setContentType("application/json");
+    void add(const std::string &ns, const Resource *res);
+    const Resource *find(const std::string &path) const;
+    const Resource &get(const std::string &path) const;
 
-    if (400 <= e.getCode() && e.getCode() < 600) {
-      LOG_WARNING(e.getMessages());
-      req.sendJSONError((Status::enum_t)e.getCode(), e.getMessage());
-
-    } else {
-      LOG_ERROR(e);
-      req.sendError(e);
-    }
-  }
-
-  return true;
+    SmartPointer<std::istream> open(const std::string &path) const;
+  };
 }

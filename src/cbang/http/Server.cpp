@@ -34,22 +34,132 @@
 #include "ConnIn.h"
 #include "Request.h"
 
+#include <cbang/config.h>
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
+#include <cbang/config/Options.h>
+#include <cbang/os/SystemUtilities.h>
+#include <cbang/openssl/SSLContext.h>
 
-using namespace cb::HTTP;
-using namespace cb;
+#include <cinttypes>
+
 using namespace std;
+using namespace cb;
+using namespace cb::HTTP;
 
 
-Server::Server(Event::Base &base) : Event::Server(base) {}
+Server::Server(Event::Base &base, const SmartPointer<SSLContext> &sslCtx) :
+  Event::Server(base), sslCtx(sslCtx) {}
 
 
-SmartPointer<Request>
-Server::createRequest(
-  const SmartPointer<Conn> &connection, Method method,
-  const URI &uri, const Version &version) {
+void Server::addListenPort(const SockAddr &addr) {
+  LOG_INFO(1, "Listening for HTTP on " << addr);
+  bind(addr, 0, priority);
+}
+
+
+void Server::addSecureListenPort(const SockAddr &addr) {
+  LOG_INFO(1, "Listening for HTTPS on " << addr);
+  bind(addr, sslCtx, securePriority < 0 ? priority : securePriority);
+}
+
+
+void Server::addOptions(Options &options) {
+  Event::Server::addOptions(options);
+
+  SmartPointer<Option> opt;
+  options.pushCategory("HTTP Server");
+
+  opt = options.add("http-addresses", "A space separated list of server "
+                    "address and port pairs to listen on in the form "
+                    "<ip | hostname>[:<port>]");
+  opt->setType(Option::TYPE_STRINGS);
+  opt->setDefault("0.0.0.0:80");
+
+  options.addTarget("http-max-body-size", maxBodySize,
+                    "Maximum size of an HTTP request body.");
+  options.addTarget("http-max-headers-size", maxHeaderSize,
+                    "Maximum size of the HTTP request headers.");
+
+  options.alias("connection-timeout", "http-timeout");
+  options.alias("connection-backlog", "http-connection-backlog");
+  options.alias("max-connections",    "http-max-connections");
+  options.alias("max-ttl",            "http-max-ttl");
+
+  options.popCategory();
+
+  if (sslCtx.isSet()) {
+    options.pushCategory("HTTP Server SSL");
+    opt = options.add("https-addresses", "A space separated list of secure "
+                      "server address and port pairs to listen on in the form "
+                      "<ip | hostname>[:<port>]");
+    opt->setType(Option::TYPE_STRINGS);
+    opt->setDefault("0.0.0.0:443");
+    options.add("crl-file", "Supply a Certificate Revocation List.  Overrides "
+                "any internal CRL");
+    options.add("certificate-file", "The servers certificate file in PEM "
+                "format.")->setDefault("certificate.pem");
+    options.add("private-key-file", "The servers private key file in PEM "
+                "format.")->setDefault("private.pem");
+    options.popCategory();
+  }
+}
+
+
+void Server::init(Options &options) {
+  Event::Server::init(options);
+
+  // Configure ports
+  Option::strings_t addresses = options["http-addresses"].toStrings();
+  for (unsigned i = 0; i < addresses.size(); i++)
+    addListenPort(SockAddr::parse(addresses[i]));
+
+#ifdef HAVE_OPENSSL
+  // SSL
+  if (sslCtx.isSet()) {
+    // Configure secure ports
+    addresses = options["https-addresses"].toStrings();
+    for (unsigned i = 0; i < addresses.size(); i++)
+      addSecureListenPort(SockAddr::parse(addresses[i]));
+
+    // Load server certificate
+    // TODO should load file relative to configuration file
+    if (options["certificate-file"].hasValue()) {
+      string certFile = options["certificate-file"].toString();
+      if (SystemUtilities::exists(certFile))
+        sslCtx->useCertificateChainFile(certFile);
+      else LOG_WARNING("Certificate file not found " << certFile);
+    }
+
+    // Load server private key
+    if (options["private-key-file"].hasValue()) {
+      string priKeyFile = options["private-key-file"].toString();
+      if (SystemUtilities::exists(priKeyFile))
+        sslCtx->usePrivateKey(*SystemUtilities::open(priKeyFile));
+      else LOG_WARNING("Private key file not found " << priKeyFile);
+    }
+  }
+#endif // HAVE_OPENSSL
+}
+
+
+SmartPointer<Event::Connection> Server::createConnection() {
+  auto conn = SmartPtr(new ConnIn(*this));
+  conn->setMaxHeaderSize(maxHeaderSize);
+  conn->setMaxBodySize(maxBodySize);
+  return conn;
+}
+
+
+SmartPointer<Request> Server::createRequest(
+  const SmartPointer<Conn> &connection, Method method, const URI &uri,
+  const Version &version) {
   return new Request(connection, method, uri, version);
+}
+
+
+void Server::endRequest(Request &req) {
+  if (logPrefix) Logger::instance().setPrefix("");
 }
 
 
@@ -59,14 +169,11 @@ void Server::dispatch(Request &req) {
 }
 
 
-SmartPointer<Event::Connection> Server::createConnection() {
-  return new ConnIn(*this);
-}
+bool Server::operator()(Request &req) {
+  if (logPrefix) {
+    string prefix = String::printf("REQ%" PRIu64 ":", req.getID());
+    Logger::instance().setPrefix(prefix);
+  }
 
-
-void Server::onConnect(const SmartPointer<Event::Connection> &conn) {
-  auto c = conn.cast<ConnIn>();
-  c->setMaxHeaderSize(maxHeaderSize);
-  c->setMaxBodySize(maxBodySize);
-  c->readHeader();
+  return HandlerGroup::operator()(req);
 }

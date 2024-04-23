@@ -55,19 +55,21 @@ namespace cb {
 
   public:
     AddressRange() {}
-    AddressRange(const std::string &spec);
-    AddressRange(const SockAddr &addr) : start(addr), end(addr) {}
-    AddressRange(const SockAddr &start, const SockAddr &end);
+    AddressRange(const std::string &spec) {set(spec);}
+    AddressRange(const SockAddr &start, const SockAddr &end) {set(start, end);}
+    AddressRange(const SockAddr &addr) {setBoth(addr);}
 
-    SockAddr &getStart() {return start;}
     const SockAddr &getStart() const {return start;}
-    void setStart(const SockAddr &start) {this->start = start;}
-    SockAddr &getEnd() {return end;}
-    const SockAddr &getEnd() const {return end;}
-    void setEnd(const SockAddr &end) {this->end = end;}
+    const SockAddr &getEnd()   const {return end;}
+
+    void set(const std::string &spec);
+    void set(const SockAddr &start, const SockAddr &end);
+    void setStart(const SockAddr &start);
+    void setEnd  (const SockAddr &end);
+    void setBoth (const SockAddr &addr) {set(addr, addr);}
 
     std::string toString() const;
-    uint8_t getCIDRBits() const {return start.getCIDRBits(end);}
+    int8_t getCIDRBits() const {return start.getCIDRBits(end);}
 
     int cmp(const SockAddr &addr) const;
     bool contains(const SockAddr &addr) const {return cmp(addr) == 0;}

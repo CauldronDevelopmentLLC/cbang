@@ -48,7 +48,8 @@ namespace cb {
 
     public:
       ArgNumber(const JSON::ValuePtr &config) :
-        min(config->getNumber("min", NAN)), max(config->getNumber("max", NAN)) {}
+        min(config->getNumber("min", NAN)),
+        max(config->getNumber("max", NAN)) {}
 
       // From ArgConstraint
       void operator()(HTTP::Request &req, JSON::Value &value) const {

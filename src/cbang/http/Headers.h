@@ -56,8 +56,9 @@ namespace cb {
       void remove(const std::string &key);
       bool keyContains(const std::string &key, const std::string &value) const;
 
-      bool hasContentType() const {return has("Content-Type");}
+      bool hasContentType() const {return !getContentType().empty();}
       std::string getContentType() const;
+      bool isJSONContentType() const;
       void setContentType(const std::string &contentType);
       void guessContentType(const std::string &ext);
       bool needsClose() const;
