@@ -45,11 +45,16 @@ namespace cb {
   class Socket;
   class SSLContext;
 
+  namespace DNS {class Request;}
+
   namespace Event {
     class Server;
 
     class Connection : public FD, public Enum {
+      Server *server = 0;
+
       SmartPointer<Event> timeout;
+      SmartPointer<DNS::Request> dnsReq;
 
       SmartPointer<Socket> socket;
       SockAddr peerAddr;
@@ -62,6 +67,9 @@ namespace cb {
     public:
       Connection(Base &base);
       ~Connection();
+
+      void setServer(Server *server) {this->server = server;}
+      Server &getServer() const;
 
       void setTTL(double sec);
 
@@ -86,6 +94,9 @@ namespace cb {
 
     protected:
       void timedout();
+
+      // From FD
+      void close() override;
     };
   }
 }

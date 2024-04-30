@@ -148,7 +148,7 @@ namespace cb {
       SPSCQueue<Command> results;
       std::set<TimeoutMember> inTimeoutQ;
       std::priority_queue<Timeout> timeoutQ;
-      std::map<int, std::function<void ()> > flushing;
+      std::set<int> flushing;
 
       typedef std::map<int, SmartPointer<FDRec> > pool_t;
       pool_t pool;
@@ -167,13 +167,13 @@ namespace cb {
       // From FDPool
       void setEventPriority(int priority) override;
       int getEventPriority() const override;
-      const Rate &getReadRate() const override {return readRate;}
+      const Rate &getReadRate()  const override {return readRate;}
       const Rate &getWriteRate() const override {return writeRate;}
 
       void read(const SmartPointer<Transfer> &t) override;
       void write(const SmartPointer<Transfer> &t) override;
       void open(FD &fd) override;
-      void flush(int fd, std::function <void ()> cb) override;
+      void flush(int fd) override;
 
       void queueTimeout(uint64_t time, bool read, int fd);
       void queueComplete(const SmartPointer<Transfer> &t);

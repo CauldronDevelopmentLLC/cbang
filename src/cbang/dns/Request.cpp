@@ -49,7 +49,7 @@ Request::Request(Base &base, const std::string &request) :
 }
 
 
-Request::~Request() {timeout->del();}
+Request::~Request() {}
 
 
 void Request::cancel() {
@@ -62,17 +62,11 @@ void Request::respond(const cb::SmartPointer<Result> &result) {
   if (cancelled) return;
   timeout->del();
   this->result = result;
-  scheduleResponse();
-}
-
-
-void Request::scheduleResponse() {
-  auto self = SmartPtr(this);
-  base.getEventBase().newEvent([self] {self->callback();}, 0)->activate();
+  callback();
 }
 
 
 void Request::timedout() {
   result = new Result(DNS_ERR_TIMEOUT);
-  scheduleResponse();
+  callback();
 }

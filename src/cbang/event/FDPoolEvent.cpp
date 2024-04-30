@@ -33,6 +33,7 @@
 #include "Event.h"
 
 #include <cbang/Catch.h>
+#include <cbang/net/Socket.h>
 
 using namespace std;
 using namespace cb;
@@ -120,10 +121,8 @@ void FDPoolEvent::FDQueue::pop() {
 /******************************************************************************/
 FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, int fd) :
   pool(pool), fd(fd), readQ(true), writeQ(false) {
-  event = pool.getBase().newEvent(fd, this, &FDPoolEvent::FDRec::callback,
-                                  EF::EVENT_NO_SELF_REF);
-  timeoutEvent = pool.getBase().newEvent(this, &FDPoolEvent::FDRec::timeout,
-                                         EF::EVENT_NO_SELF_REF);
+  event = pool.getBase().newEvent(fd, this, &FDPoolEvent::FDRec::callback);
+  timeoutEvent = pool.getBase().newEvent(this, &FDPoolEvent::FDRec::timeout);
   timeoutEvent->setPriority(pool.getEventPriority());
 }
 
@@ -215,7 +214,8 @@ void FDPoolEvent::FDRec::timeout() {
 
 
 /******************************************************************************/
-FDPoolEvent::FDPoolEvent(Base &base) : base(base) {}
+FDPoolEvent::FDPoolEvent(Base &base) :
+  base(base), flushEvent(base.newEvent(this, &FDPoolEvent::flushFDs)) {}
 
 
 void FDPoolEvent::read(const cb::SmartPointer<Transfer> &t) {
@@ -236,16 +236,16 @@ void FDPoolEvent::open(FD &_fd) {
 }
 
 
-void FDPoolEvent::flush(int fd, function <void ()> cb) {
+void FDPoolEvent::flush(int fd) {
   get(fd).flush();
 
   // Defer FDRec deallocation, it may be executing
-  auto it    = fds.find(fd);
-  auto fdPtr = it->second;
-  base.newEvent([fdPtr] () {}, 0)->add();
+  auto it = fds.find(fd);
+  flushedFDs.push_back(it->second);
   fds.erase(it);
+  flushEvent->activate();
 
-  cb();
+  Socket::close((socket_t)fd);
 }
 
 
@@ -255,3 +255,6 @@ FDPoolEvent::FDRec &FDPoolEvent::get(int fd) {
   if (it == fds.end()) THROW("FD " << fd << " not found in pool");
   return *it->second;
 }
+
+
+void FDPoolEvent::flushFDs() {flushedFDs.clear();}

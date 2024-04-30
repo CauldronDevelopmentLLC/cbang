@@ -42,6 +42,23 @@ using namespace cb;
 using namespace cb::DNS;
 
 
+bool Base::Entry::isValid() const {
+  return result.isSet() && Time::now() < expires;
+}
+
+
+void Base::Entry::respond(const SmartPointer<Result> &result,
+                          uint64_t expires) {
+  this->result  = result;
+  this->expires = expires;
+
+  for (auto &req: requests)
+    req->respond(result);
+
+  requests.clear();
+}
+
+
 Base::Base(Event::Base &base, bool useSystemNS) :
   base(base), pumpEvent(base.newEvent(this, &Base::pump, 0)) {
   if (useSystemNS) initSystemNameservers();
@@ -92,15 +109,11 @@ void Base::addNameserver(const SockAddr &addr, bool system) {
 void Base::add(const SmartPointer<Request> &req) {
   if (useSystemNS && servers.empty()) initSystemNameservers();
 
-  if (servers.empty()) {
-    TRY_CATCH_ERROR(req->respond(new Result(DNS_ERR_NOSERVER)));
-    return;
-  }
-
   string id = makeID(req->getType(), req->toString());
-  auto &e = lookup(id);
+  auto &e   = lookup(id);
 
-  if (e.result.isSet()) return req->respond(e.result);
+  // Check cache
+  if (e.isValid()) return req->respond(e.result);
 
   e.attempts = 0;
   e.requests.push_back(req);
@@ -118,7 +131,7 @@ SmartPointer<Request> Base::resolve(
     // This is an already resolved address
     auto result = SmartPtr(new Result(DNS_ERR_NOERROR));
     result->addrs.push_back(addr);
-    TRY_CATCH_ERROR(req->respond(result));
+    req->respond(result);
 
   } else add(req);
 
@@ -144,10 +157,7 @@ void Base::response(Type type, const std::string &request,
                     const SmartPointer<Result> &result, unsigned ttl) {
   string id = makeID(type, request);
   auto &e   = lookup(id);
-  e.expires = Time::now() + ttl;
-  e.result  = result;
   e.attempts++;
-
   active.erase(id);
 
   LOG_DEBUG(5, "DNS: response " << result->error << " to " << id << " with "
@@ -162,10 +172,7 @@ void Base::response(Type type, const std::string &request,
   }
 
   // Respond to any active requests
-  for (auto &req: e.requests)
-    TRY_CATCH_ERROR(req->respond(result));
-
-  e.requests.clear();
+  e.respond(result, Time::now() + ttl);
 }
 
 
@@ -179,13 +186,7 @@ string Base::makeID(Type type, const string &request) {
 
 Base::Entry &Base::lookup(const string &id) {
   auto it = cache.find(id);
-
-  if (it != cache.end()) {
-    auto &e = it->second;
-    if (!e.expires || e.expires < Time::now()) e.result = 0;
-    return e;
-  }
-
+  if (it != cache.end()) return it->second;
   return cache.insert(cache_t::value_type(id, Entry())).first->second;
 }
 
@@ -205,44 +206,44 @@ void Base::pump() {
   // Send events
   while (!pending.empty()) {
     auto id = pending.front();
+    pending.pop_front();
 
-    if (active.find(id) != active.end()) pending.pop_front(); // Already active
-    else {
-      // Get cache entry
-      auto &e = lookup(id);
+    if (active.find(id) == active.end()) {
+      auto &e = lookup(id); // Get cache entry
 
       // Drop any cancelled requests
       for (auto it = e.requests.begin(); it != e.requests.end();)
         if ((*it)->isCancelled()) it = e.requests.erase(it);
         else it++;
 
-      // Skip if no requests are still waiting
-      if (e.requests.empty()) {
-        if (e.result.isNull()) cache.erase(id);
-        pending.pop_front();
-        continue;
-      }
-
-      // Find a server
-      auto &req = *e.requests.front();
-      try {
+      if (e.requests.empty())   error(e, id, DNS_ERR_NOERROR);
+      else if (servers.empty()) error(e, id, DNS_ERR_NOSERVER);
+      else {
         // Transmit request
-        bool ok = false;
-        for (unsigned i = 0; i < servers.size() && !ok; i++) {
-          auto ns = nextServer->second;
-          if (++nextServer == servers.end()) nextServer = servers.begin();
-          ok = ns->transmit(req.getType(), req.toString());
-        }
+        try {
+          bool ok = false;
+          auto &req = *e.requests.front();
 
-        if (!ok) break;
-        pending.pop_front();
-        active.insert(id);
-        continue;
-      } CATCH_DEBUG(4);
+          for (unsigned i = 0; i < servers.size() && !ok; i++) {
+            auto ns = nextServer->second;
+            if (++nextServer == servers.end()) nextServer = servers.begin();
+            ok = ns->transmit(req.getType(), req.toString());
+          }
 
-      // Failed request
-      TRY_CATCH_ERROR(req.respond(new Result(DNS_ERR_BADREQ)));
-      pending.pop_front();
+          if (!ok) break;
+          active.insert(id);
+          continue;
+        } CATCH_DEBUG(4);
+
+        // Failed request
+        error(e, id, DNS_ERR_BADREQ);
+      }
     }
   }
+}
+
+
+void Base::error(Entry &e, const std::string &id, Error error) {
+  e.respond(new Result(error));
+  cache.erase(id);
 }

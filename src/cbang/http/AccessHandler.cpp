@@ -116,8 +116,8 @@ bool AccessHandler::operator()(Request &req) {
   SmartPointer<Session> session = req.getSession();
   string user = req.getUser();
   string group;
-  bool allow;
-  bool deny;
+  bool allow = false;
+  bool deny  = false;
 
   if (checkGroup("*", allow, deny)) group = "@*";
 

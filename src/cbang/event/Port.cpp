@@ -66,7 +66,7 @@ void Port::open() {
   socket_t fd = socket->get();
 
   event = server.getBase().newEvent(
-    fd, this, &Port::accept, EVENT_READ | EVENT_PERSIST | EVENT_NO_SELF_REF);
+    fd, this, &Port::accept, EVENT_READ | EVENT_PERSIST);
   if (0 <= priority) event->setPriority(priority);
   event->add();
 }

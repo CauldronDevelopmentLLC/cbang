@@ -120,13 +120,7 @@ void Server::accept(const SockAddr &peerAddr,
   conn->setStats(stats);
   if (maxConnectionTTL) conn->setTTL(maxConnectionTTL);
 
-  auto cb = conn->getOnClose();
-  conn->setOnClose([this, conn, cb] () mutable {
-                     if (cb) cb();
-                     remove(conn);
-                     conn->setOnClose(0);
-                   });
-
+  conn->setServer(this);
   connections.insert(conn);
 
   TRY_CATCH_ERROR(conn->onConnect());

@@ -61,6 +61,10 @@ namespace cb {
         unsigned attempts = 0;
         SmartPointer<Result> result;
         std::list<SmartPointer<Request>> requests;
+
+        bool isValid() const;
+        void respond(const SmartPointer<Result> &result,
+                     uint64_t expires = 0);
       };
 
       typedef std::map<std::string, Entry> cache_t;
@@ -68,6 +72,7 @@ namespace cb {
 
       std::set<std::string>  active;
       std::list<std::string> pending;
+      std::list<std::string> ready;
 
       SockAddr bindAddr;
       unsigned maxActive      = 64;
@@ -120,6 +125,7 @@ namespace cb {
       static std::string makeID(Type type, const std::string &request);
       Entry &lookup(const std::string &id);
       void pump();
+      void error(Entry &e, const std::string &id, Error error);
     };
   }
 }

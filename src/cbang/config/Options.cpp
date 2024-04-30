@@ -149,6 +149,12 @@ void Options::load(const JSON::Value &config) {
 
       if (has(name)) get(name)->configure(config);
       else add(name, new Option(name, config));
+
+      if (config.hasList("aliases")) {
+        auto &aliases = config.getList("aliases");
+        for (unsigned i = 0; i < aliases.size(); i++)
+          alias(name, aliases.getAsString(i));
+      }
     }
 
     if (!category.empty()) popCategory();

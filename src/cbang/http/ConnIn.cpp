@@ -127,8 +127,8 @@ void ConnIn::processHeader() {
     return error(HTTP_BAD_REQUEST, e.getMessage());
   }
 
-  // Create new request
-  auto req = server.createRequest(this, method, uri, version);
+  // Create new request (Don't create circular dependency)
+  auto req = server.createRequest(SmartPhony(this), method, uri, version);
   push(req);
 
   // Read header block

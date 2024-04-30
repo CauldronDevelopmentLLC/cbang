@@ -64,7 +64,7 @@ bool Base::_threadsEnabled = false;
 
 
 Base::Base(bool withThreads, bool useSystemNS, int priorities) :
-  useSystemNS(useSystemNS) {
+  EventFactory(*this), useSystemNS(useSystemNS) {
   Socket::initialize(); // Windows needs this
 
   if (withThreads) enableThreads();
@@ -75,18 +75,25 @@ Base::Base(bool withThreads, bool useSystemNS, int priorities) :
 
 
 Base::~Base() {
-  pool.release(); // Must be before base is freed
+  deallocating = true;
+
+  // Must be released before base is freed
+  dns.release();
+  pool.release();
+
   if (base) event_base_free(base);
 }
 
 
 DNS::Base &Base::getDNS() {
+  if (deallocating) THROW("Base deallocating");
   if (dns.isNull()) dns = new DNS::Base(*this, useSystemNS);
   return *dns;
 }
 
 
 FDPool &Base::getPool() {
+  if (deallocating) THROW("Base deallocating");
   if (pool.isNull()) pool = FDPool::create(*this);
   return *pool;
 }
@@ -115,25 +122,6 @@ int Base::getNumActiveEvents() const {
 
 void Base::countActiveEventsByPriority(map<int, unsigned> &counts) const {
   event_base_foreach_event(base, count_events_by_priority, &counts);
-}
-
-
-void Base::setTimeout(callback_t cb, double t) {newEvent(cb, 0)->add(t);}
-
-
-SmartPointer<cb::Event::Event>
-Base::newEvent(callback_t cb, unsigned flags) {return newEvent(-1, cb, flags);}
-
-
-SmartPointer<cb::Event::Event>
-Base::newEvent(socket_t fd, callback_t cb, unsigned flags) {
-  return new Event(*this, fd, cb, flags);
-}
-
-
-SmartPointer<cb::Event::Event>
-Base::newSignal(int signal, callback_t cb, unsigned flags) {
-  return newEvent((socket_t)signal, cb, flags | EV_SIGNAL);
 }
 
 

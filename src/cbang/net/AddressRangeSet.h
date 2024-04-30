@@ -36,12 +36,13 @@
 #include <cbang/SmartPointer.h>
 
 #include <string>
+#include <map>
 #include <vector>
 #include <iostream>
 
 namespace cb {
   namespace JSON {class Sink;}
-  namespace DNS  {class Base;}
+  namespace DNS  {class Base; class Request;}
 }
 
 
@@ -49,6 +50,8 @@ namespace cb {
   class AddressRangeSet {
     typedef std::vector<AddressRange> ranges_t;
     ranges_t ranges;
+
+    std::map<std::string, SmartPointer<DNS::Request>> requests;
 
   public:
     AddressRangeSet() {}

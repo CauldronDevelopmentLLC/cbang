@@ -101,6 +101,9 @@ namespace cb {
       typedef std::map<int, SmartPointer<FDRec> > fds_t;
       fds_t fds;
 
+      std::vector<SmartPointer<FDRec>> flushedFDs;
+      SmartPointer<Event> flushEvent;
+
     public:
       FDPoolEvent(Base &base);
 
@@ -114,10 +117,11 @@ namespace cb {
       void read(const SmartPointer<Transfer> &t) override;
       void write(const SmartPointer<Transfer> &t) override;
       void open(FD &fd) override;
-      void flush(int fd, std::function <void ()> cb) override;
+      void flush(int fd) override;
 
     protected:
       FDRec &get(int fd);
+      void flushFDs();
     };
   }
 }

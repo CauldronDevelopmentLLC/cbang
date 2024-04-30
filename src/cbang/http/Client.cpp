@@ -68,11 +68,12 @@ void Client::send(const SmartPointer<Request> &req) const {
   }
 
   // Connect
+  auto &_req = *req; // Don't create circular ref
   conn->connect(
     uri.getHost(), uri.getPort(), bindAddr, sslCtx,
-    [req] (bool success) {
-      if (success) req->getConnection()->makeRequest(req);
-      else req->onResponse(Event::ConnectionError::CONN_ERR_CONNECT);
+    [&_req] (bool success) {
+      if (success) _req.getConnection()->makeRequest(SmartPhony(&_req));
+      else _req.onResponse(Event::ConnectionError::CONN_ERR_CONNECT);
     });
 }
 

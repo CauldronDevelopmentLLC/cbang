@@ -40,7 +40,7 @@ using namespace cb::Event;
 StreamEventHandler::StreamEventHandler(
   Base &base, socket_t handle, unsigned flags) :
   event(base.newEvent(handle, this, &StreamEventHandler::onEvent,
-                      EVENT_PERSIST | EVENT_NO_SELF_REF | flags)) {}
+                      EVENT_PERSIST | flags)) {}
 
 
 StreamEventHandler::~StreamEventHandler() {}

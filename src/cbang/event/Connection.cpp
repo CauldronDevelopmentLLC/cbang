@@ -50,7 +50,7 @@ uint64_t Connection::nextID = 0;
 
 
 Connection::Connection(Base &base) : FD(base),
-  timeout(base.newEvent(this, &Connection::timedout, EVENT_NO_SELF_REF)) {
+  timeout(base.newEvent(this, &Connection::timedout)) {
   LOG_DEBUG(4, "Connection opened");
 }
 
@@ -59,6 +59,13 @@ Connection::~Connection() {
   LOG_DEBUG(4, "Connection closed");
   // Prevent socket from closing FD
   if (socket.isSet()) TRY_CATCH_ERROR(socket->adopt());
+  if (dnsReq.isSet()) dnsReq->cancel();
+}
+
+
+Server &Connection::getServer() const {
+  if (!server) THROW("Server not set");
+  return *server;
 }
 
 
@@ -139,15 +146,11 @@ void Connection::connect(
 
     LOG_DEBUG(4, "Connection with fd " << socket->get());
 
-    // DNS request reference
-    struct Ref {SmartPointer<DNS::Request> dnsReq;};
-    SmartPointer<Ref> ref = new Ref;
-
     // DNS callback
     auto dnsCB =
-      [this, ref, hostname, port, cb] (
+      [this, hostname, port, cb] (
         DNS::Error error, const vector<SockAddr> &addrs) {
-        ref->dnsReq.release();
+        dnsReq.release();
 
         if (error || addrs.empty()) {
           LOG_WARNING("DNS lookup failed for " << hostname);
@@ -177,7 +180,7 @@ void Connection::connect(
       };
 
     // Start async DNS lookup
-    ref->dnsReq = getBase().getDNS().resolve(hostname, dnsCB);
+    dnsReq = getBase().getDNS().resolve(hostname, dnsCB);
     return;
 
   } CATCH_ERROR;
@@ -190,4 +193,11 @@ void Connection::timedout() {
   if (stats.isSet()) stats->event("timedout");
   LOG_DEBUG(3, "Connection timedout");
   close();
+}
+
+
+void Connection::close() {
+  auto self = SmartPtr(this);
+  if (server) server->remove(this);
+  FD::close();
 }

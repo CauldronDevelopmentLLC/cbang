@@ -389,7 +389,7 @@ void Websocket::schedulePong() {
 
   if (pongEvent.isNull()) {
     auto cb = [this] () {pong();};
-    pongEvent = getConnection()->getBase().newEvent(cb, EVENT_NO_SELF_REF);
+    pongEvent = getConnection()->getBase().newEvent(cb);
   }
 
   if (!pongEvent->isPending()) pongEvent->add(5);
@@ -401,7 +401,7 @@ void Websocket::schedulePing() {
 
   if (pingEvent.isNull()) {
     auto cb = [this] () {ping();};
-    pingEvent = getConnection()->getBase().newEvent(cb, EVENT_NO_SELF_REF);
+    pingEvent = getConnection()->getBase().newEvent(cb);
   }
 
   double timeout = getConnection()->getReadTimeout();

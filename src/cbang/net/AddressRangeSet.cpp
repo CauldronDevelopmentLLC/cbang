@@ -51,15 +51,19 @@ void AddressRangeSet::insert(const string &spec, DNS::Base *dns) {
     } catch (const Exception &e) {
       if (!dns) throw;
 
-      auto cb = [this, token] (
+      auto colon  = spec.find_last_of(':');
+      string name = token.substr(0, colon);
+
+      auto cb = [this, token, name] (
         DNS::Error error, const vector<SockAddr> &addrs) {
         for (auto &addr: addrs)
           insert(AddressRange(addr));
+
+        requests.erase(name);
       };
 
-      auto colon  = spec.find_last_of(':');
-      string addr = token.substr(0, colon);
-      dns->resolve(addr, cb);
+      if (requests.find(name) == requests.end())
+        requests[name] = dns->resolve(name, cb);
     }
 }
 

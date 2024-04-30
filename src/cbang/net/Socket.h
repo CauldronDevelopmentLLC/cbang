@@ -124,7 +124,7 @@ namespace cb {
       uint8_t *data, std::streamsize length, unsigned flags = 0,
       SockAddr *addr = 0);
 
-    /// Close an open connection.
+    static void close(socket_t socket);
     virtual void close();
 
     virtual socket_t get() const {return socket;}

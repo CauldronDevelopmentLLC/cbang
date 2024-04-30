@@ -65,7 +65,6 @@ namespace cb {
       virtual void callback() = 0;
 
     private:
-      void scheduleResponse();
       void timedout();
     };
 
