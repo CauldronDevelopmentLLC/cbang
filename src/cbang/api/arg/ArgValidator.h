@@ -57,7 +57,7 @@ namespace cb {
       void add(const SmartPointer<ArgConstraint> &constraint);
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const;
+      void operator()(HTTP::Request &req, JSON::Value &value) const override;
     };
   }
 }

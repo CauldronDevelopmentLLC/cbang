@@ -45,7 +45,7 @@ namespace cb {
         const std::string &sql) : Query(api, req, sql) {}
 
       // From Query
-      void callback(state_t state);
+      void callback(state_t state) override;
     };
   }
 }

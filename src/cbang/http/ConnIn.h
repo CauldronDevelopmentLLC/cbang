@@ -53,7 +53,7 @@ namespace cb {
       void readHeader();
 
       // From Event::Connection
-      void onConnect() {readHeader();}
+      void onConnect() override {readHeader();}
 
     protected:
       void processHeader();

@@ -64,8 +64,8 @@ namespace cb {
         base(base), child(child), cmd(cmd), req(req) {}
 
       // From AsyncSubprocess
-      void exec();
-      void done();
+      void exec() override;
+      void done() override;
     };
   }
 }

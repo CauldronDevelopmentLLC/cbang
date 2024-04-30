@@ -78,8 +78,8 @@ namespace cb {
       void addSecureListenPort(const SockAddr &addr);
 
       // From Event::Server
-      void addOptions(Options &options);
-      void init(Options &options);
+      void addOptions(Options &options) override;
+      void init(Options &options) override;
       SmartPointer<Event::Connection> createConnection() override;
 
       virtual SmartPointer<Request>
@@ -90,7 +90,7 @@ namespace cb {
       void dispatch(Request &req);
 
       // From RequestHandler
-      bool operator()(Request &req);
+      bool operator()(Request &req) override;
     };
   }
 }

@@ -56,7 +56,7 @@ namespace cb {
       void processProfile(const JSON::ValuePtr &profile);
 
       // From Query
-      void callback(state_t state);
+      void callback(state_t state) override;
     };
   }
 }

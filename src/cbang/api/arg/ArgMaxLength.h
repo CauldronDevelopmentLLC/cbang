@@ -46,7 +46,7 @@ namespace cb {
         max(config->getU32("max")) {}
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const {
+      void operator()(HTTP::Request &req, JSON::Value &value) const override {
         if (max < value.asString().length())
           CBANG_THROW("Must be no more than " << max << " chars long");
       }

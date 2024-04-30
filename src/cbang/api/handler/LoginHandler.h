@@ -51,7 +51,7 @@ namespace cb {
       void listProviders(HTTP::Request &req);
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

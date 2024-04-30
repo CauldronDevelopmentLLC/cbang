@@ -46,7 +46,7 @@ namespace cb {
       DocsHandler(const JSON::ValuePtr &config, const JSON::ValuePtr &docs);
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

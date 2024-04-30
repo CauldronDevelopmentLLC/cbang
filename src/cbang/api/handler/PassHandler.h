@@ -39,7 +39,7 @@ namespace cb {
     class PassHandler : public HTTP::RequestHandler {
     public:
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) {return false;}
+      bool operator()(HTTP::Request &req) override {return false;}
     };
   }
 }

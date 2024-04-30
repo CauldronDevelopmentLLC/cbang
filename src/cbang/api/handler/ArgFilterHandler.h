@@ -50,7 +50,7 @@ namespace cb {
                        SmartPointer<HTTP::RequestHandler> &child);
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

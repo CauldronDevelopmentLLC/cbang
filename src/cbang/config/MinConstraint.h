@@ -63,6 +63,6 @@ namespace cb {
     }
 
 
-    void dump(JSON::Sink &sink) const {sink.insert("min", minimum);}
+    void dump(JSON::Sink &sink) const override {sink.insert("min", minimum);}
   };
 }
