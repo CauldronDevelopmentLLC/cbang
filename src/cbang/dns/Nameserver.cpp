@@ -136,8 +136,7 @@ void Nameserver::start() {
   if (!bind.isNull() && !addr.isLoopback()) socket->bind(bind);
 
   event = base.getEventBase().newEvent(
-    socket->get(), this, &Nameserver::ready,
-    EVENT_READ | EVENT_PERSIST | EVENT_NO_SELF_REF);
+    socket->get(), this, &Nameserver::ready, EVENT_READ | EVENT_PERSIST);
   event->add();
 }
 

@@ -29,21 +29,26 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "EventFactory.h"
+#include "Event.h"
 
-#include <cbang/SmartPointer.h>
-
-#include <iostream>
-
-
-namespace cb {
-  struct TransferCallback {
-    virtual ~TransferCallback() {}
-    virtual bool transferCallback(std::streamsize bytes) = 0;
-  };
+using namespace cb;
+using namespace cb::Event;
 
 
-  std::streamsize transfer(std::istream &in, std::ostream &out,
-                           std::streamsize length = 0,
-                           SmartPointer<TransferCallback> callback = 0);
+SmartPointer<cb::Event::Event> EventFactory::newEvent(
+  callback_t cb, unsigned flags) {
+  return newEvent(-1, cb, flags);
+}
+
+
+SmartPointer<cb::Event::Event> EventFactory::newEvent(
+  socket_t fd, callback_t cb, unsigned flags) {
+  return new Event(base, fd, cb, flags);
+}
+
+
+SmartPointer<cb::Event::Event> EventFactory::newSignal(
+  int signal, callback_t cb, unsigned flags) {
+  return newEvent((socket_t)signal, cb, flags | EVENT_SIGNAL);
 }

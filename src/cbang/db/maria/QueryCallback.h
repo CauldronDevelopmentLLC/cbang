@@ -29,38 +29,38 @@
 
 \******************************************************************************/
 
-#include "Transfer.h"
+#pragma once
 
-#include <algorithm>
-
-using namespace cb;
-using namespace std;
-
-#define BUFFER_SIZE ((streamsize)64 * 1024)
+#include "EventDB.h"
 
 
-streamsize cb::transfer(istream &in, ostream &out, streamsize length,
-                        SmartPointer<TransferCallback> callback) {
-  char buffer[BUFFER_SIZE];
-  streamsize total = 0;
+namespace cb {
+  namespace MariaDB {
+    class QueryCallback {
+      EventDB &db;
+      EventDB::callback_t cb;
+      std::string query;
+      unsigned retry;
 
-  while (!in.fail() && !out.fail()) {
-    in.read(buffer, length ? min(length, BUFFER_SIZE) : BUFFER_SIZE);
-    streamsize bytes = in.gcount();
-    out.write(buffer, bytes);
+      typedef enum {
+        STATE_START,
+        STATE_QUERY,
+        STATE_STORE,
+        STATE_FETCH,
+        STATE_FREE,
+        STATE_NEXT,
+        STATE_DONE,
+      } state_t;
 
-    total += bytes;
-    if (!callback.isNull() && !callback->transferCallback(bytes)) break;
+      state_t state = STATE_START;
 
-    if (length) {
-      length -= bytes;
-      if (!length) break;
-    }
+    public:
+      QueryCallback(EventDB &db, EventDB::callback_t cb,
+                    const std::string &query, unsigned retry = 5);
+
+      void call(EventDB::state_t state);
+      bool next();
+      void operator()(Event::Event &event, int fd, unsigned flags);
+    };
   }
-
-  out.flush();
-
-  if (out.fail() || length) THROW("Transfer failed");
-
-  return total;
 }

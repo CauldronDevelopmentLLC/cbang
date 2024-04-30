@@ -45,7 +45,7 @@ bool ConcurrentPool::Task::shouldShutdown() {
 
 ConcurrentPool::ConcurrentPool(Base &base, unsigned size) :
   ThreadPool(size), base(base),
-  event(base.newEvent(this, &ConcurrentPool::complete, EF::EVENT_NO_SELF_REF)) {
+  event(base.newEvent(this, &ConcurrentPool::complete)) {
   if (!Base::threadsEnabled())
     THROW("Cannot use Event::ConcurrentPool without threads enabled.  "
           "Call Event::Base::enableThreads() before creating Event::Base.");

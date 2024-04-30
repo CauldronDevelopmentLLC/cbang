@@ -36,8 +36,6 @@
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Progress.h>
 
-#include <functional>
-
 
 namespace cb {
   namespace Event {
@@ -54,12 +52,12 @@ namespace cb {
 
       virtual void setEventPriority(int priority) = 0;
       virtual int getEventPriority() const = 0;
-      virtual const Rate &getReadRate() const = 0;
+      virtual const Rate &getReadRate()  const = 0;
       virtual const Rate &getWriteRate() const = 0;
-      virtual void read(const SmartPointer<Transfer> &t) = 0;
+      virtual void read (const SmartPointer<Transfer> &t) = 0;
       virtual void write(const SmartPointer<Transfer> &t) = 0;
       virtual void open(FD &fd) = 0;
-      virtual void flush(int fd, std::function <void ()> cb) = 0;
+      virtual void flush(int fd) = 0;
     };
   }
 }

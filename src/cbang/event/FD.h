@@ -37,8 +37,6 @@
 
 #include <cbang/util/Progress.h>
 
-#include <queue>
-#include <functional>
 #include <cstdint>
 
 
@@ -53,8 +51,6 @@ namespace cb {
 
       unsigned readTimeout  = 0;
       unsigned writeTimeout = 0;
-
-      std::function<void ()> onClose;
 
       uint64_t start = Time::now();
       Progress readProgress;
@@ -86,9 +82,6 @@ namespace cb {
 
       unsigned getWriteTimeout() const {return writeTimeout;}
       void setWriteTimeout(unsigned timeout);
-
-      std::function<void ()> getOnClose() const {return onClose;}
-      void setOnClose(std::function<void ()> cb) {onClose = cb;}
 
       uint64_t getStart() const {return start;}
 

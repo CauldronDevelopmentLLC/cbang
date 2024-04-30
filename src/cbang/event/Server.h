@@ -52,10 +52,10 @@ namespace cb {
     class Server : public Enum {
       Base &base;
 
-      typedef std::list<SmartPointer<Port> > ports_t;
+      typedef std::list<SmartPointer<Port>> ports_t;
       ports_t ports;
 
-      typedef std::set<SmartPointer<Connection> > connections_t;
+      typedef std::set<SmartPointer<Connection>> connections_t;
       connections_t connections;
 
       int readTimeout = 50;

@@ -159,8 +159,7 @@ void Conn::pop() {
 
 
 void Conn::close() {
-  SmartPointer<Conn> self(this); // Make sure we don't get deallocated
-  Event::Connection::close();
-  // Must be after close so all transactions have cleared
+  auto self = SmartPtr(this);
   while (!requests.empty()) pop();
+  Event::Connection::close();
 }

@@ -51,8 +51,6 @@ namespace cb {
     protected:
       event *e;
       callback_t cb;
-      bool selfReferencing;
-      SmartPointer<Event> self;
 
     public:
       Event(Base &base, socket_t fdOrSignal, callback_t cb, unsigned flags);
@@ -62,9 +60,6 @@ namespace cb {
 
       callback_t getCallback() const {return cb;}
       void setCallback(callback_t cb) {this->cb = cb;}
-
-      bool getSelfReferencing() const {return selfReferencing;}
-      void setSelfReferencing(bool enable);
 
       double getTimeout() const;
 

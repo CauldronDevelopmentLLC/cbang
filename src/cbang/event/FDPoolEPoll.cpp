@@ -291,8 +291,6 @@ void FDPoolEPoll::FDRec::update() {
 FDPoolEPoll::FDPoolEPoll(Base &base) :
   event(base.newEvent(this, &FDPoolEPoll::processResults)) {
 
-  event->setSelfReferencing(false);
-
   fd = epoll_create1(EPOLL_CLOEXEC);
   if (!fd) THROW("Failed to create epoll");
   start();
@@ -328,11 +326,12 @@ void FDPoolEPoll::open(FD &fd) {
 }
 
 
-void FDPoolEPoll::flush(int fd, function <void ()> cb) {
+void FDPoolEPoll::flush(int fd) {
   if (fd < 0) THROW("Invalid fd " << fd);
   if (flushing.find(fd) != flushing.end())
     THROW("FD " << fd << " already flushing");
-  flushing[fd] = cb;
+
+  flushing.insert(fd);
   queueCommand(CMD_FLUSH, fd, 0);
 }
 
@@ -398,16 +397,15 @@ void FDPoolEPoll::processResults() {
     FD &fd = *it->second;
 
     // Drop results from flushing FDs
-    auto it2 = flushing.find(cmd.fd);
-    if (it2 != flushing.end() && cmd.cmd != CMD_FLUSHED) {
+    if (flushing.find(cmd.fd) != flushing.end() && cmd.cmd != CMD_FLUSHED) {
       results.pop();
       continue;
     }
 
     switch (cmd.cmd) {
     case CMD_FLUSHED:
-      if (it2->second) it2->second(); // Call callback
-      flushing.erase(it2);
+      ::close(cmd.fd);
+      flushing.erase(cmd.fd);
       fds.erase(cmd.fd);
       break;
 

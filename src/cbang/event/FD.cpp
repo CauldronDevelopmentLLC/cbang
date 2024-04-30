@@ -37,13 +37,7 @@
 #include <cbang/Catch.h>
 #include <cbang/time/Time.h>
 #include <cbang/log/Logger.h>
-
-// For close()
-#ifdef _WIN32
-#include <cbang/net/Winsock.h>
-#else
-#include <unistd.h>
-#endif
+#include <cbang/net/Socket.h>
 
 using namespace cb::Event;
 using namespace cb;
@@ -51,16 +45,6 @@ using namespace std;
 
 #undef CBANG_LOG_PREFIX
 #define CBANG_LOG_PREFIX "FD" << getFD() << ':'
-
-namespace {
-  void close_fd(int fd) {
-#ifdef _WIN32
-    closesocket((SOCKET)fd);
-#else
-    ::close(fd);
-#endif
-  }
-}
 
 
 FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
@@ -75,7 +59,8 @@ FD::~FD () {
 
   if (fd != -1) {
     int fd = this->fd;
-    TRY_CATCH_ERROR(base.getPool().flush(fd, [fd] () {close_fd(fd);}));
+    if (!base.isDeallocating()) TRY_CATCH_ERROR(base.getPool().flush(fd));
+    else Socket::close((socket_t)fd);
   }
 }
 
@@ -128,16 +113,9 @@ void FD::close() {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
   if (fd != -1) {
-    auto onClose = this->onClose;
     int fd = this->fd;
     this->fd = -1;
 
-    auto cb =
-      [fd, onClose] () {
-        close_fd(fd);
-        if (onClose) onClose();
-      };
-
-    base.getPool().flush(fd, cb);
+    base.getPool().flush(fd);
   }
 }

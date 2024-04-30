@@ -32,7 +32,7 @@
 #include "StreamEventBuffer.h"
 #include "Event.h"
 
-#include <event2/util.h> // For evutil_closesocket()
+#include <cbang/net/Socket.h>
 
 using namespace cb;
 using namespace cb::Event;
@@ -48,7 +48,7 @@ void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
 
 void StreamEventBuffer::write() {
   write(event->getFD(), 1e6);
-  if (!getLength()) evutil_closesocket(handle);
+  if (!getLength()) Socket::close(handle);
 }
 
 

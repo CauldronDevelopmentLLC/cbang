@@ -41,8 +41,11 @@ namespace cb {
   namespace JSON {class Value;}
 
   namespace MariaDB {
+    class QueryCallback;
+
     class EventDB : public DB {
       Event::Base &base;
+      SmartPointer<Event::Event> event;
 
     public:
       typedef enum {
@@ -64,11 +67,6 @@ namespace cb {
 
       unsigned getEventFlags() const;
 
-      void newEvent(Event::Base::callback_t cb) const;
-      void renewEvent(Event::Event &e) const;
-      void addEvent(Event::Event &e) const;
-
-      void callback(callback_t cb);
       void connect(callback_t cb,
                    const std::string &host = "localhost",
                    const std::string &user = "root",
@@ -121,6 +119,17 @@ namespace cb {
       using DB::connect;
       using DB::close;
       using DB::query;
+
+    protected:
+      static unsigned eventFlagsToDBReady(unsigned flags);
+
+      void newEvent(Event::Base::callback_t cb);
+      void renewEvent() const;
+      void addEvent() const;
+
+      void callback(callback_t cb);
+
+      friend class QueryCallback;
     };
   }
 }

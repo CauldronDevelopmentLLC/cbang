@@ -30,6 +30,7 @@
 \******************************************************************************/
 
 #include "EventDB.h"
+#include "QueryCallback.h"
 
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
@@ -46,137 +47,7 @@ using namespace cb::MariaDB;
 using namespace cb::Event;
 
 
-namespace {
-  unsigned event_flags_to_db_ready(unsigned flags) {
-    unsigned ready = 0;
-
-    if (flags & EventFlag::EVENT_READ)    ready |= DB::READY_READ;
-    if (flags & EventFlag::EVENT_WRITE)   ready |= DB::READY_WRITE;
-    if (flags & EventFlag::EVENT_CLOSED)  ready |= DB::READY_EXCEPT;
-    if (flags & EventFlag::EVENT_TIMEOUT) ready |= DB::READY_TIMEOUT;
-
-    return ready;
-  }
-
-  class QueryCallback {
-    EventDB &db;
-    EventDB::callback_t cb;
-    string query;
-    unsigned retry;
-
-    typedef enum {
-      STATE_START,
-      STATE_QUERY,
-      STATE_STORE,
-      STATE_FETCH,
-      STATE_FREE,
-      STATE_NEXT,
-      STATE_DONE,
-    } state_t;
-
-    state_t state;
-
-  public:
-    QueryCallback(EventDB &db, EventDB::callback_t cb, const string &query,
-                  unsigned retry = 5) :
-      db(db), cb(cb), query(query), retry(retry),
-      state(STATE_START) {}
-
-
-    void call(EventDB::state_t state) {
-      try {
-        cb(state);
-        return;
-      } CATCH_ERROR;
-
-      if (state != EventDB::EVENTDB_ERROR && state != EventDB::EVENTDB_DONE)
-        try {
-          cb(EventDB::EVENTDB_ERROR);
-        } CATCH_ERROR;
-    }
-
-
-    bool next() {
-      switch (state) {
-      case STATE_START:
-        state = STATE_QUERY;
-        LOG_DEBUG(5, "SQL: " << query);
-        if (!db.queryNB(query)) return false;
-
-      case STATE_QUERY:
-        state = STATE_STORE;
-        if (!db.storeResultNB()) return false;
-
-      case STATE_STORE:
-        if (!db.haveResult()) {
-          if (db.moreResults()) state = STATE_NEXT;
-          else state = STATE_DONE;
-          return next();
-        }
-
-        call(EventDB::EVENTDB_BEGIN_RESULT);
-        state = STATE_FETCH;
-        if (!db.fetchRowNB()) return false;
-
-      case STATE_FETCH:
-        while (db.haveRow()) {
-          call(EventDB::EVENTDB_ROW);
-          if (!db.fetchRowNB()) return false;
-        }
-        state = STATE_FREE;
-        if (!db.freeResultNB()) return false;
-
-      case STATE_FREE:
-        call(EventDB::EVENTDB_END_RESULT);
-
-        if (!db.moreResults()) {
-          state = STATE_DONE;
-          return next();
-        }
-
-      case STATE_NEXT:
-        state = STATE_QUERY;
-        if (!db.nextResultNB()) return false;
-        return next();
-
-      case STATE_DONE:
-        LOG_DEBUG(6, "EVENTDB_DONE");
-        call(EventDB::EVENTDB_DONE);
-        return true;
-
-      default: THROW("Invalid state");
-      }
-    }
-
-
-    void operator()(Event::Event &event, int fd, unsigned flags) {
-      try {
-        if (db.continueNB(event_flags_to_db_ready(flags))) {
-          if (!next()) db.renewEvent(event);
-        } else db.addEvent(event);
-
-      } catch (const Exception &e) {
-        // Retry deadlocks
-        if (db.getErrorNumber() == ER_LOCK_DEADLOCK && --retry) {
-          LOG_WARNING("DB deadlock detected, retrying");
-          call(EventDB::EVENTDB_RETRY);
-          state = STATE_START;
-          if (!next()) db.renewEvent(event);
-
-        } else {
-          LOG_DEBUG(5, e);
-          call(EventDB::EVENTDB_ERROR);
-        }
-      }
-    }
-  };
-}
-
-
 EventDB::EventDB(Base &base, st_mysql *db) : DB(db), base(base) {}
-
-
-// TODO Error when EventDB deallocated while events are still outstanding.
 
 
 unsigned EventDB::getEventFlags() const {
@@ -185,42 +56,6 @@ unsigned EventDB::getEventFlags() const {
     (waitWrite()   ? Base::EVENT_WRITE   : 0) |
     (waitExcept()  ? Base::EVENT_CLOSED  : 0) |
     (waitTimeout() ? Base::EVENT_TIMEOUT : 0);
-}
-
-
-void EventDB::newEvent(Base::callback_t cb) const {
-  assertPending();
-  addEvent(*base.newEvent(getSocket(), cb, getEventFlags()));
-}
-
-
-void EventDB::renewEvent(Event::Event &e) const {
-  assertPending();
-  e.renew(getSocket(), getEventFlags());
-  addEvent(e);
-}
-
-
-void EventDB::addEvent(Event::Event &e) const {
-  if (waitTimeout()) e.add(getTimeout());
-  else e.add();
-}
-
-
-void EventDB::callback(callback_t cb) {
-  auto response =
-    [this, cb] (Event::Event &e, int fd, unsigned flags) {
-      try {
-        if (continueNB(event_flags_to_db_ready(flags)))
-          TRY_CATCH_ERROR(cb(EventDB::EVENTDB_DONE));
-        else addEvent(e);
-
-      } catch (const Exception &e) {
-        TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));
-      }
-    };
-
-  newEvent(response);
 }
 
 
@@ -272,4 +107,53 @@ void EventDB::query(callback_t cb, const string &s,
     };
 
   if (isPending() || !queryCB->next()) newEvent(reply);
+}
+
+
+unsigned EventDB::eventFlagsToDBReady(unsigned flags) {
+  unsigned ready = 0;
+
+  if (flags & EventFlag::EVENT_READ)    ready |= DB::READY_READ;
+  if (flags & EventFlag::EVENT_WRITE)   ready |= DB::READY_WRITE;
+  if (flags & EventFlag::EVENT_CLOSED)  ready |= DB::READY_EXCEPT;
+  if (flags & EventFlag::EVENT_TIMEOUT) ready |= DB::READY_TIMEOUT;
+
+  return ready;
+}
+
+
+void EventDB::newEvent(Base::callback_t cb) {
+  if (event.isSet() && event->isPending()) THROW("Event already pending");
+  assertPending();
+  event = base.newEvent(getSocket(), cb, getEventFlags());
+}
+
+
+void EventDB::renewEvent() const {
+  assertPending();
+  event->renew(getSocket(), getEventFlags());
+  addEvent();
+}
+
+
+void EventDB::addEvent() const {
+  if (waitTimeout()) event->add(getTimeout());
+  else event->add();
+}
+
+
+void EventDB::callback(callback_t cb) {
+  auto response =
+    [this, cb] (Event::Event &e, int fd, unsigned flags) {
+      try {
+        if (continueNB(eventFlagsToDBReady(flags)))
+          TRY_CATCH_ERROR(cb(EventDB::EVENTDB_DONE));
+        else addEvent();
+
+      } catch (const Exception &e) {
+        TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));
+      }
+    };
+
+  newEvent(response);
 }

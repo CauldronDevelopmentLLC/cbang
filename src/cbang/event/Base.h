@@ -31,12 +31,8 @@
 
 #pragma once
 
-#include "EventFlag.h"
+#include "EventFactory.h"
 
-#include <cbang/SmartPointer.h>
-#include <cbang/net/SocketType.h>
-
-#include <functional>
 #include <map>
 
 struct event_base;
@@ -49,9 +45,10 @@ namespace cb {
     class Event;
     class FDPool;
 
-    class Base : public EventFlag {
+    class Base : public EventFactory {
       static bool _threadsEnabled;
 
+      bool deallocating = false;
       event_base *base;
 
       bool useSystemNS;
@@ -59,18 +56,11 @@ namespace cb {
       SmartPointer<FDPool> pool;
 
     public:
-      template <class T> struct Callback {
-        typedef void (T::*member_t)(Event &, int, unsigned);
-        typedef void (T::*bare_member_t)();
-      };
-
-      typedef std::function<void (Event &, int, unsigned)> callback_t;
-      typedef std::function<void ()> bare_callback_t;
-
       Base(bool withThreads = false, bool useSystemNS = true,
            int priorities = -1);
       ~Base();
 
+      bool isDeallocating() const {return deallocating;}
       struct event_base *getBase() const {return base;}
 
       DNS::Base &getDNS();
@@ -82,81 +72,6 @@ namespace cb {
       int getNumEvents() const;
       int getNumActiveEvents() const;
       void countActiveEventsByPriority(std::map<int, unsigned> &counts) const;
-
-      void setTimeout(callback_t cb, double t);
-      void setTimeout(bare_callback_t cb, double t) {setTimeout(bind(cb), t);}
-
-      SmartPointer<Event> newEvent(callback_t cb,
-                                   unsigned flags = EVENT_PERSIST);
-      SmartPointer<Event> newEvent(socket_t fd, callback_t cb,
-                                   unsigned flags = EVENT_PERSIST);
-      SmartPointer<Event> newSignal(int signal, callback_t cb,
-                                    unsigned flags = EVENT_PERSIST);
-
-      // Bare Callbacks
-      callback_t bind(bare_callback_t cb)
-      {return [cb] (Event &, int, unsigned) {cb();};}
-
-      SmartPointer<Event> newEvent(bare_callback_t cb,
-                                   unsigned flags = EVENT_PERSIST)
-      {return newEvent(bind(cb), flags);}
-
-      SmartPointer<Event>
-      newEvent(socket_t fd, bare_callback_t cb, unsigned flags = EVENT_PERSIST)
-        {return newEvent(fd, bind(cb), flags);}
-
-      SmartPointer<Event> newSignal(int signal, bare_callback_t cb,
-                                    unsigned flags = EVENT_PERSIST)
-      {return newSignal(signal, bind(cb), flags);}
-
-
-      // Member Callbacks
-      template <class T>
-      callback_t bind(T *obj, typename Callback<T>::member_t member) {
-        using namespace std::placeholders;
-        return std::bind(member, obj, _1, _2, _3);
-      }
-
-      template <class T> SmartPointer<Event> newEvent(
-        T *obj, typename Callback<T>::member_t member,
-        unsigned flags = EVENT_PERSIST)
-      {return newEvent(bind(obj, member), flags);}
-
-      template <class T>
-      SmartPointer<Event> newEvent(socket_t fd, T *obj,
-                                   typename Callback<T>::member_t member,
-                                   unsigned flags = EVENT_PERSIST)
-        {return newEvent(fd, bind(obj, member), flags);}
-
-      template <class T> SmartPointer<Event>
-      newSignal(int signal, T *obj, typename Callback<T>::member_t member,
-                unsigned flags = EVENT_PERSIST)
-      {return newSignal(signal, bind(obj, member), flags);}
-
-
-      // Bare Member Callbacks
-      template <class T>
-      callback_t bind(T *obj, typename Callback<T>::bare_member_t member) {
-        return bind(std::bind(member, obj));
-      }
-
-      template <class T>
-      SmartPointer<Event> newEvent(
-        T *obj, typename Callback<T>::bare_member_t member,
-        unsigned flags = EVENT_PERSIST)
-      {return newEvent(bind(obj, member), flags);}
-
-      template <class T>
-      SmartPointer<Event> newEvent(socket_t fd, T *obj,
-                                   typename Callback<T>::bare_member_t member,
-                                   unsigned flags)
-        {return newEvent(fd, bind(obj, member), flags);}
-
-      template <class T> SmartPointer<Event> newSignal(
-        int signal, T *obj, typename Callback<T>::bare_member_t member,
-        unsigned flags = EVENT_PERSIST)
-      {return newSignal(signal, bind(obj, member), flags);}
-
 
       void dispatch();
       void loop();

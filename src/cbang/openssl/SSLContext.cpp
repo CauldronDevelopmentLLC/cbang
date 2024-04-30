@@ -162,13 +162,13 @@ void SSLContext::setVerifyPeer(bool verifyClientOnce, bool failIfNoPeerCert,
 
 
 void SSLContext::addClientCA(const Certificate &cert) {
-  if (!SSL_CTX_add_client_CA(ctx, X509_dup(cert.getX509())))
+  if (!SSL_CTX_add_client_CA(ctx, cert.getX509()))
     THROW("Failed to add client CA: " << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::useCertificate(const Certificate &cert) {
-  if (!SSL_CTX_use_certificate(ctx, X509_dup(cert.getX509())))
+  if (!SSL_CTX_use_certificate(ctx, cert.getX509()))
     THROW("Failed to use certificate: " << cb::SSL::getErrorStr());
 }
 
@@ -220,7 +220,7 @@ void SSLContext::usePrivateKey(istream &stream) {
 
 void SSLContext::addTrustedCA(const Certificate &cert) {
   X509_STORE *store = getStore();
-  if (!X509_STORE_add_cert(store, X509_dup(cert.getX509())))
+  if (!X509_STORE_add_cert(store, cert.getX509()))
     THROW("Failed to add certificate to store " << cb::SSL::getErrorStr());
 }
 

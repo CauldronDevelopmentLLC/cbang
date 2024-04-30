@@ -347,6 +347,15 @@ streamsize Socket::read(
 }
 
 
+void Socket::close(socket_t socket) {
+#ifdef _WIN32
+  closesocket((SOCKET)socket);
+#else
+  ::close(socket);
+#endif
+}
+
+
 void Socket::close() {
   if (!isOpen()) return;
 
@@ -356,11 +365,7 @@ void Socket::close() {
     connected = false;
   }
 
-#ifdef _WIN32
-  closesocket((SOCKET)socket);
-#else
-  ::close(socket);
-#endif
+  close(socket);
 
   socket = INVALID_SOCKET;
 }

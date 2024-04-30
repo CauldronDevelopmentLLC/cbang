@@ -55,25 +55,12 @@ namespace {
 Event::Event(Base &base, cb::socket_t fdOrSignal, callback_t cb,
              unsigned flags) :
   e(event_new(base.getBase(), fdOrSignal, flags & 0xff, event_cb, this)),
-  cb(cb), selfReferencing(!(flags & EVENT_NO_SELF_REF)) {
-  if (!e) THROW("Failed to create event");
-}
+  cb(cb) {if (!e) THROW("Failed to create event");}
 
 
 Event::~Event() {
   LOG_DEBUG(6, CBANG_FUNC << "() " << Debugger::getStackTrace());
   if (e) event_free(e);
-}
-
-
-void Event::setSelfReferencing(bool enable) {
-  selfReferencing = enable;
-
-  if (selfReferencing && isPending()) self = this;
-  else if (!selfReferencing && self.isSet()) {
-    if (getRefCount() < 2) THROW(CBANG_FUNC << "() call would deallocate");
-    self.release();
-  }
 }
 
 
@@ -127,42 +114,26 @@ void Event::renew(int signal) {
 void Event::add(double t) {
   struct timeval tv = Timer::toTimeVal(max(0.0, t));
   event_add(e, &tv);
-  if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
 
 
-void Event::add() {
-  event_add(e, 0);
-  if (selfReferencing) self = this; // Don't deallocate while scheduled
-}
+void Event::add() {event_add(e, 0);}
 
 
 void Event::readd() {
   struct timeval tv = e->ev_timeout;
   event_add(e, &tv);
-  if (selfReferencing) self = this; // Don't deallocate while scheduled
 }
 
 
-void Event::del() {
-  if (self.isSet() && getRefCount() < 2)
-    THROW(CBANG_FUNC << "() call would deallocate");
-  event_del(e);
-  self.release();
-}
-
-
-void Event::activate(int flags) {
-  event_active(e, flags, 0);
-  if (selfReferencing) self = this; // Don't deallocate while scheduled
-}
+void Event::del() {event_del(e);}
+void Event::activate(int flags) {event_active(e, flags, 0);}
 
 
 void Event::call(int fd, short flags) {
   LOG_DEBUG(0 <= fd ? 5 : 6, "Event callback fd=" << fd << " flags=" << flags);
   SmartPointer<Event> _ = this; // Don't deallocate while in callback
   TRY_CATCH_ERROR(cb(*this, fd, flags));
-  if (!isPending()) self.release();
 }
 
 
