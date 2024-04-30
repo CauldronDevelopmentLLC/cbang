@@ -48,7 +48,7 @@ namespace cb {
       ArgEnum(const JSON::ValuePtr &config);
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const;
+      void operator()(HTTP::Request &req, JSON::Value &value) const override;
     };
   }
 }

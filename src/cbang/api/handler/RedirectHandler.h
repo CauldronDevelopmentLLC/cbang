@@ -45,7 +45,7 @@ namespace cb {
       RedirectHandler(const JSON::ValuePtr &config);
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

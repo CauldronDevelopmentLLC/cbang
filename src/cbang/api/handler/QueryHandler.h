@@ -54,7 +54,7 @@ namespace cb {
         HTTP::Request &req, HTTP::Status status, Event::Buffer &buffer);
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

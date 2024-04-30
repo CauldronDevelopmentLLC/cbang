@@ -41,7 +41,7 @@ namespace cb {
       FacebookProvider();
 
       // From Provider
-      const char *getName() const {return "facebook";}
+      const char *getName() const override {return "facebook";}
       SmartPointer<JSON::Value>
       processProfile(const SmartPointer<JSON::Value> &profile) const override;
     };

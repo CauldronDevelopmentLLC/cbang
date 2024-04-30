@@ -39,7 +39,7 @@ namespace cb {
     class ArgsParser : public HTTP::RequestHandler {
     public:
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

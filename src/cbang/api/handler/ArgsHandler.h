@@ -52,7 +52,7 @@ namespace cb {
       void add(const JSON::ValuePtr &args) {validator.add(args);}
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

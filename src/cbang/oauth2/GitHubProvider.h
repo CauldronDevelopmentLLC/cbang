@@ -41,7 +41,7 @@ namespace cb {
       GitHubProvider();
 
       // From OAuth2
-      const char *getName() const {return "github";}
+      const char *getName() const override {return "github";}
       SmartPointer<JSON::Value>
       processProfile(const SmartPointer<JSON::Value> &profile) const override;
     };

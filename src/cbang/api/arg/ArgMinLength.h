@@ -46,7 +46,7 @@ namespace cb {
         min(config->getU32("min")) {}
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const {
+      void operator()(HTTP::Request &req, JSON::Value &value) const override {
         if (value.asString().length() < min)
           CBANG_THROW("Must be at least " << min << " chars long");
       }

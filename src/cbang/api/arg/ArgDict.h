@@ -50,7 +50,7 @@ namespace cb {
       void add(const JSON::ValuePtr &args);
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const;
+      void operator()(HTTP::Request &req, JSON::Value &value) const override;
     };
   }
 }

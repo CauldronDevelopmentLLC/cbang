@@ -61,7 +61,7 @@ namespace cb {
     }
 
 
-    void dump(JSON::Sink &sink) const {
+    void dump(JSON::Sink &sink) const override {
       minimum.dump(sink);
       maximum.dump(sink);
     }

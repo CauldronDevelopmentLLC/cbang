@@ -60,6 +60,6 @@ namespace cb {
     }
 
 
-    void dump(JSON::Sink &sink) const {sink.insert("max", maximum);}
+    void dump(JSON::Sink &sink) const override {sink.insert("max", maximum);}
   };
 }

@@ -47,8 +47,8 @@ namespace cb {
 
       // From JSON::Writer
       using JSON::Writer::write;
-      void close();
-      void reset();
+      void close() override;
+      void reset() override;
     };
   }
 }

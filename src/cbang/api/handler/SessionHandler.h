@@ -41,7 +41,7 @@ namespace cb {
       SessionHandler(API &api, const JSON::ValuePtr &config);
 
       // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req);
+      bool operator()(HTTP::Request &req) override;
     };
   }
 }

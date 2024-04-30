@@ -41,7 +41,7 @@ namespace cb {
       GoogleProvider();
 
       // From OAuth2
-      const char *getName() const {return "google";}
+      const char *getName() const override {return "google";}
       SmartPointer<JSON::Value>
       processProfile(const SmartPointer<JSON::Value> &profile) const override;
     };
