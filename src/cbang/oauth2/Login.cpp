@@ -74,7 +74,7 @@ bool Login::requestToken(HTTP::Request &req, const string &state,
   auto cb = [this, &req] (HTTP::Request &_req) {
     verifyToken(req, _req.getInput());
   };
-  auto pr = client.call(verifyURL, HTTP_POST, data, cb);
+  pr = client.call(verifyURL, HTTP_POST, data, cb);
   pr->setContentType("application/x-www-form-urlencoded");
   pr->outSet("Accept", "application/json");
   pr->send();
@@ -94,6 +94,7 @@ void Login::verifyToken(HTTP::Request &req, const string &response) {
         } CATCH_ERROR;
 
       processProfile(req, 0);
+      pr.release();
     };
 
   if (!response.empty())
@@ -103,7 +104,7 @@ void Login::verifyToken(HTTP::Request &req, const string &response) {
       auto profileURL    = provider->getProfileURL(accessToken);
 
       // Get profile
-      auto pr = client.call(profileURL, HTTP_GET, handler);
+      pr = client.call(profileURL, HTTP_GET, handler);
       pr->outSet("User-Agent", "cbang.org");
       return pr->send();
 

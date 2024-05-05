@@ -32,7 +32,7 @@
 #pragma once
 
 #include <cbang/SmartPointer.h>
-#include <cbang/http/Method.h>
+#include <cbang/http/Client.h>
 #include <cbang/http/Status.h>
 
 #include <string>
@@ -48,6 +48,7 @@ namespace cb {
     class Login : public HTTP::Method, public HTTP::Status {
       HTTP::Client &client;
       SmartPointer<Provider> provider;
+      HTTP::Client::RequestPtr pr;
 
     public:
       Login(HTTP::Client &client, const SmartPointer<Provider> &provider = 0);

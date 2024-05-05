@@ -47,6 +47,7 @@ void OutgoingRequest::send() {client.send(this);}
 
 
 void OutgoingRequest::onResponse(Event::ConnectionError error) {
+  auto self = SmartPtr(this);
   Request::onResponse(error);
   if (cb) cb(*this);
 }
