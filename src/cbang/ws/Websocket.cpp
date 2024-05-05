@@ -193,8 +193,12 @@ void Websocket::readHeader() {
 
           // Check total message size
           auto maxBodySize = getConnection()->getMaxBodySize();
-          if (maxBodySize && maxBodySize < wsMsg.size() + bytesToRead)
-            return close(WS_STATUS_TOO_BIG);
+          auto msgSize = wsMsg.size() + bytesToRead;
+          if (maxBodySize && maxBodySize < msgSize) {
+            string err = SSTR("Message size " << msgSize
+                              << " exceeds max body size " << maxBodySize);
+            return close(WS_STATUS_TOO_BIG, err);
+          }
 
           // Copy mask
           if (mask) memcpy(wsMask, &header[bytes - 4], 4);
@@ -416,8 +420,9 @@ void Websocket::message(const char *data, uint64_t length) {
   try {
     onMessage(data, length);
 
-  } CATCH(LOG_ERROR_LEVEL, [&]() -> string {
-    close(WS_STATUS_UNACCEPTABLE, string("Message rejected: ") + msg);
-    return ": Closing Websocket";
-  }());
+  } catch (const Exception &e) {
+    string msg = "Websocket message rejected: " + e.getMessage();
+    LOG_DEBUG(3, msg);
+    close(WS_STATUS_UNACCEPTABLE, msg);
+  }
 }

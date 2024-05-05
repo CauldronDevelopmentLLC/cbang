@@ -75,7 +75,7 @@ namespace cb {
       void send(const std::string &s) override;
       void send(const char *s) override {send(std::string(s));}
 
-      void close(Status status, const std::string &msg = "");
+      void close(Status status, const std::string &msg);
       void ping(const std::string &payload = "");
 
       // Called by HTTP::ConnIn
