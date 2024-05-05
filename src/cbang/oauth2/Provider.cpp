@@ -101,6 +101,8 @@ void Provider::verify(
       try {
         auto profileCB =
           [this, done] (HTTP::Request &req) {
+            pr.release();
+
             if (req.isOk())
               try {
                 auto profile = processProfile(req.getInputJSON());
@@ -116,7 +118,7 @@ void Provider::verify(
         auto profileURL    = getProfileURL(accessToken);
 
         // Get profile
-        auto pr = client.call(profileURL, HTTP_GET, profileCB);
+        pr = client.call(profileURL, HTTP_GET, profileCB);
         pr->outSet("User-Agent", "cbang.org");
         return pr->send();
 
@@ -136,7 +138,7 @@ void Provider::verify(
   string data = verifyURL.getQuery();
   verifyURL.setQuery("");
 
-  auto pr = client.call(verifyURL, HTTP_POST, data, verifyCB);
+  pr = client.call(verifyURL, HTTP_POST, data, verifyCB);
   pr->setContentType("application/x-www-form-urlencoded");
   pr->outSet("Accept", "application/json");
   pr->send();

@@ -34,6 +34,7 @@
 #include <cbang/SmartPointer.h>
 #include <cbang/json/Value.h>
 #include <cbang/http/Method.h>
+#include <cbang/http/Client.h>
 
 #include <string>
 #include <functional>
@@ -55,6 +56,8 @@ namespace cb {
       std::string redirectBase;
       std::string clientID;
       std::string clientSecret;
+
+      HTTP::Client::RequestPtr pr;
 
     public:
       Provider(const std::string &authURL = "",
