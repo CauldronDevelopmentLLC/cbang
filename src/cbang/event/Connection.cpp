@@ -176,14 +176,19 @@ void Connection::connect(
 
         } CATCH_WARNING;
 
+        close();
+
         if (cb) cb(false);
       };
 
     // Start async DNS lookup
     dnsReq = getBase().getDNS().resolve(hostname, dnsCB);
+    if (dnsReq->getResult().isSet()) dnsReq.release(); // Immediate result
     return;
 
   } CATCH_ERROR;
+
+  close();
 
   if (cb) cb(false);
 }
@@ -200,4 +205,6 @@ void Connection::close() {
   auto self = SmartPtr(this);
   if (server) server->remove(this);
   FD::close();
+  setSSL(0);
+  setSocket(0);
 }
