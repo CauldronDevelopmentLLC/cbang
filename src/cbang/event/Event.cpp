@@ -140,12 +140,12 @@ void Event::call(int fd, short flags) {
 string Event::getEventsString(unsigned events) {
   vector<string> parts;
 
-  if (events & EVENT_TIMEOUT) parts.push_back("TIMEOUT");
-  if (events & EVENT_READ)    parts.push_back("READ");
-  if (events & EVENT_WRITE)   parts.push_back("WRITE");
-  if (events & EVENT_SIGNAL)  parts.push_back("SIGNAL");
-  if (events & EVENT_PERSIST) parts.push_back("PERSIST");
-  if (events & EVENT_ET)      parts.push_back("ET");
+  if (events & EVENT_TIMEOUT)   parts.push_back("TIMEOUT");
+  if (events & EVENT_READ)      parts.push_back("READ");
+  if (events & EVENT_WRITE)     parts.push_back("WRITE");
+  if (events & EVENT_SIGNAL)    parts.push_back("SIGNAL");
+  if (events & EVENT_PERSIST)   parts.push_back("PERSIST");
+  if (events & EVENT_EDGE_TRIG) parts.push_back("EDGE_TRIG");
 
   return String::join(parts, "|");
 }
