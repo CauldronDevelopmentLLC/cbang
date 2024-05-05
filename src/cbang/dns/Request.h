@@ -49,7 +49,7 @@ namespace cb {
       std::string request;
 
       bool cancelled = false;
-      cb::SmartPointer<Result> result;
+      SmartPointer<Result> result;
       SmartPointer<Event::Event> timeout;
 
     public:
@@ -59,6 +59,7 @@ namespace cb {
       virtual Type getType() const = 0;
       const std::string &toString() const {return request;}
       bool isCancelled() const {return cancelled;}
+      const SmartPointer<Result> &getResult() const {return result;}
 
       void cancel();
       void respond(const cb::SmartPointer<Result> &result);

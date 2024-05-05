@@ -287,7 +287,7 @@ void Websocket::onResponse(Event::ConnectionError error) {
     readHeader();
     schedulePing();
 
-  } else onClose(WS_STATUS_NONE, "Connection failed");
+  } else onClose(WS_STATUS_NONE, SSTR("Connection failed: " << error));
 }
 
 
