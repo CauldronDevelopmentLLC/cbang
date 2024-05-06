@@ -37,7 +37,7 @@ using namespace std;
 
 ThreadPool::ThreadPool(unsigned size) {
   for (unsigned i = 0; i < size; i++)
-    pool.push_back(new ThreadFunc<ThreadPool>(this, &ThreadPool::run));
+    pool.push_back(new ThreadFunc([this] {run();}));
 }
 
 
