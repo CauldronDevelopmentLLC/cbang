@@ -57,7 +57,8 @@ Mutex Logger::mutex;
 Logger::Logger(Inaccessible) :
   rates(new RateSet), threadIDStorage(new ThreadLocalStorage<unsigned long>),
   prefixStorage(new ThreadLocalStorage<string>),
-  screenStream(SmartPointer<ostream>::Phony(&cout)), lastDate(Time::now()) {
+  screenStream(SmartPointer<ostream>::Phony(&cout)), lastDate(Time::now()),
+  lastRotate(lastDate) {
 
 #ifdef _WIN32
   logCRLF = true;

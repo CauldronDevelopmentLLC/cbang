@@ -128,7 +128,7 @@ namespace cb {
     domain_traces_t domainTraces;
 
     uint64_t lastDate;
-    uint64_t lastRotate = 0;
+    uint64_t lastRotate;
 
   public:
     Logger(Inaccessible);

@@ -35,6 +35,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 
 
 namespace cb {
@@ -139,24 +140,15 @@ namespace cb {
   };
 
 
-  template<class T, typename METHOD_T = void (T::*)()>
   class ThreadFunc : public Thread {
-    T *obj;          // pointer to object
-    METHOD_T method; // pointer to method function
+    typedef std::function<void ()> cb_t;
+    cb_t cb;
 
   public:
-    /**
-     * Construct a thread which will execute a method function of the class T.
-     *
-     * @param obj The class instance.
-     * @param method A pointer to the method function.
-     */
-    ThreadFunc(T *obj, METHOD_T method, bool destroy = false) :
-      Thread(destroy), obj(obj), method(method) {}
+    ThreadFunc(cb_t cb, bool destroy = false) : Thread(destroy), cb(cb) {}
 
   private:
     // From Thread
-    /// Passes the polymorphic call to run on to the target class.
-    void run() override {(*obj.*method)();}
+    void run() override {if (cb) cb();}
   };
 }

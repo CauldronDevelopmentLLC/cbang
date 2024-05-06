@@ -46,6 +46,7 @@
 #include <cbang/comp/CompressionFilter.h>
 #include <cbang/boost/IOStreams.h>
 #include <cbang/util/ResourceManager.h>
+#include <cbang/thread/Thread.h>
 
 #include <cerrno>
 #include <cstring>
@@ -753,18 +754,8 @@ namespace cb {
       // Move it
       rename(path, target);
 
-      // Compression
-      string compExt = compressionExtension(compression);
-      if (compression != Compression::COMPRESSION_NONE) {
-        string compTarget = target + compExt;
-
-        auto out = SystemUtilities::oopen(compTarget, 0644, true);
-        auto in  = SystemUtilities::iopen(target);
-        SystemUtilities::cp(*in, *out);
-        SystemUtilities::unlink(target);
-      }
-
       // Remove old log files
+      string compExt = compressionExtension(compression);
       if (maxFiles) {
         string base = basename(path);
         if (!ext.empty()) base = base.substr(0, base.length() - ext.length());
@@ -790,6 +781,20 @@ namespace cb {
             count--;
           }
         }
+      }
+
+      // Compression
+      if (compression != Compression::COMPRESSION_NONE) {
+        string compTarget = target + compExt;
+
+        auto cb = [target, compTarget] {
+          auto out = SystemUtilities::oopen(compTarget, 0644, true);
+          auto in  = SystemUtilities::iopen(target);
+          SystemUtilities::cp(*in, *out);
+          SystemUtilities::unlink(target);
+        };
+
+        (new ThreadFunc(cb, true))->start();
       }
     }
 
