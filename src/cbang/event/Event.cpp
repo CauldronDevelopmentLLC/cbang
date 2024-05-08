@@ -132,8 +132,9 @@ void Event::activate(int flags) {event_active(e, flags, 0);}
 
 void Event::call(int fd, short flags) {
   LOG_DEBUG(0 <= fd ? 5 : 6, "Event callback fd=" << fd << " flags=" << flags);
-  SmartPointer<Event> _ = this; // Don't deallocate while in callback
+  auto self = SmartPtr(this); // Don't deallocate while in callback
   TRY_CATCH_ERROR(cb(*this, fd, flags));
+  if (!isPending()) endOfLife();
 }
 
 

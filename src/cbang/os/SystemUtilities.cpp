@@ -738,7 +738,7 @@ namespace cb {
       // Directory
       if (!dir.empty()) {
         ensureDirectory(dir);
-        target = dir + string(1, path_separator) + basename(path);
+        target = joinPath(dir, basename(path));
 
       } else target = path;
 

@@ -47,7 +47,7 @@ void TailFileToLog::run() {
   while (!shouldShutdown()) {
     if (stream.isNull()) {
       if (SystemUtilities::exists(filename))
-        stream = SystemUtilities::open(filename, ios::in);
+        stream = SystemUtilities::iopen(filename);
 
     } else {
       while (!stream->fail() && !shouldShutdown()) {

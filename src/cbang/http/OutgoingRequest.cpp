@@ -32,6 +32,7 @@
 #include "OutgoingRequest.h"
 #include "Client.h"
 
+#include <cbang/Catch.h>
 
 using namespace cb;
 using namespace cb::HTTP;
@@ -49,5 +50,6 @@ void OutgoingRequest::send() {client.send(this);}
 void OutgoingRequest::onResponse(Event::ConnectionError error) {
   auto self = SmartPtr(this);
   Request::onResponse(error);
-  if (cb) cb(*this);
+  if (cb) TRY_CATCH_ERROR(cb(*this));
+  endOfLife();
 }
