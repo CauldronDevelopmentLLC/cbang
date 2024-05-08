@@ -31,44 +31,16 @@
 
 #pragma once
 
-#include "Request.h"
-
-#include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeObject.h>
-
-#include <functional>
-
-
 namespace cb {
-  class URI;
+  class LifetimeManager;
 
-  namespace HTTP {
-    class Client;
-    class HTTPHandler;
-    class ConnOut;
+  class LifetimeObject {
+    LifetimeManager *manager = 0;
 
-    class OutgoingRequest : public Request, public LifetimeObject {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+  public:
+    virtual ~LifetimeObject() {endOfLife();}
 
-    protected:
-      Client &client;
-      callback_t cb;
-
-    public:
-      OutgoingRequest(Client &client, const SmartPointer<Conn> &connection,
-                      const URI &uri, Method method, callback_t cb);
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(Event::ConnectionError error) override;
-    };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
-  }
+    void setManager(LifetimeManager *manager);
+    void endOfLife();
+  };
 }

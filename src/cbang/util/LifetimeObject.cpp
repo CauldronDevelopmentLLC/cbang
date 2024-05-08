@@ -29,46 +29,19 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "LifetimeObject.h"
+#include "LifetimeManager.h"
 
-#include "Request.h"
-
-#include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeObject.h>
-
-#include <functional>
+using namespace cb;
 
 
-namespace cb {
-  class URI;
+void LifetimeObject::setManager(LifetimeManager *manager) {
+  if (manager && this->manager) THROW("LifetimeManager already set");
+  this->manager = manager;
+}
 
-  namespace HTTP {
-    class Client;
-    class HTTPHandler;
-    class ConnOut;
 
-    class OutgoingRequest : public Request, public LifetimeObject {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
-
-    protected:
-      Client &client;
-      callback_t cb;
-
-    public:
-      OutgoingRequest(Client &client, const SmartPointer<Conn> &connection,
-                      const URI &uri, Method method, callback_t cb);
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(Event::ConnectionError error) override;
-    };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
-  }
+void LifetimeObject::endOfLife() {
+  if (manager) manager->remove(this);
+  manager = 0;
 }

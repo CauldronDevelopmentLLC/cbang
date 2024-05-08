@@ -35,6 +35,7 @@
 #include "Result.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/LifetimeObject.h>
 
 
 namespace cb {
@@ -43,7 +44,9 @@ namespace cb {
   namespace DNS {
     class Base;
 
-    class Request : public RefCounted, public Error::Enum, public Type::Enum {
+    class Request :
+      public RefCounted, public LifetimeObject, public Error::Enum,
+      public Type::Enum {
     protected:
       Base &base;
       std::string request;

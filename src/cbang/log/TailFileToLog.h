@@ -45,7 +45,7 @@ namespace cb {
     const std::string prefix;
     const char *logDomain;
     unsigned logLevel;
-    SmartPointer<std::iostream> stream;
+    SmartPointer<std::istream> stream;
 
     static const unsigned bufferSize = 4096;
     char buffer[bufferSize + 1]; // Room for null terminator

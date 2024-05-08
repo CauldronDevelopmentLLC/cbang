@@ -31,44 +31,28 @@
 
 #pragma once
 
-#include "Request.h"
+#include "LifetimeObject.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeObject.h>
 
-#include <functional>
+#include <set>
 
 
 namespace cb {
-  class URI;
+  class LifetimeManager {
+    std::set<SmartPointer<LifetimeObject>> objs;
 
-  namespace HTTP {
-    class Client;
-    class HTTPHandler;
-    class ConnOut;
+  public:
+    ~LifetimeManager();
 
-    class OutgoingRequest : public Request, public LifetimeObject {
-    public:
-      typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
+    void clear();
+    void remove(LifetimeObject *obj);
 
-    protected:
-      Client &client;
-      callback_t cb;
-
-    public:
-      OutgoingRequest(Client &client, const SmartPointer<Conn> &connection,
-                      const URI &uri, Method method, callback_t cb);
-
-      void setCallback(callback_t cb) {this->cb = cb;}
-
-      using Request::send;
-      void send();
-
-      // From Request
-      void onResponse(Event::ConnectionError error) override;
-    };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
-  }
+    template <typename T>
+    const SmartPointer<T> &add(const SmartPointer<T> &obj) {
+      objs.insert(obj);
+      obj->setManager(this);
+      return obj;
+    }
+  };
 }

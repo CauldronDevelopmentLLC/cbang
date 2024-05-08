@@ -33,6 +33,7 @@
 #include "Base.h"
 
 #include <cbang/String.h>
+#include <cbang/Catch.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/Event.h>
 
@@ -55,6 +56,7 @@ Request::~Request() {}
 void Request::cancel() {
   cancelled = true;
   timeout->del();
+  endOfLife();
 }
 
 
@@ -62,11 +64,9 @@ void Request::respond(const cb::SmartPointer<Result> &result) {
   if (cancelled) return;
   timeout->del();
   this->result = result;
-  callback();
+  TRY_CATCH_ERROR(callback());
+  endOfLife();
 }
 
 
-void Request::timedout() {
-  result = new Result(DNS_ERR_TIMEOUT);
-  callback();
-}
+void Request::timedout() {respond(new Result(DNS_ERR_TIMEOUT));}
