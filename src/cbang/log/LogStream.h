@@ -57,7 +57,6 @@ namespace cb {
       std::string rateMessage;
       bool first = true;
       bool startOfLine = true;
-      bool locked = false;
       StackTrace trace;
 
     public:
@@ -69,10 +68,6 @@ namespace cb {
       std::streamsize write(const char_type *s, std::streamsize n);
       void flushLine();
       bool flush();
-
-    protected:
-      void lock();
-      void unlock();
     };
 
   protected:

@@ -273,16 +273,16 @@ string Logger::simplifyDomain(const string &domain) const {
 int Logger::domainVerbosity(const string &domain, int level) const {
   string dom = simplifyDomain(domain);
 
-  domain_levels_t::const_iterator it;
-  if ((level == LEVEL_DEBUG &&
-       (it = debugDomainLevels.find(dom)) != debugDomainLevels.end()) ||
-      (level == LEVEL_INFO &&
-       (it = infoDomainLevels.find(dom)) != infoDomainLevels.end())) {
-    int verbosity = it->second;
+  if ((level & (LEVEL_DEBUG | LEVEL_INFO))) {
+    auto &levels = level == LEVEL_DEBUG ? debugDomainLevels : infoDomainLevels;
+    auto it = levels.find(dom);
 
-    // If verbosity < 0 then it is relative to Logger::verbosity
-    if (verbosity < 0) verbosity += this->verbosity;
-    return verbosity;
+    if (it != levels.end()) {
+      int verbosity = it->second;
+
+      // If verbosity < 0 then it is relative to Logger::verbosity
+      return verbosity + (verbosity < 0 ? this->verbosity : 0);
+    }
   }
 
   return verbosity;
@@ -293,10 +293,10 @@ char Logger::getLevelChar(int level) {
   level &= LEVEL_MASK;
 
   switch (level) {
-  case LEVEL_ERROR:    return 'E';
-  case LEVEL_WARNING:  return 'W';
-  case LEVEL_INFO:     return 'I';
-  case LEVEL_DEBUG:    return 'D';
+  case LEVEL_ERROR:   return 'E';
+  case LEVEL_WARNING: return 'W';
+  case LEVEL_INFO:    return 'I';
+  case LEVEL_DEBUG:   return 'D';
   default: THROW("Unknown log level " << level);
   }
 }
@@ -430,6 +430,8 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
 
   if (!enabled(domain, level)) return new NullStream<>;
 
+  lock();
+
   string rateKey;
   if ((level & logRates) && rates.isSet()) {
     rateKey = SSTR(getLevelChar(level) << ':' << filename << ':' << line);
@@ -479,10 +481,10 @@ void Logger::logBar(const string &msg, uint64_t ts) const {
 }
 
 
-streamsize Logger::write(const char *s, streamsize n) {
+void Logger::write(const char *s, streamsize n) {
   if (!logFile.isNull()) logFile->write(s, n);
   if (logToScreen && !screenStream.isNull()) screenStream->write(s, n);
-  return n;
+  flush();
 }
 
 

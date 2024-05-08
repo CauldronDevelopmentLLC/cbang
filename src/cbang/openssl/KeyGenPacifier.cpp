@@ -36,27 +36,23 @@ using namespace std;
 using namespace cb;
 
 
-KeyGenPacifier::KeyGenPacifier(SmartPointer<std::ostream> streamPtr) :
-  streamPtr(streamPtr), stream(*streamPtr) {}
-
-
-KeyGenPacifier::KeyGenPacifier(ostream &stream) : stream(stream) {}
+KeyGenPacifier::KeyGenPacifier(SmartPointer<std::ostream> stream) :
+  stream(stream) {}
 
 
 KeyGenPacifier::KeyGenPacifier(const string &prefix, const string &domain,
                                int level) :
-  streamPtr(Logger::instance().createStream(domain, level, prefix)),
-  stream(*streamPtr) {}
+  stream(CBANG_LOG_STREAM(domain, level)) {*stream << prefix << flush;}
 
 
 void KeyGenPacifier::operator()(int p) const {
   switch (p) {
-  case 0: stream << '.'; break;
-  case 1: stream << '+'; break;
-  case 2: stream << '*'; break;
-  case 3: stream << '-'; break;
-  default: stream << '*'; break;
+  case 0:  *stream << '.'; break;
+  case 1:  *stream << '+'; break;
+  case 2:  *stream << '*'; break;
+  case 3:  *stream << '-'; break;
+  default: *stream << '*'; break;
   }
 
-  stream << flush;
+  stream->flush();
 }

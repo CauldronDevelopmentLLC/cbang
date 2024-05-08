@@ -197,11 +197,11 @@ namespace cb {
     LogStream createStream(const std::string &domain, int level,
                            const std::string &prefix = std::string(),
                            const char *filename = 0, int line = 0);
-    void rateMessage(const std::string &key, const std::string &msg);
 
   protected:
+    void rateMessage(const std::string &key, const std::string &msg);
     void logBar(const std::string &msg, uint64_t ts) const;
-    std::streamsize write(const char *s, std::streamsize n);
+    void write(const char *s, std::streamsize n);
     void write(const std::string &s);
     bool flush();
 
@@ -222,11 +222,11 @@ namespace cb {
 #define CBANG_LOG_ERROR_LEVEL    cb::Logger::LEVEL_ERROR
 #define CBANG_LOG_WARNING_LEVEL  cb::Logger::LEVEL_WARNING
 #define CBANG_LOG_DEBUG_LEVEL(x) (cb::Logger::LEVEL_DEBUG + ((x) << 8))
-#define CBANG_LOG_INFO_LEVEL(x)  (cb::Logger::LEVEL_INFO + ((x) << 8))
+#define CBANG_LOG_INFO_LEVEL(x)  (cb::Logger::LEVEL_INFO  + ((x) << 8))
 
 
 // Check if logging level is enabled
-#define CBANG_LOG_ENABLED(domain, level)        \
+#define CBANG_LOG_ENABLED(domain, level)                        \
   cb::Logger::instance().enabled(domain, level)
 #ifdef DEBUG
 #define CBANG_LOG_DEBUG_ENABLED(x)                              \
@@ -244,18 +244,18 @@ namespace cb {
   cb::Logger::instance()                                                \
     .createStream(domain, level, CBANG_SSTR(CBANG_LOG_PREFIX), file, line)
 
-#define CBANG_LOG_STREAM(domain, level)                         \
+#define CBANG_LOG_STREAM(domain, level)                               \
   CBANG_LOG_STREAM_LOCATION(domain, level, __FILE__, __LINE__)
 
-#define CBANG_LOG_RAW_STREAM()                              \
+#define CBANG_LOG_RAW_STREAM()                                        \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_RAW_LEVEL)
-#define CBANG_LOG_ERROR_STREAM()                                \
+#define CBANG_LOG_ERROR_STREAM()                                      \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_ERROR_LEVEL)
-#define CBANG_LOG_WARNING_STREAM()                              \
+#define CBANG_LOG_WARNING_STREAM()                                    \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_WARNING_LEVEL)
-#define CBANG_LOG_DEBUG_STREAM(level)                               \
+#define CBANG_LOG_DEBUG_STREAM(level)                                 \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_DEBUG_LEVEL(level))
-#define CBANG_LOG_INFO_STREAM(level)                                \
+#define CBANG_LOG_INFO_STREAM(level)                                  \
   CBANG_LOG_STREAM(CBANG_LOG_DOMAIN, CBANG_LOG_INFO_LEVEL(level))
 
 
@@ -276,8 +276,8 @@ namespace cb {
 
 #define CBANG_LOG_LEVEL(level, msg) CBANG_LOG(CBANG_LOG_DOMAIN, level, msg)
 
-#define CBANG_LOG_RAW(msg)      CBANG_LOG_LEVEL(CBANG_LOG_RAW_LEVEL, msg)
-#define CBANG_LOG_ERROR(msg)    CBANG_LOG_LEVEL(CBANG_LOG_ERROR_LEVEL, msg)
+#define CBANG_LOG_RAW(msg)      CBANG_LOG_LEVEL(CBANG_LOG_RAW_LEVEL,     msg)
+#define CBANG_LOG_ERROR(msg)    CBANG_LOG_LEVEL(CBANG_LOG_ERROR_LEVEL,   msg)
 #define CBANG_LOG_WARNING(msg)  CBANG_LOG_LEVEL(CBANG_LOG_WARNING_LEVEL, msg)
 #define CBANG_LOG_INFO(x, msg)  CBANG_LOG_LEVEL(CBANG_LOG_INFO_LEVEL(x), msg)
 
@@ -289,28 +289,28 @@ namespace cb {
 
 
 #ifdef USING_CBANG
-#define LOG_RAW_LEVEL CBANG_LOG_RAW_LEVEL
-#define LOG_ERROR_LEVEL CBANG_LOG_ERROR_LEVEL
-#define LOG_WARNING_LEVEL CBANG_LOG_WARNING_LEVEL
-#define LOG_DEBUG_LEVEL(x) CBANG_LOG_DEBUG_LEVEL(x)
-#define LOG_INFO_LEVEL(x) CBANG_LOG_INFO_LEVEL(x)
+#define LOG_RAW_LEVEL              CBANG_LOG_RAW_LEVEL
+#define LOG_ERROR_LEVEL            CBANG_LOG_ERROR_LEVEL
+#define LOG_WARNING_LEVEL          CBANG_LOG_WARNING_LEVEL
+#define LOG_DEBUG_LEVEL(x)         CBANG_LOG_DEBUG_LEVEL(x)
+#define LOG_INFO_LEVEL(x)          CBANG_LOG_INFO_LEVEL(x)
 
 #define LOG_ENABLED(domain, level) CBANG_LOG_ENABLED(domain, level)
-#define LOG_DEBUG_ENABLED(x) CBANG_LOG_DEBUG_ENABLED(x)
-#define LOG_INFO_ENABLED(x) CBANG_LOG_INFO_ENABLED(x)
+#define LOG_DEBUG_ENABLED(x)       CBANG_LOG_DEBUG_ENABLED(x)
+#define LOG_INFO_ENABLED(x)        CBANG_LOG_INFO_ENABLED(x)
 
-#define LOG_STREAM(domain, level) CBANG_LOG_STREAM(domain, level)
-#define LOG_RAW_STREAM() CBANG_LOG_RAW_STREAM()
-#define LOG_ERROR_STREAM() CBANG_LOG_ERROR_STREAM()
-#define LOG_WARNING_STREAM() CBANG_LOG_WARNING_STREAM()
-#define LOG_DEBUG_STREAM(level) CBANG_LOG_DEBUG_STREAM(level)
-#define LOG_INFO_STREAM(level) CBANG_LOG_INFO_STREAM(level)
+#define LOG_STREAM(domain, level)  CBANG_LOG_STREAM(domain, level)
+#define LOG_RAW_STREAM()           CBANG_LOG_RAW_STREAM()
+#define LOG_ERROR_STREAM()         CBANG_LOG_ERROR_STREAM()
+#define LOG_WARNING_STREAM()       CBANG_LOG_WARNING_STREAM()
+#define LOG_DEBUG_STREAM(level)    CBANG_LOG_DEBUG_STREAM(level)
+#define LOG_INFO_STREAM(level)     CBANG_LOG_INFO_STREAM(level)
 
-#define LOG(domain, level, msg) CBANG_LOG(domain, level, msg)
-#define LOG_LEVEL(level, msg) CBANG_LOG_LEVEL(level, msg)
-#define LOG_RAW(msg) CBANG_LOG_RAW(msg)
-#define LOG_ERROR(msg) CBANG_LOG_ERROR(msg)
-#define LOG_WARNING(msg) CBANG_LOG_WARNING(msg)
-#define LOG_INFO(x, msg) CBANG_LOG_INFO(x, msg)
-#define LOG_DEBUG(x, msg) CBANG_LOG_DEBUG(x, msg)
+#define LOG(domain, level, msg)    CBANG_LOG(domain, level, msg)
+#define LOG_LEVEL(level, msg)      CBANG_LOG_LEVEL(level, msg)
+#define LOG_RAW(msg)               CBANG_LOG_RAW(msg)
+#define LOG_ERROR(msg)             CBANG_LOG_ERROR(msg)
+#define LOG_WARNING(msg)           CBANG_LOG_WARNING(msg)
+#define LOG_INFO(x, msg)           CBANG_LOG_INFO(x, msg)
+#define LOG_DEBUG(x, msg)          CBANG_LOG_DEBUG(x, msg)
 #endif // USING_CBANG
