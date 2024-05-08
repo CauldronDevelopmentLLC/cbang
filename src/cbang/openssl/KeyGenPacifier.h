@@ -42,12 +42,10 @@
 
 namespace cb {
   class KeyGenPacifier : public KeyGenCallback {
-    SmartPointer<std::ostream> streamPtr;
-    std::ostream &stream;
+    SmartPointer<std::ostream> stream;
 
   public:
-    KeyGenPacifier(SmartPointer<std::ostream> streamPtr);
-    KeyGenPacifier(std::ostream &stream);
+    KeyGenPacifier(SmartPointer<std::ostream> stream);
     KeyGenPacifier(const std::string &prefix,
                    const std::string &domain = CBANG_LOG_DOMAIN,
                    int level = CBANG_LOG_INFO_LEVEL(1));

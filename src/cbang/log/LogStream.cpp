@@ -46,6 +46,7 @@ LogDevice::impl::impl(const string &prefix, const string &suffix,
 LogDevice::impl::~impl() {
   write(&trailer[0], trailer.size());
   flushLine();
+  Logger::instance().unlock();
 }
 
 
@@ -88,10 +89,8 @@ streamsize LogDevice::impl::write(const char_type *s, streamsize n) {
 void LogDevice::impl::flushLine() {
   if (startOfLine) return;
 
-  if (first && !rateKey.empty() && !rateMessage.empty()) {
-    lock();
+  if (first && !rateKey.empty() && !rateMessage.empty())
     Logger::instance().rateMessage(rateKey, rateMessage);
-  }
   first = false;
 
   // Add suffix
@@ -103,7 +102,6 @@ void LogDevice::impl::flushLine() {
 
   flush();
 
-  unlock();
   startOfLine = true;
 }
 
@@ -111,29 +109,11 @@ void LogDevice::impl::flushLine() {
 bool LogDevice::impl::flush() {
   if (buffer.empty()) return true;
 
-  lock();
-
   // Write to log
-  Logger &logger = Logger::instance();
-  logger.write(buffer);
-  logger.flush();
+  Logger::instance().write(buffer);
 
   // Flush the buffer
   buffer.clear();
 
   return true;
-}
-
-
-void LogDevice::impl::lock() {
-  if (locked) return;
-  Logger::instance().lock();
-  locked = true;
-}
-
-
-void LogDevice::impl::unlock() {
-  if (!locked) return;
-  Logger::instance().unlock();
-  locked = false;
 }
