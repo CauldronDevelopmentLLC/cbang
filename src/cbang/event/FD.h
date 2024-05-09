@@ -37,6 +37,7 @@
 #include "Buffer.h"
 
 #include <cbang/util/Progress.h>
+#include <cbang/util/NonCopyable.h>
 
 #include <cstdint>
 
@@ -45,7 +46,7 @@ namespace cb {
   namespace Event {
     class FDPool;
 
-    class FD : public RefCounted {
+    class FD : public RefCounted, public NonCopyable {
       Base &base;
       int fd = -1;
       SmartPointer<SSL> ssl;

@@ -36,6 +36,7 @@
 #include "SockAddr.h"
 
 #include <cbang/SmartPointer.h>
+#include <cbang/util/NonCopyable.h>
 
 #include <ios>
 #include <cstdint>
@@ -46,16 +47,12 @@ namespace cb {
   class SSLContext;
 
   /// Create a TCP socket connection.
-  class Socket {
+  class Socket : public NonCopyable {
     static bool initialized;
 
     socket_t socket = -1;
     bool blocking   = true;
     bool connected  = false;
-
-    // Don't allow copy constructor or assignment
-    Socket(const Socket &o) {}
-    Socket &operator=(const Socket &o) {return *this;}
 
   public:
     // NOTE Inheriting from std::exception instead of cb::Exception due to

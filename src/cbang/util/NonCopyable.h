@@ -34,10 +34,9 @@
 
 namespace cb {
   class NonCopyable {
-    NonCopyable(const NonCopyable &) {}
-    void operator=(const NonCopyable &) {}
-
   public:
-    NonCopyable() {}
+    NonCopyable(const NonCopyable &) = delete;
+    void operator=(const NonCopyable &) = delete;
+    NonCopyable() = default;
   };
 }
