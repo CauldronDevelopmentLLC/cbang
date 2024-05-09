@@ -34,6 +34,7 @@
 #include "SysError.h"
 
 #include <cbang/Exception.h>
+#include <cbang/log/Logger.h>
 #include <cbang/boost/IOStreams.h>
 
 #ifdef _WIN32
@@ -66,10 +67,11 @@ void PipeEnd::close() {
   if (!isOpen()) return;
 
 #ifdef _WIN32
-  CloseHandle(handle);
+  if (!CloseHandle(handle))
 #else
-  ::close(handle);
+  if (::close(handle))
 #endif
+    LOG_ERROR("Closing pipe " << handle << ": " << SysError());
 
   handle = INVALID;
 }
