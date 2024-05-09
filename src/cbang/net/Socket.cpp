@@ -352,10 +352,11 @@ void Socket::close(socket_t socket) {
   LOG_DEBUG(4, "Socket::close(" << socket << ")");
 
 #ifdef _WIN32
-  closesocket((SOCKET)socket);
+  if (closesocket((SOCKET)socket))
 #else
-  ::close(socket);
+  if (::close(socket))
 #endif
+    LOG_ERROR("Closing socket " << socket << ": " << SysError());
 }
 
 

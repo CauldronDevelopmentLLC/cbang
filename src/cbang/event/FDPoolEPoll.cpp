@@ -39,6 +39,7 @@
 #include <cbang/thread/SmartLock.h>
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
+#include <cbang/net/Socket.h>
 
 #include <cstring>
 #include <cerrno>
@@ -405,7 +406,7 @@ void FDPoolEPoll::processResults() {
 
     switch (cmd.cmd) {
     case CMD_FLUSHED:
-      ::close(cmd.fd);
+      Socket::close(cmd.fd);
       flushing.erase(cmd.fd);
       fds.erase(cmd.fd);
       break;
