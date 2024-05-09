@@ -65,7 +65,7 @@ void TailFileToLog::run() {
             // Terminate line
             char *ptr = eol;
             *ptr-- = 0;
-            if (*ptr == '\r') *ptr = 0;
+            if (buffer <= ptr && *ptr == '\r') *ptr = 0;
 
             // Log the line
             log();
@@ -94,8 +94,8 @@ void TailFileToLog::run() {
           return;
         }
 
-        // Ignore end of stream
-        if (stream->eof()) {
+        // Reset on end of stream or fail
+        if (!stream->good()) {
           stream->clear();
           break;
         }

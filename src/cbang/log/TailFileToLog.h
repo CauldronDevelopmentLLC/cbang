@@ -50,7 +50,7 @@ namespace cb {
 
     static const unsigned bufferSize = 4096;
     char buffer[bufferSize + 1]; // Room for null terminator
-    unsigned fill;
+    unsigned fill = 0;
 
   public:
     TailFileToLog(const std::string &filename,
@@ -58,7 +58,7 @@ namespace cb {
                   const char *logDomain = CBANG_LOG_DOMAIN,
                   unsigned logLevel = CBANG_LOG_INFO_LEVEL(1)) :
       filename(filename), prefix(prefix), logDomain(logDomain),
-      logLevel(logLevel), fill(0) {}
+      logLevel(logLevel) {}
 
   protected:
     // From Thread

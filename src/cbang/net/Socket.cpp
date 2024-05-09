@@ -349,6 +349,8 @@ streamsize Socket::read(
 
 
 void Socket::close(socket_t socket) {
+  LOG_DEBUG(4, "Socket::close(" << socket << ")");
+
 #ifdef _WIN32
   closesocket((SOCKET)socket);
 #else

@@ -95,7 +95,7 @@ ThreadLocalStorage<Thread *> Thread::threads;
 
 Thread::Thread(bool destroy) :
   p(new Thread::private_t), state(THREAD_STOPPED), shutdown(false),
-  destroy(destroy), id(getNextID()), exitStatus(0) {
+  destroy(destroy), id(getNextID()) {
 
 #ifdef HAVE_VALGRIND
   VALGRIND_HG_DISABLE_CHECKING(state, sizeof(state));
@@ -111,10 +111,7 @@ Thread::~Thread() {
     LOG_ERROR(Exception(SSTR("Thread " << getID()
                              << " deallocated while still active")));
 
-  if (p) {
-    delete p;
-    p = 0;
-  }
+  if (p) delete p;
 }
 
 
@@ -159,9 +156,7 @@ void Thread::start() {
 }
 
 
-void Thread::stop() {
-  shutdown = true;
-}
+void Thread::stop() {shutdown = true;}
 
 
 void Thread::join() {
