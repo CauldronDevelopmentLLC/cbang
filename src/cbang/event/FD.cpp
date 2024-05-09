@@ -50,7 +50,7 @@ using namespace std;
 
 FD::FD(Base &base, int fd, const SmartPointer<SSL> &ssl) :
   base(base), ssl(ssl) {
-  if (0 <= fd) setFD(fd);
+  setFD(fd);
   LOG_DEBUG(4, CBANG_FUNC << "()");
 }
 
@@ -59,7 +59,6 @@ FD::~FD () {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
   if (fd != -1) {
-    int fd = this->fd;
     if (!base.isDeallocating()) TRY_CATCH_ERROR(base.getPool().flush(fd));
     else Socket::close((socket_t)fd);
   }
@@ -70,7 +69,7 @@ void FD::setFD(int fd) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
   if (0 <= this->fd) THROW("FD already set");
-  this->fd = fd;
+  this->fd = fd < 0 ? -1 : fd;
   if (0 <= fd) base.getPool().open(*this);
 }
 

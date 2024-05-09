@@ -88,8 +88,14 @@ void TailFileToLog::run() {
           }
         }
 
-        // Ignore end of stream but not bad/closed stream
-        if (stream->eof() && !stream->bad()) {
+        // Stream bad
+        if (stream->bad()) {
+          LOG_ERROR(prefix + "Stream bad");
+          return;
+        }
+
+        // Ignore end of stream
+        if (stream->eof()) {
           stream->clear();
           break;
         }

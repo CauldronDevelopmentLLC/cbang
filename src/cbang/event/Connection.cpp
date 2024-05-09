@@ -59,7 +59,7 @@ Connection::Connection(Base &base) : FD(base),
 Connection::~Connection() {
   LOG_DEBUG(4, "Connection closed");
   // Prevent socket from closing FD
-  if (socket.isSet()) TRY_CATCH_ERROR(socket->adopt());
+  if (socket.isSet()) socket->adopt();
   if (dnsReq.isSet()) dnsReq->cancel();
 }
 

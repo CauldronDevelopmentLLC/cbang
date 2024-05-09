@@ -35,6 +35,8 @@
 
 #include <cbang/String.h>
 
+#include <cmath>
+
 using namespace std;
 using namespace cb;
 
@@ -46,7 +48,7 @@ string TimeInterval::toString() const {
   const char *longNames[]  = {"y", "d", "h", "m", "s"};
   const char *shortNames[] = {" year", " day", " hour", " min", " sec"};
   const char **names       = compact ? longNames : shortNames;
-  unsigned i = interval < 0 ? -interval : interval;
+  unsigned i = abs(interval);
 
   for (unsigned j = 0; j < 4; j++)
     if (divs[j] < i) {
