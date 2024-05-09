@@ -51,7 +51,12 @@ void TailFileToLog::run() {
         stream = SystemUtilities::iopen(filename);
 
     } else {
-      while (!stream->fail() && !shouldShutdown()) {
+      if (!stream->good()) {
+        LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
+        return;
+      }
+
+      while (!shouldShutdown()) {
         // Try to read some data
         stream->read(buffer + fill, bufferSize - fill);
         fill += stream->gcount();
@@ -86,12 +91,6 @@ void TailFileToLog::run() {
 
             break;
           }
-        }
-
-        // Stream bad
-        if (stream->bad()) {
-          LOG_ERROR(prefix + "Stream bad");
-          return;
         }
 
         // Reset on end of stream or fail
