@@ -50,13 +50,13 @@ void TailFileToLog::run() {
       if (SystemUtilities::exists(filename))
         stream = SystemUtilities::iopen(filename);
 
-    } else {
-      if (!stream->good()) {
-        LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
-        return;
-      }
-
+    } else
       while (!shouldShutdown()) {
+        if (!stream->good()) {
+          LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
+          return;
+        }
+
         // Try to read some data
         stream->read(buffer + fill, bufferSize - fill);
         fill += stream->gcount();
@@ -95,13 +95,12 @@ void TailFileToLog::run() {
           }
         }
 
-        // Reset on end of stream or fail
-        if (!stream->good()) {
+        // Reset on end of stream
+        if (stream->eof()) {
           stream->clear();
           break;
         }
       }
-    }
 
     timer.throttle(0.25);
   }
