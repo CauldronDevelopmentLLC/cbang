@@ -60,7 +60,7 @@ namespace cb {
     std::atomic<bool> shutdown;
     bool destroy;
     unsigned id;
-    int exitStatus;
+    int exitStatus = 0;
 
     static ThreadLocalStorage<Thread *> threads;
 
