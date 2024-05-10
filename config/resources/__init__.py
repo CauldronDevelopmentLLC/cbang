@@ -229,7 +229,7 @@ def modify_targets(target, source, env):
 
 def generate(env):
   env.SetDefault(RESOURCES_NS = '')
-  env.SetDefault(RESOURCES_EXCLUDES = [r'\.svn', r'.*~'])
+  env.SetDefault(RESOURCES_EXCLUDES = [r'\.svn', r'~$'])
 
   bld = env.Builder(action = resources_build,
                     source_factory = SCons.Node.FS.Entry,
