@@ -41,6 +41,7 @@
 #include <event2/event_struct.h>
 
 #include <limits>
+#include <cstdlib>
 
 using namespace cb::Event;
 using namespace std;
@@ -183,7 +184,7 @@ namespace {
   void fatal_cb(int err) {
     LOG_ERROR("Fatal error in event system " << err << ": "
               << cb::Debugger::getStackTrace());
-    exit(err);
+    abort();
   }
 }
 
