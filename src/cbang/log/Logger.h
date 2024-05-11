@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "LogListener.h"
+
 #include <cbang/SStream.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/Exception.h>
@@ -44,6 +46,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <vector>
 
 
 namespace cb {
@@ -113,11 +116,12 @@ namespace cb {
     SmartPointer<RateSet> rates;
     std::map<std::string, std::string> rateMessages;
 
-    SmartPointer<ThreadLocalStorage<unsigned long>> threadIDStorage;
+    SmartPointer<ThreadLocalStorage<unsigned>> threadIDStorage;
     SmartPointer<ThreadLocalStorage<std::string>>   prefixStorage;
 
     SmartPointer<std::ostream> logFile;
     SmartPointer<std::ostream> screenStream;
+    std::vector<SmartPointer<LogListener>> listeners;
 
     mutable unsigned idWidth = 1;
 
@@ -150,6 +154,9 @@ namespace cb {
     void setScreenStream(std::ostream &stream);
     void setScreenStream(const SmartPointer<std::ostream> &stream);
 
+    void addListener(const SmartPointer<LogListener> &l)
+      {listeners.push_back(l);}
+
     void setVerbosity(unsigned x)       {verbosity        = x;}
     void setLogDebug(bool x)            {logDebug         = x;}
     void setLogCRLF(bool x)             {logCRLF          = x;}
@@ -177,8 +184,8 @@ namespace cb {
     unsigned getHeaderWidth() const;
     const SmartPointer<RateSet> &getRates() const {return rates;}
 
-    void setThreadID(unsigned long id);
-    unsigned long getThreadID() const;
+    void setThreadID(unsigned id);
+    unsigned getThreadID() const;
     void setPrefix(const std::string &prefix);
     std::string getPrefix() const;
 

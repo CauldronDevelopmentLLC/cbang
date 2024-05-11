@@ -30,92 +30,31 @@
 
 \******************************************************************************/
 
-#include "LogStream.h"
+#include "LogLineListener.h"
 
-#include "Logger.h"
+#include <algorithm>
+#include <cstring>
 
 using namespace std;
 using namespace cb;
 
 
-LogDevice::impl::impl(const string &prefix, const string &suffix,
-                      const string &trailer, const string &rateKey) :
-  prefix(prefix), suffix(suffix), trailer(trailer), rateKey(rateKey) {
-  Logger::instance().lock();
+void LogLineListener::write(const char *s, unsigned n) {
+  for (unsigned i = 0; i < n; i++) put(s[i]);
 }
 
 
-LogDevice::impl::~impl() {
-  write(&trailer[0], trailer.size());
-  flushLine();
-  Logger::instance().unlock();
-}
-
-
-streamsize LogDevice::impl::write(const char_type *s, streamsize n) {
-  streamsize total = n;
-
-  while (n) {
-    if (startOfLine) {
-      // Add prefix
-      buffer.append(prefix.begin(), prefix.end());
-      startOfLine = false;
-    }
-
-    // Copy up to EOL to buffer, skipping '\r's
-    streamsize i;
-    for (i = 0; i < n; i++)
-      if (s[i] == '\n') break;
-      else if (s[i] != '\r') {
-        buffer.append(1, s[i]);
-        if (first && !rateKey.empty()) rateMessage.append(1, s[i]);
-      }
-
-    if (i == n) break; // No EOL
-
-    // Write line to log
-    flushLine();
-
-    // Skip EOL
-    i++;
-
-    // Advance
-    n -= i;
-    s += i;
+void LogLineListener::put(char c) {
+  if (c == '\n') flush();
+  else {
+    buffer[fill++] = c;
+    if (fill == size) flush();
   }
-
-  return total;
 }
 
 
-void LogDevice::impl::flushLine() {
-  if (startOfLine) return;
-
-  if (first && !rateKey.empty() && !rateMessage.empty())
-    Logger::instance().rateMessage(rateKey, rateMessage);
-  first = false;
-
-  // Add suffix
-  buffer.append(suffix.begin(), suffix.end());
-
-  // Add EOL
-  if (Logger::instance().getLogCRLF()) buffer.append(1, '\r');
-  buffer.append(1, '\n');
-
-  flush();
-
-  startOfLine = true;
-}
-
-
-bool LogDevice::impl::flush() {
-  if (buffer.empty()) return true;
-
-  // Write to log
-  Logger::instance().write(buffer);
-
-  // Flush the buffer
-  buffer.clear();
-
-  return true;
+void LogLineListener::flush() {
+  buffer[fill] = 0;
+  fill = 0;
+  writeln(buffer);
 }
