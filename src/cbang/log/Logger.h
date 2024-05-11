@@ -80,6 +80,7 @@ namespace cb {
   private:
     static Mutex mutex;
     std::string logFilename;
+    uint64_t mainThreadID;
 
 #ifdef CBANG_DEBUG_LEVEL
     unsigned    verbosity           = CBANG_DEBUG_LEVEL;
