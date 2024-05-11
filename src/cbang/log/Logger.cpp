@@ -56,8 +56,7 @@ Mutex Logger::mutex;
 
 
 Logger::Logger(Inaccessible) :
-  mainThreadID(Thread::self()), rates(new RateSet),
-  threadIDStorage(new ThreadLocalStorage<unsigned>),
+  rates(new RateSet), threadIDStorage(new ThreadLocalStorage<unsigned>),
   prefixStorage(new ThreadLocalStorage<string>), lastDate(Time::now()),
   lastRotate(lastDate) {
   setScreenStream(cout);
@@ -441,11 +440,9 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
 
   // Rotate log periodically
   uint64_t now = Time::now();
-  if (mainThreadID == Thread::self()) {
-    if (logRotatePeriod && !logFilename.empty() &&
-        lastRotate / logRotatePeriod != now / logRotatePeriod)
-      startLogFile(logFilename);
-  }
+  if (logRotatePeriod && !logFilename.empty() &&
+      lastRotate / logRotatePeriod != now / logRotatePeriod)
+    startLogFile(logFilename);
 
   // Log date periodically
   if (logDatePeriodically &&
