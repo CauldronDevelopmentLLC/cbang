@@ -92,6 +92,7 @@ def configure(conf, cstd = 'c99'):
     cxxflags      =     env.get('cxxflags')
     linkflags     =     env.get('linkflags')
     cxxstd        =     env.get('cxxstd')
+    dbgstdcxx     =     env.get('dbgstdcxx')
     platform      =     env.get('platform')
     static        = int(env.get('static'))
     num_jobs      =     env.get('num_jobs')
@@ -297,6 +298,12 @@ def configure(conf, cstd = 'c99'):
             if cxxstd in ('c++14', 'c++17', 'c++20'):
                 env.AppendUnique(CXXFLAGS = ['/std:' + cxxstd])
 
+    # GNU libstdc++ debugging
+    if dbgstdcxx and compiler_mode == 'gnu':
+        env.CBDefine('_GLIBCXX_DEBUG')
+        env.CBDefine('_GLIBCXX_DEBUG_BACKTRACE')
+        conf.CBRequireLib('stdc++_libbacktrace')
+
 
     # Threads
     if threaded:
@@ -496,6 +503,7 @@ def generate(env):
         EnumVariable(
             'cxxstd', 'Set C++ language standard', 'c++14',
             allowed_values = ('c++98', 'c++11', 'c++14', 'c++17', 'c++20')),
+        BoolVariable('dbgstdcxx', 'Enable GNU libstdc++ debugging', 0),
         EnumVariable(
             'compiler', 'Select compiler', 'default',
             allowed_values = ('default', 'gnu', 'msvc', 'posix', 'clang')),
