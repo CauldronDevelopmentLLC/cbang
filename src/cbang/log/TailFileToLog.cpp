@@ -58,6 +58,7 @@ void TailFileToLog::update() {
 
   if (!stream->good()) {
     LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
+    stream.release();
     event->del();
     return;
   }
@@ -101,8 +102,8 @@ void TailFileToLog::update() {
 
     // Reset on end of stream
     if (stream->eof()) {
-      stream->clear();
       stream->seekg(0, ios::cur); // Reset file descriptor
+      stream->clear();
       return;
     }
   }
