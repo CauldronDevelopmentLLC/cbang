@@ -32,39 +32,27 @@
 
 #pragma once
 
-#include "Logger.h"
+#include "TailFileToLog.h"
 
-#include <cbang/SmartPointer.h>
-#include <cbang/thread/Thread.h>
+#include <cbang/event/Event.h>
+#include <cbang/thread/Mutex.h>
 
-#include <string>
-#include <iostream>
 
 namespace cb {
-  class TailFileToLog : public Thread {
-  protected:
-    const std::string filename;
-    const std::string prefix;
-    const char *logDomain;
-    unsigned logLevel;
-    SmartPointer<std::istream> stream;
-
-    static const unsigned bufferSize = 4096;
-    char buffer[bufferSize + 1]; // Room for null terminator
-    unsigned fill = 0;
+  class EventTailFileToLog : public TailFileToLog, public Mutex {
+    Event::EventPtr event;
+    std::vector<std::string> lines;
 
   public:
-    TailFileToLog(const std::string &filename,
-                  const std::string &prefix = std::string(),
-                  const char *logDomain = CBANG_LOG_DOMAIN,
-                  unsigned logLevel = CBANG_LOG_INFO_LEVEL(1)) :
-      filename(filename), prefix(prefix), logDomain(logDomain),
-      logLevel(logLevel) {}
+    EventTailFileToLog(Event::Base &base, const std::string &filename,
+                       const std::string &prefix = std::string(),
+                       const char *logDomain = CBANG_LOG_DOMAIN,
+                       unsigned logLevel = CBANG_LOG_INFO_LEVEL(1));
 
-    virtual void log(const char *line);
+    // From TailFileToLog
+    void log(const char *line) override;
 
   protected:
-    // From Thread
-    void run() override;
+    void flush();
   };
 }
