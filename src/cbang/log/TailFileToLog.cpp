@@ -42,6 +42,11 @@ using namespace std;
 using namespace cb;
 
 
+void TailFileToLog::log(const char *line) {
+  LOG(logDomain, logLevel, prefix + line);
+}
+
+
 void TailFileToLog::run() {
   Timer timer;
 
@@ -73,7 +78,7 @@ void TailFileToLog::run() {
             if (buffer <= ptr && *ptr == '\r') *ptr = 0;
 
             // Log the line
-            log();
+            log(buffer);
 
             // Update buffer
             fill -= (eol - buffer) + 1;
@@ -85,7 +90,7 @@ void TailFileToLog::run() {
           } else { // EOL not found
             if (fill == bufferSize) {
               // Buffer is full so just log it as is
-              log();
+              log(buffer);
               fill = 0;
             }
 
@@ -104,6 +109,3 @@ void TailFileToLog::run() {
     timer.throttle(0.25);
   }
 }
-
-
-void TailFileToLog::log() {LOG(logDomain, logLevel, prefix + buffer);}
