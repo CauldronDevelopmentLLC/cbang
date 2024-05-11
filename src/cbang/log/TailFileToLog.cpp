@@ -61,10 +61,6 @@ void TailFileToLog::run() {
         stream->read(buffer + fill, bufferSize - fill);
         fill += stream->gcount();
 
-        LOG_DEBUG(4, "fill=" << fill << " gcount()=" << stream->gcount()
-                  << " bufferSize=" << bufferSize << " buffer="
-                  << (uint64_t)buffer);
-
         while (fill) {
           // Find end of line
           buffer[fill] = 0; // Terminate buffer
@@ -100,6 +96,7 @@ void TailFileToLog::run() {
         // Reset on end of stream
         if (stream->eof()) {
           stream->clear();
+          stream->seekg(0, ios::cur); // Reset file descriptor
           break;
         }
       }
