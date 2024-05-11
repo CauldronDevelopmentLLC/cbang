@@ -44,47 +44,6 @@ using namespace std;
 using namespace cb;
 
 
-#if defined(_WIN32) && !defined(__MINGW32__)
-#define WIN32_LEAN_AND_MEAN // Avoid including winsock.h
-#include <windows.h>
-
-
-namespace {
-  const char *win32_code_to_string(int code) {
-    switch (code) {
-    case EXCEPTION_ACCESS_VIOLATION:         return "Access violation";
-    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:    return "Array bounds exceeded";
-    case EXCEPTION_BREAKPOINT:               return "Breakpoint";
-    case EXCEPTION_DATATYPE_MISALIGNMENT:    return "Datatype misalignment";
-    case EXCEPTION_FLT_DENORMAL_OPERAND:     return "Float denormal operand";
-    case EXCEPTION_FLT_DIVIDE_BY_ZERO:       return "Float divide by zero";
-    case EXCEPTION_FLT_INEXACT_RESULT:       return "Float inexact result";
-    case EXCEPTION_FLT_INVALID_OPERATION:    return "Float invalid operation";
-    case EXCEPTION_FLT_OVERFLOW:             return "Float overflow";
-    case EXCEPTION_FLT_STACK_CHECK:          return "Float stack check";
-    case EXCEPTION_FLT_UNDERFLOW:            return "Float underflow";
-    case EXCEPTION_ILLEGAL_INSTRUCTION:      return "Illegal instruction";
-    case EXCEPTION_IN_PAGE_ERROR:            return "In page error";
-    case EXCEPTION_INT_DIVIDE_BY_ZERO:       return "Tnteger divide by zero";
-    case EXCEPTION_INT_OVERFLOW:             return "Integer overflow";
-    case EXCEPTION_INVALID_DISPOSITION:      return "Invalid disposition";
-    case EXCEPTION_NONCONTINUABLE_EXCEPTION: return "Noncontinuable exception";
-    case EXCEPTION_PRIV_INSTRUCTION:         return "Private instruction";
-    case EXCEPTION_SINGLE_STEP:              return "Single step";
-    case EXCEPTION_STACK_OVERFLOW:           return "Stack overflow";
-    default:                                 return "Unknown";
-    }
-  }
-
-
-  extern "C" void convert_win32_exception(unsigned x, EXCEPTION_POINTERS *e){
-    const char *msg = win32_code_to_string(e->ExceptionRecord->ExceptionCode);
-    THROW("Win32: 0x" << hex << x << ": " << msg);
-  }
-}
-#endif // _WIN32
-
-
 #ifdef DEBUG
 bool Exception::enableStackTraces = true;
 #else
@@ -99,10 +58,6 @@ Exception::Exception(const string &message, int code,
                      const FileLocation &location,
                      const SmartPointer<Exception> &cause) :
   message(message), code(code), location(location), cause(cause) {
-
-#if defined(_WIN32) && !defined(__MINGW32__)
-  _set_se_translator(convert_win32_exception);
-#endif
 
 #ifdef HAVE_CBANG_BACKTRACE
   if (enableStackTraces) {
