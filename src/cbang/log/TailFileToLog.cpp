@@ -61,7 +61,9 @@ void TailFileToLog::run() {
         stream->read(buffer + fill, bufferSize - fill);
         fill += stream->gcount();
 
-        LOG_DEBUG(4, "fill=" << fill << " gcount()=" << stream->gcount());
+        LOG_DEBUG(4, "fill=" << fill << " gcount()=" << stream->gcount()
+                  << " bufferSize=" << bufferSize << " buffer="
+                  << (uint64_t)buffer);
 
         while (fill) {
           // Find end of line
