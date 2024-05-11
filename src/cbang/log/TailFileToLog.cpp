@@ -33,8 +33,8 @@
 #include "TailFileToLog.h"
 
 #include <cbang/String.h>
-#include <cbang/time/Timer.h>
 #include <cbang/os/SystemUtilities.h>
+#include <cbang/event/Base.h>
 
 #include <cstring>
 
@@ -42,70 +42,73 @@ using namespace std;
 using namespace cb;
 
 
-void TailFileToLog::log(const char *line) {
-  LOG(logDomain, logLevel, prefix + line);
+TailFileToLog::TailFileToLog(
+  Event::Base &base, const string &filename,
+  const string &prefix, const char *logDomain, unsigned logLevel) :
+  event(base.newEvent(this, &TailFileToLog::update)),
+  filename(filename), prefix(prefix), logDomain(logDomain),
+  logLevel(logLevel) {event->add(0.25);}
+
+
+void TailFileToLog::update() {
+  if (stream.isNull() && SystemUtilities::exists(filename))
+    stream = SystemUtilities::iopen(filename);
+
+  if (stream.isNull()) return;
+
+  if (!stream->good()) {
+    LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
+    event->del();
+    return;
+  }
+
+  for (unsigned i = 0; i < 1e4; i++) {
+    // Try to read some data
+    stream->read(buffer + fill, bufferSize - fill);
+    fill += stream->gcount();
+
+    while (fill) {
+      // Find end of line
+      buffer[fill] = 0; // Terminate buffer
+      char *eol = strchr(buffer, '\n');
+
+      if (eol) {
+        // Terminate line
+        char *ptr = eol;
+        *ptr-- = 0;
+        if (buffer <= ptr && *ptr == '\r') *ptr = 0;
+
+        // Log the line
+        log(buffer);
+
+        // Update buffer
+        fill -= (eol - buffer) + 1;
+        if (fill) {
+          memmove(buffer, eol + 1, fill);
+          continue;
+        }
+
+      } else { // EOL not found
+        if (fill == bufferSize) {
+          // Buffer is full so just log it as is
+          log(buffer);
+          fill = 0;
+        }
+
+        break;
+      }
+    }
+
+    // Reset on end of stream
+    if (stream->eof()) {
+      stream->clear();
+      stream->seekg(0, ios::cur); // Reset file descriptor
+      return;
+    }
+  }
 }
 
 
-void TailFileToLog::run() {
-  Timer timer;
-
-  while (!shouldShutdown()) {
-    if (stream.isNull()) {
-      if (SystemUtilities::exists(filename))
-        stream = SystemUtilities::iopen(filename);
-
-    } else
-      while (!shouldShutdown()) {
-        if (!stream->good()) {
-          LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
-          return;
-        }
-
-        // Try to read some data
-        stream->read(buffer + fill, bufferSize - fill);
-        fill += stream->gcount();
-
-        while (fill) {
-          // Find end of line
-          buffer[fill] = 0; // Terminate buffer
-          char *eol = strchr(buffer, '\n');
-
-          if (eol) {
-            // Terminate line
-            char *ptr = eol;
-            *ptr-- = 0;
-            if (buffer <= ptr && *ptr == '\r') *ptr = 0;
-
-            // Log the line
-            log(buffer);
-
-            // Update buffer
-            fill -= (eol - buffer) + 1;
-            if (fill) {
-              memmove(buffer, eol + 1, fill);
-              continue;
-            }
-
-          } else { // EOL not found
-            if (fill == bufferSize) {
-              // Buffer is full so just log it as is
-              log(buffer);
-              fill = 0;
-            }
-
-            break;
-          }
-        }
-
-        // Reset on end of stream
-        if (stream->eof()) {
-          stream->clear();
-          stream->seekg(0, ios::cur); // Reset file descriptor
-          break;
-        }
-      }
-
-    timer.throttle(0.25);
-  }
+void TailFileToLog::log(const char *line) {
+  LOG(logDomain, logLevel, prefix + line);
 }
