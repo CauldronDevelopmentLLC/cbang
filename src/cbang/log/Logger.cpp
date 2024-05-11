@@ -56,13 +56,13 @@ Mutex Logger::mutex;
 
 
 Logger::Logger(Inaccessible) :
-  rates(new RateSet), threadIDStorage(new ThreadLocalStorage<unsigned long>),
+  rates(new RateSet), threadIDStorage(new ThreadLocalStorage<unsigned>),
   prefixStorage(new ThreadLocalStorage<string>), lastDate(Time::now()),
   lastRotate(lastDate) {
   setScreenStream(cout);
 
 #ifdef _WIN32
-  logCRLF = true;
+  logCRLF  = true;
   logColor = false; // Windows does not handle ANSI color codes well
 #endif
 }
@@ -240,10 +240,10 @@ unsigned Logger::getHeaderWidth() const {
 }
 
 
-void Logger::setThreadID(unsigned long id) {threadIDStorage->set(id);}
+void Logger::setThreadID(unsigned id) {threadIDStorage->set(id);}
 
 
-unsigned long Logger::getThreadID() const {
+unsigned Logger::getThreadID() const {
   return threadIDStorage->isSet() ? threadIDStorage->get() : 0;
 }
 
@@ -312,7 +312,7 @@ string Logger::getHeader(const string &domain, int level) const {
 
   // Thread ID
   if (logThreadID) {
-    string idStr = String::printf("%0*ld:", idWidth - 1, getThreadID());
+    string idStr = String::printf("%0*u:", idWidth - 1, getThreadID());
     if (idWidth < idStr.length()) {
       lock();
       idWidth = idStr.length();
@@ -430,7 +430,7 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
 
   if (!enabled(domain, level)) return new NullStream<>;
 
-  lock();
+  SmartLock lock(this);
 
   string rateKey;
   if ((level & logRates) && rates.isSet()) {
@@ -484,6 +484,7 @@ void Logger::logBar(const string &msg, uint64_t ts) const {
 void Logger::write(const char *s, streamsize n) {
   if (!logFile.isNull()) logFile->write(s, n);
   if (logToScreen && !screenStream.isNull()) screenStream->write(s, n);
+  for (auto &l: listeners) TRY_CATCH_ERROR(l->write(s, n));
   flush();
 }
 

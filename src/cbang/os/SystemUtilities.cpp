@@ -785,14 +785,13 @@ namespace cb {
       }
 
       // Compression
-      if (compression != Compression::COMPRESSION_NONE) {
-        string compTarget = target + compExt;
+      if (!compExt.empty()) {
+        auto out = oopen(target + compExt, 0644, true);
+        auto in  = iopen(target);
 
-        auto cb = [target, compTarget] {
-          auto out = SystemUtilities::oopen(compTarget, 0644, true);
-          auto in  = SystemUtilities::iopen(target);
-          SystemUtilities::cp(*in, *out);
-          SystemUtilities::unlink(target);
+        auto cb = [out, in, target] {
+          cp(*in, *out);
+          unlink(target);
         };
 
         (new ThreadFunc(cb, true))->start();
