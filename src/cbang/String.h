@@ -34,8 +34,6 @@
 
 #include "Exception.h"
 
-#include <cbang/util/FormatCheck.h>
-
 #include <string>
 #include <vector>
 #include <istream>
@@ -81,10 +79,10 @@ namespace cb {
 #include "StringParseTypes.def"
 
     // Formatting
-    static std::string printf(const char *format, ...)
-      FORMAT_CHECK(printf, 1, 2);
-    static std::string vprintf(const char *format, va_list ap)
-      FORMAT_CHECK(printf, 1, 0);
+    [[gnu::format(printf, 1, 2)]]
+    static std::string printf(const char *format, ...);
+    [[gnu::format(printf, 1, 0)]]
+    static std::string vprintf(const char *format, va_list ap);
 
     // Tokenizing
     static unsigned tokenize(const std::string &s,

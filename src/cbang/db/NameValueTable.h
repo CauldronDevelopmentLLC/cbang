@@ -36,7 +36,6 @@
 #include "Statement.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/FormatCheck.h>
 
 #include <string>
 #include <functional>
@@ -64,8 +63,8 @@ namespace cb {
       void init();
       void create();
 
-      void setf(const char *name, const char *value, ...)
-        FORMAT_CHECK(printf, 3, 4);
+      [[gnu::format(printf, 3, 4)]]
+      void setf(const char *name, const char *value, ...);
       void set(const std::string &name, const std::string &value);
       void set(const std::string &name, int64_t value);
       void set(const std::string &name, uint64_t value)

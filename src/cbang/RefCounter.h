@@ -34,8 +34,6 @@
 
 #include "Deallocators.h"
 
-#include <cbang/util/FormatCheck.h>
-
 #include <atomic>
 #include <string>
 
@@ -64,7 +62,8 @@ namespace cb {
     void clearRefPtr(const RefCounted *ref);
     void clearRefPtr(const void *ref) {}
 
-    void log(unsigned level, const char *fmt, ...) FORMAT_CHECK(printf, 3, 4);
+    [[gnu::format(printf, 3, 4)]]
+    void log(unsigned level, const char *fmt, ...);
   };
 
 
