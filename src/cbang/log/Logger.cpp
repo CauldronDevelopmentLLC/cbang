@@ -45,11 +45,19 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/thread/ThreadLocalStorage.h>
 #include <cbang/config/Options.h>
+#include <cbang/event/Base.h>
 
 #include <iostream>
 
 using namespace std;
 using namespace cb;
+
+namespace {
+  uint64_t eventDelay(uint64_t period) {
+    auto now = Time::now();
+    return (1 + now / period) * period - now;
+  }
+}
 
 
 Mutex Logger::mutex;
@@ -57,8 +65,7 @@ Mutex Logger::mutex;
 
 Logger::Logger(Inaccessible) :
   rates(new RateSet), threadIDStorage(new ThreadLocalStorage<unsigned>),
-  prefixStorage(new ThreadLocalStorage<string>), lastDate(Time::now()),
-  lastRotate(lastDate) {
+  prefixStorage(new ThreadLocalStorage<string>) {
   setScreenStream(cout);
 
 #ifdef _WIN32
@@ -74,6 +81,12 @@ Logger::~Logger() {}
 bool Logger::lock(double timeout) const {return mutex.lock(timeout);}
 void Logger::unlock() const {mutex.unlock();}
 bool Logger::tryLock() const {return mutex.tryLock();}
+
+
+void Logger::initEvents(Event::Base &base) {
+  (rotateEvent = base.newEvent(this, &Logger::rotate, 0))->activate();
+  (dateEvent   = base.newEvent(this, &Logger::date,   0))->activate();
+}
 
 
 void Logger::addOptions(Options &options) {
@@ -178,7 +191,7 @@ void Logger::startLogFile(const string &filename) {
   // Rotate log
   if (logRotate) {
     if (logFile.isSet()) {
-      logBar("Log Rotated", lastDate);
+      logBar("Log Rotated", Time::now());
       logFile.release();
     }
 
@@ -189,8 +202,7 @@ void Logger::startLogFile(const string &filename) {
   logFile = SystemUtilities::open(
     filename, ios::out | (logTrunc ? ios::trunc : ios::app));
   logFilename = filename;
-  lastDate = lastRotate = Time::now();
-  logBar("Log Started", lastDate);
+  logBar("Log Started", Time::now());
   logFile->flush();
 }
 
@@ -437,20 +449,6 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
     rates->event(rateKey);
   }
 
-  // Rotate log periodically
-  uint64_t now = Time::now();
-  if (logRotatePeriod && !logFilename.empty() &&
-      lastRotate / logRotatePeriod != now / logRotatePeriod)
-    startLogFile(logFilename);
-
-  // Log date periodically
-  if (logDatePeriodically &&
-      lastDate / logDatePeriodically != now / logDatePeriodically) {
-    lastDate = now;
-    write(String::bar(Time(lastDate).toString("Date: %Y-%m-%d")) +
-          (logCRLF ? "\r\n" : "\n"));
-  }
-
   string prefix = startColor(level) + getHeader(domain, level) + _prefix;
   string suffix = endColor(level);
   string trailer;
@@ -495,4 +493,27 @@ bool Logger::flush() {
   if (!logFile.isNull()) logFile->flush();
   if (logToScreen && !screenStream.isNull()) screenStream->flush();
   return true;
+}
+
+
+void Logger::rotate() {
+  if (firstRotate) firstRotate = false;
+  else {
+    SmartLock lock(this);
+    startLogFile(logFilename);
+  }
+
+  if (logRotatePeriod) rotateEvent->add(eventDelay(logRotatePeriod));
+}
+
+
+void Logger::date() {
+  if (firstDate) firstDate = false;
+  else {
+    SmartLock lock(this);
+    write(String::bar(Time().toString("Date: %Y-%m-%d")) +
+          (logCRLF ? "\r\n" : "\n"));
+  }
+
+  if (logDatePeriodically) dateEvent->add(eventDelay(logDatePeriodically));
 }
