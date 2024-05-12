@@ -41,6 +41,7 @@
 #include <cbang/util/Singleton.h>
 #include <cbang/comp/Compression.h>
 #include <cbang/thread/Lockable.h>
+#include <cbang/event/Event.h>
 
 #include <ostream>
 #include <string>
@@ -117,7 +118,7 @@ namespace cb {
     std::map<std::string, std::string> rateMessages;
 
     SmartPointer<ThreadLocalStorage<unsigned>> threadIDStorage;
-    SmartPointer<ThreadLocalStorage<std::string>>   prefixStorage;
+    SmartPointer<ThreadLocalStorage<std::string>> prefixStorage;
 
     SmartPointer<std::ostream> logFile;
     SmartPointer<std::ostream> screenStream;
@@ -132,8 +133,10 @@ namespace cb {
     typedef std::set<std::string> domain_traces_t;
     domain_traces_t domainTraces;
 
-    uint64_t lastDate;
-    uint64_t lastRotate;
+    Event::EventPtr rotateEvent;
+    Event::EventPtr dateEvent;
+    bool firstRotate = true;
+    bool firstDate   = true;
 
   public:
     Logger(Inaccessible);
@@ -144,8 +147,11 @@ namespace cb {
     void unlock() const override;
     bool tryLock() const override;
 
+    void initEvents(Event::Base &base);
+
     void addOptions(Options &options);
     void setOptions(Options &options);
+
     int domainLevelsAction(Option &option);
 
     void startLogFile(const std::string &filename);
@@ -211,6 +217,9 @@ namespace cb {
     void write(const char *s, std::streamsize n);
     void write(const std::string &s);
     bool flush();
+
+    void rotate();
+    void date();
 
     friend class LogDevice;
   };
