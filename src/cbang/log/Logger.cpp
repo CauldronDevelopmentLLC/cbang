@@ -192,11 +192,14 @@ void Logger::startLogFile(const string &filename) {
   if (logRotate) {
     if (logFile.isSet()) {
       logBar("Log Rotated", Time::now());
+      logFile->flush();
       logFile.release();
     }
 
-    SystemUtilities::rotate(filename, logRotateDir, logRotateMax,
-                            logRotateCompression);
+    try {
+      SystemUtilities::rotate(filename, logRotateDir, logRotateMax,
+                              logRotateCompression);
+    } CATCH_ERROR;
   }
 
   logFile = SystemUtilities::open(
@@ -498,12 +501,10 @@ bool Logger::flush() {
 
 void Logger::rotate() {
   if (firstRotate) firstRotate = false;
-  else {
-    SmartLock lock(this);
-    startLogFile(logFilename);
-  }
+  else startLogFile(logFilename);
 
-  if (logRotatePeriod) rotateEvent->add(eventDelay(logRotatePeriod));
+  if (logRotate && logRotatePeriod)
+    rotateEvent->add(eventDelay(logRotatePeriod));
 }
 
 
