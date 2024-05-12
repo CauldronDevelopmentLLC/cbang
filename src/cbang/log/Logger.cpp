@@ -192,7 +192,6 @@ void Logger::startLogFile(const string &filename) {
   if (logRotate) {
     if (logFile.isSet()) {
       logBar("Log Rotated", Time::now());
-      logFile->flush();
       logFile.release();
     }
 
