@@ -732,7 +732,7 @@ namespace cb {
       string target;
 
       // Directory
-      if (!dir.empty()) {
+      if (false && !dir.empty()) {
         ensureDirectory(dir);
         target = joinPath(dir, basename(path));
 
