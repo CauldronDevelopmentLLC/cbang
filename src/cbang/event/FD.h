@@ -38,6 +38,7 @@
 
 #include <cbang/util/Progress.h>
 #include <cbang/util/NonCopyable.h>
+#include <cbang/util/LifetimeManager.h>
 
 #include <cstdint>
 
@@ -46,7 +47,7 @@ namespace cb {
   namespace Event {
     class FDPool;
 
-    class FD : public RefCounted, public NonCopyable {
+    class FD : public RefCounted, public NonCopyable, public LifetimeManager {
       Base &base;
       int fd = -1;
       SmartPointer<SSL> ssl;
@@ -93,14 +94,22 @@ namespace cb {
       void setStatus(int status) {this->status = status;}
       int getStatus() const {return status;}
 
-      void read(const SmartPointer<Transfer> transfer);
-      void read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
-                const std::string &until = std::string());
-      void canRead(Transfer::cb_t cb);
+      using LTPtr = SmartPointer<LifetimeObject>;
 
-      void write(const SmartPointer<Transfer> transfer);
-      void write(Transfer::cb_t cb, const Buffer &buffer);
-      void canWrite(Transfer::cb_t cb);
+      [[gnu::warn_unused_result]]
+      LTPtr read(const SmartPointer<Transfer> transfer);
+      [[gnu::warn_unused_result]]
+      LTPtr read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
+                const std::string &until = std::string());
+      [[gnu::warn_unused_result]]
+      LTPtr canRead(Transfer::cb_t cb);
+
+      [[gnu::warn_unused_result]]
+      LTPtr write(const SmartPointer<Transfer> transfer);
+      [[gnu::warn_unused_result]]
+      LTPtr write(Transfer::cb_t cb, const Buffer &buffer);
+      [[gnu::warn_unused_result]]
+      LTPtr canWrite(Transfer::cb_t cb);
 
       virtual void close();
     };

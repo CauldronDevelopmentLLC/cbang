@@ -83,7 +83,7 @@ void ConnIn::writeRequest(
       else readHeader();
     };
 
-  write(cb2, buffer);
+  addLTO(write(cb2, buffer));
 }
 
 
@@ -100,7 +100,7 @@ void ConnIn::readHeader() {
     };
 
   // Read until end of header
-  read(cb, input, getMaxHeaderSize(), "\r\n\r\n");
+  addLTO(read(cb, input, getMaxHeaderSize(), "\r\n\r\n"));
 }
 
 
@@ -172,7 +172,8 @@ void ConnIn::processHeader() {
             else error(HTTP_BAD_REQUEST, "Failed to send continue");
           };
 
-        return write(cb, line);
+        addLTO(write(cb, line));
+        return;
 
       } else return error(HTTP_EXPECTATION_FAILED, "Cannot continue");
     }
@@ -231,7 +232,7 @@ void ConnIn::checkChunked(const SmartPointer<Request> &req) {
       processIfNext(req);
     };
 
-  read(cb, input, contentLength);
+  addLTO(read(cb, input, contentLength));
 }
 
 

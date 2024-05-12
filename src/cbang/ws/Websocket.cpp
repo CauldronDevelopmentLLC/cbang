@@ -215,11 +215,11 @@ void Websocket::readHeader() {
         };
 
       // Read rest of header
-      getConnection()->read(cb, input, bytes);
+      addLTO(getConnection()->read(cb, input, bytes));
     };
 
   // Read first part of header
-  getConnection()->read(cb, input, 2);
+  addLTO(getConnection()->read(cb, input, 2));
 }
 
 
@@ -274,7 +274,7 @@ void Websocket::readBody() {
     if (isActive()) readHeader();
   };
 
-  getConnection()->read(cb, input, bytesToRead);
+  addLTO(getConnection()->read(cb, input, bytesToRead));
 }
 
 
@@ -379,7 +379,7 @@ void Websocket::writeFrame(
         getConnection()->close();
     };
 
-  getConnection()->write(cb, out);
+  addLTO(getConnection()->write(cb, out));
 }
 
 
