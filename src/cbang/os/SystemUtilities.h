@@ -105,7 +105,7 @@ namespace cb {
 
     // File
     typedef SmartPointer<std::iostream> (* createFile_t)(
-      const std::string &, std::ios::openmode);
+      const std::string &, std::ios::openmode, int);
     void setCreateFileCallback(createFile_t cb);
 
     unsigned getMaxFiles();
