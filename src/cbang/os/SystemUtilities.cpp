@@ -48,6 +48,7 @@
 #include <cbang/boost/IOStreams.h>
 #include <cbang/util/ResourceManager.h>
 #include <cbang/thread/Thread.h>
+#include <cbang/io/IOStream.h>
 
 #include <cerrno>
 #include <cstring>
@@ -106,8 +107,8 @@ namespace fs = boost::filesystem;
 
 namespace {
   SmartPointer<iostream> defaultCreateFile(
-    const string &path, ios::openmode mode) {
-    return new fstream(path, mode | ios::binary);
+    const string &path, ios::openmode mode, int perm) {
+    return new IOStream(path, mode, perm);
   }
 }
 
@@ -732,7 +733,7 @@ namespace cb {
       string target;
 
       // Directory
-      if (false && !dir.empty()) {
+      if (!dir.empty()) {
         ensureDirectory(dir);
         target = joinPath(dir, basename(path));
 
@@ -1120,7 +1121,7 @@ namespace cb {
 
       SysError::clear();
       try {
-        return createFile(filename, mode);
+        return createFile(filename, mode, perm);
 
       } catch (const exception &e) {
         THROW("Failed to open '" << filename << "': " << e.what()
@@ -1143,7 +1144,7 @@ namespace cb {
 
         if (String::startsWith(filename, "resource://"))
           file = ResourceManager::instance().open(filename.substr(11));
-        else file = createFile(filename, ios::in);
+        else file = createFile(filename, ios::in, 0);
 
         if (autoCompression) {
           Compression compression = compressionFromPath(filename);
@@ -1179,7 +1180,7 @@ namespace cb {
 
       SysError::clear();
       try {
-        auto file = createFile(filename, ios::out);
+        auto file = createFile(filename, ios::out, perm);
 
         if (autoCompression) {
           Compression compression = compressionFromPath(filename);
