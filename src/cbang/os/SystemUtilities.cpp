@@ -711,22 +711,17 @@ namespace cb {
 
 
     void rename(const string &src, const string &dst) {
-      bool fail;
-
-#ifdef _WIN32
-      fail = !MoveFileEx(src.c_str(), dst.c_str(), MOVEFILE_REPLACE_EXISTING);
-#else
-      fail = ::rename(src.c_str(), dst.c_str());
+      if (exists(dst)) unlink(dst);
+      bool fail = std::rename(src.c_str(), dst.c_str());
 
       if (fail && errno == EXDEV) { // Different file systems
         cp(src, dst);
         unlink(src);
         fail = false;
       }
-#endif
 
       if (fail) THROW("Failed to rename '" << src << "' to '" << dst << "': "
-                       << SysError());
+                      << SysError());
     }
 
 
@@ -1254,13 +1249,13 @@ namespace cb {
     void chmod(const string &path, unsigned mode) {
       bool fail;
 
-      #ifdef _WIN32
+#ifdef _WIN32
       if (isDirectory(path)) return;
       fail = _chmod(path.c_str(), mode & (_S_IWRITE | _S_IREAD)) != 0;
-      #else
+#else
 
       fail = ::chmod(path.c_str(), mode) != 0;
-      #endif
+#endif
 
       if (fail)
         THROW("Failed to change permissions on '" << path << "'"

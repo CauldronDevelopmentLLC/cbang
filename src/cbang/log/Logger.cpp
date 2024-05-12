@@ -175,9 +175,6 @@ void Logger::setScreenStream(const SmartPointer<ostream> &stream) {
 void Logger::startLogFile(const string &filename) {
   SmartLock lock(this);
 
-  logFilename = filename;
-  lastDate = lastRotate = Time::now();
-
   // Rotate log
   if (logRotate) {
     if (logFile.isSet()) {
@@ -191,6 +188,8 @@ void Logger::startLogFile(const string &filename) {
 
   logFile = SystemUtilities::open(
     filename, ios::out | (logTrunc ? ios::trunc : ios::app));
+  logFilename = filename;
+  lastDate = lastRotate = Time::now();
   logBar("Log Started", lastDate);
   logFile->flush();
 }

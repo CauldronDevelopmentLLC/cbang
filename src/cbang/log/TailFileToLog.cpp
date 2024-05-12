@@ -32,8 +32,8 @@
 
 #include "TailFileToLog.h"
 
-#include <cbang/String.h>
 #include <cbang/os/SystemUtilities.h>
+#include <cbang/os/SysError.h>
 #include <cbang/event/Base.h>
 
 #include <cstring>
@@ -50,66 +50,34 @@ TailFileToLog::TailFileToLog(
   logLevel(logLevel) {event->add(0.25);}
 
 
+TailFileToLog::~TailFileToLog() {if (stream) fclose(stream);}
+
+
 void TailFileToLog::update() {
-  if (stream.isNull() && SystemUtilities::exists(filename))
-    stream = SystemUtilities::iopen(filename);
+  if (!stream && SystemUtilities::exists(filename))
+    stream = fopen(filename.c_str(), "rb");
 
-  if (stream.isNull()) return;
+  if (!stream) return;
 
-  if (!stream->good()) {
-    LOG_ERROR(prefix + "Stream error: " << stream->rdstate());
-    stream.release();
-    event->del();
-    return;
-  }
+  for (unsigned i = 0; i < 1e6; i++) {
+    int c = fgetc(stream);
 
-  for (unsigned i = 0; i < 1e4; i++) {
-    // Try to read some data
-    stream->read(buffer + fill, bufferSize - fill);
-    fill += stream->gcount();
-
-    while (fill) {
-      // Find end of line
-      buffer[fill] = 0; // Terminate buffer
-      char *eol = strchr(buffer, '\n');
-
-      if (eol) {
-        // Terminate line
-        char *ptr = eol;
-        *ptr-- = 0;
-        if (buffer <= ptr && *ptr == '\r') *ptr = 0;
-
-        // Log the line
-        log(buffer);
-
-        // Update buffer
-        fill -= (eol - buffer) + 1;
-        if (fill) {
-          memmove(buffer, eol + 1, fill);
-          continue;
-        }
-
-      } else { // EOL not found
-        if (fill == bufferSize) {
-          // Buffer is full so just log it as is
-          log(buffer);
-          fill = 0;
-        }
-
-        break;
+    if (c == EOF) {
+      if (fseek(stream, 0, SEEK_CUR)) { // Reset stream
+        LOG_ERROR("Bad stream: " << SysError());
+        event->del();
       }
-    }
 
-    // Reset on end of stream
-    if (stream->eof()) {
-      stream->seekg(0, ios::cur); // Reset file descriptor
-      stream->clear();
       return;
     }
+
+    if (c == '\r') continue;
+    if (c != '\n') buffer[fill++] = c;
+
+    if (fill == bufferSize || c == '\n') {
+      buffer[fill] = 0;
+      fill = 0;
+      LOG(logDomain, logLevel, prefix + buffer);
+    }
   }
-}
-
-
-void TailFileToLog::log(const char *line) {
-  LOG(logDomain, logLevel, prefix + line);
 }
