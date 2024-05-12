@@ -78,35 +78,41 @@ void FD::setReadTimeout(unsigned timeout)  {readTimeout  = timeout;}
 void FD::setWriteTimeout(unsigned timeout) {writeTimeout = timeout;}
 
 
-void FD::read(const SmartPointer<Transfer> transfer) {
+FD::LTPtr FD::read(const SmartPointer<Transfer> transfer) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << transfer->getLength());
   transfer->setTimeout(readTimeout);
   base.getPool().read(transfer);
+  return transfer->createLifetime();
 }
 
 
-void FD::read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
+FD::LTPtr FD::read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
               const string &until) {
-  read(new TransferRead(fd, ssl, cb, buffer, length, until));
+  return read(new TransferRead(fd, ssl, cb, buffer, length, until));
 }
 
 
-void FD::canRead(Transfer::cb_t cb) {read(new Transfer(fd, ssl, cb));}
+FD::LTPtr FD::canRead(Transfer::cb_t cb) {
+  return read(new Transfer(fd, ssl, cb));
+}
 
 
-void FD::write(const SmartPointer<Transfer> transfer) {
+FD::LTPtr FD::write(const SmartPointer<Transfer> transfer) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << transfer->getLength());
   transfer->setTimeout(writeTimeout);
   base.getPool().write(transfer);
+  return transfer->createLifetime();
 }
 
 
-void FD::write(Transfer::cb_t cb, const Buffer &buffer) {
-  write(new TransferWrite(fd, ssl, cb, buffer));
+FD::LTPtr FD::write(Transfer::cb_t cb, const Buffer &buffer) {
+  return write(new TransferWrite(fd, ssl, cb, buffer));
 }
 
 
-void FD::canWrite(Transfer::cb_t cb) {write(new Transfer(fd, ssl, cb));}
+FD::LTPtr FD::canWrite(Transfer::cb_t cb) {
+  return write(new Transfer(fd, ssl, cb));
+}
 
 
 void FD::close() {

@@ -67,7 +67,7 @@ void ConnOut::writeRequest(
       readHeader(req);
    };
 
-  write(cb2, buffer);
+  addLTO(write(cb2, buffer));
 }
 
 
@@ -109,7 +109,7 @@ void ConnOut::readHeader(const SmartPointer<Request> &req) {
     };
 
   // Read until end of header
-  read(cb, input, getMaxHeaderSize(), "\r\n\r\n");
+  addLTO(read(cb, input, getMaxHeaderSize(), "\r\n\r\n"));
 }
 
 
@@ -192,7 +192,7 @@ void ConnOut::readBody(const SmartPointer<Request> &req) {
       process(req);
     };
 
-  read(cb, input, readSize);
+  addLTO(read(cb, input, readSize));
 }
 
 

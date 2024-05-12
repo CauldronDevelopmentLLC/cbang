@@ -46,13 +46,17 @@ namespace cb {
   public:
     ~LifetimeManager();
 
-    void clear();
-    void remove(LifetimeObject *obj);
+    void clearLTOs();
+    void removeLTO(LifetimeObject *obj);
+
 
     template <typename T>
-    const SmartPointer<T> &add(const SmartPointer<T> &obj) {
-      objs.insert(obj);
-      obj->setManager(this);
+    const SmartPointer<T> &addLTO(const SmartPointer<T> &obj) {
+      if (obj->isAlive()) {
+        objs.insert(obj);
+        obj->setManager(this);
+      }
+
       return obj;
     }
   };

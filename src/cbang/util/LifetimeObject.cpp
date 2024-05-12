@@ -43,6 +43,9 @@ void LifetimeObject::setManager(LifetimeManager *manager) {
 
 
 void LifetimeObject::endOfLife() {
-  if (manager) manager->remove(this);
+  if (!alive) return;
+  alive = false;
+  auto m = manager;
   manager = 0;
+  if (m) m->removeLTO(this);
 }

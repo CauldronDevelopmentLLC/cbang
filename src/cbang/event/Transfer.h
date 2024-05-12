@@ -33,6 +33,7 @@
 #pragma once
 
 #include <cbang/openssl/SSL.h>
+#include <cbang/util/ControlledCallback.h>
 
 #include <functional>
 
@@ -41,12 +42,14 @@ namespace cb {
   namespace Event {
     class Transfer {
     public:
-      typedef std::function<void (bool)> cb_t;
+      typedef ControlledCallback<bool> cb_t;
+
+    private:
+      cb_t cb;
 
     protected:
       int fd;
       SmartPointer<SSL> ssl;
-      cb_t cb;
       unsigned length;
       bool finished = false;
       bool success = false;
@@ -55,9 +58,12 @@ namespace cb {
     public:
       Transfer(int fd, const SmartPointer<SSL> &ssl, cb_t cb,
                unsigned length = 0) :
-        fd(fd), ssl(ssl), cb(cb), length(length) {}
+        cb(cb), fd(fd), ssl(ssl), length(length) {}
 
       virtual ~Transfer() {}
+
+      SmartPointer<LifetimeObject> createLifetime()
+        {return cb.createLifetime();}
 
       int getFD() const {return fd;}
       const SmartPointer<SSL> &getSSL() const {return ssl;}

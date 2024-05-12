@@ -172,7 +172,7 @@ void Connection::connect(
           auto writeCB = [this, cb] (bool success) {
             if (cb) cb(success && isConnected());
           };
-          canWrite(writeCB);
+          addLTO(canWrite(writeCB));
           return;
 
         } CATCH_WARNING;

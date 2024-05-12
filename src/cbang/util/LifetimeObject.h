@@ -32,14 +32,20 @@
 
 #pragma once
 
+#include "NonCopyable.h"
+
+
 namespace cb {
   class LifetimeManager;
 
-  class LifetimeObject {
+  class LifetimeObject : public NonCopyable {
+    bool alive = true;
     LifetimeManager *manager = 0;
 
   public:
     virtual ~LifetimeObject() {endOfLife();}
+
+    bool isAlive() const {return alive;}
 
     void setManager(LifetimeManager *manager);
     void endOfLife();

@@ -70,7 +70,7 @@ void Conn::readChunks(
       if (cb) cb(false);
     };
 
-  read(readCB, input, 1024, "\r\n");
+  addLTO(read(readCB, input, 1024, "\r\n"));
 }
 
 
@@ -98,7 +98,7 @@ void Conn::readChunk(
       } else if (cb) cb(false);
     };
 
-  read(readCB, input, size + 2);
+  addLTO(read(readCB, input, size + 2));
 }
 
 
@@ -128,10 +128,10 @@ void Conn::readChunkTrailer(
           if (cb) cb(false);
         };
 
-      read(readCB, input, maxHeaderSize, "\r\n\r\n");
+      addLTO(read(readCB, input, maxHeaderSize, "\r\n\r\n"));
     };
 
-  read(readCB, input, maxHeaderSize, "\r\n");
+  addLTO(read(readCB, input, maxHeaderSize, "\r\n"));
 }
 
 

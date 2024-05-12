@@ -30,17 +30,70 @@
 
 \******************************************************************************/
 
-#include "LifetimeManager.h"
+#pragma once
 
-using namespace cb;
+#include "SmartFunctor.h"
+#include "NonCopyable.h"
+#include "LifetimeObject.h"
+
+#include <cbang/Catch.h>
+
+#include <functional>
 
 
-LifetimeManager::~LifetimeManager() {clearLTOs();}
-void LifetimeManager::clearLTOs() {for (auto &o: objs) o->setManager(0);}
+namespace cb {
+  template <typename... Args>
+  class ControlledCallback {
+  public:
+    typedef std::function<void (Args...)> cb_t;
+
+  private:
+    class Impl : public NonCopyable {
+    public:
+      cb_t cb;
+      std::function<void()> completedCB;
+
+      Impl(cb_t cb) : cb(cb) {}
+      virtual ~Impl() {CBANG_TRY_CATCH_ERROR(cancel());}
+
+      void setCompletedCallback(std::function<void()> cb) {completedCB = cb;}
+      void cancel() {if (cb) {cb = 0; onCompleted();}}
+      virtual void onCompleted() {if (completedCB) completedCB();}
+
+      void operator()(Args... args) {
+        if (!cb) return;
+        SmartFunctor<Impl> _(this, &Impl::cancel);
+        cb(std::forward<Args>(args)...);
+      }
+    };
 
 
-void LifetimeManager::removeLTO(LifetimeObject *obj) {
-  auto it = objs.find(SmartPhony(obj));
-  if (it == objs.end()) THROW("Object not found");
-  objs.erase(it);
+    class Lifetime : public LifetimeObject {
+      Impl &cb;
+
+    public:
+      explicit Lifetime(Impl &cb) : cb(cb) {
+        cb.setCompletedCallback([this] {endOfLife();});
+      }
+
+      ~Lifetime() {if (isAlive()) cb.cancel();}
+    };
+
+
+    SmartPointer<Impl> impl;
+    bool createdLT = false;
+
+  public:
+    template <typename CB>
+    ControlledCallback(CB cb) : impl(new Impl(cb)) {}
+
+    SmartPointer<Lifetime> createLifetime() {
+      if (createdLT) CBANG_THROW("Cannot create multiple CallbackLifetimes");
+      createdLT = true;
+      return new Lifetime(*impl);
+    }
+
+    explicit operator bool() const {return (bool)impl->cb;}
+    void operator()(Args... args) {(*impl)(std::forward<Args>(args)...);}
+  };
 }
