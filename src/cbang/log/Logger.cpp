@@ -186,26 +186,12 @@ void Logger::setScreenStream(const SmartPointer<ostream> &stream) {
 
 
 void Logger::startLogFile(const string &filename) {
-  SmartLock lock(this);
-
-  // Rotate log
-  if (logRotate) {
-    if (logFile.isSet()) {
-      logBar("Log Rotated", Time::now());
-      logFile.release();
-    }
-
-    try {
-      SystemUtilities::rotate(filename, logRotateDir, logRotateMax,
-                              logRotateCompression);
-    } CATCH_ERROR;
-  }
-
   logFile = SystemUtilities::open(
     filename, ios::out | (logTrunc ? ios::trunc : ios::app));
   logFilename = filename;
   logBar("Log Started", Time::now());
   logFile->flush();
+  logFileCount = 0;
 }
 
 
@@ -481,7 +467,7 @@ void Logger::logBar(const string &msg, uint64_t ts) const {
 
 
 void Logger::write(const char *s, streamsize n) {
-  if (!logFile.isNull()) logFile->write(s, n);
+  if (!logFile.isNull()) {logFile->write(s, n); logFileCount++;}
   if (logToScreen && !screenStream.isNull()) screenStream->write(s, n);
   for (auto &l: listeners) TRY_CATCH_ERROR(l->write(s, n));
   flush();
@@ -500,7 +486,23 @@ bool Logger::flush() {
 
 void Logger::rotate() {
   if (firstRotate) firstRotate = false;
-  else startLogFile(logFilename);
+  else {
+    SmartLock lock(this);
+
+    if (logFileCount) {
+      if (logFile.isSet()) {
+        logBar("Log Rotated", Time::now());
+        logFile.release();
+      }
+
+      try {
+        SystemUtilities::rotate(
+          logFilename, logRotateDir, logRotateMax, logRotateCompression);
+      } CATCH_ERROR;
+
+      startLogFile(logFilename);
+    }
+  }
 
   if (logRotate && logRotatePeriod)
     rotateEvent->add(eventDelay(logRotatePeriod));
