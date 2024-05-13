@@ -135,8 +135,9 @@ namespace cb {
 
     Event::EventPtr rotateEvent;
     Event::EventPtr dateEvent;
-    bool firstRotate = true;
-    bool firstDate   = true;
+    bool firstRotate      = true;
+    bool firstDate        = true;
+    unsigned logFileCount = 0;
 
   public:
     Logger(Inaccessible);
