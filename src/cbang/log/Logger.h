@@ -151,7 +151,6 @@ namespace cb {
     void initEvents(Event::Base &base);
 
     void addOptions(Options &options);
-    void setOptions(Options &options);
 
     int domainLevelsAction(Option &option);
 

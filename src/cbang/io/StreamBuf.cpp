@@ -32,6 +32,9 @@
 
 #include "StreamBuf.h"
 
+#include <cbang/log/Logger.h>
+#include <cbang/os/SysError.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -86,12 +89,22 @@ namespace {
 
     return flags;
   }
+
+
+  int seekDirToWhence(ios::seekdir way) {
+    switch (way) {
+    case ios::beg: return SEEK_SET;
+    case ios::cur: return SEEK_CUR;
+    case ios::end: return SEEK_END;
+    default: THROW("Invalid seek direction: " << way);
+    }
+  }
 }
 
 
 StreamBuf::StreamBuf(const string &path, ios::openmode mode, int perm) {
 #ifdef _WIN32
-  perm &= 0600; // Windows only understands these permissions.
+  perm &= 0600; // Windows only understands these permissions
 #endif
 
   fd = ::open(path.c_str(), openModeToFlags(mode), perm);
@@ -99,7 +112,9 @@ StreamBuf::StreamBuf(const string &path, ios::openmode mode, int perm) {
 
 
 void StreamBuf::close() {
-  if (fd != -1) ::close(fd);
+  sync();
+  if (fd != -1 && ::close(fd))
+    LOG_ERROR("close(" << fd << ") failed: " << SysError());
   fd = -1;
 }
 
@@ -107,8 +122,9 @@ void StreamBuf::close() {
 StreamBuf::int_type StreamBuf::underflow() {
   if (fd < 0) return traits_type::eof();
 
-  if (readBuf.isSet()) *readBuf = *(gptr() - 1);
-  else readBuf = new char[bufferSize];
+  if (readBuf.isSet()) {
+    if (gptr()) *readBuf = *(gptr() - 1);
+  } else readBuf = new char[bufferSize];
 
   auto bytes = ::read(fd, readBuf.get() + 1, bufferSize - 1);
   if (bytes <= 0) return traits_type::eof();
@@ -145,4 +161,20 @@ int StreamBuf::sync() {
   setp(writeBuf.get(), writeBuf.get() + bufferSize);
 
   return 0;
+}
+
+
+streampos StreamBuf::seekoff(streamoff off, ios::seekdir way,
+                             ios::openmode which) {
+  if (fd < 0) return -1;
+
+  sync();
+  if (readBuf.isSet()) setg(0, 0, 0);
+
+  return lseek(fd, off, seekDirToWhence(way));
+}
+
+
+streampos StreamBuf::seekpos(streampos sp, ios::openmode which) {
+  return seekoff(sp, ios::beg, which);
 }

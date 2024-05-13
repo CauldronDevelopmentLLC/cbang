@@ -38,13 +38,13 @@
 #include <cbang/event/Event.h>
 
 #include <string>
-#include <cstdio>
+#include <iostream>
 
 
 namespace cb {
   class TailFileToLog {
     Event::EventPtr event;
-    FILE *stream = 0;
+    SmartPointer<std::istream> stream;
 
     const std::string filename;
     const std::string prefix;
@@ -60,7 +60,6 @@ namespace cb {
                   const std::string &prefix = std::string(),
                   const char *logDomain = CBANG_LOG_DOMAIN,
                   unsigned logLevel = CBANG_LOG_INFO_LEVEL(1));
-    ~TailFileToLog();
 
   protected:
     void update();

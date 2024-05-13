@@ -53,8 +53,12 @@ namespace cb {
   protected:
     void close();
 
-    int_type underflow();
-    int_type overflow(int_type c);
-    int sync();
+    int_type underflow() override;
+    int_type overflow(int_type c) override;
+    int sync() override;
+    std::streampos seekoff(std::streamoff off, std::ios::seekdir way,
+                           std::ios::openmode which) override;
+    std::streampos seekpos(std::streampos sp,
+                           std::ios::openmode which) override;
   };
 }

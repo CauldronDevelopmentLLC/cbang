@@ -74,10 +74,10 @@ namespace cb {
       uint64_t getTimeout() const {return timeout;}
 
 #ifdef HAVE_OPENSSL
-      bool wantsRead() const {return ssl.isSet() && ssl->wantsRead();}
+      bool wantsRead()  const {return ssl.isSet() && ssl->wantsRead();}
       bool wantsWrite() const {return ssl.isSet() && ssl->wantsWrite();}
 #else // HAVE_OPENSSL
-      bool wantsRead() const {return false;}
+      bool wantsRead()  const {return false;}
       bool wantsWrite() const {return false;}
 #endif // HAVE_OPENSSL
 
