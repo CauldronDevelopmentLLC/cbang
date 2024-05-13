@@ -36,11 +36,17 @@ using namespace cb;
 
 
 LifetimeManager::~LifetimeManager() {clearLTOs();}
-void LifetimeManager::clearLTOs() {for (auto &o: objs) o->setManager(0);}
+
+
+void LifetimeManager::clearLTOs() {
+  for (auto &o: objs) o->setManager(0);
+  objs.clear();
+}
 
 
 void LifetimeManager::removeLTO(LifetimeObject *obj) {
   auto it = objs.find(SmartPhony(obj));
   if (it == objs.end()) THROW("Object not found");
+  (*it)->setManager(0);
   objs.erase(it);
 }

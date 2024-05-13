@@ -236,7 +236,7 @@ int Application::init(int argc, char *argv[]) {
       !configured && SystemUtilities::exists(cmdLine["--config"]))
     configAction(cmdLine["--config"]);
 
-  logger.setOptions(options);
+  if (options["log"].hasValue()) logger.startLogFile(options["log"]);
 
   if (hasFeature(FEATURE_PROCESS_CONTROL))
     try {

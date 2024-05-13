@@ -50,24 +50,24 @@ TailFileToLog::TailFileToLog(
   logLevel(logLevel) {event->add(0.25);}
 
 
-TailFileToLog::~TailFileToLog() {if (stream) fclose(stream);}
-
-
 void TailFileToLog::update() {
-  if (!stream && SystemUtilities::exists(filename))
-    stream = fopen(filename.c_str(), "rb");
+  if (stream.isNull() && SystemUtilities::exists(filename))
+    stream = SystemUtilities::iopen(filename.c_str());
 
-  if (!stream) return;
+  if (stream.isNull()) return;
 
   for (unsigned i = 0; i < 1e6; i++) {
-    int c = fgetc(stream);
+    if (!stream->good()) {
+      LOG_ERROR("Bad stream: " << SysError());
+      event->del();
+      return;
+    }
 
-    if (c == EOF) {
-      if (fseek(stream, 0, SEEK_CUR)) { // Reset stream
-        LOG_ERROR("Bad stream: " << SysError());
-        event->del();
-      }
+    int c = stream->get();
 
+    if (c == istream::traits_type::eof()) {
+      stream->clear();
+      stream->seekg(0, ios::cur); // Reset stream
       return;
     }
 

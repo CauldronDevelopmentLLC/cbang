@@ -49,34 +49,41 @@ namespace cb {
 
   private:
     class Impl : public NonCopyable {
-    public:
       cb_t cb;
       std::function<void()> completedCB;
 
+    public:
       Impl(cb_t cb) : cb(cb) {}
-      virtual ~Impl() {CBANG_TRY_CATCH_ERROR(cancel());}
+      ~Impl() {cancel();}
 
       void setCompletedCallback(std::function<void()> cb) {completedCB = cb;}
-      void cancel() {if (cb) {cb = 0; onCompleted();}}
-      virtual void onCompleted() {if (completedCB) completedCB();}
+
+      void cancel() {
+        if (cb) {
+          cb = 0;
+          if (completedCB) CBANG_TRY_CATCH_ERROR(completedCB());
+        }
+      }
+
+      explicit operator bool() const {return (bool)cb;}
 
       void operator()(Args... args) {
         if (!cb) return;
-        SmartFunctor<Impl> _(this, &Impl::cancel);
-        cb(std::forward<Args>(args)...);
+        CBANG_TRY_CATCH_ERROR(cb(args...));
+        cancel();
       }
     };
 
 
     class Lifetime : public LifetimeObject {
-      Impl &cb;
+      SmartPointer<Impl> impl;
 
     public:
-      explicit Lifetime(Impl &cb) : cb(cb) {
-        cb.setCompletedCallback([this] {endOfLife();});
+      Lifetime(const SmartPointer<Impl> &impl) : impl(impl) {
+        impl->setCompletedCallback([this] {endOfLife();});
       }
 
-      ~Lifetime() {if (isAlive()) cb.cancel();}
+      ~Lifetime() {impl->cancel();}
     };
 
 
@@ -90,10 +97,10 @@ namespace cb {
     SmartPointer<Lifetime> createLifetime() {
       if (createdLT) CBANG_THROW("Cannot create multiple CallbackLifetimes");
       createdLT = true;
-      return new Lifetime(*impl);
+      return new Lifetime(impl);
     }
 
-    explicit operator bool() const {return (bool)impl->cb;}
-    void operator()(Args... args) {(*impl)(std::forward<Args>(args)...);}
+    explicit operator bool() const {return (bool)*impl;}
+    void operator()(Args... args) {(*impl)(args...);}
   };
 }
