@@ -51,6 +51,7 @@ namespace cb {
     class Impl : public NonCopyable {
       cb_t cb;
       LifetimeObject *lto = 0;
+      bool canceled = false;
 
     public:
       Impl(cb_t cb) : cb(cb) {
@@ -63,25 +64,26 @@ namespace cb {
       }
 
       void setLTO(LifetimeObject *lto) {
-        if (this->lto) CBANG_THROW("LifetimeObject already set");
+        if (lto && this->lto) CBANG_THROW("LifetimeObject already set");
         this->lto = lto;
       }
 
       void cancel() {
-        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this << " active=" << !!cb
-                        << " lto=" << lto);
-        if (cb) {
-          cb = 0;
-          if (lto) lto->endOfLife();
-        }
-        lto = 0;
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this << " canceled="
+                        << canceled);
+
+        if (canceled) return;
+        canceled = true;
+
+        if (cb) cb = 0; // Note this can indirectly deallocate the LTO
+        if (lto) lto->endOfLife();
       }
 
       explicit operator bool() const {return (bool)cb;}
 
       void operator()(Args... args) {
         CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this << " active=" << !!cb);
-        if (!cb) return;
+        if (canceled || !cb) return;
         CBANG_TRY_CATCH_ERROR(cb(args...));
         cancel();
       }
@@ -99,6 +101,7 @@ namespace cb {
 
       ~Lifetime() {
         CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << impl.get());
+        impl->setLTO(0);
         impl->cancel();
       }
     };
