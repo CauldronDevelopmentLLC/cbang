@@ -44,8 +44,8 @@ void LifetimeManager::clearLTOs() {
 }
 
 
-void LifetimeManager::removeLTO(LifetimeObject *obj) {
-  auto it = objs.find(SmartPhony(obj));
+void LifetimeManager::removeLTO(LifetimeObject &obj) {
+  auto it = objs.find(SmartPhony(&obj));
   if (it == objs.end()) THROW("Object not found");
   (*it)->setManager(0);
   objs.erase(it);

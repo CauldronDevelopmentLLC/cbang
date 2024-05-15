@@ -47,7 +47,7 @@ namespace cb {
     ~LifetimeManager();
 
     void clearLTOs();
-    void removeLTO(LifetimeObject *obj);
+    void removeLTO(LifetimeObject &obj);
 
 
     template <typename T>
