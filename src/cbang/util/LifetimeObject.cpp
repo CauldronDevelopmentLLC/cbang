@@ -44,5 +44,5 @@ void LifetimeObject::setManager(LifetimeManager *manager) {
 
 void LifetimeObject::endOfLife() {
   alive = false;
-  if (manager) manager->removeLTO(this);
+  if (manager) manager->removeLTO(*this);
 }

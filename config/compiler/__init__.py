@@ -144,15 +144,17 @@ def configure(conf, cstd = 'c99'):
     if ranlib: env.Replace(RANLIB = ranlib)
     if strip: env.Replace(STRIP = strip)
 
-    env.__setitem__('compiler', compiler)
-    env.__setitem__('compiler_mode', compiler_mode)
+    env['compiler']      = compiler
+    env['compiler_mode'] = compiler_mode
+    env['BUILD_MODE']    = 'debug' if debug else 'release'
 
-    print('   Compiler:', env['CC'], '(%s)' % compiler)
-    print('   Platform:', env['PLATFORM'])
-    print('       Mode:', compiler_mode)
-    print('       Arch:', env['TARGET_ARCH'])
+    print('     Compiler:', env['CC'], '(%s)' % compiler)
+    print('     Platform:', env['PLATFORM'])
+    print('Compiler Mode:', compiler_mode)
+    print('   Build Mode:', env['BUILD_MODE'])
+    print('         Arch:', env['TARGET_ARCH'])
 
-    if compiler == 'gnu': print('GCC Version:', gcc_version_str(env))
+    if compiler == 'gnu': print('  GCC Version:', gcc_version_str(env))
 
 
     # SCONS_JOBS environment variable

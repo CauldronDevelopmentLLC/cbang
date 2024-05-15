@@ -50,24 +50,37 @@ namespace cb {
   private:
     class Impl : public NonCopyable {
       cb_t cb;
-      std::function<void()> completedCB;
+      LifetimeObject *lto = 0;
 
     public:
-      Impl(cb_t cb) : cb(cb) {}
-      ~Impl() {cancel();}
+      Impl(cb_t cb) : cb(cb) {
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this);
+      }
 
-      void setCompletedCallback(std::function<void()> cb) {completedCB = cb;}
+      ~Impl() {
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this);
+        cancel();
+      }
+
+      void setLTO(LifetimeObject *lto) {
+        if (this->lto) CBANG_THROW("LifetimeObject already set");
+        this->lto = lto;
+      }
 
       void cancel() {
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this << " active=" << !!cb
+                        << " lto=" << lto);
         if (cb) {
           cb = 0;
-          if (completedCB) CBANG_TRY_CATCH_ERROR(completedCB());
+          if (lto) lto->endOfLife();
         }
+        lto = 0;
       }
 
       explicit operator bool() const {return (bool)cb;}
 
       void operator()(Args... args) {
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << this << " active=" << !!cb);
         if (!cb) return;
         CBANG_TRY_CATCH_ERROR(cb(args...));
         cancel();
@@ -80,25 +93,24 @@ namespace cb {
 
     public:
       Lifetime(const SmartPointer<Impl> &impl) : impl(impl) {
-        impl->setCompletedCallback([this] {endOfLife();});
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << impl.get());
+        impl->setLTO(this);
       }
 
-      ~Lifetime() {impl->cancel();}
+      ~Lifetime() {
+        CBANG_LOG_DEBUG(4, CBANG_FUNC << "() " << impl.get());
+        impl->cancel();
+      }
     };
 
 
     SmartPointer<Impl> impl;
-    bool createdLT = false;
 
   public:
     template <typename CB>
     ControlledCallback(CB cb) : impl(new Impl(cb)) {}
 
-    SmartPointer<Lifetime> createLifetime() {
-      if (createdLT) CBANG_THROW("Cannot create multiple CallbackLifetimes");
-      createdLT = true;
-      return new Lifetime(impl);
-    }
+    SmartPointer<Lifetime> createLifetime() {return new Lifetime(impl);}
 
     explicit operator bool() const {return (bool)*impl;}
     void operator()(Args... args) {(*impl)(args...);}
