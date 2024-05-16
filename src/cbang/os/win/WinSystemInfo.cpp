@@ -34,7 +34,6 @@
 #include "Win32Registry.h"
 
 #include <cbang/os/SysError.h>
-#include <cbang/os/DynamicLibrary.h>
 #include <cbang/net/Winsock.h>
 
 #define WIN32_LEAN_AND_MEAN
@@ -78,18 +77,10 @@ uint64_t WinSystemInfo::getMemoryInfo(memory_info_t type) const {
 
 
 Version WinSystemInfo::getOSVersion() const {
-  DynamicLibrary ntdll("ntdll.dll");
-  typedef LONG (WINAPI *func_t)(PRTL_OSVERSIONINFOW);
-  auto func = (func_t)ntdll.getSymbol("RtlGetVersion");
-
-  if (func) {
-    RTL_OSVERSIONINFOW vi = {0};
-    vi.dwOSVersionInfoSize = sizeof(vi);
-    if (!func(&vi))
-      return Version((uint8_t)vi.dwMajorVersion, (uint8_t)vi.dwMinorVersion);
-  }
-
-  THROW("Failed to get Windows version");
+  OSVERSIONINFO vi = {0};
+  vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&vi);
+  return Version((uint8_t)vi.dwMajorVersion, (uint8_t)vi.dwMinorVersion);
 }
 
 
