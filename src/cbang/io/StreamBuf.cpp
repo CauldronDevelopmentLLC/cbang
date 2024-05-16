@@ -108,6 +108,7 @@ StreamBuf::StreamBuf(const string &path, ios::openmode mode, int perm) {
 #endif
 
   fd = ::open(path.c_str(), openModeToFlags(mode), perm);
+  if (fd == -1) THROW("Failed to open file: " << SysError());
 }
 
 

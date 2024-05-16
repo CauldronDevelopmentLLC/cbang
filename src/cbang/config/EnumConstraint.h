@@ -61,7 +61,7 @@ namespace cb {
     }
 
 
-    void dump(JSON::Sink &sink) const {
+    void dump(JSON::Sink &sink) const override {
       sink.insertList("enum");
       for (unsigned i = 0; i < T::getCount(); i++)
         sink.append(T::getName(i));
