@@ -63,6 +63,8 @@ namespace cb {
         cancel();
       }
 
+      bool isCanceled() const {return canceled;}
+
       void setLTO(LifetimeObject *lto) {
         if (lto && this->lto) CBANG_THROW("LifetimeObject already set");
         this->lto = lto;
@@ -104,6 +106,8 @@ namespace cb {
         impl->setLTO(0);
         impl->cancel();
       }
+
+      bool isCanceled() const {return impl->isCanceled();}
     };
 
 
@@ -113,7 +117,8 @@ namespace cb {
     template <typename CB>
     ControlledCallback(CB cb) : impl(new Impl(cb)) {}
 
-    SmartPointer<Lifetime> createLifetime() {return new Lifetime(impl);}
+    bool isCanceled() const {return impl->isCanceled();}
+    SmartPointer<Lifetime> createLTO() {return new Lifetime(impl);}
 
     explicit operator bool() const {return (bool)*impl;}
     void operator()(Args... args) {(*impl)(args...);}

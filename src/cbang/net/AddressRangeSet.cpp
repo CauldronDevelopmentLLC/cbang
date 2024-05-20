@@ -59,12 +59,9 @@ void AddressRangeSet::insert(const string &spec, DNS::Base *dns) {
         DNS::Error error, const vector<SockAddr> &addrs) {
         for (auto &addr: addrs)
           insert(AddressRange(addr));
-
-        requests.erase(name);
       };
 
-      if (requests.find(name) == requests.end())
-        requests[name] = dns->resolve(name, cb);
+      addLTO(dns->resolve(name, cb));
     }
 }
 

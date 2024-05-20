@@ -62,8 +62,7 @@ namespace cb {
 
       virtual ~Transfer() {}
 
-      SmartPointer<LifetimeObject> createLifetime()
-        {return cb.createLifetime();}
+      SmartPointer<LifetimeObject> createLTO() {return cb.createLTO();}
 
       int getFD() const {return fd;}
       const SmartPointer<SSL> &getSSL() const {return ssl;}

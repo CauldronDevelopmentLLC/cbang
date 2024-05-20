@@ -51,22 +51,11 @@ Request::Request(Base &base, const std::string &request) :
 }
 
 
-Request::~Request() {}
-
-
-void Request::cancel() {
-  cancelled = true;
-  timeout->del();
-  endOfLife();
-}
-
-
 void Request::respond(const cb::SmartPointer<Result> &result) {
-  if (cancelled) return;
   timeout->del();
+  if (isCanceled()) return;
   this->result = result;
   TRY_CATCH_ERROR(callback());
-  endOfLife();
 }
 
 

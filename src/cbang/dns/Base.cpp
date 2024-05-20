@@ -107,23 +107,26 @@ void Base::addNameserver(const SockAddr &addr, bool system) {
 }
 
 
-void Base::add(const SmartPointer<Request> &req) {
+Base::LTOPtr Base::add(const SmartPointer<Request> &req) {
   if (useSystemNS && servers.empty()) initSystemNameservers();
 
   string id = makeID(req->getType(), req->toString());
   auto &e   = lookup(id);
 
   // Check cache
-  if (e.isValid()) return req->respond(e.result);
+  if (e.isValid()) req->respond(e.result);
+  else {
+    e.attempts = 0;
+    e.requests.push_back(req);
+    pending.push_back(id);
+    schedule();
+  }
 
-  e.attempts = 0;
-  e.requests.push_back(req);
-  pending.push_back(id);
-  schedule();
+  return req->createLTO();
 }
 
 
-SmartPointer<Request> Base::resolve(
+Base::LTOPtr Base::resolve(
   const string &name, RequestResolve::callback_t cb, bool ipv6) {
   auto req = SmartPtr(new RequestResolve(*this, name, cb, ipv6));
 
@@ -134,22 +137,19 @@ SmartPointer<Request> Base::resolve(
     result->addrs.push_back(addr);
     req->respond(result);
 
-  } else add(req);
+  } else return add(req);
 
-  return req;
+  return req->createLTO();
 }
 
 
-SmartPointer<Request> Base::reverse(
-  const SockAddr &addr, RequestReverse::callback_t cb) {
-  auto req = SmartPtr(new RequestReverse(*this, addr, cb));
-  add(req);
-  return req;
+Base::LTOPtr Base::reverse(const SockAddr &addr,
+                           RequestReverse::callback_t cb) {
+  return add(new RequestReverse(*this, addr, cb));
 }
 
 
-SmartPointer<Request> Base::reverse(
-  const string &addr, RequestReverse::callback_t cb) {
+Base::LTOPtr Base::reverse(const string &addr, RequestReverse::callback_t cb) {
   return reverse(SockAddr::parse(addr), cb);
 }
 
@@ -212,9 +212,9 @@ void Base::pump() {
     if (active.find(id) == active.end()) {
       auto &e = lookup(id); // Get cache entry
 
-      // Drop any cancelled requests
+      // Drop any canceled requests
       for (auto it = e.requests.begin(); it != e.requests.end();)
-        if ((*it)->isCancelled()) it = e.requests.erase(it);
+        if ((*it)->isCanceled()) it = e.requests.erase(it);
         else it++;
 
       if (e.requests.empty())   error(e, id, DNS_ERR_NOERROR);
