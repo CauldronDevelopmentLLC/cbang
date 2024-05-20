@@ -55,9 +55,9 @@ namespace cb {
 
       // From Request
       Type getType() const override {return ipv6 ? DNS_IPV6 : DNS_IPV4;}
-      bool isCanceled() const {return cb.isCanceled();}
+      bool isCanceled() const override {return cb.isCanceled();}
       void callback() override;
-      SmartPointer<LifetimeObject> createLTO() {return cb.createLTO();}
+      SmartPointer<LifetimeObject> createLTO() override {return cb.createLTO();}
     };
   }
 }

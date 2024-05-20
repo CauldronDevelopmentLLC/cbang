@@ -143,10 +143,10 @@ namespace cb {
           error_cb(error_cb), complete_cb(complete_cb) {}
 
         // From Task
-        void run() {data = run_cb();}
-        void error(const Exception &e) {if (error_cb) error_cb(e);}
-        void success() {if (success_cb) success_cb(data);}
-        void complete() {if (complete_cb) complete_cb();}
+        void run() override {data = run_cb();}
+        void error(const Exception &e) override {if (error_cb) error_cb(e);}
+        void success() override {if (success_cb) success_cb(data);}
+        void complete() override {if (complete_cb) complete_cb();}
       };
 
 

@@ -218,6 +218,9 @@ def configure(conf, cstd = 'c99'):
         env.AppendUnique(prefer_dynamic = ['profiler'])
         conf.CBRequireLib('profiler')
 
+    # Method overrides
+    if compiler == 'gnu' and strict:
+        env.AppendUnique(CXXFLAGS = ['-Wsuggest-override'])
 
     # Debug flags
     if debug:
