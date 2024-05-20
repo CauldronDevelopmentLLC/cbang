@@ -91,6 +91,7 @@ def configure(conf, cstd = 'c99'):
     ccflags       =     env.get('ccflags')
     cxxflags      =     env.get('cxxflags')
     linkflags     =     env.get('linkflags')
+    libs          =     env.get('libs')
     cxxstd        =     env.get('cxxstd')
     dbgstdcxx     =     env.get('dbgstdcxx')
     platform      =     env.get('platform')
@@ -384,6 +385,7 @@ def configure(conf, cstd = 'c99'):
     if ccflags: env.Append(CCFLAGS = ccflags.split())
     if cxxflags: env.Append(CXXFLAGS = cxxflags.split())
     if linkflags: env.Append(LINKFLAGS = linkflags.split())
+    if libs: env.Append(LIBS = libs.split())
 
 
 def get_lib_path_env(env):
@@ -498,10 +500,11 @@ def generate(env):
         BoolVariable('distcc', 'Enable or disable distributed builds', 0),
         BoolVariable('ccache', 'Enable or disable cached builds', 0),
         EnumVariable('platform', 'Override default platform', '',
-                   allowed_values = ('', 'win32', 'posix', 'darwin')),
+                     allowed_values = ('', 'win32', 'posix', 'darwin')),
         ('ccflags', 'Set extra C and C++ compiler flags', None),
         ('cxxflags', 'Set extra C++ compiler flags', None),
         ('linkflags', 'Set extra linker flags', None),
+        ('libs', 'Set extra libs', None),
         EnumVariable(
             'cxxstd', 'Set C++ language standard', 'c++14',
             allowed_values = ('c++98', 'c++11', 'c++14', 'c++17', 'c++20')),
