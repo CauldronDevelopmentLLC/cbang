@@ -60,7 +60,6 @@ Connection::~Connection() {
   LOG_DEBUG(4, "Connection closed");
   // Prevent socket from closing FD
   if (socket.isSet()) socket->adopt();
-  if (dnsReq.isSet()) dnsReq->cancel();
 }
 
 
@@ -151,7 +150,6 @@ void Connection::connect(
     auto dnsCB =
       [this, hostname, port, cb] (
         DNS::Error error, const vector<SockAddr> &addrs) {
-        dnsReq.release();
 
         if (error || addrs.empty()) {
           LOG_WARNING("DNS lookup failed for " << hostname);
@@ -183,8 +181,7 @@ void Connection::connect(
       };
 
     // Start async DNS lookup
-    dnsReq = getBase().getDNS().resolve(hostname, dnsCB);
-    if (dnsReq->getResult().isSet()) dnsReq.release(); // Immediate result
+    addLTO(getBase().getDNS().resolve(hostname, dnsCB));
     return;
 
   } CATCH_ERROR;

@@ -39,8 +39,8 @@ namespace cb {
   namespace DNS {
     class RequestReverse : public Request {
     public:
-      typedef std::function<
-      void (Error error, const std::vector<std::string> &names)> callback_t;
+      using callback_t =
+        ControlledCallback<Error, const std::vector<std::string> &>;
 
     protected:
       callback_t cb;
@@ -50,7 +50,9 @@ namespace cb {
 
       // From Request
       Type getType() const override {return DNS_PTR;}
+      bool isCanceled() const {return cb.isCanceled();}
       void callback() override;
+      SmartPointer<LifetimeObject> createLTO() {return cb.createLTO();}
     };
   }
 }

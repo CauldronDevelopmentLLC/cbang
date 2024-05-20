@@ -108,13 +108,16 @@ namespace cb {
       void addNameserver(const std::string &addr, bool system = false);
       void addNameserver(const SockAddr &addr, bool system = false);
 
-      void add(const SmartPointer<Request> &req);
-      SmartPointer<Request> resolve(
+      using LTOPtr = SmartPointer<LifetimeObject>;
+
+      [[gnu::warn_unused_result]] LTOPtr add(
+        const SmartPointer<Request> &req);
+      [[gnu::warn_unused_result]] LTOPtr resolve(
         const std::string &name, RequestResolve::callback_t cb,
         bool ipv6 = false);
-      SmartPointer<Request> reverse(
+      [[gnu::warn_unused_result]] LTOPtr reverse(
         const SockAddr &addr, RequestReverse::callback_t cb);
-      SmartPointer<Request> reverse(
+      [[gnu::warn_unused_result]] LTOPtr reverse(
         const std::string &addr, RequestReverse::callback_t cb);
 
       // Called by Nameserver

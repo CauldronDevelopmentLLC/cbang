@@ -94,22 +94,22 @@ namespace cb {
       void setStatus(int status) {this->status = status;}
       int getStatus() const {return status;}
 
-      using LTPtr = SmartPointer<LifetimeObject>;
+      using LTOPtr = SmartPointer<LifetimeObject>;
 
       [[gnu::warn_unused_result]]
-      LTPtr read(const SmartPointer<Transfer> transfer);
+      LTOPtr read(const SmartPointer<Transfer> transfer);
       [[gnu::warn_unused_result]]
-      LTPtr read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
+      LTOPtr read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
                 const std::string &until = std::string());
       [[gnu::warn_unused_result]]
-      LTPtr canRead(Transfer::cb_t cb);
+      LTOPtr canRead(Transfer::cb_t cb);
 
       [[gnu::warn_unused_result]]
-      LTPtr write(const SmartPointer<Transfer> transfer);
+      LTOPtr write(const SmartPointer<Transfer> transfer);
       [[gnu::warn_unused_result]]
-      LTPtr write(Transfer::cb_t cb, const Buffer &buffer);
+      LTOPtr write(Transfer::cb_t cb, const Buffer &buffer);
       [[gnu::warn_unused_result]]
-      LTPtr canWrite(Transfer::cb_t cb);
+      LTOPtr canWrite(Transfer::cb_t cb);
 
       virtual void close();
     };

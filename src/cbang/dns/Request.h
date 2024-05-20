@@ -36,7 +36,7 @@
 #include "Result.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeObject.h>
+#include <cbang/util/ControlledCallback.h>
 
 
 namespace cb {
@@ -45,29 +45,28 @@ namespace cb {
   namespace DNS {
     class Base;
 
-    class Request :
-      public RefCounted, public LifetimeObject, public Error::Enum,
-      public Type::Enum {
+    class Request : public RefCounted, public Error::Enum, public Type::Enum {
     protected:
       Base &base;
       std::string request;
 
-      bool cancelled = false;
       SmartPointer<Result> result;
       SmartPointer<Event::Event> timeout;
 
     public:
       Request(Base &base, const std::string &request);
-      virtual ~Request();
+      virtual ~Request() {}
 
       virtual Type getType() const = 0;
+      virtual bool isCanceled() const = 0;
+
       const std::string &toString() const {return request;}
-      bool isCancelled() const {return cancelled;}
       const SmartPointer<Result> &getResult() const {return result;}
 
-      void cancel();
       void respond(const cb::SmartPointer<Result> &result);
+
       virtual void callback() = 0;
+      virtual SmartPointer<LifetimeObject> createLTO() = 0;
 
     private:
       void timedout();

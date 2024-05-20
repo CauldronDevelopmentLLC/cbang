@@ -55,7 +55,6 @@ namespace cb {
       Server *server = 0;
 
       SmartPointer<Event> timeout;
-      SmartPointer<DNS::Request> dnsReq;
 
       SmartPointer<Socket> socket;
       SockAddr peerAddr;
