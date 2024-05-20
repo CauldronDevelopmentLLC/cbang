@@ -78,6 +78,7 @@ namespace cb {
       void add(double t);
       void add();
       void readd();
+      void next(uint64_t period);
       void del();
       void activate(int flags = EVENT_TIMEOUT);
 
