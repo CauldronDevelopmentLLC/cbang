@@ -37,6 +37,7 @@
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/time/Time.h>
+#include <cbang/time/Timer.h>
 #include <cbang/io/NullStream.h>
 #include <cbang/thread/SmartLock.h>
 #include <cbang/util/RateSet.h>
@@ -51,14 +52,6 @@
 
 using namespace std;
 using namespace cb;
-
-namespace {
-  uint64_t eventDelay(uint64_t period) {
-    auto now = Time::now();
-    return (1 + now / period) * period - now;
-  }
-}
-
 
 Mutex Logger::mutex;
 
@@ -496,7 +489,7 @@ void Logger::rotate() {
   else if (logFileCount) startLogFile(logFilename);
 
   if (logRotate && logRotatePeriod)
-    rotateEvent->add(eventDelay(logRotatePeriod));
+    rotateEvent->next(logRotatePeriod);
 }
 
 
@@ -508,5 +501,5 @@ void Logger::date() {
           (logCRLF ? "\r\n" : "\n"));
   }
 
-  if (logDatePeriodically) dateEvent->add(eventDelay(logDatePeriodically));
+  if (logDatePeriodically) dateEvent->next(logDatePeriodically);
 }

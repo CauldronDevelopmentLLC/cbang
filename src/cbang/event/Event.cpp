@@ -42,6 +42,7 @@
 
 #include <limits>
 #include <cstdlib>
+#include <cmath>
 
 using namespace cb::Event;
 using namespace std;
@@ -125,6 +126,12 @@ void Event::add() {event_add(e, 0);}
 void Event::readd() {
   struct timeval tv = e->ev_timeout;
   event_add(e, &tv);
+}
+
+
+void Event::next(uint64_t period) {
+  auto now = Timer::now();
+  add((1 + floor(now / period)) * period - now + 0.1);
 }
 
 
