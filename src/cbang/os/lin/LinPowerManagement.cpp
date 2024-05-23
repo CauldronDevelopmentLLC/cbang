@@ -57,12 +57,6 @@ struct LinPowerManagement::private_t {
 
 
 LinPowerManagement::LinPowerManagement() {
-  const char *sysBase  = "/sys/class/power_supply";
-  const char *procBase = "/proc/acpi/ac_adapter";
-  bool useSys  = SystemUtilities::exists(sysBase);
-  bool useProc = !useSys && SystemUtilities::exists(procBase);
-  string base  = useSys ? sysBase : (useProc ? procBase : "");
-
 #if defined(HAVE_SYSTEMD)
   pri = new private_t;
   memset(pri, 0, sizeof(private_t));
@@ -132,41 +126,28 @@ unsigned LinPowerManagement::_getIdleSeconds() {
 
 
 bool LinPowerManagement::_getHasBattery() {
-  if (!base.empty()) {
-    const char *batNames[] = {"/BAT", "/BAT0", "/BAT1", 0};
-
-    for (int i = 0; batNames[i]; i++)
-      if (SystemUtilities::exists(base + batNames[i]))
-        return true;
-  }
-
-  return false;
+  return !findDevice("Battery").empty();
 }
 
 
 bool LinPowerManagement::_getOnBattery() {
-  if (useSys) {
-    const char *acNames[] = { "/AC0/online", "/AC/online", 0};
+  string path = findDevice("Mains");
 
-    for (int i = 0; acNames[i]; i++) {
-      string path = base + acNames[i];
+  return !path.empty() && SystemUtilities::exists(path + "/online") &&
+    String::trim(SystemUtilities::read(path + "/online")) != "0";
+}
 
-      if (SystemUtilities::exists(path))
-        if (String::trim(SystemUtilities::read(path)) == "0")
-          return true;
-    }
 
-  } else if (useProc) {
-    string path = base + "/AC0/state";
+string LinPowerManagement::findDevice(const string &type) const {
+  string match;
 
-    if (SystemUtilities::exists(path)) {
-      vector<string> tokens;
-      String::tokenize(SystemUtilities::read(path), tokens);
+  auto cb = [&] (const string &path, unsigned depth) {
+    if (match.empty() && SystemUtilities::exists(path + "/type") &&
+        String::trim(SystemUtilities::read(path + "/type")) == type)
+      match = path;
+  };
 
-      if (tokens.size() == 2 && tokens[0] == "state" && tokens[1] != "on-line")
-        return true;
-    }
-  }
+  SystemUtilities::listDirectory("/sys/class/power_supply", cb);
 
-  return false;
+  return match;
 }
