@@ -200,6 +200,7 @@ void Base::pump() {
     if (server->isSystem() && maxFailures < server->getFailures()) {
       server->stop();
       it = servers.erase(it);
+      nextServer = servers.begin();
 
     } else it++;
   }
