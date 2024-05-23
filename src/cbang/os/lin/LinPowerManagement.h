@@ -39,10 +39,6 @@
 
 namespace cb {
   class LinPowerManagement : public PowerManagement {
-    bool useSys  = false;
-    bool useProc = false;
-    std::string base;
-
     struct private_t;
     private_t *pri = 0;
 
@@ -55,5 +51,8 @@ namespace cb {
     unsigned _getIdleSeconds() override;
     bool _getHasBattery() override;
     bool _getOnBattery() override;
+
+  protected:
+    std::string findDevice(const std::string &type) const;
   };
 }
