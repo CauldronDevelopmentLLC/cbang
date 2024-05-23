@@ -56,7 +56,9 @@ struct LinPowerManagement::private_t {
 
 
 
-LinPowerManagement::LinPowerManagement() {
+LinPowerManagement::LinPowerManagement() :
+  hasBattery(!findDevice("Battery").empty()), acPath(findDevice("Mains")) {
+
 #if defined(HAVE_SYSTEMD)
   pri = new private_t;
   memset(pri, 0, sizeof(private_t));
@@ -124,17 +126,9 @@ unsigned LinPowerManagement::_getIdleSeconds() {
   return 0;
 }
 
-
-bool LinPowerManagement::_getHasBattery() {
-  return !findDevice("Battery").empty();
-}
-
-
 bool LinPowerManagement::_getOnBattery() {
-  string path = findDevice("Mains");
-
-  return !path.empty() && SystemUtilities::exists(path + "/online") &&
-    String::trim(SystemUtilities::read(path + "/online")) == "0";
+  return !acPath.empty() && SystemUtilities::exists(acPath + "/online") &&
+    String::trim(SystemUtilities::read(acPath + "/online")) == "0";
 }
 
 
