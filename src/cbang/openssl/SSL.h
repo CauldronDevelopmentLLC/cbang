@@ -135,5 +135,10 @@ namespace cb {
 }
 
 #else // HAVE_OPENSSL
-namespace cb {class SSL {};}
+namespace cb {
+  class SSL {
+  public:
+    inline static void init() {}
+  };
+}
 #endif // HAVE_OPENSSL

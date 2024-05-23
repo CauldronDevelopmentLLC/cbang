@@ -50,9 +50,7 @@ namespace cb {
   template <class T>
   static int WINAPI doApplication(int argc, char *argv[]) {
     try {
-#ifdef HAVE_OPENSSL
       SSL::init();
-#endif // HAVE_OPENSSL
 
       T app;
       int i = app.init(argc, argv);
