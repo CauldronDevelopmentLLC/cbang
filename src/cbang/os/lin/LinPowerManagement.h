@@ -42,6 +42,9 @@ namespace cb {
     struct private_t;
     private_t *pri = 0;
 
+    bool hasBattery = false;
+    std::string acPath;
+
   public:
     LinPowerManagement();
     ~LinPowerManagement();
@@ -49,7 +52,7 @@ namespace cb {
     // From PowerManagement
     void _setAllowSleep(bool allow) override;
     unsigned _getIdleSeconds() override;
-    bool _getHasBattery() override;
+    bool _getHasBattery() override {return hasBattery;}
     bool _getOnBattery() override;
 
   protected:

@@ -1212,7 +1212,7 @@ namespace cb {
 
 
     string read(const string &filename, uint64_t length) {
-      return read(*open(filename, ios::in), length);
+      return read(*iopen(filename), length);
     }
 
 
