@@ -134,7 +134,7 @@ bool LinPowerManagement::_getOnBattery() {
   string path = findDevice("Mains");
 
   return !path.empty() && SystemUtilities::exists(path + "/online") &&
-    String::trim(SystemUtilities::read(path + "/online")) != "0";
+    String::trim(SystemUtilities::read(path + "/online")) == "0";
 }
 
 
@@ -147,7 +147,7 @@ string LinPowerManagement::findDevice(const string &type) const {
       match = path;
   };
 
-  SystemUtilities::listDirectory("/sys/class/power_supply", cb);
+  SystemUtilities::listDirectory("/sys/class/power_supply", cb, ".*", 1, true);
 
   return match;
 }
