@@ -89,7 +89,7 @@ void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
   add(keyCert);
 
   // Check for renewals at updateRate starting now
-  auto e = client.getBase().newEvent(this, &Account::update);
+  auto e = addLTO(client.getBase().newEvent(this, &Account::update));
   e->add(updateRate);
   e->activate();
 }
@@ -334,8 +334,8 @@ string Account::getProblemString(const JSON::Value &problem) const {
 
 
 void Account::call(const string &url, HTTP::Method method) {
-  auto req = client.call(getURL(url), method, this, &Account::responseHandler);
-  client.send(req);
+  addLTO(client.call(
+           getURL(url), method, this, &Account::responseHandler))->send();
 }
 
 
@@ -346,9 +346,10 @@ void Account::post(const string &url, const string &payload) {
 
   LOG_DEBUG(5, "Posting " << data);
 
-  auto req = client.call(uri, HTTP_POST, data, this, &Account::responseHandler);
+  auto req = addLTO(client.call(uri, HTTP_POST, data, this,
+                                &Account::responseHandler));
   req->outSet("Content-Type", "application/jose+json");
-  client.send(req);
+  req->send();
 }
 
 

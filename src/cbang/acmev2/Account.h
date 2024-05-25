@@ -42,6 +42,7 @@
 #include <cbang/openssl/KeyPair.h>
 #include <cbang/json/Sink.h>
 #include <cbang/json/Value.h>
+#include <cbang/util/LifetimeManager.h>
 
 #include <vector>
 
@@ -57,7 +58,7 @@ namespace cb {
     static std::string letsencrypt_staging =
       "https://acme-staging-v02.api.letsencrypt.org/directory";
 
-    class Account : public HTTP::Method::Enum {
+    class Account : public LifetimeManager, public HTTP::Method::Enum {
       HTTP::Client &client;
       KeyPair key;
 
