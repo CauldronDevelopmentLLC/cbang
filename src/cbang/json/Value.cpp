@@ -178,8 +178,8 @@ string Value::format(char type) const {
 string Value::format(char type, int index, const string &name,
                      bool &matched) const {
   if (index < 0) {
-    if (has(name)) return get(name)->format(type);
-    if (type == 'b') return String(false);
+    if (exists(name)) return select(name)->format(type);
+    if (type == 'b')  return String(false);
   } else if ((unsigned)index < size()) return get(index)->format(type);
 
   matched = false;
