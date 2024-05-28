@@ -50,6 +50,7 @@ import sqlite3
 import copy
 import operator
 import json
+import filecmp
 from six import string_types
 
 try:
@@ -627,31 +628,8 @@ class CheckFile(Check):
 
 
   def compare(self, file1, file2):
-    if not (os.path.exists(file1) and os.path.exists(file2)): return FAILED
-
-    lines1 = None
-    lines2 = None
-    try:
-      lines1 = open(file1)
-      lines2 = open(file2)
-
-      while True:
-        try: line1 = lines1.next()
-        except: line1 = None
-        if line1 is not None: line1 = line1.strip('\r\n')
-
-        try: line2 = lines2.next()
-        except: line2 = None
-        if line2 is not None: line2 = line2.strip('\r\n')
-
-        if line1 != line2: return FAILED
-        if line1 is None: break
-
-      return PASSED
-
-    finally:
-      if lines1 is not None: lines1.close()
-      if lines2 is not None: lines2.close()
+    if not (os.path.exists(file1) or os.path.exists(file2)): return FAILED
+    return PASSED if filecmp.cmp(file1, file2) else FAILED
 
 
   def check(self, test):
@@ -1211,7 +1189,7 @@ class Unit:
       # Close files
       if stdout is not None: stdout.close()
       if stderr is not None: stderr.close()
-      if stdin is not None: stdin.close()
+      if stdin  is not None: stdin.close()
 
       if returncode is None: self.invalid = True
 

@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
     A a;
 
     for (int i = 1; i < argc - 1; i += 2)
-      Path(argv[i]).insert(a, Reader::parse(argv[i + 1]));
+      Path(argv[i]).modify(a, argv[i + 1][0] ? Reader::parse(argv[i + 1]) : 0);
 
     cout << "FINAL: " << a << endl;
 

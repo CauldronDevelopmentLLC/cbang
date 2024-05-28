@@ -47,7 +47,7 @@ Path::Path(const string &path) {
 }
 
 
-string Path::toString(unsigned start, unsigned end) const {
+string Path::toString(unsigned start, int end) const {
   if (end < 0) end = size() + end + 1;
   vector<string> v(parts.begin() + start, parts.begin() + end);
   return cb::String::join(v, ".");
@@ -105,7 +105,7 @@ bool Path::exists(const Value &value) const {
 }
 
 
-void Path::insert(Value &target, const ValuePtr &value) {
+void Path::modify(Value &target, const ValuePtr &value) {
   ValuePtr v = SmartPointer<Value>::Phony(&target);
 
   if (1 < parts.size()) {
@@ -115,17 +115,24 @@ void Path::insert(Value &target, const ValuePtr &value) {
 
   string key = parts.back();
 
-  if (v->isList())
-    try {
+  try {
+    if (v->isList()) {
       int index = String::parseS32(key, true);
-      if (index == -1 || index == (int)v->size()) v->append(value);
-      else v->set(index, value);
 
-    } catch (const Exception &e) {
-      CBANG_KEY_ERROR("At JSON path: " << toString());
+      if (value.isSet()) {
+        if (index == -1 || index == (int)v->size()) v->append(value);
+        else v->set(index, value);
+
+      } else v->erase(index + (index < 0 ? v->size() : 0));
+
+    } else if (v->isDict()) {
+      if (value.isSet()) v->insert(key, value);
+      else v->erase(key);
     }
 
-  else if (v->isDict()) v->insert(key, value);
+  } catch (const Exception &e) {
+    CBANG_THROWTC(cb::KeyError, "At JSON path: " << toString(), e);
+  }
 }
 
 

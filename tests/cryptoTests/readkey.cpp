@@ -32,6 +32,7 @@
 
 #include <cbang/Catch.h>
 #include <cbang/os/SystemUtilities.h>
+#include <cbang/openssl/SSL.h>
 #include <cbang/openssl/KeyPair.h>
 
 using namespace std;
@@ -42,6 +43,8 @@ int main(int argc, char *argv[]) {
   try {
     bool pub = true;
 
+    SSL::init();
+
     for (int i = 1; i < argc; i++) {
       string arg = argv[i];
 
@@ -49,12 +52,13 @@ int main(int argc, char *argv[]) {
         if (arg == "--public") pub = true;
         else if (arg == "--private") pub = false;
         else THROW("Invalid argument '" << argv[i] << "'");
+        continue;
       }
 
       KeyPair key;
-      auto &stream = *SystemUtilities::open(arg);
-      if (pub) key.readPublicPEM(stream);
-      else key.readPrivatePEM(stream);
+      auto stream = SystemUtilities::open(arg);
+      if (pub) key.readPublicPEM(*stream);
+      else key.readPrivatePEM(*stream);
 
       cout << "Public:\n";
       key.writePublicPEM(cout);
