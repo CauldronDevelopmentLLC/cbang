@@ -51,7 +51,7 @@ namespace cb {
 
       bool empty() const {return parts.empty();}
       unsigned size() const {return parts.size();}
-      std::string toString(unsigned start = 0, unsigned end = -1) const;
+      std::string toString(unsigned start = 0, int end = -1) const;
 
       std::string pop();
       void push(const std::string &part);
@@ -61,7 +61,10 @@ namespace cb {
       ValuePtr select(const Value &value, fail_cb_t fail_cb = 0) const;
       ValuePtr select(const Value &value, const ValuePtr &defaultValue) const;
       bool     exists(const Value &value) const;
-      void     insert(Value &target, const ValuePtr &value);
+      void     modify(Value &target, const ValuePtr &value);
+      void     insert(Value &target, const ValuePtr &value)
+        {modify(target, value);}
+      void     erase(Value &target) {modify(target, 0);}
 
 #define CBANG_JSON_VT(NAME, TYPE)                                       \
       TYPE select##NAME(const Value &value) const;                      \

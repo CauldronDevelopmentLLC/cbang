@@ -151,8 +151,11 @@ namespace cb {
 
 
       void erase(const std::string &key) override {
-        _clearParentRef(T::get(key));
+        auto i = T::indexOf(key);
+        _clearParentRef(T::get(i));
         T::erase(key);
+        for (unsigned j = i; j < T::size(); j++)
+          _decParentRef(T::get(j));
         _notify(key);
       }
 

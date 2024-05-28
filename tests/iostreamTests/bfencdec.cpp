@@ -30,6 +30,7 @@
 
 \******************************************************************************/
 
+#include <cbang/openssl/SSL.h>
 #include <cbang/openssl/Cipher.h>
 #include <cbang/openssl/CipherStream.h>
 #include <cbang/os/SystemUtilities.h>
@@ -49,6 +50,9 @@ int main(int argc, char *argv[]) {
     cerr << "Usage: " << argv[0] << " <key>" << endl;
     return 1;
   }
+
+  SSL::init();
+  SSL::loadProvider("legacy");
 
   const unsigned char *key = (unsigned char *)argv[1];
 
