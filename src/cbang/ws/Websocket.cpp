@@ -295,7 +295,7 @@ void Websocket::onResponse(Event::ConnectionError error) {
 void Websocket::onPing(const string &payload) {
   LOG_DEBUG(4, CBANG_FUNC << "() payload=" << String::escapeC(payload));
 
-  // Schedule pong to aggregate backlogged pings
+  // Defer pong to aggregate any backlog of pings
   pongPayload = payload;
   schedulePong();
 }
@@ -394,7 +394,7 @@ void Websocket::schedulePong() {
 
   if (pongEvent.isNull()) {
     auto cb = [this] () {pong();};
-    pongEvent = getConnection()->getBase().newEvent(cb);
+    pongEvent = getConnection()->getBase().newEvent(cb, 0);
   }
 
   if (!pongEvent->isPending()) pongEvent->add(5);
@@ -416,7 +416,7 @@ void Websocket::schedulePing() {
 
 void Websocket::message(const char *data, uint64_t length) {
   msgReceived++;
-  if (pingEvent->isPending()) schedulePing();
+  if (pingEvent->isPending()) schedulePing(); // Reschedule ping for later
 
   try {
     onMessage(data, length);
