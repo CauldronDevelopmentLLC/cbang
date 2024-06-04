@@ -129,7 +129,7 @@ void Nameserver::start() {
   failures = 0;
   waiting  = false;
 
-  socket->open(true, addr.isIPv6());
+  socket->open(Socket::UDP | (addr.isIPv6() ? Socket::IPV6 : 0));
   socket->setBlocking(false);
 
   // Bind outgoing address if not loopback
