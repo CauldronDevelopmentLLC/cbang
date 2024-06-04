@@ -324,7 +324,10 @@ void Websocket::writeFrame(
   LOG_DEBUG(4, CBANG_FUNC << '(' << opcode << ", " << finish << ", " << len
             << ')');
 
-  if (!isActive()) THROW("Not active");
+  if (!isActive()) {
+    close(WS_STATUS_DIRTY_CLOSE, "Write attempted when inactive");
+    THROW("Websocket not active");
+  }
 
   uint8_t header[14];
   uint8_t bytes = 2;
