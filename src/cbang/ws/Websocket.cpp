@@ -60,9 +60,7 @@ Websocket::Websocket(
 }
 
 
-bool Websocket::isActive() const {
-  return active && hasConnection() && getConnection()->isConnected();
-}
+bool Websocket::isActive() const {return active && isConnected();}
 
 
 void Websocket::send(const char *data, unsigned length) {

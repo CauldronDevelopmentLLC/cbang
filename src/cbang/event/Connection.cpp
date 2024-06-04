@@ -56,11 +56,7 @@ Connection::Connection(Base &base) : FD(base),
 }
 
 
-Connection::~Connection() {
-  LOG_DEBUG(4, "Connection closed");
-  // Prevent socket from closing FD
-  if (socket.isSet()) socket->adopt();
-}
+Connection::~Connection() {LOG_DEBUG(4, "Connection closed");}
 
 
 Server &Connection::getServer() const {
@@ -76,23 +72,19 @@ void Connection::setTTL(double sec) {
 
 
 void Connection::setSocket(const SmartPointer<Socket> &socket) {
-  // Prevent socket from closing FD
-  if (this->socket.isSet()) this->socket->adopt();
   this->socket = socket;
-
+  if (socket.isSet()) socket->setAutoClose(false);
   setFD(socket.isSet() ? socket->get() : -1);
 }
 
 
-bool Connection::isConnected() const {
-  return getFD() != -1 && socket.isSet() && socket->isOpen();
-}
+bool Connection::isConnected() const {return getFD() != -1;}
 
 
 void Connection::accept(const SockAddr &peerAddr,
                         const SmartPointer<Socket> &socket,
                         const SmartPointer<SSLContext> &sslCtx) {
-  if (socket.isNull()) THROW("Socket cannot be null");
+  if (isConnected()) THROW("Already connected");
 
   LOG_DEBUG(5, "Accepting from " << peerAddr);
   if (stats.isSet()) stats->event("incoming");
@@ -126,10 +118,9 @@ void Connection::connect(
     if (stats.isSet()) stats->event("outgoing");
 
     // Open and bind new socket
-    SmartPointer<Socket> socket = new Socket;
-    socket->open();
+    auto socket = SmartPtr(new Socket);
+    socket->open(Socket::NONBLOCKING);
     if (!bind.isNull()) socket->bind(bind);
-    socket->setBlocking(false);
 
     SmartPointer<SSL> ssl;
 #ifdef HAVE_OPENSSL

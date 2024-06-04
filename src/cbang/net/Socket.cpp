@@ -83,7 +83,7 @@ bool Socket::initialized = false;
 
 
 Socket::Socket() {initialize();}
-Socket::~Socket() {close();}
+Socket::~Socket() {if (autoClose) close();}
 
 
 void Socket::initialize() {
@@ -246,17 +246,19 @@ void Socket::setTimeout(double timeout) {
 }
 
 
-void Socket::open(bool udp, bool ipv6) {
+void Socket::open(unsigned flags) {
   if (isOpen()) THROW("Socket already open");
 
-  int type = udp ? SOCK_DGRAM  : SOCK_STREAM;
-  socket = ::socket(ipv6 ? AF_INET6 : AF_INET, type, 0);
-  blocking = true;
+  auto net  = (flags & Socket::IPV6) ? AF_INET6   : AF_INET;
+  auto type = (flags & Socket::UDP)  ? SOCK_DGRAM : SOCK_STREAM;
+  socket = ::socket(net, type, 0);
 
   if (socket == INVALID_SOCKET)
     THROW("Failed to create socket: " << SysError());
 
-  setCloseOnExec(true);
+  autoClose = !(flags & Socket::NOAUTOCLOSE);
+  if (flags & Socket::NONBLOCKING) setBlocking(false);
+  if (!(flags & Socket::NOCLOSEONEXEC)) setCloseOnExec(true);
 }
 
 
@@ -281,9 +283,9 @@ SmartPointer<Socket> Socket::accept(SockAddr &addr) {
   socket_t s = addr.accept(socket);
 
   if (s != INVALID_SOCKET) {
-    SmartPointer<Socket> aSock = create();
-    aSock->socket = s;
+    SmartPointer<Socket> aSock = new Socket;
 
+    aSock->socket = s;
     aSock->connected = true;
     aSock->setBlocking(blocking);
 
@@ -298,18 +300,9 @@ SmartPointer<Socket> Socket::accept(SockAddr &addr) {
 
 void Socket::connect(const SockAddr &addr, const string &hostname) {
   assertOpen();
-
   LOG_DEBUG(4, "Connecting to " << addr);
-
-  try {
-    addr.connect(socket);
-    connected = true;
-
-  } catch (const Exception &e) {
-    close();
-
-    throw;
-  }
+  addr.connect(socket);
+  connected = true;
 }
 
 
@@ -317,11 +310,37 @@ streamsize Socket::write(
   const uint8_t *data, streamsize length, unsigned flags,
   const SockAddr *addr) {
   assertOpen();
-  bool blocking = !(flags & NONBLOCKING) && getBlocking();
+  bool blocking = !(flags & Socket::NONBLOCKING) && getBlocking();
   LOG_DEBUG(5, "Socket start " << (blocking ? "" : "non-")
             << "blocking write " << length);
 
-  streamsize bytes = writeImpl(data, length, flags, addr);
+  streamsize bytes = 0;
+
+  if (length) {
+    int f = MSG_NOSIGNAL;
+    if (flags & Socket::NONBLOCKING) f |= MSG_DONTWAIT;
+
+    SysError::clear();
+    streamsize ret = sendto(
+      (socket_t)socket, (char *)data, length, f, addr ? addr->get() : 0,
+      addr ? addr->getLength() : 0);
+    int err = SysError::get();
+
+    LOG_DEBUG(5, "sendto() = " << ret << " of " << length);
+
+    if (ret < 0) {
+#ifdef _WIN32
+      // NOTE: sendto() can return -1 even when there is no error
+      if (!err || err == WSAEWOULDBLOCK || err == WSAENOBUFS) ret = 0;
+#else
+      if (err == EAGAIN) ret = 0;
+#endif
+
+      if (ret) THROW("Send error: " << err << ": " << SysError(err));
+    }
+
+    bytes = ret;
+  }
 
   LOG_DEBUG(5, "Socket write " << bytes);
   if (bytes) LOG_DEBUG(6, String::hexdump(data, bytes));
@@ -333,15 +352,45 @@ streamsize Socket::write(
 streamsize Socket::read(
   uint8_t *data, streamsize length, unsigned flags, SockAddr *addr) {
   assertOpen();
-  bool blocking = !(flags & NONBLOCKING) && getBlocking();
+  bool blocking = !(flags & Socket::NONBLOCKING) && getBlocking();
   LOG_DEBUG(5, "Socket start " << (blocking ? "" : "non-")
             << "blocking read " << length);
 
-  streamsize bytes = readImpl(data, length, flags, addr);
+  streamsize bytes = 0;
+
+  if (length) {
+    int f = MSG_NOSIGNAL;
+    if (flags & Socket::NONBLOCKING) f |= MSG_DONTWAIT;
+    if (flags & Socket::PEEK) f |= MSG_PEEK;
+
+    SysError::clear();
+    socklen_t alen = addr ? addr->getCapacity() : 0;
+    streamsize ret = recvfrom((socket_t)socket, (char *)data, length, f,
+                              addr ? addr->get() : 0, addr ? &alen : 0);
+    int err = SysError::get();
+
+    LOG_DEBUG(5, "recvfrom() = " << ret << " of " << length);
+    if (addr) LOG_DEBUG(5, "recvfrom() address " << *addr);
+
+    if (!ret) throw EndOfStream(); // Orderly shutdown
+
+    if (ret < 0) {
+#ifdef _WIN32
+      // NOTE: Windows can return -1 even when there is no error
+      if (!err || err == WSAEWOULDBLOCK || err == WSAETIMEDOUT) ret = 0;
+#else
+      if (err == ECONNRESET) throw EndOfStream();
+      if (err == EAGAIN || err == EWOULDBLOCK) ret = 0;
+#endif
+
+      if (ret) THROW("Receive error: " << err << ": " << SysError(err));
+    }
+
+    bytes = ret;
+  }
 
   LOG_DEBUG(5, "Socket read " << bytes);
 
-  if (bytes == -1) throw EndOfStream();
   if (bytes) LOG_DEBUG(6, String::hexdump(data, bytes));
 
   return bytes;
@@ -372,86 +421,6 @@ void Socket::close() {
   close(socket);
 
   socket = INVALID_SOCKET;
-}
-
-
-void Socket::set(socket_t socket) {
-  close();
-  this->socket = socket;
-}
-
-
-socket_t Socket::adopt() {
-  socket_t s = socket;
-  socket = INVALID_SOCKET;
-  connected = false;
-  return s;
-}
-
-
-streamsize Socket::writeImpl(
-  const uint8_t *data, streamsize length, unsigned flags,
-  const SockAddr *addr) {
-  assertOpen();
-  if (!length) return 0;
-
-  int f = MSG_NOSIGNAL;
-  if (flags & Socket::NONBLOCKING) f |= MSG_DONTWAIT;
-
-  SysError::clear();
-  streamsize ret = sendto((socket_t)socket, (char *)data, length, f,
-                          addr ? addr->get() : 0, addr ? addr->getLength() : 0);
-  int err = SysError::get();
-
-  LOG_DEBUG(5, "sendto() = " << ret << " of " << length);
-
-  if (ret < 0) {
-#ifdef _WIN32
-    // NOTE: sendto() can return -1 even when there is no error
-    if (!err || err == WSAEWOULDBLOCK || err == WSAENOBUFS) return 0;
-#else
-    if (err == EAGAIN) return 0;
-#endif
-
-    THROW("Send error: " << err << ": " << SysError(err));
-  }
-
-  return ret;
-}
-
-
-streamsize Socket::readImpl(
-  uint8_t *data, streamsize length, unsigned flags, SockAddr *addr) {
-  assertOpen();
-  if (!length) return 0;
-
-  int f = MSG_NOSIGNAL;
-  if (flags & Socket::NONBLOCKING) f |= MSG_DONTWAIT;
-  if (flags & Socket::PEEK) f |= MSG_PEEK;
-
-  SysError::clear();
-  socklen_t alen = addr ? addr->getCapacity() : 0;
-  streamsize ret = recvfrom((socket_t)socket, (char *)data, length, f,
-                            addr ? addr->get() : 0, addr ? &alen : 0);
-  int err = SysError::get();
-
-  LOG_DEBUG(5, "recvfrom() = " << ret << " of " << length);
-  if (addr) LOG_DEBUG(5, "recvfrom() address " << *addr);
-
-  if (!ret) return -1; // Orderly shutdown
-  if (ret < 0) {
-#ifdef _WIN32
-    // NOTE: Windows can return -1 even when there is no error
-    if (!err || err == WSAEWOULDBLOCK || err == WSAETIMEDOUT) return 0;
-#else
-    if (err == ECONNRESET) return -1;
-    if (err == EAGAIN || err == EWOULDBLOCK) return 0;
-#endif
-
-    THROW("Receive error: " << err << ": " << SysError(err));
-  }
-
-  return ret;
 }
 
 

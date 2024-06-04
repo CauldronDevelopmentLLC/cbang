@@ -51,7 +51,6 @@ namespace cb {
     class OutgoingRequest : public Request, public LifetimeObject {
     public:
       typedef std::function<void (Request &)> callback_t;
-      typedef std::function<void (unsigned bytes, int total)> progress_cb_t;
 
     protected:
       Client &client;
@@ -60,8 +59,6 @@ namespace cb {
     public:
       OutgoingRequest(Client &client, const SmartPointer<Conn> &connection,
                       const URI &uri, Method method, callback_t cb);
-
-      void setCallback(callback_t cb) {this->cb = cb;}
 
       using Request::send;
       void send();
