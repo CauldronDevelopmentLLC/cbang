@@ -224,6 +224,7 @@ namespace cb {
 
   template <>
   bool String::parse<uint64_t>(const string &s, uint64_t &value, bool full) {
+    if (!s.length() || s[0] == '-') return false;
     errno = 0;
     char *end = 0;
     unsigned long long v = strtoull(s.c_str(), &end, 0);
@@ -250,6 +251,7 @@ namespace cb {
 
   template <>
   bool String::parse<uint32_t>(const string &s, uint32_t &value, bool full) {
+    if (!s.length() || s[0] == '-') return false;
     errno = 0;
     char *end = 0;
     unsigned long v = strtoul(s.c_str(), &end, 0);
