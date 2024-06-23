@@ -51,7 +51,7 @@ Value Context::eval(const InputSource &src) {
   string filename = src.getName();
   if (!filename.empty()) origin = Value::createString(filename);
 
-#if V8_MAJOR_VERSION < 10
+#if V8_MAJOR_VERSION < 10 || (V8_MAJOR_VERSION >= 12 && V8_MINOR_VERSION > 6)
   v8::ScriptOrigin sOrigin(origin);
 #else
   v8::ScriptOrigin sOrigin(Value::getIso(), origin);
