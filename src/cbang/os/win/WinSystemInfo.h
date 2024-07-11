@@ -43,5 +43,6 @@ namespace cb {
     Version getOSVersion() const override;
     std::string getMachineID() const override;
     void getNameservers(std::set<SockAddr> &addrs) override;
+    URI getProxy(const URI &uri) const override;
   };
 }

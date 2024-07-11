@@ -32,16 +32,25 @@
 
 #pragma once
 
-#include <cbang/os/SystemInfo.h>
+#include "Request.h"
+
+#include <functional>
+
 
 namespace cb {
-  class LinSystemInfo : public SystemInfo {
-  public:
-    // From SystemInfo
-    uint32_t getCPUCount() const override;
-    uint64_t getMemoryInfo(memory_info_t type) const override;
-    Version getOSVersion() const override;
-    std::string getMachineID() const override;
-    URI getProxy(const URI &uri) const override;
-  };
+  class SSLContext;
+
+  namespace HTTP {
+    class ProxyRequest : public Request {
+      std::string hostname;
+      SmartPointer<SSLContext> sslCtx;
+
+    public:
+      ProxyRequest(const URI &uri, const SmartPointer<Request> &req,
+        const SmartPointer<SSLContext> &sslCtx);
+
+      // From Request
+      void onResponse(Event::ConnectionError error) override;
+    };
+  }
 }

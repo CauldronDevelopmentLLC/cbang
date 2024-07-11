@@ -50,6 +50,14 @@ using namespace std;
 
 #include <unistd.h>
 
+namespace {
+  const char *get_proxy_var(const char *name) {
+    auto value = SystemUtilities::getenv(String::toLower(name));
+    if (!value) value = SystemUtilities::getenv(String::toUpper(name));
+    return value;
+  }
+}
+
 
 uint32_t LinSystemInfo::getCPUCount() const {
   long cpus = sysconf(_SC_NPROCESSORS_ONLN);
@@ -92,4 +100,26 @@ string LinSystemInfo::getMachineID() const {
     return String::trim(SystemUtilities::read("/etc/machine-id"));
 
   THROW("Machine ID not available");
+}
+
+
+URI LinSystemInfo::getProxy(const URI &uri) const {
+  // Check no_proxy
+  auto noProxy = get_proxy_var("no_proxy");
+  if (noProxy) {
+    vector<string> tokens;
+    String::tokenize(noProxy, tokens, ",");
+    for (auto token: tokens)
+      if (matchesProxyPattern(token, uri)) return URI();
+  }
+
+  // Check https_proxy
+  if (uri.getScheme() == "https") {
+    auto proxy = get_proxy_var("https_proxy");
+    if (proxy) return proxy;
+  }
+
+  // Check http_proxy
+  auto proxy = get_proxy_var("http_proxy");
+  return proxy ? URI(proxy) : URI();
 }

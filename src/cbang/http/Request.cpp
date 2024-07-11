@@ -111,7 +111,11 @@ string Request::getResponseLine() const {
 
 
 string Request::getRequestLine() const {
-  return SSTR(method << ' ' << uri << " HTTP/" << version);
+  string path;
+  if (method != HTTP_CONNECT) path = uri.toString();
+  else path = uri.getHost() + ":" + String(uri.getPort());
+
+  return SSTR(method << ' ' << path << " HTTP/" << version);
 }
 
 
@@ -627,7 +631,8 @@ void Request::onRequest() {
 
 bool Request::mustHaveBody() const {
   return responseCode != HTTP_NO_CONTENT && responseCode != HTTP_NOT_MODIFIED &&
-    (200 <= responseCode || responseCode < 100) && method != HTTP_HEAD;
+    (200 <= responseCode || responseCode < 100) && method != HTTP_HEAD &&
+    method != HTTP_CONNECT && method != HTTP_OPTIONS;
 }
 
 
@@ -712,8 +717,14 @@ void Request::writeRequest(Event::Buffer &buf) {
   // Generate request line
   buf.add(getRequestLine() + "\r\n");
 
-  if (!outHas("Host")) outSet("Host", uri.getHost());
-  if (!outHas("Connection")) outSet("Connection", "close"); // Don't persist
+  if (method == HTTP_CONNECT) {
+    if (!outHas("Host"))
+      outSet("Host", uri.getHost() + ":" + String(uri.getPort()));
+
+  } else {
+    if (!outHas("Host")) outSet("Host", uri.getHost());
+    if (!outHas("Connection")) outSet("Connection", "close"); // Don't persist
+  }
 
   // Add missing content length if may have body
   if (mayHaveBody() && !outHas("Content-Length"))

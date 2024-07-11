@@ -44,36 +44,78 @@ using namespace cb;
 using namespace std;
 
 
-#define BSTREAM_DEBUG() LOG_DEBUG(5, __FUNCTION__ << "()");
+#define BSTREAM_DEBUG() LOG_DEBUG(5, CBANG_FUNC << "()");
+#define BIO_BSTREAM(bio) ((BStream *)BIO_get_data(bio))
+
+
+namespace {
+  const char *cmd2str(int cmd) {
+    switch (cmd) {
+    case BIO_CTRL_RESET:                    return "RESET";
+    case BIO_CTRL_EOF:                      return "EOF";
+    case BIO_CTRL_INFO:                     return "INFO";
+    case BIO_CTRL_SET:                      return "SET";
+    case BIO_CTRL_GET:                      return "GET";
+    case BIO_CTRL_PUSH:                     return "PUSH";
+    case BIO_CTRL_POP:                      return "POP";
+    case BIO_CTRL_GET_CLOSE:                return "GET_CLOSE";
+    case BIO_CTRL_SET_CLOSE:                return "SET_CLOSE";
+    case BIO_CTRL_PENDING:                  return "PENDING";
+    case BIO_CTRL_FLUSH:                    return "FLUSH";
+    case BIO_CTRL_DUP:                      return "DUP";
+    case BIO_CTRL_WPENDING:                 return "WPENDING";
+    case BIO_CTRL_SET_CALLBACK:             return "SET_CALLBACK";
+    case BIO_CTRL_GET_CALLBACK:             return "GET_CALLBACK";
+    case BIO_CTRL_SET_FILENAME:             return "SET_FILENAME";
+    case BIO_CTRL_DGRAM_CONNECT:            return "DGRAM_CONNECT";
+    case BIO_CTRL_DGRAM_SET_CONNECTED:      return "DGRAM_SET_CONNECTED";
+    case BIO_CTRL_DGRAM_SET_RECV_TIMEOUT:   return "DGRAM_SET_RECV_TIMEOUT";
+    case BIO_CTRL_DGRAM_GET_RECV_TIMEOUT:   return "DGRAM_GET_RECV_TIMEOUT";
+    case BIO_CTRL_DGRAM_SET_SEND_TIMEOUT:   return "DGRAM_SET_SEND_TIMEOUT";
+    case BIO_CTRL_DGRAM_GET_SEND_TIMEOUT:   return "DGRAM_GET_SEND_TIMEOUT";
+    case BIO_CTRL_DGRAM_GET_RECV_TIMER_EXP: return "DGRAM_GET_RECV_TIMER_EXP";
+    case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP: return "DGRAM_GET_SEND_TIMER_EXP";
+    case BIO_CTRL_DGRAM_MTU_DISCOVER:       return "DGRAM_MTU_DISCOVER";
+    case BIO_CTRL_DGRAM_QUERY_MTU:          return "DGRAM_QUERY_MTU";
+    case BIO_CTRL_DGRAM_GET_MTU:            return "DGRAM_GET_MTU";
+    case BIO_CTRL_DGRAM_SET_MTU:            return "DGRAM_SET_MTU";
+    case BIO_CTRL_DGRAM_MTU_EXCEEDED:       return "DGRAM_MTU_EXCEEDED";
+    case BIO_CTRL_DGRAM_GET_PEER:           return "DGRAM_GET_PEER";
+    case BIO_CTRL_DGRAM_SET_PEER:           return "DGRAM_SET_PEER";
+    case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:   return "DGRAM_SET_NEXT_TIMEOUT";
+    default:                                return "UNKNOWN";
+    }
+  }
+}
 
 
 static int bstream_write(BIO *bio, const char *buf, int length) {
   BSTREAM_DEBUG();
-  return ((BStream *)BIO_get_data(bio))->write(buf, length);
+  return BIO_BSTREAM(bio)->write(buf, length);
 }
 
 
 static int bstream_read(BIO *bio, char *buf, int length) {
   BSTREAM_DEBUG();
-  return ((BStream *)BIO_get_data(bio))->read(buf, length);
+  return BIO_BSTREAM(bio)->read(buf, length);
 }
 
 
 static int bstream_puts(BIO *bio, const char *buf) {
   BSTREAM_DEBUG();
-  return ((BStream *)BIO_get_data(bio))->puts(buf);
+  return BIO_BSTREAM(bio)->puts(buf);
 }
 
 
 static int bstream_gets(BIO *bio, char *buf, int length) {
   BSTREAM_DEBUG();
-  return ((BStream *)BIO_get_data(bio))->gets(buf, length);
+  return BIO_BSTREAM(bio)->gets(buf, length);
 }
 
 
 static long bstream_ctrl(BIO *bio, int cmd, long sub, void *arg) {
   BSTREAM_DEBUG();
-  return ((BStream *)BIO_get_data(bio))->ctrl(cmd, sub, arg);
+  return BIO_BSTREAM(bio)->ctrl(cmd, sub, arg);
 }
 
 
@@ -86,7 +128,7 @@ static int bstream_create(BIO *bio) {
 
 static int bstream_destroy(BIO *bio) {
   BSTREAM_DEBUG();
-  return ((BStream *)BIO_get_data(bio))->destroy();
+  return BIO_BSTREAM(bio)->destroy();
 }
 
 
@@ -97,12 +139,12 @@ BStream::BStream() {
     method = BIO_meth_new(BIO_TYPE_FD, "iostream");
     if (!method) THROW("Failed to create BIO_METHOD object");
 
-    BIO_meth_set_write(method, bstream_write);
-    BIO_meth_set_read(method, bstream_read);
-    BIO_meth_set_puts(method, bstream_puts);
-    BIO_meth_set_gets(method, bstream_gets);
-    BIO_meth_set_ctrl(method, bstream_ctrl);
-    BIO_meth_set_create(method, bstream_create);
+    BIO_meth_set_write  (method, bstream_write);
+    BIO_meth_set_read   (method, bstream_read);
+    BIO_meth_set_puts   (method, bstream_puts);
+    BIO_meth_set_gets   (method, bstream_gets);
+    BIO_meth_set_ctrl   (method, bstream_ctrl);
+    BIO_meth_set_create (method, bstream_create);
     BIO_meth_set_destroy(method, bstream_destroy);
   }
 
@@ -113,15 +155,10 @@ BStream::BStream() {
 }
 
 
-BStream::~BStream() {
-  if (bio) {
-    BIO_free(bio);
-    bio = 0;
-  }
-}
+BStream::~BStream() {if (bio) BIO_free(bio);}
 
 
-void BStream::setFlags(int flags) {BIO_set_flags(bio, flags);}
+void BStream::setFlags  (int flags) {BIO_set_flags  (bio, flags);}
 void BStream::clearFlags(int flags) {BIO_clear_flags(bio, flags);}
 
 
@@ -147,63 +184,10 @@ int BStream::gets(char *buf, int length) {
 
 
 long BStream::ctrl(int cmd, long sub, void *arg) {
-  const char *cmdStr;
-
-  switch (cmd) {
-  case BIO_CTRL_RESET: cmdStr = "RESET"; break;
-  case BIO_CTRL_EOF: cmdStr = "EOF"; break;
-  case BIO_CTRL_INFO: cmdStr = "INFO"; break;
-  case BIO_CTRL_SET: cmdStr = "SET"; break;
-  case BIO_CTRL_GET: cmdStr = "GET"; break;
-  case BIO_CTRL_PUSH: cmdStr = "PUSH"; break;
-  case BIO_CTRL_POP: cmdStr = "POP"; break;
-  case BIO_CTRL_GET_CLOSE: cmdStr = "GET_CLOSE"; break;
-  case BIO_CTRL_SET_CLOSE: cmdStr = "SET_CLOSE"; break;
-  case BIO_CTRL_PENDING: cmdStr = "PENDING"; break;
-  case BIO_CTRL_FLUSH: cmdStr = "FLUSH"; break;
-  case BIO_CTRL_DUP: cmdStr = "DUP"; break;
-  case BIO_CTRL_WPENDING: cmdStr = "WPENDING"; break;
-  case BIO_CTRL_SET_CALLBACK: cmdStr = "SET_CALLBACK"; break;
-  case BIO_CTRL_GET_CALLBACK: cmdStr = "GET_CALLBACK"; break;
-  case BIO_CTRL_SET_FILENAME: cmdStr = "SET_FILENAME"; break;
-  case BIO_CTRL_DGRAM_CONNECT: cmdStr = "DGRAM_CONNECT"; break;
-  case BIO_CTRL_DGRAM_SET_CONNECTED: cmdStr = "DGRAM_SET_CONNECTED"; break;
-  case BIO_CTRL_DGRAM_SET_RECV_TIMEOUT:
-    cmdStr = "DGRAM_SET_RECV_TIMEOUT"; break;
-  case BIO_CTRL_DGRAM_GET_RECV_TIMEOUT:
-    cmdStr = "DGRAM_GET_RECV_TIMEOUT"; break;
-  case BIO_CTRL_DGRAM_SET_SEND_TIMEOUT:
-    cmdStr = "DGRAM_SET_SEND_TIMEOUT"; break;
-  case BIO_CTRL_DGRAM_GET_SEND_TIMEOUT:
-    cmdStr = "DGRAM_GET_SEND_TIMEOUT"; break;
-  case BIO_CTRL_DGRAM_GET_RECV_TIMER_EXP:
-    cmdStr = "DGRAM_GET_RECV_TIMER_EXP"; break;
-  case BIO_CTRL_DGRAM_GET_SEND_TIMER_EXP:
-    cmdStr = "DGRAM_GET_SEND_TIMER_EXP"; break;
-  case BIO_CTRL_DGRAM_MTU_DISCOVER: cmdStr = "DGRAM_MTU_DISCOVER"; break;
-  case BIO_CTRL_DGRAM_QUERY_MTU: cmdStr = "DGRAM_QUERY_MTU"; break;
-  case BIO_CTRL_DGRAM_GET_MTU: cmdStr = "DGRAM_GET_MTU"; break;
-  case BIO_CTRL_DGRAM_SET_MTU: cmdStr = "DGRAM_SET_MTU"; break;
-  case BIO_CTRL_DGRAM_MTU_EXCEEDED: cmdStr = "DGRAM_MTU_EXCEEDED"; break;
-#ifdef BIO_CTRL_DGRAM_GET_PEER
-  case BIO_CTRL_DGRAM_GET_PEER: cmdStr = "DGRAM_GET_PEER"; break;
-#endif
-#ifdef BIO_CTRL_DGRAM_SET_PEER
-  case BIO_CTRL_DGRAM_SET_PEER: cmdStr = "DGRAM_SET_PEER"; break;
-#endif
-#ifdef BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT
-  case BIO_CTRL_DGRAM_SET_NEXT_TIMEOUT:
-    cmdStr = "DGRAM_SET_NEXT_TIMEOUT"; break;
-#endif
-  default: cmdStr = "UNKNOWN"; break;
-  }
-
+  const char *cmdStr = cmd2str(cmd);
   LOG_DEBUG(5, "BStream::ctrl(" << cmdStr << '=' << cmd << ", " << sub << ")");
   return 1; // Success
 }
 
 
-int BStream::destroy() {
-  bio = 0;
-  return 1;
-}
+int BStream::destroy() {return 1;}

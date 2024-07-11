@@ -48,6 +48,8 @@
 #include <cbang/util/HumanSize.h>
 #include <cbang/net/Socket.h>
 #include <cbang/net/Winsock.h>
+#include <cbang/net/SockAddr.h>
+#include <cbang/net/AddressRange.h>
 
 #include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
@@ -154,4 +156,40 @@ void SystemInfo::add(Info &info) {
   try {
     info.add(category, "Hostname", getHostname());
   } catch (...) {}
+}
+
+
+bool SystemInfo::matchesProxyPattern(const string &pattern, const URI &uri) {
+  string pat = String::trim(pattern);
+
+  if (pat == "*")  return true;
+  if (pat.empty()) return false;
+
+  // Check port
+  unsigned port = 0;
+  auto semi = pat.find_last_of(':');
+  if (semi != string::npos) {
+    port = String::parseU64(pat.substr(semi + 1));
+    if (port != uri.getPort()) return false;
+    pat = pat.substr(0, semi);
+  }
+
+  // Check IP address match
+  string host = uri.getHost();
+  if (SockAddr::isAddress(host)) {
+    auto addr = SockAddr::parse(host);
+
+    // Check for CIDR
+    auto slash = pat.find_last_of('/');
+    if (slash) return AddressRange(pat).contains(addr);
+
+    return SockAddr::isAddress(pat) && SockAddr::parse(pat) == addr;
+  }
+
+  // Remove .* or . from start of pattern
+  if (pat[0] == '*') pat = pat.substr(1);
+  if (pat[0] == '.') pat = pat.substr(1);
+
+  // Check domain name match
+  return String::endsWith(host, pat);
 }

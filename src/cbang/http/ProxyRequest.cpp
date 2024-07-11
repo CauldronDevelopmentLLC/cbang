@@ -30,18 +30,23 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "ProxyRequest.h"
+#include "Conn.h"
 
-#include <cbang/os/SystemInfo.h>
+#include <cbang/openssl/SSLContext.h>
 
-namespace cb {
-  class LinSystemInfo : public SystemInfo {
-  public:
-    // From SystemInfo
-    uint32_t getCPUCount() const override;
-    uint64_t getMemoryInfo(memory_info_t type) const override;
-    Version getOSVersion() const override;
-    std::string getMachineID() const override;
-    URI getProxy(const URI &uri) const override;
-  };
+using namespace cb;
+using namespace cb::HTTP;
+
+
+ProxyRequest::ProxyRequest(
+  const URI &uri, const SmartPointer<Request> &req,
+  const SmartPointer<SSLContext> &sslCtx) :
+  Request(req->getConnection(), HTTP_CONNECT, req->getURI()),
+  hostname(req->getURI().getHost()), sslCtx(sslCtx) {}
+
+
+void ProxyRequest::onResponse(Event::ConnectionError error) {
+  if (!error && sslCtx.isSet())
+    getConnection()->openSSL(*sslCtx, hostname);
 }

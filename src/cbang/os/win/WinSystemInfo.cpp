@@ -111,3 +111,36 @@ void WinSystemInfo::getNameservers(set<SockAddr> &addrs) {
       for (auto p = aAddrs->FirstDnsServerAddress; p; p = p->Next)
         addrs.insert(SockAddr(*p->Address.lpSockaddr));
 }
+
+
+URI WinSystemInfo::getProxy(const URI &uri) const {
+  string base =
+    "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+
+  // Check ProxyOverride
+  string noProxy = Win32Registry::getString(base + "\\ProxyOverride", "");
+  vector<string> tokens;
+  String::tokenize(noProxy, tokens, ";");
+  for (auto token: tokens)
+    if (matchesProxyPattern(token, uri)) return URI();
+
+  // NOTE wpad, pac and SOCKS are not supported
+
+  if (Win32Registry::getU32(base + "\\ProxyEnable", 0)) {
+    string list = Win32Registry::getString(base + "\\ProxyServer", "");
+    vector<string> parts;
+    String::tokenize(list, parts, ";");
+
+    string defaultProxy;
+    for (auto &part: parts) {
+      auto equal = part.find_first_of('=');
+      if (equal == string::npos) defaultProxy = part;
+      else if (part.substr(0, equal) == uri.getScheme())
+        return URI(part.substr(equal + 1));
+    }
+
+    if (!defaultProxy.empty()) return URI(defaultProxy);
+  }
+
+  return URI();
+}

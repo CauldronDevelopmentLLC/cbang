@@ -110,7 +110,7 @@ void Reader::popFile() {
 
 
 void Reader::startElement(const string &name, const Attributes &attrs) {
-  LOG_DEBUG(5, __FUNCTION__ << "(" << name << ", " << attrs.toString() << ")");
+  LOG_DEBUG(5, CBANG_FUNC << "(" << name << ", " << attrs.toString() << ")");
 
   depth++;
 
@@ -123,7 +123,7 @@ void Reader::startElement(const string &name, const Attributes &attrs) {
 
 
 void Reader::endElement(const string &name) {
-  LOG_DEBUG(5, __FUNCTION__ << "(" << name << ")");
+  LOG_DEBUG(5, CBANG_FUNC << "(" << name << ")");
 
   depth--;
 

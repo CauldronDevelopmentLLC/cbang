@@ -68,7 +68,7 @@ HandlerFactory *Processor::getFactory(const string &name) {
 
 void Processor::pushContext() {
   contextStack.push_back(new HandlerContext);
-  LOG_DEBUG(5, __FUNCTION__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 }
 
 
@@ -76,5 +76,5 @@ void Processor::popContext() {
   if (contextStack.size() == 1) THROW("Cannot pop off last HandlerContext");
   delete contextStack.back();
   contextStack.pop_back();
-  LOG_DEBUG(5, __FUNCTION__ << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "()");
 }

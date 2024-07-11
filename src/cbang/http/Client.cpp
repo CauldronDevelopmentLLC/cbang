@@ -32,8 +32,10 @@
 
 #include "Client.h"
 #include "ConnOut.h"
+#include "ProxyRequest.h"
 
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/os/SystemInfo.h>
 
 using namespace std;
 using namespace cb;
@@ -52,30 +54,42 @@ void Client::send(const SmartPointer<Request> &req) const {
   auto &uri = req->getURI();
 
   if (!req->hasConnection()) req->setConnection(new ConnOut(base));
-  auto &conn = req->getConnection();
 
   // Configure connection
+  auto &conn = req->getConnection();
   if (!conn->getStats().isSet()) conn->setStats(stats);
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
 
   // Check if already connected
-  if (req->isConnected()) return conn->makeRequest(req);
+  if (req->isConnected()) return conn->queueRequest(req);
 
+  // SSL
   SmartPointer<SSLContext> sslCtx;
   if (uri.schemeRequiresSSL()) {
     sslCtx = getSSLContext();
     if (sslCtx.isNull()) THROW("Client lacks SSLContext");
   }
 
+  // Proxy
+  URI connectURI = uri;
+  auto proxy = SystemInfo::instance().getProxy(uri);
+  if (proxy.getScheme() == "http") {
+    conn->queueRequest(new ProxyRequest(proxy, SmartPhony(req.get()), sslCtx));
+    connectURI = proxy;
+
+  } else {
+    if (!proxy.getScheme().empty())
+      THROW("Proxy scheme '" << proxy.getScheme() << "' not supported");
+
+    if (sslCtx.isSet()) conn->openSSL(*sslCtx, uri.getHost());
+  }
+
+  // Queue request
+  conn->queueRequest(SmartPhony(req.get())); // Don't create circular ref
+
   // Connect
-  auto &_req = *req; // Don't create circular ref
-  conn->connect(
-    uri.getHost(), uri.getPort(), bindAddr, sslCtx,
-    [&_req] (bool success) {
-      if (success) _req.getConnection()->makeRequest(SmartPhony(&_req));
-      else _req.onResponse(Event::ConnectionError::CONN_ERR_CONNECT);
-    });
+  conn->connect(connectURI.getHost(), connectURI.getPort(), bindAddr);
 }
 
 

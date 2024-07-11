@@ -86,11 +86,11 @@ namespace cb {
       bool isConnected() const;
       void accept(const SockAddr &peer, const SmartPointer<Socket> &socket,
                   const SmartPointer<SSLContext> &sslCtx);
+      void openSSL(SSLContext &sslCtx, const std::string &hostname);
       void connect(const std::string &hostname, uint32_t port,
-                   const SockAddr &bind, const SmartPointer<SSLContext> &sslCtx,
-                   std::function<void (bool)> cb);
+                   const SockAddr &bind);
 
-      virtual void onConnect() {}
+      virtual void onConnect(bool success) {}
 
     protected:
       void timedout();
