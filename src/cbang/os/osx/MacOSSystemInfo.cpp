@@ -47,10 +47,38 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreServices/CoreServices.h>
 #include <IOKit/IOKitLib.h>
-
+#include <SystemConfiguration/SystemConfiguration.h>
 
 using namespace cb;
 using namespace std;
+
+
+namespace {
+  get_ref(CFDictionaryRef dict, const string &key) {
+    CFDictionaryGetValue(dict, CFSTR(key.c_str()));
+  }
+
+
+  int64_t get_int(
+    CFDictionaryRef dict, const string &key, uint64_t defaultValue = 0) {
+    auto ref = get_ref(dict, key);
+    int64_t value = 0;
+    if (ref && CFNumberGetValue(ref, kCFNumberSInt64Type, &value))
+      return value;
+    return defaultValue;
+  }
+
+
+  bool get_bool(CFDictionaryRef dict, const string &key) {
+    return get_int(dict, key);
+  }
+
+
+  string get_str(CFDictionaryRef dict, const string &key) {
+    auto ref = get_ref(dict, key);
+    return ref ? MacOSString::convert(ref) : string();
+  }
+}
 
 
 MacOSSystemInfo::MacOSSystemInfo() {
@@ -187,4 +215,36 @@ bool MacOSSystemInfo::versionByPList(unsigned ver[3]) {
   string vStr = MacOSString((CFStringRef)verStr);
 
   return 0 < sscanf(vStr.c_str(), "%u.%u.%u", &ver[0], &ver[1], &ver[2]);
+}
+
+
+URI MacOSSystemInfo::getProxy(const URI &uri) const {
+  CFDictionaryRef proxies = SCDynamicStoreCopyProxies(0);
+  if (!proxies) return URI();
+
+  // Check ExceptionsList
+  auto list = (CFArrayRef)get_ref(proxies, "ExceptionsList");
+
+  if (list)
+    for (int i = 0; i < CFArrayGetCount(list); i++) {
+      auto ref = (CFStringRef)CFArrayGetValueAtIndex(list, i);
+      if (matchesProxyPattern(MacOSString::convert(ref), uri))
+        return URI();
+    }
+
+  // Check ExcludeSimpleHostnames
+  if (get_bool(proxies, "ExcludeSimpleHostnames") &&
+    uri.getHost() == "127.0.0.1") return URI();
+
+  // NOTE, ProxyAutoDiscoveryEnable (wpad), ProxyAutoConfigEnable (pac) and
+  // SOCKS are not supported
+
+  // Check proxy is enabled for scheme
+  string scheme = String::toUpper(url.getScheme());
+  if (!get_bool(proxies, scheme + "Enable")) return URI();
+
+  // Get proxy
+  auto port = get_int(proxies, scheme + "Port", 80);
+  auto host = get_str(proxies, scheme + "Proxy");
+  return host.empty() ? URI() : URI("http://" + host + ":" + String(port));
 }

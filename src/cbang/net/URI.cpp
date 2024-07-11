@@ -257,9 +257,9 @@ void URI::read(const string &uri) {read(uri.c_str());}
 void URI::read(const char *uri) {
   // See RFC2396
   // Does not support:
-  //   opaque URI data (Section 3)
+  //   opaque URI data       (Section 3)
   //   registry-based naming (Section 3.2.1)
-  //   path parameters (Section 3.3)
+  //   path parameters       (Section 3.3)
 
   clear(); // Reset all
 

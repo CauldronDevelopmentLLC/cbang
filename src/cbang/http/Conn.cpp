@@ -154,7 +154,7 @@ void Conn::push(const SmartPointer<Request> &req) {
 
 void Conn::pop() {
   if (requests.empty()) THROW("No requests");
-  requests.front()->onComplete();
+  TRY_CATCH_ERROR(requests.front()->onComplete());
   requests.pop_front();
 }
 

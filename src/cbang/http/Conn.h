@@ -74,7 +74,7 @@ namespace cb {
       virtual void writeRequest(const SmartPointer<Request> &req,
                                 Event::Buffer buffer, bool hasMore = false,
                                 std::function<void (bool)> cb = 0) = 0;
-      virtual void makeRequest(const SmartPointer<Request> &req) {}
+      virtual void queueRequest(const SmartPointer<Request> &req) {}
 
       void readChunks(const SmartPointer<Request> &req,
                       std::function<void (bool)> cb);

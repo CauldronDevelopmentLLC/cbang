@@ -46,7 +46,8 @@ namespace cb {
     explicit MacOSString(const char *s);
     explicit MacOSString(const std::string &s) : MacOSString(s.c_str()) {}
 
-    operator std::string () const;
+    static std::string convert(const CFStringRef &ref);
+    operator std::string () const {return convert(ref);}
   };
 }
 

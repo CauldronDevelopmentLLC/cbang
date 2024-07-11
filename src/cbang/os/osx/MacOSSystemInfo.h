@@ -47,6 +47,7 @@ namespace cb {
     uint64_t getMemoryInfo(memory_info_t type) const override;
     Version getOSVersion() const override {return osVersion;}
     std::string getMachineID() const override;
+    URI getProxy(const URI &uri) const override;
 
   protected:
     static bool versionBySysCtrl(unsigned ver[3]);

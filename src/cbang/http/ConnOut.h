@@ -41,11 +41,14 @@ namespace cb {
     public:
       ConnOut(Event::Base &base);
 
+      // From Connection
+      void onConnect(bool success) override;
+
       // From Conn
       bool isIncoming() const override {return false;}
       void writeRequest(const SmartPointer<Request> &req, Event::Buffer buffer,
                         bool hasMore, std::function<void (bool)> cb) override;
-      void makeRequest(const SmartPointer<Request> &req) override;
+      void queueRequest(const SmartPointer<Request> &req) override;
 
     protected:
       void fail(Event::ConnectionError err, const std::string &msg);

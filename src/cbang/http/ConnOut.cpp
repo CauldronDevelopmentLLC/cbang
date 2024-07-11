@@ -48,6 +48,12 @@ using namespace std;
 ConnOut::ConnOut(Event::Base &base) : Conn(base) {}
 
 
+void ConnOut::onConnect(bool success) {
+  if (success) dispatch();
+  else fail(CONN_ERR_CONNECT, "Connection failed");
+}
+
+
 void ConnOut::writeRequest(
   const SmartPointer<Request> &req, Event::Buffer buffer, bool hasMore,
   function<void (bool)> cb) {
@@ -71,7 +77,7 @@ void ConnOut::writeRequest(
 }
 
 
-void ConnOut::makeRequest(const SmartPointer<Request> &req) {
+void ConnOut::queueRequest(const SmartPointer<Request> &req) {
   push(req);
   if (getNumRequests() == 1) dispatch();
 }
@@ -121,6 +127,7 @@ void ConnOut::readBody(const SmartPointer<Request> &req) {
     string line;
     input.readLine(line, maxHeaderSize);
     req->parseResponseLine(line);
+    LOG_DEBUG(4, req->getResponseLine());
 
   } catch (const Exception &e) {
     return fail(CONN_ERR_BAD_RESPONSE, e.getMessage());
@@ -217,5 +224,5 @@ void ConnOut::process(const SmartPointer<Request> &req) {
 
 
 void ConnOut::dispatch() {
-  if (getNumRequests()) getRequest()->write();
+  if (isConnected() && getNumRequests()) getRequest()->write();
 }

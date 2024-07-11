@@ -124,7 +124,7 @@ void Server::accept(const SockAddr &peerAddr,
   conn->setServer(this);
   connections.insert(conn);
 
-  TRY_CATCH_ERROR(conn->onConnect());
+  TRY_CATCH_ERROR(conn->onConnect(true));
 }
 
 

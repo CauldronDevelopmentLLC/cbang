@@ -75,6 +75,7 @@ void Connection::setSocket(const SmartPointer<Socket> &socket) {
   this->socket = socket;
   if (socket.isSet()) socket->setAutoClose(false);
   setFD(socket.isSet() ? socket->get() : -1);
+  if (getFD() != -1 && getSSL().isSet()) getSSL()->setFD(getFD());
 }
 
 
@@ -108,9 +109,19 @@ void Connection::accept(const SockAddr &peerAddr,
 }
 
 
+void Connection::openSSL(SSLContext &sslCtx, const string &hostname) {
+#ifdef HAVE_OPENSSL
+  auto ssl = sslCtx.createSSL();
+  if (getFD() != -1) ssl->setFD(getFD());
+  ssl->setConnectState();
+  ssl->setTLSExtHostname(hostname);
+  setSSL(ssl);
+#endif // HAVE_OPENSSL
+}
+
+
 void Connection::connect(
-  const string &hostname, uint32_t port, const SockAddr &bind,
-  const SmartPointer<SSLContext> &sslCtx, function<void (bool)> cb) {
+  const string &hostname, uint32_t port, const SockAddr &bind) {
   try {
     if (isConnected()) THROW("Already connected");
 
@@ -121,31 +132,18 @@ void Connection::connect(
     auto socket = SmartPtr(new Socket);
     socket->open(Socket::NONBLOCKING);
     if (!bind.isNull()) socket->bind(bind);
-
-    SmartPointer<SSL> ssl;
-#ifdef HAVE_OPENSSL
-    if (sslCtx.isSet()) {
-      ssl = sslCtx->createSSL();
-      ssl->setFD(socket->get());
-      ssl->setConnectState();
-      ssl->setTLSExtHostname(hostname);
-    }
-#endif // HAVE_OPENSSL
-
-    setSSL(ssl);
     setSocket(socket);
 
     LOG_DEBUG(4, "Connection with fd " << socket->get());
 
     // DNS callback
     auto dnsCB =
-      [this, hostname, port, cb] (
+      [this, hostname, port] (
         DNS::Error error, const vector<SockAddr> &addrs) {
 
         if (error || addrs.empty()) {
           LOG_WARNING("DNS lookup failed for " << hostname);
-          if (cb) cb(false);
-          return;
+          return onConnect(false);
         }
 
         try {
@@ -158,8 +156,8 @@ void Connection::connect(
           getSocket()->connect(peerAddr);
 
           // Wait for socket write
-          auto writeCB = [this, cb] (bool success) {
-            if (cb) cb(success && isConnected());
+          auto writeCB = [this] (bool success) {
+            onConnect(success && isConnected());
           };
           addLTO(canWrite(writeCB));
           return;
@@ -167,8 +165,7 @@ void Connection::connect(
         } CATCH_WARNING;
 
         close();
-
-        if (cb) cb(false);
+        onConnect(false);
       };
 
     // Start async DNS lookup
@@ -179,7 +176,7 @@ void Connection::connect(
 
   close();
 
-  if (cb) cb(false);
+  onConnect(false);
 }
 
 

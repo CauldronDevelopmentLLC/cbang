@@ -35,6 +35,7 @@
 #include <cbang/Exception.h>
 #include <cbang/util/Version.h>
 #include <cbang/net/SockAddr.h>
+#include <cbang/net/URI.h>
 
 #include <cstdint>
 
@@ -74,6 +75,9 @@ namespace cb {
     virtual std::string getMachineID() const = 0;
 
     virtual void getNameservers(std::set<SockAddr> &addrs);
+    virtual URI getProxy(const URI &uri) const = 0;
+
+    static bool matchesProxyPattern(const std::string &pattern, const URI &uri);
 
     void add(Info &info);
   };

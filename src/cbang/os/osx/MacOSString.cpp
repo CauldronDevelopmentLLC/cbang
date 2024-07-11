@@ -43,8 +43,7 @@ using namespace std;
 MacOSString::MacOSString(const char *s) :
   MacOSString(CFStringCreateWithCString(0, s, kCFStringEncodingUTF8)) {}
 
-
-MacOSString::operator string () const {
+std::string convert(const CFStringRef &ref) {
   if (!ref) return string();
 
   // Try to avoid an extra copy

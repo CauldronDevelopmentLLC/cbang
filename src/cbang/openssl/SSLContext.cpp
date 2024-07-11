@@ -300,7 +300,7 @@ void SSLContext::loadSystemRootCerts() {
 
   OSStatus err = SecTrustCopyAnchorCertificates(&anchors);
   if (err != errSecSuccess) {
-    LOG_ERROR(__FUNCTION__ << "() Failed to get anchor certificates");
+    LOG_ERROR(CBANG_FUNC << "() Failed to get anchor certificates");
     return;
   }
 

@@ -48,6 +48,11 @@ namespace cb {
     static uint32_t getBinary(const std::string &path, char *buffer,
                               uint32_t size);
 
+    static uint32_t getU32(const std::string &path, uint32_t defaultValue);
+    static uint64_t getU64(const std::string &path, uint64_t defaultValue);
+    static std::string getString(const std::string &path,
+      const std::string &defaultValue);
+
     static void set(const std::string &path, uint32_t value);
     static void set(const std::string &path, uint64_t value);
     static void set(const std::string &path, const std::string &value);

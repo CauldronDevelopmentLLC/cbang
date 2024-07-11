@@ -174,6 +174,21 @@ uint32_t Win32Registry::getBinary(const string &path, char *buffer,
 }
 
 
+uint32_t getU32(const string &path, uint32_t defaultValue) {
+  return has(path) ? getU32(path) : defaultValue;
+}
+
+
+uint64_t getU64(const string &path, uint64_t defaultValue) {
+  return has(path) ? getU64(path) : defaultValue;
+}
+
+
+string getString(const string &path, const string &defaultValue) {
+  return has(path) ? getString(path) : defaultValue;
+}
+
+
 void Win32Registry::set(const string &path, uint32_t value) {
   setRegKey(path, REG_DWORD, &value, sizeof(uint32_t));
 }
