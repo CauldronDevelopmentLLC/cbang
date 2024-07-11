@@ -48,38 +48,51 @@ SessionHandler::SessionHandler(API &api, const JSON::ValuePtr &config) :
   QueryHandler(api, config) {}
 
 
-bool SessionHandler::operator()(HTTP::Request &req) {
-  auto &sessionMan = api.getSessionManager();
+void SessionHandler::createSession(HTTP::Request &req) {
+  // Create a session
+  auto session = api.getSessionManager().openSession(req.getClientAddr());
+  req.setSession(session);
 
+  // Set session cookie
+  string cookie = api.getSessionManager().getSessionCookie();
+  string sid = session->getID();
+  req.setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
+}
+
+
+bool SessionHandler::operator()(HTTP::Request &req) {
   // Check if Session is already loaded
   if (req.getSession().isSet()) return false;
 
   // Check if we have a session ID
-  string sid = req.getSessionID(sessionMan.getSessionCookie());
-  if (sid.empty()) return false;
+  string cookie = api.getSessionManager().getSessionCookie();
+  string sid    = req.getSessionID(cookie);
+  if (sid.empty()) {
+    createSession(req);
+    return false;
+  }
 
   // Lookup Session in SessionManager
-  try {
-    req.setSession(sessionMan.lookupSession(sid));
-    LOG_DEBUG(3, "User: " << req.getUser());
-
+  if (api.getSessionManager().hasSession(sid)) {
+    req.setSession(api.getSessionManager().lookupSession(sid));
     return false;
-  } catch (const Exception &) {}
+  }
+
+  // Create session
+  auto session = SmartPtr(new HTTP::Session(sid, req.getClientAddr()));
+  req.setSession(session);
+  api.getSessionManager().addSession(session);
 
   // Lookup Session in DB
   if (sql.empty()) return false;
-  auto session = SmartPtr(new HTTP::Session(sid, req.getClientAddr()));
-  req.setSession(session);
-
   auto query = SmartPtr(new SessionQuery(api, &req, sql));
 
   auto cb = [this, query, session, &req] (
     HTTP::Status status, Event::Buffer &buffer) {
     if (status == HTTP_OK) {
       if (session->hasString("user")) {
-        // Session was found in DB
+        LOG_DEBUG(3, "Authenticated: " << session->getString("user"));
         session->addGroup("authenticated");
-        api.getSessionManager().addSession(session);
       }
 
       // Restart API request processing

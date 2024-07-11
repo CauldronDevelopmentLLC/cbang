@@ -44,8 +44,9 @@ using namespace cb;
 using namespace cb::DB;
 
 
-NameValueTable::NameValueTable(Database &db, const string &table) :
-  db(db), table(table) {}
+NameValueTable::NameValueTable(
+  Database &db, const string &table, bool ordered) :
+  db(db), table(table), ordered(ordered) {}
 
 
 void NameValueTable::init() {
@@ -53,19 +54,37 @@ void NameValueTable::init() {
 
   const char *tableName = table.c_str();
 
-  replaceStmt =
-    db.compilef("REPLACE INTO \"%s\" (name, value) VALUES (@NAME, @VALUE)",
-                tableName);
-  deleteStmt = db.compilef("DELETE FROM \"%s\" WHERE name=@NAME", tableName);
-  selectStmt =
-    db.compilef("SELECT value FROM \"%s\" WHERE name=@NAME", tableName);
-  foreachStmt = db.compilef("SELECT name, value FROM \"%s\"", tableName);
+  auto replaceSQL = "REPLACE INTO \"%s\" (name, value) VALUES (@NAME, @VALUE)";
+  auto deleteSQL  = "DELETE FROM \"%s\" WHERE name=@NAME";
+  auto selectSQL  = "SELECT value FROM \"%s\" WHERE name=@NAME";
+  auto foreachSQL = "SELECT name, value FROM \"%s\" LIMIT @LIMIT";
+
+  if (ordered) {
+    replaceSQL = "REPLACE INTO \"%s\" (name, value, ts) VALUES "
+      "(@NAME, @VALUE, CURRENT_TIMESTAMP)";
+    foreachSQL =
+      "SELECT name, value FROM \"%s\" ORDER BY ts DESC LIMIT @LIMIT";
+  }
+
+  replaceStmt = db.compilef(replaceSQL, tableName);
+  deleteStmt  = db.compilef(deleteSQL,  tableName);
+  selectStmt  = db.compilef(selectSQL,  tableName);
+  foreachStmt = db.compilef(foreachSQL, tableName);
 }
 
 
 void NameValueTable::create() {
-  db.executef("CREATE TABLE IF NOT EXISTS \"%s\" "
-              "(name TEXT PRIMARY KEY, value)", table.c_str());
+  string cmd = "CREATE TABLE IF NOT EXISTS \"%s\" ("
+                "name TEXT PRIMARY KEY,"
+                "value";
+  if (ordered) cmd += ", ts DATETIME DEFAULT CURRENT_TIMESTAMP";
+  cmd += ")";
+
+  db.executef(cmd.c_str(), table.c_str());
+
+  if (ordered)
+    db.executef("CREATE INDEX IF NOT EXISTS \"%s_ts_index\" ON \"%s\"(ts)",
+      table.c_str(), table.c_str());
 }
 
 
@@ -187,9 +206,11 @@ bool NameValueTable::has(const string &name) const {
 }
 
 
-void NameValueTable::foreach(function<void (const string &,
-                                            const string &)> cb) {
+void NameValueTable::foreach(
+  function<void (const string &, const string &)> cb, unsigned limit) {
   if (!cb) THROW("Callback cannot be null");
+
+  foreachStmt->parameter(0).bind(limit);
 
   while (foreachStmt->next())
     cb(foreachStmt->column(0).toString(), foreachStmt->column(1).toString());

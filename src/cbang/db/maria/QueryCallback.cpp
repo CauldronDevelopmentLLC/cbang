@@ -61,6 +61,8 @@ void QueryCallback::call(EventDB::state_t state) {
 
 
 bool QueryCallback::next() {
+  LOG_DEBUG(6, CBANG_FUNC << "() state=" << state);
+
   switch (state) {
   case STATE_START:
     state = STATE_QUERY;
@@ -114,6 +116,8 @@ bool QueryCallback::next() {
 
 
 void QueryCallback::operator()(Event::Event &, int, unsigned flags) {
+  LOG_DEBUG(6, CBANG_FUNC << "() flags=" << flags);
+
   try {
     if (db.continueNB(db.eventFlagsToDBReady(flags))) {
       if (!next()) db.renewEvent();

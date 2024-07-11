@@ -98,8 +98,16 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   // Always parse args
   addHandler(new ArgsParser);
 
-  // API
-  addHandler(createAPIHandler(new Context(config->get("api"))));
+  // APIs
+  if (config->hasDict("apis")) {
+    auto apis = config->get("apis");
+    for (unsigned i = 0; i < apis->size(); i++) {
+      auto api = apis->get(i);
+      if (api->hasDict("endpoints"))
+        addHandler(createAPIHandler(new Context(api->get("endpoints"))));
+    }
+
+  } else addHandler(createAPIHandler(new Context(config->get("api"))));
 }
 
 

@@ -41,9 +41,8 @@ using namespace cb::API;
 
 
 Headers::Headers(const JSON::ValuePtr &hdrs) {
-  if (hdrs.isSet())
-    for (unsigned i = 0; i < hdrs->size(); i++)
-      add(hdrs->keyAt(i), hdrs->getString(i));
+  for (unsigned i = 0; i < hdrs->size(); i++)
+    add(hdrs->keyAt(i), hdrs->getString(i));
 }
 
 

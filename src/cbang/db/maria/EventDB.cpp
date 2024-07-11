@@ -49,6 +49,7 @@ using namespace cb::Event;
 
 
 EventDB::EventDB(Base &base, st_mysql *db) : DB(db), base(base) {}
+EventDB::~EventDB() {LOG_DEBUG(5, CBANG_FUNC << "()");}
 
 
 unsigned EventDB::getEventFlags() const {
@@ -98,6 +99,8 @@ void EventDB::close(callback_t cb) {
 
 void EventDB::query(callback_t cb, const string &s,
                     const SmartPointer<const JSON::Value> &dict) {
+  LOG_DEBUG(5, CBANG_FUNC << "() sql=" << s);
+
   string query = dict.isNull() ? s : format(s, dict->getDict());
   auto queryCB = SmartPtr(new QueryCallback(*this, cb, query));
 
@@ -124,9 +127,12 @@ unsigned EventDB::eventFlagsToDBReady(unsigned flags) {
 
 
 void EventDB::newEvent(Base::callback_t cb) {
+  LOG_DEBUG(5, CBANG_FUNC << "() socket=" << getSocket()
+    << " flags=" << getEventFlags());
   if (event.isSet() && event->isPending()) THROW("Event already pending");
   assertPending();
   event = base.newEvent(getSocket(), cb, getEventFlags());
+  event->add();
 }
 
 

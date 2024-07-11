@@ -65,6 +65,7 @@ namespace cb {
       typedef std::function<void (state_t)> callback_t;
 
       EventDB(Event::Base &base, st_mysql *db = 0);
+      ~EventDB();
 
       unsigned getEventFlags() const;
 

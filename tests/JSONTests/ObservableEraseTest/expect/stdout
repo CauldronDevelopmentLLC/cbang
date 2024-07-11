@@ -1,0 +1,13 @@
+["x", {
+    "a": 1,
+    "b": 2,
+    "c": {}
+  }]
+["x", "a", null]
+["x", "c", "hello", "Hello"]
+FINAL: {
+  "x": {
+    "b": 2,
+    "c": {"hello": "Hello"}
+  }
+}
