@@ -51,6 +51,7 @@ namespace cb {
     class NameValueTable {
       Database &db;
       const std::string table;
+      bool ordered;
 
       SmartPointer<Statement> replaceStmt;
       SmartPointer<Statement> deleteStmt;
@@ -58,7 +59,8 @@ namespace cb {
       SmartPointer<Statement> foreachStmt;
 
     public:
-      NameValueTable(Database &db, const std::string &table);
+      NameValueTable(
+        Database &db, const std::string &table, bool ordered = false);
 
       void init();
       void create();
@@ -112,7 +114,8 @@ namespace cb {
       bool has(const std::string &name) const;
 
       void foreach(std::function<void (const std::string &name,
-                                       const std::string &value)> cb);
+                                       const std::string &value)> cb,
+                                       unsigned limit);
 
     protected:
       Column doGet(const std::string &name) const;

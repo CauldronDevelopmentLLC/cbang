@@ -74,18 +74,6 @@ void Login::loginComplete() {
 void Login::login(callback_t cb) {
   this->cb = cb;
 
-  // Make sure we have Session
-  auto session = req->getSession();
-  if (session.isNull()) {
-    session = api.getSessionManager().openSession(req->getClientAddr());
-    req->setSession(session);
-  }
-
-  // Set session cookie
-  string sid    = session->getID();
-  string cookie = api.getSessionManager().getSessionCookie();
-  req->setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
-
   if (provider == "none") return loginComplete();
 
   // Get OAuth2 provider
@@ -95,6 +83,7 @@ void Login::login(callback_t cb) {
       HTTP_BAD_REQUEST, "Unsupported login provider: " + provider);
 
   // Handle OAuth login response
+  auto session = req->getSession();
   const URI &uri = req->getURI();
   if (uri.has("state")) {
     if (!redirectURI.empty()) session->insert("redirect_uri", redirectURI);
@@ -103,6 +92,7 @@ void Login::login(callback_t cb) {
   }
 
   // Respond with Session ID and redirect URL
+  string sid = session->getID();
   URI redirect = oauth2->getRedirectURL(uri.getPath(), sid);
   if (!redirectURI.empty()) {
     redirect.set("redirect_uri", redirectURI);

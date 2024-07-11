@@ -179,7 +179,9 @@ void DB::connect(const string &host, const string &user, const string &password,
 bool DB::connectNB(const string &host, const string &user,
                    const string &password, const string &dbName, unsigned port,
                    const string &socketName, flags_t flags) {
-  LOG_DEBUG(5, CBANG_FUNC << "()");
+  LOG_DEBUG(5, CBANG_FUNC << "(host=" << host << ", user=" << user
+    << ", port=" << port << ", socketName=" << socketName << ", flags="
+    << flags << ")");
 
   assertNotPending();
   assertNonBlocking();
@@ -773,11 +775,11 @@ bool DB::continueNB(unsigned ready) {
 }
 
 
-bool DB::waitRead() const {return status & MYSQL_WAIT_READ;}
-bool DB::waitWrite() const {return status & MYSQL_WAIT_WRITE;}
-bool DB::waitExcept() const {return status & MYSQL_WAIT_EXCEPT;}
+bool DB::waitRead()    const {return status & MYSQL_WAIT_READ;}
+bool DB::waitWrite()   const {return status & MYSQL_WAIT_WRITE;}
+bool DB::waitExcept()  const {return status & MYSQL_WAIT_EXCEPT;}
 bool DB::waitTimeout() const {return status & MYSQL_WAIT_TIMEOUT;}
-int DB::getSocket() const {return mysql_get_socket(db);}
+int DB::getSocket()    const {return mysql_get_socket(db);}
 
 
 double DB::getTimeout() const {
