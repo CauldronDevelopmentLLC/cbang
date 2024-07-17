@@ -85,6 +85,7 @@ void ConnOut::queueRequest(const SmartPointer<Request> &req) {
 
 void ConnOut::fail(Event::ConnectionError err, const string &msg) {
   LOG_DEBUG(3, msg);
+  auto self = SmartPtr(this); // Keep alive
 
   auto requests = this->requests;
   this->requests.clear();
