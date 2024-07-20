@@ -74,7 +74,7 @@ namespace cb {
    * SmartPointers are only thread safe in the sense that multiple threads
    * can safely access different copies of the same SmartPointer
    * concurrently.  Accessing the data pointed to by the SmartPointer
-   * from multiple threads safely requires futher synchronization.
+   * from multiple threads safely requires further synchronization.
    *
    * See http://ootips.org/yonat/4dev/smart-pointers.html for more
    * information about smart pointers and why to use them.

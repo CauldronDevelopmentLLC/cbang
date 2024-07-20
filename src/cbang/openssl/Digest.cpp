@@ -158,7 +158,7 @@ bool Digest::verify(const uint8_t *sigData, size_t sigLen) {
   switch (EVP_DigestVerifyFinal(ctx, (uint8_t *)sigData, sigLen)) {
   case 0: return false;
   case 1: return true;
-  default: THROW("Error verifing digest signature: " << SSL::getErrorStr());
+  default: THROW("Error verifying digest signature: " << SSL::getErrorStr());
   }
 }
 

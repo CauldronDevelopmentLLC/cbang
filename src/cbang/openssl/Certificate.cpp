@@ -213,7 +213,7 @@ void Certificate::addNameEntry(const string &name, const string &value) {
 string Certificate::getNameEntry(const string &name) const {
   X509_NAME *subject = X509_get_subject_name(cert);
 
-  if (!subject) THROW("Failed to get cetficate subject name");
+  if (!subject) THROW("Failed to get certificate subject name");
 
   for (int i = 0; i < X509_NAME_entry_count(subject); i++) {
     X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);

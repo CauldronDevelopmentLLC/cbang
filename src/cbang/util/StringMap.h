@@ -95,7 +95,7 @@ namespace cb {
   /// Case-insensitive string compare
   struct string_ci_less {
     bool operator()(const std::string &s1, const std::string &s2) const {
-      // This is longwinded but avoids making copies of the strings
+      // This is long-winded but avoids making copies of the strings
       auto it1 = s1.begin();
       auto it2 = s2.begin();
 

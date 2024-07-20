@@ -56,7 +56,7 @@ namespace cb {
 
     // From Lockable
     /**
-     * Aquire this lock.  Will block the current thread until the lock is
+     * Acquire this lock.  Will block the current thread until the lock is
      * obtained.
      */
     bool lock(double timeout = -1) const override;
@@ -68,7 +68,7 @@ namespace cb {
     void unlock() const override;
 
     /**
-     * Try to aquire this lock.
+     * Try to acquire this lock.
      * @return False if the lock is not immediately available.
      */
     bool tryLock() const override;

@@ -120,9 +120,9 @@ namespace CBANG_ENUM_NAMESPACE {
 
       /// @return the number of entries in the enumeration
       static unsigned getCount();
-      /// @return the number of alises in the enumeration
+      /// @return the number of aliases in the enumeration
       static unsigned getAliasCount();
-      /// @return the total number of entries and alises in the enumeration
+      /// @return the total number of entries and aliases in the enumeration
       static unsigned getTotalCount() {return getCount() + getAliasCount();}
 
       /// @return the name of an enumeration entry with out the prefix
