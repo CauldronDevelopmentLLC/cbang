@@ -42,6 +42,7 @@
 #include <cbang/Info.h>
 #include <cbang/SStream.h>
 #include <cbang/String.h>
+#include <cbang/Catch.h>
 
 #include <cbang/hw/CPUInfo.h>
 #include <cbang/log/Logger.h>
@@ -124,7 +125,7 @@ void SystemInfo::getNameservers(set<SockAddr> &addrs) {
       String::tokenize(line, parts, " \t");
 
       if (1 < parts.size() && parts[0] == "nameserver")
-        addrs.insert(SockAddr::parse(parts[1]));
+        TRY_CATCH_ERROR(addrs.insert(SockAddr::parse(parts[1])));
     }
   }
 }
