@@ -61,7 +61,7 @@ namespace cb {
       T c = std::cos(angle());
       T s = std::sin(angle());
 
-      // Rodrigues' rotation forumla
+      // Rodrigues' rotation formula
       return v * c + (k.cross(v) * s) + k * k.dot(v) * (1 - c);
     }
 

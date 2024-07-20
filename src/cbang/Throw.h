@@ -32,8 +32,8 @@
 
 /*
  * Hear you will find several preprocessor macros that can be used as a
- * convient way to add the current file, line and column where an exception
- * occured.  These are:
+ * convenient way to add the current file, line and column where an exception
+ * occurred.  These are:
  *
  *   THROW(<message stream>)
  *   THROWC(<message stream>, Exception &cause)

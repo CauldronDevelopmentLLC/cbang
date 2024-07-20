@@ -39,7 +39,7 @@
  *
  * The method used in the '.def' files is admittedly a bit ugly but it
  * eliminates the need to repeat the enumeration several times and the
- * uglyness is confined to two files.  Repeated code is more evil than ugly
+ * ugliness is confined to two files.  Repeated code is more evil than ugly
  * code.  The '.def' files use what is commonly called X-Macros.  For more
  * information on this technique please see:
  *

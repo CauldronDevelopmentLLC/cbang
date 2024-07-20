@@ -107,7 +107,7 @@ bool Condition::timedWait(double timeout) const {
   if (!isLocked()) THROW("Condition not locked!");
 
 #ifdef _WIN32
-  // Windows Server 2003 and Windows XP/2000 and eariler do not support
+  // Windows Server 2003 and Windows XP/2000 and earlier do not support
   // condition variables.  This implementation uses an algorithm described
   // in the pthreads-win32 source.
   //

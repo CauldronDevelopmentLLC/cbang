@@ -54,7 +54,7 @@ namespace cb {
    *
    *   - A text message
    *   - A numeric code
-   *   - FileLocation indicating where the exception occured.
+   *   - FileLocation indicating where the exception occurred.
    *   - A pointer to an exception which was the original cause.
    *   - A stack trace.
    */
@@ -129,7 +129,7 @@ namespace cb {
     void setStackTrace(SmartPointer<StackTrace> trace) {this->trace = trace;}
 
     /**
-     * Prints the complete exception recuring down to the cause exception if
+     * Prints the complete exception recurring down to the cause exception if
      * not null.  WARNING: If there are many layers of causes this function
      * could print a very large amount of data.  This can be limited by
      * setting the causePrintLevel variable.

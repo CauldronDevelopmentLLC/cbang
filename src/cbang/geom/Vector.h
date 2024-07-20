@@ -273,7 +273,7 @@ namespace cb {
       return result;
     }
 
-    // Uniary
+    // Unary
     Vector<DIM, T> operator-() const {
       Vector<DIM, T> result;
       for (unsigned i = 0; i < DIM; i++) result[i] = -data[i];

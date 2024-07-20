@@ -75,7 +75,7 @@ namespace cb {
      * Start the thread.  This call will change the state to THREAD_STARTING.
      * Upon return there is no guarantee the thread will actually be started
      * after this call.  Once it is started the state will change to
-     * THREAD_RUNNING.  However, there is also the possiblity that the thread
+     * THREAD_RUNNING.  However, there is also the possibility that the thread
      * exits and the state changes to THREAD_STOPPED.
      */
     virtual void start();

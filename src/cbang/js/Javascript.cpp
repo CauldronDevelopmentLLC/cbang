@@ -59,8 +59,8 @@ Javascript::Javascript(const string &implName,
 #endif
 
   if (impl.isNull()) {
-    if (implName.empty()) THROW("No Javscript implementation compiled in");
-    else THROW("Javscript implementation '" << implName
+    if (implName.empty()) THROW("No JavaScript implementation compiled in");
+    else THROW("JavaScript implementation '" << implName
                 << "' not found in this build");
   }
 

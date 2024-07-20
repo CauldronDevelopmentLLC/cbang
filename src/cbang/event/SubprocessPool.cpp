@@ -90,7 +90,7 @@ void SubprocessPool::exec() {
       continue;
     } CATCH_ERROR;
 
-    // An error occured
+    // An error occurred
     proc->done();
   }
 }

@@ -291,7 +291,7 @@ void Request::outSetContentEncoding(Compression compression) {
   case COMPRESSION_LZ4:
     outSet("Content-Encoding", getContentEncoding(compression));
     break;
-  case COMPRESSION_AUTO: THROW("Unexected compression method");
+  case COMPRESSION_AUTO: THROW("Unexpected compression method");
   }
 }
 
@@ -688,7 +688,7 @@ void Request::writeResponse(Event::Buffer &buf) {
     if (1 <= version.getMinor() && !outHas("Date"))
       outSet("Date", Time().toString("%a, %d %b %Y %H:%M:%S GMT"));
 
-    // If the protocol is 1.0 and onnection was keep-alive add keep-alive
+    // If the protocol is 1.0 and connection was keep-alive add keep-alive
     bool keepAlive = inputHeaders.connectionKeepAlive();
     if (!version.getMinor() && keepAlive) outSet("Connection", "keep-alive");
 

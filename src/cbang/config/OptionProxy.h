@@ -38,7 +38,7 @@ namespace cb {
   /**
    * This class is used to allow different sets of configuration options
    * to be set in different contexts.  Such as different project runs.
-   * Options which are not "localize" are defered to the parent Options
+   * Options which are not "localize" are deferred to the parent Options
    * class.
    *
    * Options set here shadow options set in the Options class
@@ -56,7 +56,7 @@ namespace cb {
     bool local(const std::string &key) const override;
     /// Make the option local to this proxy.
     const SmartPointer<Option> &localize(const std::string &key) override;
-    /// Get an option.  Possibly defering to the parent Options.
+    /// Get an option.  Possibly deferring to the parent Options.
     const SmartPointer<Option> &get(const std::string &key) const override;
   };
 }
