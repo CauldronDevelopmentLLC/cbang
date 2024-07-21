@@ -98,6 +98,7 @@ def configure_deps(conf, local = True, with_openssl = True,
         if not (conf.CheckOSXFramework('CoreServices') and
                 conf.CheckOSXFramework('IOKit') and
                 conf.CheckOSXFramework('Security') and
+                conf.CheckOSXFramework('SystemConfiguration') and
                 conf.CheckOSXFramework('CoreFoundation')):
             raise SCons.Errors.StopError('Need CoreServices, IOKit, Security '
                                          '& CoreFoundation frameworks')
