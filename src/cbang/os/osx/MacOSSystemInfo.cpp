@@ -54,14 +54,14 @@ using namespace std;
 
 
 namespace {
-  get_ref(CFDictionaryRef dict, const string &key) {
-    CFDictionaryGetValue(dict, CFSTR(key.c_str()));
+  const void *get_ref(CFDictionaryRef dict, const string &key) {
+    return CFDictionaryGetValue(dict, MacOSString(key));
   }
 
 
   int64_t get_int(
     CFDictionaryRef dict, const string &key, uint64_t defaultValue = 0) {
-    auto ref = get_ref(dict, key);
+    auto ref = (CFNumberRef)get_ref(dict, key);
     int64_t value = 0;
     if (ref && CFNumberGetValue(ref, kCFNumberSInt64Type, &value))
       return value;
@@ -75,7 +75,7 @@ namespace {
 
 
   string get_str(CFDictionaryRef dict, const string &key) {
-    auto ref = get_ref(dict, key);
+    auto ref = (CFStringRef)get_ref(dict, key);
     return ref ? MacOSString::convert(ref) : string();
   }
 }
@@ -240,7 +240,7 @@ URI MacOSSystemInfo::getProxy(const URI &uri) const {
   // SOCKS are not supported
 
   // Check proxy is enabled for scheme
-  string scheme = String::toUpper(url.getScheme());
+  string scheme = String::toUpper(uri.getScheme());
   if (!get_bool(proxies, scheme + "Enable")) return URI();
 
   // Get proxy
