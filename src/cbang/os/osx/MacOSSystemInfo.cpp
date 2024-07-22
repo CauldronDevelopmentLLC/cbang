@@ -219,7 +219,7 @@ bool MacOSSystemInfo::versionByPList(unsigned ver[3]) {
 
 
 URI MacOSSystemInfo::getProxy(const URI &uri) const {
-  CFDictionaryRef proxies = SCDynamicStoreCopyProxies(0);
+  MacOSRef<CFDictionaryRef> proxies(SCDynamicStoreCopyProxies(0));
   if (!proxies) return URI();
 
   // Check ExceptionsList
