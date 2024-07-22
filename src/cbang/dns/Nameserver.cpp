@@ -255,7 +255,7 @@ void Nameserver::read() {
     if (it == active.end()) THROW("DNS request with ID " << id << " not found");
 
     auto query    = it->second;
-    auto result   = SmartPtr(new Result((Error::enum_t)(flags & 0x20f)));
+    auto result   = SmartPtr(new Result((Error::enum_t)(flags & 0xf)));
     unsigned rTTL = 0;
 
     // Check that response matches request
