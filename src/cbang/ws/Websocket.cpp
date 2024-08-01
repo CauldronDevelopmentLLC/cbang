@@ -88,8 +88,11 @@ void Websocket::close(Status status, const string &msg) {
   pongEvent.release();
 
   if (isActive()) {
-    uint16_t data = hton16(status);
-    writeFrame(WS_OP_CLOSE, true, &data, 2);
+    uint8_t data[125];
+    *(uint16_t *)data = hton16(status);
+    unsigned len = msg.length() < 123 ? msg.length() : 123;
+    memcpy(data + 2, msg.c_str(), len);
+    writeFrame(WS_OP_CLOSE, true, data, 2 + len);
   }
 
   if (active) {
@@ -193,11 +196,9 @@ void Websocket::readHeader() {
           // Check total message size
           auto maxBodySize = getConnection()->getMaxBodySize();
           auto msgSize = wsMsg.size() + bytesToRead;
-          if (maxBodySize && maxBodySize < msgSize) {
-            string err = SSTR("Message size " << msgSize
-                              << " exceeds max body size " << maxBodySize);
-            return close(WS_STATUS_TOO_BIG, err);
-          }
+          if (maxBodySize && maxBodySize < msgSize)
+            return close(WS_STATUS_TOO_BIG,
+              SSTR("Message size " << msgSize << ">" << maxBodySize));
 
           // Copy mask
           if (mask) memcpy(wsMask, &header[bytes - 4], 4);
