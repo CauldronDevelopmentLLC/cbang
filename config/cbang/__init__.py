@@ -47,6 +47,7 @@ def configure_deps(conf, local = True, with_openssl = True,
 
     conf.CBConfig('ZLib', not local)
     conf.CBConfig('bzip2', not local)
+    conf.CBConfig('lz4', not local)
     conf.CBConfig('XML', not local)
     conf.CBConfig('sqlite3', not local)
     conf.CBConfig('libyaml', not local)
@@ -59,9 +60,6 @@ def configure_deps(conf, local = True, with_openssl = True,
             conf.CBCheckFunc('mysql_real_connect_start'):
         env.CBConfigDef('HAVE_MARIADB')
         env.cb_enabled.add('mariadb')
-
-    # LZ4
-    conf.CBCheckLib('lz4')
 
     # Boost
     if env['PLATFORM'] == 'win32': env.CBDefine('BOOST_ALL_NO_LIB')
@@ -166,7 +164,7 @@ def generate(env):
         BoolVariable('backtrace_debugger', 'Enable backtrace debugger', 0),
         ('debug_level', 'Set log debug level', 1))
 
-    env.CBLoadTools('''sqlite3 openssl pthreads valgrind osx ZLib bzip2
+    env.CBLoadTools('''sqlite3 openssl pthreads valgrind osx ZLib bzip2 lz4
         XML v8 event re2 libyaml leveldb'''.split(), GetHome() + '/..')
 
 

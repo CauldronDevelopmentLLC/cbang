@@ -3,7 +3,7 @@ env = env.Clone()
 
 lib = env.Library('#/lib/lz4', Glob('*.c'))
 
-hdrs = env.Install(dir = '#/include/lz4', source = Glob('*.h'))
+hdrs = env.Install(dir = '#/include', source = Glob('lz4*.h'))
 Depends(lib, hdrs)
 
 Return('lib')
