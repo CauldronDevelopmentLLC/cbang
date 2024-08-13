@@ -37,7 +37,7 @@
 
 #include <cstring>
 
-#include <lz4/lz4frame.h>
+#include <lz4frame.h>
 
 
 namespace cb {
