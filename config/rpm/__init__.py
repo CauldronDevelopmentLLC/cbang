@@ -118,6 +118,8 @@ def build_function(target, source, env):
         write_var(env, f, 'Provides', 'rpm_provides', multi = True)
         write_var(env, f, 'Conflicts', 'rpm_conflicts', multi = True)
         write_var(env, f, 'Obsoletes', 'rpm_obsoletes', multi = True)
+        write_var(env, f, 'Recommends', 'rpm_recommends', multi = True)
+        write_var(env, f, 'Suggests', 'rpm_suggests', multi = True)
         write_var(env, f, 'BuildRequires', 'rpm_build_requires', multi = True)
         write_var(env, f, 'Requires', 'rpm_requires', multi = True)
         write_var(env, f, 'Requires(pre)', 'rpm_pre_requires', multi = True)
