@@ -139,11 +139,6 @@ namespace cb {
     int openModeToFlags(std::ios::openmode mode);
 
     // Process
-    enum {
-      PROCESS_SIGNALED    = 1 << 0,
-      PROCESS_DUMPED_CORE = 1 << 1,
-    };
-
     int priorityToInt(ProcessPriority priority);
     void setPriority(ProcessPriority priority, uint64_t pid = 0);
     int system(const std::string &cmd, const StringMap &env = StringMap());

@@ -62,6 +62,7 @@
 #include <direct.h> // For _chdir
 #include <process.h>
 #define getpid _getpid
+#define WIN32_EXIT_MAGIC 0x61b582f6 // Used to detect a killed process
 
 #else // _WIN32
 #include <csignal>
@@ -945,9 +946,7 @@ namespace cb {
     }
 
 
-    uint64_t getPID() {
-      return (uint64_t)getpid();
-    }
+    uint64_t getPID() {return (uint64_t)getpid();}
 
 
     bool waitPID(uint64_t pid, int *returnCode, bool nonblocking, int *flags) {
@@ -969,6 +968,11 @@ namespace cb {
 
         // NOTE Checking for STILL_ACTIVE is unreliable
         if (returnCode) *returnCode = exitCode;
+        if (flags) {
+          if (exitCode == WIN32_EXIT_MAGIC)
+            *flags = Subprocess::PROCESS_SIGNALED;
+          else *flags = Subprocess::PROCESS_EXITED;
+        }
 
         return true; // Exited
       }
@@ -983,19 +987,15 @@ namespace cb {
       if (retVal == -1)
         THROW("Failed to wait on process " << pid << ":" << SysError());
 
-      if (retVal) { // Returned PID
-        if (WIFSIGNALED(status)) {
-          if (flags) *flags |= PROCESS_SIGNALED;
+      if (!retVal) return false; // Still running
 
-        } else if (WIFEXITED(status)) {
-          if (returnCode) *returnCode = WEXITSTATUS(status);
+      if (returnCode && WIFEXITED(status)) *returnCode = WEXITSTATUS(status);
 
-        } else if (WCOREDUMP(status)) {
-          if (flags) *flags |= PROCESS_DUMPED_CORE;
-
-        } else return false; // Stopped or continued
-
-      } else return false; // Still running
+      if (flags) {
+        if (WIFEXITED(status))   *flags |= Subprocess::PROCESS_EXITED;
+        if (WIFSIGNALED(status)) *flags |= Subprocess::PROCESS_SIGNALED;
+        if (WCOREDUMP(status))   *flags |= Subprocess::PROCESS_DUMPED_CORE;
+      }
 
       return true;
 #endif // _WIN32
@@ -1007,7 +1007,7 @@ namespace cb {
 
 #ifdef _WIN32
         SmartWin32Handle h = OpenProcess(PROCESS_TERMINATE, pid);
-        if (TerminateProcess(h, -1)) return true;
+        if (TerminateProcess(h, WIN32_EXIT_MAGIC)) return true;
 
 #else // _WIN32
         int err;

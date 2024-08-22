@@ -61,6 +61,12 @@ namespace cb {
       USE_VFORK               = 1 << 12,
     };
 
+    enum {
+      PROCESS_EXITED          = 1 << 0,
+      PROCESS_SIGNALED        = 1 << 1,
+      PROCESS_DUMPED_CORE     = 1 << 2,
+    };
+
   protected:
     struct Private;
     Private *p;
@@ -68,10 +74,9 @@ namespace cb {
     std::vector<Pipe> pipes;
 
     bool running     = false;
-    bool wasKilled   = false;
-    bool dumpedCore  = false;
     bool signalGroup = false;
     int  returnCode  = 0;
+    int  exitFlags   = 0;
 
     std::string wd;
 
@@ -82,8 +87,9 @@ namespace cb {
     bool isRunning();
     uint64_t getPID() const;
     int getReturnCode()  const {return returnCode;}
-    bool getWasKilled()  const {return wasKilled;}
-    bool getDumpedCore() const {return dumpedCore;}
+    int getExitFlags()   const {return exitFlags;}
+    bool getWasKilled()  const {return exitFlags & PROCESS_SIGNALED;}
+    bool getDumpedCore() const {return exitFlags & PROCESS_DUMPED_CORE;}
 
     unsigned createPipe(bool toChild);
 
@@ -102,7 +108,6 @@ namespace cb {
     bool kill(bool nonblocking = false);
     void interrupt();
     int wait(bool nonblocking = false);
-    int waitFor(double interrupt = 0, double kill = 0);
 
     static void parse(const std::string &command,
                       std::vector<std::string> &args);
