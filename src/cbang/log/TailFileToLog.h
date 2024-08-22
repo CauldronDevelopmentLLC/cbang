@@ -55,11 +55,15 @@ namespace cb {
     char buffer[bufferSize + 1]; // Room for null terminator
     unsigned fill = 0;
 
+    unsigned bytes = 0;
+
   public:
     TailFileToLog(Event::Base &base, const std::string &filename,
                   const std::string &prefix = std::string(),
                   const char *logDomain = CBANG_LOG_DOMAIN,
                   unsigned logLevel = CBANG_LOG_INFO_LEVEL(1));
+
+    unsigned getBytesCopied() const {return bytes;}
 
   protected:
     void update();

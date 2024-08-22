@@ -113,6 +113,11 @@ Subprocess::Subprocess() : p(new Private) {
 
 
 Subprocess::~Subprocess() {
+  try {
+    if (isRunning())
+      LOG_ERROR("Subprocess deallocated while process is still running");
+  } CATCH_ERROR;
+
   closeHandles();
   delete p;
 }
@@ -151,8 +156,7 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
                       ProcessPriority priority) {
   if (isRunning()) THROW("Subprocess already running");
 
-  returnCode = 0;
-  wasKilled = dumpedCore = false;
+  returnCode = exitFlags = 0;
 
   LOG_DEBUG(3, "Executing: " << assemble(_args));
 
@@ -425,7 +429,6 @@ bool Subprocess::kill(bool nonblocking) {
 
   if (!nonblocking) wait();
 
-  wasKilled = true;
   return true;
 }
 
@@ -434,12 +437,8 @@ int Subprocess::wait(bool nonblocking) {
   if (!running) return returnCode;
 
   try {
-    int flags = 0;
     running =
-      !SystemUtilities::waitPID(getPID(), &returnCode, nonblocking, &flags);
-
-    if (flags & SystemUtilities::PROCESS_SIGNALED) wasKilled = true;
-    if (flags & SystemUtilities::PROCESS_DUMPED_CORE) dumpedCore = true;
+      !SystemUtilities::waitPID(getPID(), &returnCode, nonblocking, &exitFlags);
 
   } catch (...) {
     closeProcessHandles();
@@ -448,37 +447,6 @@ int Subprocess::wait(bool nonblocking) {
   }
 
   if (!running) closeProcessHandles();
-
-  return returnCode;
-}
-
-
-int Subprocess::waitFor(double interrupt, double kill) {
-  const double delta = 0.25;
-
-  double remain = interrupt;
-  while (isRunning())
-    if (interrupt && remain < delta) {
-      Timer::sleep(remain);
-      if (isRunning()) Subprocess::interrupt();
-      break;
-
-    } else {
-      Timer::sleep(delta);
-      remain -= delta;
-    }
-
-  remain = kill;
-  while (isRunning())
-    if (kill && remain < delta) {
-      Timer::sleep(remain);
-      if (isRunning()) Subprocess::kill();
-      break;
-
-    } else {
-      Timer::sleep(delta);
-      remain -= delta;
-    }
 
   return returnCode;
 }

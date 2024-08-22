@@ -71,6 +71,8 @@ void TailFileToLog::update() {
       return;
     }
 
+    bytes++;
+
     if (c == '\r') continue;
     if (c != '\n') buffer[fill++] = c;
 
