@@ -398,7 +398,7 @@ void Account::next() {
     break;
 
   case STATE_GET_AUTH: {
-    auto &auths = *order->get("authorizations");
+    auto &auths = *order->get("authorizations", new JSON::Dict);
     if (currentAuth < auths.size()) get(auths.getString(currentAuth));
     else nextKeyCert();
     break;
