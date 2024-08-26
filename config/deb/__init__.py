@@ -164,7 +164,7 @@ def build_function(target, source, env):
 
     # Library dependencies
     if 'programs' in env:
-        progs = ['usr/bin/' + prog for prog in env.get('programs')]
+        progs = ['usr/bin/' + os.path.basename(prog) for prog in env.get('programs')]
 
         # dummy debian/control required
         os.makedirs(build_dir + '/debian', 0o755)
