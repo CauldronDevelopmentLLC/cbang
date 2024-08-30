@@ -509,7 +509,7 @@ namespace cb {
 
 
     bool isDirectoryTreeEmpty(const string &path) {
-      return DirectoryWalker(path).hasNext();
+      return !DirectoryWalker(path).hasNext();
     }
 
 
