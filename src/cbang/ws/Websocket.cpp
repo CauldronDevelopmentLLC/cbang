@@ -185,8 +185,7 @@ void Websocket::readHeader() {
             return close(WS_STATUS_PROTOCOL, "Invalid frame size");
 
           // Check opcode
-          uint8_t opcode = header[0] & 0xf;
-          wsOpCode = (OpCode::enum_t)opcode;
+          wsOpCode = (OpCode::enum_t)(header[0] & 0xf);
 
           LOG_DEBUG(4, CBANG_FUNC << "() opcode=" << wsOpCode
                     << " bytes=" << bytesToRead);

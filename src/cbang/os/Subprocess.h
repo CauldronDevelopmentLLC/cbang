@@ -90,6 +90,8 @@ namespace cb {
     int getExitFlags()   const {return exitFlags;}
     bool getWasKilled()  const {return exitFlags & PROCESS_SIGNALED;}
     bool getDumpedCore() const {return exitFlags & PROCESS_DUMPED_CORE;}
+    bool exitedOk() const
+      {return !returnCode && !getWasKilled() && !getDumpedCore();}
 
     unsigned createPipe(bool toChild);
 
