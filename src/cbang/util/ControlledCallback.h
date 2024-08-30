@@ -106,8 +106,6 @@ namespace cb {
         impl->setLTO(0);
         impl->cancel();
       }
-
-      bool isCanceled() const {return impl->isCanceled();}
     };
 
 

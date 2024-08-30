@@ -54,7 +54,7 @@ namespace cb {
   public:
     /**
      * Create a DirectoryWalker.
-     * A maxDepth of ~0 will seach indefinitely deep.
+     * A maxDepth of ~0 will search indefinitely deep.
      * A maxDepth of 0 or 1 will only search the root.
      *
      * @param root The root of the directory tree to search.

@@ -47,8 +47,8 @@ namespace cb {
       Rate writeRate;
 
 
-      class FDQueue : private std::list<SmartPointer<Transfer> > {
-        typedef std::list<SmartPointer<Transfer> > Super_T;
+      class FDQueue : private std::list<SmartPointer<Transfer>> {
+        typedef std::list<SmartPointer<Transfer>> Super_T;
         bool read;
         bool closed = false;
         uint64_t last = 0;
