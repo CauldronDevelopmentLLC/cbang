@@ -58,7 +58,8 @@ namespace cb {
 
 
     std::string getHelp() const override {
-      return minimum.getHelp() + " & " + maximum.getHelp();
+      return SSTR("Must be >= " << minimum.getMin() << " and <= "
+        << maximum.getMax() << '.');
     }
 
 

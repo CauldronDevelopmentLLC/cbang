@@ -33,34 +33,20 @@
 #pragma once
 
 #include "Constraint.h"
+#include <cbang/util/Regex.h>
+
 
 namespace cb {
-  template <typename T>
-  class MaxConstraint : public Constraint {
-    T maximum;
+  class RegexConstraint : public Constraint {
+    const Regex re;
+    const std::string help;
 
   public:
-    MaxConstraint(T maximum) : maximum(maximum) {}
-
-    const T &getMax() const {return maximum;}
+    RegexConstraint(const Regex &re, const std::string &help = "") :
+      re(re), help(help) {}
 
     // From Constraint
-    void validate(int64_t value) const override {
-      if (maximum < value)
-        CBANG_THROW(value << " is greater than maximum value " << maximum);
-    }
-
-    void validate(double value) const override {
-      if (maximum < value)
-        CBANG_THROW(value << " is greater than maximum value " << maximum);
-    }
-
-
-    std::string getHelp() const override {
-      return SSTR("Must be <= to " << maximum << '.');
-    }
-
-
-    void dump(JSON::Sink &sink) const override {sink.insert("max", maximum);}
+    void validate(const std::string &value) const override;
+    std::string getHelp() const override;
   };
 }

@@ -30,37 +30,20 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "RegexConstraint.h"
 
-#include "Constraint.h"
-
-namespace cb {
-  template <typename T>
-  class MaxConstraint : public Constraint {
-    T maximum;
-
-  public:
-    MaxConstraint(T maximum) : maximum(maximum) {}
-
-    const T &getMax() const {return maximum;}
-
-    // From Constraint
-    void validate(int64_t value) const override {
-      if (maximum < value)
-        CBANG_THROW(value << " is greater than maximum value " << maximum);
-    }
-
-    void validate(double value) const override {
-      if (maximum < value)
-        CBANG_THROW(value << " is greater than maximum value " << maximum);
-    }
+using namespace cb;
+using namespace std;
 
 
-    std::string getHelp() const override {
-      return SSTR("Must be <= to " << maximum << '.');
-    }
+void RegexConstraint::validate(const string &value) const {
+  if (!re.match(value))
+    THROW("'" << value << "' does not match pattern '" << re.toString() << "'");
+}
 
 
-    void dump(JSON::Sink &sink) const override {sink.insert("max", maximum);}
-  };
+string RegexConstraint::getHelp() const {
+  if (help.empty())
+    return SSTR("Must match the pattern '" << re.toString() << "'.");
+  return help;
 }

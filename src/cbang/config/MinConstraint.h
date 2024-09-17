@@ -60,7 +60,7 @@ namespace cb {
 
 
     std::string getHelp() const override {
-      return SSTR(">= " << minimum);
+      return SSTR("Must be >= to " << minimum << '.');
     }
 
 
