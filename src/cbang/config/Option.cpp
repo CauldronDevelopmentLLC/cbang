@@ -523,6 +523,11 @@ ostream &Option::printHelp(ostream &stream, bool cmdLine) const {
   stream << '\n';
   String::fill(stream, help, 0, cmdLine ? 6 : 4, width);
 
+  if (constraint.isSet()) {
+    stream << '\n';
+    String::fill(stream, constraint->getHelp(), 0, cmdLine ? 6 : 4, width);
+  }
+
   return stream;
 }
 
