@@ -149,6 +149,9 @@ void EventDB::addEvent() const {
 }
 
 
+void EventDB::endEvent() {event.release();}
+
+
 void EventDB::callback(callback_t cb) {
   auto response =
     [this, cb] (Event::Event &e, int fd, unsigned flags) {
