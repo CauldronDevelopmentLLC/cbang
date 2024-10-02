@@ -120,8 +120,8 @@ void QueryCallback::operator()(Event::Event &, int, unsigned flags) {
 
   try {
     if (db.continueNB(db.eventFlagsToDBReady(flags))) {
-      if (!next()) db.renewEvent();
-    } else db.addEvent();
+      if (!next()) return db.renewEvent();
+    } else return db.addEvent();
 
   } catch (const Exception &e) {
     // Retry deadlocks
@@ -129,11 +129,13 @@ void QueryCallback::operator()(Event::Event &, int, unsigned flags) {
       LOG_WARNING("DB deadlock detected, retrying");
       call(EventDB::EVENTDB_RETRY);
       state = STATE_START;
-      if (!next()) db.renewEvent();
+      if (!next()) return db.renewEvent();
 
     } else {
       LOG_DEBUG(5, e);
       call(EventDB::EVENTDB_ERROR);
     }
   }
+
+  db.endEvent();
 }

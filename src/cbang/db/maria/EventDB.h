@@ -128,6 +128,7 @@ namespace cb {
       void newEvent(Event::Base::callback_t cb);
       void renewEvent() const;
       void addEvent() const;
+      void endEvent();
 
       void callback(callback_t cb);
 
