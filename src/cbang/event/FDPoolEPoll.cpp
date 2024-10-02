@@ -274,10 +274,9 @@ void FDPoolEPoll::FDRec::update() {
   ev.data.fd = fd;
   int op = events ? (newEvents ? EPOLL_CTL_MOD : EPOLL_CTL_DEL) : EPOLL_CTL_ADD;
 
-  if (epoll_ctl(pool.getFD(), op, fd, &ev))
-    if (op != EPOLL_CTL_DEL)
-      LOG_ERROR("epoll_ctl(" << epollOpString(op) << ") failed for fd " << fd
-                << ": " << SysError());
+  if (epoll_ctl(pool.getFD(), op, fd, &ev) && op != EPOLL_CTL_DEL)
+    LOG_ERROR("epoll_ctl(" << epollOpString(op) << ") failed for fd " << fd
+              << ": " << SysError());
 
   // Update timeouts
   readQ .updateTimeout(events & FD::READ_EVENT,  newEvents & FD::READ_EVENT);

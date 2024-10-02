@@ -42,7 +42,7 @@ namespace cb {
   namespace API {
     class API;
 
-    class Query : public HTTP::Status {
+    class Query : public RefCounted, public HTTP::Status {
     protected:
       API &api;
       SmartPointer<HTTP::Request> req;

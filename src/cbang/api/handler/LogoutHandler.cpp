@@ -47,7 +47,7 @@ LogoutHandler::LogoutHandler(API &api, const JSON::ValuePtr &config) :
 bool LogoutHandler::operator()(HTTP::Request &req) {
   auto query = SmartPtr(new Query(api, &req, sql));
 
-  auto cb = [this, query, &req] (HTTP::Status status, Event::Buffer &buffer) {
+  auto cb = [this, &req] (HTTP::Status status, Event::Buffer &buffer) {
     if (status == HTTP_OK) {
       auto &sessionMan = api.getSessionManager();
 
