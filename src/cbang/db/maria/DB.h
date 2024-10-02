@@ -142,6 +142,14 @@ namespace cb {
                      unsigned port = 3306,
                      const std::string &socketName = std::string(),
                      flags_t flags = FLAG_DEFAULTS);
+      void resetConnection();
+      bool resetConnectionNB();
+      void changeUser(const std::string &user = "root",
+                      const std::string &password = std::string(),
+                      const std::string &dbName = std::string());
+      bool changeUserNB(const std::string &user = "root",
+                        const std::string &password = std::string(),
+                        const std::string &dbName = std::string());
       bool ping();
       bool pingNB();
       void close();
@@ -271,6 +279,8 @@ namespace cb {
       // Continue non-blocking calls
       bool closeContinue(unsigned ready);
       bool connectContinue(unsigned ready);
+      bool resetConnectionContinue(unsigned ready);
+      bool changeUserContinue(unsigned ready);
       bool pingContinue(unsigned ready);
       bool useContinue(unsigned ready);
       bool queryContinue(unsigned ready);

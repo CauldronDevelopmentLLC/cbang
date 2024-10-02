@@ -180,8 +180,8 @@ bool DB::connectNB(const string &host, const string &user,
                    const string &password, const string &dbName, unsigned port,
                    const string &socketName, flags_t flags) {
   LOG_DEBUG(5, CBANG_FUNC << "(host=" << host << ", user=" << user
-    << ", port=" << port << ", socketName=" << socketName << ", flags="
-    << flags << ")");
+    << ", db=" << dbName << ", port=" << port
+    << ", socketName=" << socketName << ", flags=" << flags << ")");
 
   assertNotPending();
   assertNonBlocking();
@@ -198,6 +198,63 @@ bool DB::connectNB(const string &host, const string &user,
 
   if (!db) RAISE_DB_ERROR("Failed to connect");
   connected = true;
+
+  return true;
+}
+
+
+void DB::resetConnection() {
+  assertNotPending();
+
+  if (mysql_reset_connection(db))
+    RAISE_DB_ERROR("Failed to reset DB connection");
+}
+
+
+bool DB::resetConnectionNB() {
+  assertNotPending();
+
+  int ret = 0;
+  mysql_reset_connection_start(&ret, db);
+
+  if (status) {
+    continueFunc = &DB::resetConnectionContinue;
+    return false;
+  }
+
+  if (ret) RAISE_DB_ERROR("Failed to reset DB connection");
+
+  return true;
+}
+
+
+void DB::changeUser(const string &user, const string &password,
+                    const string &dbName) {
+  assertNotPending();
+  my_bool ret = mysql_change_user(
+    db, user.c_str(), password.c_str(), dbName.c_str());
+
+  if (ret) RAISE_DB_ERROR("Failed to change DB user");
+}
+
+
+bool DB::changeUserNB(const string &user, const string &password,
+                      const string &dbName) {
+  LOG_DEBUG(5, CBANG_FUNC << "(user=" << user << " db=" << dbName << ")");
+
+  assertNotPending();
+  assertNonBlocking();
+
+  my_bool ret = false;
+  status = mysql_change_user_start(
+    &ret, db, user.c_str(), password.c_str(), dbName.c_str());
+
+  if (status) {
+    continueFunc = &DB::changeUserContinue;
+    return false;
+  }
+
+  if (ret) RAISE_DB_ERROR("Failed to change DB user");
 
   return true;
 }
@@ -858,6 +915,32 @@ bool DB::connectContinue(unsigned ready) {
 
   if (!db) RAISE_DB_ERROR("Failed to connect");
   connected = true;
+
+  return true;
+}
+
+
+bool DB::resetConnectionContinue(unsigned ready) {
+  LOG_DEBUG(5, CBANG_FUNC << "()");
+
+  int ret = 0;
+  status = mysql_reset_connection_cont(&ret, db, ready);
+  if (status) return false;
+
+  if (ret) RAISE_DB_ERROR("Failed to reset DB connection");
+
+  return true;
+}
+
+
+bool DB::changeUserContinue(unsigned ready) {
+  LOG_DEBUG(5, CBANG_FUNC << "()");
+
+  my_bool ret = false;
+  status = mysql_change_user_cont(&ret, db, ready);
+  if (status) return false;
+
+  if (ret) RAISE_DB_ERROR("Failed to change DB user");
 
   return true;
 }

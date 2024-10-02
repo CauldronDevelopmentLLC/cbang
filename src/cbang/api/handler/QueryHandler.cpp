@@ -63,7 +63,7 @@ void QueryHandler::reply(
 bool QueryHandler::operator()(HTTP::Request &req) {
   auto query = SmartPtr(new Query(api, &req, sql, returnType, fields));
 
-  auto cb = [this, query, &req] (HTTP::Status status, Event::Buffer &buffer) {
+  auto cb = [this, &req] (HTTP::Status status, Event::Buffer &buffer) {
     reply(req, status, buffer);
   };
 

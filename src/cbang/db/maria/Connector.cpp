@@ -40,11 +40,11 @@ using namespace cb::MariaDB;
 
 void Connector::addOptions(Options &options) {
   options.pushCategory("Database");
-  options.addTarget("db-host", dbHost, "DB host name");
-  options.addTarget("db-user", dbUser, "DB user name");
-  options.addTarget("db-pass", dbPass, "DB password")->setObscured();;
-  options.addTarget("db-name", dbName, "DB name");
-  options.addTarget("db-port", dbPort, "DB port");
+  options.addTarget("db-host",    dbHost,    "DB host name");
+  options.addTarget("db-user",    dbUser,    "DB user name");
+  options.addTarget("db-pass",    dbPass,    "DB password")->setObscured();;
+  options.addTarget("db-name",    dbName,    "DB name");
+  options.addTarget("db-port",    dbPort,    "DB port");
   options.addTarget("db-timeout", dbTimeout, "DB timeout");
   options.popCategory();
 }

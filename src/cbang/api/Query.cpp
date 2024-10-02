@@ -52,9 +52,15 @@ Query::Query(
 void Query::query(callback_t cb) {
   if (!cb) THROW("Callback not set");
   this->cb = cb;
+
   if (db.isNull()) db = api.getDBConnector().getConnection();
   string sql = Resolver(api, req).format(this->sql, "NULL");
-  db->query(this, &Query::callback, sql);
+
+  // Stay alive until query callbacks are complete
+  auto self = SmartPtr(this);
+  auto queryCB = [self] (state_t state) {self->callback(state);};
+
+  db->query(queryCB, sql);
 }
 
 
@@ -286,6 +292,5 @@ void Query::returnOk(MariaDB::EventDB::state_t state) {
   default:
     errorReply(HTTP_INTERNAL_SERVER_ERROR, "Unexpected DB response");
     THROW("Unexpected DB response: " << state);
-    return;
   }
 }

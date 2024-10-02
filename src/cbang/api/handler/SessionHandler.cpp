@@ -87,7 +87,7 @@ bool SessionHandler::operator()(HTTP::Request &req) {
   if (sql.empty()) return false;
   auto query = SmartPtr(new SessionQuery(api, &req, sql));
 
-  auto cb = [this, query, session, &req] (
+  auto cb = [this, session, &req] (
     HTTP::Status status, Event::Buffer &buffer) {
     if (status == HTTP_OK) {
       if (session->hasString("user")) {
