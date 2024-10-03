@@ -47,14 +47,14 @@ using namespace cb::API;
 
 
 void ArgFilterProcess::exec() {
-  Subprocess::exec(cmd, Subprocess::SHELL | Subprocess::REDIR_STDERR |
+  Subprocess::exec(cmd, Subprocess::SHELL   | Subprocess::REDIR_STDERR |
                    Subprocess::REDIR_STDOUT | Subprocess::REDIR_STDIN);
 
   // Make pipes non-blocking
   for (unsigned i = 0; i < 3; i++)
     getPipe(i).setBlocking(false);
 
-  inStr  = new StreamEventBuffer(base, getPipeIn(), Enum::EVENT_WRITE);
+  inStr  = new StreamEventBuffer(base, getPipeIn(),  Enum::EVENT_WRITE);
   outStr = new StreamEventBuffer(base, getPipeOut(), Enum::EVENT_READ);
   errStr = new StreamLogger(
     base, getPipeErr(), SSTR("PID:" << getPID() << ':'),
