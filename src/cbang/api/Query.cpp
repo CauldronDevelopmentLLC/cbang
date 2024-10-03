@@ -277,9 +277,11 @@ void Query::returnOk(MariaDB::EventDB::state_t state) {
     default: break;
     }
 
-    LOG_ERROR("DB:" << db->getErrorNumber() << ": " << db->getError());
-    errorReply(error, db->getError());
-    if (error == HTTP_INTERNAL_SERVER_ERROR) THROW(db->getError());
+    string errMsg =
+      SSTR("DB:" << db->getErrorNumber() << ": " << db->getError());
+    errorReply(error, errMsg);
+    if (error == HTTP_INTERNAL_SERVER_ERROR) THROW(errMsg);
+    LOG_WARNING(errMsg);
 
     break;
   }
