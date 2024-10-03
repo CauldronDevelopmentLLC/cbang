@@ -30,29 +30,17 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "PipeEventBuffer.h"
 
-#include "StreamEventHandler.h"
-#include "Buffer.h"
+using namespace cb;
+using namespace cb::Event;
 
 
-namespace cb {
-  namespace Event {
-    class StreamEventBuffer : public StreamEventHandler, public Buffer {
-      socket_t handle;
+PipeEventBuffer::PipeEventBuffer(Base &base, PipeEnd &pipe, unsigned flags) :
+  StreamEventBuffer(base, pipe, flags), pipe(pipe) {}
 
-    public:
-      StreamEventBuffer(Base &base, socket_t handle, unsigned flags);
 
-      virtual bool isOpen() const;
-      virtual void close();
-      virtual void read();
-      virtual void write();
-      using Buffer::read;
-      using Buffer::write;
-
-      // From StreamEventHandler
-      void onEvent(Event &event, int fd, unsigned flags) override;
-    };
-  }
+void PipeEventBuffer::close() {
+  pipe.close();
+  StreamEventBuffer::close();
 }

@@ -44,12 +44,25 @@ StreamEventBuffer::StreamEventBuffer(
   StreamEventHandler(base, handle, flags), handle(handle) {}
 
 
-void StreamEventBuffer::read() {read(event->getFD(), 1e6);}
+bool StreamEventBuffer::isOpen() const {return handle != (socket_t)-1;}
+
+
+void StreamEventBuffer::close() {
+  if (isOpen()) Socket::close(handle);
+  event->del();
+  handle = (socket_t)-1;
+}
+
+
+void StreamEventBuffer::read() {
+  if (isOpen()) read(event->getFD(), 1e6);
+}
 
 
 void StreamEventBuffer::write() {
+  if (!isOpen()) return;
   write(event->getFD(), 1e6);
-  if (!getLength()) Socket::close(handle);
+  if (!getLength()) close();
 }
 
 

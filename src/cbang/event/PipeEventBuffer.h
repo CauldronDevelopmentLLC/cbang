@@ -32,27 +32,21 @@
 
 #pragma once
 
-#include "StreamEventHandler.h"
-#include "Buffer.h"
+#include "StreamEventBuffer.h"
+#include <cbang/os/Pipe.h>
 
 
 namespace cb {
   namespace Event {
-    class StreamEventBuffer : public StreamEventHandler, public Buffer {
-      socket_t handle;
+    class PipeEventBuffer : public StreamEventBuffer {
+      PipeEnd &pipe;
 
     public:
-      StreamEventBuffer(Base &base, socket_t handle, unsigned flags);
+      PipeEventBuffer(Base &base, PipeEnd &pipe, unsigned flags);
 
-      virtual bool isOpen() const;
-      virtual void close();
-      virtual void read();
-      virtual void write();
-      using Buffer::read;
-      using Buffer::write;
-
-      // From StreamEventHandler
-      void onEvent(Event &event, int fd, unsigned flags) override;
-    };
+      // From StreamEventBuffer
+      bool isOpen() const override {return pipe.isOpen();}
+      void close() override;
+   };
   }
 }
