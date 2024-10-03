@@ -87,7 +87,10 @@ void Login::login(callback_t cb) {
   const URI &uri = req->getURI();
   if (uri.has("state")) {
     if (!redirectURI.empty()) session->insert("redirect_uri", redirectURI);
-    auto cb = [this] (const JSON::ValuePtr &profile) {processProfile(profile);};
+    auto self = SmartPtr(this);
+    auto cb = [self] (const JSON::ValuePtr &profile) {
+      self->processProfile(profile);
+    };
     return oauth2->verify(api.getClient(), *session, uri, cb);
   }
 

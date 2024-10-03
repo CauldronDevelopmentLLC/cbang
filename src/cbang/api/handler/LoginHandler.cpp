@@ -86,7 +86,7 @@ bool LoginHandler::operator()(HTTP::Request &req) {
   else {
     auto login = SmartPtr(new Login(api, &req, sql, provider, redirectURI));
 
-    auto cb = [this, login, &req] (HTTP::Status status, Event::Buffer &buffer) {
+    auto cb = [this, &req] (HTTP::Status status, Event::Buffer &buffer) {
       // Respond with JSON or redirect
       if (status != HTTP_OK || redirect.empty()) reply(req, status, buffer);
       else req.redirect(redirect);
