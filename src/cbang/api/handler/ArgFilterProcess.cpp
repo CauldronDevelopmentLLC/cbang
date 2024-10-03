@@ -34,6 +34,7 @@
 
 #include <cbang/Catch.h>
 #include <cbang/event/Base.h>
+#include <cbang/event/PipeEventBuffer.h>
 #include <cbang/http/Request.h>
 #include <cbang/http/RequestErrorHandler.h>
 #include <cbang/http/Enum.h>
@@ -54,8 +55,8 @@ void ArgFilterProcess::exec() {
   for (unsigned i = 0; i < 3; i++)
     getPipe(i).setBlocking(false);
 
-  inStr  = new StreamEventBuffer(base, getPipeIn(),  Enum::EVENT_WRITE);
-  outStr = new StreamEventBuffer(base, getPipeOut(), Enum::EVENT_READ);
+  inStr  = new PipeEventBuffer(base, getPipeIn(),  Enum::EVENT_WRITE);
+  outStr = new PipeEventBuffer(base, getPipeOut(), Enum::EVENT_READ);
   errStr = new StreamLogger(
     base, getPipeErr(), SSTR("PID:" << getPID() << ':'),
     CBANG_LOG_DOMAIN, CBANG_LOG_WARNING_LEVEL);
