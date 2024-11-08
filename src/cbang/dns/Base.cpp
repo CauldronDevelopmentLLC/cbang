@@ -37,6 +37,7 @@
 #include <cbang/event/Event.h>
 #include <cbang/time/Time.h>
 #include <cbang/os/SystemInfo.h>
+#include <cbang/os/SystemUtilities.h>
 
 using namespace std;
 using namespace cb;
@@ -60,25 +61,39 @@ void Base::Entry::respond(const SmartPointer<Result> &result,
 }
 
 
-Base::Base(Event::Base &base, bool useSystemNS) :
-  base(base), pumpEvent(base.newEvent(this, &Base::pump, 0)) {
-  if (useSystemNS) initSystemNameservers();
-}
-
+Base::Base(Event::Base &base) :
+  base(base), pumpEvent(base.newEvent(this, &Base::pump, 0)) {}
 
 Base::~Base() {}
 
 
 void Base::initSystemNameservers() {
-  useSystemNS = true;
   if (lastSystemNSInit && Time::now() - lastSystemNSInit < 60) return;
   lastSystemNSInit = Time::now();
 
-  set<SockAddr> addrs;
-  SystemInfo::instance().getNameservers(addrs);
-  for (auto &addr: addrs)
-    if (!hasNameserver(addr))
-      TRY_CATCH_DEBUG(4, addNameserver(addr, true));
+#ifdef DEBUG
+  // Check for environment variable
+  const char *s = SystemUtilities::getenv("CBANG_DNS");
+  if (s) {
+    vector<string> servers;
+    String::tokenize(s, servers);
+
+    if (servers.empty())
+      THROW("Failed to parse `CBANG_DNS` environment variable");
+
+    for (auto &server: servers)
+      addNameserver(server);
+  }
+#endif // DEBUG
+
+  // Add system nameservers
+  if (servers.empty()) {
+    set<SockAddr> addrs;
+    SystemInfo::instance().getNameservers(addrs);
+    for (auto &addr: addrs)
+      if (!hasNameserver(addr))
+        TRY_CATCH_DEBUG(4, addNameserver(addr, true));
+  }
 }
 
 
@@ -108,7 +123,7 @@ void Base::addNameserver(const SockAddr &addr, bool system) {
 
 
 Base::LTOPtr Base::add(const SmartPointer<Request> &req) {
-  if (useSystemNS && servers.empty()) initSystemNameservers();
+  if (servers.empty()) initSystemNameservers();
 
   string id = makeID(req->getType(), req->toString());
   auto &e   = lookup(id);

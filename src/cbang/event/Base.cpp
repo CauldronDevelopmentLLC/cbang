@@ -64,8 +64,7 @@ namespace {
 bool Base::_threadsEnabled = false;
 
 
-Base::Base(bool withThreads, bool useSystemNS, int priorities) :
-  EventFactory(*this), useSystemNS(useSystemNS) {
+Base::Base(bool withThreads, int priorities) : EventFactory(*this) {
   Socket::initialize(); // Windows needs this
 
   if (withThreads) enableThreads();
@@ -88,7 +87,7 @@ Base::~Base() {
 
 DNS::Base &Base::getDNS() {
   if (deallocating) THROW("Base deallocating");
-  if (dns.isNull()) dns = new DNS::Base(*this, useSystemNS);
+  if (dns.isNull()) dns = new DNS::Base(*this);
   return *dns;
 }
 
