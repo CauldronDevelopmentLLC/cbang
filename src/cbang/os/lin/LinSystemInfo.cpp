@@ -116,10 +116,10 @@ URI LinSystemInfo::getProxy(const URI &uri) const {
   // Check https_proxy
   if (uri.getScheme() == "https") {
     auto proxy = get_proxy_var("https_proxy");
-    if (proxy) return proxy;
+    if (proxy && *proxy) return proxy;
   }
 
   // Check http_proxy
   auto proxy = get_proxy_var("http_proxy");
-  return proxy ? URI(proxy) : URI();
+  return (proxy && *proxy) ? URI(proxy) : URI();
 }
