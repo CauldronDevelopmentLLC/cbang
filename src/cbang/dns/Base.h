@@ -54,7 +54,6 @@ namespace cb {
       typedef std::map<SockAddr, SmartPointer<Nameserver>> servers_t;
       servers_t servers;
       servers_t::iterator nextServer;
-      bool useSystemNS = false;
       uint64_t lastSystemNSInit = 0;
 
       struct Entry {
@@ -83,7 +82,7 @@ namespace cb {
       unsigned maxFailures    = 16;
 
     public:
-      Base(Event::Base &base, bool useSystemNS = true);
+      Base(Event::Base &base);
       ~Base();
 
       Event::Base &getEventBase() {return base;}

@@ -52,13 +52,11 @@ namespace cb {
       bool deallocating = false;
       event_base *base;
 
-      bool useSystemNS;
       SmartPointer<DNS::Base> dns;
       SmartPointer<FDPool> pool;
 
     public:
-      Base(bool withThreads = false, bool useSystemNS = true,
-           int priorities = -1);
+      Base(bool withThreads = false, int priorities = -1);
       ~Base();
 
       bool isDeallocating() const {return deallocating;}
