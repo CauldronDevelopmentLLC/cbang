@@ -46,6 +46,7 @@
 
 namespace cb {
   class URI;
+  class Subprocess;
 
   namespace SystemUtilities {
     extern bool useHardLinks;
@@ -169,6 +170,6 @@ namespace cb {
                          const std::string &suffix = ": ");
 
     // Network
-    void openURI(const URI &uri);
+    SmartPointer<Subprocess> openURI(const URI &uri);
   }
 }
