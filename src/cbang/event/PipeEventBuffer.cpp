@@ -35,12 +35,13 @@
 using namespace cb;
 using namespace cb::Event;
 
-
+#ifndef _WIN32
 PipeEventBuffer::PipeEventBuffer(Base &base, PipeEnd &pipe, unsigned flags) :
-  StreamEventBuffer(base, pipe.getHandle(), flags), pipe(pipe) {}
+  StreamEventBuffer(base, pipe, flags), pipe(pipe) {}
 
 
 void PipeEventBuffer::close() {
   pipe.close();
   StreamEventBuffer::close();
 }
+#endif // _WIN32
