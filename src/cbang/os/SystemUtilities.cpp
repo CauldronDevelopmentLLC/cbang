@@ -1335,7 +1335,7 @@ namespace cb {
     }
 
 
-    void openURI(const URI &uri) {
+    SmartPointer<Subprocess> openURI(const URI &uri) {
       vector<string> cmd;
 
 #ifdef _WIN32
@@ -1348,7 +1348,9 @@ namespace cb {
 
       cmd.push_back(uri.toString());
 
-      Subprocess().exec(cmd, Subprocess::SHELL);
+      auto p = SmartPtr(new Subprocess);
+      p->exec(cmd, Subprocess::SHELL);
+      return p;
     }
 
   } // namespace SystemUtilities
