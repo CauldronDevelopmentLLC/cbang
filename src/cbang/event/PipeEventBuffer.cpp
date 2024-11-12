@@ -37,7 +37,7 @@ using namespace cb::Event;
 
 
 PipeEventBuffer::PipeEventBuffer(Base &base, PipeEnd &pipe, unsigned flags) :
-  StreamEventBuffer(base, pipe, flags), pipe(pipe) {}
+  StreamEventBuffer(base, pipe.getHandle(), flags), pipe(pipe) {}
 
 
 void PipeEventBuffer::close() {
