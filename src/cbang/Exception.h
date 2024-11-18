@@ -46,7 +46,7 @@
 
 namespace cb {
   // Forward Declarations
-  template <typename T, typename DeallocT, typename CounterT>
+  template <typename T, typename DeallocT, typename CounterT, bool weak>
   class SmartPointer;
 
   /**

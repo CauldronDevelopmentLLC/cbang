@@ -1,0 +1,37 @@
+a = new A
+A()
+refs=1 weak=0 set=1
+
+b = a
+refs=2 weak=0 set=1
+
+w = WeakPtr(a)
+refs=2 weak=1 set=1
+
+w.release()
+refs=2 weak=0 set=1
+
+x = WeakPtr(a)
+refs=2 weak=1 set=1
+
+w = x
+refs=2 weak=2 set=1
+
+a.release()
+refs=1 weak=2 set=1
+
+a = w
+refs=2 weak=2 set=1
+
+a.release()
+refs=1 weak=2 set=1
+
+b.release()
+~A()
+refs=0 weak=2 set=0
+
+w.release()
+refs=0 weak=1 set=0
+
+x.release()
+refs=0 weak=0 set=0
