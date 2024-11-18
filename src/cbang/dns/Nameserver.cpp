@@ -160,6 +160,8 @@ bool Nameserver::transmit(Type type, const string &request) {
 
   if (base.getMaxActive() <= active.size()) return false;
 
+  LOG_DEBUG(5, "Transmit " << request);
+
   // Choose an inactive random ID
   uint16_t id;
   while (true) {
@@ -215,6 +217,7 @@ bool Nameserver::transmit(Type type, const string &request) {
 void Nameserver::timeout(uint16_t id) {
   auto it = active.find(id);
   if (it == active.end()) return;
+  LOG_DEBUG(5, "Timeout");
   auto query = it->second;
   active.erase(it);
   respond(query, new Result(DNS_ERR_TIMEOUT), 0);
