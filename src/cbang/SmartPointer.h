@@ -87,24 +87,26 @@ namespace cb {
 
 
   template <typename T, typename DeallocT = DeallocNew<T>,
-            typename CounterT = RefCounterImpl<T, DeallocT> >
+            typename CounterT = RefCounterImpl<T, DeallocT>,
+            bool weak = false>
   class SmartPointer : public SmartPointerBase {
   protected:
     /// A pointer to the reference counter.
-    RefCounter *refCounter;
+    RefCounter *refCounter = 0;
 
     /// The actual pointer.
-    T *ptr;
+    T *ptr = 0;
 
   public:
-    typedef SmartPointer<T, DeallocT, CounterT> SmartPointerT;
+    typedef SmartPointer<T, DeallocT, CounterT, weak> SmartPointerT;
     typedef T Type;
     typedef DeallocT Dealloc;
     typedef CounterT Counter;
 
-    typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl> Phony;
-    typedef SmartPointer<T, DeallocMalloc> Malloc;
-    typedef SmartPointer<T, DeallocArray<T> > Array;
+    typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl, weak> Phony;
+    typedef SmartPointer<T, DeallocT, CounterT, true> Weak;
+    typedef SmartPointer<T, DeallocMalloc, CounterT, weak> Malloc;
+    typedef SmartPointer<T, DeallocArray<T>, CounterT, weak> Array;
 
     /**
      * The copy constructor.  If the smart pointer being copied
@@ -112,9 +114,7 @@ namespace cb {
      *
      * @param smartPtr The pointer to copy.
      */
-    SmartPointer(const SmartPointerT &smartPtr) : refCounter(0), ptr(0) {
-      *this = smartPtr;
-    }
+    SmartPointer(const SmartPointerT &smartPtr) {*this = smartPtr;}
 
     /**
      * Create a smart pointer from a pointer value.  If ptr is
@@ -136,12 +136,9 @@ namespace cb {
       refCounter(_refCounter), ptr(_ptr) {
       if (!ptr) return;
 
-      // Get RefCounter from RefCounted
-      if (!refCounter) refCounter = CounterT::getRefPtr(ptr);
-
-      // Create new RefCounter
-      if (!refCounter) refCounter = CounterT::create(ptr);
-      refCounter->incCount();
+      // Get RefCounter
+      if (!refCounter) refCounter = CounterT::getCounter(ptr);
+      refCounter->incCount(weak);
     }
 
     /**
@@ -160,7 +157,7 @@ namespace cb {
      * @return True if the smart pointers are equal, false otherwise.
      */
     bool operator==(const SmartPointerT &smartPtr) const {
-      return ptr == smartPtr.ptr;
+      return get() == smartPtr.get();
     }
 
     /**
@@ -172,7 +169,7 @@ namespace cb {
      * @return True if the smart pointers are not equal, false otherwise.
      */
     bool operator!=(const SmartPointerT &smartPtr) const {
-      return ptr != smartPtr.ptr;
+      return get() != smartPtr.get();
     }
 
     /**
@@ -183,7 +180,7 @@ namespace cb {
      * @return True if less than @param smartPtr, false otherwise.
      */
     bool operator<(const SmartPointerT &smartPtr) const {
-      return ptr < smartPtr.ptr;
+      return get() < smartPtr.get();
     }
 
     /**
@@ -194,7 +191,7 @@ namespace cb {
      * @return True if this smart pointers internal pointer equals ptr,
      *         false otherwise.
      */
-    bool operator==(const T *ptr) const {return this->ptr == ptr;}
+    bool operator==(const T *ptr) const {return get() == ptr;}
 
     /**
      * Compare this smart pointer to an actual pointer value.
@@ -204,7 +201,7 @@ namespace cb {
      * @return False if this smart pointers internal pointer equals ptr.
      *         True otherwise.
      */
-    bool operator!=(const T *ptr) const {return this->ptr != ptr;}
+    bool operator!=(const T *ptr) const {return get() != ptr;}
 
     /**
      * Compare this smart pointer to an actual pointer value.
@@ -213,7 +210,7 @@ namespace cb {
      *
      * @return True if less than @param ptr, false otherwise.
      */
-    bool operator<(const T *ptr) const {return this->ptr < ptr;}
+    bool operator<(const T *ptr) const {return get() < ptr;}
 
     /**
      * Assign this smart pointer to another.  If the passed smart pointer
@@ -228,9 +225,11 @@ namespace cb {
 
       release();
 
-      refCounter = smartPtr.refCounter;
-      if (refCounter) refCounter->incCount();
-      ptr = smartPtr.ptr;
+      if (smartPtr.isSet()) {
+        refCounter = smartPtr.refCounter;
+        refCounter->incCount(weak);
+        ptr = smartPtr.ptr;
+      }
 
       return *this;
     }
@@ -265,40 +264,42 @@ namespace cb {
      *
      * @return The value of the internal object pointer.
      */
-    T *get() const {return ptr;}
+    T *get() const {return isSet() ? ptr : 0;}
 
     /**
      * Access this smart pointer's internal object pointer but check for NULL.
      *
      * @return The value of the internal object pointer.
      */
-    T *access() const {check(); return ptr;}
+    T *access() const {check(); return get();}
 
     /**
      * Not operator
      * @return true if the pointer is NULL.
      */
-    bool operator!() const {return !ptr;}
+    bool operator!() const {return isNull();}
 
 
-    /// Convert to a base type.
-    template <typename _BaseT, typename _DeallocT, typename _CounterT>
-    operator SmartPointer<_BaseT, _DeallocT, _CounterT> () const {
-      return SmartPointer<_BaseT, _DeallocT, _CounterT>(ptr, refCounter);
+    /// Convert to a base type or weak pointer.
+    template
+      <typename _BaseT, typename _DeallocT, typename _CounterT, bool _weak>
+    operator SmartPointer<_BaseT, _DeallocT, _CounterT, _weak> () const {
+      return SmartPointer<_BaseT, _DeallocT, _CounterT, _weak>(ptr, refCounter);
     }
+
 
     /// Dynamic cast
     template <typename CastT>
     CastT *castPtr() const {
-      CastT *ptr = dynamic_cast<CastT *>(this->ptr);
-      if (!ptr && this->ptr) castError();
+      CastT *ptr = dynamic_cast<CastT *>(get());
+      if (!ptr && isSet()) castError();
 
       return ptr;
     }
 
     template <typename CastT>
-    SmartPointer<CastT, DeallocT, CounterT> cast() const {
-      return SmartPointer<CastT, DeallocT, CounterT>(
+    SmartPointer<CastT, DeallocT, CounterT, weak> cast() const {
+      return SmartPointer<CastT, DeallocT, CounterT, weak>(
         castPtr<CastT>(), refCounter);
     }
 
@@ -317,7 +318,7 @@ namespace cb {
       ptr = 0;
       refCounter = 0;
 
-      if (_refCounter) _refCounter->decCount();
+      if (_refCounter) _refCounter->decCount(weak);
     }
 
     /**
@@ -328,7 +329,7 @@ namespace cb {
      * @return The value of the internal pointer.
      */
     T *adopt() {
-      if (!ptr) return 0;
+      if (isNull()) return 0;
 
       refCounter->adopted();
       refCounter = 0;
@@ -347,8 +348,8 @@ namespace cb {
      *
      * @return The reference count.
      */
-    unsigned getRefCount() const {
-      return refCounter ? refCounter->getCount() : 0;
+    unsigned getRefCount(bool _weak = false) const {
+      return refCounter ? refCounter->getCount(_weak) : 0;
     }
 
     /**
@@ -356,20 +357,29 @@ namespace cb {
      *
      * @return True if the pointer is NULL, false otherwise.
      */
-    bool isNull() const {return !ptr;}
+    bool isNull() const {return !isSet();}
 
     /// @return True if the pointer is non-NULL, false otherwise.
-    bool isSet() const {return ptr;}
+    bool isSet() const {return refCounter && refCounter->isActive() && ptr;}
 
   protected:
     void check() const {
-      if (!ptr) referenceError("Can't dereference NULL pointer!");
+      if (!isSet()) referenceError("Can't dereference NULL pointer!");
     }
   };
 
 
   template<typename T> inline static SmartPointer<T> SmartPtr(T *ptr)
   {return ptr;}
+
+  template<typename T> inline static SmartPointer<T>
+  SmartPtr(const typename SmartPointer<T>::Weak &ptr) {return ptr;}
+
+  template<typename T> inline static typename SmartPointer<T>::Weak
+  WeakPtr(T *ptr) {return ptr;}
+
+  template<typename T> inline static typename SmartPointer<T>::Weak
+  WeakPtr(const SmartPointer<T> &ptr) {return ptr;}
 
   template<typename T> inline static SmartPointer<T> SmartPhony(T *ptr)
   {return typename SmartPointer<T>::Phony(ptr);}
@@ -382,6 +392,7 @@ namespace cb {
 }
 
 #define CBANG_SP(T)        cb::SmartPointer<T>
+#define CBANG_SP_WEAK(T)   cb::SmartPointer<T>::Weak
 #define CBANG_SP_PHONY(T)  cb::SmartPointer<T>::Phony
 #define CBANG_SP_MALLOC(T) cb::SmartPointer<T>::Malloc
 #define CBANG_SP_ARRAY(T)  cb::SmartPointer<T>::Array
@@ -390,6 +401,7 @@ namespace cb {
 
 #ifdef USING_CBANG
 #define SP(T)                  CBANG_SP(T)
+#define SP_WEAK(T)             CBANG_SP_WEAK(T)
 #define SP_PHONY(T)            CBANG_SP_PHONY(T)
 #define SP_MALLOC(T)           CBANG_SP_MALLOC(T)
 #define SP_ARRAY(T)            CBANG_SP_ARRAY(T)

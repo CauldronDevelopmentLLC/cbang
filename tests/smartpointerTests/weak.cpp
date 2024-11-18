@@ -30,40 +30,79 @@
 
 \******************************************************************************/
 
-#include "RefCounter.h"
-#include "Errors.h"
-
-#include <cbang/String.h>
-#include <cbang/log/Logger.h>
-#include <cbang/debug/Debugger.h>
-
-#include <cstdarg>
+#include <cbang/SmartPointer.h>
+#include <cbang/Catch.h>
 
 using namespace cb;
 using namespace std;
 
+class A {
+public:
+  A() {cout << "A()" << endl;}
+  ~A() {cout << "~A()" << endl;}
+};
 
-RefCounterPhonyImpl RefCounterPhonyImpl::singleton;
-
-
-RefCounter *RefCounter::getCounter(const RefCounted *ptr) {return ptr->counter;}
-
-
-void RefCounter::setCounter(
-  const RefCounted *ptr, RefCounter *counter) {
-  if (ptr->counter && counter) raise("RefCounted::counter already set");
-  const_cast<RefCounted *>(ptr)->counter = counter;
+template <typename PTR>
+void log_refs(const PTR &ptr) {
+  cout
+    << "refs="  << ptr.getRefCount()
+    << " weak=" << ptr.getRefCount(true)
+    << " set="  << ptr.isSet()
+    << endl;
 }
 
-void RefCounter::raise(const string &msg) {REFERENCE_ERROR(msg);}
+int main(int argc, char *argv[]) {
+  try {
+    cout << "a = new A" << endl;
+    auto a = SmartPtr(new A);
+    log_refs(a);
 
+    cout << endl << "b = a" << endl;
+    auto b = a;
+    log_refs(a);
 
-void RefCounter::log(unsigned level, const char *fmt, ...) {
-  if (!level) return;
+    cout << endl << "w = WeakPtr(a)" << endl;
+    auto w = WeakPtr(a);
+    log_refs(a);
 
-  va_list ap;
-  va_start(ap, fmt);
-  LOG_DEBUG(level, this << ' ' << String::vprintf(fmt, ap) << '\n'
-            << Debugger::getStackTrace());
-  va_end(ap);
+    cout << endl << "w.release()" << endl;
+    w.release();
+    log_refs(a);
+
+    cout << endl << "x = WeakPtr(a)" << endl;
+    auto x = WeakPtr(a);
+    log_refs(a);
+
+    cout << endl << "w = x" << endl;
+    w = x;
+    log_refs(a);
+
+    cout << endl << "a.release()" << endl;
+    a.release();
+    log_refs(x);
+
+    cout << endl << "a = w" << endl;
+    a = w;
+    log_refs(x);
+
+    cout << endl << "a.release()" << endl;
+    a.release();
+    log_refs(x);
+
+    cout << endl << "b.release()" << endl;
+    b.release();
+    log_refs(x);
+
+    cout << endl << "w.release()" << endl;
+    w.release();
+    log_refs(x);
+
+    cout << endl << "x.release()" << endl;
+    x.release();
+    log_refs(x);
+
+    return 0;
+  } CATCH_ERROR;
+
+  return 1;
 }

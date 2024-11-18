@@ -48,19 +48,18 @@ namespace cb {
     virtual ~RefCounter() {} // Prevent deallocation by others
 
   public:
-    virtual unsigned getCount() const = 0;
-    virtual void incCount() = 0;
-    virtual void decCount() = 0;
+    static RefCounter *getCounter(void *ptr) {return 0;}
+    static RefCounter *getCounter(const RefCounted *ptr);
+    static void setCounter(void *ptr, RefCounter *counter) {}
+    static void setCounter(const RefCounted *ptr, RefCounter *counter);
+
+    virtual bool isActive() const = 0;
+    virtual unsigned getCount(bool weak) const = 0;
+    virtual void incCount(bool weak) = 0;
+    virtual void decCount(bool weak) = 0;
     virtual void adopted() = 0;
 
     static void raise(const std::string &msg);
-
-    static RefCounter *getRefPtr(const RefCounted *ref);
-    static RefCounter *getRefPtr(const void *ref) {return 0;}
-    void setRefPtr(const RefCounted *ref);
-    void setRefPtr(const void *ref) {}
-    void clearRefPtr(const RefCounted *ref);
-    void clearRefPtr(const void *ref) {}
 
     [[gnu::format(printf, 3, 4)]]
     void log(unsigned level, const char *fmt, ...);
@@ -70,9 +69,6 @@ namespace cb {
   class RefCounted {
     RefCounter *counter = 0;
     friend class RefCounter;
-
-  public:
-    unsigned getRefCount() const {return counter ? counter->getCount() : 0;}
   };
 
 
@@ -81,49 +77,62 @@ namespace cb {
   protected:
     T *ptr;
     std::atomic<unsigned> count;
+    std::atomic<unsigned> weakCount;
+
+    RefCounterImpl(T *ptr) : ptr(ptr), count(0), weakCount(0) {}
 
   public:
     static unsigned trace;
 
-    RefCounterImpl(T *ptr) : ptr(ptr), count(0) {setRefPtr(ptr);}
-    static RefCounter *create(T *ptr) {return new RefCounterImpl(ptr);}
+    static RefCounter *getCounter(T *ptr) {
+      RefCounter *counter = RefCounter::getCounter(ptr);
 
-    void release() {
-      log(trace, "release()");
-      T *_ptr = ptr;
-      delete this;
-      if (_ptr) Dealloc_T::dealloc(_ptr);
+      if (!counter) {
+        counter = new RefCounterImpl(ptr);
+        setCounter(ptr, counter);
+      }
+
+      return counter;
     }
 
     // From RefCounter
-    unsigned getCount() const override {return count;}
+    bool isActive() const override {return ptr;}
 
-    void incCount() override {
-      unsigned c = count;
+    unsigned getCount(bool weak) const override {
+      return weak ? weakCount : count;
+    }
 
-      while (!count.compare_exchange_weak(c, c + 1))
+    void incCount(bool weak) override {
+      unsigned c = getCount(weak);
+
+      while (!(weak ? weakCount : count).compare_exchange_weak(c, c + 1))
         continue;
 
       log(trace, "incCount() count=%u", c + 1);
     }
 
-    void decCount() override {
-      unsigned c = count;
+    void decCount(bool weak) override {
+      unsigned c = getCount(weak);
 
       if (!c) raise("Already zero!");
 
-      while (!count.compare_exchange_weak(c, c - 1))
+      while (!(weak ? weakCount : count).compare_exchange_weak(c, c - 1))
         if (!c) raise("Already zero!");
 
       log(trace, "decCount() count=%u", c - 1);
 
-      if (c == 1) release();
+      if (!weak && c == 1) {
+        T *_ptr = ptr;
+        if (weakCount == 0) delete this;
+        else ptr = 0; // Deactivate
+        if (_ptr) Dealloc_T::dealloc(_ptr);
+      }
     }
 
     void adopted() override {
-      if (1 < getCount())
+      if (1 < getCount(true) + getCount(false))
         raise("Can't adopt pointer with multiple references!");
-      clearRefPtr(ptr);
+      setCounter(ptr, 0);
       delete this;
     }
   };
@@ -138,17 +147,13 @@ namespace cb {
     RefCounterPhonyImpl() {}
 
   public:
-    static RefCounter *create(void *ptr) {return &singleton;}
+    static RefCounter *getCounter(void *ptr) {return &singleton;}
 
     // From RefCounter
-    unsigned getCount() const override {return 1;}
-    void incCount() override {}
-    void decCount() override {}
+    bool isActive() const override {return true;}
+    unsigned getCount(bool weak) const override {return 1;}
+    void incCount(bool weak) override {}
+    void decCount(bool weak) override {}
     void adopted() override {}
-
-    static RefCounter *getRefPtr(const RefCounted *ref) {return 0;}
-    using RefCounter::getRefPtr;
-    void setRefPtr(const RefCounted *ref) {}
-    using RefCounter::setRefPtr;
   };
 }
