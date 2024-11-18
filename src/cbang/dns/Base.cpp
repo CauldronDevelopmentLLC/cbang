@@ -107,7 +107,7 @@ void Base::addNameserver(const SmartPointer<Nameserver> &server) {
 
   auto r = servers.insert(servers_t::value_type(server->getAddress(), server));
   if (!r.second) return; // Already exists
-  nextServer = servers.begin();
+  activeServer = servers.begin();
   schedule();
 }
 
@@ -207,6 +207,18 @@ Base::Entry &Base::lookup(const string &id) {
 }
 
 
+void Base::nextServer() {
+  if (servers.empty()) activeServer = servers.end();
+  else if (++activeServer == servers.end()) activeServer = servers.begin();
+}
+
+
+bool Base::transmit(const Request &req) {
+  if (servers.empty()) return false;
+  return activeServer->second->transmit(req.getType(), req.toString());
+}
+
+
 void Base::pump() {
   // Drop failed Nameservers
   for (auto it = servers.begin(); it != servers.end();) {
@@ -214,8 +226,9 @@ void Base::pump() {
 
     if (server->isSystem() && maxFailures < server->getFailures()) {
       server->stop();
+      bool activeFailed = it == activeServer;
       it = servers.erase(it);
-      nextServer = servers.begin();
+      if (activeFailed) activeServer = servers.begin();
 
     } else it++;
   }
@@ -238,17 +251,19 @@ void Base::pump() {
       else {
         // Transmit request
         try {
-          bool ok = false;
+          bool ok   = false;
           auto &req = *e.requests.front();
 
+          // Skip to next server if previous request failed
+          if (activeServer->second->getFailures()) nextServer();
+
           for (unsigned i = 0; i < servers.size() && !ok; i++) {
-            auto ns = nextServer->second;
-            if (++nextServer == servers.end()) nextServer = servers.begin();
-            ok = ns->transmit(req.getType(), req.toString());
+            ok = transmit(req);
+            if (!ok) nextServer();
           }
 
-          if (!ok) break;
-          active.insert(id);
+          if (!ok) error(e, id, DNS_ERR_NOSERVER);
+          else active.insert(id);
           continue;
         } CATCH_DEBUG(4);
 

@@ -53,7 +53,7 @@ namespace cb {
 
       typedef std::map<SockAddr, SmartPointer<Nameserver>> servers_t;
       servers_t servers;
-      servers_t::iterator nextServer;
+      servers_t::iterator activeServer;
       uint64_t lastSystemNSInit = 0;
 
       struct Entry {
@@ -127,6 +127,8 @@ namespace cb {
     private:
       static std::string makeID(Type type, const std::string &request);
       Entry &lookup(const std::string &id);
+      void nextServer();
+      bool transmit(const Request &req);
       void pump();
       void error(Entry &e, const std::string &id, Error error);
     };
