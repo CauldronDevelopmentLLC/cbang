@@ -48,9 +48,9 @@ namespace cb {
     virtual ~RefCounter() {} // Prevent deallocation by others
 
   public:
-    static RefCounter *getCounter(void *ptr) {return 0;}
+    static RefCounter *getCounter(const void *ptr) {return 0;}
     static RefCounter *getCounter(const RefCounted *ptr);
-    static void setCounter(void *ptr, RefCounter *counter) {}
+    static void setCounter(const void *ptr, RefCounter *counter) {}
     static void setCounter(const RefCounted *ptr, RefCounter *counter);
 
     virtual bool isActive() const = 0;
@@ -147,7 +147,7 @@ namespace cb {
     RefCounterPhonyImpl() {}
 
   public:
-    static RefCounter *getCounter(void *ptr) {return &singleton;}
+    static RefCounter *getCounter(const void *ptr) {return &singleton;}
 
     // From RefCounter
     bool isActive() const override {return true;}
