@@ -122,7 +122,7 @@ namespace cb {
 
     SmartPointer<std::ostream> logFile;
     SmartPointer<std::ostream> screenStream;
-    std::vector<SmartPointer<LogListener>> listeners;
+    std::set<SmartPointer<LogListener>> listeners;
 
     mutable unsigned idWidth = 1;
 
@@ -161,7 +161,9 @@ namespace cb {
     void setScreenStream(const SmartPointer<std::ostream> &stream);
 
     void addListener(const SmartPointer<LogListener> &l)
-      {listeners.push_back(l);}
+      {listeners.insert(l);}
+    void removeListener(const SmartPointer<LogListener> &l)
+      {listeners.erase(l);}
 
     void setVerbosity(unsigned x)       {verbosity        = x;}
     void setLogDebug(bool x)            {logDebug         = x;}
