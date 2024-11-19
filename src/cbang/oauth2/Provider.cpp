@@ -120,7 +120,7 @@ void Provider::verify(
 
         // Get profile
         pr = client.call(profileURL, HTTP_GET, profileCB);
-        pr->outSet("User-Agent", "cbang.org");
+        pr->getRequest()->outSet("User-Agent", "cbang.org");
         return pr->send();
 
       } catch (const Exception &e) {
@@ -140,8 +140,8 @@ void Provider::verify(
   verifyURL.setQuery("");
 
   pr = client.call(verifyURL, HTTP_POST, data, verifyCB);
-  pr->setContentType("application/x-www-form-urlencoded");
-  pr->outSet("Accept", "application/json");
+  pr->getRequest()->setContentType("application/x-www-form-urlencoded");
+  pr->getRequest()->outSet("Accept", "application/json");
   pr->send();
 }
 

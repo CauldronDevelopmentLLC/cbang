@@ -122,7 +122,7 @@ void Base::addNameserver(const SockAddr &addr, bool system) {
 }
 
 
-Base::LTOPtr Base::add(const SmartPointer<Request> &req) {
+void Base::add(const RequestPtr &req) {
   if (servers.empty()) initSystemNameservers();
 
   string id = makeID(req->getType(), req->toString());
@@ -136,12 +136,10 @@ Base::LTOPtr Base::add(const SmartPointer<Request> &req) {
     pending.push_back(id);
     schedule();
   }
-
-  return req->createLTO();
 }
 
 
-Base::LTOPtr Base::resolve(
+RequestPtr Base::resolve(
   const string &name, RequestResolve::callback_t cb, bool ipv6) {
   auto req = SmartPtr(new RequestResolve(*this, name, cb, ipv6));
 
@@ -152,19 +150,20 @@ Base::LTOPtr Base::resolve(
     result->addrs.push_back(addr);
     req->respond(result);
 
-  } else return add(req);
+  } else add(req);
 
-  return req->createLTO();
+  return req;
 }
 
 
-Base::LTOPtr Base::reverse(const SockAddr &addr,
-                           RequestReverse::callback_t cb) {
-  return add(new RequestReverse(*this, addr, cb));
+RequestPtr Base::reverse(const SockAddr &addr, RequestReverse::callback_t cb) {
+  auto req = SmartPtr(new RequestReverse(*this, addr, cb));
+  add(req);
+  return req;
 }
 
 
-Base::LTOPtr Base::reverse(const string &addr, RequestReverse::callback_t cb) {
+RequestPtr Base::reverse(const string &addr, RequestReverse::callback_t cb) {
   return reverse(SockAddr::parse(addr), cb);
 }
 

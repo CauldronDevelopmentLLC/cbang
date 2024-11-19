@@ -36,6 +36,7 @@
 #include <cbang/Catch.h>
 #include <cbang/net/Socket.h>
 #include <cbang/log/Logger.h>
+#include <cbang/util/WeakCallback.h>
 
 using namespace cb::HTTP;
 using namespace cb;
@@ -64,7 +65,7 @@ void ConnOut::writeRequest(
 
   checkActive(req);
 
-  auto cb2 =
+  Event::Transfer::cb_t cb2 =
     [this, req, hasMore, cb] (bool success) {
       if (cb) TRY_CATCH_ERROR(cb(success));
       if (!success) return fail(CONN_ERR_EOF, "Failed to write request");
@@ -73,7 +74,7 @@ void ConnOut::writeRequest(
       readHeader(req);
    };
 
-  addLTO(write(cb2, buffer));
+  write(WeakCall(this, cb2), buffer);
 }
 
 
@@ -102,7 +103,7 @@ void ConnOut::fail(Event::ConnectionError err, const string &msg) {
 void ConnOut::readHeader(const SmartPointer<Request> &req) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  auto cb =
+  Event::Transfer::cb_t cb =
     [this, req] (bool success) {
       LOG_DEBUG(4, CBANG_FUNC << "() success=" << success
                 << " length=" << input.getLength());
@@ -116,7 +117,7 @@ void ConnOut::readHeader(const SmartPointer<Request> &req) {
     };
 
   // Read until end of header
-  addLTO(read(cb, input, getMaxHeaderSize(), "\r\n\r\n"));
+  read(WeakCall(this, cb), input, getMaxHeaderSize(), "\r\n\r\n");
 }
 
 
@@ -192,7 +193,7 @@ void ConnOut::readBody(const SmartPointer<Request> &req) {
   else if (maxBodySize) readSize = maxBodySize;
 
   // Read body
-  auto cb =
+  Event::Transfer::cb_t cb =
     [this, req, contentLength] (bool success) {
       if (0 <= contentLength && input.getLength() < (unsigned)contentLength)
         return fail(CONN_ERR_EOF, "Failed to read response body");
@@ -200,7 +201,7 @@ void ConnOut::readBody(const SmartPointer<Request> &req) {
       process(req);
     };
 
-  addLTO(read(cb, input, readSize));
+  read(WeakCall(this, cb), input, readSize);
 }
 
 

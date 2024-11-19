@@ -38,6 +38,7 @@
 #include <cbang/net/Socket.h>
 #include <cbang/log/Logger.h>
 #include <cbang/dns/Base.h>
+#include <cbang/util/WeakCallback.h>
 
 using namespace cb::Event;
 using namespace cb;
@@ -137,7 +138,7 @@ void Connection::connect(
     LOG_DEBUG(4, "Connection with fd " << socket->get());
 
     // DNS callback
-    auto dnsCB =
+    DNS::RequestResolve::callback_t dnsCB =
       [this, hostname, port] (
         DNS::Error error, const vector<SockAddr> &addrs) {
 
@@ -156,10 +157,10 @@ void Connection::connect(
           getSocket()->connect(peerAddr);
 
           // Wait for socket write
-          auto writeCB = [this] (bool success) {
+          Transfer::cb_t writeCB = [this] (bool success) {
             onConnect(success && isConnected());
           };
-          addLTO(canWrite(writeCB));
+          canWrite(WeakCall(this, writeCB));
           return;
 
         } CATCH_WARNING;
@@ -169,7 +170,7 @@ void Connection::connect(
       };
 
     // Start async DNS lookup
-    addLTO(getBase().getDNS().resolve(hostname, dnsCB));
+    getBase().getDNS().resolve(hostname, WeakCall(this, dnsCB));
     return;
 
   } CATCH_ERROR;

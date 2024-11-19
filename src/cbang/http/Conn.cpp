@@ -36,6 +36,7 @@
 
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
+#include <cbang/util/WeakCallback.h>
 
 using namespace cb::HTTP;
 using namespace cb;
@@ -53,7 +54,7 @@ void Conn::readChunks(
   const SmartPointer<Request> &req, function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  auto readCB =
+  Event::Transfer::cb_t readCB =
     [this, req, cb] (bool success) {
       if (success) {
         try {
@@ -70,7 +71,7 @@ void Conn::readChunks(
       if (cb) cb(false);
     };
 
-  addLTO(read(readCB, input, 1024, "\r\n"));
+  read(WeakCall(this, readCB), input, 1024, "\r\n");
 }
 
 
@@ -88,7 +89,7 @@ void Conn::readChunk(
   }
 
   // Read chunk
-  auto readCB =
+  Event::Transfer::cb_t readCB =
     [this, req, size, cb] (bool success) mutable {
       if (success && size <= input.getLength()) {
         input.remove(req->getInputBuffer(), size);
@@ -98,7 +99,7 @@ void Conn::readChunk(
       } else if (cb) cb(false);
     };
 
-  addLTO(read(readCB, input, size + 2));
+  read(WeakCall(this, readCB), input, size + 2);
 }
 
 
@@ -106,7 +107,7 @@ void Conn::readChunkTrailer(
   const SmartPointer<Request> &req, function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  auto readCB =
+  Event::Transfer::cb_t readCB =
     [this, req, cb] (bool success) {
       // No header lines
       if (input.indexOf("\r\n") == 0) {
@@ -115,7 +116,7 @@ void Conn::readChunkTrailer(
       }
 
       // Has header lines in trailer
-      auto readCB =
+      Event::Transfer::cb_t readCB =
         [this, req, cb] (bool success) {
           try {
             if (req->getInputHeaders().parse(input)) {
@@ -128,10 +129,11 @@ void Conn::readChunkTrailer(
           if (cb) cb(false);
         };
 
-      addLTO(read(readCB, input, maxHeaderSize, "\r\n\r\n"));
+      read(WeakCall(this, readCB), input, maxHeaderSize,
+        "\r\n\r\n");
     };
 
-  addLTO(read(readCB, input, maxHeaderSize, "\r\n"));
+  read(WeakCall(this, readCB), input, maxHeaderSize, "\r\n");
 }
 
 

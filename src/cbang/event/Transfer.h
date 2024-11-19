@@ -33,7 +33,6 @@
 #pragma once
 
 #include <cbang/openssl/SSL.h>
-#include <cbang/util/ControlledCallback.h>
 
 #include <functional>
 
@@ -42,7 +41,7 @@ namespace cb {
   namespace Event {
     class Transfer {
     public:
-      typedef ControlledCallback<bool> cb_t;
+      typedef std::function<void (bool)> cb_t;
 
     private:
       cb_t cb;
@@ -61,8 +60,6 @@ namespace cb {
         cb(cb), fd(fd), ssl(ssl), length(length) {}
 
       virtual ~Transfer() {}
-
-      SmartPointer<LifetimeObject> createLTO() {return cb.createLTO();}
 
       int getFD() const {return fd;}
       const SmartPointer<SSL> &getSSL() const {return ssl;}

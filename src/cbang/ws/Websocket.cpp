@@ -36,6 +36,7 @@
 #include <cbang/Catch.h>
 #include <cbang/net/Swab.h>
 #include <cbang/util/Random.h>
+#include <cbang/util/WeakCallback.h>
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/Digest.h>
@@ -150,7 +151,7 @@ bool Websocket::upgrade() {
 
 
 void Websocket::readHeader() {
-  auto cb =
+  Event::Transfer::cb_t cb =
     [this] (bool success) {
       if (!success)
         return close(WS_STATUS_PROTOCOL, "Failed to read header start");
@@ -169,7 +170,7 @@ void Websocket::readHeader() {
       if (size == 126) bytes += 2;
       if (size == 127) bytes += 8;
 
-      auto cb =
+      Event::Transfer::cb_t cb =
         [this, mask, bytes, size] (bool success) {
           if (!success)
             return close(WS_STATUS_PROTOCOL, "Failed to read header end");
@@ -213,16 +214,16 @@ void Websocket::readHeader() {
         };
 
       // Read rest of header
-      addLTO(getConnection()->read(cb, input, bytes));
+      getConnection()->read(WeakCall(this, cb), input, bytes);
     };
 
   // Read first part of header
-  addLTO(getConnection()->read(cb, input, 2));
+  getConnection()->read(WeakCall(this, cb), input, 2);
 }
 
 
 void Websocket::readBody() {
-  auto cb = [this] (bool success) {
+  Event::Transfer::cb_t cb = [this] (bool success) {
     if (!success) return close(WS_STATUS_PROTOCOL, "Failed to ready body");
 
     if (bytesToRead) {
@@ -272,7 +273,7 @@ void Websocket::readBody() {
     if (isActive()) readHeader();
   };
 
-  addLTO(getConnection()->read(cb, input, bytesToRead));
+  getConnection()->read(WeakCall(this, cb), input, bytesToRead);
 }
 
 
@@ -373,14 +374,14 @@ void Websocket::writeFrame(
       ptr[i] ^= mask[i & 3];
   }
 
-  auto cb =
+  Event::Transfer::cb_t cb =
     [this, opcode] (bool success) {
       // Close connection if write fails or this is a close op code
       if (!success || opcode == WS_OP_CLOSE)
         getConnection()->close();
     };
 
-  addLTO(getConnection()->write(cb, out));
+  getConnection()->write(WeakCall(this, cb), out);
 }
 
 

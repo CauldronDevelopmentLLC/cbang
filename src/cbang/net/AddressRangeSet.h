@@ -35,7 +35,6 @@
 #include "AddressRange.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeManager.h>
 
 #include <string>
 #include <map>
@@ -49,7 +48,7 @@ namespace cb {
 
 
 namespace cb {
-  class AddressRangeSet : public LifetimeManager {
+  class AddressRangeSet : public RefCounted {
     typedef std::vector<AddressRange> ranges_t;
     ranges_t ranges;
 

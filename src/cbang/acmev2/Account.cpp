@@ -39,6 +39,7 @@
 #include <cbang/net/Base64.h>
 #include <cbang/log/Logger.h>
 #include <cbang/json/BufferWriter.h>
+#include <cbang/util/WeakCallback.h>
 
 #include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
@@ -89,7 +90,8 @@ void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
   add(keyCert);
 
   // Check for renewals at updateRate starting now
-  auto e = addLTO(client.getBase().newEvent(this, &Account::update));
+  auto wcb = WeakCallback<RefCounted>(this, [this] () {update();});
+  auto e = client.getBase().newEvent(wcb);
   e->add(updateRate);
   e->activate();
 }
@@ -99,9 +101,8 @@ void Account::addListener(listener_t listener) {listeners.push_back(listener);}
 
 
 void Account::addHandler(HTTP::HandlerGroup &group) {
-  group.addMember(HTTP::Method::HTTP_GET,
-                  "^/\\.well-known/acme-challenge/.*", this,
-                  &Account::challengeRequest);
+  group.addMember(HTTP_GET, "^/\\.well-known/acme-challenge/.*", this,
+    &Account::challengeRequest);
 }
 
 
@@ -334,8 +335,9 @@ string Account::getProblemString(const JSON::Value &problem) const {
 
 
 void Account::call(const string &url, HTTP::Method method) {
-  addLTO(client.call(
-           getURL(url), method, this, &Account::responseHandler))->send();
+  HTTP::Client::callback_t cb =
+    [this] (HTTP::Request &req) {responseHandler(req);};
+  client.call(getURL(url), method, WeakCall(this, cb))->send();
 }
 
 
@@ -346,9 +348,10 @@ void Account::post(const string &url, const string &payload) {
 
   LOG_DEBUG(5, "Posting " << data);
 
-  auto req = addLTO(client.call(uri, HTTP_POST, data, this,
-                                &Account::responseHandler));
-  req->outSet("Content-Type", "application/jose+json");
+  HTTP::Client::callback_t cb =
+    [this] (HTTP::Request &req) {responseHandler(req);};
+  auto req = client.call(uri, HTTP_POST, data, WeakCall(this, cb));
+  req->getRequest()->outSet("Content-Type", "application/jose+json");
   req->send();
 }
 

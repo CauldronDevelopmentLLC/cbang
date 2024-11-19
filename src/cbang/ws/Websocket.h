@@ -39,15 +39,13 @@
 #include <cbang/event/Event.h>
 #include <cbang/event/Buffer.h>
 #include <cbang/http/Request.h>
-#include <cbang/util/LifetimeManager.h>
 
 #include <functional>
 
 
 namespace cb {
   namespace WS {
-    class Websocket :
-      public HTTP::Request, public LifetimeManager, public Enum {
+    class Websocket : public HTTP::Request, public Enum {
       bool active = false;
 
       Event::Buffer input;

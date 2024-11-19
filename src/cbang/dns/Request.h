@@ -36,7 +36,8 @@
 #include "Result.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/ControlledCallback.h>
+
+#include <functional>
 
 
 namespace cb {
@@ -59,6 +60,7 @@ namespace cb {
 
       virtual Type getType() const = 0;
       virtual bool isCanceled() const = 0;
+      virtual void cancel() = 0;
 
       const std::string &toString() const {return request;}
       const SmartPointer<Result> &getResult() const {return result;}
@@ -66,7 +68,6 @@ namespace cb {
       void respond(const cb::SmartPointer<Result> &result);
 
       virtual void callback() = 0;
-      virtual SmartPointer<LifetimeObject> createLTO() = 0;
 
     private:
       void timedout();

@@ -53,11 +53,14 @@ Client::~Client() {}
 void Client::send(const SmartPointer<Request> &req) const {
   auto &uri = req->getURI();
 
-  if (!req->hasConnection()) req->setConnection(new ConnOut(base));
+  SmartPointer<Conn> conn = req->getConnection(); // Not a WeakPtr
+  if (conn.isNull()) {
+    conn = new ConnOut(base);
+    req->setConnection(conn);
+  }
 
   // Configure connection
-  auto &conn = req->getConnection();
-  if (!conn->getStats().isSet()) conn->setStats(stats);
+  if (conn->getStats().isNull()) conn->setStats(stats);
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
 
@@ -75,7 +78,7 @@ void Client::send(const SmartPointer<Request> &req) const {
   URI connectURI = uri;
   auto proxy = SystemInfo::instance().getProxy(uri);
   if (proxy.getScheme() == "http") {
-    conn->queueRequest(new ProxyRequest(proxy, SmartPhony(req.get()), sslCtx));
+    conn->queueRequest(new ProxyRequest(proxy, req, sslCtx));
     connectURI = proxy;
 
   } else {
@@ -86,7 +89,7 @@ void Client::send(const SmartPointer<Request> &req) const {
   }
 
   // Queue request
-  conn->queueRequest(SmartPhony(req.get())); // Don't create circular ref
+  conn->queueRequest(req);
 
   // Connect
   conn->connect(connectURI.getHost(), connectURI.getPort(), bindAddr);
@@ -97,9 +100,9 @@ Client::RequestPtr Client::call(
   const URI &uri, Method method, const char *data, unsigned length,
   callback_t cb) {
   auto con = SmartPtr(new ConnOut(base));
-  auto req = SmartPtr(new OutgoingRequest(*this, con, uri, method, cb));
+  auto req = SmartPtr(new PendingRequest(*this, con, uri, method, cb));
 
-  if (data) req->getOutputBuffer().add(data, length);
+  if (data) req->getRequest()->getOutputBuffer().add(data, length);
 
   return req;
 }
