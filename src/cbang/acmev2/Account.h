@@ -95,6 +95,8 @@ namespace cb {
 
       std::string challengeToken;
 
+      cb::HTTP::Client::RequestPtr pr;
+
     public:
       typedef std::function<void (KeyCert &)> listener_t;
 

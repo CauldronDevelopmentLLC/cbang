@@ -337,7 +337,8 @@ string Account::getProblemString(const JSON::Value &problem) const {
 void Account::call(const string &url, HTTP::Method method) {
   HTTP::Client::callback_t cb =
     [this] (HTTP::Request &req) {responseHandler(req);};
-  client.call(getURL(url), method, WeakCall(this, cb))->send();
+  pr = client.call(getURL(url), method, WeakCall(this, cb));
+  pr->send();
 }
 
 
@@ -350,9 +351,9 @@ void Account::post(const string &url, const string &payload) {
 
   HTTP::Client::callback_t cb =
     [this] (HTTP::Request &req) {responseHandler(req);};
-  auto req = client.call(uri, HTTP_POST, data, WeakCall(this, cb));
-  req->getRequest()->outSet("Content-Type", "application/jose+json");
-  req->send();
+  pr = client.call(uri, HTTP_POST, data, WeakCall(this, cb));
+  pr->getRequest()->outSet("Content-Type", "application/jose+json");
+  pr->send();
 }
 
 

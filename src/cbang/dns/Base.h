@@ -55,20 +55,20 @@ namespace cb {
 
       SmartPointer<Event::Event> pumpEvent;
 
-      typedef std::map<SockAddr, SmartPointer<Nameserver>> servers_t;
+      typedef std::vector<SmartPointer<Nameserver>> servers_t;
       servers_t servers;
-      servers_t::iterator activeServer;
       uint64_t lastSystemNSInit = 0;
 
       struct Entry {
         uint64_t expires  = 0;
         unsigned attempts = 0;
+        unsigned inflight = 0;
+        bool responded = false;
         SmartPointer<Result> result;
         std::list<RequestPtr> requests;
 
         bool isValid() const;
-        void respond(const SmartPointer<Result> &result,
-                     uint64_t expires = 0);
+        void respond(const SmartPointer<Result> &result, uint64_t expires = 0);
       };
 
       typedef std::map<std::string, Entry> cache_t;
@@ -79,7 +79,7 @@ namespace cb {
       std::list<std::string> ready;
 
       SockAddr bindAddr;
-      unsigned maxActive      = 64;
+      unsigned maxActive      = 512;
       unsigned queryTimeout   = 5;
       unsigned requestTimeout = 16;
       unsigned maxAttempts    = 3;
@@ -98,12 +98,12 @@ namespace cb {
       unsigned        getMaxAttempts   () const {return maxAttempts;}
       unsigned        getMaxFailures   () const {return maxFailures;}
 
-      void setBindAddress   (const SockAddr &addr) {bindAddr = addr;}
-      void setMaxActive     (unsigned x)           {maxActive = x;}
-      void setQueryTimeout  (unsigned x)           {queryTimeout = x;}
+      void setBindAddress   (const SockAddr &addr) {bindAddr       = addr;}
+      void setMaxActive     (unsigned x)           {maxActive      = x;}
+      void setQueryTimeout  (unsigned x)           {queryTimeout   = x;}
       void setRequestTimeout(unsigned x)           {requestTimeout = x;}
-      void setMaxAttempts   (unsigned x)           {maxAttempts = x;}
-      void setMaxFailures   (unsigned x)           {maxFailures = x;}
+      void setMaxAttempts   (unsigned x)           {maxAttempts    = x;}
+      void setMaxFailures   (unsigned x)           {maxFailures    = x;}
 
       void initSystemNameservers();
       bool hasNameserver(const SockAddr &addr) const;
@@ -126,8 +126,6 @@ namespace cb {
     private:
       static std::string makeID(Type type, const std::string &request);
       Entry &lookup(const std::string &id);
-      void nextServer();
-      bool transmit(const Request &req);
       void pump();
       void error(Entry &e, const std::string &id, Error error);
     };

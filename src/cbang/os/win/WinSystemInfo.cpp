@@ -90,7 +90,7 @@ string WinSystemInfo::getMachineID() const {
 }
 
 
-void WinSystemInfo::getNameservers(set<SockAddr> &addrs) {
+void WinSystemInfo::getNameservers(vector<SockAddr> &addrs) {
   // Get buffer size
   ULONG size = 0;
   if (GetAdaptersAddresses(0, 0, 0, 0, &size) != ERROR_BUFFER_OVERFLOW)
@@ -109,7 +109,7 @@ void WinSystemInfo::getNameservers(set<SockAddr> &addrs) {
   for (; aAddrs; aAddrs = aAddrs->Next)
     if (aAddrs->OperStatus == 1)
       for (auto p = aAddrs->FirstDnsServerAddress; p; p = p->Next)
-        addrs.insert(SockAddr(*p->Address.lpSockaddr));
+        addrs.push_back(SockAddr(*p->Address.lpSockaddr));
 }
 
 

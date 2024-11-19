@@ -74,7 +74,7 @@ namespace cb {
     virtual std::string getHostname() const;
     virtual std::string getMachineID() const = 0;
 
-    virtual void getNameservers(std::set<SockAddr> &addrs);
+    virtual void getNameservers(std::vector<SockAddr> &addrs);
     virtual URI getProxy(const URI &uri) const = 0;
 
     static bool matchesProxyPattern(const std::string &pattern, const URI &uri);

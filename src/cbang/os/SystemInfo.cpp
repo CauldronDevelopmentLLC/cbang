@@ -106,7 +106,7 @@ string SystemInfo::getHostname() const {
 }
 
 
-void SystemInfo::getNameservers(set<SockAddr> &addrs) {
+void SystemInfo::getNameservers(vector<SockAddr> &addrs) {
   string path = "/etc/resolv.conf";
 
 #ifdef DEBUG
@@ -125,7 +125,7 @@ void SystemInfo::getNameservers(set<SockAddr> &addrs) {
       String::tokenize(line, parts, " \t");
 
       if (1 < parts.size() && parts[0] == "nameserver")
-        TRY_CATCH_ERROR(addrs.insert(SockAddr::parse(parts[1])));
+        TRY_CATCH_ERROR(addrs.push_back(SockAddr::parse(parts[1])));
     }
   }
 }
@@ -137,10 +137,10 @@ void SystemInfo::add(Info &info) {
 
   info.add(category, "CPU", cpuInfo->getBrand());
   info.add(category, "CPU ID", SSTR(
-             cpuInfo->getVendor()
-             << " Family "   << cpuInfo->getFamily()
-             << " Model "    << cpuInfo->getModel()
-             << " Stepping " << cpuInfo->getStepping()));
+           cpuInfo->getVendor()
+           << " Family "   << cpuInfo->getFamily()
+           << " Model "    << cpuInfo->getModel()
+           << " Stepping " << cpuInfo->getStepping()));
   info.add(category, "CPUs", String(getCPUCount()));
 
   info.add(category, "Memory", HumanSize(getTotalMemory()).toString() + "B");
