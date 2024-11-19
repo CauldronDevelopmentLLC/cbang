@@ -49,10 +49,11 @@ bool Base::Entry::isValid() const {
 }
 
 
-void Base::Entry::respond(const SmartPointer<Result> &result,
-                          uint64_t expires) {
+void Base::Entry::respond(
+  const SmartPointer<Result> &result, uint64_t expires) {
   this->result  = result;
   this->expires = expires;
+  responded = true;
 
   for (auto &req: requests)
     req->respond(result);
@@ -68,7 +69,7 @@ Base::~Base() {}
 
 
 void Base::initSystemNameservers() {
-  if (lastSystemNSInit && Time::now() - lastSystemNSInit < 60) return;
+  if (lastSystemNSInit && Time::now() - lastSystemNSInit < 5) return;
   lastSystemNSInit = Time::now();
 
 #ifdef DEBUG
@@ -88,7 +89,7 @@ void Base::initSystemNameservers() {
 
   // Add system nameservers
   if (servers.empty()) {
-    set<SockAddr> addrs;
+    vector<SockAddr> addrs;
     SystemInfo::instance().getNameservers(addrs);
     for (auto &addr: addrs)
       if (!hasNameserver(addr))
@@ -98,16 +99,19 @@ void Base::initSystemNameservers() {
 
 
 bool Base::hasNameserver(const SockAddr &addr) const {
-  return servers.find(addr) != servers.end();
+  for (auto &server: servers)
+    if (server->getAddress() == addr) return true;
+
+  return false;
 }
 
 
 void Base::addNameserver(const SmartPointer<Nameserver> &server) {
   LOG_DEBUG(4, "Adding nameserver " << server->getAddress());
 
-  auto r = servers.insert(servers_t::value_type(server->getAddress(), server));
-  if (!r.second) return; // Already exists
-  activeServer = servers.begin();
+  if (hasNameserver(server->getAddress())) return;
+
+  servers.push_back(server);
   schedule();
 }
 
@@ -131,10 +135,13 @@ void Base::add(const RequestPtr &req) {
   // Check cache
   if (e.isValid()) req->respond(e.result);
   else {
-    e.attempts = 0;
     e.requests.push_back(req);
-    pending.push_back(id);
-    schedule();
+
+    if (!e.inflight) {
+      e.attempts = 0;
+      pending.push_back(id);
+      schedule();
+    }
   }
 }
 
@@ -172,18 +179,23 @@ void Base::response(Type type, const std::string &request,
                     const SmartPointer<Result> &result, unsigned ttl) {
   string id = makeID(type, request);
   auto &e   = lookup(id);
-  e.attempts++;
-  active.erase(id);
 
   LOG_DEBUG(5, "DNS: response " << result->error << " to " << id << " with "
             << e.requests.size() << " waiting requests, " << e.attempts
-            << " attempts");
+            << " attempts, " << e.inflight << " inflight, responded="
+            << e.responded);
 
-  // Retry on error
-  if (result->error && result->error != DNS_ERR_NOTEXIST &&
-      e.attempts < maxAttempts) {
-    pending.push_front(id);
-    return schedule();
+  if (!--e.inflight) active.erase(id);
+  if (e.responded) return;
+
+  if (result->error && result->error != DNS_ERR_NOTEXIST) {
+    if (e.inflight) return; // Wait for other responses
+
+    // Retry
+    if (e.attempts < maxAttempts) {
+      pending.push_front(id);
+      return schedule();
+    }
   }
 
   // Respond to any active requests
@@ -206,31 +218,13 @@ Base::Entry &Base::lookup(const string &id) {
 }
 
 
-void Base::nextServer() {
-  if (servers.empty()) activeServer = servers.end();
-  else if (++activeServer == servers.end()) activeServer = servers.begin();
-}
-
-
-bool Base::transmit(const Request &req) {
-  if (servers.empty()) return false;
-  return activeServer->second->transmit(req.getType(), req.toString());
-}
-
-
 void Base::pump() {
   // Drop failed Nameservers
-  for (auto it = servers.begin(); it != servers.end();) {
-    auto &server = it->second;
-
-    if (server->isSystem() && maxFailures < server->getFailures()) {
-      server->stop();
-      bool activeFailed = it == activeServer;
+  for (auto it = servers.begin(); it != servers.end();)
+    if ((*it)->isSystem() && maxFailures < (*it)->getFailures()) {
+      (*it)->stop();
       it = servers.erase(it);
-      if (activeFailed) activeServer = servers.begin();
-
     } else it++;
-  }
 
   // Send events
   while (!pending.empty()) {
@@ -250,19 +244,19 @@ void Base::pump() {
       else {
         // Transmit request
         try {
-          bool ok   = false;
           auto &req = *e.requests.front();
 
-          // Skip to next server if previous request failed
-          if (activeServer->second->getFailures()) nextServer();
+          e.responded = false;
+          e.inflight  = 0;
+          for (auto &server: servers)
+            if (server->transmit(req.getType(), req.toString()))
+              e.inflight++;
 
-          for (unsigned i = 0; i < servers.size() && !ok; i++) {
-            ok = transmit(req);
-            if (!ok) nextServer();
+          if (!e.inflight) error(e, id, DNS_ERR_NOSERVER);
+          else {
+            active.insert(id);
+            e.attempts++;
           }
-
-          if (!ok) error(e, id, DNS_ERR_NOSERVER);
-          else active.insert(id);
           continue;
         } CATCH_DEBUG(4);
 

@@ -50,7 +50,7 @@ Client::Client(
 Client::~Client() {}
 
 
-void Client::send(const SmartPointer<Request> &req) const {
+SmartPointer<Conn> Client::send(const SmartPointer<Request> &req) const {
   auto &uri = req->getURI();
 
   SmartPointer<Conn> conn = req->getConnection(); // Not a WeakPtr
@@ -65,7 +65,10 @@ void Client::send(const SmartPointer<Request> &req) const {
   conn->setWriteTimeout(writeTimeout);
 
   // Check if already connected
-  if (req->isConnected()) return conn->queueRequest(req);
+  if (req->isConnected()) {
+    conn->queueRequest(req);
+    return conn;
+  }
 
   // SSL
   SmartPointer<SSLContext> sslCtx;
@@ -93,6 +96,8 @@ void Client::send(const SmartPointer<Request> &req) const {
 
   // Connect
   conn->connect(connectURI.getHost(), connectURI.getPort(), bindAddr);
+
+  return conn;
 }
 
 

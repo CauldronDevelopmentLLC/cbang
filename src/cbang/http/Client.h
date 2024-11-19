@@ -47,6 +47,8 @@ namespace cb {
   namespace Event {class Base;}
 
   namespace HTTP {
+    class Conn;
+
     class Client {
       Event::Base &base;
       SmartPointer<SSLContext> sslCtx;
@@ -85,7 +87,7 @@ namespace cb {
       const SmartPointer<RateSet> &getStats() const {return stats;}
       void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
 
-      void send(const SmartPointer<Request> &req) const;
+      SmartPointer<Conn> send(const SmartPointer<Request> &req) const;
 
       RequestPtr call(const URI &uri, Method method, const char *data,
                       unsigned length, callback_t cb);

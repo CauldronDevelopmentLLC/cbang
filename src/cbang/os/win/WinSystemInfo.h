@@ -42,7 +42,7 @@ namespace cb {
     uint64_t getMemoryInfo(memory_info_t type) const override;
     Version getOSVersion() const override;
     std::string getMachineID() const override;
-    void getNameservers(std::set<SockAddr> &addrs) override;
+    void getNameservers(std::vector<SockAddr> &addrs) override;
     URI getProxy(const URI &uri) const override;
   };
 }
