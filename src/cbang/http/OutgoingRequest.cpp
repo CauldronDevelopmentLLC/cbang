@@ -40,17 +40,12 @@ using namespace cb::HTTP;
 
 
 OutgoingRequest::OutgoingRequest(
-  Client &client, const SmartPointer<Conn> &connection, const URI &uri,
-  Method method, callback_t cb) :
-  Request(connection, method, uri), client(client), cb(cb) {}
-
-
-void OutgoingRequest::send() {client.send(this);}
+  const SmartPointer<Conn>::Weak &connection, const URI &uri, Method method,
+  callback_t cb) : Request(connection, method, uri), cb(cb) {}
 
 
 void OutgoingRequest::onResponse(Event::ConnectionError error) {
   auto self = SmartPtr(this);
   Request::onResponse(error);
   if (cb) TRY_CATCH_ERROR(cb(*this));
-  endOfLife();
 }

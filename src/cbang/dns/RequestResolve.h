@@ -43,7 +43,7 @@ namespace cb {
     class RequestResolve : public Request {
     public:
       using callback_t =
-        ControlledCallback<Error, const std::vector<SockAddr> &>;
+        std::function<void (Error, const std::vector<SockAddr> &)>;
 
     protected:
       callback_t cb;
@@ -55,9 +55,9 @@ namespace cb {
 
       // From Request
       Type getType() const override {return ipv6 ? DNS_IPV6 : DNS_IPV4;}
-      bool isCanceled() const override {return cb.isCanceled();}
+      bool isCanceled() const override {return !cb;}
+      void cancel() override {cb = 0;}
       void callback() override;
-      SmartPointer<LifetimeObject> createLTO() override {return cb.createLTO();}
     };
   }
 }

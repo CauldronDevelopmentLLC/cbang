@@ -34,9 +34,6 @@
 
 #include "Request.h"
 
-#include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeObject.h>
-
 #include <functional>
 
 
@@ -44,29 +41,19 @@ namespace cb {
   class URI;
 
   namespace HTTP {
-    class Client;
-    class HTTPHandler;
-    class ConnOut;
-
-    class OutgoingRequest : public Request, public LifetimeObject {
+    class OutgoingRequest : public Request {
     public:
       typedef std::function<void (Request &)> callback_t;
 
     protected:
-      Client &client;
       callback_t cb;
 
     public:
-      OutgoingRequest(Client &client, const SmartPointer<Conn> &connection,
-                      const URI &uri, Method method, callback_t cb);
-
-      using Request::send;
-      void send();
+      OutgoingRequest(const SmartPointer<Conn>::Weak &connection,
+        const URI &uri, Method method, callback_t cb);
 
       // From Request
       void onResponse(Event::ConnectionError error) override;
     };
-
-    typedef SmartPointer<OutgoingRequest> OutgoingRequestPtr;
   }
 }

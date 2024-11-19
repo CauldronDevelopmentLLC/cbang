@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "OutgoingRequest.h"
+#include "PendingRequest.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/util/RateSet.h>
@@ -56,7 +56,7 @@ namespace cb {
       SmartPointer<RateSet> stats;
 
     public:
-      typedef SmartPointer<OutgoingRequest> RequestPtr;
+      typedef SmartPointer<PendingRequest> RequestPtr;
 
       template <class T> struct Callback {
         typedef void (T::*member_t)(Request &);

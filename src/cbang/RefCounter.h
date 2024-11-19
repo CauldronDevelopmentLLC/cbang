@@ -72,7 +72,7 @@ namespace cb {
   };
 
 
-  template<typename T, class Dealloc_T = DeallocNew<T> >
+  template<typename T, class DeallocT>
   class RefCounterImpl : public RefCounter {
   protected:
     T *ptr;
@@ -88,7 +88,7 @@ namespace cb {
       RefCounter *counter = RefCounter::getCounter(ptr);
 
       if (!counter) {
-        counter = new RefCounterImpl(ptr);
+        counter = new RefCounterImpl<T, DeallocT>(ptr);
         setCounter(ptr, counter);
       }
 
@@ -125,7 +125,7 @@ namespace cb {
         T *_ptr = ptr;
         if (weakCount == 0) delete this;
         else ptr = 0; // Deactivate
-        if (_ptr) Dealloc_T::dealloc(_ptr);
+        if (_ptr) DeallocT::dealloc(_ptr);
       }
     }
 
@@ -138,8 +138,8 @@ namespace cb {
   };
 
 
-  template<typename T, class Dealloc_T>
-  unsigned RefCounterImpl<T, Dealloc_T>::trace = 0;
+  template<typename T, class DeallocT>
+  unsigned RefCounterImpl<T, DeallocT>::trace = 0;
 
 
   class RefCounterPhonyImpl : public RefCounter {

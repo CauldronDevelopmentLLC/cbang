@@ -30,23 +30,27 @@
 
 \******************************************************************************/
 
-#include "LifetimeManager.h"
+#include "PendingRequest.h"
+#include "Client.h"
 
 using namespace cb;
+using namespace cb::HTTP;
 
 
-LifetimeManager::~LifetimeManager() {clearLTOs();}
+PendingRequest::PendingRequest(
+  Client &client, const SmartPointer<Conn> &connection,
+  const URI &uri, Method method, OutgoingRequest::callback_t cb) :
+  client(client), connection(connection), cb(cb) {
 
+  HTTP::Client::callback_t _cb = [this] (HTTP::Request &req) {
+    auto self = SmartPtr(this);
+    if (this->cb) this->cb(req);
+    this->request.release();
+    this->connection.release();
+  };
 
-void LifetimeManager::clearLTOs() {
-  for (auto &o: objs) o->setManager(0);
-  objs.clear();
+  request = new OutgoingRequest(connection, uri, method, _cb);
 }
 
 
-void LifetimeManager::removeLTO(LifetimeObject &obj) {
-  auto it = objs.find(SmartPhony(&obj));
-  if (it == objs.end()) THROW("Object not found");
-  (*it)->setManager(0);
-  objs.erase(it);
-}
+void PendingRequest::send() {client.send(request);}

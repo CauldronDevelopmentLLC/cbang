@@ -98,15 +98,15 @@ namespace cb {
     T *ptr = 0;
 
   public:
-    typedef SmartPointer<T, DeallocT, CounterT, weak> SmartPointerT;
-    typedef T Type;
-    typedef DeallocT Dealloc;
-    typedef CounterT Counter;
+    typedef RefCounterPhonyImpl                CounterPhony;
+    typedef RefCounterImpl<T, DeallocMalloc>   CounterMalloc;
+    typedef RefCounterImpl<T, DeallocArray<T>> CounterArray;
 
-    typedef SmartPointer<T, DeallocPhony, RefCounterPhonyImpl, weak> Phony;
-    typedef SmartPointer<T, DeallocT, CounterT, true> Weak;
-    typedef SmartPointer<T, DeallocMalloc, CounterT, weak> Malloc;
-    typedef SmartPointer<T, DeallocArray<T>, CounterT, weak> Array;
+    typedef SmartPointer<T, DeallocT,        CounterT,      weak> PointerT;
+    typedef SmartPointer<T, DeallocT,        CounterT,      true> Weak;
+    typedef SmartPointer<T, DeallocPhony,    CounterPhony,  weak> Phony;
+    typedef SmartPointer<T, DeallocMalloc,   CounterMalloc, weak> Malloc;
+    typedef SmartPointer<T, DeallocArray<T>, CounterArray,  weak> Array;
 
     /**
      * The copy constructor.  If the smart pointer being copied
@@ -114,7 +114,7 @@ namespace cb {
      *
      * @param smartPtr The pointer to copy.
      */
-    SmartPointer(const SmartPointerT &smartPtr) {*this = smartPtr;}
+    SmartPointer(const PointerT &smartPtr) {*this = smartPtr;}
 
     /**
      * Create a smart pointer from a pointer value.  If ptr is
@@ -139,6 +139,11 @@ namespace cb {
       // Get RefCounter
       if (!refCounter) refCounter = CounterT::getCounter(ptr);
       refCounter->incCount(weak);
+
+      if (weak && isPhony()) {
+        release();
+        referenceError("Weak pointer cannot have phony reference");
+      }
     }
 
     /**
@@ -156,7 +161,7 @@ namespace cb {
      *
      * @return True if the smart pointers are equal, false otherwise.
      */
-    bool operator==(const SmartPointerT &smartPtr) const {
+    bool operator==(const PointerT &smartPtr) const {
       return get() == smartPtr.get();
     }
 
@@ -168,7 +173,7 @@ namespace cb {
      *
      * @return True if the smart pointers are not equal, false otherwise.
      */
-    bool operator!=(const SmartPointerT &smartPtr) const {
+    bool operator!=(const PointerT &smartPtr) const {
       return get() != smartPtr.get();
     }
 
@@ -179,7 +184,7 @@ namespace cb {
      *
      * @return True if less than @param smartPtr, false otherwise.
      */
-    bool operator<(const SmartPointerT &smartPtr) const {
+    bool operator<(const PointerT &smartPtr) const {
       return get() < smartPtr.get();
     }
 
@@ -220,12 +225,14 @@ namespace cb {
      *
      * @return A reference to this smart pointer.
      */
-    SmartPointerT &operator=(const SmartPointerT &smartPtr) {
+    PointerT &operator=(const PointerT &smartPtr) {
       if (*this == smartPtr) return *this;
 
       release();
 
       if (smartPtr.isSet()) {
+        if (weak && smartPtr.isPhony())
+          referenceError("Weak pointer cannot have phony reference");
         refCounter = smartPtr.refCounter;
         refCounter->incCount(weak);
         ptr = smartPtr.ptr;
@@ -362,6 +369,8 @@ namespace cb {
     /// @return True if the pointer is non-NULL, false otherwise.
     bool isSet() const {return refCounter && refCounter->isActive() && ptr;}
 
+    bool isPhony() const {return dynamic_cast<CounterPhony *>(refCounter);}
+
   protected:
     void check() const {
       if (!isSet()) referenceError("Can't dereference NULL pointer!");
@@ -381,13 +390,13 @@ namespace cb {
   template<typename T> inline static typename SmartPointer<T>::Weak
   WeakPtr(const SmartPointer<T> &ptr) {return ptr;}
 
-  template<typename T> inline static SmartPointer<T> SmartPhony(T *ptr)
+  template<typename T> inline static SmartPointer<T> PhonyPtr(T *ptr)
   {return typename SmartPointer<T>::Phony(ptr);}
 
-  template<typename T> inline static SmartPointer<T> SmartMalloc(T *ptr)
+  template<typename T> inline static SmartPointer<T> MallocPtr(T *ptr)
   {return typename SmartPointer<T>::Malloc(ptr);}
 
-  template<typename T> inline static SmartPointer<T> SmartArray(T *ptr)
+  template<typename T> inline static SmartPointer<T> ArrayPtr(T *ptr)
   {return typename SmartPointer<T>::Array(ptr);}
 }
 

@@ -197,7 +197,7 @@ void YAMLReader::_parse(Sink &sink) {
   JSON::Dict anchors;
   yaml_event_t event;
   bool haveKey = false;
-  SmartPointer<Sink> target = SmartPhony(&sink);
+  SmartPointer<Sink> target = PhonyPtr(&sink);
 
   auto close_merge =
     [&] () {

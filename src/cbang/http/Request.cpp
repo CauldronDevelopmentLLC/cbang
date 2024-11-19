@@ -84,7 +84,7 @@ namespace {
 
 
 Request::Request(
-  const SmartPointer<Conn> &connection, Method method,
+  const SmartPointer<Conn>::Weak &connection, Method method,
   const URI &uri, const Version &version) :
   connection(connection), method(method), uri(uri), version(version),
   args(new JSON::Dict) {}

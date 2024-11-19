@@ -35,7 +35,6 @@
 #include "Base.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/LifetimeObject.h>
 
 struct event;
 
@@ -46,7 +45,7 @@ namespace cb {
   namespace Event {
     class EventCallback;
 
-    class Event : public RefCounted, public LifetimeObject, public EventFlag {
+    class Event : public RefCounted, public EventFlag {
     public:
       typedef Base::callback_t callback_t;
 

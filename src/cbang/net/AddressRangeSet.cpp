@@ -36,6 +36,7 @@
 #include <cbang/SStream.h>
 #include <cbang/json/Sink.h>
 #include <cbang/dns/Base.h>
+#include <cbang/util/WeakCallback.h>
 
 using namespace std;
 using namespace cb;
@@ -55,13 +56,13 @@ void AddressRangeSet::insert(const string &spec, DNS::Base *dns) {
       auto colon  = spec.find_last_of(':');
       string name = token.substr(0, colon);
 
-      auto cb = [this, token, name] (
+      DNS::RequestResolve::callback_t cb = [this, token, name] (
         DNS::Error error, const vector<SockAddr> &addrs) {
         for (auto &addr: addrs)
           insert(AddressRange(addr));
       };
 
-      addLTO(dns->resolve(name, cb));
+      dns->resolve(name, WeakCall(this, cb));
     }
 }
 

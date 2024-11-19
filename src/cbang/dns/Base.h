@@ -47,6 +47,10 @@ namespace cb {
 
   namespace DNS {
     class Base : public Error::Enum {
+    public:
+      typedef SmartPointer<Request> RequestPtr;
+
+    protected:
       Event::Base &base;
 
       SmartPointer<Event::Event> pumpEvent;
@@ -60,7 +64,7 @@ namespace cb {
         uint64_t expires  = 0;
         unsigned attempts = 0;
         SmartPointer<Result> result;
-        std::list<SmartPointer<Request>> requests;
+        std::list<RequestPtr> requests;
 
         bool isValid() const;
         void respond(const SmartPointer<Result> &result,
@@ -107,21 +111,16 @@ namespace cb {
       void addNameserver(const std::string &addr, bool system = false);
       void addNameserver(const SockAddr &addr, bool system = false);
 
-      using LTOPtr = SmartPointer<LifetimeObject>;
-
-      [[gnu::warn_unused_result]] LTOPtr add(
-        const SmartPointer<Request> &req);
-      [[gnu::warn_unused_result]] LTOPtr resolve(
-        const std::string &name, RequestResolve::callback_t cb,
+      void add(const RequestPtr &req);
+      RequestPtr resolve(const std::string &name, RequestResolve::callback_t cb,
         bool ipv6 = false);
-      [[gnu::warn_unused_result]] LTOPtr reverse(
-        const SockAddr &addr, RequestReverse::callback_t cb);
-      [[gnu::warn_unused_result]] LTOPtr reverse(
+      RequestPtr reverse(const SockAddr &addr, RequestReverse::callback_t cb);
+      RequestPtr reverse(
         const std::string &addr, RequestReverse::callback_t cb);
 
       // Called by Nameserver
       void response(Type type, const std::string &request,
-                    const cb::SmartPointer<Result> &result, unsigned ttl);
+        const cb::SmartPointer<Result> &result, unsigned ttl);
       void schedule();
 
     private:

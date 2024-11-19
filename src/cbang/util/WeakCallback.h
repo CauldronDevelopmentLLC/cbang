@@ -32,32 +32,35 @@
 
 #pragma once
 
-#include "LifetimeObject.h"
-
-#include <cbang/SmartPointer.h>
-
-#include <set>
-
+#include <functional>
 
 namespace cb {
-  class LifetimeManager {
-    std::set<SmartPointer<LifetimeObject>> objs;
+  template <typename T, typename... Args>
+  class WeakCallback {
+  public:
+    typedef std::function<void (Args...)> cb_t;
+
+  protected:
+    typename SmartPointer<T>::Weak ptr;
+    cb_t cb;
 
   public:
-    ~LifetimeManager();
+    WeakCallback(const typename SmartPointer<T>::Weak &ptr, const cb_t &cb) :
+      ptr(ptr), cb(cb) {}
+    WeakCallback(RefCounted *ptr, const cb_t &cb) : ptr(ptr), cb(cb) {}
 
-    void clearLTOs();
-    void removeLTO(LifetimeObject &obj);
+    explicit operator bool() const {return ptr.isSet() && cb;}
 
-
-    template <typename T>
-    const SmartPointer<T> &addLTO(const SmartPointer<T> &obj) {
-      if (obj->isAlive()) {
-        objs.insert(obj);
-        obj->setManager(this);
-      }
-
-      return obj;
+    void operator()(Args... args) {
+      if (ptr.isNull()) return;
+      SmartPointer<T> strong = ptr; // Prevent deallocation during callback
+      cb(args...);
     }
   };
+
+  template<typename... Args>
+  WeakCallback<RefCounted, Args...> WeakCall(
+    RefCounted *ptr, std::function<void (Args...)> cb) {
+    return WeakCallback<RefCounted, Args...>(ptr, cb);
+  }
 }

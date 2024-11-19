@@ -39,11 +39,14 @@
 
 namespace cb {
   class Progress : public Rate {
+  public:
+    typedef std::function<void (const Progress &)> callback_t;
+
+  protected:
     uint64_t size;
     uint64_t start;
     uint64_t end;
 
-    typedef std::function<void (const Progress &)> callback_t;
     callback_t cb;
     double lastCB = 0;
     double cbRate = 0;

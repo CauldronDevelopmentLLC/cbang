@@ -64,7 +64,7 @@ namespace cb {
       Event::Buffer inputBuffer;
       Event::Buffer outputBuffer;
 
-      SmartPointer<Conn> connection;
+      SmartPointer<Conn>::Weak connection;
       Method method;
       URI uri;
       Version version;
@@ -86,7 +86,7 @@ namespace cb {
       JSON::ValuePtr msg;
 
     public:
-      Request(const SmartPointer<Conn> &connection,
+      Request(const SmartPointer<Conn>::Weak &connection,
               Method method = Method(), const URI &uri = URI(),
               const Version &version = Version(1, 1));
       virtual ~Request();
@@ -129,7 +129,7 @@ namespace cb {
       bool logResponseErrors() const;
 
       bool hasConnection() const {return connection.isSet();}
-      const SmartPointer<Conn> &getConnection() const {return connection;}
+      const SmartPointer<Conn>::Weak &getConnection() const {return connection;}
       void setConnection(const SmartPointer<Conn> &con) {connection = con;}
       bool isConnected() const;
       Event::ConnectionError getConnectionError() const {return connError;}
@@ -268,3 +268,5 @@ namespace cb {
     typedef SmartPointer<Request> RequestPtr;
   }
 }
+
+#include "Conn.h"

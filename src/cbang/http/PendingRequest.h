@@ -30,19 +30,29 @@
 
 \******************************************************************************/
 
-#include "LifetimeObject.h"
-#include "LifetimeManager.h"
+#pragma once
 
-using namespace cb;
+#include "OutgoingRequest.h"
 
+namespace cb {
+  namespace HTTP {
+    class Client;
 
-void LifetimeObject::setManager(LifetimeManager *manager) {
-  if (manager && this->manager) THROW("LifetimeManager already set");
-  this->manager = manager;
-}
+    class PendingRequest : public RefCounted {
+      Client &client;
+      SmartPointer<Conn> connection;
+      SmartPointer<Request> request;
+      OutgoingRequest::callback_t cb;
 
+    public:
+      PendingRequest(
+        Client &client, const SmartPointer<Conn> &connection, const URI &uri,
+        Method method, OutgoingRequest::callback_t cb);
 
-void LifetimeObject::endOfLife() {
-  alive = false;
-  if (manager) manager->removeLTO(*this);
+      const SmartPointer<Conn> &getConnection() const {return connection;}
+      const SmartPointer<Request> &getRequest() const {return request;}
+
+      void send();
+    };
+  }
 }

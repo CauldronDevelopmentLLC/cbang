@@ -76,8 +76,8 @@ bool Login::requestToken(HTTP::Request &req, const string &state,
     verifyToken(req, _req.getInput());
   };
   pr = client.call(verifyURL, HTTP_POST, data, cb);
-  pr->setContentType("application/x-www-form-urlencoded");
-  pr->outSet("Accept", "application/json");
+  pr->getRequest()->setContentType("application/x-www-form-urlencoded");
+  pr->getRequest()->outSet("Accept", "application/json");
   pr->send();
 
   return true;
@@ -106,7 +106,7 @@ void Login::verifyToken(HTTP::Request &req, const string &response) {
 
       // Get profile
       pr = client.call(profileURL, HTTP_GET, handler);
-      pr->outSet("User-Agent", "cbang.org");
+      pr->getRequest()->outSet("User-Agent", "cbang.org");
       return pr->send();
 
     } catch (const Exception &e) {
