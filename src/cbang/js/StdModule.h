@@ -60,6 +60,7 @@ namespace cb {
 
       // Callbacks
       SmartPointer<Value> require(Callback &cb, Value &args);
+      void readfile(const Value &args, Sink &sink);
       void print(const Value &args, Sink &sink);
     };
   }
