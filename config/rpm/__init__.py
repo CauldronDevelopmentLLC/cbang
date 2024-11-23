@@ -54,7 +54,8 @@ def write_spec_script(f, env, name, var):
 
         f.write('%%%s\n%s\n\n' % (name, contents))
 
-    elif name == 'install': f.write('%install\ncp -a . $RPM_BUILD_ROOT\n\n')
+    elif name == 'install':
+        f.write('%install\ncp -aT %{cbang_build} %{buildroot}\n\n')
 
 
 def install_files(f, env, key, build_dir, path, prefix = None, perms = None,
@@ -89,15 +90,19 @@ def install_dirs(f, env, key, build_dir, prefix = None, dperms = 0o755):
 def build_function(target, source, env):
     name = env.get('package_name_lower')
 
+    # Create package build dir
+    # SPEC's %install section is responsible for populating BUILDROOT (aka
+    # %{buildroot} or $RPM_BUILD_ROOT) using our custom %{cbang_build} macro as
+    # source
+    build_dir = 'build/%s-BUILD' % name
+    if os.path.exists(build_dir): shutil.rmtree(build_dir)
+    os.makedirs(build_dir)
+
     # Create directories needed by rpmbuild
     for dir in ['BUILD', 'BUILDROOT', 'RPMS', 'SOURCES', 'SPECS', 'SRPMS']:
         dir = 'build/' + dir
         if os.path.exists(dir): shutil.rmtree(dir)
         os.makedirs(dir)
-
-    # SPEC's %install section is responsible for populating BUILDROOT
-    # (aka %{buildroot} or $RPM_BUILD_ROOT)
-    build_dir = 'build/BUILD'
 
     # Create the SPEC file
     spec_file = 'build/SPECS/%s.spec' % name
@@ -178,8 +183,9 @@ def build_function(target, source, env):
     # Build the package
     target = str(target[0])
     cmd = 'rpmbuild -bb --define "_topdir %s/build" --define ' \
-        '"_rpmfilename %s"' '%s --target %s %s' % (
-            os.getcwd(), target, cmddebug, env.GetPackageArch(), spec_file)
+        '"_rpmfilename %s" --define "cbang_build %s"' '%s --target %s %s' % (
+            os.getcwd(), target, os.path.realpath(build_dir), cmddebug,
+            env.GetPackageArch(), spec_file)
     CommandAction(cmd).execute(target, [], env)
 
     # Move the package
