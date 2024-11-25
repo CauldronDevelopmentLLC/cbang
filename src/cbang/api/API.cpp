@@ -343,7 +343,6 @@ void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
       args->appendSpecs(*paramSpec);
 
       // Determine arg "in" type
-      set<string> foundArgs;
       for (unsigned i = 0; i < paramSpec->size(); i++) {
         auto &spec = paramSpec->get(i);
         string name = spec->getString("name");
