@@ -32,130 +32,106 @@
 
 #include "Regex.h"
 
-#include <cbang/boost/StartInclude.h>
-#include <boost/regex.hpp>
-#include <cbang/boost/StartInclude.h>
+#include <re2/re2.h>
 
 using namespace cb;
 using namespace std;
 
 
-namespace {
-  boost::match_flag_type typeToFormatFlags(Regex::type_t type) {
-    switch (type) {
-    case Regex::TYPE_POSIX: return boost::format_sed;
-    case Regex::TYPE_PERL:  return boost::format_perl;
-    case Regex::TYPE_BOOST: return boost::format_default;
-    default: THROW("Invalid regex type: " << type);
-    }
-  }
-
-
-  boost::match_flag_type typeToMatchFlags(Regex::type_t type) {
-    switch (type) {
-    case Regex::TYPE_POSIX: return boost::match_posix;
-    case Regex::TYPE_PERL:  return boost::match_perl;
-    case Regex::TYPE_BOOST: return boost::match_default;
-    default: THROW("Invalid regex type: " << type);
-    }
-  }
-}
-
-
 struct Regex::private_t {
-  boost::regex re;
+  RE2 re;
 
-  private_t(const string &pattern) try : re(pattern) {
-  } catch (const boost::regex_error &e) {
-    THROW("Failed to parse regex: " << e.what());
+  private_t(const string &pattern, const RE2::Options &opts) :
+    re(pattern, opts) {
+    if (!re.ok()) THROW("Failed to parse Regex: " << re.error());
   }
 };
 
 
-struct Regex::Match::private_t {
-  boost::smatch m;
-};
+Regex::Regex(const string &pattern, bool posix) {
+  RE2::Options opts;
 
-
-Regex::Match::Match(type_t type) : pri(new private_t), type(type) {}
-
-
-string Regex::Match::format(const std::string &fmt) const {
-  try {
-    return pri->m.format(fmt, typeToFormatFlags(type));
-
-  } catch (const boost::regex_error &e) {
-    THROW("Format error: " << e.what());
+  if (posix) {
+    opts.set_posix_syntax(true);
+    opts.set_perl_classes(true);
+    opts.set_word_boundary(true);
   }
+
+  pri = new private_t(pattern, opts);
 }
 
 
-unsigned Regex::Match::position(unsigned i) const {
-  if (size() <= i) THROW("Invalid match subgroup " << i);
-  return pri->m.position(i);
+string Regex::toString() const {return pri->re.pattern();}
+
+
+unsigned Regex::getGroupCount() const {
+  int n = pri->re.NumberOfCapturingGroups();
+  return n < 0 ? 0 : (unsigned)n;
 }
 
 
-Regex::Regex(const string &pattern, type_t type) :
-  pri(new private_t(pattern)), type(type) {}
+const map<string, int> &Regex::getGroupNameMap() const {
+  return pri->re.NamedCapturingGroups();
+}
 
 
-string Regex::toString() const {return pri->re.str();}
+const map<int, string> &Regex::getGroupIndexMap() const {
+  return pri->re.CapturingGroupNames();
+}
 
 
 bool Regex::match(const string &s) const {
-  try {
-    return boost::regex_match(s, pri->re, typeToMatchFlags(type));
-
-  } catch (const boost::regex_error &e) {
-    THROW("Match error: " << e.what());
-  }
+  return RE2::FullMatchN(s, pri->re, 0, 0);
 }
 
 
 bool Regex::match(const string &s, Match &m) const {
-  try {
-    if (!boost::regex_match(s, m.pri->m, pri->re, typeToMatchFlags(type)))
-      return false;
-
-  } catch (const boost::regex_error &e) {
-    THROW("Match error: " << e.what());
-  }
-
-  for (unsigned i = 0; i < m.pri->m.size(); i++)
-    m.push_back(string(m.pri->m[i].first, m.pri->m[i].second));
-
-  return true;
+  return match_or_search(true, s, m);
 }
 
 
 bool Regex::search(const string &s) const {
-  try {
-    return boost::regex_search(s, pri->re);
-
-  } catch (const boost::regex_error &e) {
-    THROW("Search error: " << e.what());
-  }
+  return RE2::PartialMatchN(s, pri->re, 0, 0);
 }
 
 
 bool Regex::search(const string &s, Match &m) const {
-  try {
-    if (!boost::regex_search(s, m.pri->m, pri->re, typeToMatchFlags(type)))
-      return false;
-
-  } catch (const boost::regex_error &e) {
-    THROW("Search error: " << e.what());
-  }
-
-  for (unsigned i = 0; i < m.pri->m.size(); i++)
-    m.push_back(string(m.pri->m[i].first, m.pri->m[i].second));
-
-  return true;
+  return match_or_search(false, s, m);
 }
 
 
 string Regex::replace(const string &s, const string &r) const {
-  return boost::regex_replace(s, pri->re, r,
-                              typeToMatchFlags(type) | typeToFormatFlags(type));
+  string result = s;
+  RE2::Replace(&result, pri->re, r);
+  return result;
+}
+
+
+bool Regex::match_or_search(bool match, const string &s, Match &m) const {
+  unsigned n = getGroupCount();
+
+  vector<RE2::Arg>         args(n);
+  vector<RE2::Arg *>       argPtrs(n);
+  vector<re2::StringPiece> groups(n);
+
+  // Connect args
+  for (unsigned i = 0; i < n; i++) {
+    args[i]    = &groups[i];
+    argPtrs[i] = &args[i];
+  }
+
+  auto fn = match ? &RE2::FullMatchN : &RE2::PartialMatchN;
+  if ((*fn)(s, pri->re, argPtrs.data(), n)) {
+    m.clear();
+    m.offsets.clear();
+
+    for (unsigned i = 0; i < n; i++) {
+      m.push_back(groups[i].as_string());
+      m.offsets.push_back(groups[i].data() - s.data());
+    }
+
+    return true;
+  }
+
+  return false;
 }

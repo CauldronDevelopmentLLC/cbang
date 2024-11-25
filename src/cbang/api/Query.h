@@ -84,6 +84,7 @@ namespace cb {
       void returnFields(state_t state);
       void returnDict  (state_t state);
       void returnOne   (state_t state);
+      bool checkOne    (state_t state);
       void returnOk    (state_t state);
     };
   }

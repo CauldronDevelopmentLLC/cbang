@@ -43,6 +43,15 @@ void ArgDict::add(const JSON::ValuePtr &args) {
 }
 
 
+void ArgDict::appendSpecs(JSON::Value &spec) const {
+  for (auto &p: validators) {
+    auto argSpec = p.second->getSpec();
+    argSpec->insert("name", p.first);
+    spec.append(argSpec);
+  }
+}
+
+
 void ArgDict::operator()(HTTP::Request &req, JSON::Value &value) const {
   if (!value.isDict()) THROWX("Invalid arguments", HTTP_BAD_REQUEST);
 
@@ -81,4 +90,17 @@ void ArgDict::operator()(HTTP::Request &req, JSON::Value &value) const {
   if (!missing.empty())
     THROWX("Missing argument" << (1 < missing.size() ? "s" : "") << ": "
             << String::join(missing, ", "), HTTP_BAD_REQUEST);
+}
+
+
+void ArgDict::addSchema(JSON::Value &schema) const {
+  schema.insert("type", "object");
+
+  auto props = schema.createDict();
+  schema.insert("properties", props);
+  for (auto &p: validators) {
+    auto propSchema = schema.createDict();
+    props->insert(p.first, propSchema);
+    p.second->addSchema(*propSchema);
+  }
 }

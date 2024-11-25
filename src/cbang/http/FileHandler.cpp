@@ -43,11 +43,13 @@ using namespace cb::HTTP;
 
 
 FileHandler::FileHandler(const JSON::ValuePtr &config) :
-  FileHandler(config->getString("path"), config->getU32("prefix", 0)) {}
+  FileHandler(config->getString("path"), config->getU32("prefix", 0),
+    config->getString("index", "")) {}
 
 
-FileHandler::FileHandler(const string &root, unsigned pathPrefix) :
-  root(root), pathPrefix(pathPrefix),
+FileHandler::FileHandler(const string &root, unsigned pathPrefix,
+  const string &index) :
+  root(root), pathPrefix(pathPrefix), index(index),
   directory(SystemUtilities::isDirectory(root)) {}
 
 
@@ -75,7 +77,10 @@ bool FileHandler::operator()(Request &req) {
 
     // Relative to root
     path = SystemUtilities::joinPath(root, String::join(result, "/"));
-    if (path.back() != '/' && orig.back() == '/') path += "/";
+
+    // Handle index
+    if (!index.empty() && SystemUtilities::isDirectory(path))
+      path += "/" + index;
 
   } else path = root; // Single file
 

@@ -51,6 +51,11 @@ namespace cb {
         if (max < value.asString().length())
           CBANG_THROW("Must be no more than " << max << " chars long");
       }
+
+
+      void addSchema(JSON::Value &schema) const override {
+        schema.insert("maxLength", max);
+      }
     };
   }
 }

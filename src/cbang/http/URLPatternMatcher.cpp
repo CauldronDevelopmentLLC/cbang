@@ -33,6 +33,7 @@
 #include "URLPatternMatcher.h"
 
 #include <cbang/String.h>
+#include <cbang/util/Regex.h>
 
 using namespace std;
 using namespace cb::HTTP;
@@ -44,27 +45,32 @@ URLPatternMatcher::URLPatternMatcher(
 
 
 string URLPatternMatcher::toRE2Pattern(const string &pattern) {
-  if (!pattern.empty() && pattern[0] == '^') return pattern;
+  if (pattern.empty() || pattern[0] == '^') return pattern;
 
   vector<string> parts;
   String::tokenize(pattern, parts, "/");
 
+  // TODO allow escaping \, { and }
+
   string rePattern;
-  for (unsigned i = 0; i < parts.size(); i++)
-    if (1 < parts[i].size() && parts[i][0] == ':') {
-      size_t end;
+  for (auto &part: parts) {
+    auto start = part.find('{');
+    if (start != string::npos) {
+      auto end = part.find_last_of('}');
+      if (end == string::npos)
+        THROW("Mismatched { in URL pattern: " << pattern);
 
-      for (end = 1; end < parts[i].size(); end++) {
-        char c = parts[i][end];
-        if (!isalnum(c) && c != '-' && c != '_') break;
-      }
+      string head = part.substr(0, start);
+      string var  = part.substr(start + 1, end - start - 1);
+      string tail = part.substr(end + 1);
 
-      string part = parts[i].substr(1, end - 1);
-      string tail = parts[i].substr(end);
+      if ((head + var + tail).find_first_of("{}") != string::npos)
+        THROW("Invalid URL pattern: " << pattern);
 
-      rePattern += "/(?P<" + part + ">[^/]*)" + tail;
+      rePattern += "/" + head + "(?P<" + var + ">[^/]*)" + tail;
 
-    } else rePattern += "/" + parts[i];
+    } else rePattern += "/" + part;
+  }
 
   if (!pattern.empty() && pattern.back() == '/') rePattern += "/";
 

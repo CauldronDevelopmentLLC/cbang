@@ -52,6 +52,8 @@ namespace cb {
         min(config->getNumber("min", NAN)),
         max(config->getNumber("max", NAN)) {}
 
+      const char *getFormat() const;
+
       // From ArgConstraint
       void operator()(HTTP::Request &req, JSON::Value &value) const override {
         T n;
@@ -62,9 +64,9 @@ namespace cb {
         else CBANG_THROW("Must be a number or string");
 
         if (!std::isnan(min) && n < (T)min)
-          CBANG_THROW("Must be greater than " << (T)min);
+          CBANG_THROW("Must be greater than or equal to " << (T)min);
         if (!std::isnan(max) && (T)max < n)
-          CBANG_THROW("Must be less than " << (T)max);
+          CBANG_THROW("Must be less than or equal to " << (T)max);
 
         if (value.isNumber()) {
           double x = value.getNumber();
@@ -80,6 +82,37 @@ namespace cb {
                         << " for numeric type");
         }
       }
+
+
+      void addSchema(JSON::Value &schema) const override {
+        schema.insert("type", "number");
+        schema.insert("format", getFormat());
+
+        if (!std::isnan(min)) schema.insert("minimum", min);
+        if (!std::isnan(max)) schema.insert("maximum", max);
+      }
     };
+
+
+    template<>
+    const char *ArgNumber<double>::getFormat() const {return "double";}
+    template<>
+    const char *ArgNumber<float>::getFormat() const {return "float";}
+    template<>
+    const char *ArgNumber<int64_t>::getFormat() const {return "int64";}
+    template<>
+    const char *ArgNumber<uint64_t>::getFormat() const {return "uint64";}
+    template<>
+    const char *ArgNumber<int32_t>::getFormat() const {return "int32";}
+    template<>
+    const char *ArgNumber<uint32_t>::getFormat() const {return "uint32";}
+    template<>
+    const char *ArgNumber<int16_t>::getFormat() const {return "int16";}
+    template<>
+    const char *ArgNumber<uint16_t>::getFormat() const {return "uint16";}
+    template<>
+    const char *ArgNumber<int8_t>::getFormat() const {return "int8";}
+    template<>
+    const char *ArgNumber<uint8_t>::getFormat() const {return "uint8";}
   }
 }

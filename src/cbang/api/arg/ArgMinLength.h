@@ -51,6 +51,11 @@ namespace cb {
         if (value.asString().length() < min)
           CBANG_THROW("Must be at least " << min << " chars long");
       }
+
+
+      void addSchema(JSON::Value &schema) const override {
+        schema.insert("minLength", min);
+      }
     };
   }
 }

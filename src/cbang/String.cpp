@@ -837,11 +837,8 @@ size_t String::find(const string &s, const string &pattern,
   Regex::Match m;
 
   if (e.search(s, m)) {
-    if (groups)
-      for (unsigned i = 0; i < m.size(); i++)
-        groups->push_back(m[i]);
-
-    return m.position();
+    if (groups) groups->insert(groups->end(), m.begin(), m.end());
+    return m.offsets.at(0);
   }
 
   return string::npos;

@@ -45,6 +45,10 @@ namespace cb {
       void operator()(HTTP::Request &req, JSON::Value &value) const override {
         URI(value.asString());
       }
+
+
+      void addSchema(JSON::Value &schema) const override {
+      }
     };
   }
 }

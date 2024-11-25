@@ -47,11 +47,13 @@ namespace cb {
     class FileHandler : public RequestHandler {
       std::string root;
       unsigned    pathPrefix;
+      std::string index;
       bool        directory;
 
     public:
       FileHandler(const JSON::ValuePtr &config);
-      FileHandler(const std::string &root, unsigned pathPrefix = 0);
+      FileHandler(const std::string &root, unsigned pathPrefix = 0,
+        const std::string &index = std::string());
 
       // From RequestHandler
       bool operator()(Request &req) override;

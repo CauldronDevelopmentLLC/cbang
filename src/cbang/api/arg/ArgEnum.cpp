@@ -32,6 +32,8 @@
 
 #include "ArgEnum.h"
 
+#include <cbang/json/List.h>
+
 using namespace cb::API;
 using namespace cb;
 using namespace std;
@@ -56,4 +58,13 @@ void ArgEnum::operator()(HTTP::Request &req, JSON::Value &_value) const {
 
   if (values.find(value) == values.end())
     THROW("Must be one of: " << String::join(values, ", "));
+}
+
+
+void ArgEnum::addSchema(JSON::Value &schema) const {
+  schema.insert("type", "string");
+
+  JSON::ValuePtr list = new JSON::List;
+  for (auto &v: values) list->append(v);
+  schema.insert("enum", list);
 }

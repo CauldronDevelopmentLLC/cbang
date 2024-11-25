@@ -43,22 +43,26 @@ namespace cb {
 
   namespace API {
     class ArgValidator : public ArgConstraint {
-      bool optional;
+      JSON::ValuePtr config;
+      bool optional = false;
       JSON::ValuePtr defaultValue;
+      std::string type;
       std::vector<SmartPointer<ArgConstraint> > constraints;
 
     public:
-      ArgValidator() : optional(false) {}
       ArgValidator(const JSON::ValuePtr &config);
 
       bool isOptional() const {return optional;}
       bool hasDefault() const {return !defaultValue.isNull();}
       const JSON::ValuePtr &getDefault() const {return defaultValue;}
+      JSON::ValuePtr getSpec() const;
+      JSON::ValuePtr getSchema() const;
 
       void add(const SmartPointer<ArgConstraint> &constraint);
 
       // From ArgConstraint
       void operator()(HTTP::Request &req, JSON::Value &value) const override;
+      void addSchema(JSON::Value &schema) const override;
     };
   }
 }

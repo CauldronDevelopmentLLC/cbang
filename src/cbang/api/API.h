@@ -52,12 +52,13 @@ namespace cb {
   class Options;
 
   namespace API {
-    class Docs;
-
     class API : public HTTP::HandlerGroup {
       Options &options;
       JSON::ValuePtr config;
-      SmartPointer<Docs> docs;
+
+      JSON::ValuePtr spec;
+      std::string category;
+      bool hideCategory;
 
       SmartPointer<HTTP::Client>          client;
       SmartPointer<OAuth2::Providers>     oauth2Providers;
@@ -74,6 +75,8 @@ namespace cb {
       ~API();
 
       Options &getOptions() const {return options;}
+      const JSON::ValuePtr &getConfig() const {return config;}
+      JSON::ValuePtr getSpec() const {return spec;}
 
       void setClient(const SmartPointer<HTTP::Client> &x) {client = x;}
       void setOAuth2Providers(const SmartPointer<OAuth2::Providers> &x)
@@ -109,11 +112,17 @@ namespace cb {
       typedef SmartPointer<Context> CtxPtr;
 
       virtual std::string getEndpointType(const JSON::ValuePtr &config) const;
+      virtual JSON::ValuePtr getEndpointTypes(
+        const JSON::ValuePtr &config) const;
       virtual RequestHandlerPtr createEndpointHandler(
-        const std::string &type, const JSON::ValuePtr &config);
+        const JSON::ValuePtr &types, const JSON::ValuePtr &config);
       virtual RequestHandlerPtr createMethodsHandler(
         const std::string &methods, const CtxPtr &ctx);
       virtual RequestHandlerPtr createAPIHandler(const CtxPtr &ctx);
+
+      virtual void addTagSpec(
+        const std::string &tag, const JSON::ValuePtr &config);
+      virtual void addToSpec(const std::string &methods, const CtxPtr &ctx);
     };
   }
 }

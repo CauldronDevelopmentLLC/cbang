@@ -31,15 +31,15 @@
 \******************************************************************************/
 
 #include "API.h"
-#include "Docs.h"
-#include "Resolver.h"
 
+#include "Resolver.h"
+#include <cbang/api/handler/ArgsHandler.h>
 #include <cbang/api/handler/ArgsParser.h>
 #include <cbang/api/handler/StatusHandler.h>
 #include <cbang/api/handler/QueryHandler.h>
 #include <cbang/api/handler/LoginHandler.h>
 #include <cbang/api/handler/LogoutHandler.h>
-#include <cbang/api/handler/DocsHandler.h>
+#include <cbang/api/handler/SpecHandler.h>
 #include <cbang/api/handler/ArgFilterHandler.h>
 #include <cbang/api/handler/PassHandler.h>
 #include <cbang/api/handler/HeadersHandler.h>
@@ -88,12 +88,17 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   // Resolve variables
   Resolver(*this, 0).resolve(*config);
 
-  docs = new Docs(config);
-
-  // Check API version
-  const Version minVer("1.0.0");
-  Version version(config->getString("version", "0.0.0"));
+  // Check JmpAPI version
+  const Version minVer("1.1.0");
+  Version version(config->getString("jmpapi", "0.0.0"));
   if (version < minVer) THROW("API version must be at least " << minVer);
+
+  // Create Spec
+  spec = config->createDict();
+  spec->insert("openapi", "3.1.0");
+  if (config->hasDict("info")) spec->insert("info", config->get("info"));
+  spec->insert("tags", config->createList());
+  spec->insert("paths", config->createDict());
 
   // Always parse args
   addHandler(new ArgsParser);
@@ -103,8 +108,11 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
     auto apis = config->get("apis");
     for (unsigned i = 0; i < apis->size(); i++) {
       auto api = apis->get(i);
+      addTagSpec(apis->keyAt(i), api);
+
       if (api->hasDict("endpoints"))
         addHandler(createAPIHandler(new Context(api->get("endpoints"))));
+      category.clear();
     }
 
   } else addHandler(createAPIHandler(new Context(config->get("api"))));
@@ -120,6 +128,8 @@ void cb::API::API::bind(const string &key, const RequestHandlerPtr &handler) {
 string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
   if (config->isString()) return "bind";
 
+  if (config->has("handlers")) THROW("Nested handlers not allowed");
+
   string type = config->getString("handler", "");
   if (!type.empty()) return type;
 
@@ -128,24 +138,47 @@ string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
   if (config->has("path"))     return "file";
   if (config->has("resource")) return "resource";
 
-  if (config->has("handlers")) {
-    type = "handlers(";
-
-    auto &handlers = config->getList("handlers");
-    for (unsigned i = 0; i < handlers.size(); i++) {
-      if (i) type += ", ";
-      type += getEndpointType(handlers.get(i));
-    }
-
-    return type + ")";
-  }
-
   return "pass";
 }
 
 
+JSON::ValuePtr cb::API::API::getEndpointTypes(
+  const JSON::ValuePtr &config) const {
+  if (config->has("handlers")) {
+    if (config->has("handler"))
+      THROW("Cannot define both 'handler' and 'handlers'");
+
+    auto types = config->createList();
+
+    auto &handlers = config->getList("handlers");
+    for (unsigned i = 0; i < handlers.size(); i++)
+      types->append(getEndpointType(handlers.get(i)));
+
+    return types;
+  }
+
+  return config->create(getEndpointType(config));
+}
+
+
 HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
-  const string &type, const JSON::ValuePtr &config) {
+  const JSON::ValuePtr &types, const JSON::ValuePtr &config) {
+  // Multiple handlers
+  if (types->isList()) {
+    auto group     = SmartPtr(new HandlerGroup);
+    auto &handlers = config->getList("handlers");
+
+    for (unsigned i = 0; i < types->size(); i++) {
+      auto config = handlers.get(i);
+      group->addHandler(createEndpointHandler(types->get(i), config));
+    }
+
+    return group;
+  }
+
+  // A single handler
+  string type = types->asString();
+
   if (type == "bind") {
     auto key = config->isString() ? config->getString() :
       config->getString("bind", "<default>");
@@ -154,24 +187,11 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
     return it->second;
   }
 
-  if (String::startsWith(type, "handlers(")) {
-    auto group     = SmartPtr(new HandlerGroup);
-    auto &handlers = config->getList("handlers");
-
-    for (unsigned i = 0; i < handlers.size(); i++) {
-      auto config = handlers.get(i);
-      string type = getEndpointType(config);
-      group->addHandler(createEndpointHandler(type, config));
-    }
-
-    return group;
-  }
-
   if (type == "pass")     return new PassHandler;
   if (type == "cors")     return new CORSHandler(config);
   if (type == "status")   return new StatusHandler(config);
   if (type == "redirect") return new RedirectHandler(config);
-  if (type == "docs")     return new DocsHandler(config, docs);
+  if (type == "spec")     return new SpecHandler(*this, config);
   if (type == "file")     return new HTTP::FileHandler(config);
   if (type == "resource")
     return new HTTP::ResourceHandler(config->getString("resource"));
@@ -196,12 +216,15 @@ HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
   const string &methods, const CtxPtr &ctx) {
   auto group   = SmartPtr(new HTTP::HandlerGroup);
   auto &config = ctx->getConfig();
+  auto types   = getEndpointTypes(config);
 
-  string type = getEndpointType(config);
   LOG_INFO(3, "Adding endpoint " << methods << " " << ctx->getPattern()
-           << " (" << type << ")");
+           << " (" << types->toString(0, true) << ")");
 
-  // Validation
+  if (!hideCategory && !config->getBoolean("hide", false))
+    addToSpec(methods, ctx);
+
+  // Validation (must be first)
   ctx->addValidation(*group);
 
   // Headers
@@ -209,7 +232,7 @@ HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
     group->addHandler(new HeadersHandler(config->get("headers")));
 
   // Handler
-  auto handler = createEndpointHandler(type, config);
+  auto handler = createEndpointHandler(types, config);
 
   // Arg filter
   if (config->isDict() && config->has("arg-filter")) {
@@ -221,9 +244,6 @@ HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
   }
 
   group->addHandler(handler);
-
-  // Docs
-  docs->loadMethod(methods, type, config);
 
   return group;
 }
@@ -268,4 +288,85 @@ HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
   }
 
   return group;
+}
+
+
+void cb::API::API::addTagSpec(const string &tag, const JSON::ValuePtr &config) {
+  category     = tag;
+  hideCategory = config->getBoolean("hide", false);
+  if (hideCategory) return;
+
+  auto tags    = spec->get("tags");
+  auto tagSpec = config->createDict();
+  tags->append(tagSpec);
+
+  tagSpec->insert("name", tag);
+  if (config->hasString("help"))
+    tagSpec->insert("description", config->get("help"));
+}
+
+
+void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
+  auto paths  = spec->get("paths");
+  auto path   = ctx->getPattern();
+  auto config = ctx->getConfig();
+
+  if (!paths->hasDict(path)) paths->insert(path, config->createDict());
+  auto pathSpec = paths->get(path);
+
+  vector<string> methodNames;
+  String::tokenize(methods, methodNames, "|");
+  for (auto &method: methodNames) {
+    auto methodSpec = config->createDict();
+    pathSpec->insert(String::toLower(method), methodSpec);
+
+    // Add tag from category
+    if (!category.empty()) {
+      auto tags = config->createList();
+      methodSpec->insert("tags", tags);
+      tags->append(category);
+    }
+
+    // Add description from help
+    if (config->hasString("help"))
+      methodSpec->insert("description", config->get("help"));
+
+    // Add parameter spec from path and args handlers
+    set<string> foundArgs;
+    Regex re(HTTP::URLPatternMatcher::toRE2Pattern(path), false);
+    auto &urlArgs = re.getGroupNameMap();
+    JSON::ValuePtr paramSpec = config->createList();
+    methodSpec->insert("parameters", paramSpec);
+
+    auto args = ctx->getArgsHandler();
+    if (args.isSet()) {
+      args->appendSpecs(*paramSpec);
+
+      // Determine arg "in" type
+      set<string> foundArgs;
+      for (unsigned i = 0; i < paramSpec->size(); i++) {
+        auto &spec = paramSpec->get(i);
+        string name = spec->getString("name");
+        bool isURLArg = urlArgs.find(name) != urlArgs.end();
+        spec->insert("in", isURLArg ? "path" : "query");
+        foundArgs.insert(name);
+      }
+    }
+
+    // Add missing URL args to spec
+    for (auto &arg: urlArgs)
+      if (foundArgs.find(arg.first) == foundArgs.end()) {
+        auto argSpec = config->createDict();
+        argSpec->insert("name", arg.first);
+        argSpec->insert("in", "path");
+        argSpec->insertBoolean("required", true);
+        auto schema = config->createDict();
+        argSpec->insert("schema", schema);
+        schema->insert("type", "string");
+        paramSpec->append(argSpec);
+      }
+
+    // TODO Add security spec from access handlers
+    // TODO add responses
+  }
 }

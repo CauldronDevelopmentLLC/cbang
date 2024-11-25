@@ -46,6 +46,7 @@ namespace cb {
       virtual ~ArgConstraint() {}
       virtual void operator()(HTTP::Request &req,
                               JSON::Value &value) const = 0;
+      virtual void addSchema(JSON::Value &schema) const = 0;
     };
   }
 }

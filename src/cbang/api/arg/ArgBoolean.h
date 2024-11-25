@@ -48,6 +48,11 @@ namespace cb {
         else if (!value.isBoolean() && !value.isNumber())
           CBANG_THROW("Not a boolean");
       }
+
+
+      void addSchema(JSON::Value &schema) const override {
+        schema.insert("type", "boolean");
+      }
     };
   }
 }
