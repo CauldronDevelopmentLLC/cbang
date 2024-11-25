@@ -212,7 +212,11 @@ void Query::returnFields(MariaDB::EventDB::state_t state) {
 
 
 void Query::returnDict(MariaDB::EventDB::state_t state) {
-  if (checkOne(state)) db->writeRowDict(writer);
+  if (state == MariaDB::EventDB::EVENTDB_ROW) {
+    if (!rowCount++) db->writeRowDict(writer);
+    else returnOk(state); // Error
+
+  } else checkOne(state);
 }
 
 
