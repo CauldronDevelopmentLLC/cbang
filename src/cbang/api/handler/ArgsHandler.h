@@ -45,12 +45,14 @@ namespace cb {
   namespace API {
     class ArgsHandler : public HTTP::RequestHandler {
       ArgDict validator;
+      JSON::ValuePtr spec;
 
     public:
       ArgsHandler() {}
       ArgsHandler(const JSON::ValuePtr &args) : validator(args) {}
 
       void add(const JSON::ValuePtr &args) {validator.add(args);}
+      void appendSpecs(JSON::Value &spec) const {validator.appendSpecs(spec);}
 
       // From HTTP::RequestHandler
       bool operator()(HTTP::Request &req) override;

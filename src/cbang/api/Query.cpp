@@ -140,30 +140,18 @@ void Query::returnList(MariaDB::EventDB::state_t state) {
 
 
 void Query::returnBool(MariaDB::EventDB::state_t state) {
-  switch (state) {
-  case MariaDB::EventDB::EVENTDB_ROW:
-    writer.writeBoolean(db->getBoolean(0));
-    break;
-
-  default: return returnOne(state);
-  }
+  if (checkOne(state)) writer.writeBoolean(db->getBoolean(0));
 }
 
 
 
 void Query::returnU64(MariaDB::EventDB::state_t state) {
-  switch (state) {
-  case MariaDB::EventDB::EVENTDB_ROW: writer.write(db->getU64(0)); break;
-  default: return returnOne(state);
-  }
+  if (checkOne(state)) writer.write(db->getU64(0));
 }
 
 
 void Query::returnS64(MariaDB::EventDB::state_t state) {
-  switch (state) {
-  case MariaDB::EventDB::EVENTDB_ROW: writer.write(db->getS64(0)); break;
-  default: return returnOne(state);
-  }
+  if (checkOne(state)) writer.write(db->getS64(0));
 }
 
 
@@ -224,31 +212,31 @@ void Query::returnFields(MariaDB::EventDB::state_t state) {
 
 
 void Query::returnDict(MariaDB::EventDB::state_t state) {
-  switch (state) {
-  case MariaDB::EventDB::EVENTDB_ROW:
-    if (!rowCount++) db->writeRowDict(writer);
-    else return returnOk(state); // Error
-    break;
-
-  default: return returnOne(state);
-  }
+  if (checkOne(state)) db->writeRowDict(writer);
 }
 
 
 void Query::returnOne(MariaDB::EventDB::state_t state) {
+  if (checkOne(state)) db->writeField(writer, 0);
+}
+
+
+bool Query::checkOne(MariaDB::EventDB::state_t state) {
   switch (state) {
   case MariaDB::EventDB::EVENTDB_ROW:
-    if (!rowCount++ && db->getFieldCount() == 1) db->writeField(writer, 0);
-    else return returnOk(state); // Error
+    if (!rowCount++ && db->getFieldCount() == 1) return true;
+    returnOk(state); // Error
     break;
 
   case MariaDB::EventDB::EVENTDB_DONE:
     if (!rowCount) errorReply(HTTP_NOT_FOUND);
-    else return returnOk(state); // Success
+    else returnOk(state); // Success
     break;
 
-  default: return returnOk(state);
+  default: returnOk(state);
   }
+
+  return false;
 }
 
 

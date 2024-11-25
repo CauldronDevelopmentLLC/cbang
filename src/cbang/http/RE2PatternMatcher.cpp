@@ -36,67 +36,39 @@
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
 
-#include <vector>
-
-#include <re2/re2.h>
-
 using namespace std;
 using namespace cb;
 using namespace cb::HTTP;
 
 
-struct RE2PatternMatcher::Private {
-  RE2 regex;
-  Private(const string &s) : regex(s) {}
-};
-
-
 RE2PatternMatcher::RE2PatternMatcher(
   const string &pattern, const SmartPointer<RequestHandler> &child) :
-  pri(new Private(pattern)), child(child) {
-  if (pri->regex.error_code())
-    THROW("Failed to compile RE2: " << pri->regex.error());
-
-  if (child.isNull()) THROW("Child cannot be NULL");
-
-  // Regex args
-  const auto &names = pri->regex.CapturingGroupNames();
-  for (auto &it: names) if (!it.second.empty()) args.insert(it.second);
+  re(pattern, false), child(child) {
+  if (child.isNull()) THROW("Child cannot be null");
 }
 
 
 bool RE2PatternMatcher::match(const URI &uri, JSON::ValuePtr resultArgs) const {
-  int n = pri->regex.NumberOfCapturingGroups();
-  vector<RE2::Arg>   args(n);
-  vector<RE2::Arg *> argPtrs(n);
-  vector<string>     results(n);
-
-  // Connect args
-  for (int i = 0; i < n; i++) {
-    args[i]    = &results[i];
-    argPtrs[i] = &args[i];
-  }
-
-  // Attempt match
+  Regex::Match m;
   string path = uri.getPath();
-  if (!RE2::FullMatchN(path, pri->regex, argPtrs.data(), n)) {
-    LOG_DEBUG(6, path << " did not match " << pri->regex.pattern());
+
+  if (!re.match(path, m)) {
+    LOG_DEBUG(6, path << " did not match " << re);
     return false;
   }
 
-  LOG_DEBUG(5, path << " matched " << pri->regex.pattern());
+  LOG_DEBUG(5, path << " matched " << re);
 
   // Store results
   if (resultArgs.isSet()) {
-    auto &names = pri->regex.CapturingGroupNames();
+    auto &names = re.getGroupIndexMap();
 
-    for (int i = 0; i < n; i++)
-      if (!results[i].empty()) {
-        auto it = names.find(i + 1);
+    for (unsigned i = 0; i < re.getGroupCount(); i++) {
+      auto it = names.find(i + 1);
 
-        if (it != names.end() && !resultArgs->has(it->second))
-          resultArgs->insert(it->second, results[i]);
-      }
+      if (it != names.end() && !resultArgs->has(it->second))
+        resultArgs->insert(it->second, m[i]);
+    }
   }
 
   return true;

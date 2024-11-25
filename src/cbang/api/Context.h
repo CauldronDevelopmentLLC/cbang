@@ -56,6 +56,11 @@ namespace cb {
       const std::string &getPattern() const {return pattern;}
       const JSON::ValuePtr &getConfig() const {return config;}
 
+      const SmartPointer<HTTP::AccessHandler> &getAccessHandler() const
+        {return accessHandler;}
+      const SmartPointer<ArgsHandler> getArgsHandler() const
+        {return argsHandler;}
+
       SmartPointer<Context> createChild(
         const JSON::ValuePtr &config, const std::string &pattern);
       void addValidation(HTTP::HandlerGroup &group);

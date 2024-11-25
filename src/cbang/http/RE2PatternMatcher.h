@@ -34,6 +34,8 @@
 
 #include "RequestHandler.h"
 
+#include <cbang/util/Regex.h>
+
 #include <set>
 
 
@@ -42,18 +44,14 @@ namespace cb {
     class Request;
 
     class RE2PatternMatcher : public RequestHandler {
-      struct Private;
-
-      SmartPointer<Private> pri;
+      Regex re;
       SmartPointer<RequestHandler> child;
-      std::set<std::string> args;
 
     public:
       RE2PatternMatcher(const std::string &pattern,
-                            const SmartPointer<RequestHandler> &child);
+                        const SmartPointer<RequestHandler> &child);
 
       const SmartPointer<RequestHandler> &getChild() const {return child;}
-      const std::set<std::string> &getArgs() const {return args;}
 
       bool match(const URI &uri, JSON::ValuePtr args) const;
 

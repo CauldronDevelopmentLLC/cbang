@@ -30,24 +30,22 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "SpecHandler.h"
 
-#include <cbang/http/RequestHandler.h>
-#include <cbang/json/Value.h>
+#include <cbang/api/API.h>
+#include <cbang/http/Request.h>
 
-#include <set>
+using namespace cb::API;
+using namespace cb;
+using namespace std;
 
 
-namespace cb {
-  namespace API {
-    class DocsHandler : public HTTP::RequestHandler {
-      JSON::ValuePtr docs;
+SpecHandler::SpecHandler(API &api, const JSON::ValuePtr &config) :
+  api(api), config(config) {}
 
-    public:
-      DocsHandler(const JSON::ValuePtr &config, const JSON::ValuePtr &docs);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
-    };
-  }
+bool SpecHandler::operator()(HTTP::Request &req) {
+  api.getSpec()->write(*req.getJSONWriter());
+  req.reply();
+  return true;
 }

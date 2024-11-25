@@ -41,3 +41,8 @@ void ArgPattern::operator()(HTTP::Request &req, JSON::Value &value) const {
   if (!regex.match(value.asString()))
     THROW("Must match regex pattern: " << regex.toString());
 }
+
+
+void ArgPattern::addSchema(JSON::Value &schema) const {
+  schema.insert("pattern", regex.toString());
+}

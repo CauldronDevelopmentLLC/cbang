@@ -14,7 +14,7 @@ env.Replace(CXXFLAGS = re.sub(pat, '', env.subst('${CXXFLAGS}')))
 
 # Build boost lib
 src = []
-for lib in ['iostreams', 'filesystem', 'system', 'regex']:
+for lib in ['iostreams', 'filesystem', 'system']:
     src += Glob('libs/%s/src/*.cpp' % lib)
 
 lib = env.Library('#/lib/cbang-boost', src)

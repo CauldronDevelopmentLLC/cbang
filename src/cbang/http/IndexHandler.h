@@ -45,7 +45,7 @@ namespace cb {
 
     public:
       IndexHandler(const SmartPointer<RequestHandler> &child,
-                       const std::string &filename = "index.html") :
+                   const std::string &filename = "index.html") :
         child(child), filename(filename) {
         if (!child) CBANG_THROW("Child handler cannot be NULL");
       }

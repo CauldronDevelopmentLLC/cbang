@@ -35,6 +35,7 @@
 #include <cbang/SmartPointer.h>
 
 #include <vector>
+#include <map>
 #include <string>
 
 
@@ -44,34 +45,17 @@ namespace cb {
     SmartPointer<private_t> pri;
 
   public:
-    typedef enum {
-      TYPE_POSIX,
-      TYPE_PERL,
-      TYPE_BOOST,
-    } type_t;
-
-  protected:
-    type_t type;
-
-  public:
-    class Match : public std::vector<std::string> {
-      struct private_t;
-      SmartPointer<private_t> pri;
-      type_t type;
-
-    public:
-      Match(type_t type = TYPE_POSIX);
-      std::string format(const std::string &fmt) const;
-
-      unsigned position(unsigned i = 0) const;
-
-      friend class Regex;
+    struct Match : public std::vector<std::string> {
+      std::vector<unsigned> offsets;
     };
 
-
-    Regex(const std::string &pattern, type_t type = TYPE_POSIX);
+    Regex(const std::string &pattern, bool posix = true);
 
     std::string toString() const;
+
+    unsigned getGroupCount() const;
+    const std::map<std::string, int> &getGroupNameMap() const;
+    const std::map<int, std::string> &getGroupIndexMap() const;
 
     bool match(const std::string &s) const;
     bool match(const std::string &s, Match &m) const;
@@ -80,5 +64,13 @@ namespace cb {
     bool search(const std::string &s, Match &m) const;
 
     std::string replace(const std::string &s, const std::string &r) const;
+
+  protected:
+    bool match_or_search(bool match, const std::string &s, Match &m) const;
   };
+
+
+  inline std::ostream &operator<<(std::ostream &stream, const Regex &re) {
+    return stream << re.toString();
+  }
 }

@@ -42,6 +42,8 @@
 #include "ArgAuth.h"
 #include "ArgURI.h"
 
+#include <cbang/json/JSON.h>
+
 
 using namespace cb::API;
 using namespace cb;
@@ -59,10 +61,10 @@ using namespace std;
 
 
 ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
-  optional(config->getBoolean("optional", false)),
+  config(config), optional(config->getBoolean("optional", false)),
   defaultValue(config->get("default", 0)) {
 
-  string type = config->getString("type", "");
+  type = config->getString("type", "");
 
   // Implicit types
   if (type.empty()) {
@@ -76,6 +78,7 @@ ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
   if      (type == "dict")   add(new ArgDict(config->get("dict")));
   else if (type == "enum")   add(new ArgEnum(config));
   else if (type == "number") add(new ArgNumber<double>(config));
+  else if (type == "float")  add(new ArgNumber<float>(config));
   else if (type == "int")    add(new ArgNumber<int64_t>(config));
   else if (type == "s64")    add(new ArgNumber<int64_t>(config));
   else if (type == "u64")    add(new ArgNumber<uint64_t>(config));
@@ -85,7 +88,6 @@ ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
   else if (type == "u16")    add(new ArgNumber<uint16_t>(config));
   else if (type == "s8")     add(new ArgNumber<int8_t>(config));
   else if (type == "u8")     add(new ArgNumber<uint8_t>(config));
-  else if (type == "float")  add(new ArgNumber<float>(config));
   else if (type == "bool")   add(new ArgBoolean);
   else if (type == "email")  add(new ArgPattern(EMAIL_RE));
   else if (type == "time")   add(new ArgPattern(ISO8601_RE));
@@ -105,12 +107,60 @@ ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
 }
 
 
+JSON::ValuePtr ArgValidator::getSpec() const {
+  JSON::ValuePtr spec = new JSON::Dict;
+
+  if (config->hasString("help"))
+    spec->insert("description", config->get("help"));
+  if (!isOptional()) spec->insertBoolean("required", true);
+
+  spec->insert("schema", getSchema());
+
+  return spec;
+}
+
+
+JSON::ValuePtr ArgValidator::getSchema() const {
+  JSON::ValuePtr schema = new JSON::Dict;
+
+  addSchema(*schema);
+
+  if (type == "email") {
+    schema->insert("type", "string");
+    schema->insert("format", "email");
+    schema->insert("pattern", EMAIL_RE);
+
+  } else if (type == "time") {
+    schema->insert("type", "string");
+    schema->insert("format", "date-time");
+    schema->insert("pattern", ISO8601_RE);
+
+  } else if (type == "date") {
+    schema->insert("type", "string");
+    schema->insert("format", "date");
+    schema->insert("pattern", DATE_RE);
+
+  } else if (type == "uri") {
+    schema->insert("type", "string");
+    schema->insert("format", "uri");
+
+  } else if (type == "string")
+    schema->insert("type", "string");
+
+  return schema;
+}
+
+
 void ArgValidator::add(const SmartPointer<ArgConstraint> &constraint) {
   constraints.push_back(constraint);
 }
 
 
 void ArgValidator::operator()(HTTP::Request &req, JSON::Value &value) const {
-  for (unsigned i = 0; i < constraints.size(); i++)
-    (*constraints[i])(req, value);
+  for (auto &c: constraints) (*c)(req, value);
+}
+
+
+void ArgValidator::addSchema(JSON::Value &schema) const {
+  for (auto &c: constraints) c->addSchema(schema);
 }

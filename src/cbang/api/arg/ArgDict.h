@@ -50,8 +50,11 @@ namespace cb {
 
       void add(const JSON::ValuePtr &args);
 
+      void appendSpecs(JSON::Value &spec) const;
+
       // From ArgConstraint
       void operator()(HTTP::Request &req, JSON::Value &value) const override;
+      void addSchema(JSON::Value &schema) const override;
     };
   }
 }

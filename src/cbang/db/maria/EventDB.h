@@ -76,7 +76,7 @@ namespace cb {
                    const std::string &dbName = std::string(),
                    unsigned port = 3306,
                    const std::string &socketName = std::string(),
-                   flags_t flags = FLAG_NONE);
+                   flags_t flags = FLAG_DEFAULTS);
 
       template <class T>
       void connect(T *obj, typename Callback<T>::member_t member,
@@ -86,7 +86,7 @@ namespace cb {
                    const std::string &dbName = std::string(),
                    unsigned port = 3306,
                    const std::string &socketName = std::string(),
-                   flags_t flags = FLAG_NONE) {
+                   flags_t flags = FLAG_DEFAULTS) {
         using namespace std::placeholders;
         connect(std::bind(member, obj, _1), host, user, password, dbName, port,
                 socketName, flags);
