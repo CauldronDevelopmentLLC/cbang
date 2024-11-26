@@ -51,10 +51,10 @@ using namespace std;
 #include <unistd.h>
 
 namespace {
-  const char *get_proxy_var(const char *name) {
+  string get_proxy_var(const char *name) {
     auto value = SystemUtilities::getenv(String::toLower(name));
     if (!value) value = SystemUtilities::getenv(String::toUpper(name));
-    return value;
+    return String::trim(string(value ? value : ""));
   }
 }
 
@@ -104,18 +104,18 @@ string LinSystemInfo::getMachineID() const {
 
 
 URI LinSystemInfo::getProxy(const URI &uri) const {
-  const char *proxy = 0;
+  string proxy;
 
   // Check proxy vars
   if (uri.getScheme() == "https") proxy = get_proxy_var("https_proxy");
-  if (!proxy || !*proxy) proxy = get_proxy_var("http_proxy");
+  if (proxy.empty()) proxy = get_proxy_var("http_proxy");
 
   // No proxy
-  if (!proxy || !*proxy) return URI();
+  if (proxy.empty()) return URI();
 
   // Check no_proxy
-  auto noProxy = get_proxy_var("no_proxy");
-  if (noProxy) {
+  string noProxy = get_proxy_var("no_proxy");
+  if (!noProxy.empty()) {
     vector<string> tokens;
     String::tokenize(noProxy, tokens, ",");
     for (auto token: tokens)
