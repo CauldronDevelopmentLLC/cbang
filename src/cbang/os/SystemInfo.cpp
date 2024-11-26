@@ -182,7 +182,7 @@ bool SystemInfo::matchesProxyPattern(const string &pattern, const URI &uri) {
 
     // Check for CIDR
     auto slash = pat.find_last_of('/');
-    if (slash) return AddressRange(pat).contains(addr);
+    if (slash != string::npos) return AddressRange(pat).contains(addr);
 
     return SockAddr::isAddress(pat) && SockAddr::parse(pat) == addr;
   }
