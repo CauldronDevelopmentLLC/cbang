@@ -58,7 +58,7 @@ namespace cb {
 
       JSON::ValuePtr spec;
       std::string category;
-      bool hideCategory;
+      bool hideCategory = false;
 
       SmartPointer<HTTP::Client>          client;
       SmartPointer<OAuth2::Providers>     oauth2Providers;
