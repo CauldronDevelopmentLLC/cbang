@@ -126,8 +126,6 @@ void cb::API::API::bind(const string &key, const RequestHandlerPtr &handler) {
 
 
 string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
-  if (config->isString()) return "bind";
-
   if (config->has("handlers")) THROW("Nested handlers not allowed");
 
   string type = config->getString("handler", "");
@@ -180,8 +178,7 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
   string type = types->asString();
 
   if (type == "bind") {
-    auto key = config->isString() ? config->getString() :
-      config->getString("bind", "<default>");
+    auto key = config->getString("bind", "<default>");
     auto it  = callbacks.find(key);
     if (it == callbacks.end()) THROW("Bind callback '" << key << "' not found");
     return it->second;
@@ -221,21 +218,20 @@ HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
   LOG_INFO(3, "Adding endpoint " << methods << " " << ctx->getPattern()
            << " (" << types->toString(0, true) << ")");
 
-  if (!hideCategory && !config->getBoolean("hide", false))
-    addToSpec(methods, ctx);
+  addToSpec(methods, ctx);
 
   // Validation (must be first)
   ctx->addValidation(*group);
 
   // Headers
-  if (config->isDict() && config->has("headers"))
+  if (config->has("headers"))
     group->addHandler(new HeadersHandler(config->get("headers")));
 
   // Handler
   auto handler = createEndpointHandler(types, config);
 
   // Arg filter
-  if (config->isDict() && config->has("arg-filter")) {
+  if (config->has("arg-filter")) {
     if (procPool.isNull())
       THROW("API cannot have 'arg-filter' without Event::SubprocessPool");
 
@@ -258,7 +254,13 @@ HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
   // Children
   for (unsigned i = 0; i < api->size(); i++) {
     auto &key    = api->keyAt(i);
-    auto &config = api->get(i);
+    auto config = api->get(i);
+
+    if (config->isString()) {
+      string bind = config->getString();
+      config = config->createDict();
+      config->insert("bind", bind);
+    }
 
     // Child
     if (!key.empty() && key[0] == '/') {
@@ -307,9 +309,13 @@ void cb::API::API::addTagSpec(const string &tag, const JSON::ValuePtr &config) {
 
 
 void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
+  if (hideCategory) return;
+
+  auto config = ctx->getConfig();
+  if (config->getBoolean("hide", false)) return;
+
   auto paths  = spec->get("paths");
   auto path   = ctx->getPattern();
-  auto config = ctx->getConfig();
 
   if (!paths->hasDict(path)) paths->insert(path, config->createDict());
   auto pathSpec = paths->get(path);
