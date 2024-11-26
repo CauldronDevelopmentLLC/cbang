@@ -104,6 +104,15 @@ string LinSystemInfo::getMachineID() const {
 
 
 URI LinSystemInfo::getProxy(const URI &uri) const {
+  const char *proxy = 0;
+
+  // Check proxy vars
+  if (uri.getScheme() == "https") proxy = get_proxy_var("https_proxy");
+  if (!proxy || !*proxy) proxy = get_proxy_var("http_proxy");
+
+  // No proxy
+  if (!proxy || !*proxy) return URI();
+
   // Check no_proxy
   auto noProxy = get_proxy_var("no_proxy");
   if (noProxy) {
@@ -113,13 +122,5 @@ URI LinSystemInfo::getProxy(const URI &uri) const {
       if (matchesProxyPattern(token, uri)) return URI();
   }
 
-  // Check https_proxy
-  if (uri.getScheme() == "https") {
-    auto proxy = get_proxy_var("https_proxy");
-    if (proxy && *proxy) return proxy;
-  }
-
-  // Check http_proxy
-  auto proxy = get_proxy_var("http_proxy");
-  return (proxy && *proxy) ? URI(proxy) : URI();
+  return URI(proxy);
 }
