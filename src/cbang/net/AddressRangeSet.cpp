@@ -62,7 +62,7 @@ void AddressRangeSet::insert(const string &spec, DNS::Base *dns) {
           insert(AddressRange(addr));
       };
 
-      dns->resolve(name, WeakCall(this, cb));
+      dns->resolve(name, WeakCall(lifetime.get(), cb));
     }
 }
 

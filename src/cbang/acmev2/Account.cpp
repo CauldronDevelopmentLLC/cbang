@@ -90,7 +90,7 @@ void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
   add(keyCert);
 
   // Check for renewals at updateRate starting now
-  auto wcb = WeakCallback<RefCounted>(this, [this] () {update();});
+  auto wcb = WeakCallback<RefCounted>(lifetime, [this] () {update();});
   auto e = client.getBase().newEvent(wcb);
   e->add(updateRate);
   e->activate();
@@ -337,7 +337,7 @@ string Account::getProblemString(const JSON::Value &problem) const {
 void Account::call(const string &url, HTTP::Method method) {
   HTTP::Client::callback_t cb =
     [this] (HTTP::Request &req) {responseHandler(req);};
-  pr = client.call(getURL(url), method, WeakCall(this, cb));
+  pr = client.call(getURL(url), method, WeakCall(lifetime.get(), cb));
   pr->send();
 }
 
@@ -351,7 +351,7 @@ void Account::post(const string &url, const string &payload) {
 
   HTTP::Client::callback_t cb =
     [this] (HTTP::Request &req) {responseHandler(req);};
-  pr = client.call(uri, HTTP_POST, data, WeakCall(this, cb));
+  pr = client.call(uri, HTTP_POST, data, WeakCall(lifetime.get(), cb));
   pr->getRequest()->outSet("Content-Type", "application/jose+json");
   pr->send();
 }
