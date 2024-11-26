@@ -48,9 +48,10 @@ namespace cb {
 
 
 namespace cb {
-  class AddressRangeSet : public RefCounted {
+  class AddressRangeSet {
     typedef std::vector<AddressRange> ranges_t;
     ranges_t ranges;
+    SmartPointer<RefCounted> lifetime = new RefCounted;
 
   public:
     AddressRangeSet() {}

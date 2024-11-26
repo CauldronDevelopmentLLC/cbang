@@ -47,7 +47,6 @@ namespace cb {
   public:
     WeakCallback(const typename SmartPointer<T>::Weak &ptr, const cb_t &cb) :
       ptr(ptr), cb(cb) {}
-    WeakCallback(RefCounted *ptr, const cb_t &cb) : ptr(ptr), cb(cb) {}
 
     explicit operator bool() const {return ptr.isSet() && cb;}
 
@@ -58,9 +57,8 @@ namespace cb {
     }
   };
 
-  template<typename... Args>
-  WeakCallback<RefCounted, Args...> WeakCall(
-    RefCounted *ptr, std::function<void (Args...)> cb) {
-    return WeakCallback<RefCounted, Args...>(ptr, cb);
+  template<typename T, typename... Args>
+  WeakCallback<T, Args...> WeakCall(T *ptr, std::function<void (Args...)> cb) {
+    return WeakCallback<T, Args...>(ptr, cb);
   }
 }

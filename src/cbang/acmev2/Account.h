@@ -58,7 +58,8 @@ namespace cb {
     static std::string letsencrypt_staging =
       "https://acme-staging-v02.api.letsencrypt.org/directory";
 
-    class Account : public RefCounted, public HTTP::Method::Enum {
+    class Account : public HTTP::Method::Enum {
+      SmartPointer<RefCounted> lifetime;
       HTTP::Client &client;
       KeyPair key;
 
