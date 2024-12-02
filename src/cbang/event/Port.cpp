@@ -34,6 +34,7 @@
 #include "Server.h"
 #include "Event.h"
 
+#include <cbang/Catch.h>
 #include <cbang/net/Socket.h>
 #include <cbang/log/Logger.h>
 #include <cbang/os/SysError.h>
@@ -93,8 +94,13 @@ void Port::accept() {
 
     try {
       server.accept(peerAddr, newSocket, sslCtx);
-    } catch (const SSLException &e) {
+#ifdef HAVE_OPENSSL
+    }
+    catch (const SSLException& e) {
       LOG_DEBUG(4, e.getMessage());
     }
+#else
+    } CATCH_ERROR;
+#endif // HAVE_OPENSSL
   }
 }

@@ -40,6 +40,8 @@
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/Digest.h>
+#else
+#include <cbang/net/Base64.h>
 #endif
 
 #include <cstring> // memcpy()
