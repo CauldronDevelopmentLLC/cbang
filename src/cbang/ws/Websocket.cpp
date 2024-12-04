@@ -35,6 +35,7 @@
 #include <cbang/http/Conn.h>
 #include <cbang/Catch.h>
 #include <cbang/net/Swab.h>
+#include <cbang/net/Base64.h>
 #include <cbang/util/Random.h>
 #include <cbang/util/WeakCallback.h>
 
