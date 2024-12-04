@@ -38,6 +38,10 @@
 #include <string>
 #include <vector>
 
+
+namespace cb {CBANG_DEFINE_EXCEPTION_SUBCLASS(SSLException);}
+
+
 #ifdef HAVE_OPENSSL
 typedef struct ssl_st _SSL;
 typedef struct ssl_ctx_st SSL_CTX;
@@ -129,9 +133,6 @@ namespace cb {
     bool checkWants();
     void checkError(int ret);
   };
-
-
-  CBANG_DEFINE_EXCEPTION_SUBCLASS(SSLException);
 }
 
 #else // HAVE_OPENSSL

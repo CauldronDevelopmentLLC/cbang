@@ -76,7 +76,9 @@ void Connection::setSocket(const SmartPointer<Socket> &socket) {
   this->socket = socket;
   if (socket.isSet()) socket->setAutoClose(false);
   setFD(socket.isSet() ? socket->get() : -1);
+#ifdef HAVE_OPENSSL
   if (getFD() != -1 && getSSL().isSet()) getSSL()->setFD(getFD());
+#endif
 }
 
 
