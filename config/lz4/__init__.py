@@ -34,15 +34,12 @@ from SCons.Script import *
 
 
 def configure(conf):
-    conf.CBCheckHome('lz4', lib_suffix = ['', '/lib'],
-                     inc_suffix = ['/src', '/include'])
-    conf.CBRequireHeader('lz4frame.h')
-    conf.CBRequireLib('lz4')
+  conf.CBCheckHome(
+    'lz4', lib_suffix = ['', '/lib'], inc_suffix = ['/src', '/include'])
+  conf.CBRequireHeader('lz4frame.h')
+  conf.CBRequireLib('lz4')
+  conf.CBCheckLib('xxhash')
 
 
-def generate(env):
-    env.CBAddConfigTest('lz4', configure)
-
-
-def exists():
-    return 1
+def generate(env): env.CBAddConfigTest('lz4', configure)
+def exists(): return 1
