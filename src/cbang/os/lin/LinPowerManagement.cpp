@@ -141,7 +141,9 @@ string LinPowerManagement::findDevice(const string &type) const {
       match = path;
   };
 
-  SystemUtilities::listDirectory("/sys/class/power_supply", cb, ".*", 1, true);
+  string path = "/sys/class/power_supply";
+  if (SystemUtilities::exists(path))
+    SystemUtilities::listDirectory(path, cb, ".*", 1, true);
 
   return match;
 }
