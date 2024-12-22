@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "RateCollection.h"
 #include "Rate.h"
 
 #include <cbang/Exception.h>
@@ -43,7 +44,8 @@
 
 
 namespace cb {
-  class RateSet : public JSON::Serializable {
+  class RateSet :
+    public RateCollection, public JSON::Serializable, public RefCounted {
     const unsigned size;
     const unsigned period;
 
@@ -54,61 +56,30 @@ namespace cb {
     RateSet(unsigned size = 60 * 5, unsigned period = 1) :
       size(size), period(period) {}
 
+    SmartPointer<RateCollection> getNS(const std::string &ns);
 
-    Rate &getRate(const std::string &key) {
-      return rates.insert(rates_t::value_type(key, Rate(size, period)))
-        .first->second;
-    }
-
-
-    const Rate &getRate(const std::string &key) const {
-      auto it = rates.find(key);
-      if (it == rates.end()) CBANG_THROW("Rate '" << key << "' not in set");
-      return it->second;
-    }
-
+    Rate &getRate(const std::string &key);
+    const Rate &getRate(const std::string &key) const;
 
     void reset() {for (auto &p: rates)p.second.reset();}
 
+    bool has(const std::string &key) const
+    {return rates.find(key) != rates.end();}
 
-    bool has(const std::string &key) const {
-      return rates.find(key) != rates.end();
-    }
+    double get(const std::string &key, uint64_t now = Time::now()) const
+    {return getRate(key).get(now);}
 
-
-    double get(const std::string &key, uint64_t now = Time::now()) const {
-      return getRate(key).get(now);
-    }
-
-
+    // From RateCollection
     void event(const std::string &key, double value = 1,
-               uint64_t now = Time::now()) {
-      getRate(key).event(value, now);
-    }
-
+      uint64_t now = Time::now()) override
+    {getRate(key).event(value, now);}
 
     typedef rates_t::const_iterator iterator;
     iterator begin() const {return rates.begin();}
     iterator end() const {return rates.end();}
 
-
-    void insert(JSON::Sink &sink, bool withTotals = false) const {
-      for (auto &p: *this)
-        if (!withTotals) sink.insert(p.first, p.second.get());
-        else {
-          sink.insertDict(p.first);
-          sink.insert("rate", p.second.get());
-          sink.insert("total", p.second.getTotal());
-          sink.endDict();
-        }
-    }
-
-
-    void write(JSON::Sink &sink, bool withTotals) const {
-      sink.beginDict();
-      insert(sink, withTotals);
-      sink.endDict();
-    }
+    void insert(JSON::Sink &sink, bool withTotals = false) const;
+    void write(JSON::Sink &sink, bool withTotals) const;
 
     // From JSON::Serializable
     using JSON::Serializable::write;

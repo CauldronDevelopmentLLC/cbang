@@ -30,44 +30,56 @@
 
 \******************************************************************************/
 
-#include "Progress.h"
-
-#include <cbang/Catch.h>
-#include <cbang/time/Timer.h>
-
-#include <algorithm>
+#include "Rate.h"
 
 using namespace cb;
 
 
-uint64_t Progress::getETA() const {
-  double remaining = (1 - getProgress()) * size;
-  double rate = getRate();
-  return rate ? remaining / rate : 0;
+void Rate::reset() {
+  total = last = head = 0;
+  fill = 1;
+  buckets[0] = 0;
 }
 
 
-double Progress::getProgress() const {
-  if (!size) return 0;
-  double progress = getTotal() / size;
-  return std::max(0.0, std::min(1.0, progress));
+double Rate::get(uint64_t now) const {
+  if (!last) return 0; // No events
+  unsigned delta = now / period - last;
+  if (buckets.size() <= delta) return 0; // Too long since last event
+
+  // Accounting for the delta ignore buckets which are too old
+  unsigned maxFill = buckets.size() - delta;
+  unsigned fill = maxFill < this->fill ? maxFill : this->fill;
+
+  if (fill < 2) return 0; // Need at least two buckets
+
+  // Count up the buckets
+  double count = 0;
+  for (unsigned i = 0; i < fill; i++)
+    count += buckets[(head + buckets.size() - i) % buckets.size()];
+
+  // Divide by the total time
+  return count / ((fill + delta) * period);
 }
 
 
-void Progress::setCallback(callback_t cb, double cbRate) {
-  this->cb = cb;
-  this->cbRate = cbRate;
-}
+void Rate::event(double value, uint64_t now) {
+  unsigned time = now / period;
 
+  if (last) {
+    unsigned delta = time - last;
 
-void Progress::onUpdate(bool force) {
-  if (!cb) return;
+    // Advance, clearing any expired buckets along the way
+    for (unsigned i = 0; i < delta && i < buckets.size(); i++) {
+      if (fill < buckets.size()) fill++;
+      if (++head == buckets.size()) head = 0;
+      buckets[head] = 0;
+    }
+  }
 
-  double now = Timer::now();
+  buckets[head] += value; // Sum event
+  total += value;
+  last = time;
 
-  if (force || getTotal() == size || (lastCB + cbRate) <= now)
-    try {
-      cb(*this);
-      lastCB = now;
-    } CATCH_ERROR;
+  onUpdate();
 }

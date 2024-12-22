@@ -93,6 +93,10 @@ namespace cb {
       void setStatus(int status) {this->status = status;}
       int getStatus() const {return status;}
 
+      void progressStart(bool read, unsigned size, uint64_t time);
+      void progressEvent(bool read, unsigned size, uint64_t time);
+      void progressEnd(bool read, unsigned size);
+
       void read(const SmartPointer<Transfer> transfer);
       void read(Transfer::cb_t cb, const Buffer &buffer, unsigned length,
                 const std::string &until = std::string());

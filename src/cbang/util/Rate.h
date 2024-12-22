@@ -51,63 +51,14 @@ namespace cb {
   public:
     Rate(unsigned buckets = 60 * 5, unsigned period = 1) :
       buckets(buckets), period(period) {reset();}
-
     virtual ~Rate() {}
-
-
-    void reset() {
-      total = last = head = 0;
-      fill = 1;
-      buckets[0] = 0;
-    }
-
 
     double getTotal() const {return total;}
 
+    void reset();
+    double get(uint64_t now = Time::now()) const;
+    void event(double value = 1, uint64_t now = Time::now());
 
-    double get(uint64_t now = Time::now()) const {
-      if (!last) return 0; // No events
-      unsigned delta = now / period - last;
-      if (buckets.size() <= delta) return 0; // Too long since last event
-
-      // Accounting for the delta ignore buckets which are too old
-      unsigned maxFill = buckets.size() - delta;
-      unsigned fill = maxFill < this->fill ? maxFill : this->fill;
-
-      if (fill < 2) return 0; // Need at least two buckets
-
-      // Count up the buckets
-      double count = 0;
-      for (unsigned i = 0; i < fill; i++)
-        count += buckets[(head + buckets.size() - i) % buckets.size()];
-
-      // Divide by the total time
-      return count / ((fill + delta) * period);
-    }
-
-
-    void event(double value = 1, uint64_t now = Time::now()) {
-      unsigned time = now / period;
-
-      if (last) {
-        unsigned delta = time - last;
-
-        // Advance, clearing any expired buckets along the way
-        for (unsigned i = 0; i < delta && i < buckets.size(); i++) {
-          if (fill < buckets.size()) fill++;
-          if (++head == buckets.size()) head = 0;
-          buckets[head] = 0;
-        }
-      }
-
-      buckets[head] += value; // Sum event
-      total += value;
-      last = time;
-
-      onUpdate();
-    }
-
-
-    virtual void onUpdate() {}
+    virtual void onUpdate(bool force = false) {}
   };
 }

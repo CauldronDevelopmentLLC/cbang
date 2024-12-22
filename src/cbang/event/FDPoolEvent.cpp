@@ -62,13 +62,28 @@ void FDPoolEvent::FDQueue::add(const cb::SmartPointer<Transfer> &t) {
 
 
 void FDPoolEvent::FDQueue::transfer() {
-  if (empty()) return;
+  if (!fd || empty()) return;
+
+  if (newTransfer) {
+    newTransfer = false;
+    fd->progressStart(read, front()->getLength(), Time::now());
+  }
 
   int ret = front()->transfer();
   last = Time::now();
 
   if (ret < 0) close();
-  else popFinished();
+  else {
+    if (pool.getStats().isSet())
+      pool.getStats()->event(read ? "read" : "write", ret, last);
+
+    fd->progressEvent(read, ret, last);
+
+    if (front()->isFinished()) {
+      fd->progressEnd(read, front()->getLength());
+      popFinished();
+    }
+  }
 }
 
 
@@ -86,6 +101,7 @@ void FDPoolEvent::FDQueue::close() {
 void FDPoolEvent::FDQueue::flush() {
   clear();
   closed = true;
+  fd = 0;
 }
 
 
@@ -115,14 +131,16 @@ void FDPoolEvent::FDQueue::popFinished() {
 void FDPoolEvent::FDQueue::pop() {
   auto t = front();
   pop_front();
+  newTransfer = true;
   TRY_CATCH_ERROR(t->complete());
 }
 
 
 /******************************************************************************/
-FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, int fd) :
-  pool(pool), fd(fd), readQ(true), writeQ(false) {
-  event = pool.getBase().newEvent(fd, this, &FDPoolEvent::FDRec::callback);
+FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, FD *fd) :
+  pool(pool), fd(fd), readQ(pool, fd, true), writeQ(pool, fd, false) {
+  event = pool.getBase().newEvent(
+    fd->getFD(), this, &FDPoolEvent::FDRec::callback);
   timeoutEvent = pool.getBase().newEvent(this, &FDPoolEvent::FDRec::timeout);
   timeoutEvent->setPriority(pool.getEventPriority());
 }
@@ -145,10 +163,13 @@ void FDPoolEvent::FDRec::flush() {
   writeQ.flush();
   event->del();
   timeoutEvent->del();
+  fd = 0;
 }
 
 
 void FDPoolEvent::FDRec::updateEvent() {
+  if (!fd) return;
+
   unsigned events =
     (readQ.empty()  ? 0 : EF::EVENT_READ) |
     (writeQ.empty() ? 0 : EF::EVENT_WRITE);
@@ -156,14 +177,14 @@ void FDPoolEvent::FDRec::updateEvent() {
   if (readQ.wantsWrite()) events = EF::EVENT_WRITE;
   if (writeQ.wantsRead()) events = EF::EVENT_READ;
 
-  LOG_DEBUG(4, "FD" << fd << ":old events=" << this->events
+  LOG_DEBUG(4, "FD" << fd->getFD() << ":old events=" << this->events
             << " new events=" << events);
 
   if (this->events == events) return;
   this->events = events;
 
   if (events) {
-    event->renew(fd, EF::EVENT_PERSIST | events);
+    event->renew(fd->getFD(), EF::EVENT_PERSIST | events);
     event->setPriority(pool.getEventPriority());
     event->add();
 
@@ -220,28 +241,28 @@ FDPoolEvent::FDPoolEvent(Base &base) :
 
 
 void FDPoolEvent::read(const cb::SmartPointer<Transfer> &t) {
-  get(t->getFD()).read(t);
+  get(t->getFD())->second->read(t);
 }
 
 
 void FDPoolEvent::write(const cb::SmartPointer<Transfer> &t) {
-  get(t->getFD()).write(t);
+  get(t->getFD())->second->write(t);
 }
 
 
 void FDPoolEvent::open(FD &_fd) {
   int fd = _fd.getFD();
   if (fd < 0) THROW("Invalid FD " << fd);
-  if (!fds.insert(fds_t::value_type(fd, new FDRec(*this, fd))).second)
+  if (!fds.insert(fds_t::value_type(fd, new FDRec(*this, &_fd))).second)
     THROW("FD already in pool");
 }
 
 
 void FDPoolEvent::flush(int fd) {
-  get(fd).flush();
+  auto it = get(fd);
+  it->second->flush();
 
   // Defer FDRec deallocation, it may be executing
-  auto it = fds.find(fd);
   flushedFDs.push_back(it->second);
   fds.erase(it);
   flushEvent->activate();
@@ -250,11 +271,11 @@ void FDPoolEvent::flush(int fd) {
 }
 
 
-FDPoolEvent::FDRec &FDPoolEvent::get(int fd) {
+FDPoolEvent::fds_t::iterator FDPoolEvent::get(int fd) {
   if (fd < 0) THROW("Invalid FD " << fd);
   auto it = fds.find(fd);
   if (it == fds.end()) THROW("FD " << fd << " not found in pool");
-  return *it->second;
+  return it;
 }
 
 

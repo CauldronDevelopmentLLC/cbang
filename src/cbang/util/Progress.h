@@ -70,6 +70,6 @@ namespace cb {
     void setCallback(callback_t cb, double cbRate = 0);
 
     // From Rate
-    void onUpdate() override;
+    void onUpdate(bool force) override;
   };
 }

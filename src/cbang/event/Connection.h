@@ -37,7 +37,7 @@
 
 #include <cbang/net/SockAddr.h>
 #include <cbang/time/Time.h>
-#include <cbang/util/RateSet.h>
+#include <cbang/util/RateCollection.h>
 
 #include <functional>
 
@@ -62,7 +62,7 @@ namespace cb {
       static uint64_t nextID;
       uint64_t id = ++nextID;
 
-      SmartPointer<RateSet> stats;
+      SmartPointer<RateCollection> stats;
 
     public:
       Connection(Base &base);
@@ -80,8 +80,9 @@ namespace cb {
 
       uint64_t getID() const {return id;}
 
-      const SmartPointer<RateSet> &getStats() const {return stats;}
-      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+      const SmartPointer<RateCollection> &getStats() const {return stats;}
+      void setStats(const SmartPointer<RateCollection> &stats)
+      {this->stats = stats;}
 
       bool isConnected() const;
       void accept(const SockAddr &peer, const SmartPointer<Socket> &socket,

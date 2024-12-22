@@ -413,31 +413,20 @@ void FDPoolEPoll::processResults() {
     case CMD_COMPLETE: TRY_CATCH_ERROR(cmd.tran->complete()); break;
 
     case CMD_READ_PROGRESS:
-      readRate.event(cmd.value, cmd.time);
-      fd.getReadProgress().event(cmd.value, cmd.time);
+      if (getStats().isSet()) getStats()->event("read", cmd.value, cmd.time);
+      fd.progressEvent(true, cmd.value, cmd.time);
       break;
 
     case CMD_WRITE_PROGRESS:
-      writeRate.event(cmd.value, cmd.time);
-      fd.getWriteProgress().event(cmd.value, cmd.time);
+      if (getStats().isSet()) getStats()->event("write", cmd.value, cmd.time);
+      fd.progressEvent(false, cmd.value, cmd.time);
       break;
 
-    case CMD_READ_SIZE:
-      fd.getReadProgress().reset();
-      fd.getReadProgress().setSize(cmd.value);
-      fd.getReadProgress().setStart(cmd.time);
-      fd.getReadProgress().setEnd(cmd.time);
-      break;
+    case CMD_READ_SIZE:  fd.progressStart(true,  cmd.value, cmd.time); break;
+    case CMD_WRITE_SIZE: fd.progressStart(false, cmd.value, cmd.time); break;
 
-    case CMD_WRITE_SIZE:
-      fd.getWriteProgress().reset();
-      fd.getWriteProgress().setSize(cmd.value);
-      fd.getWriteProgress().setStart(cmd.time);
-      fd.getWriteProgress().setEnd(cmd.time);
-      break;
-
-    case CMD_READ_FINISHED:  fd.getReadProgress().setSize(cmd.value);  break;
-    case CMD_WRITE_FINISHED: fd.getWriteProgress().setSize(cmd.value); break;
+    case CMD_READ_FINISHED:  fd.progressEnd(true,  cmd.value); break;
+    case CMD_WRITE_FINISHED: fd.progressEnd(false, cmd.value); break;
 
     case CMD_STATUS: fd.setStatus(cmd.value); break;
 

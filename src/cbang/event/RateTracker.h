@@ -30,44 +30,60 @@
 
 \******************************************************************************/
 
-#include "Progress.h"
+#pragma once
 
-#include <cbang/Catch.h>
-#include <cbang/time/Timer.h>
+#include "Base.h"
+#include "Event.h"
 
-#include <algorithm>
+#include <cbang/util/RateSet.h>
+#include <cbang/json/Serializable.h>
 
-using namespace cb;
-
-
-uint64_t Progress::getETA() const {
-  double remaining = (1 - getProgress()) * size;
-  double rate = getRate();
-  return rate ? remaining / rate : 0;
-}
+#include <map>
+#include <vector>
+#include <limits>
 
 
-double Progress::getProgress() const {
-  if (!size) return 0;
-  double progress = getTotal() / size;
-  return std::max(0.0, std::min(1.0, progress));
-}
+namespace cb {
+  namespace Event {
+    class RateTracker : public JSON::Serializable {
+      SmartPointer<RateSet> rates;
+      const unsigned size;   //< Maximum number of measurements
+      const unsigned period; //< Measurement period in seconds
 
+      unsigned offset = 0;   //< Index to most recent measurement
+      unsigned count  = 0;   //< Number of measurements
+      std::vector<uint64_t> times;
 
-void Progress::setCallback(callback_t cb, double cbRate) {
-  this->cb = cb;
-  this->cbRate = cbRate;
-}
+      static constexpr const double NaN =
+        std::numeric_limits<double>::quiet_NaN();
 
+      struct Entry {
+        double rate  = NaN;
+        double total = NaN;
+      };
 
-void Progress::onUpdate(bool force) {
-  if (!cb) return;
+      typedef std::vector<Entry> series_t;
+      typedef std::map<std::string, series_t> measurements_t;
+      measurements_t measurements;
 
-  double now = Timer::now();
+      EventPtr event;
 
-  if (force || getTotal() == size || (lastCB + cbRate) <= now)
-    try {
-      cb(*this);
-      lastCB = now;
-    } CATCH_ERROR;
+    public:
+      RateTracker(Base &base, const SmartPointer<RateSet> &rates,
+        unsigned size = 60 * 24, unsigned period = 60);
+
+      const SmartPointer<RateSet> &getRateSet() const {return rates;}
+
+      void clear();
+
+      void insert(JSON::Sink &sink) const;
+
+      // From JSON::Serializable
+      using JSON::Serializable::write;
+      void write(JSON::Sink &sink) const override;
+
+    protected:
+      void measure();
+    };
+  }
 }
