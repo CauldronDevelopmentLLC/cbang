@@ -78,8 +78,30 @@ void FD::setReadTimeout(unsigned timeout)  {readTimeout  = timeout;}
 void FD::setWriteTimeout(unsigned timeout) {writeTimeout = timeout;}
 
 
+void FD::progressStart(bool read, unsigned size, uint64_t time) {
+  LOG_DEBUG(4, CBANG_FUNC << "() read=" << read << " size=" << size
+    << " time=" << Time(time).toString());
+  auto &p = read ? readProgress : writeProgress;
+  p.reset();
+  p.setSize(size);
+  p.setStart(time);
+  p.setEnd(time);
+}
+
+
+void FD::progressEvent(bool read, unsigned size, uint64_t time) {
+  (read ? readProgress : writeProgress).event(size, time);
+}
+
+
+void FD::progressEnd(bool read, unsigned size) {
+  auto & p = (read ? readProgress : writeProgress);
+  p.setSize(size);
+  p.onUpdate(true);
+}
+
+
 void FD::read(const SmartPointer<Transfer> transfer) {
-  LOG_DEBUG(4, CBANG_FUNC << "() length=" << transfer->getLength());
   transfer->setTimeout(readTimeout);
   base.getPool().read(transfer);
 }

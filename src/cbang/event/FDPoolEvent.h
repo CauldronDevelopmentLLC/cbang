@@ -43,18 +43,19 @@ namespace cb {
     class FDPoolEvent : public FDPool {
       Base &base;
       int priority = 0;
-      Rate readRate;
-      Rate writeRate;
-
 
       class FDQueue : private std::list<SmartPointer<Transfer>> {
         typedef std::list<SmartPointer<Transfer>> Super_T;
+        FDPoolEvent &pool;
+        FD *fd;
         bool read;
-        bool closed = false;
-        uint64_t last = 0;
+        bool closed      = false;
+        uint64_t last    = 0;
+        bool newTransfer = true;
 
       public:
-        FDQueue(bool read) : read(read) {}
+        FDQueue(FDPoolEvent &pool, FD *fd, bool read) :
+          pool(pool), fd(fd), read(read) {}
 
         using Super_T::empty;
         using Super_T::size;
@@ -76,7 +77,7 @@ namespace cb {
 
       class FDRec {
         FDPoolEvent &pool;
-        int fd;
+        FD *fd;
         SmartPointer<Event> event;
         SmartPointer<Event> timeoutEvent;
         unsigned events = 0;
@@ -85,7 +86,7 @@ namespace cb {
         FDQueue writeQ;
 
       public:
-        FDRec(FDPoolEvent &pool, int fd);
+        FDRec(FDPoolEvent &pool, FD *fd);
 
         void read(const SmartPointer<Transfer> &t);
         void write(const SmartPointer<Transfer> &t);
@@ -113,15 +114,13 @@ namespace cb {
       // From FDPool
       void setEventPriority(int priority) override {this->priority = priority;}
       int getEventPriority() const override {return priority;}
-      const Rate &getReadRate() const override {return readRate;}
-      const Rate &getWriteRate() const override {return writeRate;}
       void read(const SmartPointer<Transfer> &t) override;
       void write(const SmartPointer<Transfer> &t) override;
       void open(FD &fd) override;
       void flush(int fd) override;
 
     protected:
-      FDRec &get(int fd);
+      fds_t::iterator get(int fd);
       void flushFDs();
     };
   }

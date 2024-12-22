@@ -67,7 +67,7 @@ namespace cb {
 
       AddressFilter addrFilter;
 
-      SmartPointer<RateSet> stats;
+      SmartPointer<RateCollection> stats;
 
     public:
       Server(Base &base);
@@ -98,8 +98,9 @@ namespace cb {
       void allow(const std::string &spec);
       void deny(const std::string &spec);
 
-      const SmartPointer<RateSet> &getStats() const {return stats;}
-      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+      const SmartPointer<RateCollection> &getStats() const {return stats;}
+      void setStats(const SmartPointer<RateCollection> &stats)
+      {this->stats = stats;}
 
       unsigned getConnectionCount() const {return connections.size();}
 

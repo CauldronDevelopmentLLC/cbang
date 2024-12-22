@@ -35,7 +35,7 @@
 #include "PendingRequest.h"
 
 #include <cbang/SmartPointer.h>
-#include <cbang/util/RateSet.h>
+#include <cbang/util/RateCollection.h>
 #include <cbang/openssl/SSLContext.h>
 
 #include <map>
@@ -55,7 +55,7 @@ namespace cb {
       SockAddr bindAddr;
       unsigned readTimeout  = 0;
       unsigned writeTimeout = 0;
-      SmartPointer<RateSet> stats;
+      SmartPointer<RateCollection> stats;
 
     public:
       typedef SmartPointer<PendingRequest> RequestPtr;
@@ -84,8 +84,9 @@ namespace cb {
       unsigned getWriteTimeout() const {return writeTimeout;}
       void setWriteTimeout(unsigned timeout) {writeTimeout = timeout;}
 
-      const SmartPointer<RateSet> &getStats() const {return stats;}
-      void setStats(const SmartPointer<RateSet> &stats) {this->stats = stats;}
+      const SmartPointer<RateCollection> &getStats() const {return stats;}
+      void setStats(const SmartPointer<RateCollection> &stats)
+      {this->stats = stats;}
 
       SmartPointer<Conn> send(const SmartPointer<Request> &req) const;
 

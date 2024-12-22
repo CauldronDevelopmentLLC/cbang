@@ -30,44 +30,45 @@
 
 \******************************************************************************/
 
-#include "Progress.h"
+#include "RateSet.h"
+#include "RateCollectionNS.h"
 
-#include <cbang/Catch.h>
-#include <cbang/time/Timer.h>
-
-#include <algorithm>
-
+using namespace std;
 using namespace cb;
 
 
-uint64_t Progress::getETA() const {
-  double remaining = (1 - getProgress()) * size;
-  double rate = getRate();
-  return rate ? remaining / rate : 0;
+SmartPointer<RateCollection> RateSet::getNS(const string &ns) {
+  return new RateCollectionNS(SmartPtr(this), ns);
 }
 
 
-double Progress::getProgress() const {
-  if (!size) return 0;
-  double progress = getTotal() / size;
-  return std::max(0.0, std::min(1.0, progress));
+Rate &RateSet::getRate(const std::string &key) {
+  return rates.insert(rates_t::value_type(key, Rate(size, period)))
+    .first->second;
 }
 
 
-void Progress::setCallback(callback_t cb, double cbRate) {
-  this->cb = cb;
-  this->cbRate = cbRate;
+const Rate &RateSet::getRate(const std::string &key) const {
+  auto it = rates.find(key);
+  if (it == rates.end()) CBANG_THROW("Rate '" << key << "' not in set");
+  return it->second;
 }
 
 
-void Progress::onUpdate(bool force) {
-  if (!cb) return;
+void RateSet::insert(JSON::Sink &sink, bool withTotals) const {
+  for (auto &p: *this)
+    if (!withTotals) sink.insert(p.first, p.second.get());
+    else {
+      sink.insertDict(p.first);
+      sink.insert("rate", p.second.get());
+      sink.insert("total", p.second.getTotal());
+      sink.endDict();
+    }
+}
 
-  double now = Timer::now();
 
-  if (force || getTotal() == size || (lastCB + cbRate) <= now)
-    try {
-      cb(*this);
-      lastCB = now;
-    } CATCH_ERROR;
+void RateSet::write(JSON::Sink &sink, bool withTotals) const {
+  sink.beginDict();
+  insert(sink, withTotals);
+  sink.endDict();
 }

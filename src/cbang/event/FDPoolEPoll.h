@@ -156,8 +156,6 @@ namespace cb {
 
       typedef std::map<int, FD *> fds_t;
       fds_t fds;
-      Rate readRate = 60;
-      Rate writeRate = 60;
 
     public:
       FDPoolEPoll(Base &base);
@@ -168,8 +166,6 @@ namespace cb {
       // From FDPool
       void setEventPriority(int priority) override;
       int getEventPriority() const override;
-      const Rate &getReadRate()  const override {return readRate;}
-      const Rate &getWriteRate() const override {return writeRate;}
 
       void read(const SmartPointer<Transfer> &t) override;
       void write(const SmartPointer<Transfer> &t) override;

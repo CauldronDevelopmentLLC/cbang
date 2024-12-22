@@ -36,6 +36,7 @@
 
 #include <cbang/openssl/SSLContext.h>
 #include <cbang/os/SystemInfo.h>
+#include <cbang/util/RateCollectionNS.h>
 
 using namespace std;
 using namespace cb;
@@ -60,7 +61,8 @@ SmartPointer<Conn> Client::send(const SmartPointer<Request> &req) const {
   }
 
   // Configure connection
-  if (conn->getStats().isNull()) conn->setStats(stats);
+  if (stats.isSet() && conn->getStats().isNull())
+    conn->setStats(new RateCollectionNS(stats, "conn."));
   conn->setReadTimeout(readTimeout);
   conn->setWriteTimeout(writeTimeout);
 

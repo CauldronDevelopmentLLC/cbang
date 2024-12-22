@@ -30,44 +30,24 @@
 
 \******************************************************************************/
 
-#include "Progress.h"
+#pragma once
 
-#include <cbang/Catch.h>
-#include <cbang/time/Timer.h>
+#include "RateCollection.h"
 
-#include <algorithm>
-
-using namespace cb;
+#include <cbang/SmartPointer.h>
 
 
-uint64_t Progress::getETA() const {
-  double remaining = (1 - getProgress()) * size;
-  double rate = getRate();
-  return rate ? remaining / rate : 0;
-}
+namespace cb {
+  class RateCollectionNS : public RateCollection {
+    SmartPointer<RateCollection> parent;
+    std::string ns;
 
+  public:
+    RateCollectionNS(const SmartPointer<RateCollection> &parent,
+      const std::string &ns) : parent(parent), ns(ns) {}
 
-double Progress::getProgress() const {
-  if (!size) return 0;
-  double progress = getTotal() / size;
-  return std::max(0.0, std::min(1.0, progress));
-}
-
-
-void Progress::setCallback(callback_t cb, double cbRate) {
-  this->cb = cb;
-  this->cbRate = cbRate;
-}
-
-
-void Progress::onUpdate(bool force) {
-  if (!cb) return;
-
-  double now = Timer::now();
-
-  if (force || getTotal() == size || (lastCB + cbRate) <= now)
-    try {
-      cb(*this);
-      lastCB = now;
-    } CATCH_ERROR;
+    void event(const std::string &key, double value, uint64_t now) override {
+      parent->event(ns + key, value, now);
+    }
+  };
 }
