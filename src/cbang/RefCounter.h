@@ -121,11 +121,15 @@ namespace cb {
 
       log(trace, "decCount() count=%u", c - 1);
 
-      if (!weak && c == 1) {
-        T *_ptr = ptr;
-        if (weakCount == 0) delete this;
-        else ptr = 0; // Deactivate
-        if (_ptr) DeallocT::dealloc(_ptr);
+      if (c == 1) {
+        if (weak && count == 0) delete this;
+
+        if (!weak) {
+          T *_ptr = ptr;
+          if (weakCount == 0) delete this;
+          else ptr = 0; // Deactivate
+          if (_ptr) DeallocT::dealloc(_ptr);
+        }
       }
     }
 
