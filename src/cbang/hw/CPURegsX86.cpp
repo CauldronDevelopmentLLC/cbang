@@ -187,6 +187,6 @@ void CPURegsX86::getCPUFeatureNames(set<string> &names) {
   uint64_t features = getCPUFeatures();
 
   for (unsigned i = 0; i < CPUFeature::getCount(); i++)
-    if (features & (1 << i))
+    if (features & (1UL << i))
       names.insert(CPUFeature(CPUFeature::getValue(i)).toString());
 }
