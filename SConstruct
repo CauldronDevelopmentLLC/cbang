@@ -86,7 +86,6 @@ if not env.GetOption('clean'):
     conf.CBConfig('cbang-deps', with_openssl = env['with_openssl'],
                   with_local_boost = 'boost' not in disable_local)
     env.CBDefine('USING_CBANG') # Using CBANG macro namespace
-    if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
 
 
 # Local includes

@@ -246,11 +246,9 @@ def configure(conf, cstd = 'c99'):
             if compiler != 'clang': env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
-        if compiler == 'gnu': # Enable dead code removal
-            if env['PLATFORM'] != 'darwin':
-                env.AppendUnique(LINKFLAGS = ['-Wl,--gc-sections'])
-            env.AppendUnique(
-                CCFLAGS = ['-ffunction-sections', '-fdata-sections'])
+        if compiler == 'gnu': # Link time optimization
+            env.AppendUnique(LINKFLAGS = ['-flto'])
+            env.AppendUnique(CCFLAGS = ['-flto'])
 
         env.CBDefine('NDEBUG')
 
@@ -258,7 +256,7 @@ def configure(conf, cstd = 'c99'):
     # Optimizations
     if optimize:
         if compiler_mode == 'gnu':
-            env.AppendUnique(CCFLAGS = ['-O3', '-funroll-loops'])
+            env.AppendUnique(CCFLAGS = ['-O3'])
 
         elif compiler_mode == 'msvc':
             env.AppendUnique(CCFLAGS = ['/O2', '/Zc:throwingNew'])
@@ -285,12 +283,6 @@ def configure(conf, cstd = 'c99'):
     # Dependency files
     if depends and compiler_mode == 'gnu':
         env.AppendUnique(CCFLAGS = ['-MMD -MF ${TARGET}.d'])
-
-    # No PIE with GCC 6+
-    if compiler_mode == 'gnu' and (5,) <= gcc_version(env):
-        env.AppendUnique(CCFLAGS = '-fno-pie')
-        if compiler != 'clang': env.AppendUnique(LINKFLAGS = '-no-pie')
-
 
     # C mode
     if cstd and compiler_mode == 'gnu':
