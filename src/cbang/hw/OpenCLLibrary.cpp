@@ -141,6 +141,7 @@ namespace {
     CL_DEVICE_NAME =                   0x102b,
     CL_DRIVER_VERSION =                0x102d,
     CL_DEVICE_VERSION =                0x102f,
+    CL_DEVICE_EXTENSIONS =             0x1030,
     CL_DEVICE_UUID_KHR =               0x106a,
     CL_DEVICE_TOPOLOGY_AMD =           0x4037,
     CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD = 0x0001,
@@ -223,12 +224,6 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
     // Platform name
     string platformName = getPlatformInfo(this, platform, CL_PLATFORM_NAME);
 
-    // Get extensions
-    vector<string> extVec;
-    String::tokenize(
-      getPlatformInfo(this, platform, CL_PLATFORM_EXTENSIONS), extVec);
-    set<string> exts(extVec.begin(), extVec.end());
-
     // Get devices
     cl_uint numDevices = 0;
     SmartPointer<cl_device_id>::Array devices;
@@ -246,6 +241,12 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
     for (cl_uint j = 0; j < numDevices; j++)
       try {
         auto device = devices[j];
+
+        // Get device extensions
+        vector<string> extVec;
+        String::tokenize(
+          getDeviceInfoString(this, device, CL_DEVICE_EXTENSIONS), extVec);
+        set<string> exts(extVec.begin(), extVec.end());
 
         ComputeDevice cd;
         cd.platform       = "OpenCL: " + platformName;
