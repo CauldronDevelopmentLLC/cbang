@@ -84,6 +84,10 @@
 #include <mach-o/dyld.h>
 #endif // __APPLE__
 
+#ifdef __linux__
+#include <sched.h>
+#endif // __linux__
+
 #include <sstream>
 #include <fstream>
 #include <iomanip>
@@ -867,6 +871,46 @@ namespace cb {
 
       if (err) THROW("Failed to set process priority: " << SysError());
 
+#elif defined(__linux__)
+      if (priority == ProcessPriority::PRIORITY_IDLE) {
+        // Instead of setting nice +19, on Linux we can use the SCHED_IDLE
+        // scheduler class. This is similar to the IDLE_PRIORITY_CLASS on
+        // Windows: the targetted process will only run when there are spare
+        // CPU cycles, and will be pre-empted immediately whenever anything
+        // else wants to run. This helps avoid inducing lag on the rest of the
+        // system if the targetted process is CPU-heavy.
+        //
+        // When SCHED_IDLE is set, the nice value of the process does not
+        // affect scheduling. However, it *does* affect tools like `top` or
+        // `htop` which track system usage, in two ways:
+        //
+        // 1) The nice value affects whether this process's runtime is counted
+        //    in the "normal" or the "low-priority" summary statistics
+        //
+        // 2) The nice value is also reported in /proc/PID/stat as-is,
+        //    so unless the tool explicitly checks the scheduler policy it will
+        //    receive this value.
+        //
+        // In order to be nicer to those tools, we fall through and set nice
+        // +19 as well as SCHED_IDLE, even though this is redundant from a
+        // purely scheduling viewpoint.
+        //
+        // For context, see "Fixing SCHED_IDLE" on LWN:
+        // https://lwn.net/Articles/805317/
+        SysError::clear();
+
+        struct sched_param scheduler_params = { .sched_priority = 0 };
+        sched_setscheduler((pid_t)pid, SCHED_IDLE, &scheduler_params);
+
+        if (SysError::get())
+          THROW("Failed to set process priority: " << SysError());
+      }
+
+      SysError::clear();
+      setpriority(PRIO_PROCESS, (pid_t)pid, priorityToInt(priority));
+
+      if (SysError::get())
+        THROW("Failed to set process priority: " << SysError());
 #else
       SysError::clear();
       setpriority(PRIO_PROCESS, (pid_t)pid, priorityToInt(priority));
