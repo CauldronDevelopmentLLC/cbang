@@ -93,11 +93,11 @@ namespace cb {
 
       virtual void onConnect(bool success) {}
 
-    protected:
-      void timedout();
-
       // From FD
       void close() override;
+
+    protected:
+      void timedout();
     };
   }
 }

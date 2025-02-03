@@ -56,7 +56,7 @@ namespace cb {
       SmartPointer<FDPool> pool;
 
     public:
-      Base(bool withThreads = false, int priorities = -1);
+      Base(bool withThreads = true, int priorities = -1);
       ~Base();
 
       bool isDeallocating() const {return deallocating;}

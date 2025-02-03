@@ -183,17 +183,17 @@ void Connection::connect(
 }
 
 
-void Connection::timedout() {
-  if (stats.isSet()) stats->event("timedout");
-  LOG_DEBUG(3, "Connection timedout");
-  close();
-}
-
-
 void Connection::close() {
   auto self = SmartPtr(this);
   if (server) server->remove(this);
   FD::close();
   setSSL(0);
   setSocket(0);
+}
+
+
+void Connection::timedout() {
+  if (stats.isSet()) stats->event("timedout");
+  LOG_DEBUG(3, "Connection timedout");
+  close();
 }

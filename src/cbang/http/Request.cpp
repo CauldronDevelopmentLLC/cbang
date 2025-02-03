@@ -613,7 +613,7 @@ void Request::redirect(const URI &uri, Status code) {
 void Request::onResponse(Event::ConnectionError error) {
   if (error) LOG_DEBUG(4, "< " << error);
   else {
-    LOG_INFO(1, "< " << getResponseLine());
+    LOG_INFO(2, "< " << getResponseLine());
     LOG_DEBUG(5, inputHeaders << '\n');
     LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
   }
@@ -623,7 +623,7 @@ void Request::onResponse(Event::ConnectionError error) {
 
 
 void Request::onRequest() {
-  LOG_INFO(1, "< " << getRequestLine());
+  LOG_INFO(2, "< " << getRequestLine());
   LOG_DEBUG(5, inputHeaders << '\n');
   LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
 }
@@ -730,7 +730,7 @@ void Request::writeRequest(Event::Buffer &buf) {
   if (mayHaveBody() && !outHas("Content-Length"))
     outSet("Content-Length", String(outputBuffer.getLength()));
 
-  LOG_INFO(1, "> " << getRequestLine());
+  LOG_INFO(2, "> " << getRequestLine());
   LOG_DEBUG(5, outputHeaders << '\n');
   LOG_DEBUG(6, outputBuffer.hexdump() << '\n');
 }

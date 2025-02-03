@@ -54,13 +54,13 @@ Server::Server(Event::Base &base, const SmartPointer<SSLContext> &sslCtx) :
 
 
 void Server::addListenPort(const SockAddr &addr) {
-  LOG_INFO(1, "Listening for HTTP on " << addr);
+  LOG_INFO(2, "Listening for HTTP on " << addr);
   bind(addr, 0, priority);
 }
 
 
 void Server::addSecureListenPort(const SockAddr &addr) {
-  LOG_INFO(1, "Listening for HTTPS on " << addr);
+  LOG_INFO(2, "Listening for HTTPS on " << addr);
   bind(addr, sslCtx, securePriority < 0 ? priority : securePriority);
 }
 

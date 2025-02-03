@@ -936,7 +936,7 @@ namespace cb {
 
       while (!out->fail()) {
         out->getline(line, 4096);
-        LOG_INFO(1, 'P' << pid << ": " << line);
+        LOG_INFO(2, 'P' << pid << ": " << line);
       }
 
       return process.wait();

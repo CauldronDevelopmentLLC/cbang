@@ -88,7 +88,7 @@ const char *SignalManager::signalString(int sig) {
 
 
 void SignalManager::signal(int sig) {
-  LOG_INFO(1, "Caught signal " << signalString(sig) << '(' << sig << ')');
+  LOG_INFO(2, "Caught signal " << signalString(sig) << '(' << sig << ')');
 
   auto it = handlers.find(sig);
   if (it != handlers.end()) it->second->handleSignal(sig);
