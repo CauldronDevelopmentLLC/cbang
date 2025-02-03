@@ -112,5 +112,5 @@ void ExitSignalHandler::handleSignal(int sig) {
     ignoreExitSignals();
     LOG_WARNING("Next signal will force exit");
 
-  } else LOG_INFO(1, "Exiting, please wait. . .");
+  } else LOG_INFO(2, "Exiting, please wait. . .");
 }

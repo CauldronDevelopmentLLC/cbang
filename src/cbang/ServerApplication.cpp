@@ -111,7 +111,7 @@ void ServerApplication::afterCommandLineParse() {
     if (options["pid"].toBoolean() || options["pid-file"].isSet()) {
       // Try to acquire an exclusive lock
       new ProcessLock(options["pid-file"], 10); // OK to leak
-      LOG_INFO(1, "Acquired exclusive lock on " << options["pid-file"]);
+      LOG_INFO(2, "Acquired exclusive lock on " << options["pid-file"]);
     }
   }
 
@@ -136,12 +136,12 @@ void ServerApplication::afterCommandLineParse() {
   beforeDroppingPrivileges();
   if (!options["respawn"].toBoolean() || options["child"].toBoolean()) {
     if (options["set-group"].hasValue()) {
-      LOG_INFO(1, "Switching to group " << options["set-group"]);
+      LOG_INFO(2, "Switching to group " << options["set-group"]);
       SystemUtilities::setGroup(options["set-group"]);
     }
 
     if (options["run-as"].hasValue()) {
-      LOG_INFO(1, "Switching to user " << options["run-as"]);
+      LOG_INFO(2, "Switching to user " << options["run-as"]);
       SystemUtilities::setUser(options["run-as"]);
     }
   }
@@ -194,7 +194,7 @@ int ServerApplication::init(int argc, char *argv[]) {
       uint64_t killTime = 0;
       while (child.isRunning()) {
         if (!killTime && (restartChild || shouldQuit())) {
-          LOG_INFO(1, "Shutting down child at PID=" << child.getPID());
+          LOG_INFO(2, "Shutting down child at PID=" << child.getPID());
 
           child.interrupt();
           restartChild = false;
@@ -202,7 +202,7 @@ int ServerApplication::init(int argc, char *argv[]) {
         }
 
         if (killTime && killTime < Time::now()) {
-          LOG_INFO(1, "Child failed to shutdown cleanly, killing");
+          LOG_INFO(2, "Child failed to shutdown cleanly, killing");
 
           killTime = 0;
           child.kill();
@@ -211,7 +211,7 @@ int ServerApplication::init(int argc, char *argv[]) {
         Timer::sleep(0.1);
       }
 
-      LOG_INFO(1, "Child exited with return code " << child.getReturnCode());
+      LOG_INFO(2, "Child exited with return code " << child.getReturnCode());
     }
 
     exit(0);
@@ -234,7 +234,7 @@ bool ServerApplication::lostLifeline() const {
 
   if (!lifeline || SystemUtilities::pidAlive(lifeline)) return false;
 
-  LOG_INFO(1, "Lost lifeline PID " << lifeline << ", exiting");
+  LOG_INFO(2, "Lost lifeline PID " << lifeline << ", exiting");
 
   return true;
 }

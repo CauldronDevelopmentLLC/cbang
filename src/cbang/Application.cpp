@@ -302,7 +302,7 @@ void Application::saveConfig(const string &_filename) const {
   if (configRotate)
     SystemUtilities::rotate(filename, configRotateDir, configRotateMax);
 
-  LOG_INFO(1, "Saving configuration to " << filename);
+  LOG_INFO(2, "Saving configuration to " << filename);
   writeConfig(*LOG_INFO_STREAM(2));
   writeConfig(*SystemUtilities::open(filename, ios::out),
               Option::OBSCURED_FLAG);
@@ -347,7 +347,7 @@ int Application::configAction(Option &option) {
 void Application::handleSignal(int sig) {
   if (hasFeature(FEATURE_PROCESS_CONTROL) &&
       options["service"].toBoolean() && sig == SIGHUP) {
-    LOG_INFO(1, "Service ignoring hangup/logoff signal");
+    LOG_INFO(2, "Service ignoring hangup/logoff signal");
     return;
   }
 

@@ -67,7 +67,7 @@ void LoginHandler::processProfile(
   string email = profile->getString("email");
   session.setUser(email);
   session.addGroup("authenticated");
-  LOG_INFO(1, "Authenticated: " << email);
+  LOG_INFO(2, "Authenticated: " << email);
 
   // Redirect the client to same path with out query params.
   req.redirect(req.getURI().getPath());
