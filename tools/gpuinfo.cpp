@@ -2,7 +2,8 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2003-2024, Cauldron Development LLC
+                Copyright (c) 2021-2025, Cauldron Development  Oy
+                Copyright (c) 2003-2021, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
