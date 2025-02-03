@@ -427,6 +427,7 @@ void Websocket::message(const char *data, uint64_t length) {
   } catch (const Exception &e) {
     string msg = "Websocket message rejected: " + e.getMessage();
     LOG_DEBUG(3, msg);
+    LOG_DEBUG(4, e);
     close(WS_STATUS_UNACCEPTABLE, msg);
   }
 }
