@@ -41,8 +41,8 @@ using namespace cb::API;
 
 
 Headers::Headers(const JSON::ValuePtr &hdrs) {
-  for (unsigned i = 0; i < hdrs->size(); i++)
-    add(hdrs->keyAt(i), hdrs->getString(i));
+  for (auto e: hdrs->entries())
+    add(e.key(), e->getString());
 }
 
 

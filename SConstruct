@@ -2,7 +2,7 @@
 #                                                                              #
 #         This file is part of the C! library.  A.K.A the cbang library.       #
 #                                                                              #
-#               Copyright (c) 2021-2024, Cauldron Development  Oy              #
+#               Copyright (c) 2021-2025, Cauldron Development  Oy              #
 #               Copyright (c) 2003-2021, Cauldron Development LLC              #
 #                              All rights reserved.                            #
 #                                                                              #
@@ -86,7 +86,6 @@ if not env.GetOption('clean'):
     conf.CBConfig('cbang-deps', with_openssl = env['with_openssl'],
                   with_local_boost = 'boost' not in disable_local)
     env.CBDefine('USING_CBANG') # Using CBANG macro namespace
-
 
 # Local includes
 env.Append(CPPPATH = ['#/include', '#/src', '#/src/boost'])

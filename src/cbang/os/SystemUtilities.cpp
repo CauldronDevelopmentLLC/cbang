@@ -429,8 +429,8 @@ namespace cb {
       vector<string> paths;
       splitPaths(path, paths);
 
-      for (unsigned i = 0; i < paths.size(); i++) {
-        string filename = getCanonicalPath(joinPath(paths[i], name));
+      for (auto &path: paths) {
+        string filename = getCanonicalPath(joinPath(path, name));
         if (exists(filename)) return filename;
       }
 
@@ -773,10 +773,10 @@ namespace cb {
 
         if (maxFiles < files.size()) {
           unsigned count = files.size() - maxFiles;
-          for (auto it = files.begin(); it != files.end() && count; it++) {
-            LOG_INFO(3, "Removing old file '" << *it << "'");
-            unlink(*it);
-            count--;
+          for (auto &path: files) {
+            if (!count--) break;
+            LOG_INFO(3, "Removing old file '" << path << "'");
+            unlink(path);
           }
         }
       }

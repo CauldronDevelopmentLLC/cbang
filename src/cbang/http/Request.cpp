@@ -177,7 +177,7 @@ void Request::parseJSONArgs() {
 
 
 void Request::parseQueryArgs() {
-  for (auto it: uri) args->insert(it.first, it.second);
+  for (auto p: uri) args->insert(p.first, p.second);
 }
 
 
@@ -307,9 +307,9 @@ Compression Request::getRequestedCompression() const {
   set<string> named;
   Compression compression = COMPRESSION_NONE;
 
-  for (unsigned i = 0; i < accept.size(); i++) {
+  for (auto &_name: accept) {
     double q = 1;
-    string name = String::toLower(accept[i]);
+    string name = String::toLower(_name);
 
     // Check for quality value
     size_t pos = name.find_first_of(';');
@@ -353,8 +353,8 @@ bool Request::hasCookie(const string &name) const {
   vector<string> cookies;
   String::tokenize(inGet("Cookie"), cookies, "; \t\n\r");
 
-  for (unsigned i = 0; i < cookies.size(); i++)
-    if (name == cookies[i].substr(0, cookies[i].find('='))) return true;
+  for (auto &cookie: cookies)
+    if (name == cookie.substr(0, cookie.find('='))) return true;
 
   return false;
 }
@@ -366,11 +366,11 @@ string Request::findCookie(const string &name) const {
     vector<string> cookies;
     String::tokenize(inGet("Cookie"), cookies, "; \t\n\r");
 
-    for (unsigned i = 0; i < cookies.size(); i++) {
-      size_t pos = cookies[i].find('=');
+    for (auto &cookie: cookies) {
+      size_t pos = cookie.find('=');
 
-      if (name == cookies[i].substr(0, pos))
-        return pos == string::npos ? string() : cookies[i].substr(pos + 1);
+      if (name == cookie.substr(0, pos))
+        return pos == string::npos ? string() : cookie.substr(pos + 1);
     }
   }
 
@@ -740,12 +740,10 @@ void Request::writeHeaders(Event::Buffer &buf) {
   if (connection->isIncoming()) writeResponse(buf);
   else writeRequest(buf);
 
-  for (auto it : outputHeaders) {
-    const string &key   = it.first;
-    const string &value = it.second;
-    if (!value.empty())
-      buf.add(String::printf("%s: %s\r\n", key.c_str(), value.c_str()));
-  }
+  for (auto it: outputHeaders)
+    if (!it.value().empty())
+      buf.add(String::printf(
+        "%s: %s\r\n", it.key().c_str(), it.value().c_str()));
 
   buf.add("\r\n");
 }

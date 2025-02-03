@@ -132,13 +132,15 @@ string Resolver::format(const string &s, const string &defaultValue) const {
 
 void Resolver::resolve(JSON::Value &value) const {
   auto cb =
-    [&] (JSON::Value &value, JSON::Value *parent, unsigned index) {
+    [&] (JSON::Value &value, JSON::Value *parent) {
       if (!value.isString()) return;
 
       string s = value.getString();
       if (s.find('%') == string::npos) return;
 
-      value.cast<JSON::String>().getValue() = format(s);
+      auto sPtr = dynamic_cast<JSON::String *>(&value);
+      if (!sPtr) THROW("Expected JSON::String");
+      sPtr->getValue() = format(s);
     };
 
   value.visit(cb);

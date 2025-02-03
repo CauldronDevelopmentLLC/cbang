@@ -233,43 +233,43 @@ void ACLSet::read(const JSON::Value &json) {
   // Users
   if (dict.has("users")) {
     auto &users = dict.get("users")->getList();
-    for (unsigned i = 0; i < users.size(); i++) addUser(users[i]->getString());
+    for (auto &user: users) addUser(user->getString());
   }
 
   // Groups
   if (dict.has("groups")) {
     auto &groups = dict.get("groups")->getDict();
-    for (unsigned i = 0; i < groups.size(); i++) {
-      const string &name = groups.keyAt(i);
+    for (auto e: groups.entries()) {
+      auto &name = e.key();
       addGroup(name);
 
       // Users
-      auto &users = groups.get(i)->getList();
-      for (unsigned j = 0; j < users.size(); j++)
-        groupAddUser(name, users[j]->getString());
+      auto &users = e->getList();
+      for (auto &user: users)
+        groupAddUser(name, user->getString());
     }
   }
 
   // ACLs
   if (dict.has("acls")) {
     auto &acls = dict.get("acls")->getDict();
-    for (unsigned i = 0; i < acls.size(); i++) {
-      auto &acl = acls.get(i)->getDict();
-      const string &path = acls.keyAt(i);
+    for (auto e: acls.entries()) {
+      auto &acl  = e->getDict();
+      auto &path = e.key();
       addACL(path);
 
       // Users
       if (acl.has("users")) {
         auto &users = acl.get("users")->getList();
-        for (unsigned j = 0; j < users.size(); j++)
-          aclAddUser(path, users[j]->getString());
+        for (auto &user: users)
+          aclAddUser(path, user->getString());
       }
 
       // Groups
       if (acl.has("groups")) {
         auto &groups = acl.get("groups")->getList();
-        for (unsigned j = 0; j < groups.size(); j++)
-          aclAddGroup(path, groups[j]->getString());
+        for (auto &group: groups)
+          aclAddGroup(path, group->getString());
       }
     }
   }

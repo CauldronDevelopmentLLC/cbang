@@ -82,21 +82,13 @@ namespace cb {
     bool allowGroup(const std::string &path, const std::string &group) const;
 
     // Users
-    typedef users_t::const_iterator users_iterator;
-    users_iterator beginUsers() const {return users.begin();}
-    users_iterator endUsers() const {return users.end();}
-    const std::string &get(const users_iterator &it) const {return *it;}
-
+    const users_t &getUsers() const {return users;}
     bool hasUser(const std::string &user) const;
     void addUser(const std::string &user);
     void delUser(const std::string &user);
 
     // Groups
-    typedef groups_t::const_iterator groups_iterator;
-    groups_iterator beginGroups() const {return groups.begin();}
-    groups_iterator endGroups() const {return groups.end();}
-    const std::string &get(const groups_iterator &it) const {return it->first;}
-
+    const groups_t &getGroups() const {return groups;}
     bool hasGroup(const std::string &group) const;
     void addGroup(const std::string &group);
     void delGroup(const std::string &group);

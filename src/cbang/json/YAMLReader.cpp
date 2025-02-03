@@ -142,8 +142,7 @@ void YAMLReader::parse(Sink &sink) {
 
   } catch (const Exception &e) {
     if (dynamic_cast<const ParseError *>(&e)) throw;
-    throw ParseError(SSTR("YAML: " << e.getMessage()), e.getCode(),
-                     pri->location());
+    throw ParseError(SSTR("YAML: " << e.getMessage()), pri->location(), e);
   }
 }
 
@@ -319,10 +318,10 @@ void YAMLReader::_parse(Sink &sink) {
 
     case YAML_ALIAS_EVENT: {
       string anchor = (const char *)event.data.alias.anchor;
-      int i = anchors.indexOf(anchor);
-      if (i == -1) PARSE_ERROR("Invalid anchor '" << anchor << "'");
+      auto it = anchors.find(anchor);
+      if (!it) PARSE_ERROR("Invalid anchor '" << anchor << "'");
 
-      anchors.get(i)->write(*target);
+      (*it)->write(*target);
       haveKey = false;
       break;
     }

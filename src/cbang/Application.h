@@ -86,7 +86,7 @@ namespace cb {
     bool configured  = false;
     std::atomic<bool> quit;
 
-    double startTime;
+    uint64_t startTime;
 
   public:
     Application(const std::string &name,
@@ -109,7 +109,8 @@ namespace cb {
     virtual bool shouldQuit() const {return quit;}
     virtual void requestExit() {quit = true;}
 
-    double getUptime() const;
+    uint64_t getStartTime() const {return startTime;}
+    uint64_t getUptime() const;
 
     virtual int init(int argc, char *argv[]);
     virtual void afterCommandLineParse() {}

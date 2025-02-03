@@ -30,30 +30,24 @@
 
 \******************************************************************************/
 
-#include "ArgFilterHandler.h"
-#include "ArgFilterProcess.h"
-
-#include <cbang/api/API.h>
+#include "ListIterator.h"
+#include "List.h"
 
 using namespace std;
 using namespace cb;
-using namespace cb::API;
+using namespace cb::JSON;
 
 
-ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config,
-  SmartPointer<HTTP::RequestHandler> &child) : api(api), child(child) {
-
-  if (config->isString()) Subprocess::parse(config->toString(), cmd);
-  else {
-    if (!config->isList()) THROW("Invalid arg-filter config");
-    for (auto &v: *config) cmd.push_back(v->asString());
-  }
+SmartPointer<IteratorImpl> ListIterator::clone() const {
+  return new ListIterator(it, begin, end);
 }
 
 
-bool ArgFilterHandler::operator()(HTTP::Request &req) {
-  auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, req));
-  return true;
+bool ListIterator::equal(const SmartPointer<IteratorImpl> &o) const {
+  return it == o.cast<ListIterator>()->it;
+}
+
+
+const std::string &ListIterator::key() const {
+  THROW("List cannot be indexed by key");
 }

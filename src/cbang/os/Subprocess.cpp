@@ -289,8 +289,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
 #else // _WIN32
     // Convert args
     vector<char *> args;
-    for (unsigned i = 0; i < _args.size(); i++)
-      args.push_back((char *)_args[i].c_str());
+    for (auto &arg: _args)
+      args.push_back((char *)arg.c_str());
     args.push_back(0); // Sentinal
 
 #ifdef __APPLE__
@@ -386,8 +386,8 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
 #endif // F_SETPIPE_SZ
 
   // Close pipe child ends
-  for (unsigned i = 0; i < pipes.size(); i++)
-    pipes[i].getChildEnd().close();
+  for (auto &pipe: pipes)
+    pipe.getChildEnd().close();
 
   running = true;
 }
@@ -501,10 +501,8 @@ void Subprocess::parse(const string &command, vector<string> &args) {
 string Subprocess::assemble(const vector<string> &args) {
   string command;
 
-  for (auto it = args.begin(); it != args.end(); it++) {
-    const string &arg = *it;
-
-    if (it != args.begin()) command += " ";
+  for (auto &arg: args) {
+    if (!command.empty()) command += " ";
 
     // Check if we need to quote this arg
     bool quote = false;
@@ -547,10 +545,7 @@ void Subprocess::closeProcessHandles() {
 }
 
 
-void Subprocess::closePipes() {
-  for (unsigned i = 0; i < pipes.size(); i++)
-    pipes[i].close();
-}
+void Subprocess::closePipes() {for (auto &pipe: pipes) pipe.close();}
 
 
 void Subprocess::closeHandles() {

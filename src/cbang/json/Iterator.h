@@ -32,27 +32,38 @@
 
 #pragma once
 
-#include <cbang/SmartPointer.h>
+#include "IteratorImpl.h"
 
 
 namespace cb {
   namespace JSON {
-    class Value;
-
-
     class Iterator {
-    protected:
-      const Value &value;
-      int i;
+      SmartPointer<IteratorImpl> impl;
 
     public:
-      Iterator(const Value &value, int i = -1);
+      Iterator() {}
+      Iterator(const SmartPointer<IteratorImpl> &impl) : impl(impl) {}
+      Iterator(const Iterator &o)  : impl(o.impl->clone()) {}
+      Iterator(const Iterator &&o) : impl(o.impl) {}
 
+      Iterator &operator=(const Iterator &o);
+      Iterator &operator=(const Iterator &&o) {impl = o.impl; return *this;}
 
-      bool valid() const;
-      bool operator!=(const Iterator &o) const {return i != o.i;}
+      bool operator==(const Iterator &o) const;
+      bool operator!=(const Iterator &o) const {return !(*this == o);}
+
+      operator bool() const {return impl.isSet() && impl->operator bool();}
+
       Iterator &operator++();
-      const cb::SmartPointer<Value> &operator*() const;
+      Iterator operator++(int);
+      Iterator &operator--();
+      Iterator operator--(int);
+
+      const std::string &key() const {return impl->key();}
+      const unsigned index() const {return impl->index();}
+      const SmartPointer<Value> &value() const {return impl->value();}
+
+      const SmartPointer<Value> &operator*() const {return value();}
     };
   }
 }

@@ -30,30 +30,29 @@
 
 \******************************************************************************/
 
-#include "ArgFilterHandler.h"
-#include "ArgFilterProcess.h"
+#pragma once
 
-#include <cbang/api/API.h>
-
-using namespace std;
-using namespace cb;
-using namespace cb::API;
+#include "Iterator.h"
 
 
-ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config,
-  SmartPointer<HTTP::RequestHandler> &child) : api(api), child(child) {
+namespace cb {
+  namespace JSON {
+    class EntryIterator : public Iterator {
+    public:
+      EntryIterator(const Iterator &it) : Iterator(it) {}
 
-  if (config->isString()) Subprocess::parse(config->toString(), cmd);
-  else {
-    if (!config->isList()) THROW("Invalid arg-filter config");
-    for (auto &v: *config) cmd.push_back(v->asString());
+      struct Entry {
+        const Iterator &it;
+        Entry(const Iterator &it) : it(it) {}
+
+        const std::string &key() const {return it.key();}
+        const SmartPointer<JSON::Value> &value() const {return it.value();}
+
+        JSON::Value &operator*() const {return *it.value();}
+        JSON::Value *operator->() const {return &*it.value();}
+      };
+
+      Entry operator*() const {return Entry(*this);}
+    };
   }
-}
-
-
-bool ArgFilterHandler::operator()(HTTP::Request &req) {
-  auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, req));
-  return true;
 }

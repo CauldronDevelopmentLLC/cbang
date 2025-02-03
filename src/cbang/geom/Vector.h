@@ -117,7 +117,6 @@ namespace cb {
       data[3] = a;
     }
 
-
     static unsigned getSize() {return DIM;}
 
 
@@ -464,7 +463,7 @@ namespace cb {
 
       if (list.size() != DIM)
         CBANG_THROW("Vector<" << DIM << "> expected list of length " << DIM);
-      for (unsigned i = 0; i < DIM; i++) data[i] = list[i]->getNumber();
+      for (unsigned i = 0; i < DIM; i++) data[i] = list.getNumber(i);
     }
 
     void write(JSON::Sink &sink) const {

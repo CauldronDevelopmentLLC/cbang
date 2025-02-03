@@ -39,6 +39,8 @@
 
 #include <cbang/io/InputSource.h>
 
+#include <map>
+
 
 namespace cb {
   namespace js {

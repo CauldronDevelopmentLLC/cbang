@@ -72,17 +72,17 @@ ValuePtr Path::select(const Value &value, fail_cb_t fail_cb) const {
   for (i = 0; i < size(); i++) {
     const Value &v = i ? *ptr : value;
 
-    int index = -1;
+    Iterator it;
 
     if (v.isList())
       try {
-        index = String::parseU32(parts[i], true);
+        it = v.find(String::parseU32(parts[i], true));
       } catch (const Exception &e) {}
 
-    else if (v.isDict()) index = v.indexOf(parts[i]);
+    else if (v.isDict()) it = v.find(parts[i]);
 
-    if (index == -1 || (int)v.size() <= index) break;
-    ptr = v.get(index);
+    if (!it) break;
+    ptr = *it;
   }
 
   if (i == size()) return ptr;
@@ -136,7 +136,7 @@ void Path::modify(Value &target, const ValuePtr &value) {
 }
 
 
-#define CBANG_JSON_VT(NAME, TYPE)                                   \
+#define CBANG_JSON_VT(NAME, TYPE, ...)                              \
   TYPE Path::select##NAME(const Value &value) const {               \
     ValuePtr result = select(value);                                \
                                                                     \

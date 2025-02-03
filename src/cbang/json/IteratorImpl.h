@@ -30,30 +30,28 @@
 
 \******************************************************************************/
 
-#include "ArgFilterHandler.h"
-#include "ArgFilterProcess.h"
+#pragma once
 
-#include <cbang/api/API.h>
+#include <cbang/SmartPointer.h>
 
-using namespace std;
-using namespace cb;
-using namespace cb::API;
+namespace cb {
+  namespace JSON {
+    class Value;
 
+    class IteratorImpl {
+    public:
+      virtual ~IteratorImpl() {}
 
-ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config,
-  SmartPointer<HTTP::RequestHandler> &child) : api(api), child(child) {
+      virtual SmartPointer<IteratorImpl> clone() const = 0;
+      virtual bool equal(const SmartPointer<IteratorImpl> &o) const = 0;
+      virtual void next() = 0;
+      virtual void prev() = 0;
 
-  if (config->isString()) Subprocess::parse(config->toString(), cmd);
-  else {
-    if (!config->isList()) THROW("Invalid arg-filter config");
-    for (auto &v: *config) cmd.push_back(v->asString());
+      virtual operator bool() const = 0;
+
+      virtual const std::string &key() const = 0;
+      virtual unsigned index() const = 0;
+      virtual const SmartPointer<Value> &value() const = 0;
+    };
   }
-}
-
-
-bool ArgFilterHandler::operator()(HTTP::Request &req) {
-  auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, req));
-  return true;
 }

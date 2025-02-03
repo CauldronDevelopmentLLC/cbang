@@ -199,21 +199,21 @@ void Logger::setLogDomainLevels(const string &levels) {
   Option::strings_t entries;
   String::tokenize(levels, entries, ", \t\r\n");
 
-  for (unsigned i = 0; i < entries.size(); i++) {
+  for (auto &entry: entries) {
     bool invalid = false;
 
-    size_t pos = entries[i].find_last_of(':');
+    size_t pos = entry.find_last_of(':');
 
     if (!pos || pos == string::npos) invalid = true;
     else {
-      int level = String::parseS32(entries[i].substr(pos + 1));
+      int level = String::parseS32(entry.substr(pos + 1));
 
-      size_t pos2 = entries[i].find_last_not_of("idt", pos - 1);
-      if (pos2 && pos2 != string::npos && entries[i][pos2] == ':') {
-        string name = entries[i].substr(0, pos2);
+      size_t pos2 = entry.find_last_not_of("idt", pos - 1);
+      if (pos2 && pos2 != string::npos && entry[pos2] == ':') {
+        string name = entry.substr(0, pos2);
 
         while (++pos2 < pos)
-          switch (entries[i][pos2]) {
+          switch (entry[pos2]) {
           case 'i': infoDomainLevels[name] = level; break;
           case 'd': debugDomainLevels[name] = level; break;
 #ifdef HAVE_CBANG_BACKTRACE
@@ -222,14 +222,13 @@ void Logger::setLogDomainLevels(const string &levels) {
           }
 
       } else {
-        string name = entries[i].substr(0, pos);
+        string name = entry.substr(0, pos);
         infoDomainLevels[name] = level;
         debugDomainLevels[name] = level;
       }
     }
 
-    if (invalid) THROW("Invalid log domain level entry " << (i + 1)
-                        << " '" << entries[i] << "'");
+    if (invalid) THROW("Invalid log domain level entry '" << entry << "'");
   }
 }
 

@@ -43,16 +43,15 @@ using namespace std;
 
 
 string Signature::toString() const {
-  string s = name + "(";
+  string s;
 
-  for (unsigned i = 0; i < size(); i++) {
-    const string &key = keyAt(i);
-    const JSON::Value &value = *get(i);
-
-    if (i) s += ", ";
-    s += key;
-    if (!value.isUndefined()) s += "=" + value.toString();
+  for (auto e: entries()) {
+    if (!s.empty()) s += ", ";
+    s += e.key();
+    if (!e->isUndefined()) s += "=" + e->toString();
   }
+
+  s = name + "(" + s;
 
   if (variable) {
     if (!empty()) s += ", ";

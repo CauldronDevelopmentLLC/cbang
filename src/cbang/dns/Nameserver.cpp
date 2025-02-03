@@ -182,11 +182,11 @@ bool Nameserver::transmit(Type type, const string &request) {
   vector<string> parts;
   String::tokenize(query.request, parts, ".");
   unsigned i = 12;
-  for (unsigned j = 0; j < parts.size(); j++) {
-    unsigned len = parts[j].size();
+  for (auto &part: parts) {
+    unsigned len = part.size();
     if (63 < len) THROW("Invalid DNS request, name part too big");
     buf[i] = len;
-    memcpy(buf + i + 1, parts[j].data(), len);
+    memcpy(buf + i + 1, part.data(), len);
     i += 1 + len;
   }
   buf[i++] = 0;

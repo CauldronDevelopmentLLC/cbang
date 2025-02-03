@@ -488,8 +488,8 @@ void FDPoolEPoll::run() {
     }
 
     // Queue status changes
-    for (auto it: changed)
-      queueStatus(it.first, it.second);
+    for (auto p: changed)
+      queueStatus(p.first, p.second);
   }
 }
 

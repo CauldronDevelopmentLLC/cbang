@@ -63,22 +63,24 @@ string Cookie::toString() const {
 void Cookie::read(const string &s) {
   vector<string> tokens;
   String::tokenize(s, tokens, "; \t\n\r");
+  bool first = true;
 
-  for (unsigned i = 0; i < tokens.size(); i++) {
-    size_t pos = tokens[i].find('=');
-    string name = tokens[i].substr(0, pos);
-    string value = pos == string::npos ? string() : tokens[i].substr(pos + 1);
+  for (auto &token: tokens) {
+    size_t pos   = token.find('=');
+    string name  = token.substr(0, pos);
+    string value = pos == string::npos ? string() : token.substr(pos + 1);
 
-    if (!i) {
-      this->name = name;
+    if (first) {
+      first = false;
+      this->name  = name;
       this->value = value;
 
     } else if (name == "Domain") domain = value;
-    else if (name == "Path") path = value;
-    else if (name == "Expires") expires = Time::parse(value, Time::httpFormat);
-    else if (name == "Max-Age") expires = String::parseU64(value);
+    else if (name == "Path")     path = value;
+    else if (name == "Expires")  expires = Time::parse(value, Time::httpFormat);
+    else if (name == "Max-Age")  expires = String::parseU64(value);
     else if (name == "HttpOnly") httpOnly = true;
-    else if (name == "Secure") secure = true;
+    else if (name == "Secure")   secure = true;
     else if (name == "SameSite") sameSite = value;
   }
 }

@@ -139,23 +139,21 @@ void Options::popCategory() {
 
 
 void Options::load(const JSON::Value &config) {
-  for (unsigned i = 0; i < config.size(); i++) {
-    auto category = config.keyAt(i);
+  for (auto e: config.entries()) {
+    auto category = e.key();
     if (!category.empty()) pushCategory(category);
 
-    auto &opts = *config.get(i);
-    for (unsigned j = 0; j < opts.size(); j++) {
-      auto name    = cleanKey(opts.keyAt(j));
-      auto &config = *opts.get(j);
+    auto &opts = *e.value();
+    for (auto e2: opts.entries()) {
+      auto name    = cleanKey(e2.key());
+      auto &config = *e2.value();
 
       if (has(name)) get(name)->configure(config);
       else add(name, new Option(name, config));
 
-      if (config.hasList("aliases")) {
-        auto &aliases = config.getList("aliases");
-        for (unsigned i = 0; i < aliases.size(); i++)
-          alias(name, aliases.getAsString(i));
-      }
+      if (config.hasList("aliases"))
+        for (auto &a: config.getList("aliases"))
+          alias(name, a->asString());
     }
 
     if (!category.empty()) popCategory();
@@ -237,25 +235,23 @@ void Options::alias(const string &_key, const string &_alias) {
 
 
 void Options::read(const JSON::Value &options) {
-  for (unsigned i = 0; i < options.size(); i++) {
-    string name = options.keyAt(i);
+  for (auto e: options.entries()) {
+    string name = e.key();
 
     if (!has(name)) {
       LOG_WARNING("Unrecognized option '" << name << "'");
       continue;
     }
 
-    JSON::ValuePtr value = options.get(i);
-
-    if (value->isList()) {
+    if (e->isList()) {
       string s;
-      for (unsigned j = 0; j < value->size(); j++) {
-        if (j) s += " ";
-        s += value->get(j)->asString();
+      for (auto &v: *e.value()) {
+        if (!s.empty()) s += " ";
+        s += v->asString();
       }
       set(name, s);
 
-    } else set(name, value->asString());
+    } else set(name, e->asString());
   }
 }
 

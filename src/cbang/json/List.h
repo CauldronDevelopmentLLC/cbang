@@ -39,13 +39,13 @@
 
 namespace cb {
   namespace JSON {
-    class List : public Value, protected std::vector<ValuePtr> {
-      typedef std::vector<ValuePtr> Super_T;
+    using ListImpl = std::vector<ValuePtr>;
 
+    class List : public Value, protected ListImpl {
       bool simple = true;
 
     public:
-      using Super_T::Super_T;
+      using ListImpl::ListImpl;
 
       // From Value
       ValueType getType() const override {return JSON_LIST;}
@@ -56,15 +56,20 @@ namespace cb {
       Value &getList() override {return *this;}
       const Value &getList() const override {return *this;}
 
+      Iterator begin() const override;
+      Iterator end()   const override;
+      Iterator find(unsigned i) const override;
+
       bool toBoolean() const override {return size();}
-      unsigned size() const override {return Super_T::size();}
+      unsigned size() const override {return ListImpl::size();}
 
       const ValuePtr &get(unsigned i) const override;
 
       void append(const ValuePtr &value) override;
       void set(unsigned i, const ValuePtr &value) override;
-      void clear() override {Super_T::clear();}
+      void clear() override {ListImpl::clear();}
       void erase(unsigned i) override;
+      Iterator erase(const Iterator &it) override;
 
       void write(Sink &sink) const override;
 
@@ -77,11 +82,13 @@ namespace cb {
       using Value::append;
       using Value::set;
       using Value::insert;
+      using Value::find;
       using Value::erase;
       using Value::empty;
 
     protected:
       void check(unsigned i) const;
+      Iterator makeIt(const ListImpl::const_iterator &it) const;
     };
   }
 }

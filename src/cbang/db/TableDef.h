@@ -53,7 +53,7 @@ namespace cb {
       typedef std::vector<ColumnDef> columns_t;
       columns_t columns;
 
-      typedef std::map<std::string, unsigned, string_ci_less> columnMap_t;
+      typedef std::map<std::string, unsigned, StringILess> columnMap_t;
       columnMap_t columnMap;
 
     public:

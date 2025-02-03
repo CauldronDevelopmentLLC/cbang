@@ -37,22 +37,30 @@ using namespace cb::JSON;
 
 
 
-void ObservableBase::setParentRef(Value *parent, unsigned index) {
+void ObservableBase::setParentRef(Value *parent, const ValuePtr &key) {
   if (this->parent) THROW("Parent already set");
   this->parent = parent;
-  this->index  = index;
+  this->key    = key;
+}
+
+
+void ObservableBase::incParentRef() {
+  if (key->isNumber()) key = Factory().create(key->getU64() + 1);
+}
+
+
+void ObservableBase::decParentRef() {
+  if (key->isNumber()) key = Factory().create(key->getU64() - 1);
 }
 
 
 void ObservableBase::_notify(list<ValuePtr> &change) {
   notify(change);
 
-  if (!parent) return;
-
-  if (parent->isList()) change.push_front(Factory().create(index));
-  else change.push_front(Factory().create(parent->keyAt(index)));
-
-  dynamic_cast<ObservableBase *>(parent)->_notify(change);
+  if (parent) {
+    change.push_front(key);
+    dynamic_cast<ObservableBase *>(parent)->_notify(change);
+  }
 }
 
 

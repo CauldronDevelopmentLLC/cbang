@@ -32,8 +32,33 @@
 
 #pragma once
 
-#define _CBANG_CONCAT(prefix, name) prefix##name
-#define CBANG_CONCAT(prefix, name) _CBANG_CONCAT(prefix, name)
+#define CBANG_CONCAT(prefix, name) CBANG__CONCAT(prefix, name)
+#define CBANG__CONCAT(prefix, name) prefix##name
 
-#define _CBANG_STRING(str) #str
-#define CBANG_STRING(str) _CBANG_STRING(str)
+#define CBANG_STRING(str) CBANG__STRING(str)
+#define CBANG__STRING(str) #str
+
+#define CBANG_CAT(a, ...) a ## __VA_ARGS__
+
+#define CBANG_FIRST(a, ...) a
+#define CBANG_SECOND(a, b, ...) b
+
+#define CBANG_IS_PROBE(...) CBANG_SECOND(__VA_ARGS__, 0)
+#define CBANG_PROBE() ~, 1
+
+#define CBANG_NOT(x) CBANG_IS_PROBE(CBANG_CAT(CBANG__NOT_, x))
+#define _CBANG_NOT_0 CBANG_PROBE()
+
+#define CBANG_BOOL(x) CBANG_NOT(CBANG_NOT(x))
+
+#define CBANG_IF( c) CBANG__IF(c)
+#define CBANG__IF(c) CBANG_CAT(CBANG__IF_, c)
+#define CBANG__IF_0(...)
+#define CBANG__IF_1(...) __VA_ARGS__
+
+#define CBANG_IF_ELSE( cond, t, f) CBANG__IF_ELSE(cond, t, f)
+#define CBANG__IF_ELSE(cond, t, f) CBANG__IF_ELSE_ ## cond(t, f)
+#define CBANG__IF_ELSE_0(t, f) f
+#define CBANG__IF_ELSE_1(t, f) t
+
+#define CBANG_COMMA() ,

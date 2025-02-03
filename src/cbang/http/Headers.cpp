@@ -35,14 +35,32 @@
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
+#include <cbang/Errors.h>
 #include <cbang/event/Buffer.h>
 
 using namespace cb::HTTP;
 using namespace std;
 
 
-string Headers::find(const string &key) const {return has(key) ? get(key) : "";}
-void Headers::remove(const string &key) {if (has(key)) erase(key);}
+bool Headers::has(const string &key) const {
+  return HeadersImpl::find(key) != end();
+}
+
+
+string Headers::find(const string &key) const {
+  auto it = HeadersImpl::find(key);
+  return it == end() ? "" : it.value();
+}
+
+
+const string &Headers::get(const string &key) const {
+  auto it = HeadersImpl::find(key);
+  if (it == end()) CBANG_KEY_ERROR("Header '" << key << "' not found");
+  return it.value();
+}
+
+
+void Headers::remove(const string &key) {erase(key);}
 
 
 bool Headers::keyContains(const string &key, const string &value) const{
@@ -51,8 +69,8 @@ bool Headers::keyContains(const string &key, const string &value) const{
 
   String::tokenize(hdr, parts, " ,");
 
-  for (unsigned i = 0; i < parts.size(); i++)
-    if (parts[i] == String::toLower(value)) return true;
+  for (auto &part: parts)
+    if (part == String::toLower(value)) return true;
 
   return false;
 }
@@ -99,8 +117,9 @@ bool Headers::parse(Event::Buffer &buf, unsigned maxSize) {
 
     // Continuation line
     if (line[0] == ' ' || line[0] == '\t') {
-      if (empty()) THROW("Invalid header line: " << line);
-      get(last) += String::trim(line);
+      auto it = HeadersImpl::find(last);
+      if (it == HeadersImpl::end()) THROW("Invalid header line: " << line);
+      it.value() += String::trim(line);
       continue;
     }
 
@@ -112,8 +131,9 @@ bool Headers::parse(Event::Buffer &buf, unsigned maxSize) {
     string value = String::trim(line.substr(semi + 1));
 
     // See RFC 2616 Section 4.2 "Message Headers"
-    if (has(key)) {
-      auto &h = get(key);
+    auto it = HeadersImpl::find(key);
+    if (it != end()) {
+      auto &h = it.value();
       if (!String::trim(h).empty()) h += ", ";
       h += value;
 
@@ -127,5 +147,6 @@ bool Headers::parse(Event::Buffer &buf, unsigned maxSize) {
 
 
 void Headers::write(ostream &stream) const {
-  for (auto &p: *this) stream << p.first << ": " << p.second << '\n';
+  for (auto it: *this)
+    stream << it.key() << ": " << it.value() << '\n';
 }

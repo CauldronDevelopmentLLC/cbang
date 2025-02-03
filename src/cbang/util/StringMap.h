@@ -32,10 +32,10 @@
 
 #pragma once
 
+#include "StringICmp.h"
+
 #include <cbang/Exception.h>
 
-#include <string>
-#include <cctype>
 #include <map>
 #include <iostream>
 
@@ -92,25 +92,6 @@ namespace cb {
   };
 
 
-  /// Case-insensitive string compare
-  struct string_ci_less {
-    bool operator()(const std::string &s1, const std::string &s2) const {
-      // This is long-winded but avoids making copies of the strings
-      auto it1 = s1.begin();
-      auto it2 = s2.begin();
-
-      while (true) {
-        if (it1 == s1.end()) return it2 != s2.end();
-        if (it2 == s2.end()) return false;
-        char c1 = std::tolower(*it1++);
-        char c2 = std::tolower(*it2++);
-        if (c1 < c2) return true;
-        if (c2 < c1) return false;
-      }
-    }
-  };
-
-
   typedef StringMapBase<> StringMap;
-  typedef StringMapBase<string_ci_less> CIStringMap;
+  typedef StringMapBase<StringILess> CIStringMap;
 }

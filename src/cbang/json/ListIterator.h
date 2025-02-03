@@ -30,14 +30,36 @@
 
 \******************************************************************************/
 
-#include "KeyIterator.h"
-#include "Value.h"
+#pragma once
 
-using namespace std;
-using namespace cb::JSON;
+#include "IteratorImpl.h"
+#include "List.h"
 
 
-const string &KeyIterator::operator*() const {
-  if (!valid()) CBANG_THROW("Invalid JSON iterator");
-  return value.keyAt(i);
+namespace cb {
+  namespace JSON {
+    class List;
+
+    class ListIterator : public IteratorImpl {
+      using iterator = ListImpl::const_iterator;
+      iterator it;
+      iterator begin;
+      iterator end;
+
+    public:
+      ListIterator(iterator it, iterator begin, iterator end) :
+        it(it), begin(begin), end(end) {}
+
+      SmartPointer<IteratorImpl> clone() const override;
+      bool equal(const SmartPointer<IteratorImpl> &o) const override;
+      void next() override {it++;}
+      void prev() override {it--;}
+
+      operator bool() const override {return it != end;}
+
+      const std::string &key() const override;
+      unsigned index() const override {return it - begin;}
+      const SmartPointer<Value> &value() const override {return *it;}
+    };
+  }
 }

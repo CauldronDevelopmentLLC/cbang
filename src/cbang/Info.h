@@ -33,11 +33,10 @@
 #pragma once
 
 #include <cbang/util/Singleton.h>
+#include <cbang/util/OrderedDict.h>
 
 #include <string>
 #include <ostream>
-#include <map>
-#include <list>
 
 
 namespace cb {
@@ -45,23 +44,8 @@ namespace cb {
   namespace XML {class Writer;}
 
   class Info : public Singleton<Info> {
-    // TODO Could probably replace this with cb::OrderedDict<>
-    template <typename Key, typename Value>
-    class ordered_map :
-      public std::map<Key, Value>,
-      public std::list<typename std::map<Key, Value>::value_type *> {
-
-    public:
-      typedef std::map<Key, Value> map_t;
-      typedef std::list<typename map_t::value_type *> list_t;
-      typedef typename map_t::value_type value_type;
-      using list_t::begin;
-      using list_t::end;
-      using map_t::insert;
-    };
-
-    typedef ordered_map<std::string, std::string> category_t;
-    typedef ordered_map<std::string, category_t> categories_t;
+    typedef OrderedDict<std::string, std::string> category_t;
+    typedef OrderedDict<std::string, category_t> categories_t;
 
     unsigned maxKeyLength;
     categories_t categories;

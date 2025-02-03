@@ -115,8 +115,8 @@ bool Account::needsRenewal(const KeyCert &keyCert) const {
 unsigned Account::certsReadyForRenewal() const {
   unsigned count = 0;
 
-  for (unsigned i = 0; i < keyCerts.size(); i++)
-    if (needsRenewal(*keyCerts[i])) count++;
+  for (auto &keyCert: keyCerts)
+    if (needsRenewal(*keyCert)) count++;
 
   return count;
 }
@@ -255,8 +255,7 @@ string Account::getNewAcctPayload() const {
     String::tokenize(emails, list);
 
     writer.insertList("contact");
-    for (unsigned i = 0; i < list.size(); i++)
-      writer.append("mailto:" + list[i]);
+    for (auto &item: list) writer.append("mailto:" + item);
     writer.endList();
   }
 
@@ -273,11 +272,11 @@ string Account::getNewOrderPayload() const {
   writer.beginDict();
   writer.insertList("identifiers");
 
-  const vector<string> &domains = getCurrentDomains();
-  for (unsigned i = 0; i < domains.size(); i++) {
+  auto &domains = getCurrentDomains();
+  for (auto &domain: domains) {
     writer.appendDict();
     writer.insert("type", "dns");
-    writer.insert("value", domains[i]);
+    writer.insert("value", domain);
     writer.endDict();
   }
 
@@ -326,8 +325,8 @@ string Account::getProblemString(const JSON::Value &problem) const {
 
   if (problem.hasList("subproblems")) {
     auto &list = *problem.get("subproblems");
-    for (unsigned i = 0; i < list.size(); i++)
-      s += "\n  " + getProblemString(*list.get(i));
+    for (auto &item: list)
+      s += "\n  " + getProblemString(*item);
   }
 
   return s;
@@ -411,12 +410,10 @@ void Account::next() {
   case STATE_CHALLENGE: {
     auto &challenges = *authorization->get("challenges");
 
-    for (unsigned i = 0; i < challenges.size(); i++) {
-      auto &challenge = *challenges.get(i);
-
-      if (challenge.getString("type", "") == "http-01") {
-        string uri = challenge.getString("url");
-        challengeToken = challenge.getString("token");
+    for (auto &challenge: challenges) {
+      if (challenge->getString("type", "") == "http-01") {
+        string uri = challenge->getString("url");
+        challengeToken = challenge->getString("token");
 
         post(uri, "{}");
         break;
@@ -511,14 +508,11 @@ void Account::responseHandler(HTTP::Request &req) {
         // status == invalid or revoked
         auto &challenges = *authorization->get("challenges");
 
-        for (unsigned i = 0; i < challenges.size(); i++) {
-          auto &ch = *challenges.get(i);
-
-          if (ch.getString("type", "") == "http-01") {
-            error("Failed to complete certificate challenge", ch);
+        for (auto &challenge: challenges)
+          if (challenge->getString("type", "") == "http-01") {
+            error("Failed to complete certificate challenge", *challenge);
             break;
           }
-        }
 
         return nextKeyCert();
       }
@@ -558,8 +552,8 @@ void Account::responseHandler(HTTP::Request &req) {
         chain.clear();
         chain.parse(req.getInput());
 
-        for (unsigned i = 0; i < listeners.size(); i++)
-          TRY_CATCH_ERROR(listeners[i](keyCert));
+        for (auto &listener: listeners)
+          TRY_CATCH_ERROR(listener(keyCert));
 
         nextKeyCert();
         return;

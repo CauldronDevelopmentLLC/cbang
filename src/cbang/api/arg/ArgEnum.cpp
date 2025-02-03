@@ -43,9 +43,9 @@ ArgEnum::ArgEnum(const JSON::ValuePtr &config) :
   caseSensitive(config->getBoolean("case-sensitive", false)) {
   auto list = config->get("enum");
 
-  for (unsigned i = 0; i < list->size(); i++) {
-    const string &value = list->getString(i);
-    values.insert(caseSensitive ? value : String::toLower(value));
+  for (auto &value: *list) {
+    string s = value->getString();
+    values.insert(caseSensitive ? s : String::toLower(s));
   }
 }
 

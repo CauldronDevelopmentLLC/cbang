@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "Dict.h"
+#include "DictIterator.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
@@ -44,26 +45,47 @@ using namespace cb::JSON;
 ValuePtr Dict::copy(bool deep) const {
   ValuePtr c = createDict();
 
-  for (unsigned i = 0; i < size(); i++)
-    c->insert(keyAt(i), deep ? get(i)->copy(true) : get(i));
+  for (auto e: entries())
+    c->insert(e.key(), deep ? e.value()->copy(true) : e.value());
 
   return c;
 }
 
 
-int Dict::insert(const string &key, const ValuePtr &value) {
+Iterator Dict::begin() const {return makeIt(DictImpl::begin());}
+Iterator Dict::end()   const {return makeIt(DictImpl::end());}
+
+
+Iterator Dict::find(const string &key) const {
+  return makeIt(DictImpl::find(key));
+}
+
+
+const ValuePtr &Dict::get(const string &key) const {
+  auto it = DictImpl::find(key);
+  if (it == DictImpl::end()) CBANG_KEY_ERROR("Key '" << key << "' not found");
+  return it.value();
+}
+
+
+Iterator Dict::insert(const string &key, const ValuePtr &value) {
   if (value->isList() || value->isDict()) simple = false;
-  return OrderedDict<ValuePtr>::insert(key, value);
+  return makeIt(DictImpl::insert(key, value));
+}
+
+
+Iterator Dict::erase(const Iterator &it) {
+  return makeIt(DictImpl::erase(it.key()));
 }
 
 
 void Dict::write(Sink &sink) const {
   sink.beginDict(isSimple());
 
-  for (auto it = Super_T::begin(); it != Super_T::end(); it++) {
-    if (!it->second->canWrite(sink)) continue;
-    sink.beginInsert(it->first);
-    it->second->write(sink);
+  for (auto it: (DictImpl &)*this) {
+    if (!it.value()->canWrite(sink)) continue;
+    sink.beginInsert(it.key());
+    it.value()->write(sink);
   }
 
   sink.endDict();
@@ -71,22 +93,24 @@ void Dict::write(Sink &sink) const {
 
 
 void Dict::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
-
+  for (auto &_child: (const Value &)*this) {
+    auto &child = const_cast<const Value &>(*_child);
     if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
+    visitor(child, this);
     if (!depthFirst) child.visitChildren(visitor, depthFirst);
   }
 }
 
 
 void Dict::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
+  for (auto &child: (Value &)*this) {
+    if (depthFirst) child->visitChildren(visitor, depthFirst);
+    visitor(*child, this);
+    if (!depthFirst) child->visitChildren(visitor, depthFirst);
   }
+}
+
+
+Iterator Dict::makeIt(const DictImpl::const_iterator &it) const {
+  return Iterator(new DictIterator(it, DictImpl::end()));
 }

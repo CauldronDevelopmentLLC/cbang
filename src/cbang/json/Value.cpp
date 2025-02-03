@@ -54,77 +54,7 @@ ValuePtr Value::select(const string &path, const ValuePtr &defaultValue) const {
 }
 
 
-void Value::appendDict()                {append(createDict());}
-void Value::appendList()                {append(createList());}
-void Value::appendUndefined()           {append(createUndefined());}
-void Value::appendNull()                {append(createNull());}
-void Value::appendBoolean(bool value)   {append(createBoolean(value));}
-void Value::append(double value)        {append(create(value));}
-void Value::append(int64_t value)       {append(create(value));}
-void Value::append(uint64_t value)      {append(create(value));}
-void Value::append(const string &value) {append(create(value));}
-
-
-void Value::appendFrom(const Value &value) {
-  for (unsigned i = 0; i < value.size(); i++)
-    append(value.get(i));
-}
-
-
-void Value::setDict(unsigned i)                  {set(i, createDict());}
-void Value::setList(unsigned i)                  {set(i, createList());}
-void Value::setUndefined(unsigned i)             {set(i, createUndefined());}
-void Value::setNull(unsigned i)                  {set(i, createNull());}
-void Value::setBoolean(unsigned i, bool value)   {set(i, createBoolean(value));}
-void Value::set(unsigned i, double value)        {set(i, create(value));}
-void Value::set(unsigned i, int64_t value)       {set(i, create(value));}
-void Value::set(unsigned i, uint64_t value)      {set(i, create(value));}
-void Value::set(unsigned i, const string &value) {set(i, create(value));}
-
-
-int Value::insertDict(const string &key) {
-  return insert(key, createDict());
-}
-
-
-int Value::insertList(const string &key) {
-  return insert(key, createList());
-}
-
-
-int Value::insertUndefined(const string &key) {
-  return insert(key, createUndefined());
-}
-
-
-int Value::insertNull(const string &key) {
-  return insert(key, createNull());
-}
-
-
-int Value::insertBoolean(const string &key, bool value) {
-  return insert(key, createBoolean(value));
-}
-
-
-int Value::insert(const string &key, double value) {
-  return insert(key, create(value));
-}
-
-
-int Value::insert(const string &key, uint64_t value) {
-  return insert(key, create(value));
-}
-
-
-int Value::insert(const string &key, int64_t value) {
-  return insert(key, create(value));
-}
-
-
-int Value::insert(const string &key, const string &value) {
-  return insert(key, create(value));
-}
+void Value::appendFrom(const Value &value) {for (auto &v: value) append(v);}
 
 
 void Value::merge(const Value &value) {
@@ -141,21 +71,18 @@ void Value::merge(const Value &value) {
                << value.getType());
 
   // Merge dicts
-  for (unsigned i = 0; i < value.size(); i++) {
-    const string &key = value.keyAt(i);
-    ValuePtr src = value.get(i);
+  for (auto e: value.entries()) {
+    if (has(e.key())) {
+      ValuePtr dst = get(e.key());
 
-    if (has(key)) {
-      ValuePtr dst = get(key);
-
-      if ((src->isDict() && dst->isDict()) ||
-          (src->isList() && dst->isList())) {
-        dst->merge(*src);
+      if ((e.value()->isDict() && dst->isDict()) ||
+          (e.value()->isList() && dst->isList())) {
+        dst->merge(*e.value());
         continue;
       }
     }
 
-    insert(key, src);
+    insert(e.key(), e.value());
   }
 }
 
@@ -211,16 +138,16 @@ string Value::format(const string &s) const {
 
 
 void Value::visit(const_visitor_t visitor, bool depthFirst) const {
-  if (!depthFirst) visitor(*this, 0, 0);
+  if (!depthFirst) visitor(*this, 0);
   visitChildren(visitor, depthFirst);
-  if (depthFirst) visitor(*this, 0, 0);
+  if (depthFirst) visitor(*this, 0);
 }
 
 
 void Value::visit(visitor_t visitor, bool depthFirst) {
-  if (!depthFirst) visitor(*this, 0, 0);
+  if (!depthFirst) visitor(*this, 0);
   visitChildren(visitor, depthFirst);
-  if (depthFirst) visitor(*this, 0, 0);
+  if (depthFirst) visitor(*this, 0);
 }
 
 
@@ -264,12 +191,9 @@ bool Value::operator==(const Value &o) const {
   case JSON_DICT:
     if (size() != o.size()) return false;
 
-    for (unsigned i = 0; i < size(); i++) {
-      const string &key = keyAt(i);
-
-      if (!o.has(key) || *get(key) != *o.get(key))
+    for (auto e: entries())
+      if (!o.has(e.key()) || *e.value() != *o.get(e.key()))
         return false;
-    }
 
     return true;
   }

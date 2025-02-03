@@ -49,8 +49,8 @@ void AccessHandler::read(const JSON::ValuePtr &config) {
 
 void AccessHandler::read(const JSON::ValuePtr &config, bool allow) {
   if (config->isList())
-    for (unsigned i = 0; i < config->size(); i++)
-      read(config->get(i), allow);
+    for (auto &v: *config)
+      read(v, allow);
 
   else {
     string name = config->asString();
@@ -131,11 +131,9 @@ bool AccessHandler::operator()(Request &req) {
     deny  = userDeny(user);
 
     auto &groups = *session->get("group");
-    for (unsigned i = 0; i < groups.size(); i++)
-      if (groups.getBoolean(i)) {
-        auto &name = groups.keyAt(i);
-        if (checkGroup(name, allow, deny)) group = "@" + name;
-      }
+    for (auto e: groups.entries())
+      if (e->getBoolean())
+        if (checkGroup(e.key(), allow, deny)) group = "@" + e.key();
 
     if (checkGroup("authenticated", allow, deny)) group = "@authenticated";
   }

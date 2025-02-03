@@ -97,7 +97,7 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   spec = config->createDict();
   spec->insert("openapi", "3.1.0");
   if (config->hasDict("info")) spec->insert("info", config->get("info"));
-  spec->insert("tags", config->createList());
+  spec->insert("tags",  config->createList());
   spec->insert("paths", config->createDict());
 
   // Always parse args
@@ -106,9 +106,9 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   // APIs
   if (config->hasDict("apis")) {
     auto apis = config->get("apis");
-    for (unsigned i = 0; i < apis->size(); i++) {
-      auto api = apis->get(i);
-      addTagSpec(apis->keyAt(i), api);
+    for (auto e: apis->entries()) {
+      auto api = e.value();
+      addTagSpec(e.key(), api);
 
       if (api->hasDict("endpoints"))
         addHandler(createAPIHandler(new Context(api->get("endpoints"))));
@@ -149,8 +149,8 @@ JSON::ValuePtr cb::API::API::getEndpointTypes(
     auto types = config->createList();
 
     auto &handlers = config->getList("handlers");
-    for (unsigned i = 0; i < handlers.size(); i++)
-      types->append(getEndpointType(handlers.get(i)));
+    for (auto &handler: handlers)
+      types->append(getEndpointType(handler));
 
     return types;
   }
@@ -252,9 +252,9 @@ HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
   auto &pattern = ctx->getPattern();
 
   // Children
-  for (unsigned i = 0; i < api->size(); i++) {
-    auto &key    = api->keyAt(i);
-    auto config = api->get(i);
+  for (auto e: api->entries()) {
+    auto &key   = e.key();
+    auto config = e.value();
 
     if (config->isString()) {
       string bind = config->getString();
@@ -349,8 +349,7 @@ void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
       args->appendSpecs(*paramSpec);
 
       // Determine arg "in" type
-      for (unsigned i = 0; i < paramSpec->size(); i++) {
-        auto &spec = paramSpec->get(i);
+      for (auto &spec: *paramSpec) {
         string name = spec->getString("name");
         bool isURLArg = urlArgs.find(name) != urlArgs.end();
         spec->insert("in", isURLArg ? "path" : "query");

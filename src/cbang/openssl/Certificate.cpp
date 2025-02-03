@@ -261,8 +261,8 @@ bool Certificate::extensionHas(const string &name, const string &value,
   vector<string> values;
   String::tokenize(getExtension(name), values);
 
-  for (unsigned i = 0; i < values.size(); i++)
-    if (values[i] == value) return true;
+  for (auto &v: values)
+    if (v == value) return true;
 
   return false;
 }

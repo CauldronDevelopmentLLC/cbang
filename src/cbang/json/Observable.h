@@ -41,13 +41,14 @@
 namespace cb {
   namespace JSON {
     class ObservableBase {
-      Value *parent  = 0;
-      unsigned index = 0;
+      Value *parent = 0;
+      ValuePtr key;
 
     public:
       void clearParentRef() {parent = 0;}
-      void setParentRef(Value *parent, unsigned index);
-      void decParentRef() {index--;}
+      void setParentRef(Value *parent, const ValuePtr &key);
+      void incParentRef();
+      void decParentRef();
 
       virtual void notify(const std::list<ValuePtr> &change) {}
 
@@ -61,8 +62,8 @@ namespace cb {
     class Observable : public ObservableBase, public T {
     public:
       ~Observable() {
-        for (unsigned i = 0; i < T::size(); i++)
-          _clearParentRef(T::get(i));
+        for (auto &v: *this)
+          _clearParentRef(v);
       }
 
 
@@ -86,7 +87,7 @@ namespace cb {
       // From Value
       void append(const ValuePtr &_value) override {
         ValuePtr value = convert(_value);
-        int i = T::size();
+        auto i = T::size();
         T::append(value);
         _setParentRef(value, i);
         _notify(i, value);
@@ -95,43 +96,39 @@ namespace cb {
 
       void set(unsigned i, const ValuePtr &_value) override {
         // Block operation if value is equal
-        ValuePtr current = T::get(i);
-        if (*_value == *current) return;
+        auto value = T::get(i);
+        if (*value == *_value) return;
 
-        _clearParentRef(current);
+        _clearParentRef(value);
 
-        ValuePtr value = convert(_value);
+        value = convert(_value);
         T::set(i, value);
         _setParentRef(value, i);
         _notify(i, value);
       }
 
 
-      int insert(const std::string &key, const ValuePtr &_value) override {
+      Iterator insert(const std::string &key, const ValuePtr &_value) override {
         // Block operation if value is equal
-        int index = T::indexOf(key);
+        auto it = T::find(key);
 
-        if (index != -1) {
-          const ValuePtr &current = T::get(index);
-          if (*_value == *current) return index;
-
-          _clearParentRef(current);
+        if (it) {
+          if (*_value == **it) return it;
+          _clearParentRef(*it);
         }
 
-        ValuePtr value = convert(_value);
-        int i = T::insert(key, value);
-        if (i != -1) {
-          _setParentRef(value, i);
-          _notify(key, value);
-        }
+        auto value = convert(_value);
+        it = T::insert(key, value);
+        _setParentRef(value, key);
+        _notify(key, value);
 
-        return i;
+        return it;
       }
 
 
       void clear() override {
-        for (unsigned i = 0; i < T::size(); i++)
-          _clearParentRef(T::get(i));
+        for (auto &v: *this)
+          _clearParentRef(v);
 
         T::clear();
 
@@ -141,21 +138,38 @@ namespace cb {
       }
 
 
+      Iterator erase(const Iterator &it) override {
+        _clearParentRef(*it);
+        auto it2 = T::erase(it);
+
+        if (T::isList()) {
+          while (it2) _decParentRef(*it2++);
+          _notify(it.index());
+
+        } else _notify(it.key());
+
+        return it2;
+      }
+
+
       void erase(unsigned i) override {
         _clearParentRef(T::get(i));
         T::erase(i);
-        for (unsigned j = i; j < T::size(); j++)
-          _decParentRef(T::get(j));
+
+        if (T::isList())
+          for (unsigned j = i; j < T::size(); j++)
+            _decParentRef(T::get(j));
+
         _notify(i);
       }
 
 
       void erase(const std::string &key) override {
-        auto i = T::indexOf(key);
-        _clearParentRef(T::get(i));
-        T::erase(key);
-        for (unsigned j = i; j < T::size(); j++)
-          _decParentRef(T::get(j));
+        auto it = T::find(key);
+        if (!it) return;
+        _clearParentRef(*it);
+        it = T::erase(it);
+        while (it) _decParentRef(*it++);
         _notify(key);
       }
 
@@ -167,9 +181,25 @@ namespace cb {
       }
 
 
-      void _setParentRef(const ValuePtr &target, unsigned index) {
+      void _setParentRef(const ValuePtr &target, const ValuePtr &key) {
         auto *o = dynamic_cast<ObservableBase *>(target.get());
-        if (o) o->setParentRef(this, index);
+        if (o) o->setParentRef(this, key);
+      }
+
+
+      void _setParentRef(const ValuePtr &target, unsigned i) {
+        _setParentRef(target, T::create(i));
+      }
+
+
+      void _setParentRef(const ValuePtr &target, const std::string &key) {
+        _setParentRef(target, T::create(key));
+      }
+
+
+      static void _incParentRef(const ValuePtr &target) {
+        auto *o = dynamic_cast<ObservableBase *>(target.get());
+        if (o) o->incParentRef();
       }
 
 

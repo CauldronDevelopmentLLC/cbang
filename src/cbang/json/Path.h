@@ -66,7 +66,7 @@ namespace cb {
         {modify(target, value);}
       void     erase(Value &target) {modify(target, 0);}
 
-#define CBANG_JSON_VT(NAME, TYPE)                                       \
+#define CBANG_JSON_VT(NAME, TYPE, ...)                                  \
       TYPE select##NAME(const Value &value) const;                      \
       TYPE select##NAME(const Value &value, TYPE defaultValue) const;   \
       bool exists##NAME(const Value &value) const;
