@@ -181,7 +181,6 @@ def configure(conf, cstd = 'c99'):
         env.Replace(CC = 'ccache ' + env['CC'])
         env.Replace(CXX = 'ccache ' + env['CXX'])
 
-
     # Exceptions
     if compiler_mode == 'msvc':
         env.AppendUnique(CCFLAGS = ['/EHa']) # Asynchronous
@@ -247,8 +246,8 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
         if compiler == 'gnu': # Link time optimization
-            env.AppendUnique(LINKFLAGS = ['-flto'])
-            env.AppendUnique(CCFLAGS = ['-flto'])
+            env.AppendUnique(LINKFLAGS = ['-flto=auto'])
+            env.AppendUnique(CCFLAGS = ['-flto=auto'])
 
         env.CBDefine('NDEBUG')
 
@@ -274,6 +273,11 @@ def configure(conf, cstd = 'c99'):
 
         elif mach: env.AppendUnique(CCFLAGS = ['-m' + mach.lower()])
 
+
+    # Position independent code
+    if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
+    if (compiler_mode == 'gnu' and (5,) <= gcc_version(env) and
+        compiler != 'clang'): env.AppendUnique(LINKFLAGS = '-no-pie')
 
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
