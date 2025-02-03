@@ -63,6 +63,7 @@ def configure(conf, version = None):
                      lib_suffix = ['/out32', '/lib', ''])
 
     if env['PLATFORM'] == 'posix': conf.CBCheckLib('dl')
+    conf.CBCheckLib('zstd')
 
     if (conf.CBCheckCHeader('openssl/ssl.h') and
         (conf.CBCheckLib('crypto') and
