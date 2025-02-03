@@ -38,8 +38,8 @@ using namespace cb::API;
 
 
 void ArgDict::add(const JSON::ValuePtr &args) {
-  for (unsigned i = 0; i < args->size(); i++)
-    validators[args->keyAt(i)] = new ArgValidator(args->get(i));
+  for (auto e: args->entries())
+    validators[e.key()] = new ArgValidator(e.value());
 }
 
 
@@ -57,23 +57,23 @@ void ArgDict::operator()(HTTP::Request &req, JSON::Value &value) const {
 
   set<string> found;
 
-  for (unsigned i = 0; i < value.size(); i++) {
-    const string &name = value.keyAt(i);
+  for (auto e: value.entries()) {
+    const string &name = e.key();
 
     found.insert(name);
 
-    auto it = validators.find(name);
-    if (it == validators.end()) continue; // Ignore unrecognized args
+    auto it2 = validators.find(name);
+    if (it2 == validators.end()) continue; // Ignore unrecognized args
 
     try {
-      (*it->second)(req, *value.get(i));
+      (*it2->second)(req, *e);
 
-    } catch (const Exception &e) {
-      if (e.getCode() == HTTP_UNAUTHORIZED)
+    } catch (const Exception &ex) {
+      if (ex.getCode() == HTTP_UNAUTHORIZED)
         THROWX("Access denied", HTTP_UNAUTHORIZED);
 
-      THROWX("Invalid argument '" << name << "=" << value.getAsString(i)
-              << "': " << e.getMessage(), HTTP_BAD_REQUEST);
+      THROWX("Invalid argument '" << name << "=" << e->asString()
+              << "': " << ex.getMessage(), HTTP_BAD_REQUEST);
     }
   }
 

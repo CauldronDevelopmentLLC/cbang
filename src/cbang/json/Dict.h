@@ -39,19 +39,27 @@
 
 namespace cb {
   namespace JSON {
-    class Dict : public Value, protected OrderedDict<ValuePtr> {
-      typedef OrderedDict<ValuePtr> Super_T;
+    using DictImpl = OrderedDict<std::string, ValuePtr>;
 
+    class Dict : public Value, protected DictImpl {
+      friend class DictIterator;
       bool simple;
 
     public:
       Dict() : simple(true) {}
 
-      // From OrderedDict<ValuePtr>
-      using Super_T::empty;
-      using Super_T::has;
+      using Iterator = JSON::Iterator;
+
+      // From DictImpl
+      using DictImpl::empty;
 
       // From Value
+      using Value::begin;
+      using Value::end;
+      using Value::get;
+      using Value::erase;
+      using Value::find;
+
       ValueType getType() const override {return JSON_DICT;}
       bool isDict() const override {return true;}
       ValuePtr copy(bool deep = false) const override;
@@ -61,28 +69,29 @@ namespace cb {
       Dict &getDict() override {return *this;}
       const Dict &getDict() const override {return *this;}
 
-      bool toBoolean() const override {return size();}
-      unsigned size() const override {return Super_T::size();}
-      const std::string &keyAt(unsigned i) const override
-      {return Super_T::keyAt(i);}
-      int indexOf(const std::string &key) const override {return lookup(key);}
-      const ValuePtr &get(unsigned i) const override
-      {return Super_T::get(i);}
-      const ValuePtr &get(const std::string &key) const override
-      {return Super_T::get(key);}
+      Iterator begin() const override;
+      Iterator end()   const override;
 
-      int insert(const std::string &key, const ValuePtr &value) override;
+      bool toBoolean() const override {return size();}
+      unsigned size() const override {return DictImpl::size();}
+      Iterator find(const std::string &key) const override;
+      const ValuePtr &get(const std::string &key) const override;
+
+      Iterator insert(const std::string &key, const ValuePtr &value) override;
       using Value::insert;
 
-      void clear() override {Super_T::clear();}
-      void erase(unsigned i) override {Super_T::erase(i);}
-      void erase(const std::string &key) override {Super_T::erase(key);}
+      void clear() override {DictImpl::clear();}
+      void erase(const std::string &key) override {DictImpl::erase(key);}
+      Iterator erase(const Iterator &it) override;
 
       void write(Sink &sink) const override;
 
       void visitChildren(
         const_visitor_t visitor, bool depthFirst = true) const override;
       void visitChildren(visitor_t visitor, bool depthFirst = true) override;
+
+    private:
+      Iterator makeIt(const DictImpl::const_iterator &it) const;
     };
   }
 }

@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "List.h"
+#include "ListIterator.h"
 
 #include <cbang/Exception.h>
 #include <cbang/String.h>
@@ -45,38 +46,52 @@ using namespace cb::JSON;
 ValuePtr List::copy(bool deep) const {
   ValuePtr c = createList();
 
-  for (unsigned i = 0; i < size(); i++)
-    c->append(deep ? at(i)->copy(true) : at(i));
+  for (auto &v: (ListImpl &)*this)
+    c->append(deep ? v->copy(true) : v);
 
   return c;
 }
 
 
+Iterator List::begin() const {return makeIt(ListImpl::begin());}
+Iterator List::end()   const {return makeIt(ListImpl::end());}
+
+
+Iterator List::find(unsigned i) const {
+  return size() <= i ? end() : makeIt(ListImpl::begin() + i);
+}
+
+
 const ValuePtr &List::get(unsigned i) const {
   check(i);
-  return Super_T::operator[](i);
+  return ListImpl::operator[](i);
 }
 
 
 void List::append(const ValuePtr &value) {
   if (value->isList() || value->isDict()) simple = false;
-  push_back(value);
+  ListImpl::push_back(value);
 }
 
 
 void List::erase(unsigned i) {
   check(i);
-  Super_T::erase(Super_T::begin() + i);
+  ListImpl::erase(ListImpl::begin() + i);
+}
+
+
+Iterator List::erase(const Iterator &it) {
+  return makeIt(ListImpl::erase(ListImpl::begin() + it.index()));
 }
 
 
 void List::write(Sink &sink) const {
   sink.beginList(isSimple());
 
-  for (auto it = Super_T::begin(); it != Super_T::end(); it++) {
-    if (!(*it)->canWrite(sink)) continue;
+  for (auto &v: (ListImpl &)*this) {
+    if (!v->canWrite(sink)) continue;
     sink.beginAppend();
-    (*it)->write(sink);
+    v->write(sink);
   }
 
   sink.endList();
@@ -91,27 +106,29 @@ void List::set(unsigned i, const ValuePtr &value) {
 
 
 void List::visitChildren(const_visitor_t visitor, bool depthFirst) const {
-  for (unsigned i = 0; i < size(); i++) {
-    const Value &child = *get(i);
-
+  for (auto &_child: (const ListImpl &)*this) {
+    auto &child = const_cast<const Value &>(*_child);
     if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
+    visitor(child, this);
     if (!depthFirst) child.visitChildren(visitor, depthFirst);
   }
 }
 
 
 void List::visitChildren(visitor_t visitor, bool depthFirst) {
-  for (unsigned i = 0; i < size(); i++) {
-    Value &child = *get(i);
-
-    if (depthFirst) child.visitChildren(visitor, depthFirst);
-    visitor(child, this, i);
-    if (!depthFirst) child.visitChildren(visitor, depthFirst);
+  for (auto &child: (ListImpl &)*this) {
+    if (depthFirst) child->visitChildren(visitor, depthFirst);
+    visitor(*child, this);
+    if (!depthFirst) child->visitChildren(visitor, depthFirst);
   }
 }
 
 
 void List::check(unsigned i) const {
-  if (size() <= i) KEY_ERROR("Index " << i << " out of range " << size());
+  if (size() <= i) KEY_ERROR("Index " << (int)i << " out of range " << size());
+}
+
+
+Iterator List::makeIt(const ListImpl::const_iterator &it) const {
+  return Iterator(new ListIterator(it, ListImpl::begin(), ListImpl::end()));
 }

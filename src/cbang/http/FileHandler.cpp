@@ -66,13 +66,13 @@ bool FileHandler::operator()(Request &req) {
     String::tokenize(orig, parts, "/");
     vector<string> result;
 
-    for (unsigned i = 0; i < parts.size(); i++) {
-      if (parts[i] == ".") continue;
-      if (parts[i] == "..") {
+    for (auto &part: parts) {
+      if (part == ".") continue;
+      if (part == "..") {
         if (result.empty()) THROWX("Invalid path", HTTP_UNAUTHORIZED);
         result.pop_back();
 
-      } else result.push_back(parts[i]);
+      } else result.push_back(part);
     }
 
     // Relative to root

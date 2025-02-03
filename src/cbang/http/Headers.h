@@ -33,6 +33,7 @@
 #pragma once
 
 #include <cbang/String.h>
+#include <cbang/util/StringICmp.h>
 #include <cbang/util/OrderedDict.h>
 
 #include <ostream>
@@ -42,16 +43,16 @@ namespace cb {
   namespace Event {class Buffer;}
 
   namespace HTTP {
-    struct HeaderKeyCompare {
-      bool operator()(const std::string &a, const std::string &b) const {
-        return String::toLower(a) < String::toLower(b);
-      }
-    };
-
-    class Headers :
-      public OrderedDict<std::string, std::string, HeaderKeyCompare> {
+    using HeadersImpl = OrderedDict<std::string, std::string, StringILess>;
+    class Headers : protected HeadersImpl {
     public:
+      using HeadersImpl::begin;
+      using HeadersImpl::end;
+      using HeadersImpl::insert;
+
+      bool has(const std::string &key) const;
       std::string find(const std::string &key) const;
+      const std::string &get(const std::string &key) const;
       void set(const std::string &key, const std::string &value)
         {insert(key, value);}
       void remove(const std::string &key);

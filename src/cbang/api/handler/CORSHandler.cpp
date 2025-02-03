@@ -44,18 +44,14 @@ using namespace cb::API;
 CORSHandler::CORSHandler(const JSON::ValuePtr &config) :
   HeadersHandler(config->get("headers", new JSON::Dict)) {
   // Explicit origins
-  if (config->has("origins")) {
-    auto &l = *config->get("origins");
-    for (unsigned i = 0; i < l.size(); i++)
-      origins.insert(String::toLower(l.getString(i)));
-  }
+  if (config->has("origins"))
+    for (auto &v: *config->get("origins"))
+      origins.insert(String::toLower(v->getString()));
 
   // Origin regex patterns
-  if (config->has("patterns")) {
-    auto &l = *config->get("patterns");
-    for (unsigned i = 0; i < l.size(); i++)
-      patterns.push_back(l.getString(i));
-  }
+  if (config->has("patterns"))
+    for (auto &v: *config->get("patterns"))
+      patterns.push_back(v->getString());
 
   // Add defaults
   auto hdrs = config->get("headers", new JSON::Dict);
@@ -92,8 +88,8 @@ bool CORSHandler::operator()(HTTP::Request &req) {
     string origin = String::toLower(req.inGet("Origin"));
 
     bool match = origins.find(origin) != origins.end();
-    for (unsigned i = 0; i < patterns.size() && !match; i++)
-      match = patterns[i].match(origin);
+    for (auto &pattern: patterns)
+      if (match || (match = pattern.match(origin))) break;
 
     if (match) req.outSet("Access-Control-Allow-Origin", req.inGet("Origin"));
   }

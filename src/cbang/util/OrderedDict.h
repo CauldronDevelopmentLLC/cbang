@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2021-2024, Cauldron Development  Oy
+                Copyright (c) 2021-2025, Cauldron Development  Oy
                 Copyright (c) 2003-2021, Cauldron Development LLC
                                All rights reserved.
 
@@ -32,160 +32,217 @@
 
 #pragma once
 
-#include <map>
-#include <vector>
-#include <string>
+#include <cbang/SmartPointer.h>
 
-#include <cbang/Errors.h>
+#include <map>
+#include <string>
 
 
 namespace cb {
-  template <typename T, typename KEY = std::string,
-            typename COMPARE = std::less<KEY> >
-  class OrderedDict : protected std::vector<std::pair<KEY, T> > {
-    typedef T type_t;
-    typedef std::vector<std::pair<KEY, type_t> > vector_t;
-    typedef std::map<KEY, typename vector_t::size_type, COMPARE> dict_t;
+  template <typename Key, typename Value, typename KeyLess = std::less<Key>>
+  class OrderedDict {
+  private:
+    struct MapEntry;
+
+    using dict_t = std::map<Key, SmartPointer<struct MapEntry>, KeyLess>;
+
+    struct MapEntry {
+      Value value;
+      MapEntry *prev = 0;
+      MapEntry *next = 0;
+      typename dict_t::iterator it;
+
+      MapEntry(const Value &value) : value(value) {}
+    };
+
+    struct Iterator;
+
+    struct ConstIterator {
+      MapEntry *e;
+
+      ConstIterator(MapEntry *e = 0) : e(e) {}
+      ConstIterator(const ConstIterator &o) : e(o.e) {}
+      ConstIterator(const Iterator &o);
+
+      ConstIterator &operator=(const ConstIterator &o) {e = o.e; return *this;}
+      bool operator==(const ConstIterator &o) const {return e == o.e;}
+      bool operator!=(const ConstIterator &o) const {return e != o.e;}
+
+
+      ConstIterator &operator++() {
+        if (e) e = e->next;
+        return *this;
+      }
+
+
+      ConstIterator operator++(int) {
+        auto saveE = e;
+        if (e) e = e->next;
+        return ConstIterator(saveE);
+      }
+
+
+      ConstIterator &operator--() {
+        if (e) e = e->prev;
+        return *this;
+      }
+
+
+      ConstIterator operator--(int) {
+        auto saveE = e;
+        if (e) e = e->prev;
+        return ConstIterator(saveE);
+      }
+
+      const Key   &key()        const {return  deref().it->first;}
+      const Value &value()      const {return  deref().value;}
+      const Value *operator->() const {return &value();}
+      const Value &operator*()  const {return  value();}
+
+
+      MapEntry &deref() const {
+        if (!e) CBANG_THROW("Cannot dereference null iterator");
+        return *e;
+      }
+    };
+
+
+    struct Iterator : public ConstIterator {
+      using ConstIterator::ConstIterator;
+      using ConstIterator::deref;
+
+      Value &value()      const {return  deref().value;}
+      Value *operator->() const {return &value();}
+      Value &operator*()  const {return  value();}
+    };
+
+
+    struct EntriesIterator : public Iterator {
+      using Iterator::Iterator;
+      const Iterator &operator*()  const {return *this;}
+    };
+
+
+    struct ConstEntriesIterator : public ConstIterator {
+      using ConstIterator::ConstIterator;
+      const ConstIterator &operator*()  const {return *this;}
+    };
+
 
     dict_t dict;
+    MapEntry *head = 0;
+    MapEntry *tail = 0;
 
   public:
-    void clear() {
-      vector_t::clear();
-      dict.clear();
-    }
+    using size_type = typename dict_t::size_type;
 
 
-    typedef typename vector_t::size_type size_type;
-    using vector_t::empty;
-    using vector_t::size;
+    OrderedDict() {}
+    OrderedDict(const OrderedDict &o) {*this = o;}
+    OrderedDict(OrderedDict &&o) = default;
 
-    typedef typename vector_t::const_iterator iterator;
-    typedef typename vector_t::const_iterator const_iterator;
-    iterator begin() const {return vector_t::begin();}
-    iterator end() const {return vector_t::end();}
+    OrderedDict &operator=(OrderedDict &&o) = default;
 
 
-    void update(const OrderedDict<T> &o) {
-      for (auto &p: o) insert(p.first, p.second);
-    }
-
-
-    int lookup(const KEY &key) const {
-      auto it = dict.find(key);
-      return it == dict.end() ? -1 : it->second;
-    }
-
-
-    size_type indexOf(const KEY &key) const {
-      auto it = dict.find(key);
-      if (it == dict.end()) CBANG_KEY_ERROR("Key '" << key << "' not found");
-      return it->second;
-    }
-
-
-    const KEY &keyAt(size_type i) const {
-      if (size() <= i) CBANG_KEY_ERROR("Index " << i << " out of range");
-      return this->at(i).first;
-    }
-
-
-    bool has(const KEY &key) const {return dict.find(key) != dict.end();}
-
-
-    const typename OrderedDict::type_t &
-    get(size_type i) const {
-      if (size() <= i) CBANG_KEY_ERROR("Index " << i << " out of range");
-      return this->at(i).second;
-    }
-
-
-    typename OrderedDict::type_t &
-    get(size_type i) {
-      if (size() <= i) CBANG_KEY_ERROR("Index " << i << " out of range");
-      return this->at(i).second;
-    }
-
-
-    const typename OrderedDict::type_t &
-    get(size_type i, const typename OrderedDict::type_t &defaultValue) const {
-      if (size() <= i) return defaultValue;
-      return this->at(i).second;
-    }
-
-
-    const typename OrderedDict::type_t &
-    get(const KEY &key) const {return this->at(indexOf(key)).second;}
-
-
-    typename OrderedDict::type_t &
-    get(const KEY &key) {return this->at(indexOf(key)).second;}
-
-
-    const typename OrderedDict::type_t &
-    get(const KEY &key,
-        const typename OrderedDict::type_t &defaultValue) const {
-      auto it = dict.find(key);
-      if (it == dict.end() || size() <= it->second)
-        return defaultValue;
-      return this->at(it->second).second;
-    }
-
-
-    size_type insert(const KEY &key, const type_t &value) {
-      auto it = dict.find(key);
-      if (it == dict.end()) {
-        dict.insert(typename dict_t::value_type(key, size()));
-        vector_t::push_back(typename vector_t::value_type(key, value));
-
-        return size() - 1;
+    OrderedDict &operator=(const OrderedDict &o) {
+      if (this != &o) {
+        clear();
+        for (auto it: o) insert(it.key(), it.value());
       }
 
-      this->at(it->second) = typename vector_t::value_type(key, value);
-
-      return it->second;
+      return *this;
     }
 
 
-    typename OrderedDict::type_t &
-    operator[](size_type i) {
-      if (size() <= i) CBANG_KEY_ERROR("Index " << i << " out of range");
-      return this->at(i).second;
-    }
+    void clear() {dict.clear(); head = tail = 0;}
+    bool empty() const {return dict.empty();}
+    size_type size() const {return dict.size();}
+
+    using iterator       = EntriesIterator;
+    using const_iterator = ConstEntriesIterator;
+    const_iterator begin() const {return const_iterator(head);}
+    const_iterator end()   const {return const_iterator(0);}
+    iterator       begin()       {return iterator(head);}
+    iterator       end()         {return iterator(0);}
 
 
-    const typename OrderedDict::type_t &
-    operator[](size_type i) const {return get(i);}
-
-
-    typename OrderedDict::type_t &operator[](const KEY &key) {
+    const_iterator find(const Key &key) const {
       auto it = dict.find(key);
-      if (it == dict.end()) {
-        dict[key] = size();
-        vector_t::push_back(typename vector_t::value_type(key, T()));
-        return vector_t::back().second;
+      return it == dict.end() ? end() : const_iterator(it->second.get());
+    }
+
+
+    iterator find(const Key &key) {
+      auto it = dict.find(key);
+      return it == dict.end() ? end() : iterator(it->second.get());
+    }
+
+
+    iterator insert(const Key &key, const Value &value, bool prepend = false) {
+      auto it = dict.find(key);
+      if (it == dict.end()) it = _insert(key, value, prepend);
+      else it->second->value = value;
+      return iterator(it->second.get());
+    }
+
+
+    Value &operator[](const Key &key) {
+      auto it = dict.find(key);
+      if (it == dict.end()) it = _insert(key);
+      return it->second->value;
+    }
+
+
+    iterator erase(const Key &key) {
+      auto it = dict.find(key);
+      if (it == dict.end()) return end();
+      return erase(iterator(it->second.get()));
+    }
+
+
+    iterator erase(iterator it) {
+      auto e = it.e;
+      if (!e) CBANG_THROW("Cannot erase empty iterator");
+
+      auto next = e->next;
+      _erase(e);
+      return iterator(next);
+    }
+
+
+  private:
+    const typename dict_t::iterator &_insert(
+      const Key &key, const Value &value = Value(), bool prepend = false) {
+      auto e = new MapEntry(value);
+
+      if (prepend) {
+        e->next = head;
+        if (head) head->prev = e;
+        if (!tail) tail = e;
+        head = e;
+
+      } else {
+        e->prev = tail;
+        if (tail) tail->next = e;
+        if (!head) head = e;
+        tail = e;
       }
 
-      return this->at(it->second).second;
+      return e->it = dict.insert(typename dict_t::value_type(key, e)).first;
     }
 
 
-    const typename OrderedDict::type_t &
-    operator[](const KEY &key) const {return get(key);}
+    void _erase(MapEntry *e) {
+      if (head == e) head = e->next;
+      if (tail == e) tail = e->prev;
+      if (e->prev) e->prev->next = e->next;
+      if (e->next) e->next->prev = e->prev;
 
-
-    /// Note, erase() takes linear time
-    void erase(size_type i) {erase(keyAt(i));}
-
-
-    /// Note, erase() takes linear time
-    void erase(const KEY &key) {
-      size_type i = indexOf(key);
-      dict.erase(key);
-      vector_t::erase(vector_t::begin() + i);
-
-      for (auto &p: dict)
-        if (i < p.second) p.second--;
+      dict.erase(e->it);
     }
   };
+
+  template <typename Key, typename Value, typename KeyLess>
+  OrderedDict<Key, Value, KeyLess>::ConstIterator::ConstIterator(
+    const Iterator &o) : e(o.e) {}
 }

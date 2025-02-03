@@ -30,7 +30,7 @@
 
 \******************************************************************************/
 
-/// XMacro definitions are ugly but in this case it's worth it.
+/// X-Macro definitions are ugly but in this case it's worth it.
 /// Please see cbang/enum/Enumeration.h for more information.
 
 #include <cbang/SmartPointer.h>

@@ -56,8 +56,8 @@ void GPUIndex::add(const GPU &gpu) {gpus.insert(gpu);}
 
 void GPUIndex::read(const JSON::Value &value) {
   clear();
-  for (unsigned i = 0; i < value.size(); i++)
-    add(GPU(*value.get(i)));
+  for (auto &v: value)
+    add(GPU(*v));
 }
 
 

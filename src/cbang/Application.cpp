@@ -39,9 +39,7 @@
 #include <cbang/os/SystemInfo.h>
 #include <cbang/os/SignalManager.h>
 
-#include <cbang/time/Timer.h>
 #include <cbang/time/Time.h>
-
 #include <cbang/util/ResourceManager.h>
 #include <cbang/log/Logger.h>
 #include <cbang/config/Option.h>
@@ -70,7 +68,7 @@ namespace cb {
 
 Application::Application(const string &name, hasFeature_t hasFeature) :
   Features(hasFeature), logger(Logger::instance()), name(name),
-  quit(false), startTime(Timer::now()) {
+  quit(false), startTime(Time::now()) {
 
   loadResources();
 
@@ -181,7 +179,7 @@ bool Application::_hasFeature(int feature) {
 }
 
 
-double Application::getUptime() const {return Timer::now() - startTime;}
+uint64_t Application::getUptime() const {return Time::now() - startTime;}
 
 
 int Application::init(int argc, char *argv[]) {

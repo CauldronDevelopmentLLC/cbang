@@ -120,9 +120,9 @@ void Option::setDefault(const JSON::Value &value) {
   case JSON::ValueType::JSON_LIST: {
     string defaultValue;
 
-    for (unsigned i = 0; i < value.size(); i++) {
-      if (i) defaultValue += " ";
-      defaultValue += value.getAsString(i);
+    for (auto &v: value) {
+      if (!defaultValue.empty()) defaultValue += " ";
+      defaultValue += v->asString();
     }
 
     setDefault(defaultValue);
@@ -198,8 +198,8 @@ void Option::configure(const JSON::Value &config) {
 
   if (config.hasList("aliases")) {
     auto &aliases = config.getList("aliases");
-    for (unsigned i = 0; i < aliases.size(); i++)
-      addAlias(aliases.getAsString(i));
+    for (auto &alias: aliases)
+      addAlias(alias->asString());
   }
 
   bool hasMin = config.hasNumber("min");
@@ -291,7 +291,7 @@ void Option::set(const strings_t &values) {
   string value;
 
   for (unsigned i = 1; i < values.size(); i++) {
-    if (i != 1) value += " ";
+    if (!value.empty()) value += " ";
     value += values[i];
   }
 
@@ -303,7 +303,7 @@ void Option::set(const integers_t &values) {
   string value;
 
   for (unsigned i = 1; i < values.size(); i++) {
-    if (i != 1) value += " ";
+    if (!value.empty()) value += " ";
     value += String(values[i]);
   }
 
@@ -315,7 +315,7 @@ void Option::set(const doubles_t &values) {
   string value;
 
   for (unsigned i = 1; i < values.size(); i++) {
-    if (i != 1) value += " ";
+    if (!value.empty()) value += " ";
     value += String(values[i]);
   }
 
@@ -561,7 +561,7 @@ void Option::writeStrings(JSON::Sink &sink, const string &value) {
   strings_t l = parseStrings(value);
 
   sink.beginList();
-  for (unsigned i = 0; i < l.size(); i++) sink.append(l[i]);
+  for (auto &s: l) sink.append(s);
   sink.endList();
 }
 
@@ -570,10 +570,10 @@ void Option::writeIntegers(JSON::Sink &sink, const string &value) {
   integers_t l = parseIntegers(value);
 
   sink.beginList();
-  for (unsigned i = 0; i < l.size(); i++) {
+  for (auto i: l) {
     sink.beginAppend();
-    if (JSON_MIN_INT < l[i] && l[i] < JSON_MAX_INT) sink.write(l[i]);
-    else sink.write(SSTR("0x" << hex << l[i]));
+    if (JSON_MIN_INT < i && i < JSON_MAX_INT) sink.write(i);
+    else sink.write(SSTR("0x" << hex << i));
   }
   sink.endList();
 }
@@ -583,9 +583,9 @@ void Option::writeDoubles(JSON::Sink &sink, const string &value) {
   doubles_t l = parseDoubles(value);
 
   sink.beginList();
-  for (unsigned i = 0; i < value.size(); i++) {
+  for (auto d: l) {
     sink.beginAppend();
-    sink.append(l[i]);
+    sink.append(d);
   }
   sink.endList();
 }

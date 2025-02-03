@@ -236,17 +236,13 @@ void CommandLine::usage(ostream &stream, const string &name) const {
 
   // Extra usage lines added by the application
   if (usageExtras.size()) stream << endl;
-  for (unsigned i = 0; i < usageExtras.size(); i++)
-    stream << usageExtras[i] << endl;
+  for (auto &line: usageExtras) stream << line << endl;
 }
 
 
 int CommandLine::licenseAction() {
   if (licenseText.empty()) cout << "Unspecified" << endl;
-
-  for (unsigned i = 0; i < licenseText.size(); i++)
-    cout << licenseText[i] << endl << endl;
-
+  for (auto &text: licenseText) cout << text << endl << endl;
   exit(0);
   return -1;
 }

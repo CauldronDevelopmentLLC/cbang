@@ -112,16 +112,14 @@ void Server::init(Options &options) {
 
   // Configure ports
   Option::strings_t addresses = options["http-addresses"].toStrings();
-  for (unsigned i = 0; i < addresses.size(); i++)
-    addListenPort(SockAddr::parse(addresses[i]));
+  for (auto &addr: addresses) addListenPort(SockAddr::parse(addr));
 
 #ifdef HAVE_OPENSSL
   // SSL
   if (sslCtx.isSet()) {
     // Configure secure ports
     addresses = options["https-addresses"].toStrings();
-    for (unsigned i = 0; i < addresses.size(); i++)
-      addSecureListenPort(SockAddr::parse(addresses[i]));
+    for (auto &addr: addresses) addSecureListenPort(SockAddr::parse(addr));
 
     // Load server certificate
     // TODO should load file relative to configuration file

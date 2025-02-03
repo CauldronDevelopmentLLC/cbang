@@ -50,8 +50,8 @@ namespace {
 ArgAuth::ArgAuth(bool allow, const JSON::ValuePtr &config) : allow(allow) {
   const char *type = allow ? "allow" : "deny";
 
-  for (unsigned i = 0; i < config->size(); i++) {
-    string constraint = config->getString(i);
+  for (auto &value: *config) {
+    string constraint = value->getString();
     if (constraint.empty()) THROW("Empty arg" << type << " constraint");
 
     if (constraint[0] == '$') groups.push_back(constraint.substr(1));
@@ -69,16 +69,15 @@ void ArgAuth::operator()(HTTP::Request &req, JSON::Value &_value) const {
   SmartPointer<HTTP::Session> session = req.getSession();
   if (session.isNull()) unauthorized();
 
-  for (unsigned i = 0; i < groups.size(); i++)
-    if (session->hasGroup(groups[i])) {
+  for (auto &group: groups)
+    if (session->hasGroup(group)) {
       if (allow) return;
       unauthorized();
     }
 
   string value = _value.asString();
-  for (unsigned i = 0; i < sessionVars.size(); i++)
-    if (session->has(sessionVars[i]) &&
-        session->getAsString(sessionVars[i]) == value) {
+  for (auto &var: sessionVars)
+    if (session->has(var) && session->getAsString(var) == value) {
       if (allow) return;
       unauthorized();
     }

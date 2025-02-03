@@ -30,30 +30,39 @@
 
 \******************************************************************************/
 
-#include "ArgFilterHandler.h"
-#include "ArgFilterProcess.h"
+#pragma once
 
-#include <cbang/api/API.h>
-
-using namespace std;
-using namespace cb;
-using namespace cb::API;
+#include <string>
+#include <cctype>
 
 
-ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config,
-  SmartPointer<HTTP::RequestHandler> &child) : api(api), child(child) {
+namespace cb {
+  // Case insensitive string comparison
+  struct StringICmp {
+    int operator()(const std::string &a, const std::string &b) const {
+      if (a.length() != b.length()) return a.length() - b.length();
 
-  if (config->isString()) Subprocess::parse(config->toString(), cmd);
-  else {
-    if (!config->isList()) THROW("Invalid arg-filter config");
-    for (auto &v: *config) cmd.push_back(v->asString());
-  }
-}
+      for (unsigned i = 0; i < a.size(); i++) {
+        auto A = std::tolower(a[i]);
+        auto B = std::tolower(b[i]);
+        if (A != B) return (int)A - (int)B;
+      }
+
+      return 0;
+    }
+  };
 
 
-bool ArgFilterHandler::operator()(HTTP::Request &req) {
-  auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, req));
-  return true;
+  struct StringIEqual : public StringICmp {
+    bool operator()(const std::string &a, const std::string &b) const {
+      return StringICmp::operator()(a, b) == 0;
+    }
+  };
+
+
+  struct StringILess : public StringICmp {
+    bool operator()(const std::string &a, const std::string &b) const {
+      return StringICmp::operator()(a, b) < 0;
+    }
+  };
 }

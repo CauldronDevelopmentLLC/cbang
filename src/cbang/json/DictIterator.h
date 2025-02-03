@@ -30,30 +30,32 @@
 
 \******************************************************************************/
 
-#include "ArgFilterHandler.h"
-#include "ArgFilterProcess.h"
+#pragma once
 
-#include <cbang/api/API.h>
-
-using namespace std;
-using namespace cb;
-using namespace cb::API;
+#include "IteratorImpl.h"
+#include "Dict.h"
 
 
-ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config,
-  SmartPointer<HTTP::RequestHandler> &child) : api(api), child(child) {
+namespace cb {
+  namespace JSON {
+    class DictIterator : public IteratorImpl {
+      using iterator = DictImpl::const_iterator;
+      iterator it;
+      iterator end;
 
-  if (config->isString()) Subprocess::parse(config->toString(), cmd);
-  else {
-    if (!config->isList()) THROW("Invalid arg-filter config");
-    for (auto &v: *config) cmd.push_back(v->asString());
+    public:
+      DictIterator(const iterator &it, iterator end) : it(it), end(end) {}
+
+      SmartPointer<IteratorImpl> clone() const override;
+      bool equal(const SmartPointer<IteratorImpl> &o) const override;
+      void next() override {it++;}
+      void prev() override {it--;}
+
+      operator bool() const override {return it != end;}
+
+      const std::string &key() const override {return it.key();}
+      unsigned index() const override;
+      const SmartPointer<Value> &value() const override {return it.value();}
+    };
   }
-}
-
-
-bool ArgFilterHandler::operator()(HTTP::Request &req) {
-  auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, req));
-  return true;
 }

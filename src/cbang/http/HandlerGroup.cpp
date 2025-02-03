@@ -79,8 +79,8 @@ SmartPointer<HandlerGroup> HandlerGroup::addGroup(
 
 
 bool HandlerGroup::operator()(Request &req) {
-  for (unsigned i = 0; i < handlers.size(); i++)
-    if ((*handlers[i])(req)) return true;
+  for (auto &handler: handlers)
+    if ((*handler)(req)) return true;
 
   return false;
 }

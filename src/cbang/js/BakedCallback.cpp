@@ -50,8 +50,9 @@ SmartPointer<Value> BakedCallback::call(Callback &cb, Value &args) {
     newArgs = factory->createObject();
 
     int index = 0;
+    auto sigKeyIt = sig.begin();
     for (unsigned i = 0; i < args.length(); i++)
-      if (i < sig.size()) newArgs->set(sig.keyAt(i), args[i]);
+      if (sigKeyIt != sig.end()) newArgs->set((sigKeyIt++).key(), args[i]);
       else {
         while (newArgs->has(String(index))) index++;
         newArgs->set(index, args[i]);
@@ -60,26 +61,24 @@ SmartPointer<Value> BakedCallback::call(Callback &cb, Value &args) {
   } else newArgs = SmartPointer<Value>::Phony(&args);
 
   // Fill in defaults
-  for (unsigned i = 0; i < sig.size(); i++) {
-    string key = sig.keyAt(i);
-
-    if (!newArgs->has(key))
-      switch (sig.get(i)->getType()) {
+  for (auto e: sig.entries()) {
+    if (!newArgs->has(e.key()))
+      switch (e->getType()) {
       case JSON::Value::JSON_NULL:
-        newArgs->set(key, factory->createNull());
+        newArgs->set(e.key(), factory->createNull());
         break;
       case JSON::Value::JSON_BOOLEAN:
-        newArgs->set(key, factory->createBoolean(sig.getBoolean(i)));
+        newArgs->set(e.key(), factory->createBoolean(e->getBoolean()));
         break;
       case JSON::Value::JSON_NUMBER:
-        newArgs->set(key, factory->create(sig.getNumber(i)));
+        newArgs->set(e.key(), factory->create(e->getNumber()));
         break;
       case JSON::Value::JSON_STRING:
-        newArgs->set(key, factory->create(sig.getString(i)));
+        newArgs->set(e.key(), factory->create(e->getString()));
         break;
       case JSON::Value::JSON_UNDEFINED: break;
-      default: THROW("Unexpected type " << sig.get(i)->getType()
-                      << " in function signature");
+      default: THROW("Unexpected type " << e->getType()
+          << " in function signature");
       }
   }
 

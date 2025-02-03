@@ -36,35 +36,36 @@
 #include "Event.h"
 
 #include <cbang/util/RateSet.h>
-#include <cbang/json/Serializable.h>
+#include <cbang/util/CallbackSet.h>
+#include <cbang/json/Sink.h>
 
-#include <map>
 #include <vector>
-#include <limits>
 
 
 namespace cb {
   namespace Event {
-    class RateTracker : public JSON::Serializable {
+    class RateTracker {
       SmartPointer<RateSet> rates;
       const unsigned size;   //< Maximum number of measurements
       const unsigned period; //< Measurement period in seconds
 
-      unsigned offset = 0;   //< Index to most recent measurement
-      unsigned count  = 0;   //< Number of measurements
-      std::vector<uint64_t> times;
+      using cb_set_t =
+        CallbackSet<uint64_t, const std::string &, double, double>;
+      using cb_t = cb_set_t::callback_t;
+      cb_set_t callbacks;
 
-      static constexpr const double NaN =
-        std::numeric_limits<double>::quiet_NaN();
+      struct Series {
+        std::vector<double> rates;
+        std::vector<double> totals;
 
-      struct Entry {
-        double rate  = NaN;
-        double total = NaN;
+        Series(unsigned size);
       };
 
-      typedef std::vector<Entry> series_t;
-      typedef std::map<std::string, series_t> measurements_t;
-      measurements_t measurements;
+      std::map<std::string, SmartPointer<Series>> measurements;
+      std::vector<uint64_t> times;
+
+      unsigned offset = 0; //< Index to most recent measurement
+      unsigned fill   = 0; //< Number of measurements taken
 
       EventPtr event;
 
@@ -72,15 +73,14 @@ namespace cb {
       RateTracker(Base &base, const SmartPointer<RateSet> &rates,
         unsigned size = 60 * 24, unsigned period = 60);
 
+      uint64_t addCallback(const cb_t &cb) {return callbacks.add(cb);}
+      void removeCallback(uint64_t id) {callbacks.remove(id);}
+
       const SmartPointer<RateSet> &getRateSet() const {return rates;}
 
       void clear();
 
-      void insert(JSON::Sink &sink) const;
-
-      // From JSON::Serializable
-      using JSON::Serializable::write;
-      void write(JSON::Sink &sink) const override;
+      void write(JSON::Sink &sink) const;
 
     protected:
       void measure();

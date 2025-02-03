@@ -44,70 +44,57 @@ using namespace cb;
 
 
 Info::category_t &Info::add(const string &category, bool prepend) {
-  auto result =
-    categories.insert(categories_t::value_type(category, category_t()));
-  category_t &cat = result.first->second;
-
-  if (result.second) {
-    if (prepend) categories.push_front(&*result.first);
-    else categories.push_back(&*result.first);
-  }
-
-  return cat;
+  auto it = categories.find(category);
+  if (it == categories.end())
+    it = categories.insert(category, category_t(), prepend);
+  return it.value();
 }
 
 
 void Info::add(const string &category, const string &key, const string &value,
                bool prepend) {
   category_t &cat = add(category, prepend);
-  auto result = cat.insert(category_t::value_type(key, value));
-
-  if (result.second) {
-    if (prepend) cat.push_front(&*result.first);
-    else cat.push_back(&*result.first);
-
-  } else result.first->second = value;
-
+  cat.insert(key, value, prepend);
   if (maxKeyLength < key.length()) maxKeyLength = key.length();
 }
 
 
 const string &Info::get(const string &category, const string &key) const {
   auto it = categories.find(category);
-  if (it == categories.map_t::end())
+  if (it == categories.end())
     THROW("Info category '" << category << "' does not exist.");
 
-  const category_t &cat = it->second;
+  const category_t &cat = it.value();
 
   auto it2 = cat.find(key);
-  if (it2 == cat.map_t::end())
+  if (it2 == cat.end())
     THROW("Info category '" << category << "' does have key '" << key << "'.");
 
-  return it2->second;
+  return it2.value();
 }
 
 
 bool Info::has(const string &category, const string &key) const {
   auto it = categories.find(category);
-  if (it == categories.map_t::end()) return false;
+  if (it == categories.end()) return false;
 
-  const category_t &cat = it->second;
+  const category_t &cat = it.value();
 
-  return cat.find(key) != cat.map_t::end();
+  return cat.find(key) != cat.end();
 }
 
 
 ostream &Info::print(ostream &stream, unsigned width, bool wrap) const {
-  for (auto ptr: categories) {
-    if (ptr->first != "") stream << String::bar(ptr->first, width) << '\n';
+  for (auto it: categories) {
+    if (it.key() != "") stream << String::bar(it.key(), width) << '\n';
 
-    for (auto ptr2: ptr->second) {
-      if (ptr2->second.empty()) continue; // Don't print empty values
+    for (auto it2: it.value()) {
+      if (it2.value().empty()) continue; // Don't print empty values
 
-      stream << setw(maxKeyLength) << ptr2->first << ": ";
+      stream << setw(maxKeyLength) << it2.key() << ": ";
       if (wrap)
-        String::fill(stream, ptr2->second, maxKeyLength + 2, maxKeyLength + 2);
-      else stream << ptr2->second;
+        String::fill(stream, it2.value(), maxKeyLength + 2, maxKeyLength + 2);
+      else stream << it2.value();
       stream << '\n';
     }
   }
@@ -123,28 +110,28 @@ void Info::write(XML::Writer &writer) const {
   attrs["class"] = "info";
   writer.startElement("table", attrs);
 
-  for (auto ptr: categories) {
-    if (ptr->first != "") {
+  for (auto it: categories) {
+    if (it.key() != "") {
       writer.startElement("tr");
 
       XML::Attributes attrs;
       attrs["colspan"] = "2";
       attrs["class"] = "category";
       writer.startElement("th", attrs);
-      writer.text(ptr->first);
+      writer.text(it.key());
       writer.endElement("th");
 
       writer.endElement("tr");
     }
 
-    for (auto ptr2: ptr->second) {
-      if (ptr2->second.empty()) continue;
+    for (auto it2: it.value()) {
+      if (it2.value().empty()) continue;
       writer.startElement("tr");
       writer.startElement("th");
-      writer.text(ptr2->first);
+      writer.text(it2.key());
       writer.endElement("th");
       writer.startElement("td");
-      writer.text(ptr2->second);
+      writer.text(it2.value());
       writer.endElement("td");
       writer.endElement("tr");
     }
@@ -157,15 +144,15 @@ void Info::write(XML::Writer &writer) const {
 void Info::writeList(JSON::Sink &sink) const {
   sink.beginList();
 
-  for (auto ptr: categories) {
+  for (auto it: categories) {
     sink.appendList();
-    sink.append(ptr->first);
+    sink.append(it.key());
 
-    for (auto ptr2: ptr->second) {
-      if (ptr2->second.empty()) continue;
+    for (auto &it2: it.value()) {
+      if (it2.value().empty()) continue;
       sink.appendList(true);
-      sink.append(ptr2->first);
-      sink.append(ptr2->second);
+      sink.append(it2.key());
+      sink.append(it2.value());
       sink.endList();
     }
 
@@ -179,11 +166,11 @@ void Info::writeList(JSON::Sink &sink) const {
 void Info::write(JSON::Sink &sink) const {
   sink.beginDict();
 
-  for (auto ptr: categories) {
-    sink.insertDict(ptr->first);
+  for (auto it: categories) {
+    sink.insertDict(it.key());
 
-    for (auto ptr2: ptr->second)
-      sink.insert(ptr2->first, ptr2->second);
+    for (auto it2: it.value())
+      sink.insert(it2.key(), it2.value());
 
     sink.endDict();
   }

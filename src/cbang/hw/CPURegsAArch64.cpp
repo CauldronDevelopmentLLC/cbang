@@ -159,18 +159,18 @@ CPURegsAArch64::CPURegsAArch64() {
           vector<string> features;
           String::tokenize(value, features);
 
-          for (unsigned i = 0; i < features.size(); i++) {
-            if (features[i] == "fphp")     regs[3] |= 1ULL << 16;
-            if (features[i] == "asimdhp")  regs[3] |= 1ULL << 20;
-            if (features[i] == "aes")      regs[3] |= 1ULL << 4;
-            if (features[i] == "pmull")    regs[3] |= 1ULL << 5;
-            if (features[i] == "sha1")     regs[3] |= 1ULL << 8;
-            if (features[i] == "sha2")     regs[3] |= 1ULL << 12;
-            if (features[i] == "sha3")     regs[3] |= 1ULL << 32;
-            if (features[i] == "crc32")    regs[3] |= 1ULL << 16;
-            if (features[i] == "atomics")  regs[3] |= 1ULL << 21;
-            if (features[i] == "asimdrdm") regs[3] |= 1ULL << 28;
-            if (features[i] == "asimddp")  regs[3] |= 1ULL << 44;
+          for (auto &feature: features) {
+            if (feature == "fphp")     regs[3] |= 1ULL << 16;
+            if (feature == "asimdhp")  regs[3] |= 1ULL << 20;
+            if (feature == "aes")      regs[3] |= 1ULL << 4;
+            if (feature == "pmull")    regs[3] |= 1ULL << 5;
+            if (feature == "sha1")     regs[3] |= 1ULL << 8;
+            if (feature == "sha2")     regs[3] |= 1ULL << 12;
+            if (feature == "sha3")     regs[3] |= 1ULL << 32;
+            if (feature == "crc32")    regs[3] |= 1ULL << 16;
+            if (feature == "atomics")  regs[3] |= 1ULL << 21;
+            if (feature == "asimdrdm") regs[3] |= 1ULL << 28;
+            if (feature == "asimddp")  regs[3] |= 1ULL << 44;
           }
         }
       }

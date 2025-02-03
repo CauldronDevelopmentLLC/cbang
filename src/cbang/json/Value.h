@@ -36,10 +36,13 @@
 #include "Factory.h"
 #include "Writer.h"
 #include "Path.h"
+#include "Iterator.h"
 #include "KeyIterator.h"
+#include "EntryIterator.h"
 
 #include <cbang/SmartPointer.h>
 #include <cbang/Errors.h>
+#include <cbang/util/MacroUtils.h>
 
 #include <ostream>
 #include <list>
@@ -58,24 +61,7 @@ namespace cb {
 
       virtual ValueType getType() const = 0;
 
-#define CBANG_JSON_VT(NAME, TYPE) virtual bool is##NAME() const {return false;}
-#include "ValueTypes.def"
-
       virtual bool isSimple() const {return true;}
-      template <typename T> bool is() {return dynamic_cast<T *>(this);}
-
-      template <typename T> T &cast() {
-        T *ptr = dynamic_cast<T *>(this);
-        if (!ptr) CBANG_CAST_ERROR();
-        return *ptr;
-      }
-
-      template <typename T> const T &cast() const {
-        const T *ptr = dynamic_cast<T *>(this);
-        if (!ptr) CBANG_CAST_ERROR();
-        return *ptr;
-      }
-
       virtual ValuePtr copy(bool deep = false) const = 0;
       virtual bool canWrite(Sink &sink) const {return true;}
 
@@ -84,35 +70,29 @@ namespace cb {
       ValuePtr select(const std::string &path,
                       const ValuePtr &defaultValue) const;
 
-#define CBANG_JSON_VT(NAME, TYPE)                                       \
-      bool exists##NAME(const std::string &path) const {                \
-        return Path(path).exists##NAME(*this);                          \
-      }                                                                 \
-                                                                        \
-                                                                        \
-      TYPE select##NAME(const std::string &path) const {                \
-        return Path(path).select##NAME(*this);                          \
-      }                                                                 \
-                                                                        \
-                                                                        \
-      TYPE select##NAME(const std::string &path,                        \
-                        TYPE defaultValue) const {                      \
-        return Path(path).select##NAME(*this, defaultValue);            \
+      // X-Macros
+#define CBANG_JSON_VT(NAME, TYPE, ...)                                   \
+      virtual bool is##NAME() const {return false;}                      \
+                                                                         \
+      bool exists##NAME(const std::string &path) const                   \
+      {return Path(path).exists##NAME(*this);}                           \
+                                                                         \
+      TYPE select##NAME(const std::string &path) const                   \
+      {return Path(path).select##NAME(*this);}                           \
+                                                                         \
+      TYPE select##NAME(const std::string &path,                         \
+                        TYPE defaultValue) const                         \
+      {return Path(path).select##NAME(*this, defaultValue);}             \
+                                                                         \
+      virtual TYPE get##NAME() const {CBANG_TYPE_ERROR("Not a " #NAME);} \
+                                                                         \
+      virtual TYPE get##NAME##WithDefault(TYPE defaultValue) const {     \
+        try {return get##NAME();}                                        \
+        catch (...) {return defaultValue;}                               \
       }
 #include "ValueTypes.def"
 
-
-#define CBANG_JSON_VT(NAME, TYPE)                                       \
-      virtual TYPE get##NAME() const {CBANG_TYPE_ERROR("Not a " #NAME);}
-#include "ValueTypes.def"
-
-#define CBANG_JSON_VT(NAME, TYPE)                                       \
-      virtual TYPE get##NAME##WithDefault(TYPE defaultValue) const {    \
-        try {return get##NAME();}                                       \
-        catch (...) {return defaultValue;}                              \
-      }
-#include "ValueTypes.def"
-
+      // Non-const accessors
       virtual Value &getList() {CBANG_TYPE_ERROR("Not a List");}
       virtual Value &getDict() {CBANG_TYPE_ERROR("Not a Dict");}
 
@@ -121,155 +101,108 @@ namespace cb {
       bool empty() const {return !size();}
 
       // Iterators
-      Iterator begin() const {return Iterator(*this, 0);}
-      Iterator end() const {return Iterator(*this);}
+      using iterator = Iterator;
+      virtual iterator begin() const {CBANG_TYPE_ERROR("Not a List or Dict");}
+      virtual iterator end()   const {CBANG_TYPE_ERROR("Not a List or Dict");}
+      virtual iterator erase(const iterator &it)
+        {CBANG_TYPE_ERROR("Not a List or Dict");}
 
       struct Keys {
-        const Value &value;
-        Keys(const Value &value) : value(value) {}
-        KeyIterator begin() const {return KeyIterator(value, 0);}
-        KeyIterator end() const {return KeyIterator(value);}
+        Value::iterator _begin, _end;
+        Keys(const Value &value) : _begin(value.begin()), _end(value.end())  {}
+        KeyIterator begin() {return _begin;}
+        KeyIterator end()   {return _end;}
       };
 
       Keys keys() const {return Keys(*this);}
 
+      struct Entries {
+        Value::iterator _begin, _end;
+        Entries(const Value &value) : _begin(value.begin()), _end(value.end())  {}
+        EntryIterator begin() {return _begin;}
+        EntryIterator end()   {return _end;}
+      };
+
+      Entries entries() const {return Entries(*this);}
+
       // List functions
-      void appendDict();
-      void appendList();
-      void appendUndefined();
-      void appendNull();
-      void appendBoolean(bool value);
-      void append(double value);
-      void append(float value)    {append((double)value);}
-      void append(int8_t value)   {append((int16_t)value);}
-      void append(uint8_t value)  {append((uint16_t)value);}
-      void append(int16_t value)  {append((int32_t)value);}
-      void append(uint16_t value) {append((uint32_t)value);}
-      void append(int32_t value)  {append((int64_t)value);}
-      void append(uint32_t value) {append((uint64_t)value);}
-      void append(int64_t value);
-      void append(uint64_t value);
-      void append(const std::string &value);
-      void appendFrom(const Value &value);
-      virtual void append(const ValuePtr &value)
-        {CBANG_TYPE_ERROR("Not a List");}
-
-      // List accessors
+      virtual iterator find(unsigned i) const {CBANG_TYPE_ERROR("Not a List");}
       virtual const ValuePtr &get(unsigned i) const
-        {CBANG_TYPE_ERROR("Not a List or Dict");}
-
-#define CBANG_JSON_VT(NAME, TYPE)               \
-      TYPE get##NAME(unsigned i) const {return get(i)->get##NAME();}
-#include "ValueTypes.def"
-
+      {CBANG_TYPE_ERROR("Not a List");}
       Value &getList(unsigned i) {return get(i)->getList();}
       Value &getDict(unsigned i) {return get(i)->getDict();}
       std::string getAsString(unsigned i) const {return get(i)->asString();}
 
-      // List setters
       virtual void set(unsigned i, const ValuePtr &value)
-        {CBANG_TYPE_ERROR("Not a List");}
-      void setDict(unsigned i);
-      void setList(unsigned i);
-      void setUndefined(unsigned i);
-      void setNull(unsigned i);
-      void setBoolean(unsigned i, bool value);
-      void set(unsigned i, double value);
-      void set(unsigned i, float value)    {set(i, (double)value);}
-      void set(unsigned i, int8_t value)   {set(i, (int16_t)value);}
-      void set(unsigned i, uint8_t value)  {set(i, (uint16_t)value);}
-      void set(unsigned i, int16_t value)  {set(i, (int32_t)value);}
-      void set(unsigned i, uint16_t value) {set(i, (uint32_t)value);}
-      void set(unsigned i, int32_t value)  {set(i, (int64_t)value);}
-      void set(unsigned i, uint32_t value) {set(i, (uint64_t)value);}
-      void set(unsigned i, int64_t value);
-      void set(unsigned i, uint64_t value);
-      void set(unsigned i, const std::string &value);
-
+      {CBANG_TYPE_ERROR("Not a List");}
+      virtual void append(const ValuePtr &value)
+      {CBANG_TYPE_ERROR("Not a List");}
+      void appendFrom(const Value &value);
       virtual void clear() {CBANG_TYPE_ERROR("Not a List or Dict");}
-      virtual void erase(unsigned i) {CBANG_TYPE_ERROR("Not a List or Dict");}
+      virtual void erase(unsigned i) {CBANG_TYPE_ERROR("Not a List");}
+
+      // List X-Macros
+#define CBANG_JSON_VT(NAME, TYPE, PARAM, SUFFIX)                             \
+      void append##SUFFIX(CBANG_IF(PARAM)(TYPE value))                       \
+      {append(create##SUFFIX(CBANG_IF(PARAM)(value)));}                      \
+                                                                             \
+      TYPE get##NAME(unsigned i) const {return get(i)->get##NAME();}         \
+                                                                             \
+      void set##SUFFIX(unsigned i CBANG_IF(PARAM)(CBANG_COMMA() TYPE value)) \
+        {set(i, create##SUFFIX(CBANG_IF(PARAM)(value)));}
+#include "ValueTypes.def"
 
       // Dict functions
-      virtual const std::string &keyAt(unsigned i) const
-        {CBANG_TYPE_ERROR("Not a Dict");}
-
-      virtual int indexOf(const std::string &key) const
-        {CBANG_TYPE_ERROR("Not a Dict");}
-
-      bool has(const std::string &key) const {return indexOf(key) != -1;}
-
-#define CBANG_JSON_VT(NAME, TYPE)                               \
-      bool has##NAME(const std::string &key) const {            \
-        int index = indexOf(key);                               \
-        return index != -1 && get(index)->is##NAME();           \
-      }
-#include "ValueTypes.def"
-
+      bool has(const std::string &key) const {return find(key);}
+      virtual iterator find(const std::string &key) const
+      {CBANG_TYPE_ERROR("Not a Dict");}
       virtual const ValuePtr &get(const std::string &key) const
-        {CBANG_TYPE_ERROR("Not a Dict");}
-
-      virtual int insert(const std::string &key, const ValuePtr &value)
-        {CBANG_TYPE_ERROR("Not a Dict");}
-      int insertDict(const std::string &key);
-      int insertList(const std::string &key);
-      int insertUndefined(const std::string &key);
-      int insertNull(const std::string &key);
-      int insertBoolean(const std::string &key, bool value);
-      int insert(const std::string &key, double value);
-      int insert(const std::string &key, float value)
-      {return insert(key, (double)value);}
-      int insert(const std::string &key, uint8_t value)
-      {return insert(key, (uint16_t)value);}
-      int insert(const std::string &key, int8_t value)
-      {return insert(key, (int16_t)value);}
-      int insert(const std::string &key, uint16_t value)
-      {return insert(key, (uint32_t)value);}
-      int insert(const std::string &key, int16_t value)
-      {return insert(key, (int32_t)value);}
-      int insert(const std::string &key, uint32_t value)
-      {return insert(key, (uint64_t)value);}
-      int insert(const std::string &key, int32_t value)
-      {return insert(key, (int64_t)value);}
-      int insert(const std::string &key, uint64_t value);
-      int insert(const std::string &key, int64_t value);
-      int insert(const std::string &key, const std::string &value);
-
-      virtual void erase(const std::string &key)
-        {CBANG_TYPE_ERROR("Not a Dict");}
-      void merge(const Value &value);
-
-      // Dict accessors
-#define CBANG_JSON_VT(NAME, TYPE)                               \
-      TYPE get##NAME(const std::string &key) const {            \
-        return get(key)->get##NAME();                           \
-      }
-#include "ValueTypes.def"
-
-      Value &getList(const std::string &key) {return get(key)->getList();}
-      Value &getDict(const std::string &key) {return get(key)->getDict();}
-      std::string getAsString(const std::string &key) const
-      {return get(key)->asString();}
-
-      // Dict accessors with defaults
-#define CBANG_JSON_VT(NAME, TYPE)                                       \
-      TYPE get##NAME(const std::string &key, TYPE defaultValue) const { \
-        int index = indexOf(key);                                       \
-        if (index == -1) return defaultValue;                           \
-        return get(index)->get##NAME##WithDefault(defaultValue);        \
-      }
-#include "ValueTypes.def"
+      {CBANG_TYPE_ERROR("Not a Dict");}
 
       const ValuePtr &get(const std::string &key,
                           const ValuePtr &defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index);
+        auto it = find(key);
+        return it ? *it : defaultValue;
       }
+
+      std::string getAsString(const std::string &key) const
+      {return get(key)->asString();}
 
       std::string getAsString(const std::string &key,
                               const std::string &defaultValue) const {
-        int index = indexOf(key);
-        return index == -1 ? defaultValue : get(index)->asString();
+        auto it = find(key);
+        return it ? (*it)->asString() : defaultValue;
       }
+
+      Value &getList(const std::string &key) {return get(key)->getList();}
+      Value &getDict(const std::string &key) {return get(key)->getDict();}
+
+      virtual iterator insert(const std::string &key, const ValuePtr &value)
+      {CBANG_TYPE_ERROR("Not a Dict");}
+      virtual void erase(const std::string &key)
+      {CBANG_TYPE_ERROR("Not a Dict");}
+      void merge(const Value &value);
+
+      // Dict X-Macros
+#define CBANG_JSON_VT(NAME, TYPE, PARAM, SUFFIX)                                \
+      bool has##NAME(const std::string &key) const {                    \
+        auto it = find(key);                                            \
+        return !!it && it.value()->is##NAME();                          \
+      }                                                                 \
+                                                                        \
+      iterator insert##SUFFIX(const std::string &key                    \
+        CBANG_IF(PARAM)(CBANG_COMMA() TYPE value))                      \
+        {return insert(key, create##SUFFIX(CBANG_IF(PARAM)(value)));}   \
+                                                                        \
+      TYPE get##NAME(const std::string &key) const                      \
+      {return get(key)->get##NAME();}                                   \
+                                                                        \
+      TYPE get##NAME(const std::string &key, TYPE defaultValue) const { \
+        auto it = find(key);                                            \
+        if (!it) return defaultValue;                                   \
+        return (*it)->get##NAME##WithDefault(defaultValue);             \
+      }
+#include "ValueTypes.def"
 
       // Formatting
       std::string format(char type) const;
@@ -280,10 +213,9 @@ namespace cb {
       std::string format(const std::string &s) const;
 
       // Visitor
-      typedef std::function<void (const Value &value, const Value *parent,
-                                  unsigned index)> const_visitor_t;
-      typedef std::function<void (Value &value, Value *parent, unsigned index)>
-      visitor_t;
+      typedef std::function<void (
+        const Value &value, const Value *parent)> const_visitor_t;
+      typedef std::function<void (Value &value, Value *parent)> visitor_t;
 
       void visit(const_visitor_t visitor, bool depthFirst = true) const;
       void visit(visitor_t visitor, bool depthFirst = true);
@@ -291,11 +223,6 @@ namespace cb {
       virtual void visitChildren(
         const_visitor_t visitor, bool depthFirst = true) const {}
       virtual void visitChildren(visitor_t visitor, bool depthFirst = true) {}
-
-      // Operators
-      const ValuePtr &operator[](unsigned i) const {return get(i);}
-      const ValuePtr &operator[](const std::string &key) const
-        {return get(key);}
 
       virtual void write(Sink &sink) const = 0;
       void write(std::ostream &stream, unsigned indentStart = 0,

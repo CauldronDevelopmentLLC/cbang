@@ -61,13 +61,13 @@ using namespace std;
 
 
 namespace {
-  int hexToInt(char x) {
+  uint8_t hexToNibble(uint8_t x) {
     return isdigit(x) ? x - '0' : ((islower(x) ? x - 'a' : x - 'A') + 10);
   }
 
 
-  char nibblesToChar(char a, char b) {
-    return (char)((hexToInt(a) << 4) + hexToInt(b));
+  char nibblesToChar(uint8_t a, uint8_t b) {
+    return (char)((hexToNibble(a) << 4) + hexToNibble(b));
   }
 
 
@@ -121,8 +121,8 @@ unsigned URI::getPort() const {
 
 string URI::getEscapedPath() const {
   string path;
-  for (unsigned i = 0; i < pathSegs.size(); i++)
-    path += "/" + encode(pathSegs[i], PATH_SEGMENT_CHARS);
+  for (auto &seg: pathSegs)
+    path += "/" + encode(seg, PATH_SEGMENT_CHARS);
   return path;
 }
 
@@ -326,9 +326,9 @@ string URI::toString() const {
 string URI::encode(const string &s, const char *unescaped) {
   string result;
 
-  for (unsigned i = 0; i < s.length(); i++)
-    if (contains(unescaped, s[i])) result.append(1, s[i]);
-    else result.append(String::printf("%%%02x", (unsigned)s[i]));
+  for (auto c: s)
+    if (contains(unescaped, c)) result.append(1, c);
+    else result.append(String::printf("%%%02x", (uint8_t)c));
 
   return result;
 }

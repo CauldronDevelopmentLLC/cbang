@@ -78,9 +78,9 @@ void BacktraceDebugger::getStackTrace(StackTrace &trace, bool resolved) {
 void BacktraceDebugger::resolve(StackTrace &trace) {
   SmartLock lock(this);
 
-  for (unsigned i = 0; i < trace.size(); i++)
-    if (trace[i].getLocation()) break;
-    else trace[i].setLocation(&resolve(trace[i].getAddr()));
+  for (auto &frame: trace)
+    if (frame.getLocation()) break;
+    else frame.setLocation(&resolve(frame.getAddr()));
 }
 
 

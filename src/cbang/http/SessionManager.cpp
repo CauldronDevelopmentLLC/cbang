@@ -136,15 +136,15 @@ void SessionManager::cleanup() {
 
   // Remove expired Sessions
   for (auto it = sessions.begin(); it != sessions.end();)
-    if (isExpired(*it->second)) sessions.erase(it++);
+    if (isExpired(*it->second)) it = sessions.erase(it);
     else it++;
 }
 
 
 void SessionManager::read(const JSON::Value &value) {
-  for (unsigned i = 0; i < value.size(); i++) {
-    SmartPointer<Session> session = new Session(*value.get(i));
-    session->setID(value.keyAt(i));
+  for (auto e: value.entries()) {
+    auto session = SmartPtr(new Session(*e.value()));
+    session->setID(e.key());
     addSession(session);
   }
 }

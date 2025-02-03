@@ -57,6 +57,8 @@ namespace cb {
       uint64_t start = Time::now();
       Progress readProgress;
       Progress writeProgress;
+      Rate readRate;
+      Rate writeRate;
       int status = 0;
 
     public:
@@ -89,6 +91,8 @@ namespace cb {
 
       Progress &getReadProgress() {return readProgress;}
       Progress &getWriteProgress() {return writeProgress;}
+      Rate &getReadRate() {return readRate;}
+      Rate &getWriteRate() {return writeRate;}
 
       void setStatus(int status) {this->status = status;}
       int getStatus() const {return status;}

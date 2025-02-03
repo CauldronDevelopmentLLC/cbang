@@ -97,14 +97,14 @@ vector<string> Session::getGroups() const {
   vector<string> groups;
 
   auto g = get("group");
-  for (unsigned i = 0; i < g->size(); i++)
-    if (g->getBoolean(i)) groups.push_back(g->keyAt(i));
+  for (auto e: g->entries())
+    if (e.value()->getBoolean()) groups.push_back(e.key());
 
   return groups;
 }
 
 
 void Session::read(const JSON::Value &value) {
-  for (unsigned i = 0; i < value.size(); i++)
-    insert(value.keyAt(i), value.get(i));
+  for (auto it = value.begin(); it != value.end(); it++)
+    insert(it.key(), *it);
 }

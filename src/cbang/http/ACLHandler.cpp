@@ -60,8 +60,8 @@ bool ACLHandler::operator()(Request &req) {
 
   if (!allow && req.getSession().isSet()) {
     auto groups = req.getSession()->getGroups();
-    for (unsigned i = 0; i < groups.size(); i++)
-      if (aclSet.allowGroup(path, group = groups[i])) {allow = true; break;}
+    for (auto &g: groups)
+      if (aclSet.allowGroup(path, group = g)) {allow = true; break;}
   }
 
   LOG_INFO(allow ? 5 : 3, "allow(" << path << ", "

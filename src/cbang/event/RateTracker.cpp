@@ -34,12 +34,19 @@
 
 #include <cbang/time/Time.h>
 
+#include <limits>
+
 using namespace std;
 using namespace cb;
 using namespace cb::Event;
 
 
 #define RBUF_INDEX(i) ((size + offset - (i)) % size)
+
+
+RateTracker::Series::Series(unsigned size) :
+  rates (size, numeric_limits<double>::quiet_NaN()),
+  totals(size, numeric_limits<double>::quiet_NaN()) {}
 
 
 RateTracker::RateTracker(Base &base, const SmartPointer<RateSet> &rates,
@@ -49,73 +56,66 @@ RateTracker::RateTracker(Base &base, const SmartPointer<RateSet> &rates,
 
 
 void RateTracker::clear() {
-  offset = count = 0;
-  times.clear();
+  offset = 0;
   measurements.clear();
-}
-
-
-void RateTracker::insert(JSON::Sink &sink) const {
-  sink.insert("period", period);
-  sink.insert("size",   size);
-
-  sink.insertList("times");
-  for (unsigned i = 0; i < count; i++)
-    sink.append(Time(times[RBUF_INDEX(i)]).toString());
-  sink.endList();
-
-  sink.insertDict("measurements");
-  for (auto &p1: measurements) {
-    sink.insertDict(p1.first);
-    auto &series = p1.second;
-
-    sink.insertList("rates");
-    for (unsigned i = 0; i < count; i++) {
-      auto &value = series[RBUF_INDEX(i)].rate;
-      if (value == NaN) sink.appendNull();
-      else sink.append(value);
-    }
-    sink.endList();
-
-    sink.insertList("totals");
-    for (unsigned i = 0; i < count; i++) {
-      auto &value = series[RBUF_INDEX(i)].total;
-      if (value == NaN) sink.appendNull();
-      else sink.append(value);
-    }
-    sink.endList();
-
-    sink.endDict(); // series
-  }
-  sink.endDict(); // measurements
-}
-
-
-void RateTracker::write(JSON::Sink &sink) const {
-  sink.beginDict();
-  insert(sink);
-  sink.endDict();
+  times.clear();
 }
 
 
 void RateTracker::measure() {
-  if (size == ++offset) offset = 0;
-  if (count < size) count++;
+  if (++offset == size) offset = 0;
+  if (fill != size) fill++;
 
   uint64_t now = times[offset] = Time::now();
 
   for (auto &p: *rates) {
-    auto &name = p.first;
-    auto &rate = p.second;
+    auto &key  = p.first;
+    auto rate  = p.second.get(now);
+    auto total = p.second.getTotal();
 
     // Find series, insert if non-existant
-    auto it = measurements.find(name);
-    if (it == measurements.end())
-      it = measurements.insert(
-        it, measurements_t::value_type(name, series_t(size)));
+    SmartPointer<Series> series;
+    auto it = measurements.find(key);
+    if (it != measurements.end()) series = it->second;
+    else series = measurements[key] = new Series(size);
 
-    auto &entry = it->second;
-    entry[offset].rate  = rate.get(now);
-    entry[offset].total = rate.getTotal();
+    series->rates [offset] = rate;
+    series->totals[offset] = total;
+
+    callbacks(now, key, rate, total);
   }
+}
+
+
+#define ARRAY_INDEX(i) ((offset + 1 + (i) + size - fill) % size)
+
+void RateTracker::write(JSON::Sink &sink) const {
+  sink.beginDict();
+
+  sink.insertList("times");
+  for (unsigned i = 0; i < fill; i++)
+    sink.append(times[ARRAY_INDEX(i)]);
+  sink.endList();
+
+  sink.insertDict("measurements");
+  for (auto &p: measurements) {
+    sink.insertDict(p.first); // series
+
+    auto &rates = p.second->rates;
+    sink.insertList("rates");
+    for (unsigned i = 0; i < fill; i++)
+      sink.append(rates[ARRAY_INDEX(i)]);
+    sink.endList(); // rates
+
+    auto &totals = p.second->totals;
+    sink.insertList("totals");
+    for (unsigned i = 0; i < fill; i++)
+      sink.append(totals[ARRAY_INDEX(i)]);
+    sink.endList(); // totals
+
+    sink.endDict(); // series
+  }
+  sink.endDict(); // measurements
+
+  sink.endDict();
 }

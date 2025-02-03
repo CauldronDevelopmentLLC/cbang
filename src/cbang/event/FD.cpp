@@ -91,6 +91,7 @@ void FD::progressStart(bool read, unsigned size, uint64_t time) {
 
 void FD::progressEvent(bool read, unsigned size, uint64_t time) {
   (read ? readProgress : writeProgress).event(size, time);
+  (read ? readRate     : writeRate    ).event(size, time);
 }
 
 

@@ -39,8 +39,8 @@ namespace cb {
   namespace JSON {
     class KeyIterator : public Iterator {
     public:
-      using Iterator::Iterator;
-      const std::string &operator*() const;
+      KeyIterator(const Iterator &it) : Iterator(it) {}
+      const std::string &operator*() const {return key();}
     };
   }
 }

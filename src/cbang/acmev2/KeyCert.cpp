@@ -55,8 +55,8 @@ bool KeyCert::expiredIn(unsigned secs) const {
 
   // Check cert applies to all domains
   auto cert = chain.get(0);
-  for (unsigned i = 0; i < domains.size(); i++)
-    if (!cert.checkHost(domains[i])) return true;
+  for (auto &domain: domains)
+    if (!cert.checkHost(domain)) return true;
 
   return false;
 }

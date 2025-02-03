@@ -33,28 +33,44 @@
 #include "Iterator.h"
 #include "Value.h"
 
+using namespace std;
 using namespace cb;
 using namespace cb::JSON;
 
 
-Iterator::Iterator(const Value &value, int i) :
-  value(value), i(i < (int)value.size() ? i : -1) {}
-
-
-bool Iterator::valid() const {return 0 <= i && i < (int)value.size();}
-
-
-Iterator &Iterator::operator++() {
-  if (valid()) {
-    i++;
-    if (!valid()) i = -1;
-  }
-
+Iterator &Iterator::operator=(const Iterator &o) {
+  impl = o.impl.isSet() ? o.impl->clone() : 0;
   return *this;
 }
 
 
-const SmartPointer<Value> &Iterator::operator*() const {
-  if (!valid()) CBANG_THROW("Invalid JSON iterator");
-  return value.get(i);
+bool Iterator::operator==(const Iterator &o) const {
+  if (impl.isNull()) return o.impl.isNull();
+  return o.impl.isSet() && impl->equal(o.impl);
+}
+
+
+Iterator &Iterator::operator++() {
+  impl->next();
+  return *this;
+}
+
+
+Iterator Iterator::operator++(int) {
+  Iterator it = *this;
+  impl->next();
+  return it;
+}
+
+
+Iterator &Iterator::operator--() {
+  impl->prev();
+  return *this;
+}
+
+
+Iterator Iterator::operator--(int) {
+  Iterator it = *this;
+  impl->prev();
+  return it;
 }
