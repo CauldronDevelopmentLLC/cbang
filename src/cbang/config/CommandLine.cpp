@@ -82,16 +82,20 @@ void CommandLine::add(const string &name, SmartPointer<Option> option) {
 
 
 const SmartPointer<Option> &CommandLine::get(const string &key) const {
-  bool keyHasDashes = 2 < key.length() && key[0] == '-' && key[1] == '-';
+  bool shortOpt = 1 < key.length() && key[0] == '-' && key[1] != '-';
+  bool longOpt  = 2 < key.length() && key[0] == '-' && key[1] == '-';
 
   try {
-    if (keyHasDashes) return Options::get(key);
+    if (shortOpt || longOpt) return Options::get(key);
     return Options::get("--" + key);
 
   } catch (const Exception &e) {
     // If its not in the command line options try the keywords.
-    if (keywords && keyHasDashes) return keywords->get(key.substr(2));
-    else throw;
+    if (keywords) {
+      if (shortOpt) return keywords->get(key.substr(1));
+      if (longOpt)  return keywords->get(key.substr(2));
+    }
+    throw;
   }
 }
 
