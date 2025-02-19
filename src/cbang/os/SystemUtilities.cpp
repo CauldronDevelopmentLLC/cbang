@@ -899,7 +899,7 @@ namespace cb {
         // https://lwn.net/Articles/805317/
         SysError::clear();
 
-        struct sched_param scheduler_params = { .sched_priority = 0 };
+        struct sched_param scheduler_params = {.sched_priority = 0};
         sched_setscheduler((pid_t)pid, SCHED_IDLE, &scheduler_params);
 
         if (SysError::get())
