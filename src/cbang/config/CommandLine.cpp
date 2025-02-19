@@ -90,7 +90,7 @@ const SmartPointer<Option> &CommandLine::get(const string &key) const {
 
   } catch (const Exception &e) {
     // If its not in the command line options try the keywords.
-    if (keyHasDashes) return keywords->get(key.substr(2));
+    if (keywords && keyHasDashes) return keywords->get(key.substr(2));
     else throw;
   }
 }
