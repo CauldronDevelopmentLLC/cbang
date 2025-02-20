@@ -2,8 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2021-2024, Cauldron Development  Oy
-                Copyright (c) 2003-2021, Cauldron Development LLC
+                Copyright (c) 2003-2024, Cauldron Development LLC
                                All rights reserved.
 
          The C! library is free software: you can redistribute it and/or
@@ -30,35 +29,34 @@
 
 \******************************************************************************/
 
-#include "GPUResource.h"
-#include "CUDALibrary.h"
-#include "HIPLibrary.h"
-#include "OpenCLLibrary.h"
-#include "GPUVendor.h"
+#pragma once
 
-#include <cbang/Catch.h>
+#include "ComputeDevice.h"
 
-using namespace cb;
+#include <cbang/os/DynamicLibrary.h>
+#include <cbang/util/Singleton.h>
+
+#include <vector>
 
 
-namespace {
-  template <typename LIB>
-  ComputeDevice match(int16_t busID, int16_t slotID, int16_t functionID) {
-    try {
-      auto &lib = LIB::instance();
-      for (auto &dev: lib)
-        if (dev.gpu && busID == dev.pciBus && slotID == dev.pciSlot)
-          return dev;
+namespace cb {
+  class HIPLibrary : public DynamicLibrary,
+                      public Singleton<HIPLibrary> {
+    typedef std::vector<ComputeDevice> devices_t;
+    devices_t devices;
 
-    } catch (const DynamicLibraryException &e) {}
+  public:
+    HIPLibrary(Inaccessible);
 
-    return ComputeDevice();
-  }
+    inline static const char *getName() {return "HIP";}
+    unsigned getDeviceCount() const {return devices.size();}
+    const ComputeDevice &getDevice(unsigned i) const;
+
+    typedef devices_t::const_iterator iterator;
+    iterator begin() const {return devices.begin();}
+    iterator end() const {return devices.end();}
+
+  private:
+    int getAttribute(int id, int dev);
+  };
 }
-
-
-GPUResource::GPUResource(const GPU &gpu, const PCIDevice &pci) :
-  GPU(gpu), pci(pci),
-  cuda(match<CUDALibrary>(getBusID(), getSlotID(), getFunctionID())),
-  hip(match<HIPLibrary>(getBusID(), getSlotID(), getFunctionID())),
-  opencl(match<OpenCLLibrary>(getBusID(), getSlotID(), getFunctionID())) {}
