@@ -41,6 +41,7 @@ namespace cb {
   class GPUResource : public GPU {
     PCIDevice pci;
     ComputeDevice cuda;
+    ComputeDevice hip;
     ComputeDevice opencl;
 
   public:
@@ -50,6 +51,8 @@ namespace cb {
     const PCIDevice &getPCI() const {return pci;}
     const ComputeDevice &getCUDA() const {return cuda;}
     void setCUDA(const ComputeDevice &cuda) {this->cuda = cuda;}
+    const ComputeDevice &getHIP() const {return hip;}
+    void setHIP(const ComputeDevice &hip) {this->hip = hip;}
     const ComputeDevice &getOpenCL() const {return opencl;}
     void setOpenCL(const ComputeDevice &opencl) {this->opencl = opencl;}
 
