@@ -93,6 +93,7 @@ namespace cb {
 
       // From Value
       ValueType getType() const override {return JSON_NUMBER;}
+      bool isInteger() const override {return false;}
       bool isNumber() const override {return true;}
       ValuePtr copy(bool deep = false) const override
       {return new NumberValue<T>(value);}
@@ -125,8 +126,11 @@ namespace cb {
     };
 
 
-    typedef NumberValue<double> Number;
+    typedef NumberValue<double>   Number;
     typedef NumberValue<uint64_t> U64;
-    typedef NumberValue<int64_t> S64;
+    typedef NumberValue<int64_t>  S64;
+
+    template<> inline bool U64::isInteger() const {return true;}
+    template<> inline bool S64::isInteger() const {return true;}
   }
 }

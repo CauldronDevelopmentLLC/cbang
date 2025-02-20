@@ -127,6 +127,14 @@ string URI::getEscapedPath() const {
 }
 
 
+string URI::getEscapedPathAndQuery() const {
+  string path = getEscapedPath();
+  if (!empty()) path += "?" + getEscapedQuery();
+  return path;
+}
+
+
+
 string URI::getExtension() const {
   if (pathSegs.empty()) return "";
   size_t ptr = pathSegs.back().find_last_of('.');
@@ -135,9 +143,14 @@ string URI::getExtension() const {
 
 
 const string URI::getQuery() const {
+  return decode(getEscapedQuery());
+}
+
+
+const string URI::getEscapedQuery() const {
   ostringstream str;
   writeQuery(str);
-  return decode(str.str());
+  return str.str();
 }
 
 

@@ -236,22 +236,8 @@ void Options::alias(const string &_key, const string &_alias) {
 
 void Options::read(const JSON::Value &options) {
   for (auto e: options.entries()) {
-    string name = e.key();
-
-    if (!has(name)) {
-      LOG_WARNING("Unrecognized option '" << name << "'");
-      continue;
-    }
-
-    if (e->isList()) {
-      string s;
-      for (auto &v: *e.value()) {
-        if (!s.empty()) s += " ";
-        s += v->asString();
-      }
-      set(name, s);
-
-    } else set(name, e->asString());
+    auto option = tryLocalize(e.key());
+    if (option.isSet()) set(*option, e.value());
   }
 }
 

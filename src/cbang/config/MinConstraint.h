@@ -48,13 +48,8 @@ namespace cb {
     const T &getMin() const {return minimum;}
 
     // From Constraint
-    void validate(int64_t value) const override {
-      if (value < minimum)
-        CBANG_THROW(value << " is less than minium value " << minimum);
-    }
-
-    void validate(double value) const override {
-      if (value < minimum)
+    void validate(const JSON::Value &value) const override {
+      if (value.getNumber() < minimum)
         CBANG_THROW(value << " is less than minium value " << minimum);
     }
 

@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     string bind = "";
     string certFile;
     string priFile;
-    string url = "http://www.google.com/";
+    string url = "";
 
     CommandLine cmdLine;
     Logger::instance().addOptions(cmdLine);
@@ -61,19 +61,27 @@ int main(int argc, char *argv[]) {
     cmdLine.addTarget("bind", bind, "Outgoing IP address", 'b');
     cmdLine.addTarget("url", url, "Request URl", 'u');
     cmdLine.add("method", "Request method")->setDefault("GET");
+    cmdLine.add("header", 'H', 0, "Add HTTP header <name>=<value>")->
+      setType(Option::TYPE_STRINGS);
     cmdLine.parse(argc, argv);
 
+    if (url.empty()) {
+      cout << "URL not set" << endl;
+      return 1;
+    }
+
     SmartPointer<SSLContext> sslCtx;
-    if (String::toLower(URI(url).getScheme()) == "https")
+    if (String::toLower(URI(url).getScheme()) == "https") {
       sslCtx = new SSLContext;
+      sslCtx->loadSystemRootCerts();
+    }
 
     auto method = HTTP::Method::parse(cmdLine["--method"]);
 
     ::signal(SIGPIPE, SIG_IGN);
 
-    Event::Base base(true);
-    DNS::Base dnsBase(base);
-    HTTP::Client client(base, dnsBase, sslCtx);
+    Event::Base base;
+    HTTP::Client client(base, sslCtx);
 
     auto cb =
       [&base] (HTTP::Request &req) {
@@ -82,6 +90,16 @@ int main(int argc, char *argv[]) {
       };
 
     auto req = client.call(url, method, cb);
+
+    auto &outHdrs = req->getRequest()->getOutputHeaders();
+    auto hdrs = cmdLine["header"].toStrings();
+    for (auto hdr: hdrs) {
+      auto eq = hdr.find_first_of('=');
+      if (eq != string::npos)
+        outHdrs.set(hdr.substr(0, eq), hdr.substr(eq + 1));
+      else outHdrs.set(hdr, "");
+    }
+
     req->send();
 
     base.dispatch();

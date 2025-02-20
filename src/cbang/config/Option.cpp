@@ -46,7 +46,7 @@
 using namespace std;
 using namespace cb;
 
-// Proxy constructor
+
 Option::Option(const SmartPointer<Option> &parent) :
   name(parent->name), shortName(parent->shortName), type(parent->type),
   help(parent->help), flags(parent->flags & ~(SET_FLAG | DEFAULT_SET_FLAG)),
@@ -69,6 +69,42 @@ Option::Option(const string &name, const JSON::Value &config) :
   name(name) {configure(config);}
 
 
+void Option::setDefaultType(OptionType type) {this->type = type;}
+
+
+void Option::setType(OptionType type) {
+  flags |= TYPE_SET_FLAG;
+  this->type = type;
+}
+
+
+void Option::setTypeFromValue(const JSON::Value &value) {
+  switch (value.getType()) {
+  case JSON::ValueType::JSON_LIST: {
+    if (value.empty()) setType(TYPE_STRINGS);
+    else {
+      auto &child = value.get(0);
+
+      if (child->isNumber())
+        setType(child->isInteger() ? TYPE_INTEGERS : TYPE_DOUBLES);
+      else if (child->isString()) setType(TYPE_STRINGS);
+      else THROW("Invalid default list member type: " << child->getType());
+    }
+    break;
+  }
+
+  case JSON::ValueType::JSON_STRING:  setType(TYPE_STRING); break;
+  case JSON::ValueType::JSON_BOOLEAN: setType(TYPE_BOOLEAN); break;
+
+  case JSON::ValueType::JSON_NUMBER:
+    setType(value.isInteger() ? TYPE_INTEGER : TYPE_DOUBLE);
+    break;
+
+  default: THROW("Invalid type for option: " << value.getType());
+  }
+}
+
+
 const string Option::getTypeString() const {
   switch (type) {
   case TYPE_BOOLEAN:  return "boolean";
@@ -83,73 +119,66 @@ const string Option::getTypeString() const {
 }
 
 
-const string &Option::getDefault() const {
+const JSON::ValuePtr &Option::getDefault() const {
   if (flags & DEFAULT_SET_FLAG) return defaultValue;
-  if (!parent.isNull() && parent->hasValue()) return parent->toString();
+  if (parent.isSet() && parent->hasValue()) return parent->getValue();
   return defaultValue;
 }
 
 
-void Option::setDefault(const string &defaultValue) {
-  setDefault(defaultValue, TYPE_STRING);
-}
-
-
-void Option::setDefault(const char *defaultValue) {
-  setDefault(string(defaultValue), TYPE_STRING);
-}
-
-
-void Option::setDefault(int64_t defaultValue) {
-  setDefault(String(defaultValue), TYPE_INTEGER);
-}
-
-
-void Option::setDefault(double defaultValue) {
-  setDefault(String(defaultValue), TYPE_DOUBLE);
-}
-
-
-void Option::setDefault(bool defaultValue) {
-  setDefault(String(defaultValue), TYPE_BOOLEAN);
-}
-
-
-void Option::setDefault(const JSON::Value &value) {
-  switch (value.getType()) {
-  case JSON::ValueType::JSON_LIST: {
-    string defaultValue;
-
-    for (auto &v: value) {
-      if (!defaultValue.empty()) defaultValue += " ";
-      defaultValue += v->asString();
-    }
-
-    setDefault(defaultValue);
-    type = TYPE_STRINGS;
-    break;
+void Option::setDefault(const JSON::ValuePtr &value) {
+  if (value->isNull()) {
+    flags &= ~DEFAULT_SET_FLAG;
+    defaultValue = 0;
+    return;
   }
 
-  case JSON::ValueType::JSON_BOOLEAN: setDefault(value.getBoolean()); break;
-  case JSON::ValueType::JSON_NUMBER:  setDefault(value.getNumber());  break;
-  default:                            setDefault(value.asString());   break;
-  }
+  if (isTypeSet()) validate(*value);
+
+  defaultValue = value;
+  flags |= DEFAULT_SET_FLAG;
+
+  // Set type from default if not already set
+  if (!isTypeSet()) setTypeFromValue(*value);
+
+  if (defaultSetAction.isSet()) (*defaultSetAction)(*this);
+}
+
+
+void Option::setDefault(const string &value) {
+  if (isPlural()) setDefault(parse(value));
+  else setDefault(JSON::Factory().create(value));
+}
+
+
+void Option::setDefault(int64_t value) {
+  setDefault(JSON::Factory().create(value));
+}
+
+
+void Option::setDefault(double value) {
+  setDefault(JSON::Factory().create(value));
+}
+
+
+void Option::setDefault(bool value) {
+  setDefault(JSON::Factory().createBoolean(value));
 }
 
 
 void Option::clearDefault() {
-  defaultValue.clear();
+  defaultValue = 0;
   flags &= ~DEFAULT_SET_FLAG;
 }
 
 
 bool Option::hasDefault() const {
-  return flags & DEFAULT_SET_FLAG || (!parent.isNull() && parent->hasValue());
+  return flags & DEFAULT_SET_FLAG || (parent.isSet() && parent->hasValue());
 }
 
 
 bool Option::isDefault() const {
-  return hasDefault() && isSet() && value == getDefault();
+  return hasDefault() && isSet() && *value == *getDefault();
 }
 
 
@@ -183,14 +212,8 @@ void Option::configure(const JSON::Value &config) {
   if (config.hasString("short"))
     shortName = config.getString("short").c_str()[0];
 
-  if (config.has("default")) {
-    auto type = this->type;
-    setDefault(*config.get("default"));
-    // Don't change previously set type
-    if (type != TYPE_STRING) this->type = type;
-  }
-
-  if (config.has("type")) type = OptionType::parse(config.getString("type"));
+  if (config.has("default")) setDefault(config.get("default"));
+  if (config.has("type")) setType(OptionType::parse(config.getString("type")));
 
   if (config.getBoolean("optional",   false)) setOptional();
   if (config.getBoolean("obscured",   false)) setObscured();
@@ -227,10 +250,10 @@ void Option::configure(const JSON::Value &config) {
 
 
 void Option::reset() {
-  if (!isSet() && value.empty()) return;  // Don't run action
+  if (!isSet()) return;  // Don't run action
 
   flags &= ~SET_FLAG;
-  value.clear();
+  value = 0;
 
   if (hasAction()) (*action)(*this);
 }
@@ -238,39 +261,27 @@ void Option::reset() {
 
 void Option::unset() {
   flags &= ~DEFAULT_SET_FLAG;
-  defaultValue.clear();
+  defaultValue = 0;
   reset();
 }
 
 
-void Option::set(const string &value) {
+void Option::set(const JSON::ValuePtr &value) {
   if (isDeprecated()) {
     LOG_WARNING("Option '" << name << "' has been deprecated: " << help);
     return;
   }
-  if (isSet() && this->value == value) return;
-
-  uint32_t oldFlags = flags;
-  string oldValue = this->value;
-
-  flags |= SET_FLAG;
-  this->value = value;
-
-  // Clear the command line flag
-  flags &= ~COMMAND_LINE_FLAG;
 
   try {
-    validate();
+    validate(*value);
   } catch (const Exception &e) {
-    flags = oldFlags;
-    this->value = oldValue;
+    string errStr = "Invalid value for option '" + name + "'";
 
-    string errStr = string("Invalid value for option '") + name + "'";
-
-    if (Options::warnWhenInvalid)
+    if (Options::warnWhenInvalid) {
       LOG_WARNING(errStr << ": " << e.getMessage());
+      return;
 
-    else {
+    } else {
       ostringstream str;
       str << errStr << ".  Option help:\n";
       printHelp(str);
@@ -278,84 +289,74 @@ void Option::set(const string &value) {
     }
   }
 
+  if (isSet()) {
+    if (isPlural()) {
+      if (!value->isList()) value->append(value);
+      else for (auto &v: *value) value->append(v);
+
+    } else if (*this->value == *value) return;
+  }
+
+  flags |= SET_FLAG;
+  flags &= ~COMMAND_LINE_FLAG; // Clear the command line flag
+
+  if (isPlural() && !value->isList()) {
+    this->value = JSON::Factory().createList();
+    this->value->append(value);
+
+  } else this->value = value;
+
   if (hasAction()) (*action)(*this);
 }
 
 
-void Option::set(int64_t value) {set(String(value));}
-void Option::set(double value) {set(String(value));}
-void Option::set(bool value) {set(String(value));}
+void Option::set(const string &value) {set(JSON::Factory().create(value));}
+void Option::set(int64_t       value) {set(JSON::Factory().create(value));}
+void Option::set(double        value) {set(JSON::Factory().create(value));}
+void Option::set(bool value) {set(JSON::Factory().createBoolean(value));}
 
 
-void Option::set(const strings_t &values) {
-  string value;
-
-  for (unsigned i = 1; i < values.size(); i++) {
-    if (!value.empty()) value += " ";
-    value += values[i];
-  }
-
-  set(value);
-}
-
-
-void Option::set(const integers_t &values) {
-  string value;
-
-  for (unsigned i = 1; i < values.size(); i++) {
-    if (!value.empty()) value += " ";
-    value += String(values[i]);
-  }
-
-  set(value);
-}
-
-
-void Option::set(const doubles_t &values) {
-  string value;
-
-  for (unsigned i = 1; i < values.size(); i++) {
-    if (!value.empty()) value += " ";
-    value += String(values[i]);
-  }
-
-  set(value);
-}
-
-
-void Option::append(const string &value) {
-  if (isSet() && !this->value.empty()) set(this->value + " " + value);
-  else set(value);
-}
-
-
-void Option::append(int64_t value) {append(String(value));}
-void Option::append(double value) {append(String(value));}
-bool Option::hasValue() const {return isSet() || hasDefault();}
-bool Option::toBoolean() const {return parseBoolean(toString());}
-
-
-const string &Option::toString() const {
-  if (isSet()) return value;
-  else if (hasDefault()) return getDefault();
-  else if (getType() == TYPE_STRINGS) return value;
+JSON::ValuePtr Option::get() const {
+  if (isSet())      return value;
+  if (hasDefault()) return getDefault();
+  if (isPlural())   return JSON::Factory().createList();
   THROW("Option '" << name << "' has no default and is not set.");
 }
 
 
-int64_t Option::toInteger() const {return parseInteger(toString());}
-double Option::toDouble() const {return parseDouble(toString());}
+bool    Option::toBoolean() const {return get()->toBoolean();}
+string  Option::toString()  const {return get()->asString();}
+int64_t Option::toInteger() const {return get()->getS64();}
+double  Option::toDouble()  const {return get()->getNumber();}
 
 
-Option::strings_t Option::toStrings() const {return parseStrings(toString());}
+Option::strings_t Option::toStrings() const {
+  if (!isPlural() && !isString())
+    THROW("Option is not a plural type or string");
 
+  strings_t values;
 
-Option::integers_t Option::toIntegers() const {
-  return parseIntegers(toString());
+  if (isString()) String::tokenize(toString(), values);
+  else for (auto &v: *get()) values.push_back(v->asString());
+
+  return values;
 }
 
 
-Option::doubles_t Option::toDoubles() const {return parseDoubles(toString());}
+Option::integers_t Option::toIntegers() const {
+  if (type != TYPE_INTEGERS) THROW("Option is not integers type");
+  integers_t values;
+  for (auto &v: *get()) values.push_back(v->getS64());
+  return values;
+}
+
+
+Option::doubles_t Option::toDoubles() const {
+  if (type != TYPE_DOUBLES) THROW("Option is not doubles type");
+  doubles_t values;
+  for (auto &v: *get()) values.push_back(v->getNumber());
+  return values;
+}
 
 
 bool Option::toBoolean(bool defaultValue) const {
@@ -363,7 +364,7 @@ bool Option::toBoolean(bool defaultValue) const {
 }
 
 
-const string &Option::toString(const string &defaultValue) const {
+string Option::toString(const string &defaultValue) const {
   return hasValue() ? toString() : defaultValue;
 }
 
@@ -393,69 +394,78 @@ Option::doubles_t Option::toDoubles(const doubles_t &defaultValue) const {
 }
 
 
-bool Option::parseBoolean(const string &value) {
-  return String::parseBool(value);
-}
+void Option::validate(const JSON::Value &value) const {
+  try {
+    if (value.isList()) {
+      if (!isPlural()) THROW("Option is not a plural type");
+      for (auto &v: value) validate(*v);
+      return;
+    }
 
+    switch (type) {
+    case TYPE_BOOLEAN:
+      if (!value.isBoolean()) THROW("Option must be boolean");
+      break;
 
-int64_t Option::parseInteger(const string &value) {
-  return String::parseS64(value);
-}
+    case TYPE_STRING: case TYPE_STRINGS:
+      if (!value.isString()) THROW("Option must be string");
+      break;
 
+    case TYPE_INTEGER: case TYPE_INTEGERS:
+      if (!value.isInteger()) THROW("Option must be integer");
+      break;
 
-double Option::parseDouble(const string &value) {
-  return String::parseDouble(value);
-}
+    case TYPE_DOUBLE: case TYPE_DOUBLES:
+      if (!value.isNumber()) THROW("Option must be number");
+      break;
 
+    default: THROW("Invalid option type: " << type);
+    }
 
-Option::strings_t Option::parseStrings(const string &value) {
-  strings_t result;
-  String::tokenize(value, result, " \t\r\n");
-  return result;
-}
+    if (constraint.isSet()) constraint->validate(value);
+    if (parent.isSet()) parent->validate(value);
 
-
-Option::integers_t Option::parseIntegers(const string &value) {
-  integers_t result;
-  strings_t tokens;
-
-  String::tokenize(value, tokens);
-
-  for (auto &token: tokens)
-    result.push_back(String::parseS32(token));
-
-  return result;
-}
-
-
-Option::doubles_t Option::parseDoubles(const string &value) {
-  doubles_t result;
-  strings_t tokens;
-
-  String::tokenize(value, tokens);
-
-  for (auto &token: tokens)
-    result.push_back(String::parseDouble(token));
-
-  return result;
-}
-
-
-void Option::validate() const {
-  switch (type) {
-  case TYPE_BOOLEAN:  checkConstraint(toBoolean());  break;
-  case TYPE_STRING:   checkConstraint(value);        break;
-  case TYPE_INTEGER:  checkConstraint(toInteger());  break;
-  case TYPE_DOUBLE:   checkConstraint(toDouble());   break;
-  case TYPE_STRINGS:  checkConstraint(toStrings());  break;
-  case TYPE_INTEGERS: checkConstraint(toIntegers()); break;
-  case TYPE_DOUBLES:  checkConstraint(toDoubles());  break;
-  default: THROW("Invalid type " << type);
+  } catch (const Exception &e) {
+    THROWC("Option '" << name << "' validation failed", e);
   }
 }
 
 
-void Option::parse(unsigned &i, const vector<string> &args) {
+JSON::ValuePtr Option::parse(const string &value, OptionType type) {
+  switch (type) {
+  case TYPE_BOOLEAN:
+    return JSON::Factory().createBoolean(String::parseBool(value, true));
+
+  case TYPE_STRING: return JSON::Factory().create(value);
+
+  case TYPE_INTEGER:
+    return JSON::Factory().create(String::parseS64(value, true));
+
+  case TYPE_DOUBLE:
+    return JSON::Factory().create(String::parseDouble(value, true));
+
+  case TYPE_STRINGS: case TYPE_INTEGERS: case TYPE_DOUBLES: {
+    strings_t tokens;
+    String::tokenize(value, tokens);
+    auto list = JSON::Factory().createList();
+
+    for (auto &token: tokens)
+      switch (type) {
+      case TYPE_STRINGS:  list->append(token);                            break;
+      case TYPE_INTEGERS: list->append(String::parseS64   (token, true)); break;
+      case TYPE_DOUBLES:  list->append(String::parseDouble(token, true)); break;
+      default: break; // Not possible
+      }
+
+    return list;
+  }
+
+  default: THROW("Invalid option type: " << type);
+  }
+}
+
+
+void Option::parseCommandLine(unsigned &i, const vector<string> &args) {
   string arg = args[i++];
   string name;
   string value;
@@ -463,16 +473,16 @@ void Option::parse(unsigned &i, const vector<string> &args) {
 
   string::size_type pos = arg.find('=');
   if (pos != string::npos) {
-    name = arg.substr(0, pos);
+    name  = arg.substr(0, pos);
     value = arg.substr(pos + 1);
     hasValue = true;
 
   } else name = arg;
 
   // Required
-  if (hasValue) set(value);
+  if (hasValue) set(parse(value));
 
-  else if (type == TYPE_BOOLEAN) set(true);
+  else if (type == TYPE_BOOLEAN) set(JSON::Factory().createBoolean(true));
 
   else if (!isOptional()) {
     if (i == args.size()) {
@@ -481,11 +491,14 @@ void Option::parse(unsigned &i, const vector<string> &args) {
       printHelp(str, true);
       LOG_WARNING(str.str());
 
-    } else set(args[i++]);
+    } else set(parse(args[i++], type));
 
-  } else if (i < args.size() && args[i][0] != '-') set(args[i++]);
+  } else if (i < args.size() && args[i][0] != '-')
+    set(parse(args[i++], type));
 
   else if (hasAction()) (*action)(*this); // No arg
+
+  flags |= COMMAND_LINE_FLAG;
 }
 
 
@@ -506,7 +519,7 @@ ostream &Option::printHelp(ostream &stream, bool cmdLine) const {
   if (type != TYPE_BOOLEAN || !cmdLine) {
     stream << ' ' << (isOptional() ? '[' : '<');
     stream << getTypeString();
-    if (hasDefault()) stream << '=' << getDefault();
+    if (hasDefault()) stream << '=' << getDefault()->asString();
     stream << (isOptional() ? ']' : '>');
   }
 
@@ -539,88 +552,14 @@ ostream &Option::print(ostream &stream) const {
 }
 
 
-void Option::writeBoolean(JSON::Sink &sink, const string &value) {
-  sink.writeBoolean(parseBoolean(value));
-}
-
-
-void Option::writeInteger(JSON::Sink &sink, const string &value) {
-  int64_t x = parseInteger(value);
-
-  if (JSON_MIN_INT < x && x < JSON_MAX_INT) sink.write(x);
-  else sink.write(SSTR("0x" << hex << x));
-}
-
-
-void Option::writeDouble(JSON::Sink &sink, const string &value) {
-  sink.write(parseDouble(value));
-}
-
-
-void Option::writeStrings(JSON::Sink &sink, const string &value) {
-  strings_t l = parseStrings(value);
-
-  sink.beginList();
-  for (auto &s: l) sink.append(s);
-  sink.endList();
-}
-
-
-void Option::writeIntegers(JSON::Sink &sink, const string &value) {
-  integers_t l = parseIntegers(value);
-
-  sink.beginList();
-  for (auto i: l) {
-    sink.beginAppend();
-    if (JSON_MIN_INT < i && i < JSON_MAX_INT) sink.write(i);
-    else sink.write(SSTR("0x" << hex << i));
-  }
-  sink.endList();
-}
-
-
-void Option::writeDoubles(JSON::Sink &sink, const string &value) {
-  doubles_t l = parseDoubles(value);
-
-  sink.beginList();
-  for (auto d: l) {
-    sink.beginAppend();
-    sink.append(d);
-  }
-  sink.endList();
-}
-
-
-void Option::writeValue(JSON::Sink &sink, const string &value) const {
-  switch (type) {
-  case TYPE_BOOLEAN:  writeBoolean(sink,  value); break;
-  case TYPE_STRING:   sink.write(         value); break;
-  case TYPE_INTEGER:  writeInteger(sink,  value); break;
-  case TYPE_DOUBLE:   writeDouble(sink,   value); break;
-  case TYPE_STRINGS:  writeStrings(sink,  value); break;
-  case TYPE_INTEGERS: writeIntegers(sink, value); break;
-  case TYPE_DOUBLES:  writeDoubles(sink,  value); break;
-  default: THROW("Invalid type " << type);
-  }
-}
-
-
 void Option::write(JSON::Sink &sink, bool config) const {
-  if (config) return writeValue(sink, toString());
+  if (config) return sink.write(*get());
 
   sink.beginDict();
 
-  if (!getHelp().empty()) sink.insert("help", getHelp());
-
-  if (hasValue()) {
-    sink.beginInsert("value");
-    writeValue(sink, toString());
-  }
-
-  if (hasDefault()) {
-    sink.beginInsert("default");
-    writeValue(sink, getDefault());
-  }
+  if (!getHelp().empty()) sink.insert("help",    getHelp());
+  if (hasValue())         sink.insert("value",   *getValue());
+  if (hasDefault())       sink.insert("default", *getDefault());
 
   sink.insert("type", getTypeString());
   if (shortName)          sink.insert("short", string(1, shortName));
@@ -656,57 +595,20 @@ void Option::dump(JSON::Sink &sink) const {
   if (type != TYPE_STRING)
     sink.insert("type", String::toLower(type.toString()));
 
-  if (shortName)      sink.insert("short",   string(1, shortName));
-  if (!help.empty())  sink.insert("help",    help);
+  if (shortName)      sink.insert("short", string(1, shortName));
+  if (!help.empty())  sink.insert("help",  help);
   if (isOptional())   sink.insertBoolean("optional",   true);
   if (isObscured())   sink.insertBoolean("obscured",   true);
   if (isDeprecated()) sink.insertBoolean("deprecated", true);
-
-  if (hasDefault()) {
-    sink.beginInsert("default");
-
-    switch (type) {
-    case TYPE_BOOLEAN: sink.writeBoolean(toBoolean()); break;
-    case TYPE_INTEGER: sink.writeBoolean(toInteger()); break;
-    case TYPE_DOUBLE:  sink.writeBoolean(toDouble());  break;
-    default:
-      if (isPlural()) {
-        sink.beginList();
-        auto strings = toStrings();
-
-        for (auto &s: strings) {
-          switch (type) {
-          case TYPE_STRINGS:  sink.append(s);               break;
-          case TYPE_INTEGERS: sink.append(parseInteger(s)); break;
-          case TYPE_DOUBLES:  sink.append(parseDouble(s));  break;
-          default: THROW("Unsupported plural option type: " << type);
-          }
-        }
-
-        sink.endList();
-
-      } else sink.write(defaultValue);
-      break;
-    }
-  }
+  if (hasDefault())   sink.insert("default", *defaultValue);
 
   if (aliases.size()) {
     sink.insertList("aliases");
-    for (auto &alias: aliases)
-      sink.append(alias);
+    for (auto &alias: aliases) sink.append(alias);
     sink.endList();
   }
 
   if (constraint.isSet()) constraint->dump(sink);
 
   sink.endDict();
-}
-
-
-void Option::setDefault(const string &value, OptionType type) {
-  defaultValue = value;
-  flags |= DEFAULT_SET_FLAG;
-  this->type = type;
-
-  if (defaultSetAction.isSet()) (*defaultSetAction)(*this);
 }

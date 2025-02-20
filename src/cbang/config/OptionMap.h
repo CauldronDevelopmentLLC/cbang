@@ -32,15 +32,17 @@
 
 #pragma once
 
-#include <string>
-#include <iostream>
-
-#include <cbang/SmartPointer.h>
-
 #include "Option.h"
 #include "OptionActionSet.h"
 
+#include <cbang/SmartPointer.h>
+#include <cbang/enum/Enumeration.h>
 #include <cbang/xml/HandlerFactory.h>
+#include <cbang/log/Logger.h>
+
+#include <string>
+#include <iostream>
+#include <type_traits>
 
 
 namespace cb {
@@ -92,18 +94,31 @@ namespace cb {
     }
 
     template <typename T>
+    typename std::enable_if<
+      std::is_base_of<EnumerationBase, T>::value, void>::type
+    setOptionDefault(Option &option, T &value) {
+      option.setDefault(value.toString());
+    }
+
+    template <typename T>
+    typename std::enable_if<
+      !std::is_base_of<EnumerationBase, T>::value, void>::type
+    setOptionDefault(Option &option, T &value) {option.setDefault(value);}
+
+    template <typename T>
     SmartPointer<Option> addTarget(const std::string &name, T &target,
-                                   const std::string &help = "",
-                                   char shortName = 0) {
+      const std::string &help = "", char shortName = 0) {
       auto option = add(name, shortName, 0, help);
       bind(name, target);
-      option->setDefault(target);
+      setOptionDefault(*option, target);
       return option;
     }
 
     Option &operator[](const std::string &key) const {return *get(key);}
+
+    void set(Option &option, const JSON::ValuePtr &value);
     void set(const std::string &name, const std::string &value,
-             bool setDefault = false);
+      bool setDefault = false);
 
     // Virtual interface
     virtual void add(const std::string &name, SmartPointer<Option> option) = 0;
@@ -121,5 +136,8 @@ namespace cb {
     void endElement(const std::string &name) override;
     void text(const std::string &text) override;
     void cdata(const std::string &data) override;
+
+  protected:
+    SmartPointer<Option> tryLocalize(const std::string &name);
   };
 }

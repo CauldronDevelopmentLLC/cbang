@@ -63,28 +63,28 @@ SmartPointer<Option> OptionMap::add(const string &name, const char shortName,
 }
 
 
-void OptionMap::set(const string &name, const string &value, bool setDefault) {
-  if (!autoAdd && !has(name)) {
-    LOG_WARNING("Unrecognized option '" << name << "'");
-    return;
-  }
+void OptionMap::set(Option &option, const JSON::ValuePtr &value) {
+  if (!allowReset && !option.isPlural() && option.isSet())
+    LOG_WARNING("Option '" << option.getName() << "' already set to '"
+                << option << "' reseting to '" << value->asString() << "'.");
 
-  Option &option = *localize(name);
+  option.set(value);
+}
 
-  if (setDefault) option.setDefault(value);
-  else if (!allowReset && option.isPlural()) option.append(value);
-  else {
-    if (!allowReset && option.isSet())
-      LOG_WARNING("Option '" << name << "' already set to '" << option
-                  << "' reseting to '" << value << "'.");
 
-    option.set(value);
-  }
+void OptionMap::set(const string &name, const string &_value, bool setDefault) {
+  auto option = tryLocalize(name);
+  if (option.isNull()) return;
+
+  auto value = option->parse(_value);
+  if (setDefault) option->setDefault(value);
+  else set(*option, value);
 }
 
 
 void OptionMap::startElement(const string &name, const XML::Attributes &attrs) {
-  setDefault = attrs.has("default") && attrs["default"] == "true";
+  setDefault =
+    attrs.has("default") && String::parseBool(attrs["default"], true);
 
   auto it = attrs.find("v");
   if (it == attrs.end()) it = attrs.find("value");
@@ -92,7 +92,7 @@ void OptionMap::startElement(const string &name, const XML::Attributes &attrs) {
 
   if (xmlValueSet) set(name, it->second, setDefault);
 
-  xmlValue = "";
+  xmlValue.clear();
 }
 
 
@@ -101,8 +101,11 @@ void OptionMap::endElement(const string &name) {
 
   if (xmlValue.empty()) {
     // If value not set and type is boolean, set true
-    if (!xmlValueSet && has(name) &&
-        get(name)->getType() == Option::TYPE_BOOLEAN) set(name, "true");
+    if (!xmlValueSet && has(name)) {
+      auto option = get(name);
+      if (option->isBoolean())
+        set(*option, JSON::Factory().createBoolean(true));
+    }
 
   } else set(name, xmlValue, setDefault);
 }
@@ -110,3 +113,10 @@ void OptionMap::endElement(const string &name) {
 
 void OptionMap::text(const string &text) {xmlValue.append(text);}
 void OptionMap::cdata(const string &data) {xmlValue.append(data);}
+
+
+SmartPointer<Option> OptionMap::tryLocalize(const string &name) {
+  if (autoAdd || has(name)) return localize(name);
+  LOG_WARNING("Unrecognized option '" << name << "'");
+  return 0;
+}

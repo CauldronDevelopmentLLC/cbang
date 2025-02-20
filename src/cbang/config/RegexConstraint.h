@@ -46,7 +46,7 @@ namespace cb {
       re(re), help(help) {}
 
     // From Constraint
-    void validate(const std::string &value) const override;
+    void validate(const JSON::Value &value) const override;
     std::string getHelp() const override;
   };
 }

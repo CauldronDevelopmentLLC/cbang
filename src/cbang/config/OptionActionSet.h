@@ -47,70 +47,70 @@ namespace cb {
     OptionActionSet(T &ref) : ref(ref) {}
 
     int operator()(Option &option) override {
-      set(option.toString());
+      set(*option.get());
       return 0;
     }
 
-    void set(const std::string &value) {ref = T::parse(value);}
+    void set(const JSON::Value &value) {ref = T::parse(value.asString());}
   };
 
   template <>
-  inline void OptionActionSet<std::string>::set(const std::string &value) {
-    ref = value;
+  inline void OptionActionSet<std::string>::set(const JSON::Value &value) {
+    ref = value.asString();
   }
 
   template <>
-  inline void OptionActionSet<uint8_t>::set(const std::string &value) {
-    ref = String::parseU8(value);
+  inline void OptionActionSet<uint8_t>::set(const JSON::Value &value) {
+    ref = value.getU8();
   }
 
   template <>
-  inline void OptionActionSet<int8_t>::set(const std::string &value) {
-    ref = String::parseS8(value);
+  inline void OptionActionSet<int8_t>::set(const JSON::Value &value) {
+    ref = value.getS8();
   }
 
   template <>
-  inline void OptionActionSet<uint16_t>::set(const std::string &value) {
-    ref = String::parseU16(value);
+  inline void OptionActionSet<uint16_t>::set(const JSON::Value &value) {
+    ref = value.getU16();
   }
 
   template <>
-  inline void OptionActionSet<int16_t>::set(const std::string &value) {
-    ref = String::parseS16(value);
+  inline void OptionActionSet<int16_t>::set(const JSON::Value &value) {
+    ref = value.getS16();
   }
 
   template <>
-  inline void OptionActionSet<uint32_t>::set(const std::string &value) {
-    ref = String::parseU32(value);
+  inline void OptionActionSet<uint32_t>::set(const JSON::Value &value) {
+    ref = value.getU32();
   }
 
   template <>
-  inline void OptionActionSet<int32_t>::set(const std::string &value) {
-    ref = String::parseS32(value);
+  inline void OptionActionSet<int32_t>::set(const JSON::Value &value) {
+    ref = value.getS32();
   }
 
   template <>
-  inline void OptionActionSet<uint64_t>::set(const std::string &value) {
-    ref = String::parseU64(value);
+  inline void OptionActionSet<uint64_t>::set(const JSON::Value &value) {
+    ref = value.getU64();
   }
 
   template <>
-  inline void OptionActionSet<int64_t>::set(const std::string &value) {
-    ref = String::parseS64(value);
+  inline void OptionActionSet<int64_t>::set(const JSON::Value &value) {
+    ref = value.getS64();
   }
 
   template <>
-  inline void OptionActionSet<double>::set(const std::string &value) {
-    ref = String::parseDouble(value);
+  inline void OptionActionSet<double>::set(const JSON::Value &value) {
+    ref = value.getNumber();
   }
 
   template <>
-  inline void OptionActionSet<float>::set(const std::string &value) {
-    ref = String::parseFloat(value);
+  inline void OptionActionSet<float>::set(const JSON::Value &value) {
+    ref = (float)value.getNumber();
   }
 
   template <>
-  inline void OptionActionSet<bool>::set(const std::string &value) {
-    ref = String::parseBool(value);
+  inline void OptionActionSet<bool>::set(const JSON::Value &value) {
+    ref = value.getBoolean();
   }
 }
