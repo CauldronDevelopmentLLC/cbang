@@ -40,8 +40,7 @@
 
 
 namespace cb {
-  class HIPLibrary : public DynamicLibrary,
-                      public Singleton<HIPLibrary> {
+  class HIPLibrary : public DynamicLibrary, public Singleton<HIPLibrary> {
     typedef std::vector<ComputeDevice> devices_t;
     devices_t devices;
 
