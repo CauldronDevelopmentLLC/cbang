@@ -31,6 +31,7 @@
 
 #include <cbang/Catch.h>
 #include <cbang/hw/CUDALibrary.h>
+#include <cbang/hw/HIPLibrary.h>
 #include <cbang/hw/OpenCLLibrary.h>
 
 #include <iostream>
@@ -51,6 +52,7 @@ void printCD(const char *name) try {
 
 int main(int argc, char *argv[]) {
   printCD<CUDALibrary>("CUDA");
+  printCD<HIPLibrary>("HIP");
   printCD<OpenCLLibrary>("OpenCL");
   return 0;
 }
