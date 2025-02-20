@@ -111,7 +111,7 @@ void Server::init(Options &options) {
   Event::Server::init(options);
 
   // Configure ports
-  Option::strings_t addresses = options["http-addresses"].toStrings();
+  auto addresses = options["http-addresses"].toStrings();
   for (auto &addr: addresses) addListenPort(SockAddr::parse(addr));
 
 #ifdef HAVE_OPENSSL

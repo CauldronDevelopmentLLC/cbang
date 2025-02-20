@@ -33,35 +33,18 @@
 #pragma once
 
 #include <cbang/Exception.h>
+#include <cbang/json/Value.h>
 
 #include <vector>
 #include <string>
 
 
 namespace cb {
-  namespace JSON {class Sink;}
-
   class Constraint {
   public:
     virtual ~Constraint() {}
-
-    virtual void validate(bool value) const {}
-    virtual void validate(const std::string &value) const {}
-    virtual void validate(int64_t value) const {}
-    virtual void validate(double value) const {}
-
-    template <typename T>
-    void validate(const std::vector<T> &value) const {
-      for (unsigned i = 0; i < value.size(); i++)
-        try {
-          validate(value[i]);
-        } catch (const Exception &e) {
-          CBANG_THROWC("Item " << i << " is invalid", e);
-        }
-    }
-
+    virtual void validate(const JSON::Value &value) const {}
     virtual std::string getHelp() const = 0;
-
     virtual void dump(JSON::Sink &sink) const {}
   };
 }

@@ -62,6 +62,7 @@ namespace cb {
       virtual ValueType getType() const = 0;
 
       virtual bool isSimple() const {return true;}
+      virtual bool isInteger() const {return false;}
       virtual ValuePtr copy(bool deep = false) const = 0;
       virtual bool canWrite(Sink &sink) const {return true;}
 

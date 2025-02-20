@@ -126,9 +126,8 @@ void Base::countActiveEventsByPriority(map<int, unsigned> &counts) const {
 
 
 void Base::dispatch() {
-  int ret = event_base_dispatch(base);
-  if (ret < 0) THROW("Dispatch failed: " << SysError());
-  if (ret == 1) THROW("No pending events");
+  if (event_base_loop(base, EVLOOP_NO_EXIT_ON_EMPTY))
+    THROW("Event dispatch failed: " << SysError());
 }
 
 

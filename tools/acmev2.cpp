@@ -42,7 +42,7 @@
 #include <cbang/event/Event.h>
 #include <cbang/dns/Base.h>
 #include <cbang/http/Client.h>
-#include <cbang/http/WebServer.h>
+#include <cbang/http/Server.h>
 
 #include <cbang/acmev2/Account.h>
 #include <cbang/os/SystemUtilities.h>
@@ -58,9 +58,8 @@ void readKey(KeyPair &key, const string &filename) {
     key.readPrivatePEM(SystemUtilities::read(filename));
 
   } else {
-    LOG_INFO(1, "Generating " << filename);
-    key.generateRSA(4096, 65537, new KeyGenPacifier(cout));
-    cout << endl;
+    key.generateRSA(4096, 65537,
+      new KeyGenPacifier("Generating " + filename));
     key.writePrivatePEM(*SystemUtilities::oopen(filename, 0600));
   }
 }
@@ -73,9 +72,8 @@ class App : public Application {
   KeyPair clientKey;
 
   Event::Base base;
-  DNS::Base dns;
   HTTP::Client client;
-  HTTP::WebServer server;
+  HTTP::Server server;
 
   ACMEv2::Account account;
 
@@ -84,13 +82,13 @@ class App : public Application {
 public:
   App() :
     Application("ACMEv2 Tool", App::_hasFeature), sslCtx(new SSLContext),
-    base(true), dns(base), client(base, dns, sslCtx), server(options, base),
-    account(client) {
+    base(true), client(base, sslCtx), server(base), account(client) {
 
     options.pushCategory("ACME v2");
     options.addTarget("domain", domain);
     options.popCategory();
 
+    server.addOptions(options);
     account.addOptions(options);
 
     // Modify Option defaults
@@ -117,7 +115,7 @@ public:
 
 
   // From Application
-  void run() {
+  void run() override {
     readKey(serverKey, "server.key");
     readKey(clientKey, "client.key");
 
@@ -140,7 +138,7 @@ public:
       return;
     }
 
-    server.init();
+    server.init(options);
 
     base.dispatch();
   }

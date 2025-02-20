@@ -38,6 +38,8 @@
 
 #include <cbang/SmartPointer.h>
 #include <cbang/xml/Handler.h>
+#include <cbang/json/Value.h>
+#include <cbang/json/Sink.h>
 
 #include <ostream>
 #include <string>
@@ -47,8 +49,6 @@
 
 
 namespace cb {
-  namespace JSON {class Sink; class Value;}
-
   /**
    * A Configuration option.  Holds option defaults, user values, and parses
    * option strings.  Can also call an OptionAction when an option is set.
@@ -66,16 +66,17 @@ namespace cb {
       OBSCURED_FLAG     = 1 << 3,
       COMMAND_LINE_FLAG = 1 << 4,
       DEPRECATED_FLAG   = 1 << 5,
+      TYPE_SET_FLAG     = 1 << 6,
     } flags_t;
 
   protected:
     std::string name;
-    char        shortName = 0;
-    OptionType  type = TYPE_STRING;
-    std::string defaultValue;
-    std::string help;
-    std::string value;
-    uint32_t    flags = 0;
+    char           shortName = 0;
+    OptionType     type = TYPE_STRING;
+    JSON::ValuePtr defaultValue;
+    std::string    help;
+    JSON::ValuePtr value;
+    uint32_t       flags = 0;
 
     typedef std::set<std::string> aliases_t;
     aliases_t aliases;
@@ -97,32 +98,41 @@ namespace cb {
     const std::string &getName() const {return name;}
     char getShortName() const {return shortName;}
 
-    void setType(OptionType type) {this->type = type;}
+    void setType(OptionType type);
+    void setDefaultType(OptionType type);
+    void setTypeFromValue(const JSON::Value &value);
     OptionType getType() const {return type;}
     const std::string getTypeString() const;
 
-    const std::string &getDefault() const;
-    void setDefault(const std::string &defaultValue);
-    void setDefault(const char *defaultValue);
-    void setDefault(int64_t  defaultValue);
-    void setDefault(uint64_t defaultValue) {setDefault((int64_t)defaultValue);}
-    void setDefault(int32_t  defaultValue) {setDefault((int64_t)defaultValue);}
-    void setDefault(uint32_t defaultValue) {setDefault((int64_t)defaultValue);}
-    void setDefault(double   defaultValue);
-    void setDefault(bool     defaultValue);
-    void setDefault(const JSON::Value &value);
+    bool isBoolean()  const {return type == TYPE_BOOLEAN;}
+    bool isString()   const {return type == TYPE_STRING;}
+    bool isInteger()  const {return type == TYPE_INTEGER;}
+    bool isDouble()   const {return type == TYPE_DOUBLE;}
+    bool isStrings()  const {return type == TYPE_STRINGS;}
+    bool isIntegers() const {return type == TYPE_INTEGERS;}
+    bool isDoubles()  const {return type == TYPE_DOUBLES;}
+
+    const JSON::ValuePtr &getDefault() const;
+    void setDefault(const JSON::ValuePtr &value);
+    void setDefault(const std::string &value);
+    void setDefault(const char *value) {setDefault(std::string(value));}
+    void setDefault(int64_t  value);
+    void setDefault(uint64_t value) {setDefault((int64_t)value);}
+    void setDefault(int32_t  value) {setDefault((int64_t)value);}
+    void setDefault(uint32_t value) {setDefault((int64_t)value);}
+    void setDefault(double   value);
+    void setDefault(bool     value);
     void clearDefault();
     bool hasDefault() const;
-    bool isDefault() const;
+    bool isDefault()  const;
 
-    void setOptional()    {flags |= OPTIONAL_FLAG;}
-    void setObscured()    {flags |= OBSCURED_FLAG;}
-    void setCommandLine() {flags |= COMMAND_LINE_FLAG;}
-    void setDeprecated()  {flags |= DEPRECATED_FLAG; clearDefault();}
+    void setOptional()   {flags |= OPTIONAL_FLAG;}
+    void setObscured()   {flags |= OBSCURED_FLAG;}
+    void setDeprecated() {flags |= DEPRECATED_FLAG; clearDefault();}
 
     bool isOptional()    const {return flags & OPTIONAL_FLAG;}
     bool isObscured()    const {return flags & OBSCURED_FLAG;}
-    bool isPlural()      const {return type >= TYPE_STRINGS;}
+    bool isPlural()      const {return TYPE_STRINGS <= type;}
     bool isCommandLine() const {return flags & COMMAND_LINE_FLAG;}
     bool isDeprecated()  const {return flags & DEPRECATED_FLAG;}
     bool isHidden()      const;
@@ -141,6 +151,7 @@ namespace cb {
     void configure(const JSON::Value &value);
     void reset();
     void unset();
+    void set(const JSON::ValuePtr &value);
     void set(const std::string &value);
     void set(const char *value) {set(std::string(value));}
     void set(int64_t  value);
@@ -149,70 +160,45 @@ namespace cb {
     void set(uint32_t value) {set((int64_t)value);}
     void set(double   value);
     void set(bool     value);
-    void set(const strings_t &values);
-    void set(const integers_t &values);
-    void set(const doubles_t &values);
 
-    void append(const std::string &value);
-    void append(int64_t value);
-    void append(double value);
+    bool isSet()     const {return flags & SET_FLAG;}
+    bool isTypeSet() const {return flags & TYPE_SET_FLAG;}
+    bool hasValue()  const {return isSet() || hasDefault();}
 
-    bool isSet() const {return flags & SET_FLAG;}
-    bool hasValue() const;
+    const JSON::ValuePtr &getValue() const {return value;}
+    JSON::ValuePtr get() const;
 
-    bool       toBoolean()  const;
-    const std::string &toString() const;
-    int64_t    toInteger()  const;
-    double     toDouble()   const;
-    strings_t  toStrings()  const;
-    integers_t toIntegers() const;
-    doubles_t  toDoubles()  const;
+    bool        toBoolean () const;
+    std::string toString  () const;
+    int64_t     toInteger () const;
+    double      toDouble  () const;
+    strings_t   toStrings () const;
+    integers_t  toIntegers() const;
+    doubles_t   toDoubles () const;
 
-    bool       toBoolean(bool defaultValue) const;
-    const std::string &toString(const std::string &defaultValue) const;
-    int64_t    toInteger(int64_t defaultValue) const;
-    double     toDouble(double defaultValue) const;
-    strings_t  toStrings(const strings_t &defaultValue) const;
-    integers_t toIntegers(const integers_t &defaultValue) const;
-    doubles_t  toDoubles(const doubles_t &defaultValue) const;
+    bool        toBoolean (bool defaultValue)               const;
+    std::string toString  (const std::string &defaultValue) const;
+    int64_t     toInteger (int64_t defaultValue)            const;
+    double      toDouble  (double defaultValue)             const;
+    strings_t   toStrings (const strings_t &defaultValue)   const;
+    integers_t  toIntegers(const integers_t &defaultValue)  const;
+    doubles_t   toDoubles (const doubles_t &defaultValue)   const;
 
-    static bool       parseBoolean (const std::string &value);
-    static int64_t    parseInteger (const std::string &value);
-    static double     parseDouble  (const std::string &value);
-    static strings_t  parseStrings (const std::string &value);
-    static integers_t parseIntegers(const std::string &value);
-    static doubles_t  parseDoubles (const std::string &value);
-
-    template <typename T>
-    void checkConstraint(T value) const {
-      if (constraint.isSet()) constraint->validate(value);
-      if (parent.isSet()) parent->checkConstraint(value);
-    }
-
-    void validate() const;
+    void validate(const JSON::Value &value) const;
 
     bool hasAction() const {return action.isSet();}
 
-    void parse(unsigned &i, const std::vector<std::string> &args);
+    static JSON::ValuePtr parse(const std::string &value, OptionType type);
+    JSON::ValuePtr parse(const std::string &value) {return parse(value, type);}
+    void parseCommandLine(unsigned &i, const std::vector<std::string> &args);
     std::ostream &printHelp(std::ostream &stream, bool cmdLine = true) const;
     std::ostream &print(std::ostream &stream) const;
 
-    operator const std::string &() const {return toString();}
+    operator std::string() const {return toString();}
 
-    static void writeBoolean (JSON::Sink &sink, const std::string &value);
-    static void writeInteger (JSON::Sink &sink, const std::string &value);
-    static void writeDouble  (JSON::Sink &sink, const std::string &value);
-    static void writeStrings (JSON::Sink &sink, const std::string &value);
-    static void writeIntegers(JSON::Sink &sink, const std::string &value);
-    static void writeDoubles (JSON::Sink &sink, const std::string &value);
-
-    void writeValue(JSON::Sink &sink, const std::string &value) const;
     void write(JSON::Sink &sink, bool config = false) const;
     void write(XML::Handler &handler, uint32_t flags) const;
     void dump(JSON::Sink &sink) const;
-
-  protected:
-    void setDefault(const std::string &value, OptionType type);
   };
 
   inline std::ostream &operator<<(std::ostream &stream, const Option &o) {

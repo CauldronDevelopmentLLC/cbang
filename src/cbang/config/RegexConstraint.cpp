@@ -36,8 +36,8 @@ using namespace cb;
 using namespace std;
 
 
-void RegexConstraint::validate(const string &value) const {
-  if (!re.match(value))
+void RegexConstraint::validate(const JSON::Value &value) const {
+  if (!re.match(value.asString()))
     THROW("'" << value << "' does not match pattern '" << re.toString() << "'");
 }
 

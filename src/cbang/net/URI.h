@@ -64,11 +64,13 @@ namespace cb {
     unsigned getPort() const;
     const std::string &getPath() const {return path;}
     std::string getEscapedPath() const;
+    std::string getEscapedPathAndQuery() const;
     const std::vector<std::string> &getPathSegments() const {return pathSegs;}
     std::string getExtension() const;
     const std::string &getUser() const {return user;}
     const std::string &getPass() const {return pass;}
     const std::string getQuery() const;
+    const std::string getEscapedQuery() const;
 
     void setScheme(const std::string &scheme) {this->scheme = scheme;}
     void setHost(const std::string &host) {this->host = host;}

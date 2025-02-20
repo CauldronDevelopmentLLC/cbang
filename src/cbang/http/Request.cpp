@@ -112,8 +112,10 @@ string Request::getResponseLine() const {
 
 string Request::getRequestLine() const {
   string path;
-  if (method != HTTP_CONNECT) path = uri.toString();
-  else path = uri.getHost() + ":" + String(uri.getPort());
+  if (method == HTTP_CONNECT)
+    path = uri.getHost() + ":" + String(uri.getPort());
+  else if (version == Version(1, 0)) path = uri.toString();
+  else path = uri.getEscapedPathAndQuery();
 
   return SSTR(method << ' ' << path << " HTTP/" << version);
 }
@@ -724,6 +726,7 @@ void Request::writeRequest(Event::Buffer &buf) {
   } else {
     if (!outHas("Host")) outSet("Host", uri.getHost());
     if (!outHas("Connection")) outSet("Connection", "close"); // Don't persist
+    if (!outHas("Accept")) outSet("Accept", "*/*");
   }
 
   // Add missing content length if may have body

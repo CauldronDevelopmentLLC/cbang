@@ -45,13 +45,9 @@ namespace cb {
     MinMaxConstraint(T minimum, T maximum) :
       minimum(minimum), maximum(maximum) {}
 
-    // From Constraint
-    void validate(int64_t value) const override {
-      minimum.validate(value);
-      maximum.validate(value);
-    }
 
-    void validate(double value) const override {
+    // From Constraint
+    void validate(const JSON::Value &value) const override {
       minimum.validate(value);
       maximum.validate(value);
     }

@@ -40,12 +40,11 @@ namespace cb {
   class EnumConstraint : public Constraint {
   public:
     // From Constraint
-    void validate(const std::string &value) const override {T::parse(value);}
-
-    void validate(int64_t value) const override {
-      if (!T::isValid((typename T::enum_t)value))
+    void validate(const JSON::Value &value) const override {
+      if (value.isInteger() && !T::isValid((typename T::enum_t)value.getU32()))
         CBANG_THROW(value << " is not a member of enumeration "
-                     << T::getName());
+          << T::getName());
+      T::parse(value.getString());
     }
 
 

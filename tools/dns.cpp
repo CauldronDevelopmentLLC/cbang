@@ -90,8 +90,13 @@ int main(int argc, char *argv[]) {
     auto &args = cmdLine.getPositionalArgs();
     unsigned count = args.size();
 
+    if (!count) {
+      cout << "Missing required lookup argument" << endl;
+      return 1;
+    }
+
     Event::Base base;
-    DNS::Base dns(base, server.empty());
+    auto &dns = base.getDNS();
 
     if (!server.empty()) dns.addNameserver(server);
 

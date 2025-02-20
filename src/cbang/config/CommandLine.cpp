@@ -69,7 +69,7 @@ CommandLine::CommandLine() {
 
 
 void CommandLine::add(const string &name, SmartPointer<Option> option) {
-  option->setType(Option::TYPE_BOOLEAN); // The default for command line opts
+  option->setDefaultType(Option::TYPE_BOOLEAN);
 
   // Short name
   if (option->getShortName())
@@ -123,14 +123,8 @@ int CommandLine::parse(const vector<string> &args) {
       if (allowConfigAsFirstArg && !configSet && !optionStr.empty()) {
         option = get("--config");
 
-        if (!option.isNull()) {
-          unsigned cmdI = 0;
-          vector<string> cmdArgs;
-
-          cmdArgs.push_back("--config");
-          cmdArgs.push_back(args[i++]);
-
-          option->parse(cmdI, cmdArgs);
+        if (option.isSet()) {
+          option->set(option->parse(args[i++]));
           configSet = true;
           continue;
         }
@@ -143,7 +137,7 @@ int CommandLine::parse(const vector<string> &args) {
     }
 
     // Split --arg=value
-    string::size_type pos = optionStr.find('=');
+    auto pos = optionStr.find('=');
     if (pos != string::npos) optionStr = optionStr.substr(0, pos);
 
     try {
@@ -162,8 +156,7 @@ int CommandLine::parse(const vector<string> &args) {
       THROWC("Invalid argument '" << args[i] << "'", e);
     }
 
-    option->parse(i, args);
-    option->setCommandLine();
+    option->parseCommandLine(i, args);
   }
 
   return i;
