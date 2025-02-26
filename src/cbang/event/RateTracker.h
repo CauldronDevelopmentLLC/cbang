@@ -47,7 +47,6 @@ namespace cb {
     class RateTracker {
       SmartPointer<RateSet> rates;
       const unsigned size;   //< Maximum number of measurements
-      const unsigned period; //< Measurement period in seconds
 
       using cb_set_t =
         CallbackSet<uint64_t, const std::string &, double, double>;
