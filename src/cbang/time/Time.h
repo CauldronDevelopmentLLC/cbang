@@ -61,7 +61,7 @@ namespace cb {
     static const unsigned SEC_PER_DAY  = Time::SEC_PER_HOUR * 24;
     static const unsigned SEC_PER_YEAR = Time::SEC_PER_DAY  * 365;
 
-    /// @param time In seconds since Janary 1st, 1970
+    /// @param time In seconds since January 1st, 1970
     Time(uint64_t time = ~(uint64_t)0);
     explicit Time(const struct tm &tm);
 
@@ -79,7 +79,7 @@ namespace cb {
     static uint64_t parse(const std::string &s,
                           const std::string &format = iso8601Format);
 
-    /// Get current time in seconds since Janary 1st, 1970.
+    /// Get current time in seconds since January 1st, 1970.
     static uint64_t now();
 
     // UTC offset in seconds
