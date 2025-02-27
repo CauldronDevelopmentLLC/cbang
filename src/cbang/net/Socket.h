@@ -76,6 +76,8 @@ namespace cb {
       IPV6          = 1 << 3,
       UDP           = 1 << 4,
       NOCLOSEONEXEC = 1 << 5,
+      REUSEADDR     = 1 << 6,
+      KEEPALIVE     = 1 << 7,
     };
 
 
@@ -104,7 +106,7 @@ namespace cb {
     void setSendTimeout(double timeout);
     void setTimeout(double timeout);
 
-    void open(unsigned flags = 0);
+    void open(unsigned flags = 0, const SockAddr &bindAddr = SockAddr());
     void bind(const SockAddr &addr);
     void listen(int backlog = -1);
     SmartPointer<Socket> accept(SockAddr &addr);

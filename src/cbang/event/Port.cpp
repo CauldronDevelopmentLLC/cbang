@@ -59,9 +59,7 @@ void Port::setPriority(int priority) {
 
 void Port::open() {
   socket = new Socket;
-  socket->open(Socket::NONBLOCKING);
-  socket->setReuseAddr(true);
-  socket->bind(addr);
+  socket->open(Socket::NONBLOCKING | Socket::REUSEADDR, addr);
   socket->listen(server.getConnectionBacklog());
   socket_t fd = socket->get();
 
