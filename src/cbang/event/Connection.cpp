@@ -133,8 +133,7 @@ void Connection::connect(
 
     // Open and bind new socket
     auto socket = SmartPtr(new Socket);
-    socket->open(Socket::NONBLOCKING);
-    if (!bind.isNull()) socket->bind(bind);
+    socket->open(Socket::NONBLOCKING, bind);
     setSocket(socket);
 
     LOG_DEBUG(4, "Connection with fd " << socket->get());

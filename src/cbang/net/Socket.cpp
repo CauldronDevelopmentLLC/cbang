@@ -143,16 +143,21 @@ void Socket::setBlocking(bool blocking) {
 
 #ifdef _WIN32
   u_long on = blocking ? 0 : 1;
-  ioctlsocket((socket_t)socket, FIONBIO, &on);
+  if (ioctlsocket((socket_t)socket, FIONBIO, &on))
+    THROW("Failed to set socket " << (blocking ? "" : "non-")
+      << " blocking: " << SysError());
 
 #else
-  int opts = fcntl(socket, F_GETFL);
-  if (opts >= 0) {
-    if (blocking) opts &= ~O_NONBLOCK;
-    else opts |= O_NONBLOCK;
+  int flags = fcntl(socket, F_GETFL);
+  if (flags == -1) THROW("Failed to get socket flags: " << SysError());
 
-    fcntl(socket, F_SETFL, opts);
-  }
+  int newFlags = flags;
+  if (blocking) newFlags &= ~O_NONBLOCK;
+  else newFlags |= O_NONBLOCK;
+
+  if (flags != newFlags && fcntl(socket, F_SETFL, newFlags) == -1)
+    THROW("Failed to set socket " << (blocking ? "" : "non-")
+      << " blocking: " << SysError());
 #endif
 
   this->blocking = blocking;
@@ -161,7 +166,8 @@ void Socket::setBlocking(bool blocking) {
 
 void Socket::setCloseOnExec(bool closeOnExec) {
 #ifndef _WIN32
-  fcntl(socket, F_SETFD, closeOnExec ? FD_CLOEXEC : 0);
+  if (fcntl(socket, F_SETFD, closeOnExec ? FD_CLOEXEC : 0))
+    THROW("Failed to set socket close on exit: " << SysError());
 #endif
 }
 
@@ -246,8 +252,10 @@ void Socket::setTimeout(double timeout) {
 }
 
 
-void Socket::open(unsigned flags) {
+void Socket::open(unsigned flags, const SockAddr &bindAddr) {
   if (isOpen()) THROW("Socket already open");
+
+  if (bindAddr.isIPv6()) flags |= Socket::IPV6;
 
   auto net  = (flags & Socket::IPV6) ? AF_INET6   : AF_INET;
   auto type = (flags & Socket::UDP)  ? SOCK_DGRAM : SOCK_STREAM;
@@ -257,8 +265,12 @@ void Socket::open(unsigned flags) {
     THROW("Failed to create socket: " << SysError());
 
   autoClose = !(flags & Socket::NOAUTOCLOSE);
-  if (flags & Socket::NONBLOCKING) setBlocking(false);
+  if (  flags & Socket::NONBLOCKING)    setBlocking(false);
   if (!(flags & Socket::NOCLOSEONEXEC)) setCloseOnExec(true);
+  if (  flags & Socket::REUSEADDR)      setReuseAddr(true);
+  if (  flags & Socket::KEEPALIVE)      setKeepAlive(true);
+
+  if (!bindAddr.isNull()) bind(bindAddr);
 }
 
 
