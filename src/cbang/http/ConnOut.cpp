@@ -113,6 +113,25 @@ void ConnOut::readHeader(const SmartPointer<Request> &req) {
 
       if (!success) return fail(CONN_ERR_EOF, "Failed to read response header");
 
+      // Read first line
+      try {
+        string line;
+        input.readLine(line, maxHeaderSize);
+        req->parseResponseLine(line);
+        LOG_DEBUG(4, req->getResponseLine());
+
+      } catch (const Exception &e) {
+        return fail(CONN_ERR_BAD_RESPONSE, e.getMessage());
+      }
+
+      // Read header block
+      auto hdrs = SmartPtr(new Headers);
+      if (!hdrs->parse(input))
+        return fail(CONN_ERR_BAD_RESPONSE, "Incomplete headers");
+
+      req->setInputHeaders(hdrs);
+      LOG_DEBUG(4, *hdrs);
+
       readBody(req);
     };
 
@@ -123,26 +142,6 @@ void ConnOut::readHeader(const SmartPointer<Request> &req) {
 
 void ConnOut::readBody(const SmartPointer<Request> &req) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
-
-  // Read first line
-  try {
-    string line;
-    input.readLine(line, maxHeaderSize);
-    req->parseResponseLine(line);
-    LOG_DEBUG(4, req->getResponseLine());
-
-  } catch (const Exception &e) {
-    return fail(CONN_ERR_BAD_RESPONSE, e.getMessage());
-  }
-
-  // Read header block
-  if (!req->getInputHeaders().parse(input))
-    return fail(CONN_ERR_BAD_RESPONSE, "Incomplete headers");
-
-  LOG_DEBUG(4, req->getInputHeaders());
-
-  // Headers callback
-  req->onHeaders();
 
   if (req->getResponseCode() == 100) return readHeader(req);
   if (!req->mustHaveBody()) return process(req);

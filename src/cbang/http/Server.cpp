@@ -150,10 +150,8 @@ SmartPointer<Event::Connection> Server::createConnection() {
 }
 
 
-SmartPointer<Request> Server::createRequest(
-  const SmartPointer<Conn> &connection, Method method, const URI &uri,
-  const Version &version) {
-  return new Request(connection, method, uri, version);
+SmartPointer<Request> Server::createRequest(const RequestParams &params) {
+  return new Request(params);
 }
 
 

@@ -33,14 +33,13 @@
 #pragma once
 
 #include "Enum.h"
-#include "Headers.h"
 #include "Session.h"
+#include "RequestParams.h"
 
 #include <cbang/event/Buffer.h>
 #include <cbang/SmartPointer.h>
 #include <cbang/util/Version.h>
 #include <cbang/net/SockAddr.h>
-#include <cbang/net/URI.h>
 #include <cbang/json/Value.h>
 #include <cbang/json/Writer.h>
 #include <cbang/comp/Compression.h>
@@ -55,11 +54,10 @@ namespace cb {
   class SSL;
 
   namespace HTTP {
-    class Conn;
-
     class Request : virtual public RefCounted, public Enum {
-      Headers inputHeaders;
-      Headers outputHeaders;
+      using HeadersPtr = SmartPointer<Headers>;
+      HeadersPtr inputHeaders;
+      HeadersPtr outputHeaders;
 
       Event::Buffer inputBuffer;
       Event::Buffer outputBuffer;
@@ -86,9 +84,7 @@ namespace cb {
       JSON::ValuePtr msg;
 
     public:
-      Request(const SmartPointer<Conn>::Weak &connection,
-              Method method = Method(), const URI &uri = URI(),
-              const Version &version = Version(1, 1));
+      Request(const RequestParams &params);
       virtual ~Request();
 
       template <class T>
@@ -100,10 +96,12 @@ namespace cb {
 
       uint64_t getID() const;
 
-      const Headers &getInputHeaders() const {return inputHeaders;}
-      const Headers &getOutputHeaders() const {return outputHeaders;}
-      Headers &getInputHeaders() {return inputHeaders;}
-      Headers &getOutputHeaders() {return outputHeaders;}
+      void setInputHeaders (const HeadersPtr &hdrs) {inputHeaders  = hdrs;}
+      void setOutputHeaders(const HeadersPtr &hdrs) {outputHeaders = hdrs;}
+      const Headers &getInputHeaders() const {return *inputHeaders;}
+      const Headers &getOutputHeaders() const {return *outputHeaders;}
+      Headers &getInputHeaders();
+      Headers &getOutputHeaders();
 
       const Event::Buffer &getInputBuffer() const {return inputBuffer;}
       const Event::Buffer &getOutputBuffer() const {return outputBuffer;}
@@ -242,7 +240,6 @@ namespace cb {
         const URI &uri, Status code = HTTP_TEMPORARY_REDIRECT);
 
       // Callbacks
-      virtual void onHeaders() {}
       virtual bool onContinue() {return true;}
       virtual void onResponse(Event::ConnectionError error);
       virtual void onRequest();

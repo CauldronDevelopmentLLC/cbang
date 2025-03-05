@@ -60,6 +60,13 @@ const string &Headers::get(const string &key) const {
 }
 
 
+const string &Headers::get(
+  const string &key, const string &defaultValue) const {
+  auto it = HeadersImpl::find(key);
+  return it == end() ? defaultValue : it.value();
+}
+
+
 void Headers::remove(const string &key) {erase(key);}
 
 

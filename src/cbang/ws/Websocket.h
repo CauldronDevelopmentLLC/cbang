@@ -63,8 +63,7 @@ namespace cb {
       uint64_t msgReceived = 0;
 
     public:
-      Websocket(const SmartPointer<HTTP::Conn> &connection = 0,
-                const URI &uri = URI(), const Version &version = Version(1, 1));
+      Websocket(const HTTP::RequestParams &params = HTTP::RequestParams());
 
       bool isActive() const;
 

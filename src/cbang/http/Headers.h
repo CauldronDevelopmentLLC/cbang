@@ -53,6 +53,8 @@ namespace cb {
       bool has(const std::string &key) const;
       std::string find(const std::string &key) const;
       const std::string &get(const std::string &key) const;
+      const std::string &get(
+        const std::string &key, const std::string &defaultValue) const;
       void set(const std::string &key, const std::string &value)
         {insert(key, value);}
       void remove(const std::string &key);

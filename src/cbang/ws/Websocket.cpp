@@ -54,11 +54,9 @@ using namespace cb;
 using namespace cb::WS;
 
 
-Websocket::Websocket(
-  const SmartPointer<HTTP::Conn> &connection, const URI &uri,
-  const Version &version) :
-  Request(connection, HTTP_GET, uri, version) {
-  if (version < Version(1, 1)) THROW("Invalid HTTP version for websocket");
+Websocket::Websocket(const cb::HTTP::RequestParams &params) : Request(params) {
+  if (params.version < Version(1, 1))
+    THROW("Invalid HTTP version for websocket");
 }
 
 
