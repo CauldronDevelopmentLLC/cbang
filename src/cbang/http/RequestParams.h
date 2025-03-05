@@ -30,23 +30,24 @@
 
 \******************************************************************************/
 
-#include "ProxyRequest.h"
+#pragma once
+
 #include "Conn.h"
+#include "Method.h"
+#include "Headers.h"
 
-#include <cbang/openssl/SSLContext.h>
-
-using namespace cb;
-using namespace cb::HTTP;
-
-
-ProxyRequest::ProxyRequest(
-  const URI &uri, const SmartPointer<Request> &req,
-  const SmartPointer<SSLContext> &sslCtx) :
-  Request({req->getConnection(), HTTP_CONNECT, req->getURI()}),
-  hostname(req->getURI().getHost()), sslCtx(sslCtx) {}
+#include <cbang/util/Version.h>
+#include <cbang/net/URI.h>
 
 
-void ProxyRequest::onResponse(Event::ConnectionError error) {
-  if (!error && sslCtx.isSet())
-    getConnection()->openSSL(*sslCtx, hostname);
+namespace cb {
+  namespace HTTP {
+    struct RequestParams {
+      SmartPointer<Conn> connection;
+      Method method;
+      URI uri;
+      Version version = Version(1, 1);
+      SmartPointer<Headers> hdrs = 0;
+    };
+  }
 }

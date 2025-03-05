@@ -129,20 +129,13 @@ void ConnIn::processHeader() {
     return error(HTTP_BAD_REQUEST, e.getMessage());
   }
 
-  // Create new request (Don't create circular dependency)
-  auto req = server.createRequest(this, method, uri, version);
-  push(req);
-
   // Read header block
-  if (!req->getInputHeaders().parse(input))
-    return error(HTTP_BAD_REQUEST, "Incomplete headers");
+  auto hdrs = SmartPtr(new Headers);
+  if (!hdrs->parse(input)) return error(HTTP_BAD_REQUEST, "Incomplete headers");
 
-  // Headers callback
-  try {
-    req->onHeaders();
-  } catch (const Exception &e) {
-    return error((Status::enum_t)e.getCode(), e.getMessage());
-  }
+  // Create new request (Don't create circular dependency)
+  auto req = server.createRequest({this, method, uri, version, hdrs});
+  push(req);
 
   // Handle protocol upgrades
   if (req->inHas("Upgrade")) {

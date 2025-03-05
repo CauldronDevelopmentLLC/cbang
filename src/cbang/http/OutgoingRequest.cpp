@@ -41,7 +41,7 @@ using namespace cb::HTTP;
 
 OutgoingRequest::OutgoingRequest(
   const SmartPointer<Conn>::Weak &connection, const URI &uri, Method method,
-  callback_t cb) : Request(connection, method, uri), cb(cb) {}
+  callback_t cb) : Request({connection, method, uri}), cb(cb) {}
 
 
 void OutgoingRequest::onResponse(Event::ConnectionError error) {

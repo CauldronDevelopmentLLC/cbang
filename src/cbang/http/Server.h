@@ -83,9 +83,7 @@ namespace cb {
       void init(Options &options) override;
       SmartPointer<Event::Connection> createConnection() override;
 
-      virtual SmartPointer<Request>
-      createRequest(const SmartPointer<Conn> &conn, Method method,
-                    const URI &uri, const Version &version);
+      virtual SmartPointer<Request> createRequest(const RequestParams &params);
       virtual void endRequest(Request &req);
 
       void dispatch(Request &req);

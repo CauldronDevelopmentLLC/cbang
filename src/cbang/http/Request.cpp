@@ -83,10 +83,9 @@ namespace {
 #define CBANG_LOG_PREFIX (isIncoming() ? "REQ" : "OUT") << getID() << ':'
 
 
-Request::Request(
-  const SmartPointer<Conn>::Weak &connection, Method method,
-  const URI &uri, const Version &version) :
-  connection(connection), method(method), uri(uri), version(version),
+Request::Request(const RequestParams &params) :
+  inputHeaders(params.hdrs), connection(params.connection),
+  method(params.method), uri(params.uri), version(params.version),
   args(new JSON::Dict) {}
 
 
@@ -95,6 +94,18 @@ Request::~Request() {}
 
 uint64_t Request::getID() const {
   return connection.isSet() ? connection->getID() : 0;
+}
+
+
+Headers &Request::getInputHeaders() {
+  if (inputHeaders.isNull()) inputHeaders = new Headers;
+  return *inputHeaders;
+}
+
+
+Headers &Request::getOutputHeaders() {
+  if (outputHeaders.isNull()) outputHeaders = new Headers;
+  return *outputHeaders;
 }
 
 
@@ -195,46 +206,58 @@ SockAddr Request::getClientAddr() const {
 }
 
 
-bool Request::inHas(const string &name) const {return inputHeaders.has(name);}
+bool Request::inHas(const string &name) const {
+  return inputHeaders.isSet() && inputHeaders->has(name);
+}
 
 
 string Request::inFind(const string &name) const {
-  return inputHeaders.find(name);
+  return inputHeaders->find(name);
 }
 
 
-string Request::inGet(const string &name) const {return inputHeaders.get(name);}
+string Request::inGet(const string &name) const {
+  return getInputHeaders().get(name);
+}
 
 
 void Request::inSet(const string &name, const string &value) {
-  inputHeaders.insert(name, value);
+  getInputHeaders().insert(name, value);
 }
 
 
-void Request::inRemove(const string &name) {inputHeaders.remove(name);}
-bool Request::outHas(const string &name) const {return outputHeaders.has(name);}
+void Request::inRemove(const string &name) {
+  if (inputHeaders.isSet()) inputHeaders->remove(name);
+}
+
+
+bool Request::outHas(const string &name) const {
+  return outputHeaders.isSet() && outputHeaders->has(name);
+}
 
 
 string Request::outFind(const string &name) const {
-  return outputHeaders.find(name);
+  return getOutputHeaders().find(name);
 }
 
 
 string Request::outGet(const string &name) const {
-  return outputHeaders.get(name);
+  return getOutputHeaders().get(name);
 }
 
 
 void Request::outSet(const string &name, const string &value) {
-  outputHeaders.insert(name, value);
+  getOutputHeaders().insert(name, value);
 }
 
 
-void Request::outRemove(const string &name) {outputHeaders.remove(name);}
+void Request::outRemove(const string &name) {
+  if (outputHeaders.isSet()) outputHeaders->remove(name);
+}
 
 
 bool Request::isPersistent() const {
-  bool keepAlive = inputHeaders.connectionKeepAlive();
+  bool keepAlive = getInputHeaders().connectionKeepAlive();
   return (Version(1, 1) <= version || keepAlive) && !needsClose();
 }
 
@@ -265,22 +288,28 @@ void Request::setCache(uint32_t age) {
 }
 
 
-bool Request::hasContentType() const {return outputHeaders.hasContentType();}
-string Request::getContentType() const {return outputHeaders.getContentType();}
+bool Request::hasContentType() const {
+  return outputHeaders.isSet() && outputHeaders->hasContentType();
+}
+
+
+string Request::getContentType() const {
+  return getOutputHeaders().getContentType();
+}
 
 
 bool Request::isJSONContentType() const {
-  return outputHeaders.isJSONContentType();
+  return outputHeaders.isSet() && outputHeaders->isJSONContentType();
 }
 
 
 void Request::setContentType(const string &contentType) {
-  outputHeaders.setContentType(contentType);
+  getOutputHeaders().setContentType(contentType);
 }
 
 
 void Request::guessContentType() {
-  outputHeaders.guessContentType(uri.getExtension());
+  getOutputHeaders().guessContentType(uri.getExtension());
 }
 
 
@@ -396,7 +425,7 @@ void Request::setCookie(const string &name, const string &value,
 }
 
 
-string Request::getInput() const {return inputBuffer.toString();}
+string Request::getInput()  const {return inputBuffer.toString();}
 string Request::getOutput() const {return outputBuffer.toString();}
 
 
@@ -410,7 +439,7 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
 
 const SmartPointer<JSON::Value> &Request::getJSONMessage() {
   if (msg.isNull()) {
-    const Headers &hdrs = inputHeaders;
+    const Headers &hdrs = getInputHeaders();
     if (hdrs.hasContentType() && hdrs.isJSONContentType()) msg = getInputJSON();
   }
 
@@ -616,7 +645,7 @@ void Request::onResponse(Event::ConnectionError error) {
   if (error) LOG_DEBUG(4, "< " << error);
   else {
     LOG_INFO(2, "< " << getResponseLine());
-    LOG_DEBUG(5, inputHeaders << '\n');
+    LOG_DEBUG(5, getInputHeaders() << '\n');
     LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
   }
 
@@ -626,7 +655,7 @@ void Request::onResponse(Event::ConnectionError error) {
 
 void Request::onRequest() {
   LOG_INFO(2, "< " << getRequestLine());
-  LOG_DEBUG(5, inputHeaders << '\n');
+  LOG_DEBUG(5, getInputHeaders() << '\n');
   LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
 }
 
@@ -644,7 +673,8 @@ bool Request::mayHaveBody() const {
 
 
 bool Request::needsClose() const {
-  return inputHeaders.needsClose() || outputHeaders.needsClose();
+  return (inputHeaders.isSet() && inputHeaders->needsClose()) ||
+    (outputHeaders.isSet() && outputHeaders->needsClose());
 }
 
 
@@ -691,7 +721,8 @@ void Request::writeResponse(Event::Buffer &buf) {
       outSet("Date", Time().toString("%a, %d %b %Y %H:%M:%S GMT"));
 
     // If the protocol is 1.0 and connection was keep-alive add keep-alive
-    bool keepAlive = inputHeaders.connectionKeepAlive();
+    bool keepAlive =
+      inputHeaders.isSet() && inputHeaders->connectionKeepAlive();
     if (!version.getMinor() && keepAlive) outSet("Connection", "keep-alive");
 
     if ((0 < version.getMinor() || keepAlive) && mustHaveBody() &&
@@ -701,16 +732,17 @@ void Request::writeResponse(Event::Buffer &buf) {
 
   // Don't reply with empty JSON
   if (outputBuffer.isEmpty() && isJSONContentType())
-    outputHeaders.remove("Content-Type");
+    outRemove("Content-Type");
 
   // Add Content-Type
   if (mustHaveBody() && !hasContentType()) guessContentType();
 
   // If request asked for close, send close
-  if (inputHeaders.needsClose()) outSet("Connection", "close");
+  if (inputHeaders.isSet() && inputHeaders->needsClose())
+    outSet("Connection", "close");
 
   LOG_INFO(300 <= responseCode ? 1 : 4, "> " << getResponseLine());
-  LOG_DEBUG(5, outputHeaders << '\n');
+  LOG_DEBUG(5, getOutputHeaders() << '\n');
   LOG_DEBUG(6, outputBuffer.hexdump() << '\n');
 }
 
@@ -734,7 +766,7 @@ void Request::writeRequest(Event::Buffer &buf) {
     outSet("Content-Length", String(outputBuffer.getLength()));
 
   LOG_INFO(2, "> " << getRequestLine());
-  LOG_DEBUG(5, outputHeaders << '\n');
+  LOG_DEBUG(5, getOutputHeaders() << '\n');
   LOG_DEBUG(6, outputBuffer.hexdump() << '\n');
 }
 
@@ -743,10 +775,11 @@ void Request::writeHeaders(Event::Buffer &buf) {
   if (connection->isIncoming()) writeResponse(buf);
   else writeRequest(buf);
 
-  for (auto it: outputHeaders)
-    if (!it.value().empty())
-      buf.add(String::printf(
-        "%s: %s\r\n", it.key().c_str(), it.value().c_str()));
+  if (outputHeaders.isSet())
+    for (auto it: *outputHeaders)
+      if (!it.value().empty())
+        buf.add(String::printf(
+          "%s: %s\r\n", it.key().c_str(), it.value().c_str()));
 
   buf.add("\r\n");
 }
