@@ -69,12 +69,22 @@ Option::Option(const string &name, const JSON::Value &config) :
   name(name) {configure(config);}
 
 
-void Option::setDefaultType(OptionType type) {this->type = type;}
+void Option::setDefaultType(OptionType type) {
+  this->type = type;
+  if (isPlural()) value = JSON::Factory().createList();
+}
 
 
 void Option::setType(OptionType type) {
+  if (isTypeSet()) {
+    if (isSet())      THROW("Cannot set type, Option already set");
+    if (hasDefault()) THROW("Cannot set type, Option already has default");
+  }
+
   flags |= TYPE_SET_FLAG;
   this->type = type;
+
+  if (isPlural()) value = JSON::Factory().createList();
 }
 
 
@@ -212,8 +222,8 @@ void Option::configure(const JSON::Value &config) {
   if (config.hasString("short"))
     shortName = config.getString("short").c_str()[0];
 
-  if (config.has("default")) setDefault(config.get("default"));
   if (config.has("type")) setType(OptionType::parse(config.getString("type")));
+  if (config.has("default")) setDefault(config.get("default"));
 
   if (config.getBoolean("optional",   false)) setOptional();
   if (config.getBoolean("obscured",   false)) setObscured();
@@ -289,20 +299,17 @@ void Option::set(const JSON::ValuePtr &value) {
     }
   }
 
-  if (isSet()) {
-    if (isPlural()) {
-      if (!value->isList()) value->append(value);
-      else for (auto &v: *value) value->append(v);
-
-    } else if (*this->value == *value) return;
-  }
+  // Don't trigger action if value is the same
+  if (isSet() && !isPlural() && *this->value == *value) return;
 
   flags |= SET_FLAG;
   flags &= ~COMMAND_LINE_FLAG; // Clear the command line flag
 
-  if (isPlural() && !value->isList()) {
-    this->value = JSON::Factory().createList();
-    this->value->append(value);
+  if (isPlural()) {
+    if (!value->isList()) this->value->append(value);
+    else
+      for (auto v: *value)
+        this->value->append(v);
 
   } else this->value = value;
 
@@ -319,7 +326,7 @@ void Option::set(bool value) {set(JSON::Factory().createBoolean(value));}
 JSON::ValuePtr Option::get() const {
   if (isSet())      return value;
   if (hasDefault()) return getDefault();
-  if (isPlural())   return JSON::Factory().createList();
+  if (isPlural())   return value;
   THROW("Option '" << name << "' has no default and is not set.");
 }
 
