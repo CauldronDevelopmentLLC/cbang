@@ -107,6 +107,9 @@ string Regex::replace(const string &s, const string &r) const {
 }
 
 
+string Regex::escape(const string &s) {return RE2::QuoteMeta(s);}
+
+
 bool Regex::match_or_search(bool match, const string &s, Match &m) const {
   unsigned n = getGroupCount();
 

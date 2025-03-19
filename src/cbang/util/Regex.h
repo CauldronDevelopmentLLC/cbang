@@ -65,6 +65,8 @@ namespace cb {
 
     std::string replace(const std::string &s, const std::string &r) const;
 
+    static std::string escape(const std::string &s);
+
   protected:
     bool match_or_search(bool match, const std::string &s, Match &m) const;
   };
