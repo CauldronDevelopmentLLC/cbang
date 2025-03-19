@@ -245,6 +245,7 @@ void URI::clear() {
   pathSegs.clear();
   user.clear();
   pass.clear();
+  frag.clear();
 }
 
 
@@ -286,6 +287,7 @@ void URI::read(const char *uri) {
       parseNetPath(s);
     }
     if (consume(s, '?')) parseQuery(s);
+    if (consume(s, '#')) parseFragment(s);
 
   } catch (const Exception &e) {
     THROW("Failed to parse URI '" << String::escapeC(uri) << "' at char "
@@ -313,7 +315,12 @@ ostream &URI::write(ostream &stream) const {
 
   if (!empty()) stream << '?';
 
-  return writeQuery(stream);
+  writeQuery(stream);
+
+  if (!frag.empty())
+    stream << '#' << encode(frag, RESERVED_CHARS UNRESERVED_CHARS);
+
+  return stream;
 }
 
 
@@ -506,4 +513,10 @@ string URI::parseValue(const char *&s) {
     else break;
 
   return result;
+}
+
+
+void URI::parseFragment(const char *&s) {
+  frag = decode(s);
+  while (*s) s++;
 }

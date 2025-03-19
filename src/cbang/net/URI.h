@@ -48,6 +48,7 @@ namespace cb {
     std::vector<std::string> pathSegs;
     std::string user;
     std::string pass;
+    std::string frag;
 
   public:
     static const char *DEFAULT_UNESCAPED;
@@ -71,6 +72,7 @@ namespace cb {
     const std::string &getPass() const {return pass;}
     const std::string getQuery() const;
     const std::string getEscapedQuery() const;
+    const std::string &getFragment() const {return frag;}
 
     void setScheme(const std::string &scheme) {this->scheme = scheme;}
     void setHost(const std::string &host) {this->host = host;}
@@ -80,6 +82,7 @@ namespace cb {
     void setPass(const std::string &pass) {this->pass = pass;}
     void setQuery(const std::string &query);
     void setQuery(const char *query);
+    void setFragment(const std::string &frag) {this->frag = frag;}
 
     static unsigned portFromScheme(const std::string &scheme);
     static bool schemeRequiresSSL(const std::string &scheme);
@@ -115,6 +118,7 @@ namespace cb {
     void parsePair(const char *&s);
     std::string parseName(const char *&s);
     std::string parseValue(const char *&s);
+    void parseFragment(const char *&s);
   };
 
 
