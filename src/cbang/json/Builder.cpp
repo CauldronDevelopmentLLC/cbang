@@ -38,9 +38,7 @@ using namespace cb;
 using namespace cb::JSON;
 
 
-Builder::Builder(const ValuePtr &root) : appendNext(false) {
-  if (root.isSet()) stack.push_back(root);
-}
+Builder::Builder(const ValuePtr &root) : root(root) {}
 
 
 ValuePtr Builder::build(function<void (Sink &sink)> cb) {
@@ -50,7 +48,19 @@ ValuePtr Builder::build(function<void (Sink &sink)> cb) {
 }
 
 
-ValuePtr Builder::getRoot() const {return stack.empty() ? 0 : stack.front();}
+void Builder::close() {
+  if (!stack.empty())
+    THROW("JSON::Builder closed with open " << stack.back()->getType());
+}
+
+
+void Builder::reset() {
+  stack.clear();
+  nextKey.clear();
+  appendNext = insertNext = false;
+  root.release();
+}
+
 
 void Builder::writeNull()                {add(createNull());}
 void Builder::writeBoolean(bool value)   {add(createBoolean(value));}
@@ -59,11 +69,13 @@ void Builder::write(uint64_t value)      {add(create(value));}
 void Builder::write(int64_t value)       {add(create(value));}
 void Builder::write(const string &value) {add(create(value));}
 
+
+bool Builder::inList() const {return !stack.empty() && stack.back()->isList();}
 void Builder::beginList(bool simple) {add(createList());}
 
 
 void Builder::beginAppend() {
-  if (stack.empty() || !stack.back()->isList()) TYPE_ERROR("Not a List");
+  if (!inList()) TYPE_ERROR("Not a List");
   assertNotPending();
   appendNext = true;
 }
@@ -71,23 +83,23 @@ void Builder::beginAppend() {
 
 void Builder::endList() {
   assertNotPending();
-
-  if (stack.empty() || !stack.back()->isList()) TYPE_ERROR("Not a List");
-  if (stack.size() != 1) stack.pop_back();
+  if (inList()) stack.pop_back();
+  else TYPE_ERROR("Not a List");
 }
 
 
+bool Builder::inDict() const {return !stack.empty() && stack.back()->isDict();}
 void Builder::beginDict(bool simple) {add(createDict());}
 
 
 bool Builder::has(const string &key) const {
-  if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
+  if (!inDict()) TYPE_ERROR("Not a Dict");
   return stack.back()->has(key);
 }
 
 
 void Builder::beginInsert(const string &key) {
-  if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
+  if (!inDict()) TYPE_ERROR("Not a Dict");
   assertNotPending();
   nextKey    = key;
   insertNext = true;
@@ -96,9 +108,8 @@ void Builder::beginInsert(const string &key) {
 
 void Builder::endDict() {
   assertNotPending();
-
-  if (stack.empty() || !stack.back()->isDict()) TYPE_ERROR("Not a Dict");
-  if (stack.size() != 1) stack.pop_back();
+  if (inDict()) stack.pop_back();
+  else TYPE_ERROR("Not a Dict");
 }
 
 
@@ -112,14 +123,14 @@ void Builder::add(const ValuePtr &value) {
     nextKey.clear();
     insertNext = false;
 
-  } else if (!stack.empty()) THROW("Cannot add " << value->getType());
+  } else if (root.isNull()) root = value;
+  else THROW("Cannot add " << value->getType());
 
-  if (stack.empty() || value->isList() || value->isDict())
-    stack.push_back(value);
+  if (value->isList() || value->isDict()) stack.push_back(value);
 }
 
 
 void Builder::assertNotPending() {
-  if (appendNext) THROW("Already called append()");
-  if (insertNext) THROW("Already called insert()");
+  if (appendNext) THROW("Already called beginAppend()");
+  if (insertNext) THROW("Already called beginAssert()");
 }

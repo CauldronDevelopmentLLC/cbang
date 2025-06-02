@@ -47,7 +47,7 @@ namespace cb {
       // From Conn
       bool isIncoming() const override {return false;}
       void writeRequest(const SmartPointer<Request> &req, Event::Buffer buffer,
-                        bool hasMore, std::function<void (bool)> cb) override;
+        bool continueProcessing, std::function<void (bool)> cb) override;
       void queueRequest(const SmartPointer<Request> &req) override;
 
     protected:

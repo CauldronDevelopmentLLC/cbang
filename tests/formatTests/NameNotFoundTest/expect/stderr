@@ -1,0 +1,2 @@
+Exception: String format error at character 10
+Caused by: Key 'bar' not found

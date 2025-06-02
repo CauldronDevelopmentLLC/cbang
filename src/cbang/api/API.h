@@ -33,6 +33,8 @@
 #pragma once
 
 #include "Context.h"
+#include "QueryDef.h"
+#include "TimeseriesDef.h"
 
 #include <cbang/http/Client.h>
 #include <cbang/http/HandlerGroup.h>
@@ -43,6 +45,7 @@
 #include <cbang/oauth2/Providers.h>
 #include <cbang/json/Value.h>
 #include <cbang/http/SessionManager.h>
+#include <cbang/db/EventLevelDB.h>
 #include <cbang/db/maria/Connector.h>
 
 #include <functional>
@@ -53,30 +56,33 @@ namespace cb {
 
   namespace API {
     class API : public HTTP::HandlerGroup {
-      Options &options;
+      Options       &options;
       JSON::ValuePtr config;
 
       JSON::ValuePtr spec;
-      std::string category;
-      bool hideCategory = false;
+      std::string    category;
+      bool           hideCategory = false;
 
       SmartPointer<HTTP::Client>          client;
       SmartPointer<OAuth2::Providers>     oauth2Providers;
       SmartPointer<HTTP::SessionManager>  sessionManager;
       SmartPointer<MariaDB::Connector>    connector;
       SmartPointer<Event::SubprocessPool> procPool;
+      SmartPointer<EventLevelDB>          timeseriesDB;
+      JSON::ValuePtr                      optionValues;
 
-      typedef HTTP::RequestHandlerPtr RequestHandlerPtr;
-      typedef std::map<std::string, RequestHandlerPtr> callbacks_t;
-      callbacks_t callbacks;
+      using RequestHandlerPtr = HTTP::RequestHandlerPtr ;
+      std::map<std::string, RequestHandlerPtr>           callbacks;
+      std::map<std::string, SmartPointer<QueryDef>>      queries;
+      std::map<std::string, SmartPointer<TimeseriesDef>> timeseries;
 
     public:
       API(Options &options);
       ~API();
 
-      Options &getOptions() const {return options;}
-      const JSON::ValuePtr &getConfig() const {return config;}
-      JSON::ValuePtr getSpec() const {return spec;}
+      const JSON::ValuePtr &getOptions() const {return optionValues;}
+      const JSON::ValuePtr &getConfig()  const {return config;}
+      JSON::ValuePtr        getSpec()    const {return spec;}
 
       void setClient(const SmartPointer<HTTP::Client> &x) {client = x;}
       void setOAuth2Providers(const SmartPointer<OAuth2::Providers> &x)
@@ -87,29 +93,44 @@ namespace cb {
         {connector = x;}
       void setProcPool(const SmartPointer<Event::SubprocessPool> &x)
         {procPool = x;}
+      void setTimeseriesDB(const SmartPointer<EventLevelDB> &x)
+        {timeseriesDB = x;}
 
       HTTP::Client          &getClient()          {return *client;}
       OAuth2::Providers     &getOAuth2Providers() {return *oauth2Providers;}
       HTTP::SessionManager  &getSessionManager()  {return *sessionManager;}
       MariaDB::Connector    &getDBConnector()     {return *connector;}
       Event::SubprocessPool &getProcPool()        {return *procPool;}
+      EventLevelDB          &getTimeseriesDB()    {return *timeseriesDB;}
 
       void load(const JSON::ValuePtr &config);
 
       void bind(const std::string &key, const RequestHandlerPtr &handler);
 
-      template <class T, typename MEMBER_T>
-      void bind(const std::string &key, T *obj, MEMBER_T member) {
-        bind(key, HTTP::RequestHandlerFactory::create(obj, member));
+      template <class T, typename METHOD_T>
+      void bind(const std::string &key, T *obj, METHOD_T method) {
+        bind(key, HTTP::RequestHandlerFactory::create(obj, method));
       }
 
-      template <class T, typename MEMBER_T>
-      void bind(const std::string &key, MEMBER_T member) {
-        bind(key, HTTP::RequestHandlerFactory::create<T>(member));
+      template <class T, typename METHOD_T>
+      void bind(const std::string &key, METHOD_T method) {
+        bind(key, HTTP::RequestHandlerFactory::create<T>(method));
       }
 
-    protected:
-      typedef SmartPointer<Context> CtxPtr;
+      const std::string &getCategory() const {return category;}
+      std::string resolve(const std::string &name) const;
+
+      void addQuery(const std::string &name, const SmartPointer<QueryDef> &def);
+      SmartPointer<QueryDef> addQuery(
+        const std::string &name, const JSON::ValuePtr &config);
+      const SmartPointer<QueryDef> &getQuery(const std::string &name) const;
+
+      void addTimeseries(
+        const std::string &name, const SmartPointer<TimeseriesDef> &ts);
+      SmartPointer<TimeseriesDef> addTimeseries(
+        const std::string &name, const JSON::ValuePtr &config);
+      const SmartPointer<TimeseriesDef> &getTimeseries(
+        const std::string &name) const;
 
       virtual std::string getEndpointType(const JSON::ValuePtr &config) const;
       virtual JSON::ValuePtr getEndpointTypes(

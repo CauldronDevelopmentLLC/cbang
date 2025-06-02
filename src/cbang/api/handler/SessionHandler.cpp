@@ -34,6 +34,9 @@
 
 #include <cbang/api/API.h>
 #include <cbang/api/SessionQuery.h>
+#include <cbang/api/QueryDef.h>
+#include <cbang/api/Resolver.h>
+
 #include <cbang/log/Logger.h>
 #include <cbang/http/SessionManager.h>
 #include <cbang/http/ConnIn.h>
@@ -84,11 +87,10 @@ bool SessionHandler::operator()(HTTP::Request &req) {
   api.getSessionManager().addSession(session);
 
   // Lookup Session in DB
-  if (sql.empty()) return false;
-  auto query = SmartPtr(new SessionQuery(api, &req, sql));
+  if (queryDef->sql.empty()) return false;
 
   auto cb = [this, session, &req] (
-    HTTP::Status status, Event::Buffer &buffer) {
+    HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
       if (session->hasString("user")) {
         LOG_DEBUG(3, "Authenticated: " << session->getString("user"));
@@ -98,10 +100,11 @@ bool SessionHandler::operator()(HTTP::Request &req) {
       // Restart API request processing
       req.getConnection().cast<HTTP::ConnIn>()->getServer().dispatch(req);
 
-    } else reply(req, status, buffer);
+    } else reply(req, status, result);
   };
 
-  query->query(cb);
+  auto query = SmartPtr(new SessionQuery(queryDef, req.getSession(), cb));
+  query->exec(Resolver(api, req).resolve(queryDef->getSQL()));
 
   return true;
 }

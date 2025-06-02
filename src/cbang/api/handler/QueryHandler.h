@@ -38,21 +38,18 @@
 namespace cb {
   namespace API {
     class API;
+    class QueryDef;
 
     class QueryHandler : public HTTP::RequestHandler {
     protected:
       API &api;
-
-      std::string sql;
-      bool pass = false;
-      JSON::ValuePtr fields;
-      std::string returnType;
+      SmartPointer<QueryDef> queryDef;
 
     public:
       QueryHandler(API &api, const JSON::ValuePtr &config);
 
       void reply(
-        HTTP::Request &req, HTTP::Status status, Event::Buffer &buffer);
+        HTTP::Request &req, HTTP::Status status, const JSON::ValuePtr &result);
 
       // From HTTP::RequestHandler
       bool operator()(HTTP::Request &req) override;

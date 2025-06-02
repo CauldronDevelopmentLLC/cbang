@@ -43,7 +43,7 @@
 
 #include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
-#include <cbang/time/HumanTime.h>
+#include <cbang/time/HumanDuration.h>
 
 #include <cbang/openssl/Digest.h>
 #include <cbang/openssl/CSR.h>
@@ -450,13 +450,13 @@ void Account::retry(HTTP::Request &req, double delay) {
 
   }
 
-  LOG_DEBUG(3, "Retrying certificate operation in " << HumanTime(delay));
+  LOG_DEBUG(3, "Retrying certificate operation in " << HumanDuration(delay));
   retryEvent->add(delay);
 }
 
 
 void Account::fail(double delay) {
-  LOG_DEBUG(3, "Failed, retrying certificate in " << HumanTime(delay));
+  LOG_DEBUG(3, "Failed, retrying certificate in " << HumanDuration(delay));
   getCurrentKeyCert().setWaitUntil(Time::now() + delay);
   nextKeyCert();
 }

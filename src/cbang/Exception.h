@@ -46,7 +46,7 @@
 
 namespace cb {
   // Forward Declarations
-  template <typename T, typename DeallocT, typename CounterT, bool weak>
+  template <typename T, bool weak, typename DeallocT, typename CounterT>
   class SmartPointer;
 
   /**
@@ -54,9 +54,9 @@ namespace cb {
    *
    *   - A text message
    *   - A numeric code
-   *   - FileLocation indicating where the exception occurred.
-   *   - A pointer to an exception which was the original cause.
-   *   - A stack trace.
+   *   - FileLocation indicating where the exception occurred
+   *   - A pointer to an exception which was the original cause
+   *   - A stack trace
    */
   class Exception : public std::exception {
   private:

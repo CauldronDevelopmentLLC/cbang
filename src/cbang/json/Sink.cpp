@@ -50,3 +50,10 @@ void Sink::insert(const string &key, const Value &value) {
   beginInsert(key);
   write(value);
 }
+
+
+void Sink::end() {
+  if (inList()) return endList();
+  if (inDict()) return endDict();
+  TYPE_ERROR("Not in list or dict");
+}

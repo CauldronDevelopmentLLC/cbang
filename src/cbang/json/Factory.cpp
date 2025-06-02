@@ -56,14 +56,14 @@ ValuePtr Factory::createBoolean(bool value) const {
 }
 
 
-ValuePtr Factory::create(double value) const {return new Number(value);}
-ValuePtr Factory::create(float value) const {return create((double)value);}
-ValuePtr Factory::create(int8_t value) const {return create((int64_t)value);}
-ValuePtr Factory::create(uint8_t value) const {return create((uint64_t)value);}
-ValuePtr Factory::create(int16_t value) const {return create((int64_t)value);}
+ValuePtr Factory::create(double   value) const {return new Number(value);}
+ValuePtr Factory::create(float    value) const {return create((double  )value);}
+ValuePtr Factory::create(int8_t   value) const {return create((int64_t )value);}
+ValuePtr Factory::create(uint8_t  value) const {return create((uint64_t)value);}
+ValuePtr Factory::create(int16_t  value) const {return create((int64_t )value);}
 ValuePtr Factory::create(uint16_t value) const {return create((uint64_t)value);}
-ValuePtr Factory::create(int32_t value) const {return create((int64_t)value);}
+ValuePtr Factory::create(int32_t  value) const {return create((int64_t )value);}
 ValuePtr Factory::create(uint32_t value) const {return create((uint64_t)value);}
-ValuePtr Factory::create(int64_t value) const {return new S64(value);}
+ValuePtr Factory::create(int64_t  value) const {return new S64(value);}
 ValuePtr Factory::create(uint64_t value) const {return new U64(value);}
 ValuePtr Factory::create(const string &value) const {return new String(value);}

@@ -32,28 +32,32 @@
 
 #include "QueryHandler.h"
 
-#include <cbang/api/Query.h>
+#include <cbang/api/API.h>
+#include <cbang/api/Resolver.h>
+#include <cbang/api/QueryDef.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) :
-  api(api), sql(config->getString("sql")) {
+QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) : api(api) {
+  if (config->has("query")) {
+    if (config->has("sql")) THROW("Cannot define both 'query' and 'sql'");
+    queryDef = api.getQuery(config->getString("query"));
 
-  if (config->hasList("fields")) fields = config->get("fields");
-
-  returnType = config->getString("return", fields.isNull() ? "ok" : "fields");
-  pass = returnType == "pass";
+  } else {
+    queryDef = new QueryDef(api, config);
+    if (config->has("name")) api.addQuery(config->getString("name"), queryDef);
+  }
 }
 
 
 void QueryHandler::reply(
-  HTTP::Request &req, HTTP::Status status, Event::Buffer &buffer) {
-  if (buffer.getLength()) {
+  HTTP::Request &req, HTTP::Status status, const JSON::ValuePtr &result) {
+  if (result.isSet()) {
     req.setContentType("application/json");
-    req.send(buffer);
+    req.send(result->toString());
   }
 
   req.reply(status);
@@ -61,13 +65,10 @@ void QueryHandler::reply(
 
 
 bool QueryHandler::operator()(HTTP::Request &req) {
-  auto query = SmartPtr(new Query(api, &req, sql, returnType, fields));
-
-  auto cb = [this, &req] (HTTP::Status status, Event::Buffer &buffer) {
-    reply(req, status, buffer);
+  auto cb = [this, &req] (HTTP::Status status, const JSON::ValuePtr &result) {
+    reply(req, status, result);
   };
 
-  query->query(cb);
-
-  return !pass;
+  queryDef->query(new Resolver(api, req), cb);
+  return true;
 }

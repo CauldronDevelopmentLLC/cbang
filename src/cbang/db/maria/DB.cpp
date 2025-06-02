@@ -844,13 +844,25 @@ double DB::getTimeout() const {
 }
 
 
-string DB::escape(const string &s) const {
-  SmartPointer<char>::Array to = new char[s.length() * 2 + 1];
+string DB::escape(const string &s) {
+  string result;
+  result.reserve(s.length());
 
-  unsigned len =
-    mysql_real_escape_string(db, to.get(), s.data(), s.length());
+  for (auto c: s)
+    switch (c) {
+    case 0:    result.append("\\0");  break;
+    case '\'': result.append("\\'");  break;
+    case '\"': result.append("\\\""); break;
+    case '\b': result.append("\\b");  break;
+    case '\n': result.append("\\n");  break;
+    case '\r': result.append("\\r");  break;
+    case '\t': result.append("\\t");  break;
+    case 26:   result.append("\\Z");  break;
+    case '\\': result.append("\\\\"); break;
+    default:   result.push_back(c);   break;
+    }
 
-  return string(to.get(), len);
+  return result;
 }
 
 
@@ -863,16 +875,22 @@ string DB::toHex(const string &s) {
 }
 
 
-string DB::formatBool(bool value) {return value ? "true" : "false";}
-string DB::format(double value) {return String(value);}
-string DB::format(int32_t value) {return String(value);}
-string DB::format(uint32_t value) {return String(value);}
-string DB::format(const string &value) const {return "'" + escape(value) + "'";}
+string DB::formatBool(bool      value) {return value ? "true" : "false";}
+string DB::format(double        value) {return String(value);}
+string DB::format(int32_t       value) {return String(value);}
+string DB::format(uint32_t      value) {return String(value);}
+string DB::format(const string &value) {return "'" + escape(value) + "'";}
 
 
-string DB::format(const string &s, const JSON::Value &dict,
-                  const string &defaultValue) const {
-  return dict.format(s, defaultValue);
+string DB::format(const string &s, const JSON::Value &dict) {
+  auto cb = [&] (const string &id, const string &spec) -> string {
+    auto value = dict.select(id, 0);
+    if (value.isNull()) return formatNull();
+    if (spec == "s")    return format(value->asString());
+    return value->formatAs(spec);
+  };
+
+  return String(s).format(cb);
 }
 
 

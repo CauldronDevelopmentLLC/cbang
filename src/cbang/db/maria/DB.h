@@ -253,16 +253,15 @@ namespace cb {
       double getTimeout() const;
 
       // Formatting
-      std::string escape(const std::string &s) const;
+      static std::string escape(const std::string &s);
       static std::string toHex(const std::string &s);
       static std::string formatNull() {return "null";}
       static std::string formatBool(bool value);
       static std::string format(double value);
       static std::string format(int32_t value);
       static std::string format(uint32_t value);
-      std::string format(const std::string &value) const;
-      std::string format(const std::string &s, const JSON::Value &dict,
-                         const std::string &defaultValue = "null") const;
+      static std::string format(const std::string &value);
+      static std::string format(const std::string &s, const JSON::Value &value);
 
       // Library
       static void libraryInit(int argc = 0, char *argv[] = 0,

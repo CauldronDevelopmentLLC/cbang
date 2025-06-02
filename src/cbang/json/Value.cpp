@@ -33,6 +33,8 @@
 #include "Value.h"
 #include "Path.h"
 
+#include <cbang/config.h>
+
 #include <sstream>
 #include <limits>
 
@@ -87,53 +89,39 @@ void Value::merge(const Value &value) {
 }
 
 
-string Value::format(char type) const {
+string Value::formatAs(const string &spec) const {
+  if (1 < spec.length()) THROW("Unsupported format spec '" << spec << "'");
+  char type = spec.empty() ? 's' : spec[0];
+
   switch (type) {
-  case 'b': return String(getBoolean());
+  case 'b': return String(toBoolean());
+  case 'u': return String(getU64());
+  case 'd': return String(getS64());
   case 'f': return String(getNumber());
-  case 'i': return String(getS32());
-  case 'u': return String(getU32());
   case 's': return asString();
-  case 'S': return "\"" + String::escapeMySQL(asString()) + "\"";
+  default: THROW("Unsupported format type '" << type << "'");
   }
-
-  THROW("Unsupported format type specifier '"
-        << String::escapeC(string(1, type)) << "'");
 }
 
 
-string Value::format(char type, int index, const string &name,
-                     bool &matched) const {
-  if (index < 0) {
-    if (exists(name)) return select(name)->format(type);
-    if (type == 'b')  return String(false);
-  } else if ((unsigned)index < size()) return get(index)->format(type);
+string Value::format(const string &fmt, const string &defaultValue) const {
+  auto cb = [&] (const string &id, const string &spec) {
+    auto result = select(id, 0);
+    return result.isNull() ? defaultValue : result->formatAs(spec);
+  };
 
-  matched = false;
-  return "";
+  return String(fmt).format(cb);
 }
 
 
-string Value::format(const string &s, const string &defaultValue) const {
-  auto cb =
-    [&] (char type, int index, const string &name, bool &matched) {
-      string result = format(type, index, name, matched);
-      if (matched) return result;
-      matched = true;
-      return defaultValue;
-    };
+string Value::format(const string &fmt) const {
+  auto cb = [&] (const string &id, const string &spec) {
+    auto result = select(id, 0);
+    if (result.isNull()) CBANG_KEY_ERROR("Key '" << id << "' not found");
+    return result->formatAs(spec);
+  };
 
-  return String(s).format(cb);
-}
-
-
-string Value::format(const string &s) const {
-  auto cb =
-    [&] (char type, int index, const string &name, bool &matched) {
-      return format(type, index, name, matched);
-    };
-
-  return String(s).format(cb);
+  return String(fmt).format(cb);
 }
 
 
@@ -170,33 +158,46 @@ string Value::toString(unsigned indentStart, bool compact, unsigned indentSpace,
 string Value::asString() const {return isString() ? getString() : toString();}
 
 
-bool Value::operator==(const Value &o) const {
-  if (getType() != o.getType()) return false;
+int Value::compare(const Value &o) const {
+  if (getType() != o.getType()) return getType() - o.getType();
 
   switch (getType()) {
-  case JSON_NULL: case JSON_UNDEFINED: return true;
-  case JSON_BOOLEAN: return getBoolean() == o.getBoolean();
-  case JSON_STRING:  return getString()  == o.getString();
+  case JSON_NULL: case JSON_UNDEFINED: return 0;
+  case JSON_BOOLEAN: return getBoolean() - o.getBoolean();
+  case JSON_STRING:  return getString().compare(o.getString());
+  case JSON_NUMBER: {
     // TODO Some numbers are not represented exactly as doubles
-  case JSON_NUMBER:  return getNumber()  == o.getNumber();
-
-  case JSON_LIST:
-    if (size() != o.size()) return false;
-
-    for (unsigned i = 0; i < size(); i++)
-      if (*get(i) != *o.get(i)) return false;
-
-    return true;
-
-  case JSON_DICT:
-    if (size() != o.size()) return false;
-
-    for (auto e: entries())
-      if (!o.has(e.key()) || *e.value() != *o.get(e.key()))
-        return false;
-
-    return true;
+    auto a = getNumber();
+    auto b = o.getNumber();
+    return a < b ? -1 : (b < a ? 1 : 0);
   }
 
-  return false;
+  case JSON_LIST:
+    if (size() != o.size()) return size() - o.size();
+
+    for (unsigned i = 0; i < size(); i++) {
+      int ret = get(i)->compare(*o.get(i));
+      if (ret) return ret;
+    }
+
+    return 0;
+
+  case JSON_DICT: {
+    if (size() != o.size()) return size() - o.size();
+
+    auto itA = entries().begin();
+    auto itB = o.entries().begin();
+
+    for (unsigned i = 0; i < size(); i++) {
+      int ret = itA.key().compare(itB.key());
+      if (ret) return ret;
+      ret = itA.value()->compare(*itB.value());
+      if (ret) return ret;
+    }
+
+    return 0;
+  }
+  }
+
+  THROW("Unexpected JSON type: " << getType());
 }

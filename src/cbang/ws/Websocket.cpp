@@ -32,12 +32,14 @@
 
 #include "Websocket.h"
 
-#include <cbang/http/Conn.h>
 #include <cbang/Catch.h>
 #include <cbang/net/Swab.h>
 #include <cbang/net/Base64.h>
 #include <cbang/util/Random.h>
 #include <cbang/util/WeakCallback.h>
+#include <cbang/http/Client.h>
+#include <cbang/http/ConnOut.h>
+#include <cbang/http/OutgoingRequest.h>
 
 #ifdef HAVE_OPENSSL
 #include <cbang/openssl/Digest.h>
@@ -54,18 +56,48 @@ using namespace cb;
 using namespace cb::WS;
 
 
-Websocket::Websocket(const cb::HTTP::RequestParams &params) : Request(params) {
-  if (params.version < Version(1, 1))
-    THROW("Invalid HTTP version for websocket");
+uint64_t Websocket::getID() const {
+  return connection.isSet() ? connection->getID() : 0;
 }
 
 
-bool Websocket::isActive() const {return active && isConnected();}
+bool Websocket::isActive() const {
+  return active && connection.isSet() && connection->isConnected();
+}
+
+
+void Websocket::connect(HTTP::Client &client, const URI &uri) {
+  HTTP::Client::callback_t cb = [this] (HTTP::Request &req) {
+    auto code  = req.getResponseCode();
+    auto error = req.getConnectionError();
+
+    if (error == CONN_ERR_OK && code == HTTP_SWITCHING_PROTOCOLS) {
+      LOG_DEBUG(4, "Opened new Websocket: " << getID());
+      start();
+
+    } else {
+      onClose(WS_STATUS_NONE,
+        SSTR("Connection failed: error=" << error << " code=" << code));
+      connection.release();
+    }
+  };
+
+  auto req = SmartPtr(new HTTP::OutgoingRequest(
+    connection, uri, HTTP_GET, WeakCall(this, cb)));
+
+  char nonce[16];
+  Random::instance().bytes(nonce, 16);
+
+  req->outSet("Sec-WebSocket-Key",     Base64().encode(nonce, 16));
+  req->outSet("Sec-WebSocket-Version", "13");
+  req->outSet("Upgrade",               "websocket");
+  req->outSet("Connection",            "upgrade");
+
+  connection = client.send(req);
+}
 
 
 void Websocket::send(const char *data, unsigned length) {
-  if (!active) return Request::send(data, length);
-
   const unsigned frameSize = 0xffff;
 
   for (unsigned i = 0; length; i += frameSize) {
@@ -98,6 +130,8 @@ void Websocket::close(Status status, const string &msg) {
   if (active) {
     active = false;
     TRY_CATCH_ERROR(onClose(status, msg));
+    active = true;
+    shutdown();
   }
 }
 
@@ -107,45 +141,35 @@ void Websocket::ping(const string &payload) {
 }
 
 
-bool Websocket::upgrade() {
+void Websocket::upgrade(HTTP::Request &req) {
+   if (String::toLower(req.inFind("Upgrade")) != "websocket")
+     THROWX("Expected websocket request", HTTP_BAD_REQUEST);
+
   // Check if websocket upgrade is allowed
-  bool upgrade = getInputHeaders().keyContains("Connection", "upgrade");
-  string key = inFind("Sec-WebSocket-Key");
+  bool upgrade = req.getInputHeaders().keyContains("Connection", "upgrade");
+  string key = req.inFind("Sec-WebSocket-Key");
 
-  if (!upgrade || key.empty() || getVersion() < Version(1, 1)) return false;
+  if (!upgrade || key.empty() || req.getVersion() < Version(1, 1))
+    THROWX("Invalid websocket request", HTTP_BAD_REQUEST);
 
-  try {
-    // Callback
-    if (!onUpgrade()) return false;
-
-    // Send handshake
-    key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+  // Send handshake
+  key += "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 #ifdef HAVE_OPENSSL
-    key = Digest::base64(key, "sha1");
+  key = Digest::base64(key, "sha1");
 #else
-    THROW("Cannot open Websocket, C! not built with openssl support");
+  THROWX("Cannot open Websocket, C! not built with openssl support",
+    HTTP_NOT_IMPLEMENTED);
 #endif
 
-    // Activate Websocket
-    active = true;
+  // Respond
+  req.setVersion(Version(1, 1));
+  req.outSet("Upgrade", "websocket");
+  req.outSet("Connection", "upgrade");
+  req.outSet("Sec-WebSocket-Accept", key);
+  req.reply(HTTP_SWITCHING_PROTOCOLS);
 
-    // Respond
-    setVersion(Version(1, 1));
-    outSet("Upgrade", "websocket");
-    outSet("Connection", "upgrade");
-    outSet("Sec-WebSocket-Accept", key);
-    reply(HTTP_SWITCHING_PROTOCOLS);
-
-    // Start connection
-    onOpen();
-    readHeader();
-    schedulePing();
-
-    return true;
-  } CATCH_ERROR;
-
-  close(WS_STATUS_UNEXPECTED, "Exception");
-  return false;
+  connection = req.getConnection();
+  start();
 }
 
 
@@ -160,7 +184,7 @@ void Websocket::readHeader() {
 
       // Client must set mask bit
       bool mask = header[1] & (1 << 7);
-      if (mask != isIncoming())
+      if (mask != connection->isIncoming())
         return close(WS_STATUS_PROTOCOL, "Header mask mismatch");
 
       // Compute header size
@@ -193,11 +217,10 @@ void Websocket::readHeader() {
           if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
 
           // Check total message size
-          auto maxBodySize = getConnection()->getMaxBodySize();
           auto msgSize = wsMsg.size() + bytesToRead;
-          if (maxBodySize && maxBodySize < msgSize)
+          if (maxMessageSize && maxMessageSize < msgSize)
             return close(WS_STATUS_TOO_BIG,
-              SSTR("Message size " << msgSize << ">" << maxBodySize));
+              SSTR("Message size " << msgSize << ">" << maxMessageSize));
 
           // Copy mask
           if (mask) memcpy(wsMask, &header[bytes - 4], 4);
@@ -231,7 +254,7 @@ void Websocket::readBody() {
       input.remove(&wsMsg[offset], bytesToRead);
 
       // Demask client messages
-      if (isIncoming())
+      if (connection->isIncoming())
         for (uint64_t i = 0; i < bytesToRead; i++)
           wsMsg[offset +  i] ^= wsMask[i & 3];
 
@@ -276,20 +299,6 @@ void Websocket::readBody() {
 }
 
 
-void Websocket::onResponse(Event::ConnectionError error) {
-  Request::onResponse(error);
-
-  if (error == CONN_ERR_OK && getResponseCode() == HTTP_SWITCHING_PROTOCOLS) {
-    LOG_DEBUG(4, "Opened new Websocket");
-    active = true;
-    onOpen();
-    readHeader();
-    schedulePing();
-
-  } else onClose(WS_STATUS_NONE, SSTR("Connection failed: " << error));
-}
-
-
 void Websocket::onPing(const string &payload) {
   LOG_DEBUG(4, CBANG_FUNC << "() payload=" << String::escapeC(payload));
 
@@ -303,20 +312,6 @@ void Websocket::onPong(const string &payload) {
   LOG_DEBUG(4, CBANG_FUNC << "() payload=" << String::escapeC(payload));
   schedulePing();
 }
-
-
-void Websocket::writeRequest(Event::Buffer &buf) {
-  char nonce[16];
-  Random::instance().bytes(nonce, 16);
-
-  outSet("Sec-WebSocket-Key",     Base64().encode(nonce, 16));
-  outSet("Sec-WebSocket-Version", "13");
-  outSet("Upgrade",               "websocket");
-  outSet("Connection",            "upgrade");
-
-  Request::writeRequest(buf);
-}
-
 
 
 void Websocket::writeFrame(
@@ -350,7 +345,7 @@ void Websocket::writeFrame(
   }
 
   // Create mask
-  bool mask = !isIncoming();
+  bool mask = !connection->isIncoming();
   if (mask) {
     header[1] |= 1 << 7; // Set mask bit
 
@@ -376,8 +371,7 @@ void Websocket::writeFrame(
   Event::Transfer::cb_t cb =
     [this, opcode] (bool success) {
       // Close connection if write fails or this is a close op code
-      if (!success || opcode == WS_OP_CLOSE)
-        getConnection()->close();
+      if (!success || opcode == WS_OP_CLOSE) shutdown();
     };
 
   getConnection()->write(WeakCall(this, cb), out);
@@ -427,5 +421,22 @@ void Websocket::message(const char *data, uint64_t length) {
     LOG_DEBUG(3, msg);
     LOG_DEBUG(4, e);
     close(WS_STATUS_UNACCEPTABLE, msg);
+  }
+}
+
+
+void Websocket::start() {
+  active = true;
+  onOpen();
+  readHeader();
+  schedulePing();
+}
+
+
+void Websocket::shutdown() {
+  if (connection.isSet()) connection->close();
+  if (active) {
+    active = false;
+    TRY_CATCH_ERROR(onShutdown());
   }
 }

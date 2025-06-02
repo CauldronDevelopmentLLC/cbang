@@ -33,7 +33,8 @@
 #include "LogoutHandler.h"
 
 #include <cbang/api/API.h>
-#include <cbang/api/Query.h>
+#include <cbang/api/QueryDef.h>
+#include <cbang/api/Resolver.h>
 
 using namespace std;
 using namespace cb;
@@ -45,9 +46,7 @@ LogoutHandler::LogoutHandler(API &api, const JSON::ValuePtr &config) :
 
 
 bool LogoutHandler::operator()(HTTP::Request &req) {
-  auto query = SmartPtr(new Query(api, &req, sql));
-
-  auto cb = [this, &req] (HTTP::Status status, Event::Buffer &buffer) {
+  auto cb = [this, &req] (HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
       auto &sessionMan = api.getSessionManager();
 
@@ -62,7 +61,6 @@ bool LogoutHandler::operator()(HTTP::Request &req) {
     req.reply(status);
   };
 
-  query->query(cb);
-
+  queryDef->query(new Resolver(api, req), cb);
   return true;
 }

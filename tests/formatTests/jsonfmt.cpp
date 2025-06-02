@@ -30,8 +30,6 @@
 
 \******************************************************************************/
 
-#include <cbang/Catch.h>
-
 #include <cbang/json/Value.h>
 #include <cbang/json/Reader.h>
 
@@ -42,6 +40,9 @@ using namespace cb::JSON;
 
 
 int main(int argc, char *argv[]) {
+  cb::Exception::enableStackTraces = false;
+  cb::Exception::printLocations = false;
+
   try {
     if (argc != 3) THROW("Usage " << argv[0] << " <json> <format>");
 
@@ -50,6 +51,8 @@ int main(int argc, char *argv[]) {
 
     return 0;
 
-  } CBANG_CATCH_ERROR;
+  } catch (const cb::Exception &e) {
+    cerr << "Exception: " << e << endl;
+  }
   return 0;
 }

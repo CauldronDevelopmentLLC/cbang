@@ -46,7 +46,7 @@ namespace cb {
       ArgPattern(const std::string &pattern) : regex(pattern) {}
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const override;
+      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override;
       void addSchema(JSON::Value &schema) const override;
     };
   }

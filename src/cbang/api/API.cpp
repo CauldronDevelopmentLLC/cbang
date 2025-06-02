@@ -33,6 +33,8 @@
 #include "API.h"
 
 #include "Resolver.h"
+#include "QueryDef.h"
+
 #include <cbang/api/handler/ArgsHandler.h>
 #include <cbang/api/handler/ArgsParser.h>
 #include <cbang/api/handler/StatusHandler.h>
@@ -46,6 +48,8 @@
 #include <cbang/api/handler/RedirectHandler.h>
 #include <cbang/api/handler/SessionHandler.h>
 #include <cbang/api/handler/CORSHandler.h>
+#include <cbang/api/handler/TimeseriesHandler.h>
+#include <cbang/api/handler/WebsocketHandler.h>
 
 #include <cbang/http/Request.h>
 #include <cbang/http/HandlerGroup.h>
@@ -54,6 +58,7 @@
 #include <cbang/http/FileHandler.h>
 #include <cbang/http/ResourceHandler.h>
 
+#include <cbang/config/Options.h>
 #include <cbang/openssl/SSLContext.h>
 #include <cbang/json/Value.h>
 #include <cbang/log/Logger.h>
@@ -85,8 +90,10 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   if (this->config.isSet()) THROW("API already loaded");
   this->config = config;
 
+  optionValues = options.getConfigJSON();
+
   // Resolve variables
-  Resolver(*this, 0).resolve(*config);
+  Resolver(*this).resolve(*config);
 
   // Check JmpAPI version
   const Version minVer("1.1.0");
@@ -103,25 +110,114 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   // Always parse args
   addHandler(new ArgsParser);
 
-  // APIs
-  if (config->hasDict("apis")) {
-    auto apis = config->get("apis");
-    for (auto e: apis->entries()) {
-      auto api = e.value();
-      addTagSpec(e.key(), api);
+  // Get list of APIs
+  JSON::ValuePtr apis;
+  if (config->hasDict("apis")) apis = config->get("apis");
+  else {
+    apis = new JSON::Dict;
+    apis->insert("", config->get("api"));
+  }
 
-      if (api->hasDict("endpoints"))
-        addHandler(createAPIHandler(new Context(api->get("endpoints"))));
-      category.clear();
-    }
+  // Pass 1: Register queries before timeseries and endpoints
+  for (auto e: apis->entries()) {
+    auto api = e.value();
+    category = e.key();
 
-  } else addHandler(createAPIHandler(new Context(config->get("api"))));
+    if (api->hasDict("queries"))
+      for (auto e2: api->get("queries")->entries())
+        addQuery(e2.key(), e2.value());
+  }
+
+  // Pass 2: Register timeseries before endpoints
+  for (auto e: apis->entries()) {
+    auto api = e.value();
+    category = e.key();
+
+    if (api->hasDict("timeseries"))
+      for (auto e2: api->get("timeseries")->entries())
+        addTimeseries(e2.key(), e2.value());
+  }
+
+  // Pass 3: Register endpoints and create spec
+  for (auto e: apis->entries()) {
+    auto api = e.value();
+    category = e.key();
+
+    addTagSpec(e.key(), api);
+
+    if (api->hasDict("endpoints"))
+      addHandler(createAPIHandler(new Context(*this, api->get("endpoints"))));
+  }
+
+  category.clear();
 }
 
 
 void cb::API::API::bind(const string &key, const RequestHandlerPtr &handler) {
-  if (!callbacks.insert(callbacks_t::value_type(key, handler)).second)
+  if (!callbacks.insert(decltype(callbacks)::value_type(key, handler)).second)
     THROW("API binding for '" << key << "' already exists");
+}
+
+
+string cb::API::API::resolve(const string &name) const {
+  if (category.empty()) return name;
+  return name.find('.') == string::npos ? (category + "." + name) : name;
+}
+
+
+void cb::API::API::addQuery(
+  const string &name, const SmartPointer<QueryDef> &def) {
+  string _name = resolve(name);
+  auto result = queries.insert(decltype(queries)::value_type(_name, def));
+  if (!result.second) THROW("Query '" << _name << "' already exists");
+  LOG_INFO(3, "Adding query " << _name);
+}
+
+
+SmartPointer<QueryDef> cb::API::API::addQuery(
+  const string &name, const JSON::ValuePtr &config) {
+  auto def = SmartPtr(new QueryDef(*this, config));
+  addQuery(name, def);
+  return def;
+}
+
+
+const SmartPointer<QueryDef> &cb::API::API::getQuery(const string &name) const {
+  string _name = resolve(name);
+  auto it = queries.find(_name);
+  if (it == queries.end())
+    THROWX("Query '" << _name << "' not found", HTTP_NOT_FOUND);
+  return it->second;
+}
+
+
+void cb::API::API::addTimeseries(
+  const string &name, const SmartPointer<TimeseriesDef> &ts) {
+  if (timeseriesDB.isNull())
+    THROW("Cannot configure timeseries with out timeseries DB");
+  string _name = resolve(name);
+  auto result = timeseries.insert(decltype(timeseries)::value_type(_name, ts));
+  if (!result.second) THROW("Timeseries '" << _name << "' already exists");
+  LOG_INFO(3, "Adding timeseries " << _name);
+  ts->load();
+}
+
+
+SmartPointer<TimeseriesDef> cb::API::API::addTimeseries(
+  const string &name, const JSON::ValuePtr &config) {
+  auto ts = SmartPtr(new TimeseriesDef(*this, name, config));
+  addTimeseries(name, ts);
+  return ts;
+}
+
+
+const SmartPointer<TimeseriesDef> &cb::API::API::getTimeseries(
+  const string &name) const {
+  string _name = resolve(name);
+  auto it = timeseries.find(_name);
+  if (it == timeseries.end())
+    THROWX("Timeseries '" << _name << "' not found", HTTP_NOT_FOUND);
+  return it->second;
 }
 
 
@@ -131,10 +227,12 @@ string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
   string type = config->getString("handler", "");
   if (!type.empty()) return type;
 
-  if (config->has("bind"))     return "bind";
-  if (config->has("sql"))      return "query";
-  if (config->has("path"))     return "file";
-  if (config->has("resource")) return "resource";
+  if (config->has("bind"))       return "bind";
+  if (config->has("timeseries")) return "timeseries";
+  if (config->has("sql"))        return "query";
+  if (config->has("query"))      return "query";
+  if (config->has("path"))       return "file";
+  if (config->has("resource"))   return "resource";
 
   return "pass";
 }
@@ -184,12 +282,13 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
     return it->second;
   }
 
-  if (type == "pass")     return new PassHandler;
-  if (type == "cors")     return new CORSHandler(config);
-  if (type == "status")   return new StatusHandler(config);
-  if (type == "redirect") return new RedirectHandler(config);
-  if (type == "spec")     return new SpecHandler(*this, config);
-  if (type == "file")     return new HTTP::FileHandler(config);
+  if (type == "pass")      return new PassHandler;
+  if (type == "cors")      return new CORSHandler(config);
+  if (type == "status")    return new StatusHandler(config);
+  if (type == "redirect")  return new RedirectHandler(config);
+  if (type == "spec")      return new SpecHandler(*this, config);
+  if (type == "file")      return new HTTP::FileHandler(config);
+  if (type == "websocket") return new WebsocketHandler(*this, config);
   if (type == "resource")
     return new HTTP::ResourceHandler(config->getString("resource"));
 
@@ -202,8 +301,10 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
     if (type == "session") return new SessionHandler(*this, config);
   }
 
-  if (connector.isSet() && type == "query")
-    return new QueryHandler(*this, config);
+  if (connector.isSet()) {
+    if (type == "query")      return new QueryHandler     (*this, config);
+    if (type == "timeseries") return new TimeseriesHandler(*this, config);
+  }
 
   THROW("Unsupported handler '" << type << "'");
 }
@@ -216,7 +317,7 @@ HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
   auto types   = getEndpointTypes(config);
 
   LOG_INFO(3, "Adding endpoint " << methods << " " << ctx->getPattern()
-           << " (" << types->toString(0, true) << ")");
+    << " (" << types->toString(0, true) << ")");
 
   addToSpec(methods, ctx);
 
@@ -294,7 +395,6 @@ HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
 
 
 void cb::API::API::addTagSpec(const string &tag, const JSON::ValuePtr &config) {
-  category     = tag;
   hideCategory = config->getBoolean("hide", false);
   if (hideCategory) return;
 
@@ -371,6 +471,6 @@ void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
       }
 
     // TODO Add security spec from access handlers
-    // TODO add responses
+    // TODO add response schemas
   }
 }

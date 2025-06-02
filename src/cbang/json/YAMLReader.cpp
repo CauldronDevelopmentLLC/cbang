@@ -330,9 +330,6 @@ void YAMLReader::_parse(Sink &sink) {
       string value = string((const char *)event.data.scalar.value,
                             event.data.scalar.length);
 
-      if (anchors.size() && value.find('%') != string::npos)
-        value = anchors.format(value);
-
       if (frame && frame->event == YAML_MAPPING_START_EVENT && !haveKey) {
         // Handle special merge key but allow it to be quoted
         if (value == "<<" && !event.data.scalar.quoted_implicit) {

@@ -61,8 +61,11 @@ using namespace std;
 
 
 ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
-  config(config), optional(config->getBoolean("optional", false)),
-  defaultValue(config->get("default", 0)) {
+  config(config), defaultValue(config->get("default", 0)) {
+
+  optional = config->getBoolean("optional", defaultValue.isSet());
+  if (!optional && defaultValue.isSet())
+    THROW("It does not make sense for a required option to have a default");
 
   type = config->getString("type", "");
 
@@ -156,8 +159,8 @@ void ArgValidator::add(const SmartPointer<ArgConstraint> &constraint) {
 }
 
 
-void ArgValidator::operator()(HTTP::Request &req, JSON::Value &value) const {
-  for (auto &c: constraints) (*c)(req, value);
+void ArgValidator::operator()(const ResolverPtr &resolver, JSON::Value &value) const {
+  for (auto &c: constraints) (*c)(resolver, value);
 }
 
 

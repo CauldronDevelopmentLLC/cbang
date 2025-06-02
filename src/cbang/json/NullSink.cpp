@@ -38,26 +38,6 @@
 using namespace cb::JSON;
 
 
-unsigned NullSink::getDepth() const {return stack.size();}
-
-
-bool NullSink::inList() const {
-  return !stack.empty() && stack.back() == ValueType::JSON_LIST;
-}
-
-
-bool NullSink::inDict() const {
-  return !stack.empty() && stack.back() == ValueType::JSON_DICT;
-}
-
-
-void NullSink::end() {
-  if (inList()) endList();
-  else if (inDict()) endDict();
-  else TYPE_ERROR("Not in list or dict");
-}
-
-
 void NullSink::close() {
   if (!stack.empty()) THROW("Writer closed with open " << stack.back());
 }
@@ -67,6 +47,11 @@ void NullSink::reset() {
   stack.clear();
   keyStack.clear();
   canWrite = true;
+}
+
+
+bool NullSink::inList() const {
+  return !stack.empty() && stack.back() == ValueType::JSON_LIST;
 }
 
 
@@ -89,6 +74,11 @@ void NullSink::endList() {
   if (!inList()) TYPE_ERROR("Not a List");
 
   stack.pop_back();
+}
+
+
+bool NullSink::inDict() const {
+  return !stack.empty() && stack.back() == ValueType::JSON_DICT;
 }
 
 

@@ -44,19 +44,22 @@ namespace cb {
   namespace JSON {
     class Builder : public Factory, public Sink {
       std::vector<ValuePtr> stack;
-      bool appendNext;
-      std::string nextKey;
+      ValuePtr root;
+      bool appendNext = false;
       bool insertNext = false;
+      std::string nextKey;
 
     public:
       Builder(const ValuePtr &root = 0);
 
       static ValuePtr build(std::function<void (Sink &sink)> cb);
 
-      ValuePtr getRoot() const;
-      void clear() {stack.clear();}
+      ValuePtr getRoot() const {return root;}
 
       // From Sink
+      unsigned getDepth() const override {return stack.size();}
+      void close() override;
+      void reset() override;
       void writeNull() override;
       void writeBoolean(bool value) override;
       void write(double value) override;
@@ -64,9 +67,11 @@ namespace cb {
       void write(int64_t value) override;
       void write(const std::string &value) override;
       using Sink::write;
+      bool inList() const override;
       void beginList(bool simple = false) override;
       void beginAppend() override;
       void endList() override;
+      bool inDict() const override;
       void beginDict(bool simple = false) override;
       bool has(const std::string &key) const override;
       void beginInsert(const std::string &key) override;

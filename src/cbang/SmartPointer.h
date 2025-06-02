@@ -86,9 +86,8 @@ namespace cb {
   };
 
 
-  template <typename T, typename DeallocT = DeallocNew<T>,
-            typename CounterT = RefCounterImpl<T, DeallocT>,
-            bool weak = false>
+  template <typename T, bool weak = false, typename DeallocT = DeallocNew<T>,
+            typename CounterT = RefCounterImpl<T, DeallocT>>
   class SmartPointer : public SmartPointerBase {
   protected:
     /// A pointer to the reference counter.
@@ -98,15 +97,15 @@ namespace cb {
     T *ptr = 0;
 
   public:
-    typedef RefCounterPhonyImpl                CounterPhony;
-    typedef RefCounterImpl<T, DeallocMalloc>   CounterMalloc;
-    typedef RefCounterImpl<T, DeallocArray<T>> CounterArray;
+    using CounterPhony  = RefCounterPhonyImpl;
+    using CounterMalloc = RefCounterImpl<T, DeallocMalloc>;
+    using CounterArray  = RefCounterImpl<T, DeallocArray<T>>;
 
-    typedef SmartPointer<T, DeallocT,        CounterT,      weak> PointerT;
-    typedef SmartPointer<T, DeallocT,        CounterT,      true> Weak;
-    typedef SmartPointer<T, DeallocPhony,    CounterPhony,  weak> Phony;
-    typedef SmartPointer<T, DeallocMalloc,   CounterMalloc, weak> Malloc;
-    typedef SmartPointer<T, DeallocArray<T>, CounterArray,  weak> Array;
+    using PointerT = SmartPointer<T, weak, DeallocT,        CounterT>;
+    using Weak     = SmartPointer<T, true, DeallocT,        CounterT>;
+    using Phony    = SmartPointer<T, weak, DeallocPhony,    CounterPhony>;
+    using Malloc   = SmartPointer<T, weak, DeallocMalloc,   CounterMalloc>;
+    using Array    = SmartPointer<T, weak, DeallocArray<T>, CounterArray>;
 
     /**
      * The copy constructor.  If the smart pointer being copied
@@ -286,14 +285,12 @@ namespace cb {
      */
     bool operator!() const {return isNull();}
 
-
     /// Convert to a base type or weak pointer.
     template
-      <typename _BaseT, typename _DeallocT, typename _CounterT, bool _weak>
-    operator SmartPointer<_BaseT, _DeallocT, _CounterT, _weak> () const {
-      return SmartPointer<_BaseT, _DeallocT, _CounterT, _weak>(ptr, refCounter);
+      <typename _BaseT, bool _weak, typename _DeallocT, typename _CounterT>
+    operator SmartPointer<_BaseT, _weak, _DeallocT, _CounterT> () const {
+      return SmartPointer<_BaseT, _weak, _DeallocT, _CounterT>(ptr, refCounter);
     }
-
 
     /// Dynamic cast
     template <typename CastT>
@@ -305,9 +302,8 @@ namespace cb {
     }
 
     template <typename CastT>
-    SmartPointer<CastT, DeallocT, CounterT, weak> cast() const {
-      return SmartPointer<CastT, DeallocT, CounterT, weak>(
-        castPtr<CastT>(), refCounter);
+    SmartPointer<CastT, weak> cast() const {
+      return SmartPointer<CastT, weak>(castPtr<CastT>(), refCounter);
     }
 
     // Type check
@@ -405,16 +401,13 @@ namespace cb {
 #define CBANG_SP_PHONY(T)  cb::SmartPointer<T>::Phony
 #define CBANG_SP_MALLOC(T) cb::SmartPointer<T>::Malloc
 #define CBANG_SP_ARRAY(T)  cb::SmartPointer<T>::Array
-#define CBANG_SP_DEALLOC(T, DEALLOC) \
-  cb::SmartPointer<T, cb::DeallocFunc<T, DEALLOC> >
 
 #ifdef USING_CBANG
-#define SP(T)                  CBANG_SP(T)
-#define SP_WEAK(T)             CBANG_SP_WEAK(T)
-#define SP_PHONY(T)            CBANG_SP_PHONY(T)
-#define SP_MALLOC(T)           CBANG_SP_MALLOC(T)
-#define SP_ARRAY(T)            CBANG_SP_ARRAY(T)
-#define SP_DEALLOC(T, DEALLOC) CBANG_SP_DEALLOC(T, DEALLOC)
+#define SP(T)        CBANG_SP(T)
+#define SP_WEAK(T)   CBANG_SP_WEAK(T)
+#define SP_PHONY(T)  CBANG_SP_PHONY(T)
+#define SP_MALLOC(T) CBANG_SP_MALLOC(T)
+#define SP_ARRAY(T)  CBANG_SP_ARRAY(T)
 #endif
 
 #endif // CBANG_SMART_POINTER_H

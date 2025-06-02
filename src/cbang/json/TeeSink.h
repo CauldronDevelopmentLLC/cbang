@@ -45,13 +45,16 @@ namespace cb {
       TeeSink(const SmartPointer<Sink> &left, const SmartPointer<Sink> &right) :
         left(left), right(right) {}
 
-      const SmartPointer<Sink> &getLeft() const {return left;}
+      const SmartPointer<Sink> &getLeft()  const {return left;}
       const SmartPointer<Sink> &getRight() const {return right;}
 
-      void setLeft(const SmartPointer<Sink> &left) {this->left = left;}
+      void setLeft(const SmartPointer<Sink>  &left)  {this->left  = left;}
       void setRight(const SmartPointer<Sink> &right) {this->right = right;}
 
       // From Sink
+      unsigned getDepth() const override {return left->getDepth();}
+      void close() override;
+      void reset() override;
       void writeNull() override;
       void writeBoolean(bool value) override;
       void write(double value) override;
@@ -66,11 +69,13 @@ namespace cb {
       void write(const std::string &value) override;
 
       // List functions
+      bool inList() const override {return left->inList();}
       void beginList(bool simple = false) override;
       void beginAppend() override;
       void endList() override;
 
       // Dict functions
+      bool inDict() const override {return left->inDict();}
       void beginDict(bool simple = false) override;
       bool has(const std::string &key) const override;
       void beginInsert(const std::string &key) override;

@@ -52,7 +52,9 @@ void ArgDict::appendSpecs(JSON::Value &spec) const {
 }
 
 
-void ArgDict::operator()(HTTP::Request &req, JSON::Value &value) const {
+void ArgDict::validate(const ResolverPtr &resolver, JSON::Value &value,
+  const JSON::ValuePtr &target) const {
+
   if (!value.isDict()) THROWX("Invalid arguments", HTTP_BAD_REQUEST);
 
   set<string> found;
@@ -60,13 +62,13 @@ void ArgDict::operator()(HTTP::Request &req, JSON::Value &value) const {
   for (auto e: value.entries()) {
     const string &name = e.key();
 
-    found.insert(name);
-
     auto it2 = validators.find(name);
     if (it2 == validators.end()) continue; // Ignore unrecognized args
 
     try {
-      (*it2->second)(req, *e);
+      (*it2->second)(resolver, *e.value());
+      found.insert(name);
+      if (target.isSet()) target->insert(name, e.value());
 
     } catch (const Exception &ex) {
       if (ex.getCode() == HTTP_UNAUTHORIZED)
@@ -83,13 +85,20 @@ void ArgDict::operator()(HTTP::Request &req, JSON::Value &value) const {
     if (found.find(p.first) == found.end()) {
       const ArgValidator &av = *p.second;
 
-      if (av.hasDefault()) value.insert(p.first, av.getDefault());
+      if (av.hasDefault())
+        (target.isSet() ? *target : value).insert(p.first, av.getDefault());
       else if (!av.isOptional()) missing.push_back(p.first);
     }
 
   if (!missing.empty())
-    THROWX("Missing argument" << (1 < missing.size() ? "s" : "") << ": "
-            << String::join(missing, ", "), HTTP_BAD_REQUEST);
+    THROWX("Missing arguments: " << String::join(missing, ", "),
+      HTTP_BAD_REQUEST);
+}
+
+
+void ArgDict::operator()(
+  const ResolverPtr &resolver, JSON::Value &value) const {
+  validate(resolver, value, 0);
 }
 
 

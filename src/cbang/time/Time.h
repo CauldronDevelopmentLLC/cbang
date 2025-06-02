@@ -77,7 +77,7 @@ namespace cb {
     bool operator>=(const Time &o) const {return time >= o.time;}
 
     static uint64_t parse(const std::string &s,
-                          const std::string &format = iso8601Format);
+      const std::string &format = iso8601Format);
 
     /// Get current time in seconds since January 1st, 1970.
     static uint64_t now();

@@ -1,1 +1,1 @@
-'{"foo": "bar"}' "Hello %%(bar)s"
+'{"foo": "bar"}' "Hello {bar}"

@@ -31,8 +31,7 @@
 \******************************************************************************/
 
 #include "Query.h"
-#include "API.h"
-#include "Resolver.h"
+#include "QueryDef.h"
 
 #include <cbang/log/Logger.h>
 
@@ -43,55 +42,51 @@ using namespace cb;
 using namespace cb::API;
 
 
-Query::Query(
-  API &api, const SmartPointer<HTTP::Request> &req, const string &sql,
-  const string &returnType, const JSON::ValuePtr &fields) :
-  api(api), req(req), sql(sql), returnType(returnType), fields(fields) {}
-
-
-void Query::query(callback_t cb) {
+Query::Query(const SmartPointer<const QueryDef> &def, callback_t cb) :
+  def(def), cb(cb), db(def->getDBConnection()) {
   if (!cb) THROW("Callback not set");
-  this->cb = cb;
+}
 
-  if (db.isNull()) db = api.getDBConnector().getConnection();
-  string sql = Resolver(api, req).format(this->sql, "NULL");
 
+void Query::exec(const string &sql) {
   // Stay alive until query callbacks are complete
   auto self = SmartPtr(this);
-  auto queryCB = [self] (state_t state) {self->callback(state);};
-
-  db->query(queryCB, sql);
+  auto cb = [self] (state_t state) {self->callback(state);};
+  db->query(cb, sql);
 }
 
 
-void Query::callback(state_t state) {
-  if (returnType == "ok")     return Query::returnOk    (state);
-  if (returnType == "hlist")  return Query::returnHList (state);
-  if (returnType == "list")   return Query::returnList  (state);
-  if (returnType == "fields") return Query::returnFields(state);
-  if (returnType == "dict")   return Query::returnDict  (state);
-  if (returnType == "one")    return Query::returnOne   (state);
-  if (returnType == "bool")   return Query::returnBool  (state);
-  if (returnType == "u64")    return Query::returnU64   (state);
-  if (returnType == "s64")    return Query::returnS64   (state);
-  if (returnType == "pass")   return Query::returnOk    (state);
-  THROW("Unsupported query return type '" << returnType << "'");
+Query::return_t Query::getReturnType(const string &name) {
+  if (name == "ok")     return &Query::returnOk;
+  if (name == "hlist")  return &Query::returnHList;
+  if (name == "list")   return &Query::returnList;
+  if (name == "fields") return &Query::returnFields;
+  if (name == "dict")   return &Query::returnDict;
+  if (name == "one")    return &Query::returnOne;
+  if (name == "bool")   return &Query::returnBool;
+  if (name == "u64")    return &Query::returnU64;
+  if (name == "s64")    return &Query::returnS64;
+
+  THROW("Unsupported query return type '" << name << "'");
 }
+
+
+void Query::callback(state_t state) {(*this.*def->returnCB)(state);}
 
 
 void Query::reply(HTTP::Status code) {
-  writer.close();
-  cb(code, writer);
+  sink.close();
+  cb(code, sink.getRoot());
 }
 
 
 void Query::errorReply(HTTP::Status code, const string &msg) {
-  writer.reset();
+  sink.reset();
 
-  writer.beginDict();
-  writer.insert("error", msg.empty() ? code.toString() : msg);
-  writer.endDict();
-  writer.close();
+  sink.beginDict();
+  sink.insert("error", msg.empty() ? code.toString() : msg);
+  sink.endDict();
+  sink.close();
 
   reply(code);
 }
@@ -100,17 +95,17 @@ void Query::errorReply(HTTP::Status code, const string &msg) {
 void Query::returnHList(MariaDB::EventDB::state_t state) {
   if (state == MariaDB::EventDB::EVENTDB_ROW) {
     if (!rowCount++) {
-      writer.beginList();
+      sink.beginList();
 
       // Write list header
-      writer.appendList();
+      sink.appendList();
       for (unsigned i = 0; i < db->getFieldCount(); i++)
-        writer.append(db->getField(i).getName());
-      writer.endList();
+        sink.append(db->getField(i).getName());
+      sink.endList();
     }
 
-    writer.beginAppend();
-    db->writeRowList(writer);
+    sink.beginAppend();
+    db->writeRowList(sink);
 
   } else returnList(state);
 }
@@ -120,17 +115,17 @@ void Query::returnHList(MariaDB::EventDB::state_t state) {
 void Query::returnList(MariaDB::EventDB::state_t state) {
   switch (state) {
   case MariaDB::EventDB::EVENTDB_ROW:
-    if (!rowCount++) writer.beginList();
+    if (!rowCount++) sink.beginList();
 
-    writer.beginAppend();
+    sink.beginAppend();
 
-    if (db->getFieldCount() == 1) db->writeField(writer, 0);
-    else db->writeRowDict(writer);
+    if (db->getFieldCount() == 1) db->writeField(sink, 0);
+    else db->writeRowDict(sink);
     break;
 
   case MariaDB::EventDB::EVENTDB_DONE:
-    if (!rowCount) writer.beginList(); // Empty list
-    writer.endList();
+    if (!rowCount) sink.beginList(); // Empty list
+    sink.endList();
     returnOk(state);
     break;
 
@@ -140,68 +135,64 @@ void Query::returnList(MariaDB::EventDB::state_t state) {
 
 
 void Query::returnBool(MariaDB::EventDB::state_t state) {
-  if (checkOne(state)) writer.writeBoolean(db->getBoolean(0));
+  if (checkOne(state)) sink.writeBoolean(db->getBoolean(0));
 }
 
 
-
 void Query::returnU64(MariaDB::EventDB::state_t state) {
-  if (checkOne(state)) writer.write(db->getU64(0));
+  if (checkOne(state)) sink.write(db->getU64(0));
 }
 
 
 void Query::returnS64(MariaDB::EventDB::state_t state) {
-  if (checkOne(state)) writer.write(db->getS64(0));
+  if (checkOne(state)) sink.write(db->getS64(0));
 }
 
 
 void Query::returnFields(MariaDB::EventDB::state_t state) {
   switch (state) {
   case MariaDB::EventDB::EVENTDB_ROW:
-    if (!rowCount++) writer.beginDict();
+    if (!rowCount++) sink.beginDict();
 
     if (!nextField.empty()) {
       closeField = true;
       if (nextField[0] == '*') {
-        if (nextField.length() != 1) writer.insertDict(nextField.substr(1));
+        if (nextField.length() != 1) sink.insertDict(nextField.substr(1));
         else closeField = false;
-      } else writer.insertList(nextField);
+      } else sink.insertList(nextField);
       nextField.clear();
     }
 
-    if (writer.inDict()) db->insertRow(writer, 0, -1, false);
+    if (sink.inDict()) db->insertRow(sink, 0, -1, false);
 
     else if (db->getFieldCount() == 1) {
-      writer.beginAppend();
-      db->writeField(writer, 0);
+      sink.beginAppend();
+      db->writeField(sink, 0);
 
     } else {
-      writer.appendDict();
-      db->insertRow(writer, 0, -1, false);
-      writer.endDict();
+      sink.appendDict();
+      db->insertRow(sink, 0, -1, false);
+      sink.endDict();
     }
     break;
 
   case MariaDB::EventDB::EVENTDB_BEGIN_RESULT: {
     closeField = false;
-    if (fields.isNull()) THROW("Fields cannot be null");
-    if (currentField == fields->size()) THROW("Unexpected DB result");
-    nextField = fields->getString(currentField++);
+    if (def->fields.isNull()) THROW("Fields cannot be null");
+    if (currentField == def->fields->size()) THROW("Unexpected DB result");
+    nextField = def->fields->getString(currentField++);
     if (nextField.empty()) THROW("Empty field name");
     break;
   }
 
   case MariaDB::EventDB::EVENTDB_END_RESULT:
-    if (closeField) {
-      if (writer.inList()) writer.endList();
-      else writer.endDict();
-    }
+    if (closeField) sink.end();
     break;
 
   case MariaDB::EventDB::EVENTDB_DONE:
     if (!rowCount) errorReply(HTTP_NOT_FOUND);
     else {
-      writer.endDict();
+      sink.endDict();
       return returnOk(state); // Success
     }
     break;
@@ -213,7 +204,7 @@ void Query::returnFields(MariaDB::EventDB::state_t state) {
 
 void Query::returnDict(MariaDB::EventDB::state_t state) {
   if (state == MariaDB::EventDB::EVENTDB_ROW) {
-    if (!rowCount++) db->writeRowDict(writer);
+    if (!rowCount++) db->writeRowDict(sink);
     else returnOk(state); // Error
 
   } else checkOne(state);
@@ -221,7 +212,7 @@ void Query::returnDict(MariaDB::EventDB::state_t state) {
 
 
 void Query::returnOne(MariaDB::EventDB::state_t state) {
-  if (checkOne(state)) db->writeField(writer, 0);
+  if (checkOne(state)) db->writeField(sink, 0);
 }
 
 
@@ -246,10 +237,10 @@ bool Query::checkOne(MariaDB::EventDB::state_t state) {
 
 void Query::returnOk(MariaDB::EventDB::state_t state) {
   switch (state) {
-  case MariaDB::EventDB::EVENTDB_BEGIN_RESULT: break;
-  case MariaDB::EventDB::EVENTDB_END_RESULT: break;
-  case MariaDB::EventDB::EVENTDB_DONE: reply(); break;
-  case MariaDB::EventDB::EVENTDB_RETRY: writer.reset(); break;
+  case MariaDB::EventDB::EVENTDB_BEGIN_RESULT:               break;
+  case MariaDB::EventDB::EVENTDB_END_RESULT:                 break;
+  case MariaDB::EventDB::EVENTDB_DONE:         reply();      break;
+  case MariaDB::EventDB::EVENTDB_RETRY:        sink.reset(); break;
 
   case MariaDB::EventDB::EVENTDB_ERROR: {
     HTTP::Status error = HTTP_INTERNAL_SERVER_ERROR;
@@ -259,8 +250,8 @@ void Query::returnOk(MariaDB::EventDB::state_t state) {
       error = HTTP_NOT_FOUND;
       break;
 
-    case ER_DUP_ENTRY:           error = HTTP_CONFLICT;    break;
-    case ER_SIGNAL_EXCEPTION:    error = HTTP_BAD_REQUEST; break;
+    case ER_DUP_ENTRY:        error = HTTP_CONFLICT;    break;
+    case ER_SIGNAL_EXCEPTION: error = HTTP_BAD_REQUEST; break;
 
     case ER_ACCESS_DENIED_ERROR: case ER_DBACCESS_DENIED_ERROR:
       error = HTTP_UNAUTHORIZED;
