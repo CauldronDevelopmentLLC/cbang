@@ -132,7 +132,7 @@ void ServerApplication::afterCommandLineParse() {
                   "'/etc/security/limits.conf'");
   }
 
-  // Set group and user.
+  // Set group and user
   beforeDroppingPrivileges();
   if (!options["respawn"].toBoolean() || options["child"].toBoolean()) {
     if (options["set-group"].hasValue()) {

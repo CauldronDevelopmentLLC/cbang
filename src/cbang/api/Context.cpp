@@ -41,9 +41,9 @@ using namespace cb;
 using namespace cb::API;
 
 
-Context::Context(const JSON::ValuePtr &config, const string &pattern,
-                 SmartPointer<Context> parent) :
-  config(config), pattern(pattern), parent(parent) {
+Context::Context(API &api, const JSON::ValuePtr &config, const string &pattern,
+  SmartPointer<Context> parent) :
+  api(api), config(config), pattern(pattern), parent(parent) {
 
   if (parent.isSet()) {
     if (parent->argsHandler.isSet())
@@ -56,7 +56,7 @@ Context::Context(const JSON::ValuePtr &config, const string &pattern,
   if (!config->isDict()) return;
 
   if (config->has("args")) {
-    if (argsHandler.isNull()) argsHandler = new ArgsHandler;
+    if (argsHandler.isNull()) argsHandler = new ArgsHandler(api);
     argsHandler->add(config->get("args"));
   }
 
@@ -72,7 +72,7 @@ Context::~Context() {}
 
 SmartPointer<Context> Context::createChild(
   const JSON::ValuePtr &config, const string &pattern) {
-  return new Context(config, this->pattern + pattern, this);
+  return new Context(api, config, this->pattern + pattern, this);
 }
 
 

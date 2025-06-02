@@ -50,7 +50,7 @@ ArgEnum::ArgEnum(const JSON::ValuePtr &config) :
 }
 
 
-void ArgEnum::operator()(HTTP::Request &req, JSON::Value &_value) const {
+void ArgEnum::operator()(const ResolverPtr &resolver, JSON::Value &_value) const {
   if (!_value.isString()) THROW("Enum argument must be string");
 
   string value = _value.getString();

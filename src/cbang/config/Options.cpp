@@ -50,12 +50,7 @@ using namespace cb;
 bool Options::warnWhenInvalid = false;
 
 
-Options::Options() {
-  pushCategory(""); // Default category
-}
-
-
-Options::~Options() {}
+Options::Options() {pushCategory("");} // Default category
 
 
 void Options::insert(JSON::Sink &sink, bool config) const {
@@ -76,7 +71,8 @@ void Options::write(JSON::Sink &sink, bool config) const {
 
 
 void Options::write(XML::Handler &handler, uint32_t flags) const {
-  for (auto &p: categories) p.second->write(handler, flags);
+  for (auto &p: categories)
+    p.second->write(handler, flags);
 }
 
 
@@ -178,6 +174,13 @@ void Options::dump(JSON::Sink &sink) const {
   }
 
   sink.endDict();
+}
+
+
+JSON::ValuePtr Options::getConfigJSON() const {
+  JSON::Builder builder;
+  write(builder, true);
+  return builder.getRoot();
 }
 
 

@@ -33,7 +33,7 @@
 #include "ArgAuth.h"
 
 #include <cbang/String.h>
-#include <cbang/http/Request.h>
+#include <cbang/http/Status.h>
 
 using namespace cb::API;
 using namespace cb;
@@ -63,14 +63,12 @@ ArgAuth::ArgAuth(bool allow, const JSON::ValuePtr &config) : allow(allow) {
 }
 
 
-
-
-void ArgAuth::operator()(HTTP::Request &req, JSON::Value &_value) const {
-  SmartPointer<HTTP::Session> session = req.getSession();
+void ArgAuth::operator()(const ResolverPtr &resolver, JSON::Value &_value) const {
+  auto session = resolver->select("session");
   if (session.isNull()) unauthorized();
 
   for (auto &group: groups)
-    if (session->hasGroup(group)) {
+    if (session->getBoolean(group, false)) {
       if (allow) return;
       unauthorized();
     }

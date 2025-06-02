@@ -33,27 +33,35 @@
 #pragma once
 
 #include "Query.h"
+#include "Resolver.h"
 
 #include <cbang/http/Request.h>
 
 
 namespace cb {
+  class URI;
+
   namespace API {
     class API;
 
     class Login : public Query {
-      API &api;
+      ResolverPtr resolver;
       std::string provider;
       std::string redirectURI;
+
+      SmartPointer<HTTP::Session> session;
+      URI uri;
       unsigned resultCount = 0;
 
     public:
-      Login(API &api, const SmartPointer<HTTP::Request> &req,
-            const std::string &sql, const std::string &provider,
-            const std::string &redirectURI);
+      Login(const SmartPointer<const QueryDef> &def, callback_t cb,
+        const ResolverPtr &resolver, HTTP::Request &req,
+        const std::string &provider, const std::string &redirectURI);
 
+      void login();
+
+    protected:
       void loginComplete();
-      void login(callback_t cb);
       void processProfile(const JSON::ValuePtr &profile);
 
       // From Query

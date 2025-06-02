@@ -44,6 +44,8 @@
 #include <leveldb/iterator.h>
 #include <leveldb/write_batch.h>
 
+#include <cstring>
+
 #undef CBANG_EXCEPTION
 #define CBANG_EXCEPTION LevelDBError
 
@@ -61,9 +63,7 @@ namespace {
 }
 
 
-string LevelDBNS::nsKey(const string &key) const {
-  return name + key;
-}
+string LevelDBNS::nsKey(const string &key) const {return name + key;}
 
 
 string LevelDBNS::stripKey(const string &key) const {
@@ -73,16 +73,7 @@ string LevelDBNS::stripKey(const string &key) const {
 }
 
 
-bool LevelDBNS::inNS(const string &key) const {
-  return name.empty() || key.compare(0, name.length(), name) == 0;
-}
-
-
-void LevelDBNS::check(const leveldb::Status &s, const std::string &key) const {
-  if (s.ok()) return;
-  if (s.IsNotFound()) THROW("DB ERROR: Not '" << nsKey(key) << "' found");
-  THROW("DB ERROR: " << s.ToString());
-}
+LevelDB::Snapshot::~Snapshot() {db->ReleaseSnapshot(snapshot);}
 
 
 int LevelDB::Comparator::operator()(const string &, const string &) const {
@@ -91,28 +82,30 @@ int LevelDB::Comparator::operator()(const string &, const string &) const {
 
 
 bool LevelDB::Iterator::valid() const {
-  return it->Valid() && inNS(it->key().ToString());
+  if (!it->Valid()) return false;
+  auto &ns = db->getNS();
+  if (it->key().size() < ns.size()) return false;
+  return memcmp(it->key().data(), ns.data(), ns.size()) == 0;
 }
 
 
 void LevelDB::Iterator::first() {
-  if (hasNS()) it->Seek(getNS());
+  if (db->hasNS()) it->Seek(db->getNS());
   else it->SeekToFirst();
 }
 
 
 void LevelDB::Iterator::last() {
-  if (hasNS()) {
+  if (db->hasNS()) {
     seek(nsLast);
     if (it->Valid()) it->Prev();
+    else it->SeekToLast(); // This is the last NS or DB is empty
 
   } else it->SeekToLast();
 }
 
 
-void LevelDB::Iterator::seek(const string &key) {
-  it->Seek(nsKey(key));
-}
+void LevelDB::Iterator::seek(const string &key) {it->Seek(db->nsKey(key));}
 
 
 void LevelDB::Iterator::next() {
@@ -129,13 +122,20 @@ void LevelDB::Iterator::prev() {
 
 string LevelDB::Iterator::key() const {
   if (!valid()) THROW("Cannot call key() on invalid iterator");
-  return stripKey(it->key().ToString());
+  return db->stripKey(it->key().ToString());
 }
 
 
 string LevelDB::Iterator::value() const {
   if (!valid()) THROW("Cannot call value() on invalid iterator");
   return it->value().ToString();
+}
+
+
+LevelDB::Iterator &LevelDB::Iterator::operator=(const Iterator &it) {
+  db = it.db;
+  this->it = it.it;
+  return *this;
 }
 
 
@@ -146,10 +146,9 @@ bool LevelDB::Iterator::operator==(const Iterator &it) const {
 }
 
 
-LevelDB::Batch::Batch(const SmartPointer<leveldb::DB> &db,
-                      const SmartPointer<leveldb::WriteBatch> &batch,
-                      const string &name) :
-  LevelDBNS(name), db(db), batch(batch) {}
+LevelDB::Batch::Batch(
+  LevelDB &db, const SmartPointer<leveldb::WriteBatch> &batch,
+  const string &name) : LevelDBNS(name), db(db), batch(batch) {}
 
 
 LevelDB::Batch::~Batch() {}
@@ -168,20 +167,16 @@ void LevelDB::Batch::set(const string &key, const string &value) {
 }
 
 
-void LevelDB::Batch::erase(const string &key) {
-  batch->Delete(nsKey(key));
-}
+void LevelDB::Batch::erase(const string &key) {batch->Delete(nsKey(key));}
 
 
 void LevelDB::Batch::eraseAll(int options) {
-  Iterator it(db->NewIterator(getReadOptions(options)), getNS());
+  Iterator it = db.iterator(options);
   for (it.first(); it.valid(); it++) erase(it.key());
 }
 
 
-void LevelDB::Batch::commit(int options) {
-  check(db->Write(getWriteOptions(options), batch.get()));
-}
+void LevelDB::Batch::commit(int options) {db.commit(*batch, options);}
 
 
 namespace {
@@ -216,14 +211,23 @@ LevelDB::LevelDB(const string &name,
 
 
 LevelDB::LevelDB(const string &name,
-                 const SmartPointer<leveldb::Comparator> &comparator,
-                 const SmartPointer<leveldb::DB> &db) :
-  LevelDBNS(name), comparator(comparator), db(db) {}
+  const SmartPointer<leveldb::Comparator> &comparator,
+  const SmartPointer<leveldb::DB> &db, const SmartPointer<Snapshot> &snapshot) :
+  LevelDBNS(name), comparator(comparator), db(db), _snapshot(snapshot) {}
+
+
+LevelDB::~LevelDB() {}
 
 
 LevelDB LevelDB::ns(const string &name) {
   if (db.isNull()) THROW("DB not open");
-  return LevelDB(getNS() + name, comparator, db);
+  return LevelDB(getNS() + name, comparator, db, _snapshot);
+}
+
+
+LevelDB LevelDB::snapshot() {
+  if (db.isNull()) THROW("DB not open");
+  return LevelDB(getNS(), comparator, db, new Snapshot(db, db->GetSnapshot()));
 }
 
 
@@ -241,6 +245,12 @@ void LevelDB::open(const string &path, int options) {
 
 
 void LevelDB::close() {db.release();}
+
+
+int LevelDB::compare(const string &keyA, const string &keyB) const {
+  if (comparator.isSet()) return comparator->Compare(keyA, keyB);
+  return keyA.compare(keyB);
+}
 
 
 bool LevelDB::has(const string &key, int options) const {
@@ -287,7 +297,7 @@ void LevelDB::eraseAll(int options) {
 
 
 LevelDB::Iterator LevelDB::iterator(int options) const {
-  return Iterator(db->NewIterator(getReadOptions(options)), getNS());
+  return Iterator(*this, db->NewIterator(getReadOptions(options)));
 }
 
 
@@ -306,7 +316,12 @@ LevelDB::Iterator LevelDB::last(int options) const {
 
 
 LevelDB::Batch LevelDB::batch() {
-  return Batch(db, new leveldb::WriteBatch, getNS());
+  return Batch(*this, new leveldb::WriteBatch, getNS());
+}
+
+
+void LevelDB::commit(leveldb::WriteBatch &batch, int options) {
+  check(db->Write(getWriteOptions(options), &batch));
 }
 
 
@@ -328,36 +343,40 @@ void LevelDB::compact(const string &begin, const string &end) {
 }
 
 
-leveldb::Options LevelDB::getOptions(int options) {
+leveldb::Options LevelDB::getOptions(int options) const {
   // TODO Support other options
 
   leveldb::Options opts;
 
   opts.create_if_missing = options & CREATE_IF_MISSING;
-  opts.error_if_exists = options & ERROR_IF_EXISTS;
-  opts.paranoid_checks = options & PARANOID_CHECKS;
+  opts.error_if_exists   = options & ERROR_IF_EXISTS;
+  opts.paranoid_checks   = options & PARANOID_CHECKS;
   if (options & NO_COMPRESSION) opts.compression = leveldb::kNoCompression;
 
   return opts;
 }
 
 
-leveldb::ReadOptions LevelDB::getReadOptions(int options) {
+leveldb::ReadOptions LevelDB::getReadOptions(int options) const {
   leveldb::ReadOptions opts;
 
+  if (_snapshot.isSet()) opts.snapshot = _snapshot->get();
   opts.verify_checksums = options & VERIFY_CHECKSUMS;
-  opts.fill_cache = options & FILL_CACHE;
+  opts.fill_cache       = options & FILL_CACHE;
 
   return opts;
 }
 
 
-leveldb::WriteOptions LevelDB::getWriteOptions(int options) {
-  leveldb::WriteOptions opts;
+leveldb::WriteOptions LevelDB::getWriteOptions(int options) const {
+  return {.sync = bool(options & SYNC)};
+}
 
-  opts.sync = options & SYNC;
 
-  return opts;
+void LevelDB::check(const leveldb::Status &s, const std::string &key) const {
+  if (s.ok()) return;
+  if (s.IsNotFound()) THROW("DB ERROR: Key '" << nsKey(key) << "' not found");
+  THROW("DB ERROR: " << s.ToString());
 }
 
 #endif // HAVE_LEVELDB

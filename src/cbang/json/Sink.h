@@ -45,6 +45,11 @@ namespace cb {
     public:
       virtual ~Sink() {}
 
+      virtual unsigned getDepth() const = 0;
+
+      virtual void close() = 0;
+      virtual void reset() = 0;
+
       // Element functions
       virtual void writeNull() = 0;
       virtual void writeBoolean(bool value) = 0;
@@ -61,11 +66,13 @@ namespace cb {
       void write(const Value &value);
 
       // List functions
+      virtual bool inList() const = 0;
       virtual void beginList(bool simple = false) = 0;
       virtual void beginAppend() = 0;
       virtual void endList() = 0;
 
       // Dict functions
+      virtual bool inDict() const = 0;
       virtual void beginDict(bool simple = false) = 0;
       virtual bool has(const std::string &key) const = 0;
       virtual void beginInsert(const std::string &key) = 0;
@@ -91,6 +98,8 @@ namespace cb {
       virtual void insertDict(const std::string &key, bool simple = false)
       {beginInsert(key); beginDict(simple);}
       void insert(const std::string &key, const Value &value);
+
+      void end();
     };
   }
 }

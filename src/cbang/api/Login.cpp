@@ -31,67 +31,63 @@
 \******************************************************************************/
 
 #include "Login.h"
+#include "QueryDef.h"
 #include "API.h"
 
 #include <cbang/Catch.h>
 #include <cbang/log/Logger.h>
 #include <cbang/http/Request.h>
+#include <cbang/api/Resolver.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-Login::Login(
-  API &api, const SmartPointer<HTTP::Request> &req, const string &sql,
-  const string &provider, const string &redirectURI) :
-  Query(api, req, sql), api(api), provider(provider),
-  redirectURI(redirectURI) {}
+Login::Login(const SmartPointer<const QueryDef> &def, callback_t cb,
+  const ResolverPtr &resolver, HTTP::Request &req, const string &provider,
+  const string &redirectURI) : Query(def, cb), resolver(resolver),
+  provider(provider), redirectURI(redirectURI), session(req.getSession()),
+  uri(req.getURI()) {}
 
 
 void Login::loginComplete() {
   auto origCB = cb;
 
-  auto cb = [this, origCB] (HTTP::Status status, Event::Buffer &buffer) {
+  cb = [this, origCB] (HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
       // Authenticate Session
-      auto session = req->getSession();
       session->addGroup("authenticated");
 
       // Respond with session
-      session->write(writer);
+      return origCB(status, session);
     }
 
-    writer.close();
-    origCB(status, writer);
+    origCB(status, result);
   };
 
-  if (sql.empty()) cb(HTTP_OK, writer);
-  else query(cb);
+  if (def->sql.empty()) cb(HTTP_OK, 0);
+  else exec(resolver->resolve(def->getSQL()));
 }
 
 
-void Login::login(callback_t cb) {
-  this->cb = cb;
-
+void Login::login() {
   if (provider == "none") return loginComplete();
 
   // Get OAuth2 provider
-  auto oauth2 = api.getOAuth2Providers().get(provider);
+  auto oauth2 = def->api.getOAuth2Providers().get(provider);
   if (oauth2.isNull() || !oauth2->isConfigured())
     return errorReply(
       HTTP_BAD_REQUEST, "Unsupported login provider: " + provider);
 
   // Handle OAuth login response
-  auto session = req->getSession();
-  const URI &uri = req->getURI();
   if (uri.has("state")) {
     if (!redirectURI.empty()) session->insert("redirect_uri", redirectURI);
     auto self = SmartPtr(this);
     auto cb = [self] (const JSON::ValuePtr &profile) {
       self->processProfile(profile);
     };
-    return oauth2->verify(api.getClient(), *session, uri, cb);
+    return oauth2->verify(def->api.getClient(), *session, uri, cb);
   }
 
   // Respond with Session ID and redirect URL
@@ -102,11 +98,10 @@ void Login::login(callback_t cb) {
     session->insert("redirect_uri", redirectURI);
   }
 
-  writer.beginDict();
-  writer.insert("id", sid);
-  writer.insert("redirect", redirect);
-  writer.endDict();
-  writer.close();
+  sink.beginDict();
+  sink.insert("id", sid);
+  sink.insert("redirect", redirect);
+  sink.endDict();
 
   reply(HTTP_OK);
 }
@@ -129,7 +124,6 @@ void Login::processProfile(const JSON::ValuePtr &profile) {
         profile->insert("name", profile->getString("login"));
 
       // Fill session
-      auto session = req->getSession();
       session->setUser(profile->getString("email"));
       session->insert("provider",    provider);
       session->insert("provider_id", profile->getString("id"));
@@ -151,8 +145,6 @@ void Login::callback(state_t state) {
   case MariaDB::EventDB::EVENTDB_END_RESULT: resultCount++; break;
 
   case MariaDB::EventDB::EVENTDB_ROW: {
-    auto session = req->getSession();
-
     if (resultCount) session->addGroup(db->getString(0)); // Groups
     else if (db->getField(1).isNumber()) // Session vars
       session->insert(db->getString(0), db->getDouble(1));

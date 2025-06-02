@@ -560,11 +560,11 @@ void Request::send(const string &s) {outputBuffer.add(s);}
 void Request::sendFile(const string &path) {outputBuffer.addFile(path);}
 
 
-void Request::reply(Status::enum_t code) {
-  if (replying && !isWebsocket()) THROW("Request already replying");
+void Request::reply(Status::enum_t code, write_cb_t cb) {
+  if (replying) THROW("Request already replying");
 
   responseCode = code ? code : (Status::enum_t)HTTP_INTERNAL_SERVER_ERROR;
-  write();
+  write(cb);
   replying = true;
 }
 
@@ -612,8 +612,7 @@ void Request::sendChunk(const Event::Buffer &buf) {
   out.add(buf);
   out.add("\r\n");
 
-  auto cb = [this] (bool success) {onWriteComplete(success);};
-  connection->writeRequest(this, out, chunked || isWebsocket(), cb);
+  connection->writeRequest(this, out, !chunked);
 }
 
 
@@ -699,8 +698,11 @@ void Request::parseResponseLine(const string &line) {
 }
 
 
-void Request::write() {
-  if (connection.isNull()) return onWriteComplete(false); // Ignore write
+void Request::write(write_cb_t cb) {
+  if (connection.isNull()) {
+    if (cb) cb(false); // Ignore write
+    return;
+  }
 
   Event::Buffer out;
   writeHeaders(out);
@@ -708,8 +710,9 @@ void Request::write() {
 
   bytesWritten += out.getLength();
 
-  auto cb = [this] (bool success) {onWriteComplete(success);};
-  connection->writeRequest(this, out, chunked || isWebsocket(), cb);
+  bool continueProcessing =
+    !chunked && responseCode != HTTP_SWITCHING_PROTOCOLS;
+  connection->writeRequest(this, out, continueProcessing, cb);
 }
 
 

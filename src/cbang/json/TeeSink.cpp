@@ -36,6 +36,18 @@ using namespace std;
 using namespace cb::JSON;
 
 
+void TeeSink::close() {
+  left->close();
+  right->close();
+}
+
+
+void TeeSink::reset() {
+  left->reset();
+  right->reset();
+}
+
+
 void TeeSink::writeNull() {
   left->writeNull();
   right->writeNull();

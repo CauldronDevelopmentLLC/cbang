@@ -31,16 +31,24 @@
 \******************************************************************************/
 
 #include "SessionQuery.h"
+#include "QueryDef.h"
+
+#include <cbang/api/Resolver.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
+SessionQuery::SessionQuery(
+  const SmartPointer<const QueryDef> &def,
+  const SmartPointer<HTTP::Session> &session, callback_t cb) :
+   Query(def, cb), session(session) {}
+
+
 void SessionQuery::callback(state_t state) {
   switch (state) {
   case MariaDB::EventDB::EVENTDB_ROW: {
-    auto session = req->getSession();
     if (!session->hasString("user")) session->read(*db->getRowDict());
     else session->addGroup(db->getString(0));
     break;

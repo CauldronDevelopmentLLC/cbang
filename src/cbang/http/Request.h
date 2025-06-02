@@ -143,7 +143,6 @@ namespace cb {
       const std::string &getUser() const;
       void setUser(const std::string &user);
 
-      virtual bool isWebsocket() const {return false;}
       bool isIncoming() const;
       bool isChunked() const {return chunked;}
       bool isReplying() const {return replying;}
@@ -209,41 +208,41 @@ namespace cb {
       SmartPointer<std::ostream>
       getOutputStream(Compression compression = COMPRESSION_NONE);
 
-      virtual void sendJSONError(Status code, const std::string &message);
-      virtual void sendError(Status code, const std::string &message);
-      virtual void sendError(Status code);
-      virtual void sendError(Status code, const Exception &e);
-      virtual void sendError(const Exception &e);
-      virtual void sendError(const std::exception &e);
+      void sendJSONError(Status code, const std::string &message);
+      void sendError(Status code, const std::string &message);
+      void sendError(Status code);
+      void sendError(Status code, const Exception &e);
+      void sendError(const Exception &e);
+      void sendError(const std::exception &e);
 
-      virtual void send(const Event::Buffer &buf);
-      virtual void send(const char *data, unsigned length);
-      virtual void send(const char *s);
-      virtual void send(const std::string &s);
-      virtual void sendFile(const std::string &path);
+      void send(const Event::Buffer &buf);
+      void send(const char *data, unsigned length);
+      void send(const char *s);
+      void send(const std::string &s);
+      void sendFile(const std::string &path);
 
-      virtual void reply(Status::enum_t code = HTTP_OK);
-      virtual void reply(const Event::Buffer &buf);
-      virtual void reply(const char *data, unsigned length);
-      virtual void reply(Status code, const char *data, unsigned length);
+      using write_cb_t = std::function<void (bool)>;
+      void reply(Status::enum_t code = HTTP_OK, write_cb_t cb = 0);
+      void reply(const Event::Buffer &buf);
+      void reply(const char *data, unsigned length);
+      void reply(Status code, const char *data, unsigned length);
 
-      template <typename T>
-      void reply(Status code, const T &data) {send(data); reply(code);}
+      void reply(Status code,
+        const Event::Buffer &buf) {send(buf); reply(code);}
+      void reply(Status code, const char *s) {send(s); reply(code);}
+      void reply(Status code, const std::string &s) {send(s); reply(code);}
 
-      virtual void startChunked(Status code = HTTP_OK);
-      virtual void sendChunk(const Event::Buffer &buf);
-      virtual void sendChunk(const char *data, unsigned length);
-      virtual SmartPointer<JSON::Writer> getJSONChunkWriter();
-      virtual void endChunked();
+      void startChunked(Status code = HTTP_OK);
+      void sendChunk(const Event::Buffer &buf);
+      void sendChunk(const char *data, unsigned length);
+      SmartPointer<JSON::Writer> getJSONChunkWriter();
+      void endChunked();
 
-      virtual void redirect(
-        const URI &uri, Status code = HTTP_TEMPORARY_REDIRECT);
+      void redirect(const URI &uri, Status code = HTTP_TEMPORARY_REDIRECT);
 
       // Callbacks
-      virtual bool onContinue() {return true;}
       virtual void onResponse(Event::ConnectionError error);
       virtual void onRequest();
-      virtual void onWriteComplete(bool success) {}
       virtual void onComplete() {}
 
       // Used by Connection
@@ -254,11 +253,11 @@ namespace cb {
       static Version parseHTTPVersion(const std::string &s);
       void parseResponseLine(const std::string &line);
 
-      virtual void write();
+      void write(write_cb_t cb = 0); // Called by ConnOut
 
     protected:
-      virtual void writeResponse(Event::Buffer &buf);
-      virtual void writeRequest(Event::Buffer &buf);
+      void writeResponse(Event::Buffer &buf);
+      void writeRequest(Event::Buffer &buf);
       void writeHeaders(Event::Buffer &buf);
     };
 

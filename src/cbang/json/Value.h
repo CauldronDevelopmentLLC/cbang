@@ -206,12 +206,10 @@ namespace cb {
 #include "ValueTypes.def"
 
       // Formatting
-      std::string format(char type) const;
-      std::string format(char type, int index, const std::string &name,
-                         bool &matched) const;
-      std::string format(const std::string &s,
-                         const std::string &defaultValue) const;
-      std::string format(const std::string &s) const;
+      std::string formatAs(const std::string &spec) const;
+      std::string format(const std::string &fmt,
+        const std::string &defaultValue) const;
+      std::string format(const std::string &fmt) const;
 
       // Visitor
       typedef std::function<void (
@@ -235,8 +233,13 @@ namespace cb {
       std::string asString() const;
 
       // Comparison
-      bool operator==(const Value &o) const;
-      bool operator!=(const Value &o) const {return !(*this == o);}
+      int compare(const Value &o) const;
+      bool operator==(const Value &o) const {return compare(o) == 0;}
+      bool operator!=(const Value &o) const {return compare(o) != 0;}
+      bool operator< (const Value &o) const {return compare(o) <  0;}
+      bool operator<=(const Value &o) const {return compare(o) <= 0;}
+      bool operator> (const Value &o) const {return compare(o) >  0;}
+      bool operator>=(const Value &o) const {return compare(o) >= 0;}
     };
 
     static inline

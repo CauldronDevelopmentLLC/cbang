@@ -55,7 +55,7 @@ namespace cb {
       const char *getFormat() const;
 
       // From ArgConstraint
-      void operator()(HTTP::Request &req, JSON::Value &value) const override {
+      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override {
         T n;
 
         if (value.isNumber()) n = (T)value.getNumber();
@@ -71,9 +71,9 @@ namespace cb {
         if (value.isNumber()) {
           double x = value.getNumber();
 
-          if (x < (double)std::numeric_limits<T>::min())
+          if (x < (double)std::numeric_limits<T>::lowest())
             CBANG_THROW("Less than minimum value " <<
-                        (double)std::numeric_limits<T>::min()
+                        (double)std::numeric_limits<T>::lowest()
                         << " for numeric type");
 
           if ((double)std::numeric_limits<T>::max() < x)

@@ -87,9 +87,13 @@ uint64_t Time::parse(const string &s, const string &format) {
     facet->format(format.c_str());
 
     pt::ptime t;
-    stringstream ss(s);
+    istringstream ss(s);
     ss.imbue(locale(ss.getloc(), facet));
     ss >> t;
+
+    if (ss.fail()) THROW("Parse failed");
+    ss.get();
+    if (!ss.eof()) THROW("Did not parse whole string");
 
     pt::time_duration diff = t - pt::ptime(epoch);
 

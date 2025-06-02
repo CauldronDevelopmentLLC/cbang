@@ -46,6 +46,7 @@ namespace leveldb {
   class Iterator;
   class WriteBatch;
   class Status;
+  class Snapshot;
   struct Options;
   struct ReadOptions;
   struct WriteOptions;
@@ -66,15 +67,27 @@ namespace cb {
 
     std::string nsKey(const std::string &key) const;
     std::string stripKey(const std::string &key) const;
-    bool inNS(const std::string &key) const;
-    void check(const leveldb::Status &s,
-               const std::string &key = std::string()) const;
   };
 
 
   class LevelDB : public LevelDBNS {
+  protected:
+    class Snapshot {
+      SmartPointer<leveldb::DB> db;
+      const leveldb::Snapshot *snapshot;
+
+    public:
+      Snapshot(const SmartPointer<leveldb::DB> &db,
+        const leveldb::Snapshot *snapshot) : db(db), snapshot(snapshot) {}
+      ~Snapshot();
+
+      const leveldb::Snapshot *get() const {return snapshot;}
+    };
+
+
     SmartPointer<leveldb::Comparator> comparator; // Deallocate after db
     SmartPointer<leveldb::DB> db;
+    SmartPointer<Snapshot> _snapshot;
 
   public:
     typedef enum {
@@ -97,22 +110,25 @@ namespace cb {
 
       const std::string &getName() const {return name;}
 
-      virtual int operator()(const std::string &key1,
-                             const std::string &key2) const;
-      virtual int operator()(const char *key1, unsigned len1,
-                             const char *key2, unsigned len2) const {
+      virtual int operator()(
+        const std::string &key1, const std::string &key2) const;
+
+      virtual int operator()(
+        const char *key1, unsigned len1,
+        const char *key2, unsigned len2) const {
         return (*this)(std::string(key1, len1), std::string(key2, len2));
       }
     };
 
 
-    class Iterator : public LevelDBNS {
+    class Iterator {
+      const LevelDB *db;
       SmartPointer<leveldb::Iterator> it;
 
     public:
-      Iterator(const SmartPointer<leveldb::Iterator> &it,
-               const std::string &name) :
-        LevelDBNS(name), it(it) {}
+      Iterator(const Iterator &it) : db(it.db), it(it.it) {}
+      Iterator(const LevelDB &db, const SmartPointer<leveldb::Iterator> &it) :
+        db(&db), it(it) {}
 
       bool valid() const;
       void first();
@@ -123,6 +139,7 @@ namespace cb {
       std::string key() const;
       std::string value() const;
 
+      Iterator &operator=(const Iterator &it);
       Iterator &operator++() {next(); return *this;}
       void operator++(int) {next();}
       Iterator &operator--() {prev(); return *this;}
@@ -133,13 +150,12 @@ namespace cb {
 
 
     class Batch : public LevelDBNS {
-      SmartPointer<leveldb::DB> db;
-      SmartPointer<leveldb::WriteBatch> batch; // Deallocate before db
+      LevelDB &db;
+      SmartPointer<leveldb::WriteBatch> batch;
 
     public:
-      Batch(const SmartPointer<leveldb::DB> &db,
-            const SmartPointer<leveldb::WriteBatch> &batch,
-            const std::string &name);
+      Batch(LevelDB &db, const SmartPointer<leveldb::WriteBatch> &batch,
+        const std::string &name);
       ~Batch();
 
       Batch ns(const std::string &name);
@@ -156,41 +172,50 @@ namespace cb {
     LevelDB(const std::string &name,
             const SmartPointer<Comparator> &comparator = 0);
     LevelDB(const std::string &name,
-            const SmartPointer<leveldb::Comparator> &comparator,
-            const SmartPointer<leveldb::DB> &db);
+      const SmartPointer<leveldb::Comparator> &comparator,
+      const SmartPointer<leveldb::DB> &db,
+      const SmartPointer<Snapshot> &snapshot);
+    ~LevelDB();
 
     leveldb::DB &getDB() {return *db;}
-    const SmartPointer<leveldb::Comparator> &getComparator() const {
-      return comparator;
-    }
+    const SmartPointer<leveldb::Comparator> &getComparator() const
+      {return comparator;}
 
     LevelDB ns(const std::string &name);
+    LevelDB snapshot();
 
+    bool isOpen() const {return db.isSet();}
     void open(const std::string &path, int options = 0);
     void close();
 
-    bool isOpen() const {return db.isSet();}
-
+    int compare(const std::string &keyA, const std::string &keyB) const;
     bool has(const std::string &key, int options = 0) const;
     std::string get(const std::string &key, int options = 0) const;
     std::string get(const std::string &key,
-                    const std::string &defaultValue, int options = 0) const;
+      const std::string &defaultValue, int options = 0) const;
+
     void set(const std::string &key, const std::string &value, int options = 0);
     void erase(const std::string &key, int options = 0);
     void eraseAll(int options = 0);
 
     Iterator iterator(int options = 0) const;
-    Iterator first(int options = 0) const;
-    Iterator last(int options = 0) const;
+    Iterator    first(int options = 0) const;
+    Iterator     last(int options = 0) const;
+
     Batch batch();
+    void commit(leveldb::WriteBatch &batch, int options);
 
     std::string getProperty(const std::string &name);
     void compact(const std::string &begin = std::string(),
-                 const std::string &end = std::string());
+      const std::string &end = std::string());
 
-    static leveldb::Options getOptions(int options);
-    static leveldb::ReadOptions getReadOptions(int options);
-    static leveldb::WriteOptions getWriteOptions(int options);
+    leveldb::Options           getOptions(int options) const;
+    leveldb::ReadOptions   getReadOptions(int options) const;
+    leveldb::WriteOptions getWriteOptions(int options) const;
+
+  protected:
+    void check(const leveldb::Status &s,
+      const std::string &key = std::string()) const;
   };
 }
 

@@ -61,4 +61,10 @@ namespace cb {
   WeakCallback<T, Args...> WeakCall(T *ptr, std::function<void (Args...)> cb) {
     return WeakCallback<T, Args...>(ptr, cb);
   }
+
+  template<typename T, typename... Args>
+  WeakCallback<T, Args...> WeakCall(
+    const SmartPointer<T> &ptr, std::function<void (Args...)> cb) {
+    return WeakCallback<T, Args...>(ptr, cb);
+  }
 }

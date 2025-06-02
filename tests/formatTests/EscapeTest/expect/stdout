@@ -1,1 +1,1 @@
-Hello %(foo)s
+Hello {foo}

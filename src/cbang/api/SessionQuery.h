@@ -40,11 +40,13 @@
 namespace cb {
   namespace API {
     class SessionQuery : public Query {
-    public:
-      SessionQuery(
-        API &api, const SmartPointer<HTTP::Request> &req,
-        const std::string &sql) : Query(api, req, sql) {}
+      SmartPointer<HTTP::Session> session;
 
+    public:
+      SessionQuery(const SmartPointer<const QueryDef> &def,
+        const SmartPointer<HTTP::Session> &session, callback_t cb);
+
+    protected:
       // From Query
       void callback(state_t state) override;
     };

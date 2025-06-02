@@ -38,9 +38,11 @@ namespace cb {
   namespace HTTP {class HandlerGroup; class AccessHandler;}
 
   namespace API {
+    class API;
     class ArgsHandler;
 
     class Context : public RefCounted {
+      API &api;
       JSON::ValuePtr config;
       std::string pattern;
       SmartPointer<Context> parent;
@@ -49,8 +51,8 @@ namespace cb {
       SmartPointer<ArgsHandler> argsHandler;
 
     public:
-      Context(const JSON::ValuePtr &config, const std::string &pattern = "",
-              SmartPointer<Context> parent = 0);
+      Context(API &api, const JSON::ValuePtr &config,
+        const std::string &pattern = "", SmartPointer<Context> parent = 0);
       virtual ~Context();
 
       const std::string &getPattern() const {return pattern;}
@@ -65,5 +67,7 @@ namespace cb {
         const JSON::ValuePtr &config, const std::string &pattern);
       void addValidation(HTTP::HandlerGroup &group);
     };
+
+    using CtxPtr = SmartPointer<Context>;
   }
 }

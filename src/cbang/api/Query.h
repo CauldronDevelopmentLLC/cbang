@@ -33,43 +33,44 @@
 #pragma once
 
 #include <cbang/json/Value.h>
+#include <cbang/json/Builder.h>
 #include <cbang/http/Request.h>
-#include <cbang/event/JSONBufferWriter.h>
 #include <cbang/db/maria/EventDB.h>
 
 
 namespace cb {
   namespace API {
     class API;
+    class QueryDef;
 
     class Query : public RefCounted, public HTTP::Status {
+    public:
+      using state_t    = MariaDB::EventDB::state_t;
+      using return_t   = void (Query::*)(state_t);
+      using callback_t =
+        std::function<void (HTTP::Status, const JSON::ValuePtr &)>;
+
     protected:
-      API &api;
-      SmartPointer<HTTP::Request> req;
-      std::string sql;
-      std::string returnType;
-      JSON::ValuePtr fields;
+      SmartPointer<const QueryDef> def;
+      callback_t cb;
+
+      SmartPointer<MariaDB::EventDB> db;
 
       std::string nextField;
       unsigned currentField = 0;
       bool closeField       = true;
       unsigned rowCount     = 0;
 
-      typedef std::function<void (HTTP::Status, Event::Buffer &)> callback_t;
-      callback_t cb;
-
-      SmartPointer<MariaDB::EventDB> db;
-      Event::JSONBufferWriter writer;
+      JSON::Builder sink;
 
     public:
-      Query(API &api, const SmartPointer<HTTP::Request> &req,
-            const std::string &sql, const std::string &returnType = "ok",
-            const JSON::ValuePtr &fields = 0);
+      Query(const SmartPointer<const QueryDef> &def, callback_t cb);
       virtual ~Query() {}
 
-      void query(callback_t cb);
+      void exec(const std::string &sql);
+      static return_t getReturnType(const std::string &name);
 
-      typedef MariaDB::EventDB::state_t state_t;
+    protected:
       virtual void callback(state_t state);
 
       void reply(HTTP::Status code = HTTP_OK);

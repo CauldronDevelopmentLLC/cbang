@@ -84,15 +84,15 @@ bool LoginHandler::operator()(HTTP::Request &req) {
   else if (provider == "providers") listProviders(req);
 
   else {
-    auto login = SmartPtr(new Login(api, &req, sql, provider, redirectURI));
-
-    auto cb = [this, &req] (HTTP::Status status, Event::Buffer &buffer) {
+    auto cb = [this, &req] (HTTP::Status status, const JSON::ValuePtr &result) {
       // Respond with JSON or redirect
-      if (status != HTTP_OK || redirect.empty()) reply(req, status, buffer);
+      if (status != HTTP_OK || redirect.empty()) reply(req, status, result);
       else req.redirect(redirect);
     };
 
-    login->login(cb);
+    auto login = SmartPtr(new Login(
+      queryDef, cb, new Resolver(api, req), req, provider, redirectURI));
+    login->login();
   }
 
   return true;

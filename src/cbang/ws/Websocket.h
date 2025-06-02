@@ -41,12 +41,18 @@
 #include <cbang/http/Request.h>
 
 #include <functional>
+#include <limits>
 
 
 namespace cb {
+  namespace HTTP {class Client;}
+
   namespace WS {
-    class Websocket : public HTTP::Request, public Enum {
+    class Websocket : virtual public RefCounted, public Enum {
+      SmartPointer<HTTP::Conn> connection;
       bool active = false;
+
+      unsigned maxMessageSize = std::numeric_limits<int>::max();
 
       Event::Buffer input;
       uint64_t bytesToRead = 0;
@@ -63,52 +69,52 @@ namespace cb {
       uint64_t msgReceived = 0;
 
     public:
-      Websocket(const HTTP::RequestParams &params = HTTP::RequestParams());
+      Websocket(const SmartPointer<HTTP::Conn> &conn = 0) : connection(conn) {}
+      virtual ~Websocket() {}
 
+      uint64_t getID() const;
       bool isActive() const;
+
+      void setConnection(const SmartPointer<HTTP::Conn> &c) {connection = c;}
+      const SmartPointer<HTTP::Conn> &getConnection() const {return connection;}
+
+      unsigned getMaxMessageSize() const {return maxMessageSize;}
+      void setMaxMessageSize(unsigned size) {maxMessageSize = size;}
 
       uint64_t getMessagesSent() const {return msgSent;}
       uint64_t getMessagesReceived() const {return msgReceived;}
 
-      // From Request
-      void send(const char *data, unsigned length) override;
-      void send(const std::string &s) override;
-      void send(const char *s) override {send(std::string(s));}
+      void connect(HTTP::Client &client, const URI &uri);
+
+      void send(const char *data, unsigned length);
+      void send(const std::string &s);
+      void send(const char *s) {send(std::string(s));}
 
       void close(Status status, const std::string &msg);
       void ping(const std::string &payload = "");
 
-      // Called by HTTP::ConnIn
-      bool upgrade();
+      void upgrade(HTTP::Request &req);
 
       void readHeader();
       void readBody();
 
-      // From Request
-      bool isWebsocket() const override {return active;}
-      void onResponse(Event::ConnectionError error) override;
-
       // Callbacks
-      virtual bool onUpgrade() {return true;}
       virtual void onOpen() {}
       virtual void onMessage(const char *data, uint64_t length) = 0;
+      virtual void onClose(Status status, const std::string &msg) {}
+      virtual void onShutdown() {}
       virtual void onPing(const std::string &payload);
       virtual void onPong(const std::string &payload);
-      virtual void onClose(Status status, const std::string &msg) {}
 
     protected:
-      using HTTP::Request::send;
-      using HTTP::Request::reply;
-
-      // From Request
-      void writeRequest(Event::Buffer &buf) override;
-
       void writeFrame(
         OpCode opcode, bool finish, const void *data, uint64_t len);
       void pong();
       void schedulePong();
       void schedulePing();
       void message(const char *data, uint64_t length);
+      void start();
+      void shutdown();
     };
 
     typedef SmartPointer<Websocket> WebsocketPtr;

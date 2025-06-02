@@ -650,28 +650,6 @@ string String::escapeRE(const string &s) {
 }
 
 
-string String::escapeMySQL(const string &s) {
-  string result;
-  result.reserve(s.length());
-
-  for (auto c: s)
-    switch (c) {
-    case 0:    result.append("\\0");  break;
-    case '\'': result.append("\\'");  break;
-    case '\"': result.append("\\\""); break;
-    case '\b': result.append("\\b");  break;
-    case '\n': result.append("\\n");  break;
-    case '\r': result.append("\\r");  break;
-    case '\t': result.append("\\t");  break;
-    case 26:   result.append("\\Z");  break;
-    case '\\': result.append("\\\\"); break;
-    default: result.push_back(c);   break;
-    }
-
-  return result;
-}
-
-
 void String::escapeC(string &result, char c) {
     switch (c) {
     case '\"': result.append("\\\""); break;
@@ -883,66 +861,59 @@ string String::transcode(
 string String::format(format_cb_t cb) {
   string result;
   result.reserve(length());
-
   int index = 0;
-  bool escape = false;
 
-  for (auto it = begin(); it != end(); it++) {
-    if (escape) {
-      escape  = false;
-
+  for (auto it = begin(); it != end(); it++)
+    try {
       switch (*it) {
-      case '(': {
-        auto it2 = it + 1;
+      case '{':
+        if (++it == end()) THROW("Unmatched '{'");
 
-        string name;
-        while (it2 != end() && *it2 != ')') name.push_back(*it2++);
+        if (*it == '{') result.push_back('{');
+        else {
+          string fmt;
 
-        if (it2 != end() && ++it2 != end() && !name.empty()) {
-          bool matched = true;
-          string s = cb(*it2, -1, name, matched);
+          while (true) {
+            if (*it == '}') {
+              if ((it + 1) != end() && *(it + 1) == '}') fmt.push_back(*it++);
+              else {
+                string id = fmt;
+                string spec;
 
-          if (matched) {
-            result.append(s);
-            it = it2;
-            continue;
+                auto semi = fmt.find_last_of(':');
+                if (semi != string::npos) {
+                  id   = fmt.substr(0, semi);
+                  spec = fmt.substr(semi + 1);
+                }
+
+                if (id.empty() && index != -1) id = String(index++);
+                else index = -1;
+
+                result.append(cb(id, spec));
+                break;
+              }
+
+            } else if (*it == '{') {
+              if (it + 1 != end() && *(it + 1) == '{') fmt.push_back(*it++);
+              else THROW("Unexpected '{'");
+
+            } else fmt.push_back(*it);
+
+            if (++it == end()) THROW("Unmatched '}'");
           }
         }
-
-        result.push_back('%');
         break;
+
+      case '}':
+        if ((it + 1) != end() && *(it + 1) == '}') result.push_back(*it++);
+        else THROW("Unmatched '}'");
+        break;
+
+      default: result.push_back(*it); break;
       }
-
-      case '%': break;
-
-      default: {
-        bool matched = true;
-        string s = cb(*it, index++, "", matched);
-
-        if (matched) {
-          result.append(s);
-          continue;
-        }
-
-        result.push_back('%');
-      }
-      }
-
-    } else if (*it == '%') {
-      escape = true;
-      continue;
+    } catch (const Exception &e) {
+      THROWC("String format error at character " << int(it - begin()), e);
     }
 
-    result.push_back(*it);
-  }
-
-  if (escape) result.push_back('%');
-
   return result;
-}
-
-
-string String::makeFormatString(char type, const string &name) {
-  if (name.empty()) return "%" + string(1, type);
-  return "%(" + name + ")" + string(1, type);
 }

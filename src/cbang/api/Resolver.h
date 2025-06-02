@@ -34,42 +34,39 @@
 
 #include <cbang/String.h>
 #include <cbang/json/Dict.h>
-#include <cbang/http/Request.h>
-
-#include <functional>
 
 
 namespace cb {
+  namespace HTTP {
+    class Request;
+    class Session;
+  }
+
   namespace API {
     class API;
     class Resolver;
-    typedef SmartPointer<Resolver> ResolverPtr;
-    typedef SmartPointer<HTTP::Request> RequestPtr;
-
+    using ResolverPtr = SmartPointer<Resolver>;
 
     class Resolver : virtual public RefCounted {
-      API &api;
-      RequestPtr req;
-      JSON::ValuePtr ctx;
-      ResolverPtr parent;
-
-      Resolver(API &api, const JSON::ValuePtr &ctx, const ResolverPtr &parent);
+      SmartPointer<Resolver> parent;
+      JSON::Dict vars;
 
     public:
-      Resolver(API &api, const RequestPtr &req);
+      Resolver(const SmartPointer<Resolver> parent = 0) : parent(parent) {}
+      Resolver(API &api);
+      Resolver(API &api, const HTTP::Request &req);
       virtual ~Resolver() {}
 
-      API &getAPI() {return api;}
-      const JSON::ValuePtr &getContext() const {return ctx;}
+      void set(const std::string &key, const JSON::ValuePtr &values);
+      void setSession(const SmartPointer<HTTP::Session> &session);
 
-      ResolverPtr makeChild(const JSON::ValuePtr &ctx);
+      virtual JSON::ValuePtr select(const std::string &path) const;
+      std::string selectString(const std::string &path) const;
 
-      virtual JSON::ValuePtr select(const std::string &name) const;
-      std::string format(const std::string &s,
-                         String::format_cb_t cb = 0) const;
-      std::string format(const std::string &s,
-                         const std::string &defaultValue) const;
-      void resolve(JSON::Value &value) const;
+      std::string resolve(const std::string &s, bool sql = false) const;
+      void resolve(JSON::Value &value, bool sql = false) const;
     };
+
+    using ResolverPtr = SmartPointer<Resolver>;
   }
 }

@@ -32,13 +32,13 @@
 
 #include "ArgsHandler.h"
 
-#include <cbang/http/Request.h>
+#include <cbang/api/Resolver.h>
 
 using namespace cb;
 using namespace cb::API;
 
 
 bool ArgsHandler::operator()(HTTP::Request &req) {
-  validator(req, *req.getArgs());
+  validator(new Resolver(api, req), *req.getArgs());
   return false;
 }

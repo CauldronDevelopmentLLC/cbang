@@ -1,7 +1,0 @@
-[
-  "Hello",
-  "World!",
-  {"x": 1, "y": 2},
-  "Hello World!",
-  {"Hello": "World!", "foo": "{\"x\": 1, \"y\": 2}"}
-]

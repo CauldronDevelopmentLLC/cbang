@@ -56,8 +56,8 @@ void ConnOut::onConnect(bool success) {
 
 
 void ConnOut::writeRequest(
-  const SmartPointer<Request> &req, Event::Buffer buffer, bool hasMore,
-  function<void (bool)> cb) {
+  const SmartPointer<Request> &req, Event::Buffer buffer,
+  bool continueProcessing,  function<void (bool)> cb) {
   if (!isConnected()) THROW("Cannot write request, not connected");
 
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength());
@@ -66,12 +66,10 @@ void ConnOut::writeRequest(
   checkActive(req);
 
   Event::Transfer::cb_t cb2 =
-    [this, req, hasMore, cb] (bool success) {
+    [this, req, continueProcessing, cb] (bool success) {
       if (cb) TRY_CATCH_ERROR(cb(success));
       if (!success) return fail(CONN_ERR_EOF, "Failed to write request");
-      if (hasMore) return; // Still writing
-
-      readHeader(req);
+      if (continueProcessing) readHeader(req);
    };
 
   write(WeakCall(this, cb2), buffer);

@@ -58,22 +58,19 @@ namespace cb {
       bool getAllowDuplicates() const {return allowDuplicates;}
       void setAllowDuplicates(bool x) {allowDuplicates = x;}
 
-      unsigned getDepth() const;
-      bool inList() const;
-      bool inDict() const;
-      void end();
-
-      virtual void close();
-      virtual void reset();
-
       // From Sink
+      unsigned getDepth() const override {return stack.size();}
+      void close() override;
+      void reset() override;
       void writeNull() override {assertCanWrite();}
       void writeBoolean(bool value) override {assertCanWrite();}
       void write(double value) override {assertCanWrite();}
       void write(const std::string &value) override {assertCanWrite();}
+      bool inList() const override;
       void beginList(bool simple = false) override;
       void beginAppend() override;
       void endList() override;
+      bool inDict() const override;
       void beginDict(bool simple = false) override;
       bool has(const std::string &key) const override;
       void beginInsert(const std::string &key) override;

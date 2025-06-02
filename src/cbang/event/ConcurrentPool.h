@@ -35,6 +35,7 @@
 #include "Base.h"
 #include "Event.h"
 
+#include <cbang/Catch.h>
 #include <cbang/thread/ThreadPool.h>
 #include <cbang/thread/Condition.h>
 #include <cbang/thread/SmartLock.h>
@@ -122,46 +123,47 @@ namespace cb {
       };
 
 
-      template <typename Data>
+      template <typename Data = void>
       struct TaskFunctions : public Task {
-        typedef std::function<Data ()> run_cb_t;
-        typedef std::function<void (Data &)> success_cb_t;
-        typedef std::function<void (const Exception &)> error_cb_t;
-        typedef std::function<void ()> complete_cb_t;
+        using run_cb_t      = std::function<Data ()>;
+        using success_cb_t  = std::function<void (Data &)>;
+        using error_cb_t    = std::function<void (const Exception &)>;
+        using complete_cb_t = std::function<void ()>;
 
-        run_cb_t run_cb;
-        success_cb_t success_cb;
-        error_cb_t error_cb;
+        run_cb_t      run_cb;
+        success_cb_t  success_cb;
+        error_cb_t    error_cb;
         complete_cb_t complete_cb;
 
         Data data;
 
         TaskFunctions(int priority, run_cb_t run_cb,
-                      success_cb_t success_cb = 0, error_cb_t error_cb = 0,
-                      complete_cb_t complete_cb = 0) :
+          success_cb_t  success_cb  = 0, error_cb_t error_cb = 0,
+          complete_cb_t complete_cb = 0) :
           Task(priority), run_cb(run_cb), success_cb(success_cb),
           error_cb(error_cb), complete_cb(complete_cb) {}
 
         // From Task
         void run() override {data = run_cb();}
         void error(const Exception &e) override {if (error_cb) error_cb(e);}
-        void success() override {if (success_cb) success_cb(data);}
+        void success()  override {if (success_cb)  success_cb(data);}
         void complete() override {if (complete_cb) complete_cb();}
       };
 
 
       struct TaskPtrCompare {
         bool operator()(const SmartPointer<Task> &a,
-                        const SmartPointer<Task> &b) const {return *a < *b;}
+          const SmartPointer<Task> &b) const {return *a < *b;}
       };
 
     protected:
       Base &base;
       SmartPointer<Event> event;
 
-      typedef std::priority_queue<SmartPointer<Task>,
-                                  std::vector<SmartPointer<Task> >,
-                                  TaskPtrCompare> queue_t;
+      using queue_t =
+        std::priority_queue<SmartPointer<Task>, std::vector<SmartPointer<Task>>,
+          TaskPtrCompare>;
+
       unsigned active = 0;
       queue_t ready;
       queue_t completed;
@@ -170,6 +172,7 @@ namespace cb {
       ConcurrentPool(Base &base, unsigned size);
       ~ConcurrentPool();
 
+      Base &getEventBase() const {return base;}
       void setEventPriority(int priority) {event->setPriority(priority);}
 
       unsigned getNumReady() const;
@@ -178,14 +181,31 @@ namespace cb {
 
       void submit(const SmartPointer<Task> &task);
 
-      template <typename Data>
-      void submit(int priority, typename TaskFunctions<Data>::run_cb_t run,
-                  typename TaskFunctions<Data>::success_cb_t success = 0,
-                  typename TaskFunctions<Data>::error_cb_t error = 0,
-                  typename TaskFunctions<Data>::complete_cb_t complete = 0) {
+      template <typename Data = void>
+      void submit(
+        int priority, typename TaskFunctions<Data>::run_cb_t run,
+        typename TaskFunctions<Data>::success_cb_t  success  = 0,
+        typename TaskFunctions<Data>::error_cb_t    error    = 0,
+        typename TaskFunctions<Data>::complete_cb_t complete = 0) {
         submit(
           new TaskFunctions<Data>(priority, run, success, error, complete));
       }
+
+      void submit(std::function<void ()> run,
+        std::function<void (bool)> done, int priority = 0) {
+
+        auto doneCB = [=] (bool ok) {if (done) done(ok);};
+        auto runCB  = [=] () -> bool {
+          try {
+            if (run) run();
+            return true;
+          } CBANG_CATCH_ERROR;
+          return false;
+        };
+
+        submit<bool>(priority, runCB, doneCB);
+      }
+
 
       // From ThreadPool
       using ThreadPool::start;

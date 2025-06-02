@@ -59,32 +59,31 @@ namespace cb {
     static bool warnWhenInvalid;
 
     Options();
-    virtual ~Options();
 
     typedef map_t::iterator iterator;
     typedef map_t::const_iterator const_iterator;
 
-    virtual bool empty() const {return map.empty();}
-    virtual iterator begin() {return map.begin();}
-    virtual iterator end() {return map.end();}
-    virtual const_iterator begin() const {return map.begin();}
-    virtual const_iterator end() const {return map.end();}
+    bool empty() const {return map.empty();}
+    iterator begin() {return map.begin();}
+    iterator end() {return map.end();}
+    const_iterator begin() const {return map.begin();}
+    const_iterator end() const {return map.end();}
 
-    virtual void insert(JSON::Sink &sink, bool config = false) const;
-    virtual void write(JSON::Sink &sink, bool config) const;
-    virtual void write(XML::Handler &handler, uint32_t flags = 0) const;
+    void insert(JSON::Sink &sink, bool config = false) const;
+    void write(JSON::Sink &sink, bool config) const;
+    void write(XML::Handler &handler, uint32_t flags = 0) const;
 
-    virtual std::ostream &print(std::ostream &stream) const;
-    virtual void printHelp(std::ostream &stream, bool cmdLine = false) const;
+    std::ostream &print(std::ostream &stream) const;
+    void printHelp(std::ostream &stream, bool cmdLine = false) const;
 
-    virtual const SmartPointer<OptionCategory> &
-    getCategory(const std::string &name);
-    virtual const SmartPointer<OptionCategory> &
-    pushCategory(const std::string &name);
-    virtual void popCategory();
+    const SmartPointer<OptionCategory> &getCategory(const std::string &name);
+    const SmartPointer<OptionCategory> &pushCategory(const std::string &name);
+    void popCategory();
 
     void load(const JSON::Value &config);
     void dump(JSON::Sink &sink) const;
+
+    JSON::ValuePtr getConfigJSON() const;
 
     // From OptionMap
     using OptionMap::add;

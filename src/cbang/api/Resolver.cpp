@@ -37,6 +37,8 @@
 #include <cbang/json/Null.h>
 #include <cbang/json/String.h>
 #include <cbang/config/Options.h>
+#include <cbang/http/Request.h>
+#include <cbang/db/maria/DB.h>
 
 #include <set>
 
@@ -45,103 +47,84 @@ using namespace cb;
 using namespace cb::API;
 
 
-Resolver::Resolver(
-  API &api, const JSON::ValuePtr &ctx, const ResolverPtr &parent) :
-  api(api), req(parent->req), ctx(ctx), parent(parent) {}
-
-
-Resolver::Resolver(API &api, const RequestPtr &req) : api(api), req(req) {}
-
-
-ResolverPtr Resolver::makeChild(const JSON::ValuePtr &ctx) {
-  return new Resolver(api, ctx, this);
+Resolver::Resolver(API &api) {
+  vars.insert("args", new JSON::Dict);
+  vars.insert("options", api.getOptions());
 }
 
 
-JSON::ValuePtr Resolver::select(const string &name) const {
-  if (name.empty()) return 0;
-  if (name == ".") return ctx;
+Resolver::Resolver(API &api, const HTTP::Request &req) : Resolver(api) {
+  set("args", req.getArgs());
+  setSession(req.getSession());
+}
+
+
+void Resolver::set(const string &key, const JSON::ValuePtr &values) {
+  vars.insert(key, values);
+}
+
+
+void Resolver::setSession(const SmartPointer<HTTP::Session> &session) {
+  if (session.isSet()) {
+    set("session", session);
+    set("group",   session->select("group"));
+  }
+}
+
+
+
+JSON::ValuePtr Resolver::select(const string &path) const {
+  if (path.empty()) return 0;
 
   // Return ``null`` if not found
-  if (name[0] == '~') {
-    auto result = select(name.substr(1));
+  if (path[0] == '~') {
+    auto result = select(path.substr(1));
     if (result.isNull()) return JSON::Null::instancePtr();
     return result;
   }
 
-  if (name == "..") return parent->getContext();
-  if (String::startsWith(name, "../")) {
-    if (parent.isSet()) return parent->select(name.substr(3));
-    return 0;
-  }
-
-  if (req.isSet()) {
-    if (name == "args") return req->getArgs();
-    if (String::startsWith(name, "args."))
-      return req->getArgs()->select(name.substr(5), 0);
-
-    auto &session = req->getSession();
-    if (session.isSet()) {
-      if (name == "session") return session;
-      if (String::startsWith(name, "session."))
-        return session->select(name.substr(8), 0);
-
-      if (name == "group") return session->get("group");
-      if (String::startsWith(name, "group."))
-        return session->get("group")->select(name.substr(6), 0);
-    }
-  }
-
-  if (String::startsWith(name, "options."))
-    return new JSON::String(api.getOptions()[name.substr(8)]);
-
-  if (ctx.isSet()) {
-    if (String::startsWith(name, "./")) return ctx->select(name.substr(2), 0);
-    return ctx->select(name, 0);
-  }
-
-  return 0;
+  auto result = vars.select(path, 0);
+  if (result.isSet()) return result;
+  return parent.isSet() ? parent->select(path) : 0;
 }
 
 
-string Resolver::format(const string &s,
-                        String::format_cb_t default_cb) const {
-  String::format_cb_t cb =
-    [&] (char type, int index, const string &name, bool &matched) {
-      // Do not allow recursive refs, user input could contain var refs
-      auto value = select(name);
-      if (value.isSet()) return value->format(type);
+string Resolver::selectString(const string &path) const {
+  auto value = select(path);
+  if (value.isNull()) THROW("String value '" << path << "' not found");
+  return value->asString();
+}
 
-      // TODO Is there something wrong with matching bools?: %(test)b
 
-      if (default_cb) return default_cb(type, index, name, matched);
+string Resolver::resolve(const string &s, bool sql) const {
+  auto cb = [&] (const string &id, const string &spec) -> string {
+    auto value = select(id);
 
-      matched = false;
-      return String::printf("%%(%s)%c", name.c_str(), type);
-    };
+    if (value.isSet()) {
+      if ((sql && spec.empty() && value->isString()) || spec == "S")
+        return MariaDB::DB::format(value->asString());
+
+      return value->formatAs(spec);
+    }
+
+    if (sql) return "NULL";
+
+    return "{" + id + (spec.empty() ? string() : (":" + spec)) + "}";
+  };
 
   return String(s).format(cb);
 }
 
 
-string Resolver::format(const string &s, const string &defaultValue) const {
-  auto cb = [&] (char, int, const string &, bool &) {return defaultValue;};
-  return format(s, cb);
-}
+void Resolver::resolve(JSON::Value &value, bool sql) const {
+  if (value.isString()) {
+    auto sPtr = dynamic_cast<JSON::String *>(&value);
+    if (!sPtr) THROW("Expected JSON::String");
 
+    string &s = sPtr->getValue();
+    if (s.find('{') != string::npos) s = resolve(s, sql);
 
-void Resolver::resolve(JSON::Value &value) const {
-  auto cb =
-    [&] (JSON::Value &value, JSON::Value *parent) {
-      if (!value.isString()) return;
-
-      string s = value.getString();
-      if (s.find('%') == string::npos) return;
-
-      auto sPtr = dynamic_cast<JSON::String *>(&value);
-      if (!sPtr) THROW("Expected JSON::String");
-      sPtr->getValue() = format(s);
-    };
-
-  value.visit(cb);
+  } else if (value.isList() || value.isDict())
+    for (auto e: value.entries())
+      resolve(*e.value(), sql);
 }

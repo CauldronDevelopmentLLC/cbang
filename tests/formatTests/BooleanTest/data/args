@@ -1,1 +1,1 @@
-'{"foo": true}' "%%(foo)b"
+'{"foo": true}' "{foo:b}"

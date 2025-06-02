@@ -53,26 +53,27 @@ ConnIn::ConnIn(Server &server) :
 
 
 void ConnIn::writeRequest(
-  const SmartPointer<Request> &req, Event::Buffer buffer, bool hasMore,
-  function<void (bool)> cb) {
+  const SmartPointer<Request> &req, Event::Buffer buffer,
+  bool continueProcessing, function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "() length=" << buffer.getLength() << " hasMore="
-            << hasMore);
+            << continueProcessing);
 
   checkActive(req);
 
   if (getStats().isSet()) getStats()->event(req->getResponseCode().toString());
 
   Event::Transfer::cb_t cb2 =
-    [this, req, hasMore, cb] (bool success) {
+    [this, req, continueProcessing, cb] (bool success) {
       LOG_DEBUG(6, "Response " << (success ? "successful" : "failed")
-                << " hasMore=" << hasMore << " persistent="
-                << req->isPersistent() << " numReqs=" << getNumRequests());
+                << " continueProcessing=" << continueProcessing
+                << " persistent=" << req->isPersistent()
+                << " numReqs=" << getNumRequests());
 
       if (cb) TRY_CATCH_ERROR(cb(success));
 
       // Handle write failure
       if (!success) return close();
-      if (hasMore) return; // Still writing
+      if (!continueProcessing) return;
 
       if (getNumRequests()) pop();
 
@@ -137,27 +138,16 @@ void ConnIn::processHeader() {
   auto req = server.createRequest({this, method, uri, version, hdrs});
   push(req);
 
-  // Handle protocol upgrades
-  if (req->inHas("Upgrade")) {
-    string upgrade = String::toLower(req->inFind("Upgrade"));
-
-    if (upgrade == "websocket") {
-      WS::Websocket *websock = dynamic_cast<WS::Websocket *>(req.get());
-      if (websock && websock->upgrade()) return;
-    }
-
-    return error(HTTP_BAD_REQUEST, "Cannot upgrade");
-  }
-
   // If this is a request without a body, then we are done
   if (!req->mayHaveBody()) return processIfNext(req);
+  else if (req->inHas("Upgrade")) error(HTTP_BAD_REQUEST, "Cannot upgrade");
 
   // Handle 100 HTTP continue
   if (Version(1, 1) <= version) {
     string expect = String::toLower(req->inFind("Expect"));
 
     if (!expect.empty()) {
-      if (expect == "100-continue" && req->onContinue()) {
+      if (expect == "100-continue") {
         string line = "HTTP/" + version.toString() + " 100 Continue\r\n\r\n";
 
         Event::Transfer::cb_t cb =

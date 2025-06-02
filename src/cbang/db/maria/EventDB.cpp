@@ -98,7 +98,7 @@ void EventDB::close(callback_t cb) {
 
 
 void EventDB::query(callback_t cb, const string &s,
-                    const SmartPointer<const JSON::Value> &dict) {
+  const SmartPointer<const JSON::Value> &dict) {
   LOG_DEBUG(5, CBANG_FUNC << "() sql=" << s);
 
   string query = dict.isNull() ? s : format(s, dict->getDict());

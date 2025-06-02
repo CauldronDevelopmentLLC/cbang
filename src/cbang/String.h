@@ -149,7 +149,6 @@ namespace cb {
     static std::string hexEncode(const std::string &s);
     static std::string hexEncode(const char *data, unsigned length);
     static std::string escapeRE(const std::string &s);
-    static std::string escapeMySQL(const std::string &s);
     static std::string escapeC(char c);
     static void escapeC(std::string &result, char c);
     static std::string escapeC(const std::string &s);
@@ -202,12 +201,8 @@ namespace cb {
                                  const std::string &replace);
 
     // Formatting
-    typedef std::function
-    <std::string (char type, int index, const std::string &name, bool &matched)>
-    format_cb_t;
-
+    using format_cb_t = std::function<std::string (
+      const std::string &id, const std::string &spec)>;
     std::string format(format_cb_t cb);
-
-    static std::string makeFormatString(char type, const std::string &name);
   };
 }

@@ -35,17 +35,16 @@
 #include <string>
 
 #include <cbang/json/Value.h>
+#include <cbang/api/Resolver.h>
 
 
 namespace cb {
-  namespace HTTP {class Request;}
-
   namespace API {
     class ArgConstraint {
     public:
       virtual ~ArgConstraint() {}
-      virtual void operator()(HTTP::Request &req,
-                              JSON::Value &value) const = 0;
+      virtual void operator()(
+        const ResolverPtr &resolver, JSON::Value &value) const = 0;
       virtual void addSchema(JSON::Value &schema) const = 0;
     };
   }
