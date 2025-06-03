@@ -61,11 +61,11 @@ bool BacktraceDebugger::supported() {return true;}
 void BacktraceDebugger::getStackTrace(StackTrace &trace, bool resolved) {
   init();
 
-  void *stack[maxStack];
-  int n = backtrace(stack, maxStack);
+  auto stack = ArrayPtr(new void *[maxStack]);
+  int n = backtrace(stack.get(), maxStack);
 
 #ifdef VALGRIND_MAKE_MEM_DEFINED
-  (void)VALGRIND_MAKE_MEM_DEFINED(stack, n * sizeof(void *));
+  (void)VALGRIND_MAKE_MEM_DEFINED(stack.get(), n * sizeof(void *));
 #endif // VALGRIND_MAKE_MEM_DEFINED
 
   for (int i = 0; i < n; i++)
