@@ -56,12 +56,12 @@ Option::Option(const SmartPointer<Option> &parent) :
 
 
 Option::Option(const string &name, const char shortName,
-               SmartPointer<OptionActionBase> action, const string &help) :
+  SmartPointer<OptionActionBase> action, const string &help) :
   name(name), shortName(shortName), help(help), action(action) {}
 
 
 Option::Option(const string &name, const string &help,
-               const SmartPointer<Constraint> &constraint) :
+  const SmartPointer<Constraint> &constraint) :
   name(name), help(help), constraint(constraint) {}
 
 
@@ -331,8 +331,25 @@ JSON::ValuePtr Option::get() const {
 }
 
 
-bool    Option::toBoolean() const {return get()->toBoolean();}
-string  Option::toString()  const {return get()->asString();}
+bool Option::toBoolean() const {return get()->toBoolean();}
+
+
+string  Option::toString() const {
+  auto value = get();
+
+  if (value.isSet() && value->isList()) {
+    string s;
+
+    for (auto v: *get())
+      s += (s.empty() ? "" : " ") + v->asString();
+
+    return s;
+  }
+
+  return value->asString();
+}
+
+
 int64_t Option::toInteger() const {return get()->getS64();}
 double  Option::toDouble()  const {return get()->getNumber();}
 
