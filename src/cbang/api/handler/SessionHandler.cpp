@@ -104,7 +104,7 @@ bool SessionHandler::operator()(HTTP::Request &req) {
   };
 
   auto query = SmartPtr(new SessionQuery(queryDef, req.getSession(), cb));
-  query->exec(Resolver(api, req).resolve(queryDef->getSQL()));
+  query->exec(Resolver(api, req).resolve(queryDef->getSQL(), true));
 
   return true;
 }

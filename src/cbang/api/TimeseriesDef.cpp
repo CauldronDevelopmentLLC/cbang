@@ -82,7 +82,7 @@ TimeseriesDef::TimeseriesDef(API &api, const JSON::ValuePtr &config) :
 SmartPointer<Timeseries> TimeseriesDef::get(
   const ResolverPtr &resolver, bool create) {
 
-  string sql = resolver->resolve(queryDef->getSQL());
+  string sql = resolver->resolve(queryDef->getSQL(), true);
   string key = Digest::base64(sql, "sha256");
 
   auto it = series.find(key);

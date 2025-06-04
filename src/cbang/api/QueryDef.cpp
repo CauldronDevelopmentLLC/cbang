@@ -69,5 +69,5 @@ SmartPointer<Query> QueryDef::query(
 
 SmartPointer<Query> QueryDef::query(
   const ResolverPtr &resolver, Query::callback_t cb) const {
-  return query(resolver->resolve(sql), cb);
+  return query(resolver->resolve(sql, true), cb);
 }

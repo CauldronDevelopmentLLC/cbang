@@ -67,7 +67,7 @@ void Login::loginComplete() {
   };
 
   if (def->sql.empty()) cb(HTTP_OK, 0);
-  else exec(resolver->resolve(def->getSQL()));
+  else exec(resolver->resolve(def->getSQL(), true));
 }
 
 
