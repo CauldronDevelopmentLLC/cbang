@@ -47,17 +47,16 @@ void OptionMap::add(SmartPointer<Option> option) {
 
 SmartPointer<Option>
 OptionMap::add(const string &name, const string &help,
-               const SmartPointer<Constraint> &constraint) {
-  SmartPointer<Option> option = new Option(name, help, constraint);
+  const SmartPointer<Constraint> &constraint) {
+  auto option = SmartPtr(new Option(name, help, constraint));
   add(option);
   return option;
 }
 
 
 SmartPointer<Option> OptionMap::add(const string &name, const char shortName,
-                                    SmartPointer<OptionActionBase> action,
-                                    const string &help) {
-  SmartPointer<Option> option = new Option(name, shortName, action, help);
+  SmartPointer<OptionActionBase> action, const string &help) {
+  auto option = SmartPtr(new Option(name, shortName, action, help));
   add(option);
   return option;
 }

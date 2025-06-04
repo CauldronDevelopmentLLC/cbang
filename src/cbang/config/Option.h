@@ -70,7 +70,7 @@ namespace cb {
     } flags_t;
 
   protected:
-    std::string name;
+    std::string    name;
     char           shortName = 0;
     OptionType     type = TYPE_STRING;
     JSON::ValuePtr defaultValue;
