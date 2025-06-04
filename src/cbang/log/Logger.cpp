@@ -223,7 +223,7 @@ void Logger::setLogDomainLevels(const string &levels) {
 
       } else {
         string name = entry.substr(0, pos);
-        infoDomainLevels[name] = level;
+        infoDomainLevels[name]  = level;
         debugDomainLevels[name] = level;
       }
     }
