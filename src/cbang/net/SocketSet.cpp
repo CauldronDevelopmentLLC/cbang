@@ -119,7 +119,7 @@ bool SocketSet::select(double timeout) {
 #else  // !_WIN32
   // Emulate select() with poll() on Linux because select() is unable to handle
   // file descriptors >= 1024.
-  struct pollfd fds[sockets.size()];
+  auto fds = ArrayPtr(new struct pollfd [sockets.size()]);
 
   int i = 0;
   for (auto &p: sockets) {
@@ -131,7 +131,7 @@ bool SocketSet::select(double timeout) {
     i++;
   }
 
-  int ret = poll(fds, sockets.size(), timeout * 1000);
+  int ret = poll(fds.get(), sockets.size(), timeout * 1000);
 
   if (ret < 0) THROW("poll() " << SysError());
 
