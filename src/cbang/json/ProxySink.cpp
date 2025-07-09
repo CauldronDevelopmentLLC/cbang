@@ -35,6 +35,17 @@
 using namespace std;
 using namespace cb::JSON;
 
+void ProxySink::close() {
+  NullSink::close();
+  if (target.isSet()) target->close();
+}
+
+
+void ProxySink::reset() {
+  NullSink::reset();
+  if (target.isSet()) target->reset();
+}
+
 
 void ProxySink::writeNull() {
   NullSink::writeNull();

@@ -48,16 +48,19 @@ namespace cb {
       void setTarget(const SmartPointer<Sink> &target) {this->target = target;}
 
       // From Sink
+      void close() override;
+      void reset() override;
+
       void writeNull() override;
       void writeBoolean(bool value) override;
-      void write(double value) override;
-      void write(int8_t value) override;
-      void write(uint8_t value) override;
-      void write(int16_t value) override;
+      void write(double   value) override;
+      void write(int8_t   value) override;
+      void write(uint8_t  value) override;
+      void write(int16_t  value) override;
       void write(uint16_t value) override;
-      void write(int32_t value) override;
+      void write(int32_t  value) override;
       void write(uint32_t value) override;
-      void write(int64_t value) override;
+      void write(int64_t  value) override;
       void write(uint64_t value) override;
       void write(const std::string &value) override;
 
