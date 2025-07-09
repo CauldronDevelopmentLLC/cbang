@@ -51,6 +51,8 @@ struct Regex::private_t {
 Regex::Regex(const string &pattern, bool posix) {
   RE2::Options opts;
 
+  opts.set_log_errors(false);
+
   if (posix) {
     opts.set_posix_syntax(true);
     opts.set_perl_classes(true);
