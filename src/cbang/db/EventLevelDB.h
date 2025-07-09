@@ -127,7 +127,12 @@ namespace cb {
 
         } else {
           it.seek(first);
-          if (reverse && it.valid() && it.key() != first) it--;
+
+          if (reverse) {
+            if (it.valid()) {
+              if (compare(first, it.key()) < 0) it--;
+            } else it.last();
+          }
         }
 
         for (unsigned i = 0; it.valid(); reverse ? it-- : it++) {
