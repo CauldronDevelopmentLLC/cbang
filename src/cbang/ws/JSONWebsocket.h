@@ -36,6 +36,7 @@
 
 #include <cbang/json/JSON.h>
 
+#include <functional>
 
 namespace cb {
   namespace WS {
@@ -43,8 +44,8 @@ namespace cb {
     public:
       using Websocket::Websocket;
 
+      void send(std::function<void (JSON::Sink &sink)> cb);
       virtual void send(const JSON::Value &msg);
-      SmartPointer<JSON::Writer> getJSONWriter();
 
       virtual void onMessage(const JSON::ValuePtr &msg) = 0;
 

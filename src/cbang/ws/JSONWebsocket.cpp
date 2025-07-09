@@ -45,35 +45,22 @@ using namespace std;
 #define CBANG_LOG_PREFIX "WS" << getID() << ':'
 
 
-namespace {
-  struct JSONWriter : vector<char>, cb::VectorStream<>, public JSON::Writer {
-    SmartPointer<Websocket> ws;
+void JSONWebsocket::send(function<void (JSON::Sink &sink)> cb) {
+  vector<char> v;
+  VectorStream<> stream(v);
+  JSON::Writer writer(stream, 0, true);
 
-    JSONWriter(const SmartPointer<Websocket> &ws) :
-      cb::VectorStream<>((vector<char> &)*this),
-      JSON::Writer((ostream &)*this), ws(ws) {}
+  cb(writer);
 
-    ~JSONWriter() {TRY_CATCH_ERROR(close(););}
-
-    unsigned getID() const {return ws->getID();}
-
-    // From JSON::Writer
-    void close() override {
-      JSON::Writer::close();
-      ws->send(data(), size());
-    }
-  };
+  writer.close();
+  stream.flush();
+  Websocket::send(v.data(), v.size());
 }
 
 
 void JSONWebsocket::send(const JSON::Value &value) {
   LOG_DEBUG(6, "Sending: " << value);
   send(value.toString());
-}
-
-
-SmartPointer<JSON::Writer> JSONWebsocket::getJSONWriter() {
-  return new JSONWriter(this);
 }
 
 

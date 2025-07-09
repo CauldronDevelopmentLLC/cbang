@@ -44,7 +44,7 @@ SmartPointer<RequestHandler> RequestHandlerFactory::create(callback_t cb) {
 
 SmartPointer<RequestHandler> RequestHandlerFactory::create(msg_callback_t cb) {
   return create([cb] (Request &req) {
-    JSON::ValuePtr msg = req.getJSONMessage();
+    auto msg = req.getJSONMessage();
     if (msg.isNull()) msg = req.parseArgs();
 
     cb(req, msg);
@@ -56,8 +56,7 @@ SmartPointer<RequestHandler> RequestHandlerFactory::create(msg_callback_t cb) {
 
 SmartPointer<RequestHandler> RequestHandlerFactory::create(sink_callback_t cb) {
   return create([cb] (Request &req) {
-    cb(req, *req.getJSONWriter());
-    req.reply();
+    req.reply([&] (JSON::Sink &sink) {cb(req, sink);});
     return true;
   });
 }
@@ -66,11 +65,9 @@ SmartPointer<RequestHandler> RequestHandlerFactory::create(sink_callback_t cb) {
 SmartPointer<RequestHandler>
 RequestHandlerFactory::create(msg_sink_callback_t cb) {
   return create([cb] (Request &req) {
-    JSON::ValuePtr msg = req.getJSONMessage();
+    auto msg = req.getJSONMessage();
     if (msg.isNull()) msg = req.parseArgs();
-
-    cb(req, msg, *req.getJSONWriter());
-    req.reply();
+    req.reply([&] (JSON::Sink &sink) {cb(req, msg, sink);});
     return true;
   });
 }
