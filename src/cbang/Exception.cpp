@@ -76,7 +76,7 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
   if (printLocations && !location.isEmpty())
     stream << "\n       At: " << location;
 
-  if (!trace.isNull()) {
+  if (trace.isSet()) {
     Debugger::instance().resolve(*trace);
 
     unsigned count = 0;
@@ -90,7 +90,7 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
     }
   }
 
-  if (!cause.isNull()) {
+  if (cause.isSet()) {
     stream << endl;
 
     if (level > causePrintLevel) {
@@ -123,6 +123,7 @@ void Exception::write(JSON::Sink &sink, bool withDebugInfo) const {
     }
 
     if (trace.isSet()) {
+      Debugger::instance().resolve(*trace);
       sink.beginInsert("trace");
       trace->write(sink);
     }
