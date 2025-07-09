@@ -39,7 +39,10 @@ using namespace cb;
 using namespace std;
 
 
-ArgEnum::ArgEnum(const JSON::ValuePtr &config) : values(config) {}
+ArgEnum::ArgEnum(const JSON::ValuePtr &config) :
+  values(config->get("enum")) {
+  if (!values->isList()) THROW("Arg enum must be list");
+}
 
 
 JSON::ValuePtr ArgEnum::operator()(
