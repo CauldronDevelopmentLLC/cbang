@@ -32,15 +32,15 @@
 
 #pragma once
 
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
+#include <cbang/api/QueryDef.h>
 
 
 namespace cb {
   namespace API {
     class API;
-    class QueryDef;
 
-    class QueryHandler : public HTTP::RequestHandler {
+    class QueryHandler : public Handler {
     protected:
       API &api;
       SmartPointer<QueryDef> queryDef;
@@ -49,10 +49,10 @@ namespace cb {
       QueryHandler(API &api, const JSON::ValuePtr &config);
 
       void reply(
-        HTTP::Request &req, HTTP::Status status, const JSON::ValuePtr &result);
+        const CtxPtr &ctx, HTTP::Status status, const JSON::ValuePtr &result);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

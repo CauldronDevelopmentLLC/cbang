@@ -34,9 +34,10 @@
 
 #include "Resolver.h"
 #include "QueryDef.h"
+#include "HandlerGroup.h"
 
-#include <cbang/api/handler/ArgsHandler.h>
-#include <cbang/api/handler/ArgsParser.h>
+#include <cbang/api/handler/MethodHandler.h>
+#include <cbang/api/handler/URLHandler.h>
 #include <cbang/api/handler/StatusHandler.h>
 #include <cbang/api/handler/QueryHandler.h>
 #include <cbang/api/handler/LoginHandler.h>
@@ -50,11 +51,11 @@
 #include <cbang/api/handler/CORSHandler.h>
 #include <cbang/api/handler/TimeseriesHandler.h>
 #include <cbang/api/handler/WebsocketHandler.h>
+#include <cbang/api/handler/HTTPHandler.h>
+#include <cbang/api/arg/ArgDict.h>
 
 #include <cbang/http/Request.h>
-#include <cbang/http/HandlerGroup.h>
 #include <cbang/http/URLPatternMatcher.h>
-#include <cbang/http/MethodMatcher.h>
 #include <cbang/http/FileHandler.h>
 #include <cbang/http/ResourceHandler.h>
 
@@ -107,9 +108,6 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   spec->insert("tags",  config->createList());
   spec->insert("paths", config->createDict());
 
-  // Always parse args
-  addHandler(new ArgsParser);
-
   // Get list of APIs
   JSON::ValuePtr apis;
   if (config->hasDict("apis")) apis = config->get("apis");
@@ -118,27 +116,43 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
     apis->insert("", config->get("api"));
   }
 
-  // Pass 1: Register queries before timeseries and endpoints
+  // Pass 1: Register args
+  for (auto e: apis->entries()) {
+    auto api = e.value();
+    category = e.key();
+
+    if (api->hasDict("args"))
+      for (auto e2: api->get("args")->entries())
+        addArgs(e2.key(), e2.value());
+  }
+
+  // Pass 2: Register queries
   for (auto e: apis->entries()) {
     auto api = e.value();
     category = e.key();
 
     if (api->hasDict("queries"))
-      for (auto e2: api->get("queries")->entries())
-        addQuery(e2.key(), e2.value());
+      for (auto e2: api->get("queries")->entries()) {
+        HandlerPtr handler = new QueryHandler(*this, e2.value());
+        handler = wrapEndpoint(handler, new Config(*this, e2.value()));
+        addQuery(e2.key(), handler);
+      }
   }
 
-  // Pass 2: Register timeseries before endpoints
+  // Pass 3: Register timeseries
   for (auto e: apis->entries()) {
     auto api = e.value();
     category = e.key();
 
     if (api->hasDict("timeseries"))
-      for (auto e2: api->get("timeseries")->entries())
-        addTimeseries(e2.key(), e2.value());
+      for (auto e2: api->get("timeseries")->entries()) {
+        HandlerPtr handler = new TimeseriesHandler(*this, e2.key(), e2.value());
+        handler = wrapEndpoint(handler, new Config(*this, e2.value()));
+        addTimeseries(e2.key(), handler);
+      }
   }
 
-  // Pass 3: Register endpoints and create spec
+  // Pass 4: Register endpoints and create spec
   for (auto e: apis->entries()) {
     auto api = e.value();
     category = e.key();
@@ -146,7 +160,7 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
     addTagSpec(e.key(), api);
 
     if (api->hasDict("endpoints"))
-      addHandler(createAPIHandler(new Context(*this, api->get("endpoints"))));
+      add(createAPIHandler(new Config(*this, api->get("endpoints"))));
   }
 
   category.clear();
@@ -159,65 +173,103 @@ void cb::API::API::bind(const string &key, const RequestHandlerPtr &handler) {
 }
 
 
-string cb::API::API::resolve(const string &name) const {
+string cb::API::API::resolve(const string &category, const string &name) {
   if (category.empty()) return name;
   return name.find('.') == string::npos ? (category + "." + name) : name;
 }
 
 
-void cb::API::API::addQuery(
-  const string &name, const SmartPointer<QueryDef> &def) {
+string cb::API::API::resolve(const string &name) const {
+  return resolve(category, name);
+}
+
+
+void cb::API::API::addArgs(const string &name, const JSON::ValuePtr &_args) {
   string _name = resolve(name);
-  auto result = queries.insert(decltype(queries)::value_type(_name, def));
+  auto result = args.insert(decltype(args)::value_type(_name, _args));
+  if (!result.second) THROW("Args '" << _name << "' already exists");
+
+  LOG_INFO(3, "Adding args " << _name);
+}
+
+
+const JSON::ValuePtr &cb::API::API::getArgs(const string &name) const {
+  string _name = resolve(name);
+  auto it = args.find(_name);
+
+  if (it == args.end())
+    THROWX("Args '" << _name << "' not found", HTTP_NOT_FOUND);
+
+  return it->second;
+}
+
+
+void cb::API::API::addQuery(const string &name, const HandlerPtr &handler) {
+  string _name = resolve(name);
+  auto result = queries.insert(decltype(queries)::value_type(_name, handler));
   if (!result.second) THROW("Query '" << _name << "' already exists");
+
   LOG_INFO(3, "Adding query " << _name);
 }
 
 
-SmartPointer<QueryDef> cb::API::API::addQuery(
-  const string &name, const JSON::ValuePtr &config) {
-  auto def = SmartPtr(new QueryDef(*this, config));
-  addQuery(name, def);
-  return def;
+cb::API::HandlerPtr cb::API::API::getQuery(
+  const string &category, const string &name) const {
+
+  string _name = resolve(category, name);
+  auto it = queries.find(_name);
+
+  if (it == queries.end())
+    THROWX("Query '" << _name << "' not found", HTTP_NOT_FOUND);
+
+  return it->second;
 }
 
 
-const SmartPointer<QueryDef> &cb::API::API::getQuery(const string &name) const {
-  string _name = resolve(name);
-  auto it = queries.find(_name);
-  if (it == queries.end())
-    THROWX("Query '" << _name << "' not found", HTTP_NOT_FOUND);
-  return it->second;
+cb::API::HandlerPtr cb::API::API::getQuery(const string &name) const {
+  return getQuery(category, name);
+}
+
+
+cb::API::HandlerPtr cb::API::API::getQuery(const JSON::ValuePtr &config) {
+
+  if (config->hasString("query")) {
+    if (config->has("sql")) THROW("Cannot define both 'query' and 'sql'");
+    return getQuery(config->getString("query"));
+  }
+
+  return new QueryHandler(*this, config);
 }
 
 
 void cb::API::API::addTimeseries(
-  const string &name, const SmartPointer<TimeseriesDef> &ts) {
+  const string &name, const HandlerPtr &handler) {
+
   if (timeseriesDB.isNull())
     THROW("Cannot configure timeseries with out timeseries DB");
+
   string _name = resolve(name);
-  auto result = timeseries.insert(decltype(timeseries)::value_type(_name, ts));
+  auto result =
+    timeseries.insert(decltype(timeseries)::value_type(_name, handler));
   if (!result.second) THROW("Timeseries '" << _name << "' already exists");
   LOG_INFO(3, "Adding timeseries " << _name);
-  ts->load();
 }
 
 
-SmartPointer<TimeseriesDef> cb::API::API::addTimeseries(
-  const string &name, const JSON::ValuePtr &config) {
-  auto ts = SmartPtr(new TimeseriesDef(*this, name, config));
-  addTimeseries(name, ts);
-  return ts;
-}
-
-
-const SmartPointer<TimeseriesDef> &cb::API::API::getTimeseries(
-  const string &name) const {
-  string _name = resolve(name);
+cb::API::HandlerPtr cb::API::API::getTimeseries(
+  const string &category, const string &name) const {
+  string _name = resolve(category, name);
   auto it = timeseries.find(_name);
+
   if (it == timeseries.end())
     THROWX("Timeseries '" << _name << "' not found", HTTP_NOT_FOUND);
+
   return it->second;
+}
+
+
+cb::API::HandlerPtr cb::API::API::getTimeseries(const string &name) const {
+  return getTimeseries(category, name);
 }
 
 
@@ -257,16 +309,18 @@ JSON::ValuePtr cb::API::API::getEndpointTypes(
 }
 
 
-HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
-  const JSON::ValuePtr &types, const JSON::ValuePtr &config) {
+cb::API::HandlerPtr cb::API::API::createEndpointHandler(
+  const JSON::ValuePtr &types, const CfgPtr &cfg) {
+  auto config = cfg->getConfig();
+
   // Multiple handlers
   if (types->isList()) {
     auto group     = SmartPtr(new HandlerGroup);
     auto &handlers = config->getList("handlers");
 
     for (unsigned i = 0; i < types->size(); i++) {
-      auto config = handlers.get(i);
-      group->addHandler(createEndpointHandler(types->get(i), config));
+      auto childCfg = cfg->createChild(handlers.get(i));
+      group->add(createEndpointHandler(types->get(i), childCfg));
     }
 
     return group;
@@ -279,7 +333,7 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
     auto key = config->getString("bind", "<default>");
     auto it  = callbacks.find(key);
     if (it == callbacks.end()) THROW("Bind callback '" << key << "' not found");
-    return it->second;
+    return new HTTPHandler(it->second);
   }
 
   if (type == "pass")      return new PassHandler;
@@ -287,10 +341,12 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
   if (type == "status")    return new StatusHandler(config);
   if (type == "redirect")  return new RedirectHandler(config);
   if (type == "spec")      return new SpecHandler(*this, config);
-  if (type == "file")      return new HTTP::FileHandler(config);
   if (type == "websocket") return new WebsocketHandler(*this, config);
+  if (type == "file")
+    return new HTTPHandler(new HTTP::FileHandler(config));
   if (type == "resource")
-    return new HTTP::ResourceHandler(config->getString("resource"));
+    return new HTTPHandler(
+      new HTTP::ResourceHandler(config->getString("resource")));
 
   if (client.isSet() && oauth2Providers.isSet() && sessionManager.isSet()) {
     if (config->hasString("sql") && connector.isNull())
@@ -302,34 +358,38 @@ HTTP::RequestHandlerPtr cb::API::API::createEndpointHandler(
   }
 
   if (connector.isSet()) {
-    if (type == "query")      return new QueryHandler     (*this, config);
-    if (type == "timeseries") return new TimeseriesHandler(*this, config);
+    if (type == "query") {
+      if (config->has("query")) {
+        if (config->has("sql")) THROW("Cannot define both 'query' and 'sql'");
+        return getQuery(config->getString("query"));
+      }
+
+      return new QueryHandler(*this, config);
+    }
+
+    if (type == "timeseries") {
+      if (config->has("timeseries")) {
+        if (config->has("query") || config->has("sql"))
+          THROW("Cannot define both 'timeseries' and 'query' or 'sql'");
+
+        return getTimeseries(config->getString("timeseries"));
+      }
+
+      return new TimeseriesHandler(*this, config);
+    }
   }
 
   THROW("Unsupported handler '" << type << "'");
 }
 
 
-HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
-  const string &methods, const CtxPtr &ctx) {
-  auto group   = SmartPtr(new HTTP::HandlerGroup);
-  auto &config = ctx->getConfig();
-  auto types   = getEndpointTypes(config);
-
-  LOG_INFO(3, "Adding endpoint " << methods << " " << ctx->getPattern()
-    << " (" << types->toString(0, true) << ")");
-
-  addToSpec(methods, ctx);
-
-  // Validation (must be first)
-  ctx->addValidation(*group);
+cb::API::HandlerPtr cb::API::API::wrapEndpoint(
+  const HandlerPtr &handler, const CfgPtr &cfg) {
+  auto group = SmartPtr(new HandlerGroup);
 
   // Headers
   if (config->has("headers"))
-    group->addHandler(new HeadersHandler(config->get("headers")));
-
-  // Handler
-  auto handler = createEndpointHandler(types, config);
+    group->add(new HeadersHandler(config->get("headers")));
 
   // Arg filter
   if (config->has("arg-filter")) {
@@ -337,20 +397,34 @@ HTTP::RequestHandlerPtr cb::API::API::createMethodsHandler(
       THROW("API cannot have 'arg-filter' without Event::SubprocessPool");
 
     auto filter = config->get("arg-filter");
-    handler = new ArgFilterHandler(*this, filter, handler);
-  }
+    group->add(new ArgFilterHandler(*this, filter, handler));
 
-  group->addHandler(handler);
+  } else group->add(handler);
 
-  return group;
+  // Validation
+  return cfg->addValidation(group);
 }
 
 
-HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
-  auto children = SmartPtr(new HTTP::HandlerGroup);
-  auto methods  = SmartPtr(new HTTP::HandlerGroup);
-  auto &api     = ctx->getConfig();
-  auto &pattern = ctx->getPattern();
+cb::API::HandlerPtr cb::API::API::createMethodsHandler(
+  const string &methods, const CfgPtr &cfg) {
+  auto config = cfg->getConfig();
+  auto types  = getEndpointTypes(config);
+
+  LOG_INFO(3, "Adding endpoint " << methods << " " << cfg->getPattern()
+    << " (" << types->toString(0, true) << ")");
+
+  addToSpec(methods, cfg);
+
+  return wrapEndpoint(createEndpointHandler(types, cfg), cfg);
+}
+
+
+cb::API::HandlerPtr cb::API::API::createAPIHandler(const CfgPtr &cfg) {
+  auto children = SmartPtr(new HandlerGroup);
+  auto methods  = SmartPtr(new HandlerGroup);
+  auto api      = cfg->getConfig();
+  auto pattern  = cfg->getPattern();
 
   // Children
   for (auto e: api->entries()) {
@@ -365,29 +439,28 @@ HTTP::RequestHandlerPtr cb::API::API::createAPIHandler(const CtxPtr &ctx) {
 
     // Child
     if (!key.empty() && key[0] == '/') {
-      children->addHandler(createAPIHandler(ctx->createChild(config, key)));
+      children->add(createAPIHandler(cfg->createChild(config, key)));
       continue;
     }
 
     // Methods
     unsigned methodTypes = parseMethods(key);
     if (methodTypes) {
-      auto handler = createMethodsHandler(key, ctx->createChild(config, ""));
-      methods->addHandler(new HTTP::MethodMatcher(methodTypes, handler));
+      auto handler = createMethodsHandler(key, cfg->createChild(config));
+      methods->add(new MethodHandler(methodTypes, handler));
     }
   }
 
-  auto group = SmartPtr(new HTTP::HandlerGroup);
+  auto group = SmartPtr(new HandlerGroup);
 
   if (!methods->isEmpty()) {
-    if (pattern.empty()) group->addHandler(methods);
-    else group->addHandler(new HTTP::URLPatternMatcher(pattern, methods));
+    if (pattern.empty()) group->add(methods);
+    else group->add(new URLHandler(pattern, methods));
   }
 
   if (!children->isEmpty()) {
-    if (pattern.empty()) group->addHandler(children);
-    else group->addHandler(
-      new HTTP::URLPatternMatcher(pattern + ".+", children));
+    if (pattern.empty()) group->add(children);
+    else group->add(new URLHandler(pattern + ".+", children));
   }
 
   return group;
@@ -408,14 +481,14 @@ void cb::API::API::addTagSpec(const string &tag, const JSON::ValuePtr &config) {
 }
 
 
-void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
+void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
   if (hideCategory) return;
 
-  auto config = ctx->getConfig();
+  auto config = cfg->getConfig();
   if (config->getBoolean("hide", false)) return;
 
-  auto paths  = spec->get("paths");
-  auto path   = ctx->getPattern();
+  auto paths = spec->get("paths");
+  auto path  = cfg->getPattern();
 
   if (!paths->hasDict(path)) paths->insert(path, config->createDict());
   auto pathSpec = paths->get(path);
@@ -444,7 +517,7 @@ void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
     JSON::ValuePtr paramSpec = config->createList();
     methodSpec->insert("parameters", paramSpec);
 
-    auto args = ctx->getArgsHandler();
+    auto args = cfg->getArgs();
     if (args.isSet()) {
       args->appendSpecs(*paramSpec);
 
@@ -473,4 +546,9 @@ void cb::API::API::addToSpec(const string &methods, const CtxPtr &ctx) {
     // TODO Add security spec from access handlers
     // TODO add response schemas
   }
+}
+
+
+bool cb::API::API::operator()(HTTP::Request &req) {
+  return operator()(new Context(*this, req));
 }

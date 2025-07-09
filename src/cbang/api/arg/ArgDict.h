@@ -46,17 +46,17 @@ namespace cb {
 
     public:
       ArgDict() {}
+      ArgDict(API &api, const JSON::ValuePtr &def) {load(api, def);}
       ArgDict(const JSON::ValuePtr &args) {add(args);}
 
+      void load(API &api, const JSON::ValuePtr &def);
       void add(const JSON::ValuePtr &args);
 
       void appendSpecs(JSON::Value &spec) const;
 
-      void validate(const ResolverPtr &resolver, JSON::Value &value,
-        const JSON::ValuePtr &target) const;
-
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override;
+      JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const override;
       void addSchema(JSON::Value &schema) const override;
     };
   }

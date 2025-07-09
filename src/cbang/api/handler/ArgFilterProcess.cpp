@@ -33,6 +33,7 @@
 #include "ArgFilterProcess.h"
 
 #include <cbang/Catch.h>
+#include <cbang/api/Context.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/PipeEventBuffer.h>
 #include <cbang/http/Request.h>
@@ -61,7 +62,7 @@ void ArgFilterProcess::exec() {
     base, getPipeErr(), SSTR("PID:" << getPID() << ':'),
     CBANG_LOG_DOMAIN, CBANG_LOG_WARNING_LEVEL);
 
-  inStr->add(req.getArgs()->toString());
+  inStr->add(ctx->getArgs()->toString());
   inStr->write();
 }
 
@@ -79,17 +80,19 @@ void ArgFilterProcess::done() {
 
     if (code == 200) {
       if (results->hasDict("data"))
-        req.getArgs()->merge(results->getDict("data"));
+        ctx->getArgs()->merge(results->getDict("data"));
 
-      (HTTP::RequestErrorHandler(*child))(req);
+      ctx->errorHandler([&] {
+        if (!(*child)(ctx)) ctx->reply(HTTP::Status::HTTP_NOT_FOUND);
+      });
       return;
     }
 
     if (results->hasString("error")) LOG_WARNING(results->getString("error"));
-    req.sendError((HTTP::Status::enum_t)code);
+    ctx->reply((HTTP::Status::enum_t)code);
     return;
 
   } CATCH_ERROR;
 
-  req.sendError(HTTP::Enum::HTTP_INTERNAL_SERVER_ERROR);
+  ctx->reply(HTTP::Enum::HTTP_INTERNAL_SERVER_ERROR);
 }

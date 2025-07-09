@@ -41,8 +41,8 @@ using namespace cb::API;
 
 
 ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config,
-  SmartPointer<HTTP::RequestHandler> &child) : api(api), child(child) {
+  API &api, const JSON::ValuePtr &config, const SmartPointer<Handler> &child) :
+    api(api), child(child) {
 
   if (config->isString()) Subprocess::parse(config->toString(), cmd);
   else {
@@ -52,8 +52,8 @@ ArgFilterHandler::ArgFilterHandler(
 }
 
 
-bool ArgFilterHandler::operator()(HTTP::Request &req) {
+bool ArgFilterHandler::operator()(const CtxPtr &ctx) {
   auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, req));
+  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, ctx));
   return true;
 }

@@ -37,9 +37,11 @@ using namespace cb;
 using namespace std;
 
 
-void ArgPattern::operator()(const ResolverPtr &resolver, JSON::Value &value) const {
-  if (!regex.match(value.asString()))
+JSON::ValuePtr ArgPattern::operator()(
+  const CtxPtr &ctx, const JSON::ValuePtr &value) const {
+  if (!regex.match(value->asString()))
     THROW("Must match regex pattern: " << regex.toString());
+  return value;
 }
 
 

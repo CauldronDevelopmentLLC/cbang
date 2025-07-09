@@ -42,8 +42,10 @@ namespace cb {
     class ArgURI : public ArgConstraint {
     public:
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override {
-        URI(value.asString());
+      JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const override {
+        URI(value->asString());
+        return value;
       }
 
 

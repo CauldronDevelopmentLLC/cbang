@@ -41,13 +41,12 @@ using namespace cb::API;
 
 
 WSMatchHandler::WSMatchHandler(const JSON::ValuePtr &config,
-  const SmartPointer<WSMessageHandler> &child) :
+  const SmartPointer<Handler> &child) :
   schema(new JSON::Schema::RootSchema(*config)), child(child) {}
 
 
-bool WSMatchHandler::onMessage(
-  const WebsocketPtr &ws, const ResolverPtr &resolver) {
-  auto msg = resolver->select("msg");
+bool WSMatchHandler::operator()(const CtxPtr &ctx) {
+  auto msg = ctx->getResolver()->select("msg");
   if (msg.isNull() || !schema->match(*msg)) return false;
-  return child->onMessage(ws, resolver);
+  return child->operator()(ctx);
 }

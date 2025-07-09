@@ -32,19 +32,21 @@
 
 #pragma once
 
-#include <cbang/api/Resolver.h>
-#include <cbang/api/Websocket.h>
-#include <cbang/json/Value.h>
+#include <cbang/api/Handler.h>
 
 
 namespace cb {
   namespace API {
-    class WSMessageHandler {
-    public:
-      virtual ~WSMessageHandler() {}
+    class MethodHandler : public Handler {
+      unsigned methods;
+      SmartPointer<Handler> child;
 
-      virtual bool onMessage(
-        const WebsocketPtr &ws, const ResolverPtr &resolver) = 0;
+    public:
+      MethodHandler(unsigned methods, const SmartPointer<Handler> &child) :
+        methods(methods), child(child) {}
+
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

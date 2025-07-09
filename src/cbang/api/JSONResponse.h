@@ -30,26 +30,24 @@
 
 \******************************************************************************/
 
-#include "WSArgsHandler.h"
+#pragma once
 
-#include <cbang/api/handler/WebsocketHandler.h>
+#include <cbang/Catch.h>
+#include <cbang/json/ProxySink.h>
 
-using namespace std;
-using namespace cb;
-using namespace cb::API;
-
-
-WSArgsHandler::WSArgsHandler(const JSON::ValuePtr &config,
-  const SmartPointer<WSMessageHandler> &child) :
-  validator(config), child(child) {}
+#include <functional>
 
 
-bool WSArgsHandler::onMessage(
-  const WebsocketPtr &ws, const ResolverPtr &resolver) {
-  auto msg = resolver->select("msg");
+namespace cb {
+  namespace API {
+    class JSONResponse : public JSON::ProxySink {
+      std::function<void ()> cb;
 
-  if (msg.isSet())
-    validator.validate(resolver, *msg, resolver->select("args"));
-
-  return child->onMessage(ws, resolver);
+    public:
+      JSONResponse(
+        const SmartPointer<Sink> &target, std::function<void ()> cb) :
+        JSON::ProxySink(target), cb(cb) {}
+      ~JSONResponse() {CBANG_TRY_CATCH_ERROR(cb());}
+    };
+  }
 }

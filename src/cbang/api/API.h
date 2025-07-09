@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include "Context.h"
-#include "QueryDef.h"
-#include "TimeseriesDef.h"
+#include "Config.h"
+#include "HandlerGroup.h"
 
 #include <cbang/http/Client.h>
 #include <cbang/http/HandlerGroup.h>
@@ -55,7 +54,7 @@ namespace cb {
   class Options;
 
   namespace API {
-    class API : public HTTP::HandlerGroup {
+    class API : public HTTP::RequestHandler, public HandlerGroup {
       Options       &options;
       JSON::ValuePtr config;
 
@@ -71,18 +70,20 @@ namespace cb {
       SmartPointer<EventLevelDB>          timeseriesDB;
       JSON::ValuePtr                      optionValues;
 
-      using RequestHandlerPtr = HTTP::RequestHandlerPtr ;
-      std::map<std::string, RequestHandlerPtr>           callbacks;
-      std::map<std::string, SmartPointer<QueryDef>>      queries;
-      std::map<std::string, SmartPointer<TimeseriesDef>> timeseries;
+      using RequestHandlerPtr = HTTP::RequestHandlerPtr;
+      std::map<std::string, RequestHandlerPtr> callbacks;
+      std::map<std::string, JSON::ValuePtr>    args;
+      std::map<std::string, HandlerPtr>        queries;
+      std::map<std::string, HandlerPtr>        timeseries;
 
     public:
       API(Options &options);
       ~API();
 
-      const JSON::ValuePtr &getOptions() const {return optionValues;}
-      const JSON::ValuePtr &getConfig()  const {return config;}
-      JSON::ValuePtr        getSpec()    const {return spec;}
+      const JSON::ValuePtr &getOptions()  const {return optionValues;}
+      const JSON::ValuePtr &getConfig()   const {return config;}
+      JSON::ValuePtr        getSpec()     const {return spec;}
+      const std::string    &getCategory() const {return category;}
 
       void setClient(const SmartPointer<HTTP::Client> &x) {client = x;}
       void setOAuth2Providers(const SmartPointer<OAuth2::Providers> &x)
@@ -117,33 +118,43 @@ namespace cb {
         bind(key, HTTP::RequestHandlerFactory::create<T>(method));
       }
 
-      const std::string &getCategory() const {return category;}
+      static std::string resolve(const std::string &category,
+        const std::string &name);
       std::string resolve(const std::string &name) const;
 
-      void addQuery(const std::string &name, const SmartPointer<QueryDef> &def);
-      SmartPointer<QueryDef> addQuery(
-        const std::string &name, const JSON::ValuePtr &config);
-      const SmartPointer<QueryDef> &getQuery(const std::string &name) const;
+      void addArgs(const std::string &name, const JSON::ValuePtr &args);
+      const JSON::ValuePtr &getArgs(const std::string &name) const;
 
-      void addTimeseries(
-        const std::string &name, const SmartPointer<TimeseriesDef> &ts);
-      SmartPointer<TimeseriesDef> addTimeseries(
-        const std::string &name, const JSON::ValuePtr &config);
-      const SmartPointer<TimeseriesDef> &getTimeseries(
-        const std::string &name) const;
+      void addQuery(const std::string &name, const HandlerPtr &handler);
+      HandlerPtr getQuery(
+        const std::string &category, const std::string &name) const;
+      HandlerPtr getQuery(const std::string &name) const;
+      HandlerPtr getQuery(const JSON::ValuePtr &config);
+
+      void addTimeseries(const std::string &name, const HandlerPtr &handler);
+      HandlerPtr getTimeseries(
+        const std::string &category, const std::string &name) const;
+      HandlerPtr getTimeseries(const std::string &name) const;
 
       virtual std::string getEndpointType(const JSON::ValuePtr &config) const;
       virtual JSON::ValuePtr getEndpointTypes(
         const JSON::ValuePtr &config) const;
-      virtual RequestHandlerPtr createEndpointHandler(
-        const JSON::ValuePtr &types, const JSON::ValuePtr &config);
-      virtual RequestHandlerPtr createMethodsHandler(
-        const std::string &methods, const CtxPtr &ctx);
-      virtual RequestHandlerPtr createAPIHandler(const CtxPtr &ctx);
+      virtual HandlerPtr createEndpointHandler(
+        const JSON::ValuePtr &types, const CfgPtr &cfg);
+      virtual HandlerPtr wrapEndpoint(
+        const HandlerPtr &handler, const CfgPtr &cfg);
+      virtual HandlerPtr createMethodsHandler(
+        const std::string &methods, const CfgPtr &cfg);
+      virtual HandlerPtr createAPIHandler(const CfgPtr &cfg);
 
       virtual void addTagSpec(
         const std::string &tag, const JSON::ValuePtr &config);
-      virtual void addToSpec(const std::string &methods, const CtxPtr &ctx);
+      virtual void addToSpec(const std::string &methods, const CfgPtr &cfg);
+
+      // From HTTP::RequestHandler
+      bool operator()(HTTP::Request &req) override;
+
+      using HandlerGroup::operator();
     };
   }
 }

@@ -34,7 +34,7 @@
 
 #include <cbang/json/Value.h>
 #include <cbang/json/Builder.h>
-#include <cbang/http/Request.h>
+#include <cbang/http/Status.h>
 #include <cbang/db/maria/EventDB.h>
 
 
@@ -51,7 +51,7 @@ namespace cb {
         std::function<void (HTTP::Status, const JSON::ValuePtr &)>;
 
     protected:
-      SmartPointer<const QueryDef> def;
+      const QueryDef &def;
       callback_t cb;
 
       SmartPointer<MariaDB::EventDB> db;
@@ -64,7 +64,7 @@ namespace cb {
       JSON::Builder sink;
 
     public:
-      Query(const SmartPointer<const QueryDef> &def, callback_t cb);
+      Query(const QueryDef &def, callback_t cb);
       virtual ~Query() {}
 
       void exec(const std::string &sql);

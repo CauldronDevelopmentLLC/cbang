@@ -45,8 +45,8 @@ namespace cb {
                       HTTP::Status code = HTTP_TEMPORARY_REDIRECT);
       RedirectHandler(const JSON::ValuePtr &config);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

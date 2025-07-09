@@ -32,15 +32,15 @@
 
 #pragma once
 
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
 
 
 namespace cb {
   namespace API {
-    class PassHandler : public HTTP::RequestHandler {
+    class PassHandler : public Handler {
     public:
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override {return false;}
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override {return false;}
     };
   }
 }

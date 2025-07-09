@@ -43,8 +43,8 @@ namespace cb {
 
       void createSession(HTTP::Request &req);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

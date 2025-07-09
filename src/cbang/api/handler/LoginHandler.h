@@ -48,11 +48,11 @@ namespace cb {
     public:
       LoginHandler(API &api, const JSON::ValuePtr &config);
 
-      void reportSession(HTTP::Request &req);
-      void listProviders(HTTP::Request &req);
+      void reportSession(const CtxPtr &ctx);
+      void listProviders(const CtxPtr &ctx);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

@@ -32,36 +32,18 @@
 
 #pragma once
 
-#include "TimeseriesDef.h"
+#include "Context.h"
 
+#include <cbang/http/Status.h>
 
 namespace cb {
   namespace API {
-    class API;
-
-    class TimeseriesRef {
-      API &api;
-      std::string category;
-      std::string name;
-      SmartPointer<TimeseriesDef> def;
-      std::string sinceArg;
-      std::string maxCountArg;
-
+    class Handler : public HTTP::Status::Enum {
     public:
-      TimeseriesRef(API &api, const JSON::ValuePtr &config);
-
-      uint64_t getSince(const ResolverPtr &resolver) const;
-      unsigned getMaxCount(const ResolverPtr &resolver) const;
-
-      SmartPointer<TimeseriesDef> getDef(const ResolverPtr &resolver) const;
-      SmartPointer<Timeseries> getTS(
-        const ResolverPtr &resolver, bool create) const;
-
-      void subscribe  (const WebsocketPtr &ws, const ResolverPtr &resolver);
-      void unsubscribe(const WebsocketPtr &ws, const ResolverPtr &resolver);
-
-      using cb_t = std::function<void (const JSON::ValuePtr &)>;
-      void query(const ResolverPtr &resolver, cb_t cb);
+      virtual ~Handler() {}
+      virtual bool operator()(const CtxPtr &ctx) = 0;
     };
+
+    using HandlerPtr = SmartPointer<Handler>;
   }
 }

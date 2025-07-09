@@ -30,26 +30,48 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "URLHandler.h"
 
-#include "Buffer.h"
+#include <cbang/http/URLPatternMatcher.h>
 
-#include <cbang/json/Writer.h>
+using namespace std;
+using namespace cb;
+using namespace cb::API;
 
-#include <ostream>
+
+URLHandler::URLHandler(
+  const string &pattern, const SmartPointer<Handler> &child) :
+  re(HTTP::URLPatternMatcher::toRE2Pattern(pattern), false), child(child) {}
 
 
-namespace cb {
-  namespace Event {
-    class JSONBufferWriter :
-      public Buffer, SmartPointer<std::ostream>, public JSON::Writer {
-    public:
-      JSONBufferWriter(unsigned indent = 0, bool compact = true);
+bool URLHandler::operator()(const CtxPtr &ctx) {
+  Regex::Match m;
+  string path = ctx->getRequest().getURI().getPath();
 
-      // From JSON::Writer
-      using JSON::Writer::write;
-      void close() override;
-      void reset() override;
-    };
+  if (!re.match(path, m)) return false;
+
+  // Handle URL args
+  auto &names = re.getGroupIndexMap();
+  if (!names.empty()) {
+    auto args = ctx->getArgs()->copy();
+
+    // Look up the indices of named groups and get their matched values
+    // Note, URL args are always strings but they may be later converted to
+    // other types by the ArgValidator.
+    for (unsigned i = 0; i < re.getGroupCount(); i++) {
+      auto it = names.find(i + 1);
+
+      // TODO Currently, if an arg name already exists it is not overwritten.
+      // The consequence is that the API caller can override URL args with
+      // JSON or query args.  This is intentional but may not be ideal.
+      if (it != names.end() && !args->has(it->second))
+        args->insert(it->second, m[i]);
+    }
+
+    CtxPtr childCtx = new Context(*ctx);
+    childCtx->setArgs(args);
+    return child->operator()(childCtx);
   }
+
+  return child->operator()(ctx);
 }

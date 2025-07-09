@@ -41,9 +41,8 @@ using namespace cb::API;
 
 
 SessionQuery::SessionQuery(
-  const SmartPointer<const QueryDef> &def,
-  const SmartPointer<HTTP::Session> &session, callback_t cb) :
-   Query(def, cb), session(session) {}
+  const QueryDef &def, const SmartPointer<HTTP::Session> &session,
+  callback_t cb) : Query(def, cb), session(session) {}
 
 
 void SessionQuery::callback(state_t state) {

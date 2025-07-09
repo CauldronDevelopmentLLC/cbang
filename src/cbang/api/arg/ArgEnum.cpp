@@ -39,25 +39,16 @@ using namespace cb;
 using namespace std;
 
 
-ArgEnum::ArgEnum(const JSON::ValuePtr &config) :
-  caseSensitive(config->getBoolean("case-sensitive", false)) {
-  auto list = config->get("enum");
-
-  for (auto &value: *list) {
-    string s = value->getString();
-    values.insert(caseSensitive ? s : String::toLower(s));
-  }
-}
+ArgEnum::ArgEnum(const JSON::ValuePtr &config) : values(config) {}
 
 
-void ArgEnum::operator()(const ResolverPtr &resolver, JSON::Value &_value) const {
-  if (!_value.isString()) THROW("Enum argument must be string");
+JSON::ValuePtr ArgEnum::operator()(
+  const CtxPtr &ctx, const JSON::ValuePtr &value) const {
 
-  string value = _value.getString();
-  if (caseSensitive) value = String::toLower(value);
+  for (auto v: *values)
+    if (*v == *value) return value;
 
-  if (values.find(value) == values.end())
-    THROW("Must be one of: " << String::join(values, ", "));
+  THROW("Must be one of: " << values->toString());
 }
 
 
@@ -65,6 +56,6 @@ void ArgEnum::addSchema(JSON::Value &schema) const {
   schema.insert("type", "string");
 
   JSON::ValuePtr list = new JSON::List;
-  for (auto &v: values) list->append(v);
+  for (auto v: *values) list->append(v);
   schema.insert("enum", list);
 }

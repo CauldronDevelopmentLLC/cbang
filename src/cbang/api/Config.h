@@ -32,45 +32,43 @@
 
 #pragma once
 
-#include "QueryDef.h"
-#include "Resolver.h"
-#include "Websocket.h"
+#include "Handler.h"
 
-#include <cbang/db/EventLevelDB.h>
-
-#include <map>
-
+#include <cbang/json/Value.h>
 
 namespace cb {
+  namespace HTTP {class AccessHandler;}
+
   namespace API {
-    class Timeseries;
+    class API;
+    class ArgDict;
 
-    class TimeseriesDef : public RefCounted {
+    class Config : public RefCounted {
+      API &api;
+      JSON::ValuePtr config;
+      std::string pattern;
+      SmartPointer<Config> parent;
+
+      SmartPointer<HTTP::AccessHandler> access;
+      SmartPointer<ArgDict> args;
+
     public:
-      API              &api;
-      const std::string name;
-      EventLevelDB      db;
-      EventLevelDB      dbKeys;
-      QueryDefPtr       queryDef;
-      bool              automatic;
-      uint64_t          period;
-      uint64_t          timeout;
+      Config(API &api, const JSON::ValuePtr &config,
+        const std::string &pattern = "", SmartPointer<Config> parent = 0);
+      virtual ~Config();
 
-      std::map<std::string, SmartPointer<Timeseries>> series;
+      const std::string &getPattern() const {return pattern;}
+      const JSON::ValuePtr &getConfig() const {return config;}
 
-      TimeseriesDef(
-        API &api, const std::string &name, const JSON::ValuePtr &config);
-      TimeseriesDef(API &api, const JSON::ValuePtr &config);
+      const SmartPointer<HTTP::AccessHandler> &getAccessHandler() const
+        {return access;}
+      const SmartPointer<ArgDict> &getArgs() const {return args;}
 
-      const std::string &getName() const {return name;}
-      uint64_t getTimePeriod(uint64_t ts) const {return (ts / period) * period;}
-
-      SmartPointer<Timeseries> get(const ResolverPtr &resolver, bool create);
-
-      void add(const SmartPointer<Timeseries> &ts);
-      void load();
+      SmartPointer<Config> createChild(
+        const JSON::ValuePtr &config, const std::string &pattern = "");
+      HandlerPtr addValidation(const HandlerPtr &handler) const;
     };
 
-    using TimeseriesDefPtr = SmartPointer<TimeseriesDef>;
+    using CfgPtr = SmartPointer<Config>;
   }
 }

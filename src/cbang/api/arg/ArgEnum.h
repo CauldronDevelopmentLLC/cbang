@@ -42,14 +42,14 @@
 namespace cb {
   namespace API {
     class ArgEnum : public ArgConstraint {
-      bool caseSensitive;
-      std::set<std::string> values;
+      JSON::ValuePtr values;
 
     public:
       ArgEnum(const JSON::ValuePtr &config);
 
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override;
+      JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const override;
       void addSchema(JSON::Value &schema) const override;
     };
   }

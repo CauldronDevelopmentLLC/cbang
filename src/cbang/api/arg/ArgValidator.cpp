@@ -61,7 +61,8 @@ using namespace std;
 
 
 ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
-  config(config), defaultValue(config->get("default", 0)) {
+  config(config), defaultValue(config->get("default", 0)),
+  source(config->getString("source", "")) {
 
   optional = config->getBoolean("optional", defaultValue.isSet());
   if (!optional && defaultValue.isSet())
@@ -80,17 +81,17 @@ ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
 
   if      (type == "dict")   add(new ArgDict(config->get("dict")));
   else if (type == "enum")   add(new ArgEnum(config));
-  else if (type == "number") add(new ArgNumber<double>(config));
-  else if (type == "float")  add(new ArgNumber<float>(config));
-  else if (type == "int")    add(new ArgNumber<int64_t>(config));
-  else if (type == "s64")    add(new ArgNumber<int64_t>(config));
+  else if (type == "number") add(new ArgNumber<double  >(config));
+  else if (type == "float")  add(new ArgNumber<float   >(config));
+  else if (type == "int")    add(new ArgNumber<int64_t >(config));
+  else if (type == "s64")    add(new ArgNumber<int64_t >(config));
   else if (type == "u64")    add(new ArgNumber<uint64_t>(config));
-  else if (type == "s32")    add(new ArgNumber<int32_t>(config));
+  else if (type == "s32")    add(new ArgNumber<int32_t >(config));
   else if (type == "u32")    add(new ArgNumber<uint32_t>(config));
-  else if (type == "s16")    add(new ArgNumber<int16_t>(config));
+  else if (type == "s16")    add(new ArgNumber<int16_t >(config));
   else if (type == "u16")    add(new ArgNumber<uint16_t>(config));
-  else if (type == "s8")     add(new ArgNumber<int8_t>(config));
-  else if (type == "u8")     add(new ArgNumber<uint8_t>(config));
+  else if (type == "s8")     add(new ArgNumber<int8_t  >(config));
+  else if (type == "u8")     add(new ArgNumber<uint8_t >(config));
   else if (type == "bool")   add(new ArgBoolean);
   else if (type == "email")  add(new ArgPattern(EMAIL_RE));
   else if (type == "time")   add(new ArgPattern(ISO8601_RE));
@@ -159,8 +160,14 @@ void ArgValidator::add(const SmartPointer<ArgConstraint> &constraint) {
 }
 
 
-void ArgValidator::operator()(const ResolverPtr &resolver, JSON::Value &value) const {
-  for (auto &c: constraints) (*c)(resolver, value);
+JSON::ValuePtr ArgValidator::operator()(
+  const CtxPtr &ctx, const JSON::ValuePtr &value) const {
+  auto v = value;
+
+  for (auto &c: constraints)
+    v = (*c)(ctx, v);
+
+  return v;
 }
 
 

@@ -42,14 +42,14 @@ using namespace cb;
 using namespace cb::API;
 
 
-Query::Query(const SmartPointer<const QueryDef> &def, callback_t cb) :
-  def(def), cb(cb), db(def->getDBConnection()) {
+Query::Query(const QueryDef &def, callback_t cb) :
+  def(def), cb(cb), db(def.getDBConnection()) {
   if (!cb) THROW("Callback not set");
 }
 
 
 void Query::exec(const string &sql) {
-  // Stay alive until query callbacks are complete
+  // Stay alive until DB callbacks are complete
   auto self = SmartPtr(this);
   auto cb = [self] (state_t state) {self->callback(state);};
   db->query(cb, sql);
@@ -71,7 +71,10 @@ Query::return_t Query::getReturnType(const string &name) {
 }
 
 
-void Query::callback(state_t state) {(*this.*def->returnCB)(state);}
+void Query::callback(state_t state) {
+  auto retCB = getReturnType(def.ret);
+  (*this.*retCB)(state);
+}
 
 
 void Query::reply(HTTP::Status code) {
@@ -85,8 +88,8 @@ void Query::errorReply(HTTP::Status code, const string &msg) {
 
   sink.beginDict();
   sink.insert("error", msg.empty() ? code.toString() : msg);
+  if (code) sink.insert("code", code);
   sink.endDict();
-  sink.close();
 
   reply(code);
 }
@@ -178,9 +181,9 @@ void Query::returnFields(MariaDB::EventDB::state_t state) {
 
   case MariaDB::EventDB::EVENTDB_BEGIN_RESULT: {
     closeField = false;
-    if (def->fields.isNull()) THROW("Fields cannot be null");
-    if (currentField == def->fields->size()) THROW("Unexpected DB result");
-    nextField = def->fields->getString(currentField++);
+    if (def.fields.isNull()) THROW("Fields cannot be null");
+    if (currentField == def.fields->size()) THROW("Unexpected DB result");
+    nextField = def.fields->getString(currentField++);
     if (nextField.empty()) THROW("Empty field name");
     break;
   }
@@ -269,10 +272,13 @@ void Query::returnOk(MariaDB::EventDB::state_t state) {
     break;
   }
 
-  case MariaDB::EventDB::EVENTDB_ROW:
-    LOG_ERROR("Unexpected DB row");
-    errorReply(HTTP_INTERNAL_SERVER_ERROR, "Unexpected DB row");
+  case MariaDB::EventDB::EVENTDB_ROW: {
+    string msg =
+      SSTR("DB row unexpected with query return type '" << def.ret << "'");
+    LOG_ERROR(msg);
+    errorReply(HTTP_INTERNAL_SERVER_ERROR, msg);
     break;
+  }
 
   default:
     errorReply(HTTP_INTERNAL_SERVER_ERROR, "Unexpected DB response");

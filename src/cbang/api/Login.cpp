@@ -44,7 +44,7 @@ using namespace cb;
 using namespace cb::API;
 
 
-Login::Login(const SmartPointer<const QueryDef> &def, callback_t cb,
+Login::Login(const QueryDef &def, callback_t cb,
   const ResolverPtr &resolver, HTTP::Request &req, const string &provider,
   const string &redirectURI) : Query(def, cb), resolver(resolver),
   provider(provider), redirectURI(redirectURI), session(req.getSession()),
@@ -66,8 +66,8 @@ void Login::loginComplete() {
     origCB(status, result);
   };
 
-  if (def->sql.empty()) cb(HTTP_OK, 0);
-  else exec(resolver->resolve(def->getSQL(), true));
+  if (def.sql.empty()) cb(HTTP_OK, 0);
+  else exec(resolver->resolve(def.getSQL(), true));
 }
 
 
@@ -75,7 +75,7 @@ void Login::login() {
   if (provider == "none") return loginComplete();
 
   // Get OAuth2 provider
-  auto oauth2 = def->api.getOAuth2Providers().get(provider);
+  auto oauth2 = def.api.getOAuth2Providers().get(provider);
   if (oauth2.isNull() || !oauth2->isConfigured())
     return errorReply(
       HTTP_BAD_REQUEST, "Unsupported login provider: " + provider);
@@ -87,7 +87,7 @@ void Login::login() {
     auto cb = [self] (const JSON::ValuePtr &profile) {
       self->processProfile(profile);
     };
-    return oauth2->verify(def->api.getClient(), *session, uri, cb);
+    return oauth2->verify(def.api.getClient(), *session, uri, cb);
   }
 
   // Respond with Session ID and redirect URL

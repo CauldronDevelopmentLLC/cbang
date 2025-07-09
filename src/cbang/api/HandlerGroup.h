@@ -30,29 +30,25 @@
 
 \******************************************************************************/
 
-#include "JSONBufferWriter.h"
-#include "BufferStream.h"
+#pragma once
 
-#include <cbang/Catch.h>
+#include "Handler.h"
 
-using namespace cb;
-using namespace std;
-using namespace cb::Event;
+#include <cbang/SmartPointer.h>
 
+#include <vector>
 
-JSONBufferWriter::JSONBufferWriter(unsigned indent, bool compact) :
-  SmartPointer<ostream>(new BufferStream<>(*this)),
-  JSON::Writer(*SmartPointer<ostream>::get(), indent, compact) {}
+namespace cb {
+  namespace API {
+    class HandlerGroup : public Handler {
+      std::vector<SmartPointer<Handler>> handlers;
 
+    public:
+      bool isEmpty() const {return handlers.empty();}
+      void add(const SmartPointer<Handler> &handler);
 
-void JSONBufferWriter::close() {
-  JSON::Writer::close();
-  SmartPointer<ostream>::operator->()->flush();
-}
-
-
-void JSONBufferWriter::reset() {
-  JSON::Writer::reset();
-  SmartPointer<ostream>::operator->()->flush();
-  Buffer::clear();
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
+   };
+  }
 }

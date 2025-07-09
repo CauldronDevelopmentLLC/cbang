@@ -47,9 +47,8 @@ QueryDef::QueryDef(API &api, const JSON::ValuePtr &config) :
   if (sql.empty()) THROW("Query must have 'sql'");
 
   if (config->hasList("fields")) fields = config->get("fields");
-  string ret = config->getString("return", fields.isNull() ? "ok" : "fields");
-
-  returnCB = Query::getReturnType(ret);
+  ret = config->getString("return", fields.isNull() ? "ok" : "fields");
+  Query::getReturnType(ret); // Check that return type is valid
 }
 
 
@@ -61,7 +60,7 @@ SmartPointer<MariaDB::EventDB> QueryDef::getDBConnection() const {
 SmartPointer<Query> QueryDef::query(
   const string &sql, Query::callback_t cb) const {
 
-  auto query = SmartPtr(new Query(this, cb));
+  auto query = SmartPtr(new Query(*this, cb));
   query->exec(sql);
   return query;
 }

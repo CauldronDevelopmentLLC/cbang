@@ -63,22 +63,26 @@ ArgAuth::ArgAuth(bool allow, const JSON::ValuePtr &config) : allow(allow) {
 }
 
 
-void ArgAuth::operator()(const ResolverPtr &resolver, JSON::Value &_value) const {
-  auto session = resolver->select("session");
+JSON::ValuePtr ArgAuth::operator()(
+  const CtxPtr &ctx, const JSON::ValuePtr &value) const {
+
+  auto session = ctx->getRequest().getSession();
   if (session.isNull()) unauthorized();
 
   for (auto &group: groups)
     if (session->getBoolean(group, false)) {
-      if (allow) return;
+      if (allow) return value;
       unauthorized();
     }
 
-  string value = _value.asString();
+  string s = value->asString();
   for (auto &var: sessionVars)
-    if (session->has(var) && session->getAsString(var) == value) {
-      if (allow) return;
+    if (session->has(var) && session->getAsString(var) == s) {
+      if (allow) return value;
       unauthorized();
     }
 
   if (allow) unauthorized();
+
+  return value;
 }

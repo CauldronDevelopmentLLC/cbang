@@ -34,41 +34,28 @@
 
 #include <cbang/api/API.h>
 #include <cbang/api/Resolver.h>
-#include <cbang/api/QueryDef.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) : api(api) {
-  if (config->has("query")) {
-    if (config->has("sql")) THROW("Cannot define both 'query' and 'sql'");
-    queryDef = api.getQuery(config->getString("query"));
-
-  } else {
-    queryDef = new QueryDef(api, config);
-    if (config->has("name")) api.addQuery(config->getString("name"), queryDef);
-  }
-}
+QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) :
+  api(api), queryDef(new QueryDef(api, config)) {}
 
 
 void QueryHandler::reply(
-  HTTP::Request &req, HTTP::Status status, const JSON::ValuePtr &result) {
-  if (result.isSet()) {
-    req.setContentType("application/json");
-    req.send(result->toString());
-  }
-
-  req.reply(status);
+  const CtxPtr &ctx, HTTP::Status status, const JSON::ValuePtr &result) {
+  if (result.isSet()) ctx->reply(result);
+  else ctx->reply(status);
 }
 
 
-bool QueryHandler::operator()(HTTP::Request &req) {
-  auto cb = [this, &req] (HTTP::Status status, const JSON::ValuePtr &result) {
-    reply(req, status, result);
+bool QueryHandler::operator()(const CtxPtr &ctx) {
+  auto cb = [this, ctx] (HTTP::Status status, const JSON::ValuePtr &result) {
+    reply(ctx, status, result);
   };
 
-  queryDef->query(new Resolver(api, req), cb);
+  queryDef->query(ctx->getResolver(), cb);
   return true;
 }

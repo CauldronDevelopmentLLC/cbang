@@ -34,7 +34,6 @@
 
 #include <cbang/api/API.h>
 #include <cbang/api/SessionQuery.h>
-#include <cbang/api/QueryDef.h>
 #include <cbang/api/Resolver.h>
 
 #include <cbang/log/Logger.h>
@@ -63,8 +62,9 @@ void SessionHandler::createSession(HTTP::Request &req) {
 }
 
 
-bool SessionHandler::operator()(HTTP::Request &req) {
+bool SessionHandler::operator()(const CtxPtr &ctx) {
   // Check if Session is already loaded
+  auto &req = ctx->getRequest();
   if (req.getSession().isSet()) return false;
 
   // Check if we have a session ID
@@ -89,7 +89,7 @@ bool SessionHandler::operator()(HTTP::Request &req) {
   // Lookup Session in DB
   if (queryDef->sql.empty()) return false;
 
-  auto cb = [this, session, &req] (
+  auto cb = [this, session, &req, ctx] (
     HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
       if (session->hasString("user")) {
@@ -100,11 +100,11 @@ bool SessionHandler::operator()(HTTP::Request &req) {
       // Restart API request processing
       req.getConnection().cast<HTTP::ConnIn>()->getServer().dispatch(req);
 
-    } else reply(req, status, result);
+    } else reply(ctx, status, result);
   };
 
-  auto query = SmartPtr(new SessionQuery(queryDef, req.getSession(), cb));
-  query->exec(Resolver(api, req).resolve(queryDef->getSQL(), true));
+  auto query = SmartPtr(new SessionQuery(*queryDef, req.getSession(), cb));
+  query->exec(ctx->getResolver()->resolve(queryDef->getSQL(), true));
 
   return true;
 }

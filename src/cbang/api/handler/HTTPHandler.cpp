@@ -30,37 +30,12 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "HTTPHandler.h"
 
-#include <cbang/api/Websocket.h>
-#include <cbang/api/Handler.h>
+using namespace cb;
+using namespace cb::API;
 
 
-namespace cb {
-  namespace API {
-    class API;
-    class WSMessageHandler;
-
-    class WebsocketHandler : public Handler {
-      API &api;
-      std::map<uint64_t, WebsocketPtr> websockets;
-      std::vector<SmartPointer<Handler>> handlers;
-
-    public:
-      WebsocketHandler(API &api, const JSON::ValuePtr &config);
-
-      API &getAPI() const {return api;}
-
-      void onMessage(const WebsocketPtr &ws, const JSON::ValuePtr &msg);
-
-      void add(const WebsocketPtr &ws);
-      void remove(const Websocket &ws);
-
-      SmartPointer<Handler> createHandler(const JSON::ValuePtr &config);
-      void loadHandlers(const JSON::ValuePtr &list);
-
-      // From Handler
-      bool operator()(const CtxPtr &ctx) override;
-   };
-  }
+bool HTTPHandler::operator()(const CtxPtr &ctx) {
+  return child->operator()(ctx->getRequest());
 }

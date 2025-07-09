@@ -54,9 +54,9 @@ namespace cb {
       unsigned resultCount = 0;
 
     public:
-      Login(const SmartPointer<const QueryDef> &def, callback_t cb,
-        const ResolverPtr &resolver, HTTP::Request &req,
-        const std::string &provider, const std::string &redirectURI);
+      Login(const QueryDef &def, callback_t cb, const ResolverPtr &resolver,
+        HTTP::Request &req, const std::string &provider,
+        const std::string &redirectURI);
 
       void login();
 

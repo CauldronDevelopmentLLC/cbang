@@ -34,27 +34,19 @@
 
 #include <cbang/api/API.h>
 #include <cbang/api/Resolver.h>
-#include <cbang/api/TimeseriesRef.h>
-#include <cbang/api/handler/WebsocketHandler.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-WSTimeseriesHandler::WSTimeseriesHandler(WebsocketHandler &handler,
-  const JSON::ValuePtr &config) : handler(handler),
-  ref(new TimeseriesRef(handler.getAPI(), config)),
-  action(config->getString("action")) {}
+WSTimeseriesHandler::WSTimeseriesHandler(API &api,
+  const JSON::ValuePtr &config) : api(api), category(api.getCategory()),
+  timeseries(config->getString("timeseries")) {}
 
 
-bool WSTimeseriesHandler::onMessage(
-  const WebsocketPtr &ws, const ResolverPtr &resolver) {
-
-  string action = resolver->resolve(this->action);
-  if      (action == "subscribe")   ref->subscribe  (ws, resolver);
-  else if (action == "unsubscribe") ref->unsubscribe(ws, resolver);
-  else THROW("Unrecognized timeseries action '" << action << "'");
-
-  return true;
+bool WSTimeseriesHandler::operator()(const CtxPtr &ctx) {
+  string name = ctx->getResolver()->resolve(timeseries);
+  auto handler = api.getTimeseries(category, name);
+  return handler->operator()(ctx);
 }

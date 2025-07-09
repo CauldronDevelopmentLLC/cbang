@@ -45,11 +45,15 @@ namespace cb {
 
     class Websocket : public WS::JSONWebsocket {
       WebsocketHandler &handler;
+      SmartPointer<HTTP::Request> req;
       std::map<void *, SmartPointer<Subscriber>> subscriptions;
 
     public:
-      Websocket(WebsocketHandler &handler) : handler(handler) {}
+      Websocket(WebsocketHandler &handler, HTTP::Request &req) :
+        handler(handler), req(&req) {}
       virtual ~Websocket();
+
+      HTTP::Request &getRequest() const {return *req;}
 
       void subscribe(
         Timeseries &timeseries, uint64_t since, unsigned maxResults);
@@ -57,9 +61,6 @@ namespace cb {
 
       using WS::Websocket::send;
       using WS::JSONWebsocket::send;
-
-      void sendError(HTTP::Status code, const std::string &msg = "",
-        const std::string &ref = "");
 
       // From WS:Websocket
       void onShutdown() override;

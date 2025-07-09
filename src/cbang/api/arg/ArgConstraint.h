@@ -35,7 +35,7 @@
 #include <string>
 
 #include <cbang/json/Value.h>
-#include <cbang/api/Resolver.h>
+#include <cbang/api/Context.h>
 
 
 namespace cb {
@@ -43,8 +43,8 @@ namespace cb {
     class ArgConstraint {
     public:
       virtual ~ArgConstraint() {}
-      virtual void operator()(
-        const ResolverPtr &resolver, JSON::Value &value) const = 0;
+      virtual JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const = 0;
       virtual void addSchema(JSON::Value &schema) const = 0;
     };
   }

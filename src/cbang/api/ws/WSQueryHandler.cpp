@@ -41,21 +41,12 @@ using namespace cb;
 using namespace cb::API;
 
 
-WSQueryHandler::WSQueryHandler(WebsocketHandler &handler,
-  const JSON::ValuePtr &config) :
-  handler(handler), query(config->getString("query")) {}
+WSQueryHandler::WSQueryHandler(API &api, const JSON::ValuePtr &config) :
+  api(api), category(api.getCategory()), query(config->getString("query")) {}
 
 
-bool WSQueryHandler::onMessage(const WebsocketPtr &ws,
-  const ResolverPtr &resolver) {
-
-  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &result) {
-    if (status == HTTP::Status::HTTP_OK)
-      ws->send(*result);
-  };
-
-  auto queryDef = handler.getAPI().getQuery(resolver->resolve(query));
-  queryDef->query(resolver, cb);
-
-  return true;
+bool WSQueryHandler::operator()(const CtxPtr &ctx) {
+  string name = ctx->getResolver()->resolve(query);
+  auto handler = api.getQuery(category, name);
+  return handler->operator()(ctx);
 }
