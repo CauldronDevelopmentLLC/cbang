@@ -43,10 +43,13 @@ namespace cb {
 
     public:
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override {
-        if (value.isString()) String::parseBool(value.asString());
-        else if (!value.isBoolean() && !value.isNumber())
-          CBANG_THROW("Not a boolean");
+      JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const override {
+
+        if (value->isString() || value->isNumber())
+          return value->createBoolean(value->toBoolean());
+        else if (!value->isBoolean()) CBANG_THROW("Not a boolean");
+        return value;
       }
 
 

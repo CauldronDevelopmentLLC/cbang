@@ -32,33 +32,23 @@
 
 #pragma once
 
+#include <cbang/api/Handler.h>
 #include <cbang/api/arg/ArgDict.h>
-
-#include <cbang/http/RequestHandler.h>
-#include <cbang/json/Value.h>
-
-#include <set>
-#include <map>
 
 
 namespace cb {
   namespace API {
-    class API;
-
-    class ArgsHandler : public HTTP::RequestHandler {
-      API &api;
+    class ArgsHandler : public Handler {
       ArgDict validator;
-      JSON::ValuePtr spec;
+      SmartPointer<Handler> child;
 
     public:
-      ArgsHandler(API &api) : api(api) {}
-      ArgsHandler(API &api, JSON::ValuePtr &args) : api(api), validator(args) {}
+      ArgsHandler(
+        const ArgDict &validator, const SmartPointer<Handler> &child) :
+        validator(validator), child(child) {}
 
-      void add(const JSON::ValuePtr &args) {validator.add(args);}
-      void appendSpecs(JSON::Value &spec) const {validator.appendSpecs(spec);}
-
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

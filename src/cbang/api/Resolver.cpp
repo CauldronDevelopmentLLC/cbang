@@ -48,13 +48,11 @@ using namespace cb::API;
 
 
 Resolver::Resolver(API &api) {
-  vars.insert("args", new JSON::Dict);
   vars.insert("options", api.getOptions());
 }
 
 
 Resolver::Resolver(API &api, const HTTP::Request &req) : Resolver(api) {
-  set("args", req.getArgs());
   setSession(req.getSession());
 }
 
@@ -93,6 +91,25 @@ string Resolver::selectString(const string &path) const {
   auto value = select(path);
   if (value.isNull()) THROW("String value '" << path << "' not found");
   return value->asString();
+}
+
+
+string Resolver::selectString(
+  const string &path, const string &defaultValue) const {
+  auto value = select(path);
+  return value.isNull() ? defaultValue : value->asString();
+}
+
+
+uint64_t Resolver::selectU64(const string &path, uint64_t defaultValue) const {
+  auto value = select(path);
+  return value.isNull() ? defaultValue : value->getU64();
+}
+
+
+uint64_t Resolver::selectTime(const string &path, uint64_t defaultValue) const {
+  auto value = select(path);
+  return value.isNull() ? defaultValue : Time::parse(value->asString());
 }
 
 

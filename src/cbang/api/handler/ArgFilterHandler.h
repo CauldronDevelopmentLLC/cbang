@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
 
 #include <vector>
 
@@ -41,17 +41,17 @@ namespace cb {
   namespace API {
     class API;
 
-    class ArgFilterHandler : public HTTP::RequestHandler {
+    class ArgFilterHandler : public Handler {
       API &api;
-      SmartPointer<HTTP::RequestHandler> child;
+      SmartPointer<Handler> child;
       std::vector<std::string> cmd;
 
     public:
       ArgFilterHandler(API &api, const JSON::ValuePtr &config,
-                       SmartPointer<HTTP::RequestHandler> &child);
+        const SmartPointer<Handler> &child);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

@@ -32,26 +32,23 @@
 
 #pragma once
 
-#include "WSMessageHandler.h"
+#include <cbang/api/Handler.h>
 
 
 namespace cb {
   namespace API {
    class WebsocketHandler;
-   class TimeseriesRef;
 
-   class WSTimeseriesHandler : public WSMessageHandler {
-    WebsocketHandler &handler;
-    SmartPointer<TimeseriesRef> ref;
-    std::string action;
+   class WSTimeseriesHandler : public Handler {
+    API &api;
+    std::string category;
+    std::string timeseries;
 
     public:
-      WSTimeseriesHandler(WebsocketHandler &handler,
-        const JSON::ValuePtr &config);
+      WSTimeseriesHandler(API &api, const JSON::ValuePtr &config);
 
-      // From WSMessageHandler
-      bool onMessage(
-        const WebsocketPtr &ws, const ResolverPtr &resolver) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

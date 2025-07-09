@@ -30,15 +30,60 @@
 
 \******************************************************************************/
 
-#include "ArgsParser.h"
+#include "Config.h"
 
-#include <cbang/http/Request.h>
+#include <cbang/api/API.h>
+#include <cbang/api/HandlerGroup.h>
+#include <cbang/api/handler/ArgsHandler.h>
+#include <cbang/api/handler/HTTPHandler.h>
+#include <cbang/http/AccessHandler.h>
 
-using namespace cb::API;
+using namespace std;
 using namespace cb;
+using namespace cb::API;
 
 
-bool ArgsParser::operator()(HTTP::Request &req) {
-  req.parseArgs();
-  return false;
+Config::Config(API &api, const JSON::ValuePtr &config, const string &pattern,
+  SmartPointer<Config> parent) :
+  api(api), config(config), pattern(pattern), parent(parent),
+  access(parent.isSet() ? parent->access : 0),
+  args(parent.isSet() ? parent->args : 0) {
+
+  if (!config->isDict()) return;
+
+  if (config->has("args")) {
+    args = args.isSet() ? new ArgDict(*args) : new ArgDict;
+    args->load(api, config->get("args"));
+  }
+
+  if (config->has("allow") || config->has("deny")) {
+    access = access.isSet() ?
+      new HTTP::AccessHandler(*access) : new HTTP::AccessHandler;
+    access->read(config);
+  }
+}
+
+
+Config::~Config() {}
+
+
+CfgPtr Config::createChild(
+  const JSON::ValuePtr &config, const string &pattern) {
+  return new Config(api, config, this->pattern + pattern, this);
+}
+
+
+HandlerPtr Config::addValidation(const HandlerPtr &_handler) const {
+  HandlerPtr handler = _handler;
+
+  if (args.isSet()) handler = new ArgsHandler(*args, handler);
+
+  if (access.isSet()) {
+    auto group = SmartPtr(new HandlerGroup);
+    group->add(new HTTPHandler(access));
+    group->add(handler);
+    return group;
+  }
+
+  return handler;
 }

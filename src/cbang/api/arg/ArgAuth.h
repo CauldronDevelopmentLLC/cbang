@@ -48,7 +48,7 @@ namespace cb {
       ArgAuth(bool allow, const JSON::ValuePtr &config);
 
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override;
+      JSON::ValuePtr operator()(const CtxPtr &ctx, const JSON::ValuePtr &value) const override;
       void addSchema(JSON::Value &schema) const override {}
     };
   }

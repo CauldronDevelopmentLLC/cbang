@@ -32,13 +32,13 @@
 
 #pragma once
 
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
 #include <cbang/json/Value.h>
 
 
 namespace cb {
   namespace API {
-    class StatusHandler : public HTTP::RequestHandler {
+    class StatusHandler : public Handler {
       HTTP::Status code;
       std::string text;
 
@@ -47,8 +47,8 @@ namespace cb {
         code(code), text(text) {}
       StatusHandler(const JSON::ValuePtr &config);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

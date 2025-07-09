@@ -47,9 +47,11 @@ namespace cb {
         max(config->getU32("max")) {}
 
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override {
-        if (max < value.asString().length())
+      JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const override {
+        if (max < value->asString().length())
           CBANG_THROW("Must be no more than " << max << " chars long");
+        return value;
       }
 
 

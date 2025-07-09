@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "WSMessageHandler.h"
+#include <cbang/api/Handler.h>
 
 #include <map>
 
@@ -41,16 +41,15 @@ namespace cb {
   namespace API {
     class WebsocketHandler;
 
-    class WSMapHandler : public WSMessageHandler {
+    class WSMapHandler : public Handler {
       std::string key;
-      std::map<std::string, SmartPointer<WSMessageHandler>> handlers;
+      std::map<std::string, SmartPointer<Handler>> handlers;
 
     public:
       WSMapHandler(WebsocketHandler &handler, const JSON::ValuePtr &config);
 
-      // From WSMessageHandler
-      bool onMessage(
-        const WebsocketPtr &ws, const ResolverPtr &resolver) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

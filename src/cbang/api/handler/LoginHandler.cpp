@@ -45,53 +45,47 @@ LoginHandler::LoginHandler(API &api, const JSON::ValuePtr &config) :
   redirect(config->getString("redirect", "")) {}
 
 
-void LoginHandler::reportSession(HTTP::Request &req) {
-  auto session = req.getSession();
+void LoginHandler::reportSession(const CtxPtr &ctx) {
+  auto session = ctx->getRequest().getSession();
 
   if (session.isNull() || !session->hasGroup("authenticated"))
-    req.sendJSONError(HTTP_UNAUTHORIZED, "Not logged in");
+    ctx->reply(HTTP_UNAUTHORIZED, "Not logged in");
 
-  else {
-    // Respond with session JSON
-    session->write(*req.getJSONWriter());
-    req.reply();
-  }
+  else ctx->reply(session); // Respond with session JSON
 }
 
 
-void LoginHandler::listProviders(HTTP::Request &req) {
-  auto &providers = api.getOAuth2Providers();
-  auto writer     = req.getJSONWriter();
+void LoginHandler::listProviders(const CtxPtr &ctx) {
+  ctx->reply([&] (JSON::Sink &sink) {
+    auto &providers = api.getOAuth2Providers();
 
-  writer->beginList();
-  for (auto &p: providers)
-    if (p.second->isConfigured()) writer->append(p.first);
-  writer->endList();
-
-  writer.release();
-  req.reply();
+    sink.beginList();
+    for (auto &p: providers)
+      if (p.second->isConfigured()) sink.append(p.first);
+    sink.endList();
+  });
 }
 
 
-bool LoginHandler::operator()(HTTP::Request &req) {
-  auto &args         = *req.getArgs();
-  string provider    = args.getString("provider", "");
-  string redirectURI = args.getString("redirect_uri", "");
+bool LoginHandler::operator()(const CtxPtr &ctx) {
+  auto resolver      = ctx->getResolver();
+  string provider    = resolver->selectString("provider", "");
+  string redirectURI = resolver->selectString("redirect_uri", "");
 
   if (!this->provider.empty()) provider = this->provider;
 
-  if (provider.empty()) reportSession(req);
-  else if (provider == "providers") listProviders(req);
+  if (provider.empty()) reportSession(ctx);
+  else if (provider == "providers") listProviders(ctx);
 
   else {
-    auto cb = [this, &req] (HTTP::Status status, const JSON::ValuePtr &result) {
+    auto cb = [this, ctx] (HTTP::Status status, const JSON::ValuePtr &result) {
       // Respond with JSON or redirect
-      if (status != HTTP_OK || redirect.empty()) reply(req, status, result);
-      else req.redirect(redirect);
+      if (status != HTTP_OK || redirect.empty()) reply(ctx, status, result);
+      else ctx->getRequest().redirect(redirect);
     };
 
     auto login = SmartPtr(new Login(
-      queryDef, cb, new Resolver(api, req), req, provider, redirectURI));
+      *queryDef, cb, resolver, ctx->getRequest(), provider, redirectURI));
     login->login();
   }
 

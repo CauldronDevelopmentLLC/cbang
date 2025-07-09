@@ -48,9 +48,7 @@ StatusHandler::StatusHandler(const JSON::ValuePtr &config) :
 }
 
 
-bool StatusHandler::operator()(HTTP::Request &req) {
-  req.send(text.empty() ? code.toString() : text);
-  req.reply(code);
-
+bool StatusHandler::operator()(const CtxPtr &ctx) {
+  ctx->reply(code, text);
   return true;
 }

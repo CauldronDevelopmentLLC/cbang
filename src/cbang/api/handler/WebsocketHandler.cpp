@@ -34,11 +34,12 @@
 
 #include <cbang/api/API.h>
 #include <cbang/api/Resolver.h>
+#include <cbang/api/Context.h>
 #include <cbang/api/ws/WSMapHandler.h>
 #include <cbang/api/ws/WSMatchHandler.h>
-#include <cbang/api/ws/WSArgsHandler.h>
 #include <cbang/api/ws/WSTimeseriesHandler.h>
 #include <cbang/api/ws/WSQueryHandler.h>
+#include <cbang/api/handler/ArgsHandler.h>
 
 using namespace cb;
 using namespace cb::API;
@@ -53,14 +54,16 @@ WebsocketHandler::WebsocketHandler(API &api, const JSON::ValuePtr &config) :
 void WebsocketHandler::onMessage(const WebsocketPtr &ws,
   const JSON::ValuePtr &msg) {
 
-  auto resolver = SmartPtr(new Resolver(api));
-  resolver->set("msg", msg);
+  CtxPtr ctx = new Context(api, ws);
+  ctx->setArgs(msg);
+  ctx->getResolver()->set("msg", msg);
 
-  for (auto handler: handlers)
-    if (handler->onMessage(ws, resolver))
-      return;
+  ctx->errorHandler([&] () {
+    for (auto handler: handlers)
+      if (handler->operator()(ctx)) return;
 
-  THROW("Unhandled Websocket message " << msg->toString());
+    THROW("Unhandled Websocket message " << msg->toString());
+  });
 }
 
 
@@ -76,7 +79,7 @@ void WebsocketHandler::remove(const Websocket &ws) {
 }
 
 
-SmartPointer<WSMessageHandler> WebsocketHandler::createHandler(
+SmartPointer<Handler> WebsocketHandler::createHandler(
   const JSON::ValuePtr &config) {
 
   auto type = config->getString("handler", "");
@@ -88,15 +91,15 @@ SmartPointer<WSMessageHandler> WebsocketHandler::createHandler(
     else THROW("Must specify websocket message handler type");
   }
 
-  SmartPointer<WSMessageHandler> handler;
+  SmartPointer<Handler> handler;
   if (type == "map") handler = new WSMapHandler(*this, config);
   else if (type == "timeseries")
-    handler = new WSTimeseriesHandler(*this, config);
-  else if (type == "query") handler = new WSQueryHandler(*this, config);
+    handler = new WSTimeseriesHandler(api, config);
+  else if (type == "query") handler = new WSQueryHandler(api, config);
   else THROW("Unsupported websocket message handler type '" << type << "'");
 
   if (config->has("args"))
-    handler = new WSArgsHandler(config->get("args"), handler);
+    handler = new ArgsHandler(ArgDict(api, config->get("args")), handler);
 
   if (config->has("match"))
     handler = new WSMatchHandler(config->get("match"), handler);
@@ -114,10 +117,11 @@ void WebsocketHandler::loadHandlers(const JSON::ValuePtr &list) {
 }
 
 
-bool WebsocketHandler::operator()(HTTP::Request &req) {
+bool WebsocketHandler::operator()(const CtxPtr &ctx) {
+  auto &req = ctx->getRequest();
   if (String::toLower(req.inFind("Upgrade")) != "websocket") return false;
 
-  auto ws = SmartPtr(new Websocket(*this));
+  auto ws = SmartPtr(new Websocket(*this, req));
   ws->upgrade(req);
   add(ws);
 

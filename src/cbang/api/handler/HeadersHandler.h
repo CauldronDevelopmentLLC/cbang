@@ -34,19 +34,19 @@
 
 #include <cbang/api/Headers.h>
 
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
 
 
 namespace cb {
   namespace API {
-    class HeadersHandler : public HTTP::RequestHandler, public Headers {
+    class HeadersHandler : public Handler, public Headers {
     public:
       HeadersHandler() {}
       HeadersHandler(const JSON::ValuePtr &config) : Headers(config) {}
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override {
-        set(req);
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override {
+        set(ctx->getRequest());
         return false;
       }
     };

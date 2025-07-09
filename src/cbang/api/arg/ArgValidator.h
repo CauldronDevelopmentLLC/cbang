@@ -47,6 +47,7 @@ namespace cb {
       bool optional = false;
       JSON::ValuePtr defaultValue;
       std::string type;
+      std::string source;
       std::vector<SmartPointer<ArgConstraint> > constraints;
 
     public:
@@ -58,10 +59,14 @@ namespace cb {
       JSON::ValuePtr getSpec() const;
       JSON::ValuePtr getSchema() const;
 
+      bool hasSource() const {return !source.empty();}
+      const std::string &getSource() const {return source;}
+
       void add(const SmartPointer<ArgConstraint> &constraint);
 
       // From ArgConstraint
-      void operator()(const ResolverPtr &resolver, JSON::Value &value) const override;
+      JSON::ValuePtr operator()(
+        const CtxPtr &ctx, const JSON::ValuePtr &value) const override;
       void addSchema(JSON::Value &schema) const override;
     };
   }

@@ -62,6 +62,10 @@ namespace cb {
 
       virtual JSON::ValuePtr select(const std::string &path) const;
       std::string selectString(const std::string &path) const;
+      std::string selectString(
+        const std::string &path, const std::string &defaultValue) const;
+      uint64_t selectU64(const std::string &path, uint64_t defaultValue) const;
+      uint64_t selectTime(const std::string &path, uint64_t defaultValue) const;
 
       std::string resolve(const std::string &s, bool sql = false) const;
       void resolve(JSON::Value &value, bool sql = false) const;

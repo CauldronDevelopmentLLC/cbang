@@ -44,7 +44,7 @@ namespace cb {
     public:
       API &api;
       std::string sql;
-      Query::return_t returnCB = 0;
+      std::string ret;
       JSON::ValuePtr fields;
 
       QueryDef(API &api, const JSON::ValuePtr &config);

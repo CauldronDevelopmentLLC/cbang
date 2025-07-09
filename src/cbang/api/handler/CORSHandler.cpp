@@ -42,7 +42,8 @@ using namespace cb::API;
 
 
 CORSHandler::CORSHandler(const JSON::ValuePtr &config) :
-  HeadersHandler(config->get("headers", new JSON::Dict)) {
+  Headers(config->get("headers", new JSON::Dict)) {
+
   // Explicit origins
   if (config->has("origins"))
     for (auto &v: *config->get("origins"))
@@ -79,11 +80,12 @@ CORSHandler::CORSHandler(const JSON::ValuePtr &config) :
 }
 
 
-bool CORSHandler::operator()(HTTP::Request &req) {
+bool CORSHandler::operator()(const CtxPtr &ctx) {
   // Add headers
-  HeadersHandler::operator()(req);
+  Headers::set(ctx->getRequest());
 
   // Copy Origin if it matches
+  auto &req = ctx->getRequest();
   if (req.inHas("Origin")) {
     string origin = String::toLower(req.inGet("Origin"));
 
@@ -95,7 +97,7 @@ bool CORSHandler::operator()(HTTP::Request &req) {
   }
 
   // OPTIONS are done here
-  if (req.getMethod() == HTTP_OPTIONS) {
+  if (req.getMethod() == HTTP::Method::HTTP_OPTIONS) {
     req.reply();
     return true;
   }

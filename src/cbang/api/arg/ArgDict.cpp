@@ -32,9 +32,22 @@
 
 #include "ArgDict.h"
 
+#include <cbang/api/API.h>
+
 using namespace cb;
 using namespace std;
 using namespace cb::API;
+
+
+void ArgDict::load(API &api, const JSON::ValuePtr &def) {
+  if (def->isString()) add(api.getArgs(def->getString()));
+
+  else if (def->isList())
+    for (auto &ref: *def)
+      add(api.getArgs(ref->getString()));
+
+  else add(def);
+}
 
 
 void ArgDict::add(const JSON::ValuePtr &args) {
@@ -52,53 +65,43 @@ void ArgDict::appendSpecs(JSON::Value &spec) const {
 }
 
 
-void ArgDict::validate(const ResolverPtr &resolver, JSON::Value &value,
-  const JSON::ValuePtr &target) const {
+JSON::ValuePtr ArgDict::operator()(
+  const CtxPtr &ctx, const JSON::ValuePtr &args) const {
 
-  if (!value.isDict()) THROWX("Invalid arguments", HTTP_BAD_REQUEST);
+  if (!args->isDict()) THROWX("Invalid arguments", HTTP_BAD_REQUEST);
 
-  set<string> found;
+  JSON::ValuePtr result = new JSON::Dict;
+  vector<string> errors;
 
-  for (auto e: value.entries()) {
-    const string &name = e.key();
+  for (auto &p: validators) {
+    const ArgValidator &av = *p.second;
+    auto name   = p.first;
+    auto source = av.hasSource() ? av.getSource() : name;
+    auto value  = args->get(source, 0);
 
-    auto it2 = validators.find(name);
-    if (it2 == validators.end()) continue; // Ignore unrecognized args
+    if (value.isNull()) {
+      if (av.hasDefault()) result->insert(name, av.getDefault());
+      else if (!av.isOptional())
+        errors.push_back(SSTR("Missing argument '" << source << "'"));
 
-    try {
-      (*it2->second)(resolver, *e.value());
-      found.insert(name);
-      if (target.isSet()) target->insert(name, e.value());
+    } else
+      try {
+        result->insert(name, av(ctx, value));
 
-    } catch (const Exception &ex) {
-      if (ex.getCode() == HTTP_UNAUTHORIZED)
-        THROWX("Access denied", HTTP_UNAUTHORIZED);
+      } catch (const Exception &ex) {
+        string msg = SSTR("Invalid argument '" << source << "'='"
+          << value->asString() << "' " << ex.getMessages());
 
-      THROWX("Invalid argument '" << name << "=" << e->asString()
-              << "': " << ex.getMessage(), HTTP_BAD_REQUEST);
-    }
+        if (ex.getCode() && ex.getCode() != HTTP_BAD_REQUEST)
+          THROWX(msg, ex.getCode());
+
+        errors.push_back(msg);
+      }
   }
 
-  // Make sure all required arguments were found and handle defaults
-  vector<string> missing;
-  for (auto &p: validators)
-    if (found.find(p.first) == found.end()) {
-      const ArgValidator &av = *p.second;
+  if (!errors.empty()) THROWX(String::join(errors, ", "), HTTP_BAD_REQUEST);
 
-      if (av.hasDefault())
-        (target.isSet() ? *target : value).insert(p.first, av.getDefault());
-      else if (!av.isOptional()) missing.push_back(p.first);
-    }
-
-  if (!missing.empty())
-    THROWX("Missing arguments: " << String::join(missing, ", "),
-      HTTP_BAD_REQUEST);
-}
-
-
-void ArgDict::operator()(
-  const ResolverPtr &resolver, JSON::Value &value) const {
-  validate(resolver, value, 0);
+  return result;
 }
 
 
@@ -107,6 +110,7 @@ void ArgDict::addSchema(JSON::Value &schema) const {
 
   auto props = schema.createDict();
   schema.insert("properties", props);
+
   for (auto &p: validators) {
     auto propSchema = schema.createDict();
     props->insert(p.first, propSchema);

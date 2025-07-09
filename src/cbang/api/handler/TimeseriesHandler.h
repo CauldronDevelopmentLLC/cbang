@@ -32,23 +32,43 @@
 
 #pragma once
 
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
+#include <cbang/api/QueryDef.h>
+#include <cbang/db/EventLevelDB.h>
 
 
 namespace cb {
   namespace API {
     class API;
-    class TimeseriesRef;
+    class TimeseriesDef;
 
-    class TimeseriesHandler : public HTTP::RequestHandler {
-      API &api;
-      SmartPointer<TimeseriesRef> ref;
-
+    class TimeseriesHandler : public Handler, public QueryDef  {
     public:
-      TimeseriesHandler(API &api, const JSON::ValuePtr &config);
+      std::string  name;
+      EventLevelDB db;
+      EventLevelDB stateDB;
+      bool         automatic;
+      uint64_t     period;
+      uint64_t     timeout;
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      std::map<std::string, SmartPointer<Timeseries>> series;
+
+      TimeseriesHandler(API &api, const JSON::ValuePtr &config);
+      TimeseriesHandler(
+        API &api, const std::string &name, const JSON::ValuePtr &config);
+
+      const std::string &getName() const {return name;}
+      uint64_t getTimePeriod(uint64_t ts) const {return (ts / period) * period;}
+      double getNext(uint64_t last) const;
+
+      SmartPointer<Timeseries> get(const CtxPtr &ctx, bool create);
+      void add(const SmartPointer<Timeseries> &ts);
+
+      void action(const CtxPtr &ctx);
+      void load();
+
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
    };
   }
 }

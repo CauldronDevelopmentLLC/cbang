@@ -43,7 +43,7 @@ namespace cb {
       SmartPointer<HTTP::Session> session;
 
     public:
-      SessionQuery(const SmartPointer<const QueryDef> &def,
+      SessionQuery(const QueryDef &def,
         const SmartPointer<HTTP::Session> &session, callback_t cb);
 
     protected:

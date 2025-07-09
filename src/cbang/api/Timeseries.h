@@ -33,9 +33,9 @@
 #pragma once
 
 #include "Subscriber.h"
-#include "TimeseriesDef.h"
 
 #include <cbang/event/Event.h>
+#include <cbang/db/EventLevelDB.h>
 
 #include <map>
 
@@ -43,29 +43,31 @@
 namespace cb {
   namespace API {
     class API;
+    class TimeseriesHandler;
 
     class Timeseries : public RefCounted {
     public:
       using cb_t = Subscriber::cb_t;
 
     protected:
-      TimeseriesDefPtr def;
-      std::string      key;
-      std::string      sql;
-      EventLevelDB     db;
-      Event::EventPtr  event;
-      uint64_t         lastRequest = 0;
-      JSON::ValuePtr   lastResult;
+      TimeseriesHandler &handler;
+      std::string        key;
+      std::string        sql;
+      EventLevelDB       db;
+      Event::EventPtr    event;
+      uint64_t           lastRequest = 0;
+      JSON::ValuePtr     lastResult;
+      bool               dirty = false;
       std::map<uint64_t, SmartPointer<Subscriber>::Weak> subscribers;
 
     public:
-      Timeseries(const TimeseriesDefPtr &def, const std::string &key,
+      Timeseries(TimeseriesHandler &handler, const std::string &key,
         const std::string &sql);
 
       const std::string &getKey() const {return key;}
       const std::string &getSQL() const {return sql;}
 
-      void get(uint64_t since, unsigned maxResults, const cb_t &cb);
+      void query(uint64_t since, unsigned maxResults, const cb_t &cb);
       SmartPointer<Subscriber> subscribe(
         uint64_t id, uint64_t since, unsigned maxResults, const cb_t &cb);
       void unsubscribe(uint64_t id);
@@ -74,6 +76,9 @@ namespace cb {
       void save();
 
     protected:
+      void requested();
+      void setLastResult(const JSON::ValuePtr &last);
+
       std::string getKey(uint64_t ts) const;
 
       void query(uint64_t ts);

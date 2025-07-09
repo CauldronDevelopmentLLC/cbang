@@ -30,17 +30,11 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "MethodHandler.h"
 
-#include <cbang/http/RequestHandler.h>
+using namespace cb::API;
 
 
-namespace cb {
-  namespace API {
-    class ArgsParser : public HTTP::RequestHandler {
-    public:
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
-    };
-  }
+bool MethodHandler::operator()(const CtxPtr &ctx) {
+  return (ctx->getRequest().getMethod() & methods) && child->operator()(ctx);
 }

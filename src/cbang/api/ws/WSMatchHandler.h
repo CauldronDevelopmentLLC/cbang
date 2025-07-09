@@ -32,8 +32,7 @@
 
 #pragma once
 
-#include "WSMessageHandler.h"
-
+#include <cbang/api/Handler.h>
 #include <cbang/json/schema/Schema.h>
 
 
@@ -41,17 +40,16 @@ namespace cb {
   namespace API {
     class WebsocketHandler;
 
-    class WSMatchHandler : public WSMessageHandler {
+    class WSMatchHandler : public Handler {
       JSON::SchemaPtr schema;
-      SmartPointer<WSMessageHandler> child;
+      SmartPointer<Handler> child;
 
     public:
       WSMatchHandler(const JSON::ValuePtr &config,
-        const SmartPointer<WSMessageHandler> &child);
+        const SmartPointer<Handler> &child);
 
-      // From WSMessageHandler
-      bool onMessage(
-        const WebsocketPtr &ws, const ResolverPtr &resolver) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

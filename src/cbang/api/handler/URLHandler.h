@@ -32,35 +32,23 @@
 
 #pragma once
 
-#include <cbang/api/Websocket.h>
 #include <cbang/api/Handler.h>
+
+#include <cbang/util/Regex.h>
 
 
 namespace cb {
   namespace API {
-    class API;
-    class WSMessageHandler;
-
-    class WebsocketHandler : public Handler {
-      API &api;
-      std::map<uint64_t, WebsocketPtr> websockets;
-      std::vector<SmartPointer<Handler>> handlers;
+    class URLHandler : public Handler {
+      Regex re;
+      SmartPointer<Handler> child;
 
     public:
-      WebsocketHandler(API &api, const JSON::ValuePtr &config);
-
-      API &getAPI() const {return api;}
-
-      void onMessage(const WebsocketPtr &ws, const JSON::ValuePtr &msg);
-
-      void add(const WebsocketPtr &ws);
-      void remove(const Websocket &ws);
-
-      SmartPointer<Handler> createHandler(const JSON::ValuePtr &config);
-      void loadHandlers(const JSON::ValuePtr &list);
+      URLHandler(
+        const std::string &pattern, const SmartPointer<Handler> &child);
 
       // From Handler
       bool operator()(const CtxPtr &ctx) override;
-   };
+    };
   }
 }

@@ -30,26 +30,22 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "HandlerGroup.h"
 
-#include "WSMessageHandler.h"
+using namespace std;
+using namespace cb;
+using namespace cb::API;
 
-#include <cbang/api/arg/ArgDict.h>
+
+void HandlerGroup::add(const SmartPointer<Handler> &handler) {
+  handlers.push_back(handler);
+}
 
 
-namespace cb {
-  namespace API {
-    class WSArgsHandler : public WSMessageHandler {
-      ArgDict validator;
-      SmartPointer<WSMessageHandler> child;
+bool HandlerGroup::operator()(const CtxPtr &ctx) {
+  for (auto &handler: handlers)
+    if ((*handler)(ctx))
+      return true;
 
-    public:
-      WSArgsHandler(const JSON::ValuePtr &config,
-        const SmartPointer<WSMessageHandler> &child);
-
-      // From WSMessageHandler
-      bool onMessage(
-        const WebsocketPtr &ws, const ResolverPtr &resolver) override;
-    };
-  }
+  return false;
 }

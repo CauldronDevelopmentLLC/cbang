@@ -46,32 +46,19 @@ Websocket::~Websocket() {LOG_DEBUG(3, "~Websocket() ID " << getID());}
 
 
 void Websocket::subscribe(
-  Timeseries &timeseries, uint64_t since, unsigned maxResults) {
+  Timeseries &ts, uint64_t since, unsigned maxResults) {
+
   auto cb = [this] (const JSON::ValuePtr &data) {
     if (!isActive()) return close(WS_STATUS_DIRTY_CLOSE, "Websocket inactive");
-    if (data.isNull())
-      sendError(HTTP_INTERNAL_SERVER_ERROR, "Timeseries query failed");
-    else send(*data);
+    send(*data);
   };
 
-  auto sub = timeseries.subscribe(getID(), since, maxResults, cb);
-  subscriptions[&timeseries] = sub;
+  subscriptions[&ts] = ts.subscribe(getID(), since, maxResults, cb);
 }
 
 
 void Websocket::unsubscribe(Timeseries &timeseries) {
   subscriptions.erase(&timeseries);
-}
-
-
-void Websocket::sendError(HTTP::Status code, const string &msg,
-  const std::string &ref) {
-  auto writer = getJSONWriter();
-  writer->beginDict();
-  writer->insert("error", code);
-  writer->insert("message", msg.empty() ? code.toString() : msg);
-  if (!ref.empty()) writer->insert("ref", ref);
-  writer->endDict();
 }
 
 
@@ -82,12 +69,6 @@ void Websocket::onShutdown() {
 
 
 void Websocket::onMessage(const JSON::ValuePtr &msg) {
-  try {
-    LOG_DEBUG(3, "Websocket id=" << getID() << " msg=" << msg->toString());
-    handler.onMessage(this, msg);
-
-  } catch (const Exception &e) {
-    sendError((HTTP::Status::enum_t)e.getCode(), e.getMessage(),
-      msg->getAsString("ref", ""));
-  }
+  LOG_DEBUG(3, "Websocket id=" << getID() << " msg=" << msg->toString());
+  handler.onMessage(this, msg);
 }

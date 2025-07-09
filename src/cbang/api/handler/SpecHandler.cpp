@@ -44,8 +44,7 @@ SpecHandler::SpecHandler(API &api, const JSON::ValuePtr &config) :
   api(api), config(config) {}
 
 
-bool SpecHandler::operator()(HTTP::Request &req) {
-  api.getSpec()->write(*req.getJSONWriter());
-  req.reply();
+bool SpecHandler::operator()(const CtxPtr &ctx) {
+  ctx->reply(api.getSpec());
   return true;
 }

@@ -32,40 +32,49 @@
 
 #pragma once
 
-#include <cbang/json/Value.h>
+#include <cbang/api/Resolver.h>
+#include <cbang/api/Websocket.h>
+#include <cbang/http/Request.h>
+
+#include <functional>
 
 namespace cb {
-  namespace HTTP {class HandlerGroup; class AccessHandler;}
-
   namespace API {
     class API;
-    class ArgsHandler;
+    class Websocket;
 
-    class Context : public RefCounted {
+    class Context : public cb::HTTP::Status::Enum {
       API &api;
-      JSON::ValuePtr config;
-      std::string pattern;
-      SmartPointer<Context> parent;
-
-      SmartPointer<HTTP::AccessHandler> accessHandler;
-      SmartPointer<ArgsHandler> argsHandler;
+      HTTP::Request &req;
+      WebsocketPtr ws;
+      JSON::ValuePtr args;
+      SmartPointer<Resolver> resolver;
 
     public:
-      Context(API &api, const JSON::ValuePtr &config,
-        const std::string &pattern = "", SmartPointer<Context> parent = 0);
-      virtual ~Context();
+      Context(API &api, HTTP::Request &req);
+      Context(API &api, const WebsocketPtr &ws);
 
-      const std::string &getPattern() const {return pattern;}
-      const JSON::ValuePtr &getConfig() const {return config;}
+      HTTP::Request &getRequest() const {return req;}
+      const WebsocketPtr &getWebsocket() const {return ws;}
 
-      const SmartPointer<HTTP::AccessHandler> &getAccessHandler() const
-        {return accessHandler;}
-      const SmartPointer<ArgsHandler> getArgsHandler() const
-        {return argsHandler;}
+      const SmartPointer<Resolver> &getResolver() const {return resolver;}
+      void setResolver(const SmartPointer<Resolver> &resolver)
+        {this->resolver = resolver;}
 
-      SmartPointer<Context> createChild(
-        const JSON::ValuePtr &config, const std::string &pattern);
-      void addValidation(HTTP::HandlerGroup &group);
+      const JSON::ValuePtr &getArgs() const {return args;}
+      void setArgs(const JSON::ValuePtr &args) {this->args = args;}
+
+      void reply(HTTP::Status code, const JSON::ValuePtr &msg) const;
+      void reply(const JSON::ValuePtr &msg) const;
+      void reply(HTTP::Status code,
+        std::function<void (JSON::Sink &sink)> cb) const;
+      void reply(std::function<void (JSON::Sink &sink)> cb) const;
+      void reply(HTTP::Status code = HTTP_OK,
+        const std::string &text = "") const;
+      void reply(const std::exception &e) const;
+      void reply(const Exception &e) const;
+
+      void errorHandler(std::function<void ()> cb) const;
     };
 
     using CtxPtr = SmartPointer<Context>;

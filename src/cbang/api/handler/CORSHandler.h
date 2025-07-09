@@ -32,9 +32,8 @@
 
 #pragma once
 
-#include "HeadersHandler.h"
-
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
+#include <cbang/api/Headers.h>
 #include <cbang/json/Value.h>
 #include <cbang/net/URI.h>
 #include <cbang/util/Regex.h>
@@ -44,15 +43,15 @@
 
 namespace cb {
   namespace API {
-    class CORSHandler : public HeadersHandler {
+    class CORSHandler : public Handler, public Headers {
       std::set<URI> origins;
       std::vector<Regex> patterns;
 
     public:
       CORSHandler(const JSON::ValuePtr &config);
 
-      // From HTTP::RequestHandler
-      bool operator()(HTTP::Request &req) override;
+      // From Handler
+      bool operator()(const CtxPtr &ctx) override;
     };
   }
 }

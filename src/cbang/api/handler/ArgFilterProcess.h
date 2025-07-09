@@ -35,7 +35,7 @@
 #include <cbang/event/AsyncSubprocess.h>
 #include <cbang/event/StreamEventBuffer.h>
 #include <cbang/event/StreamLogger.h>
-#include <cbang/http/RequestHandler.h>
+#include <cbang/api/Handler.h>
 
 #include <vector>
 
@@ -47,11 +47,14 @@ namespace cb {
   }
 
   namespace API {
+    class Context;
+    class Handler;
+
     class ArgFilterProcess : public Event::AsyncSubprocess {
       Event::Base &base;
-      SmartPointer<HTTP::RequestHandler> child;
+      SmartPointer<Handler> child;
       std::vector<std::string> cmd;
-      HTTP::Request &req;
+      const CtxPtr &ctx;
 
       SmartPointer<Event::StreamEventBuffer> inStr;
       SmartPointer<Event::StreamEventBuffer> outStr;
@@ -60,9 +63,9 @@ namespace cb {
     public:
       ArgFilterProcess(
         Event::Base &base,
-        SmartPointer<HTTP::RequestHandler> child,
-        const std::vector<std::string> &cmd, HTTP::Request &req) :
-        base(base), child(child), cmd(cmd), req(req) {}
+        SmartPointer<Handler> child,
+        const std::vector<std::string> &cmd, const CtxPtr &ctx) :
+        base(base), child(child), cmd(cmd), ctx(ctx) {}
 
       // From AsyncSubprocess
       void exec() override;

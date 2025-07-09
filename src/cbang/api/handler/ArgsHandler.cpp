@@ -38,7 +38,12 @@ using namespace cb;
 using namespace cb::API;
 
 
-bool ArgsHandler::operator()(HTTP::Request &req) {
-  validator(new Resolver(api, req), *req.getArgs());
-  return false;
+bool ArgsHandler::operator()(const CtxPtr &ctx) {
+  CtxPtr childCtx = new Context(*ctx);
+
+  auto resolver = SmartPtr(new Resolver(ctx->getResolver()));
+  resolver->set("args", validator(ctx, ctx->getArgs()));
+  childCtx->setResolver(resolver);
+
+  return child->operator()(childCtx);
 }

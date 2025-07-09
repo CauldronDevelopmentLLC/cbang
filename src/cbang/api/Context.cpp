@@ -32,51 +32,89 @@
 
 #include "Context.h"
 
-#include <cbang/http/HandlerGroup.h>
-#include <cbang/http/AccessHandler.h>
-#include <cbang/api/handler/ArgsHandler.h>
+#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-Context::Context(API &api, const JSON::ValuePtr &config, const string &pattern,
-  SmartPointer<Context> parent) :
-  api(api), config(config), pattern(pattern), parent(parent) {
+Context::Context(API &api, HTTP::Request &req) :
+  api(api), req(req), args(new JSON::Dict), resolver(new Resolver(api, req)) {}
 
-  if (parent.isSet()) {
-    if (parent->argsHandler.isSet())
-      argsHandler = new ArgsHandler(*parent->argsHandler);
 
-    if (parent->accessHandler.isSet())
-      accessHandler = new HTTP::AccessHandler(*parent->accessHandler);
-  }
+Context::Context(API &api, const WebsocketPtr &ws) :
+  Context(api, ws->getRequest()) {this->ws = ws;}
 
-  if (!config->isDict()) return;
 
-  if (config->has("args")) {
-    if (argsHandler.isNull()) argsHandler = new ArgsHandler(api);
-    argsHandler->add(config->get("args"));
-  }
-
-  if (config->has("allow") || config->has("deny")) {
-    if (accessHandler.isNull()) accessHandler = new HTTP::AccessHandler;
-    accessHandler->read(config);
-  }
+void Context::reply(HTTP::Status code, const JSON::ValuePtr &msg) const {
+  reply(code, [&] (JSON::Sink &sink) {msg->write(sink);});
 }
 
 
-Context::~Context() {}
+void Context::reply(const JSON::ValuePtr &msg) const {reply(HTTP_OK, msg);}
 
 
-SmartPointer<Context> Context::createChild(
-  const JSON::ValuePtr &config, const string &pattern) {
-  return new Context(api, config, this->pattern + pattern, this);
+void Context::reply(
+  HTTP::Status code, function<void (JSON::Sink &sink)> cb) const {
+
+  if (ws.isSet()) {
+    auto ref = resolver->select("msg.$ref");
+
+    if (ref.isNull()) ws->send(cb);
+    else ws->send([&] (JSON::Sink &sink) {
+      sink.beginDict();
+      sink.insert("$ref", *ref);
+      sink.beginInsert("data");
+      cb(sink);
+      sink.endDict();
+    });
+
+  } else req.reply(code, cb);
 }
 
 
-void Context::addValidation(HTTP::HandlerGroup &group) {
-  if (accessHandler.isSet()) group.addHandler(accessHandler);
-  if (argsHandler.isSet())   group.addHandler(argsHandler);
+void Context::reply(function<void (JSON::Sink &sink)> cb) const {
+  reply(HTTP_OK, cb);
+}
+
+
+void Context::reply(HTTP::Status code, const string &text) const {
+  string msg = text.empty() ? code.toString() : text;
+
+  if (ws.isNull()) req.reply(code, msg);
+
+  else reply([&] (JSON::Sink &sink) {
+    sink.beginDict();
+    sink.insert("error", code);
+    sink.insert("message", msg);
+    sink.endDict();
+  });
+}
+
+
+void Context::reply(const std::exception &e) const {
+  LOG_ERROR(e.what());
+  reply(HTTP_INTERNAL_SERVER_ERROR, e.what());
+}
+
+
+void Context::reply(const Exception &e) const {
+  if (400 <= e.getCode() && e.getCode() < 600)
+    LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
+      << e.getMessages());
+
+  else {
+    if (!CBANG_LOG_DEBUG_ENABLED(3)) LOG_WARNING(e.getMessages());
+    LOG_DEBUG(3, e);
+  }
+
+  reply([&] (JSON::Sink &sink) {e.write(sink);});
+}
+
+
+void Context::errorHandler(function<void ()> cb) const {
+  try {cb();}
+  catch (Exception &e) {reply(e);}
+  catch (exception &e) {reply(e);}
 }
