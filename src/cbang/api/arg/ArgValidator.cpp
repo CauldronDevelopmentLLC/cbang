@@ -60,8 +60,8 @@ using namespace std;
 #define ISO8601_RE DATE_RE "T" TIME_RE ZONE_RE
 
 
-ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
-  config(config), defaultValue(config->get("default", 0)),
+ArgValidator::ArgValidator(API &api, const JSON::ValuePtr &config) :
+  api(api), config(config), defaultValue(config->get("default", 0)),
   source(config->getString("source", "")) {
 
   optional = config->getBoolean("optional", defaultValue.isSet());
@@ -79,7 +79,7 @@ ArgValidator::ArgValidator(const JSON::ValuePtr &config) :
     config->insert("type", type);
   }
 
-  if      (type == "dict")   add(new ArgDict(config->get("dict")));
+  if      (type == "dict")   add(new ArgDict(api, config->get("dict")));
   else if (type == "enum")   add(new ArgEnum(config));
   else if (type == "number") add(new ArgNumber<double  >(config));
   else if (type == "float")  add(new ArgNumber<float   >(config));

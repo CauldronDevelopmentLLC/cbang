@@ -52,8 +52,8 @@ Config::Config(API &api, const JSON::ValuePtr &config, const string &pattern,
   if (!config->isDict()) return;
 
   if (config->has("args")) {
-    args = args.isSet() ? new ArgDict(*args) : new ArgDict;
-    args->load(api, config->get("args"));
+    args = args.isSet() ? new ArgDict(*args) : new ArgDict(api);
+    args->load(config->get("args"));
   }
 
   if (config->has("allow") || config->has("deny")) {
