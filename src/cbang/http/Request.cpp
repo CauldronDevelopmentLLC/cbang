@@ -38,7 +38,6 @@
 #include <cbang/Catch.h>
 #include <cbang/event/Event.h>
 #include <cbang/event/BufferStream.h>
-#include <cbang/event/JSONBufferWriter.h>
 #include <cbang/openssl/SSL.h>
 #include <cbang/log/Logger.h>
 #include <cbang/json/JSON.h>
@@ -53,20 +52,6 @@ using namespace std;
 
 
 namespace {
-  class JSONWriter : public Event::JSONBufferWriter {
-    typedef std::function<void (Event::Buffer &buffer)> callback_t;
-    callback_t cb;
-
-  public:
-    JSONWriter(callback_t cb) : cb(cb) {}
-
-    ~JSONWriter() {
-      close();
-      TRY_CATCH_ERROR(if (cb) cb(*this));
-    }
-  };
-
-
   const char *getContentEncoding(Compression compression) {
     switch (compression) {
     case Compression::COMPRESSION_ZLIB:  return "zlib";
@@ -447,20 +432,6 @@ const SmartPointer<JSON::Value> &Request::getJSONMessage() {
 }
 
 
-SmartPointer<JSON::Writer> Request::getJSONWriter() {
-  outputBuffer.clear();
-
-  auto cb = [this] (Event::Buffer &buffer) {
-    if (!buffer.getLength()) return;
-
-    setContentType("application/json");
-    send(buffer);
-  };
-
-  return new JSONWriter(cb);
-}
-
-
 SmartPointer<istream> Request::getInputStream() const {
   return new Event::BufferStream<>(inputBuffer);
 }
@@ -489,15 +460,13 @@ SmartPointer<ostream> Request::getOutputStream(Compression compression) {
 }
 
 
-void Request::sendJSONError(Status code, const string &message) {
-  auto writer = getJSONWriter();
-
-  writer->beginDict();
-  writer->insert("error", message);
-  writer->endDict();
-  writer->close();
-
-  reply(code);
+void Request::sendJSONError(Status code, const string &msg) {
+  reply(code, [&] (JSON::Sink &sink) {
+    sink.beginDict();
+    sink.insert("code", code);
+    sink.insert("error", msg.empty() ? code.toString() : msg);
+    sink.endDict();
+  });
 }
 
 
@@ -523,15 +492,12 @@ void Request::sendError(Status code) {
 
 void Request::sendError(Status code, const Exception &e) {
   if (isJSONContentType()) {
-    auto writer = getJSONWriter();
-
-    writer->beginDict();
-    writer->beginInsert("error");
-    e.write(*writer, false);
-    writer->endDict();
-    writer->close();
-
-    reply(code);
+    reply(code, [&] (JSON::Sink &sink) {
+      sink.beginDict();
+      sink.beginInsert("error");
+      e.write(sink, false);
+      sink.endDict();
+    });
 
   } else sendError(code, e.getMessages());
 }
@@ -544,6 +510,23 @@ void Request::sendError(const Exception &e) {
 
 void Request::sendError(const exception &e) {
   sendError((Status::enum_t)0, e.what());
+}
+
+
+void Request::send(function<void (JSON::Sink &sink)> cb) {
+  outputBuffer.clear();
+
+  Event::Buffer buffer;
+  Event::BufferStream<> stream(buffer);
+  JSON::Writer writer(stream, 0, true);
+
+  cb(writer);
+
+  writer.close();
+  stream.flush();
+
+  setContentType("application/json");
+  send(buffer);
 }
 
 
@@ -582,6 +565,21 @@ void Request::reply(Status code, const char *data, unsigned length) {
 }
 
 
+void Request::reply(Status code, function<void (JSON::Sink &sink)> cb) {
+  send(cb);
+  reply(code);
+}
+
+
+void Request::reply(function<void (JSON::Sink &sink)> cb) {reply(HTTP_OK, cb);}
+
+
+void Request::reply(Status code, const Event::Buffer &buf) {
+  send(buf);
+  reply(code);
+}
+
+
 void Request::startChunked(Status code) {
   if (outHas("Content-Length"))
     THROW("Cannot start chunked with Content-Length set");
@@ -594,6 +592,20 @@ void Request::startChunked(Status code) {
   outSet("Transfer-Encoding", "chunked");
   chunked = true;
   reply(code);
+}
+
+
+void Request::sendChunk(function<void (JSON::Sink &sink)> cb) {
+  Event::Buffer buffer;
+  Event::BufferStream<> stream(buffer);
+  JSON::Writer writer(stream, 0, true);
+
+  cb(writer);
+
+  writer.close();
+  stream.flush();
+
+  sendChunk(buffer);
 }
 
 
@@ -618,15 +630,6 @@ void Request::sendChunk(const Event::Buffer &buf) {
 
 void Request::sendChunk(const char *data, unsigned length) {
   sendChunk(Event::Buffer(data, length));
-}
-
-
-SmartPointer<JSON::Writer> Request::getJSONChunkWriter() {
-  auto cb = [this] (Event::Buffer &buffer) {
-    if (buffer.getLength()) sendChunk(buffer);
-  };
-
-  return new JSONWriter(cb);
 }
 
 

@@ -202,7 +202,6 @@ namespace cb {
       void setJSONMessage(const SmartPointer<JSON::Value> &msg)
         {this->msg = msg;}
       const SmartPointer<JSON::Value> &getJSONMessage();
-      SmartPointer<JSON::Writer> getJSONWriter();
 
       SmartPointer<std::istream> getInputStream() const;
       SmartPointer<std::ostream>
@@ -215,6 +214,7 @@ namespace cb {
       void sendError(const Exception &e);
       void sendError(const std::exception &e);
 
+      void send(std::function<void (JSON::Sink &sink)> cb);
       void send(const Event::Buffer &buf);
       void send(const char *data, unsigned length);
       void send(const char *s);
@@ -227,15 +227,16 @@ namespace cb {
       void reply(const char *data, unsigned length);
       void reply(Status code, const char *data, unsigned length);
 
-      void reply(Status code,
-        const Event::Buffer &buf) {send(buf); reply(code);}
+      void reply(Status code, std::function<void (JSON::Sink &sink)> cb);
+      void reply(std::function<void (JSON::Sink &sink)> cb);
+      void reply(Status code, const Event::Buffer &buf);
       void reply(Status code, const char *s) {send(s); reply(code);}
       void reply(Status code, const std::string &s) {send(s); reply(code);}
 
       void startChunked(Status code = HTTP_OK);
+      void sendChunk(std::function<void (JSON::Sink &sink)> cb);
       void sendChunk(const Event::Buffer &buf);
       void sendChunk(const char *data, unsigned length);
-      SmartPointer<JSON::Writer> getJSONChunkWriter();
       void endChunked();
 
       void redirect(const URI &uri, Status code = HTTP_TEMPORARY_REDIRECT);
