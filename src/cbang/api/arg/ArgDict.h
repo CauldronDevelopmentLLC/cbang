@@ -42,16 +42,15 @@
 namespace cb {
   namespace API {
     class ArgDict : public ArgConstraint, public HTTP::Enum {
+      API &api;
       std::map<std::string, SmartPointer<ArgValidator> > validators;
 
     public:
-      ArgDict() {}
-      ArgDict(API &api, const JSON::ValuePtr &def) {load(api, def);}
-      ArgDict(const JSON::ValuePtr &args) {add(args);}
+      ArgDict(API &api) : api(api) {}
+      ArgDict(API &api, const JSON::ValuePtr &def) : api(api) {load(def);}
 
-      void load(API &api, const JSON::ValuePtr &def);
-      void add(const JSON::ValuePtr &args);
-
+      void load(const JSON::ValuePtr &def);
+      void add(const std::string &name, const JSON::ValuePtr &arg);
       void appendSpecs(JSON::Value &spec) const;
 
       // From ArgConstraint

@@ -185,6 +185,9 @@ string cb::API::API::resolve(const string &name) const {
 
 
 void cb::API::API::addArgs(const string &name, const JSON::ValuePtr &_args) {
+  if (!_args->isDict())
+    THROW("Args def is not a dictionary: " << _args->toString());
+
   string _name = resolve(name);
   auto result = args.insert(decltype(args)::value_type(_name, _args));
   if (!result.second) THROW("Args '" << _name << "' already exists");

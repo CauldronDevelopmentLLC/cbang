@@ -39,20 +39,40 @@ using namespace std;
 using namespace cb::API;
 
 
-void ArgDict::load(API &api, const JSON::ValuePtr &def) {
-  if (def->isString()) add(api.getArgs(def->getString()));
+void ArgDict::load(const JSON::ValuePtr &def) {
+  if (def->isString()) load(api.getArgs(def->getString()));
 
   else if (def->isList())
-    for (auto &ref: *def)
-      add(api.getArgs(ref->getString()));
+    for (auto &e: *def)
+      load(e);
 
-  else add(def);
+  else if (def->isDict())
+    for (auto e: def->entries())
+      add(e.key(), e.value());
+
+  else THROW("Invalid arg def type " << def->getType());
 }
 
 
-void ArgDict::add(const JSON::ValuePtr &args) {
-  for (auto e: args->entries())
-    validators[e.key()] = new ArgValidator(e.value());
+void ArgDict::add(const string &name, const JSON::ValuePtr &_arg) {
+  JSON::ValuePtr arg = _arg;
+  set<string> inherited;
+
+  if (!arg->isDict()) THROW("Arg def is not a dictionary: " << arg->toString());
+
+  while (arg->hasString("inherit")) {
+    auto parentName = arg->getString("inherit");
+    if (!inherited.insert(parentName).second)
+      THROW("Recursive arg inheritance with arg '" << parentName << "'");
+
+    auto parent = api.getArgs(parentName);
+    auto tmp    = arg->copy();
+    tmp->erase("inherit");
+    tmp->merge(*parent);
+    arg = tmp;
+  }
+
+  validators[name] = new ArgValidator(api, arg);
 }
 
 
