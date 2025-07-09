@@ -643,11 +643,7 @@ string String::hexEncode(const char *data, unsigned length) {
 }
 
 
-string String::escapeRE(const string &s) {
-  static const Regex re("[\\^\\.\\$\\|\\(\\)\\[\\]\\*\\+\\?\\/\\\\]");
-  static const string rep("\\\\\\1&");
-  return re.replace(s, rep);
-}
+string String::escapeRE(const string &s) {return Regex::escape(s);}
 
 
 void String::escapeC(string &result, char c) {
@@ -811,7 +807,7 @@ string String::ellipsis(const string &s, unsigned width) {
 
 size_t String::find(const string &s, const string &pattern,
                     vector<string> *groups) {
-  Regex e(pattern);
+  Regex e(pattern, true);
   Regex::Match m;
 
   if (e.search(s, m)) {
@@ -835,7 +831,7 @@ string String::replace(const string &s, char search, char replace) {
 
 string String::replace(const string &s, const string &search,
                        const string &replace) {
-  Regex exp(search);
+  Regex exp(search, true);
   return exp.replace(s, replace);
 }
 
