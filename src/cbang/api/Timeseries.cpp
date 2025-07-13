@@ -56,26 +56,22 @@ Timeseries::Timeseries(TimeseriesHandler &handler, const string &key,
   event(db.getPool()->getEventBase().newEvent(this, &Timeseries::query, 0)) {}
 
 
-void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
+void Timeseries::load(uint64_t since, unsigned maxResults, const cb_t &cb) {
   auto _cb = [this, cb] (
+    const EventLevelDB::Status &status,
     const SmartPointer<EventLevelDB::results_t> &results) {
-    if (results.isNull()) return cb(0);
+    if (!status.isOk()) return cb(status.getException(), 0);
 
-    try {
-      JSON::ValuePtr data = new JSON::List;
+    JSON::ValuePtr data = new JSON::List;
 
-      for (auto &result: *results) {
-        auto time = Time::parse(result.first, TIME_FMT);
-        data->append(makeEntry(time, JSON::Reader::parse(result.second)));
-      }
+    for (auto &result: *results) {
+      auto time = Time::parse(result.first, TIME_FMT);
+      data->append(makeEntry(time, JSON::Reader::parse(result.second)));
+    }
 
-      LOG_DEBUG(5, data->size() << " results");
+    LOG_DEBUG(5, data->size() << " results");
 
-      cb(data);
-      return;
-    } CATCH_ERROR;
-
-    cb(0);
+    cb(0, data);
   };
 
   string last = since ? Time(since).toString(TIME_FMT) : "00000000000000";
@@ -97,12 +93,17 @@ SmartPointer<Subscriber> Timeseries::subscribe(
   auto subscriber = SmartPtr(new Subscriber(cb, this, id));
   subscribers[id] = subscriber; // Save weak pointer
 
-  auto _cb = [this, cb, id] (const JSON::ValuePtr &results) {
+  auto _cb = [this, cb, id] (const SmartPointer<Exception> &err,
+    const JSON::ValuePtr &results) {
+
     auto it = subscribers.find(id);
-    if (it != subscribers.end()) it->second->first(results);
+    if (it != subscribers.end()) {
+      if (err.isNull()) it->second->first(results);
+      else LOG_WARNING("Error loading data: " << *err);
+    }
   };
 
-  query(since, maxResults, _cb);
+  load(since, maxResults, _cb);
 
   return subscriber;
 }

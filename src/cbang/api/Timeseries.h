@@ -67,7 +67,7 @@ namespace cb {
       const std::string &getKey() const {return key;}
       const std::string &getSQL() const {return sql;}
 
-      void query(uint64_t since, unsigned maxResults, const cb_t &cb);
+      void load(uint64_t since, unsigned maxResults, const cb_t &cb);
       SmartPointer<Subscriber> subscribe(
         uint64_t id, uint64_t since, unsigned maxResults, const cb_t &cb);
       void unsubscribe(uint64_t id);

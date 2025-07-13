@@ -123,10 +123,9 @@ namespace cb {
       };
 
 
-      template <typename Data = void>
       struct TaskFunctions : public Task {
-        using run_cb_t      = std::function<Data ()>;
-        using success_cb_t  = std::function<void (Data &)>;
+        using run_cb_t      = std::function<void ()>;
+        using success_cb_t  = std::function<void ()>;
         using error_cb_t    = std::function<void (const Exception &)>;
         using complete_cb_t = std::function<void ()>;
 
@@ -135,8 +134,6 @@ namespace cb {
         error_cb_t    error_cb;
         complete_cb_t complete_cb;
 
-        Data data;
-
         TaskFunctions(int priority, run_cb_t run_cb,
           success_cb_t  success_cb  = 0, error_cb_t error_cb = 0,
           complete_cb_t complete_cb = 0) :
@@ -144,9 +141,9 @@ namespace cb {
           error_cb(error_cb), complete_cb(complete_cb) {}
 
         // From Task
-        void run() override {data = run_cb();}
+        void run() override {run_cb();}
         void error(const Exception &e) override {if (error_cb) error_cb(e);}
-        void success()  override {if (success_cb)  success_cb(data);}
+        void success()  override {if (success_cb)  success_cb();}
         void complete() override {if (complete_cb) complete_cb();}
       };
 
@@ -181,29 +178,22 @@ namespace cb {
 
       void submit(const SmartPointer<Task> &task);
 
-      template <typename Data = void>
       void submit(
-        int priority, typename TaskFunctions<Data>::run_cb_t run,
-        typename TaskFunctions<Data>::success_cb_t  success  = 0,
-        typename TaskFunctions<Data>::error_cb_t    error    = 0,
-        typename TaskFunctions<Data>::complete_cb_t complete = 0) {
-        submit(
-          new TaskFunctions<Data>(priority, run, success, error, complete));
+        int priority, typename TaskFunctions::run_cb_t run,
+        typename TaskFunctions::success_cb_t  success  = 0,
+        typename TaskFunctions::error_cb_t    error    = 0,
+        typename TaskFunctions::complete_cb_t complete = 0) {
+        submit(new TaskFunctions(priority, run, success, error, complete));
       }
 
       void submit(std::function<void ()> run,
         std::function<void (bool)> done, int priority = 0) {
 
-        auto doneCB = [=] (bool ok) {if (done) done(ok);};
-        auto runCB  = [=] () -> bool {
-          try {
-            if (run) run();
-            return true;
-          } CBANG_CATCH_ERROR;
-          return false;
-        };
+        auto ok = SmartPtr(new bool);
+        auto successCB = [=] () {*ok = true;};
+        auto errorCB   = [=] (const Exception &e) {*ok = false;};
 
-        submit<bool>(priority, runCB, doneCB);
+        submit(priority, run, successCB, errorCB);
       }
 
 
