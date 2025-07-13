@@ -42,11 +42,14 @@ using namespace cb::API;
 Subscriber::~Subscriber() {TRY_CATCH_ERROR(timeseries->unsubscribe(id));}
 
 
+void Subscriber::error(const SmartPointer<Exception> &e) {cb(e, 0);}
+
+
 void Subscriber::first(const JSON::ValuePtr &results) {
-  cb(results);
+  cb(0, results);
 
   for (auto result: pending)
-    cb(result);
+    cb(0, result);
 
   pending.clear();
   init = true;
@@ -54,6 +57,6 @@ void Subscriber::first(const JSON::ValuePtr &results) {
 
 
 void Subscriber::next(const JSON::ValuePtr &result) {
-  if (init) cb(result);
+  if (init) cb(0, result);
   else pending.push_back(result);
 }

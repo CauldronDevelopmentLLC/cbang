@@ -45,15 +45,19 @@ using namespace cb::API;
 Websocket::~Websocket() {LOG_DEBUG(3, "~Websocket() ID " << getID());}
 
 
-void Websocket::subscribe(
-  Timeseries &ts, uint64_t since, unsigned maxResults) {
+void Websocket::subscribe(Timeseries &ts, uint64_t since,
+  unsigned maxCount, Timeseries::cb_t cb) {
 
-  auto cb = [this] (const JSON::ValuePtr &data) {
-    if (!isActive()) return close(WS_STATUS_DIRTY_CLOSE, "Websocket inactive");
-    send(*data);
+  auto _cb = [&, cb] (const SmartPointer<Exception> &err,
+    const JSON::ValuePtr &data) {
+    try {
+      cb(err, data);
+    } catch (const Exception &e) {
+      unsubscribe(ts); // Cannot reply so unsubscribe
+    }
   };
 
-  subscriptions[&ts] = ts.subscribe(getID(), since, maxResults, cb);
+  subscriptions[&ts] = ts.subscribe(getID(), since, maxCount, _cb);
 }
 
 

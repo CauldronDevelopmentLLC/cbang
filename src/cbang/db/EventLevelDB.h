@@ -46,6 +46,18 @@ namespace cb {
     int priority = 0;
 
   public:
+    class Status {
+      bool success = true;
+      SmartPointer<Exception> e;
+
+      public:
+        Status() {}
+        Status(const SmartPointer<Exception> &e) : success(false), e(e) {}
+
+        bool isOk() const {return success;}
+        const SmartPointer<Exception> &getException() const {return e;}
+    };
+
     EventLevelDB() {}
 
 
@@ -111,7 +123,9 @@ namespace cb {
 
 
     using results_t = std::vector<std::pair<std::string, std::string>>;
-    using range_cb_t = std::function<void (const SmartPointer<results_t> &)>;
+    using range_cb_t = std::function<void (
+      const Status &status, const SmartPointer<results_t> &)>;
+
     void range(range_cb_t cb, const std::string &first = std::string(),
       const std::string &last = std::string(), bool reverse = false,
       int options = 0, unsigned maxResults = 1000) const {
@@ -142,11 +156,10 @@ namespace cb {
         }
       };
 
-      std::function<void (bool)> process = [=] (bool success) {
-        cb(success ? results : 0);
-      };
+      auto success = [=] () {cb(Status(), results);};
+      auto error = [=] (const Exception &e) {cb(Status(new Exception(e)), 0);};
 
-      pool->submit(query, process);
+      pool->submit(0, query, success, error);
     }
 
 

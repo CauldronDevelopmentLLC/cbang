@@ -43,7 +43,8 @@ namespace cb {
 
     class Subscriber {
     public:
-      using cb_t = std::function<void (const JSON::ValuePtr &)>;
+      using cb_t = std::function<void (
+        const SmartPointer<Exception> &err, const JSON::ValuePtr &data)>;
 
     protected:
       cb_t cb;
@@ -57,6 +58,7 @@ namespace cb {
         uint64_t id) : cb(cb), timeseries(timeseries), id(id) {}
       ~Subscriber();
 
+      void error(const SmartPointer<Exception> &e);
       void first(const JSON::ValuePtr &results);
       void next(const JSON::ValuePtr &results);
     };

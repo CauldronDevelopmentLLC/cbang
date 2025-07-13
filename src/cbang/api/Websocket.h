@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include "Timeseries.h"
+
 #include <cbang/ws/JSONWebsocket.h>
 
 #include <map>
@@ -41,7 +43,6 @@ namespace cb {
   namespace API {
     class WebsocketHandler;
     class Subscriber;
-    class Timeseries;
 
     class Websocket : public WS::JSONWebsocket {
       WebsocketHandler &handler;
@@ -55,8 +56,8 @@ namespace cb {
 
       HTTP::Request &getRequest() const {return *req;}
 
-      void subscribe(
-        Timeseries &timeseries, uint64_t since, unsigned maxResults);
+      void subscribe(Timeseries &timeseries, uint64_t since, unsigned maxCount,
+        Timeseries::cb_t cb);
       void unsubscribe(Timeseries &timeseries);
 
       using WS::Websocket::send;

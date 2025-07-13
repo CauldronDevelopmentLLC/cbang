@@ -120,22 +120,20 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
   auto action   = resolver->selectString("args.action", "query");
   auto since    = resolver->selectTime("args.since", 0);
   auto maxCount = resolver->selectU64("args.max_count", 0);
+  auto ts       = get(ctx, action != "unsubscribe");
 
-  if (action == "query") {
-    auto cb = [this, ctx] (const JSON::ValuePtr &data) {
-      if (data.isNull()) ctx->reply(HTTP::Status::HTTP_INTERNAL_SERVER_ERROR);
-      else ctx->reply(data);
+  auto cb = [this, ctx] (
+    const SmartPointer<Exception> &err, const JSON::ValuePtr &data) {
+      if (err.isNull()) ctx->reply(data);
+      else ctx->reply(*err);
     };
 
-    return get(ctx, true)->query(since, maxCount, cb);
-  }
+  if (action == "query") return ts->load(since, maxCount, cb);
 
   auto ws = ctx->getWebsocket();
   if (ws.isSet())  {
-    if (action == "subscribe")
-      return ws->subscribe(*get(ctx, true), since, maxCount);
-
-    if (action == "unsubscribe") return ws->unsubscribe(*get(ctx, false));
+    if (action == "subscribe")   return ws->subscribe(*ts, since, maxCount, cb);
+    if (action == "unsubscribe") return ws->unsubscribe(*ts);
   }
 
   THROW("Unrecognized timeseries action '" << action << "'");
@@ -145,7 +143,14 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
 void TimeseriesHandler::load() {
   db = api.getTimeseriesDB().ns(":" + name + ":");
 
-  auto cb = [=] (const SmartPointer<EventLevelDB::results_t> &results) {
+  auto cb = [=] (const EventLevelDB::Status &status,
+    const SmartPointer<EventLevelDB::results_t> &results) {
+
+    if (!status.isOk()) {
+      LOG_WARNING("Failed to load timeseries: " << *status.getException());
+      return;
+    }
+
     for (auto &result: *results) try {
       auto state = JSON::Reader::parse(result.second);
       add(new Timeseries(*this, result.first, state->getString("sql")));
