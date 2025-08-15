@@ -81,8 +81,8 @@ double TimeseriesHandler::getNext(uint64_t last) const {
 
     LOG_DEBUG(5, "Querying timeseries in " << next << " seconds "
       << " current=" << Time(getTimePeriod(ceil(now))).toString()
-      << " period=" << period
-      << " now=" << Time(now).toString());
+      << " period="  << period
+      << " now="     << Time(now).toString());
 
     return next;
   }
