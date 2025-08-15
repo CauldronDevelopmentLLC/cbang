@@ -626,13 +626,34 @@ void DB::writeField(JSON::Sink &sink, unsigned i) const {
   else {
     Field field = getField(i);
 
+    // TODO write integer types as integers
     if (field.isNumber()) sink.write(getDouble(i));
     else sink.write(getString(i));
   }
 }
 
 
-bool DB::getNull(unsigned i) const {return !res->current_row[i];}
+void DB::insertField(JSON::Value &value, unsigned i) const {
+  value.insert(getField(i).getName(), getJSON(i));
+}
+
+
+JSON::ValuePtr DB::getJSON(unsigned i) const {
+  if (getNull(i)) return JSON::Factory().createNull();
+
+  Field field = getField(i);
+
+  // TODO write integer types as integers
+  if (field.isNumber()) return JSON::Factory().create(getDouble(i));
+  return JSON::Factory().create(getString(i));
+}
+
+
+
+bool DB::getNull(unsigned i) const {
+  assertInFieldRange(i);
+  return !res->current_row[i];
+}
 
 
 string DB::getString(unsigned i) const {

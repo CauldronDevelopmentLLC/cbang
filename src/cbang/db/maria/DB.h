@@ -34,7 +34,7 @@
 
 #include "Field.h"
 
-#include <cbang/SmartPointer.h>
+#include <cbang/json/Value.h>
 
 #include <string>
 #include <vector>
@@ -47,11 +47,6 @@ struct st_mysql_res;
 
 
 namespace cb {
-  namespace JSON {
-    class Sink;
-    class Value;
-  }
-
   namespace MariaDB {
     class DB {
     public:
@@ -195,30 +190,32 @@ namespace cb {
       unsigned getLength(unsigned i) const;
       const char *getData(unsigned i) const;
       void writeField(JSON::Sink &sink, unsigned i) const;
+      void insertField(JSON::Value &value, unsigned i) const;
 
       // Field type
-      bool isNull(unsigned i) const {return getField(i).isNull();}
-      bool isInteger(unsigned i) const {return getField(i).isInteger();}
-      bool isReal(unsigned i) const {return getField(i).isReal();}
-      bool isNumber(unsigned i) const {return getField(i).isNumber();}
-      bool isBit(unsigned i) const {return getField(i).isBit();}
-      bool isTime(unsigned i) const {return getField(i).isTime();}
-      bool isBlob(unsigned i) const {return getField(i).isBlob();}
-      bool isString(unsigned i) const {return getField(i).isString();}
+      bool isNull    (unsigned i) const {return getField(i).isNull();}
+      bool isInteger (unsigned i) const {return getField(i).isInteger();}
+      bool isReal    (unsigned i) const {return getField(i).isReal();}
+      bool isNumber  (unsigned i) const {return getField(i).isNumber();}
+      bool isBit     (unsigned i) const {return getField(i).isBit();}
+      bool isTime    (unsigned i) const {return getField(i).isTime();}
+      bool isBlob    (unsigned i) const {return getField(i).isBlob();}
+      bool isString  (unsigned i) const {return getField(i).isString();}
       bool isGeometry(unsigned i) const {return getField(i).isGeometry();}
 
       // Field getters
-      bool getNull(unsigned i) const;
-      std::string getString(unsigned i) const;
-      bool getBoolean(unsigned i) const;
-      double getDouble(unsigned i) const;
-      uint32_t getU32(unsigned i) const;
-      int32_t getS32(unsigned i) const;
-      uint64_t getU64(unsigned i) const;
-      int64_t getS64(unsigned i) const;
-      uint64_t getBit(unsigned i) const;
-      void getSet(unsigned i, std::set<std::string> &s) const;
-      double getTime(unsigned i) const;
+      JSON::ValuePtr getJSON(unsigned i) const;
+      bool        getNull   (unsigned i) const;
+      std::string getString (unsigned i) const;
+      bool        getBoolean(unsigned i) const;
+      double      getDouble (unsigned i) const;
+      uint32_t    getU32    (unsigned i) const;
+      int32_t     getS32    (unsigned i) const;
+      uint64_t    getU64    (unsigned i) const;
+      int64_t     getS64    (unsigned i) const;
+      uint64_t    getBit    (unsigned i) const;
+      void        getSet    (unsigned i, std::set<std::string> &s) const;
+      double      getTime   (unsigned i) const;
       std::string rowToString() const;
 
       // Error handling

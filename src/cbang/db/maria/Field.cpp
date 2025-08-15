@@ -37,64 +37,18 @@
 using namespace cb::MariaDB;
 
 
-const char *Field::getName() const {
-  return field->name;
-}
-
-
-const char *Field::getOriginalName() const {
-  return field->org_name;
-}
-
-
-const char *Field::getTable() const {
-  return field->table;
-}
-
-
-const char *Field::getOriginalTable() const {
-  return field->org_table;
-}
-
-
-const char *Field::getDBName() const {
-  return field->db;
-}
-
-
-const char *Field::getCatalog() const {
-  return field->catalog;
-}
-
-
-const char *Field::getDefault() const {
-  return field->def;
-}
-
-
-unsigned Field::getWidth() const {
-  return field->length;
-}
-
-
-unsigned Field::getMaxWidth() const {
-  return field->max_length;
-}
-
-
-unsigned Field::getDecimals() const {
-  return field->decimals;
-}
-
-
-Field::type_t Field::getType() const {
-  return (type_t)field->type;
-}
-
-
-bool Field::isNull() const {
-  return getType() == TYPE_NULL;
-}
+const char   *Field::getName()          const {return field->name;}
+const char   *Field::getOriginalName()  const {return field->org_name;}
+const char   *Field::getTable()         const {return field->table;}
+const char   *Field::getOriginalTable() const {return field->org_table;}
+const char   *Field::getDBName()        const {return field->db;}
+const char   *Field::getCatalog()       const {return field->catalog;}
+const char   *Field::getDefault()       const {return field->def;}
+unsigned      Field::getWidth()         const {return field->length;}
+unsigned      Field::getMaxWidth()      const {return field->max_length;}
+unsigned      Field::getDecimals()      const {return field->decimals;}
+Field::type_t Field::getType()          const {return (type_t)field->type;}
+bool          Field::isNull()           const {return getType() == TYPE_NULL;}
 
 
 bool Field::isInteger() const {
@@ -172,6 +126,4 @@ bool Field::isString() const {
 }
 
 
-bool Field::isGeometry() const {
-  return getType() == TYPE_GEOMETRY;
-}
+bool Field::isGeometry() const {return getType() == TYPE_GEOMETRY;}
