@@ -115,7 +115,7 @@ void Login::processProfile(const JSON::ValuePtr &profile) {
       // Fix up Facebook avatar
       if (provider == "facebook")
         profile->insert("avatar", "http://graph.facebook.com/" +
-                        profile->getString("id") + "/picture?type=small");
+          profile->getString("id") + "/picture?type=small");
 
       // Fix up for GitHub name
       if ((!profile->hasString("name") ||

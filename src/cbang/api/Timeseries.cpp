@@ -86,7 +86,8 @@ void Timeseries::load(uint64_t since, unsigned maxResults, const cb_t &cb) {
 SmartPointer<Subscriber> Timeseries::subscribe(
   uint64_t id, uint64_t since, unsigned maxResults, const cb_t &cb) {
 
-  if (subscribers.find(id) != subscribers.end())
+  auto it = subscribers.find(id);
+  if (it != subscribers.end() && it->second.isSet())
     THROWX("Timeseries already has subscriber with id " << id,
       HTTP::Status::HTTP_CONFLICT);
 
@@ -97,7 +98,7 @@ SmartPointer<Subscriber> Timeseries::subscribe(
     const JSON::ValuePtr &results) {
 
     auto it = subscribers.find(id);
-    if (it != subscribers.end()) {
+    if (it != subscribers.end() && it->second.isSet()) {
       if (err.isNull()) it->second->first(results);
       else LOG_WARNING("Error loading data: " << *err);
     }
@@ -177,7 +178,7 @@ void Timeseries::query(uint64_t ts) {
 
         auto entry = makeEntry(ts, result);
         for (auto p: subscribers)
-          p.second->next(entry);
+          if (p.second.isSet()) p.second->next(entry);
       }
 
       if (!subscribers.empty()) requested();
