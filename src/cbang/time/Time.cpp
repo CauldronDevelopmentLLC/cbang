@@ -42,6 +42,7 @@
 #include <sstream>
 #include <locale>
 #include <exception>
+#include <ctime>
 
 using namespace std;
 using namespace cb;
@@ -50,6 +51,92 @@ namespace pt = boost::posix_time;
 
 namespace {
   const boost::gregorian::date epoch(1970, 1, 1);
+
+
+  bool consume(
+    string::const_iterator &it, const string::const_iterator &end, char c) {
+    if (it == end || *it != c) return false;
+    it++;
+    return true;
+  }
+
+
+  bool isDigit(
+    const string::const_iterator &it, const string::const_iterator &end) {
+    return it != end && '0' <= *it && *it <= '9';
+  }
+
+
+  uint32_t parseUInt(string::const_iterator &it,
+    const string::const_iterator &end, unsigned digits) {
+    uint32_t x = 0;
+
+    for (unsigned i = 0; i < digits; i++) {
+      if (isDigit(it, end)) x = x * 10 + *it++ - '0';
+      else THROW("Expected digit");
+    }
+
+    return x;
+  }
+
+
+  uint64_t parseISO8601(const string &s) {
+    auto it  = s.begin();
+    auto end = s.end();
+
+    try {
+      auto year = parseUInt(it, end, 4);
+      if (year < 1970) THROW("Unsupported year " << year);
+      consume(it, end, '-');
+
+      auto month = parseUInt(it, end, 2);
+      if (!month || 12 < month) THROW("Invalid month " << month);
+      consume(it, end, '-');
+
+      auto day = parseUInt(it, end, 2);
+      if (!day || 31 < day) THROW("Invalid day " << day);
+
+      if (!(consume(it, end, ' ') || consume(it, end, 'T')))
+        THROW("Expected 'T' or ' '");
+
+      auto hour = parseUInt(it, end, 2);
+      if (23 < hour) THROW("Invalid hour " << hour);
+      consume(it, end, ':');
+
+      auto min = parseUInt(it, end, 2);
+      if (59 < min) THROW("Invalid minute " << min);
+      consume(it, end, ':');
+
+      auto sec = parseUInt(it, end, 2);
+      if (59 < sec) THROW("Invalid second " << sec);
+
+      if (consume(it, end, '.'))
+        for (unsigned i = 0; i < 9; i++)
+          if (isDigit(it, end)) it++;
+
+      consume(it, end, 'Z');
+
+      if (it != end)
+        THROW("Did not parse whole string, '" << string(it, end)
+          << "' remains");
+
+      struct tm t{};
+      t.tm_year = year  - 1900;
+      t.tm_mon  = month - 1;
+      t.tm_mday = day;
+      t.tm_hour = hour;
+      t.tm_min  = min;
+      t.tm_sec  = sec;
+
+      auto result = timegm(&t);
+      if (result == -1) THROW("Invalid time");
+      return result;
+
+    } catch (const Exception &e) {
+      THROWC("Failed to parse ISO8601 time '" << s << "' at character "
+        << (it - s.begin()), e);
+    }
+  }
 }
 
 
@@ -92,8 +179,11 @@ uint64_t Time::parse(const string &s, const string &format) {
     ss >> t;
 
     if (ss.fail()) THROW("Parse failed");
-    ss.get();
-    if (!ss.eof()) THROW("Did not parse whole string");
+    if (ss.tellg() != (streampos)s.length()) {
+      string remains;
+      ss >> remains;
+      THROW("Did not parse whole string, '" << remains << "' remains");
+    }
 
     pt::time_duration diff = t - pt::ptime(epoch);
 
@@ -104,6 +194,9 @@ uint64_t Time::parse(const string &s, const string &format) {
            << "': " << e.what());
   }
 }
+
+
+uint64_t Time::parse(const string &s) {return parseISO8601(s);}
 
 
 uint64_t Time::now() {
