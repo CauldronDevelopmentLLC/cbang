@@ -208,4 +208,7 @@ namespace cb {
   inline std::string operator+(const std::string &s, const Option &o) {
     return s + o.toString();
   }
+
+
+  using OptionPtr = SmartPointer<Option>;
 };

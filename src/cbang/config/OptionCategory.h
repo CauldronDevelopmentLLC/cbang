@@ -63,12 +63,16 @@ namespace cb {
     bool hasSetOption() const;
 
     void setHidden(bool x) {hidden = x;}
-    bool getHidden() const {return hidden;}
+    bool isHidden() const {return hidden;}
 
     void add(const SmartPointer<Option> &option);
+    bool remove(const std::string &key);
 
     void write(JSON::Sink &sink, bool config = false) const;
     void write(XML::Handler &handler, uint32_t flags) const;
     void printHelp(std::ostream &stream, bool cmdLine = false) const;
   };
+
+
+  using OptionCatPtr = SmartPointer<OptionCategory>;
 }
