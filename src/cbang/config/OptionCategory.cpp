@@ -52,6 +52,9 @@ void OptionCategory::add(const SmartPointer<Option> &option) {
 }
 
 
+bool OptionCategory::remove(const string &key) {return options.erase(key);}
+
+
 void OptionCategory::write(JSON::Sink &sink, bool config) const {
   if (!config) sink.beginDict();
 

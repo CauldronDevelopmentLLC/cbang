@@ -47,15 +47,52 @@ using namespace std;
 using namespace cb;
 
 
-bool Options::warnWhenInvalid = false;
-
-
 Options::Options() {pushCategory("");} // Default category
+
+
+void Options::add(OptionPtr option) {add(option->getName(), option);}
+
+
+OptionPtr Options::add(const string &name, const string &help,
+  const SmartPointer<Constraint> &constraint) {
+  auto option = SmartPtr(new Option(name, help, constraint));
+  add(option);
+  return option;
+}
+
+
+OptionPtr Options::add(const string &name, const char shortName,
+  SmartPointer<OptionActionBase> action, const string &help) {
+  auto option = SmartPtr(new Option(name, shortName, action, help));
+  add(option);
+  return option;
+}
+
+
+void Options::set(Option &option, const JSON::ValuePtr &value) {
+  if (!allowReset && !option.isPlural() && option.isSet())
+    LOG_WARNING("Option '" << option.getName() << "' already set to '"
+      << option << "' reseting to '" << value->asString() << "'.");
+
+  option.set(value);
+}
+
+
+void Options::set(const string &name, const string &_value, bool setDefault) {
+  if (autoAdd && !has(name)) add(new Option(name));
+
+  auto option = tryLocalize(name);
+  if (option.isNull()) return;
+
+  auto value = option->parse(_value);
+  if (setDefault) option->setDefault(value);
+  else set(*option, value);
+}
 
 
 void Options::insert(JSON::Sink &sink, bool config) const {
   for (auto &p: categories)
-    if (!p.second->getHidden() && !p.second->isEmpty() &&
+    if (!p.second->isHidden() && !p.second->isEmpty() &&
         (!config || p.second->hasSetOption())) {
       if (!config) sink.beginInsert(p.first);
       p.second->write(sink, config);
@@ -101,8 +138,9 @@ ostream &Options::print(ostream &stream) const {
 
 void Options::printHelp(ostream &stream, bool cmdLine) const {
   bool first = true;
+
   for (auto &p: categories)
-    if (!p.second->getHidden()) {
+    if (!p.second->isHidden()) {
       if (first) first = false;
       else stream << "\n\n";
       p.second->printHelp(stream, cmdLine);
@@ -110,19 +148,19 @@ void Options::printHelp(ostream &stream, bool cmdLine) const {
 }
 
 
-const SmartPointer<OptionCategory> &Options::getCategory(const string &name) {
+const OptionCatPtr &Options::getCategory(const string &name) {
   auto it = categories.find(name);
 
+  using value_type = decltype(categories)::value_type;
   if (it == categories.end())
-    it = categories.insert(
-      categories_t::value_type(name, new OptionCategory(name))).first;
+    it = categories.insert(value_type(name, new OptionCategory(name))).first;
 
   return it->second;
 }
 
 
-const SmartPointer<OptionCategory> &Options::pushCategory(const string &name) {
-  const SmartPointer<OptionCategory> &category = getCategory(name);
+const OptionCatPtr &Options::pushCategory(const string &name) {
+  auto &category = getCategory(name);
   categoryStack.push_back(category);
   return category;
 }
@@ -184,7 +222,7 @@ JSON::ValuePtr Options::getConfigJSON() const {
 }
 
 
-void Options::add(const string &_key, SmartPointer<Option> option) {
+void Options::add(const string &_key, OptionPtr option) {
   auto key = cleanKey(_key);
   auto it  = map.find(key);
 
@@ -195,7 +233,14 @@ void Options::add(const string &_key, SmartPointer<Option> option) {
 }
 
 
-bool Options::remove(const string &key) {return map.erase(cleanKey(key));}
+bool Options::remove(const string &_key) {
+  auto key = cleanKey(_key);
+
+  for (auto &p: categories)
+    p.second->remove(key);
+
+  return map.erase(key);
+}
 
 
 bool Options::has(const string &key) const {
@@ -203,20 +248,14 @@ bool Options::has(const string &key) const {
 }
 
 
-const SmartPointer<Option> &Options::get(const string &_key) const {
+const OptionPtr &Options::localize(const std::string &key) {return get(key);}
+
+
+const OptionPtr &Options::get(const string &_key) const {
   string key = cleanKey(_key);
 
   auto it = map.find(key);
-
-  if (it == map.end()) {
-    if (getAutoAdd()) {
-      const SmartPointer<Option> &option =
-        const_cast<Options *>(this)->map[key] = new Option(key);
-      categoryStack.back()->add(option);
-      return option;
-
-    } else THROW("Option '" << key << "' does not exist.");
-  }
+  if (it == map.end()) THROW("Option '" << key << "' does not exist.");
 
   return it->second;
 }
@@ -226,15 +265,47 @@ void Options::alias(const string &_key, const string &_alias) {
   string key   = cleanKey(_key);
   string alias = cleanKey(_alias);
 
-  const SmartPointer<Option> &option = localize(key);
+  const OptionPtr &option = localize(key);
 
-  auto it = map.find(alias);
-  if (it != map.end())
+  if (map.find(alias) != map.end())
     THROW("Cannot alias, option '" << alias << "' already exists.");
 
   option->addAlias(alias);
   map[alias] = option;
 }
+
+
+void Options::startElement(const string &name, const XML::Attributes &attrs) {
+  setDefault =
+    attrs.has("default") && String::parseBool(attrs["default"], true);
+
+  auto it = attrs.find("v");
+  if (it == attrs.end()) it = attrs.find("value");
+  xmlValueSet = it != attrs.end();
+
+  if (xmlValueSet) set(name, it->second, setDefault);
+
+  xmlValue.clear();
+}
+
+
+void Options::endElement(const string &name) {
+  xmlValue = String::trim(xmlValue);
+
+  if (xmlValue.empty()) {
+    // If value not set and type is boolean, set true
+    if (!xmlValueSet && has(name)) {
+      auto option = get(name);
+      if (option->isBoolean())
+        set(*option, JSON::Factory().createBoolean(true));
+    }
+
+  } else set(name, xmlValue, setDefault);
+}
+
+
+void Options::text (const string &text) {xmlValue.append(text);}
+void Options::cdata(const string &data) {xmlValue.append(data);}
 
 
 void Options::read(const JSON::Value &options) {
@@ -247,4 +318,11 @@ void Options::read(const JSON::Value &options) {
 
 string Options::cleanKey(const string &key) {
   return String::replace(key, '_', '-');
+}
+
+
+OptionPtr Options::tryLocalize(const string &name) {
+  if (has(name)) return localize(name);
+  LOG_WARNING("Unrecognized option '" << name << "'");
+  return 0;
 }

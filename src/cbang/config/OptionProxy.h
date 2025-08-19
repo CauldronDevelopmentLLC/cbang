@@ -50,7 +50,7 @@ namespace cb {
   public:
     OptionProxy(const Options &options) : options(options) {}
 
-    // From OptionMap
+    // From Options
     bool has(const std::string &key) const override;
     /// @return True if the options is local to this proxy.
     bool local(const std::string &key) const override;

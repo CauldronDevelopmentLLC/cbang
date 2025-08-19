@@ -285,18 +285,10 @@ void Option::set(const JSON::ValuePtr &value) {
   try {
     validate(*value);
   } catch (const Exception &e) {
-    string errStr = "Invalid value for option '" + name + "'";
-
-    if (Options::warnWhenInvalid) {
-      LOG_WARNING(errStr << ": " << e.getMessage());
-      return;
-
-    } else {
-      ostringstream str;
-      str << errStr << ".  Option help:\n";
-      printHelp(str);
-      THROWC(str.str(), e);
-    }
+    ostringstream str;
+    str << "Invalid value for option '" << name << "'.  Option help:\n";
+    printHelp(str);
+    THROWC(str.str(), e);
   }
 
   // Don't trigger action if value is the same
