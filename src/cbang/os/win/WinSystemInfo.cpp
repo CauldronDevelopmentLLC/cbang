@@ -47,6 +47,13 @@ using namespace cb;
 using namespace std;
 
 
+namespace {
+  URI schemelessURI(const string &s) {
+    return s.find("://") == string::npos ? "http://" + s : s;
+  }
+}
+
+
 uint32_t WinSystemInfo::getCPUCount() const {
   auto cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
   if (cores) return (uint32_t)cores;
@@ -136,10 +143,10 @@ URI WinSystemInfo::getProxy(const URI &uri) const {
       auto equal = part.find_first_of('=');
       if (equal == string::npos) defaultProxy = part;
       else if (part.substr(0, equal) == uri.getScheme())
-        return URI(part.substr(equal + 1));
+        return schemelessURI(part.substr(equal + 1));
     }
 
-    if (!defaultProxy.empty()) return URI(defaultProxy);
+    if (!defaultProxy.empty()) return schemelessURI(defaultProxy);
   }
 
   return URI();
