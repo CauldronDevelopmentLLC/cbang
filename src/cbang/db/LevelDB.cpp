@@ -369,7 +369,9 @@ leveldb::ReadOptions LevelDB::getReadOptions(int options) const {
 
 
 leveldb::WriteOptions LevelDB::getWriteOptions(int options) const {
-  return {.sync = bool(options & SYNC)};
+  leveldb::WriteOptions opts;
+  opts.sync = bool(options & SYNC);
+  return opts;
 }
 
 
