@@ -193,6 +193,9 @@ int Value::compare(const Value &o) const {
       if (ret) return ret;
       ret = itA.value()->compare(*itB.value());
       if (ret) return ret;
+
+      itA++;
+      itB++;
     }
 
     return 0;
