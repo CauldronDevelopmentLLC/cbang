@@ -44,28 +44,30 @@ namespace cb {
 
     class TimeseriesHandler : public Handler, public QueryDef  {
     public:
-      std::string  name;
-      EventLevelDB db;
-      EventLevelDB stateDB;
-      bool         automatic;
-      uint64_t     period;
-      uint64_t     timeout;
+      std::string     name;
+      EventLevelDB    db;
+      uint64_t        period;
+      std::string     key;
+      Event::EventPtr event;
 
       std::map<std::string, SmartPointer<Timeseries>> series;
 
-      TimeseriesHandler(API &api, const JSON::ValuePtr &config);
       TimeseriesHandler(
         API &api, const std::string &name, const JSON::ValuePtr &config);
 
       const std::string &getName() const {return name;}
       uint64_t getTimePeriod(uint64_t ts) const {return (ts / period) * period;}
-      double getNext(uint64_t last) const;
+      double getNext() const;
 
-      SmartPointer<Timeseries> get(const CtxPtr &ctx, bool create);
-      void add(const SmartPointer<Timeseries> &ts);
-
+      SmartPointer<Timeseries> get(const std::string &key, bool create = true);
       void action(const CtxPtr &ctx);
       void load();
+      void schedule();
+      void addData(const std::string &key, uint64_t time,
+        const JSON::ValuePtr &data);
+      void query(uint64_t time);
+      void query();
+      using QueryDef::query;
 
       // From Handler
       bool operator()(const CtxPtr &ctx) override;

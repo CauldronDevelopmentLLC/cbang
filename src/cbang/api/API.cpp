@@ -378,7 +378,7 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
         return getTimeseries(config->getString("timeseries"));
       }
 
-      return new TimeseriesHandler(*this, config);
+      return new TimeseriesHandler(*this, cfg->getPattern(), config);
     }
   }
 
@@ -553,5 +553,7 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
 
 
 bool cb::API::API::operator()(HTTP::Request &req) {
-  return operator()(new Context(*this, req));
+  auto ctx = SmartPtr(new Context(*this, req));
+  ctx->setArgs(req.parseArgs());
+  return operator()(ctx);
 }

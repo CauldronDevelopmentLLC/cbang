@@ -50,13 +50,21 @@ using namespace cb::API;
 #define TIME_FMT "%Y%m%d%H%M%S"
 
 
-Timeseries::Timeseries(TimeseriesHandler &handler, const string &key,
-  const string &sql) : handler(handler), key(key), sql(sql),
-  db(handler.db.ns("data:" + key + ":")),
-  event(db.getPool()->getEventBase().newEvent(this, &Timeseries::query, 0)) {}
+namespace {
+  JSON::ValuePtr makeEntry(uint64_t ts, const JSON::ValuePtr &value) {
+    JSON::ValuePtr d = new JSON::Dict;
+    d->insert("value", value);
+    d->insert("time",  Time(ts).toString());
+    return d;
+  }
+}
 
 
-void Timeseries::load(uint64_t since, unsigned maxResults, const cb_t &cb) {
+Timeseries::Timeseries(TimeseriesHandler &handler, const string &key) :
+  handler(handler), key(key), db(handler.db.ns(key + ":")) {}
+
+
+void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
   auto _cb = [this, cb] (
     const EventLevelDB::Status &status,
     const SmartPointer<EventLevelDB::results_t> &results) {
@@ -77,9 +85,35 @@ void Timeseries::load(uint64_t since, unsigned maxResults, const cb_t &cb) {
   string last = since ? Time(since).toString(TIME_FMT) : "00000000000000";
   LOG_DEBUG(5, "getting max " << maxResults << " results since " << last);
   db.range(_cb, "99999999999999", last, true, 0, maxResults);
+}
 
-  requested();
-  schedule();
+
+void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
+  // Load last data point if necessary
+  if (last.isNull()) {
+    auto cb = [=] (
+      const SmartPointer<Exception> &err, const JSON::ValuePtr &data) {
+      if (err.isNull() && data.isSet() && data->isList() && data->size())
+        last = data->get(0)->get("value");
+      add(time, value);
+    };
+
+    last = JSON::Null::instancePtr();
+    return query(0, 1, cb);
+  }
+
+  // Don't record if result is unchanged
+  if (*last != *value) {
+    last = value;
+
+    auto key = getKey(time);
+    LOG_DEBUG(5, "key: " << key << " value: " << *value);
+    db.set(key, value->toString());
+
+    auto entry = makeEntry(time, value);
+    for (auto p: subscribers)
+      if (p.second.isSet()) p.second->next(entry);
+  }
 }
 
 
@@ -104,7 +138,7 @@ SmartPointer<Subscriber> Timeseries::subscribe(
     }
   };
 
-  load(since, maxResults, _cb);
+  query(since, maxResults, _cb);
 
   return subscriber;
 }
@@ -117,96 +151,6 @@ void Timeseries::unsubscribe(uint64_t id) {
 }
 
 
-void Timeseries::save() {
-  if (!dirty) return;
-  dirty = false;
-
-  JSON::Dict state;
-
-  state.insert("sql", sql);
-  state.insert("last-request", lastRequest);
-  if (lastResult.isSet()) state.insert("last-result", lastResult);
-
-  handler.db.set("state:" + key, state.toString());
-}
-
-
-void Timeseries::load() {
-  auto cb = [=] (bool success, const string &value) {
-    if (success) {
-      LOG_DEBUG(5, "state=" << value);
-      auto state  = JSON::Reader::parse(value);
-      lastRequest = state->getU64("last-request", 0);
-      if (state->has("last-result")) lastResult = state->get("last-result");
-    }
-
-    schedule();
-  };
-
-  handler.db.get("state:" + key, "{}", cb);
-}
-
-
-void Timeseries::requested() {
-  lastRequest = Time::now();
-  dirty = true;
-}
-
-
-void Timeseries::setLastResult(const JSON::ValuePtr &last) {
-  lastResult = last;
-  dirty = true;
-}
-
-
 string Timeseries::getKey(uint64_t ts) const {
   return Time(handler.getTimePeriod(ts)).toString(TIME_FMT);
-}
-
-
-void Timeseries::query(uint64_t ts) {
-  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &result) {
-    if (status == HTTP::Status::HTTP_OK) {
-      LOG_DEBUG(5, "result: " << result->toString() << " last: "
-        << (lastResult.isSet() ? lastResult->toString() : "<null>"));
-
-      // Don't record if result is unchanged
-      if (lastResult.isNull() || *lastResult != *result) {
-        setLastResult(result);
-
-        db.set(getKey(ts), result->toString());
-
-        auto entry = makeEntry(ts, result);
-        for (auto p: subscribers)
-          if (p.second.isSet()) p.second->next(entry);
-      }
-
-      if (!subscribers.empty()) requested();
-      save();
-    }
-
-    schedule();
-  };
-
-  LOG_DEBUG(5, "querying: " << sql);
-
-  handler.query(sql, cb);
-}
-
-
-void Timeseries::query() {query(handler.getTimePeriod(Time::now()));}
-
-
-void Timeseries::schedule() {
-  if (event->isPending()) return;
-  auto next = handler.getNext(lastRequest);
-  if (next) event->add(next);
-}
-
-
-JSON::ValuePtr Timeseries::makeEntry(uint64_t ts, const JSON::ValuePtr &value) {
-  JSON::ValuePtr d = new JSON::Dict;
-  d->insert("value", value);
-  d->insert("time",  Time(ts).toString());
-  return d;
 }
