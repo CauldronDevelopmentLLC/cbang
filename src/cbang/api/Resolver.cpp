@@ -70,7 +70,6 @@ void Resolver::setSession(const SmartPointer<HTTP::Session> &session) {
 }
 
 
-
 JSON::ValuePtr Resolver::select(const string &path) const {
   if (path.empty()) return 0;
 

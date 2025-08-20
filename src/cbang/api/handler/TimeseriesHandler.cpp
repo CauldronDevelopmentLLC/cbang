@@ -47,88 +47,69 @@ using namespace cb::API;
 
 TimeseriesHandler::TimeseriesHandler(
   API &api, const string &name, const JSON::ValuePtr &config) :
-  QueryDef(api, config), name(name),
-  period (HumanDuration::parse(config->getAsString("period"))),
-  timeout(HumanDuration::parse(config->getAsString("timeout", "0"))) {
+  QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + ":")),
+  period(HumanDuration::parse(config->getAsString("period"))),
+  key(config->getString("key", "")),
+  event(db.getPool()->getEventBase().newEvent(
+    this, &TimeseriesHandler::query, 0)) {
 
   if (name.empty()) THROW("Timeseries requires a name");
   if (!period) THROW("Timeseries period cannot be zero");
 
-  string trigger = config->getString("trigger", "request");
-  if (trigger != "auto" && trigger != "request")
-    THROW("Invalid timeseries trigger '" << trigger
-      << "' must be 'auto' or 'request'");
-
-  automatic = trigger == "auto";
-
-  if (automatic && timeout)
-    THROW("It does not make sense for a timeseries to be both automatic and "
-      "have a timeout.");
+  if (ret == "hlist") THROW("Timeseries return type cannot be 'hlist'");
+  if (ret == "list" && !config->hasString("key"))
+    THROW("Timeseries with 'list' return type must provided a 'key' name");
 
   load();
 }
 
 
-TimeseriesHandler::TimeseriesHandler(API &api, const JSON::ValuePtr &config) :
-  TimeseriesHandler(api, config->getString("name", ""), config) {}
+double TimeseriesHandler::getNext() const {
+  auto   now  = Timer::now();
+  double next = getTimePeriod(ceil(now)) + period - now;
 
+  LOG_DEBUG(5, "Querying timeseries in " << next << " seconds "
+    << " current=" << Time(getTimePeriod(ceil(now))).toString()
+    << " period="  << period
+    << " now="     << Time(now).toString());
 
-double TimeseriesHandler::getNext(uint64_t last) const {
-  auto now = Timer::now();
-
-  if (automatic || (last && (!timeout || now < last + timeout))) {
-    double next = getTimePeriod(ceil(now)) + period - now;
-
-    LOG_DEBUG(5, "Querying timeseries in " << next << " seconds "
-      << " current=" << Time(getTimePeriod(ceil(now))).toString()
-      << " period="  << period
-      << " now="     << Time(now).toString());
-
-    return next;
-  }
-
-  return 0;
+  return next;
 }
 
 
 SmartPointer<Timeseries> TimeseriesHandler::get(
-  const CtxPtr &ctx, bool create) {
-  string sql = ctx->getResolver()->resolve(getSQL(), true);
-  string key = Digest::base64(sql, "sha256");
+  const string &key, bool create) {
 
   auto it = series.find(key);
   if (it != series.end()) return it->second;
   if (!create) return 0;
 
-  auto timeseries = SmartPtr(new Timeseries(*this, key, sql));
-  add(timeseries);
-
-  return timeseries;
+  LOG_DEBUG(3, "Adding `" << name << "` timeseries with key `" << key << "`");
+  return series[key] = new Timeseries(*this, key);
 }
 
-
-void TimeseriesHandler::add(const SmartPointer<Timeseries> &ts) {
-  LOG_DEBUG(3, "Adding `" << name << "` timeseries with key `" << ts->getKey()
-    << "` and SQL `" << ts->getSQL() << "`");
-  series[ts->getKey()] = ts;
-  ts->load();
-}
 
 
 void TimeseriesHandler::action(const CtxPtr &ctx) {
+  // Resolve variables
   auto resolver = ctx->getResolver();
   auto action   = resolver->selectString("args.action", "query");
   auto since    = resolver->selectTime("args.since", 0);
   auto maxCount = resolver->selectU64("args.max_count", 0);
-  auto ts       = get(ctx, action != "unsubscribe");
+  auto key      = resolver->resolve(this->key);
 
+  // Get Timeseries
+  auto ts = get(key);
+  if (ts.isNull() && action == "unsubscribe") return;
+
+  // Execute action
   auto cb = [this, ctx] (
     const SmartPointer<Exception> &err, const JSON::ValuePtr &data) {
       if (err.isNull()) ctx->reply(data);
       else ctx->reply(*err);
     };
 
-  if (action == "query") return ts->load(since, maxCount, cb);
+  if (action == "query") return ts->query(since, maxCount, cb);
 
   auto ws = ctx->getWebsocket();
   if (ws.isSet())  {
@@ -140,26 +121,44 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
 }
 
 
-void TimeseriesHandler::load() {
-  db = api.getTimeseriesDB().ns(":" + name + ":");
+void TimeseriesHandler::load() {schedule();}
 
-  auto cb = [=] (const EventLevelDB::Status &status,
-    const SmartPointer<EventLevelDB::results_t> &results) {
 
-    if (!status.isOk()) {
-      LOG_WARNING("Failed to load timeseries: " << *status.getException());
-      return;
+void TimeseriesHandler::schedule() {
+  if (!event->isPending()) event->add(getNext());
+}
+
+
+void TimeseriesHandler::addData(const string &key, uint64_t time,
+  const JSON::ValuePtr &data) {
+  get(key)->add(time, data);
+}
+
+
+void TimeseriesHandler::query(uint64_t time) {
+  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &result) {
+    if (status == HTTP::Status::HTTP_OK) {
+      if (ret != "list") addData("", time, result);
+      else {
+        Resolver resolver(api);
+
+        for (auto &e: *result) {
+          resolver.set("args", e);
+          addData(resolver.resolve(key), time, e);
+        }
+      }
     }
 
-    for (auto &result: *results) try {
-      auto state = JSON::Reader::parse(result.second);
-      add(new Timeseries(*this, result.first, state->getString("sql")));
-    } CATCH_ERROR;
+    schedule();
   };
 
-  stateDB = db.ns("state:");
-  stateDB.range(cb);
+  LOG_DEBUG(5, "querying: " << sql);
+
+  query(sql, cb);
 }
+
+
+void TimeseriesHandler::query() {query(getTimePeriod(Time::now()));}
 
 
 bool TimeseriesHandler::operator()(const CtxPtr &ctx) {

@@ -52,40 +52,24 @@ namespace cb {
     protected:
       TimeseriesHandler &handler;
       std::string        key;
-      std::string        sql;
       EventLevelDB       db;
-      Event::EventPtr    event;
-      uint64_t           lastRequest = 0;
-      JSON::ValuePtr     lastResult;
-      bool               dirty = false;
+      JSON::ValuePtr     last;
       std::map<uint64_t, SmartPointer<Subscriber>::Weak> subscribers;
 
     public:
-      Timeseries(TimeseriesHandler &handler, const std::string &key,
-        const std::string &sql);
+      Timeseries(TimeseriesHandler &handler, const std::string &key);
 
-      const std::string &getKey() const {return key;}
-      const std::string &getSQL() const {return sql;}
+      void query(uint64_t since, unsigned maxResults, const cb_t &cb);
+      void add(uint64_t time, const JSON::ValuePtr &value);
 
-      void load(uint64_t since, unsigned maxResults, const cb_t &cb);
       SmartPointer<Subscriber> subscribe(
         uint64_t id, uint64_t since, unsigned maxResults, const cb_t &cb);
       void unsubscribe(uint64_t id);
 
-      void load();
-      void save();
-
     protected:
-      void requested();
-      void setLastResult(const JSON::ValuePtr &last);
-
       std::string getKey(uint64_t ts) const;
-
       void query(uint64_t ts);
       void query();
-      void schedule();
-
-      JSON::ValuePtr makeEntry(uint64_t ts, const JSON::ValuePtr &value);
     };
   }
 }
