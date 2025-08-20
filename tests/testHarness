@@ -128,7 +128,7 @@ def format_line(left, right):
 
 
 def get_time_string():
-  utc = datetime.datetime.now(datetime.UTC)
+  utc = datetime.datetime.now(datetime.timezone.utc)
   now = datetime.datetime.now()
   offset = now.hour - utc.hour
   return now.strftime('%Y-%d-%m %H:%M:%S') + ' UTC%+d' % offset
