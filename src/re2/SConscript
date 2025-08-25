@@ -3,13 +3,14 @@ Import('*')
 env = env.Clone()
 
 if not env.GetOption('clean'):
-    env.Append(CPPPATH = ['#/src/re2/src'])
+  env.Append(CPPPATH = ['#/src/re2/src'])
 
-    if env.get('compiler_mode') == 'gnu':
-        if env.get('compiler') != 'clang':
-            env.Append(CXXFLAGS =
-                       ['-Wno-class-memaccess', '-Wno-suggest-override'])
-        env.Append(CXXFLAGS = ['-Wno-parentheses'])
+  if env.get('compiler_mode') == 'gnu':
+    if env.get('compiler') != 'clang':
+      env.Append(CXXFLAGS = ['-Wno-class-memaccess', '-Wno-suggest-override'])
+    env.Append(CXXFLAGS = ['-Wno-parentheses'])
+
+  env.Append(CPPDEFINES = ['NO_THREADS'])
 
 # Build lib
 src = Glob('src/re2/*.cc') + Glob('src/util/*.cc')
