@@ -551,7 +551,8 @@ string String::bar(const string &title, unsigned width, const string &chars) {
 
 
 string String::hexdump(const char *data, unsigned size) {
-  unsigned width = (unsigned)ceil(log((double)size) / log(2.0) / 4);
+  unsigned width =
+    (unsigned)std::ceil(std::log((double)size) / std::log(2.0) / 4);
   string result;
   string chars;
   unsigned i;
