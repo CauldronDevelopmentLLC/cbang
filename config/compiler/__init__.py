@@ -101,6 +101,7 @@ def configure(conf, cstd = 'c99'):
     osx_sdk_root  =     env.get('osx_sdk_root')
     osx_archs     =     env.get('osx_archs')
     win32_thread  =     env.get('win32_thread')
+    lto           =     env.get('lto')
 
     if platform != '': env.Replace(PLATFORM = platform)
 
@@ -245,9 +246,9 @@ def configure(conf, cstd = 'c99'):
             if compiler != 'clang': env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
-        if compiler == 'gnu': # Link time optimization
+        if lto and compiler == 'gnu': # Link time optimization
             env.AppendUnique(LINKFLAGS = ['-flto=auto'])
-            env.AppendUnique(CCFLAGS = ['-flto=auto'])
+            env.AppendUnique(CCFLAGS   = ['-flto=auto'])
 
         env.CBDefine('NDEBUG')
 
@@ -498,6 +499,7 @@ def generate(env):
         BoolVariable('depends', 'Enable or disable dependency files', 0),
         BoolVariable('distcc', 'Enable or disable distributed builds', 0),
         BoolVariable('ccache', 'Enable or disable cached builds', 0),
+        BoolVariable('lto', 'Enable or disable link-time optimization', 1),
         EnumVariable('platform', 'Override default platform', '',
                      allowed_values = ('', 'win32', 'posix', 'darwin')),
         ('ccflags', 'Set extra C and C++ compiler flags', None),
