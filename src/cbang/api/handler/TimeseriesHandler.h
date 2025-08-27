@@ -56,7 +56,7 @@ namespace cb {
         API &api, const std::string &name, const JSON::ValuePtr &config);
 
       const std::string &getName() const {return name;}
-      std::string resolveKey(const Resolver &resolver) const;
+      std::string resolveKey(const JSON::Value &dict) const;
       uint64_t getTimePeriod(uint64_t ts) const {return (ts / period) * period;}
       double getNext() const;
 

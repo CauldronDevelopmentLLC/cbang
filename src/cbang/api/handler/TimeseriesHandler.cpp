@@ -47,7 +47,7 @@ using namespace cb::API;
 
 TimeseriesHandler::TimeseriesHandler(
   API &api, const string &name, const JSON::ValuePtr &config) :
-  QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + ":")),
+  QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + "\0")),
   period(HumanDuration::parse(config->getAsString("period"))),
   event(db.getPool()->getEventBase().newEvent(
     this, &TimeseriesHandler::query, 0)) {
@@ -80,12 +80,12 @@ TimeseriesHandler::TimeseriesHandler(
 }
 
 
-string TimeseriesHandler::resolveKey(const Resolver &resolver) const {
+string TimeseriesHandler::resolveKey(const JSON::Value &dict) const {
   string result;
 
   for (auto it: *key) {
     if (!result.empty()) result += "\0";
-    result += resolver.selectString("args." + it->asString());
+    result += dict.getAsString(it->asString());
   }
 
   return result;
@@ -124,7 +124,7 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
   auto action   = resolver->selectString("args.action", "query");
   auto since    = resolver->selectTime("args.since", 0);
   auto maxCount = resolver->selectU64("args.max_count", 0);
-  auto key      = resolveKey(resolver);
+  auto key      = resolveKey(*resolver->select("args"));
 
   // Get Timeseries
   auto ts = get(key);
@@ -165,14 +165,15 @@ void TimeseriesHandler::addData(const string &key, uint64_t time,
 
 void TimeseriesHandler::query(uint64_t time) {
   auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &result) {
+    schedule();
+
     if (status == HTTP::Status::HTTP_OK) {
       if (ret != "list") addData("", time, result);
       else {
         Resolver resolver(api);
 
         for (auto e: *result) {
-          resolver.set("args", e);
-          string key = resolveKey(resolver);
+          string key = resolveKey(*e);
 
           for (auto it: *this->key)
             e->erase(it->asString());
@@ -183,8 +184,6 @@ void TimeseriesHandler::query(uint64_t time) {
         }
       }
     }
-
-    schedule();
   };
 
   LOG_DEBUG(5, "querying: " << sql);
