@@ -146,7 +146,8 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
 
     if (api->hasDict("timeseries"))
       for (auto e2: api->get("timeseries")->entries()) {
-        HandlerPtr handler = new TimeseriesHandler(*this, e2.key(), e2.value());
+        string name = category + "." + e2.key();
+        HandlerPtr handler = new TimeseriesHandler(*this, name, e2.value());
         handler = wrapEndpoint(handler, new Config(*this, e2.value()));
         addTimeseries(e2.key(), handler);
       }
@@ -378,7 +379,8 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
         return getTimeseries(config->getString("timeseries"));
       }
 
-      return new TimeseriesHandler(*this, cfg->getPattern(), config);
+      string name = category + "." + cfg->getPattern();
+      return new TimeseriesHandler(*this, name, config);
     }
   }
 
