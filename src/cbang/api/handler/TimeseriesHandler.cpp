@@ -49,18 +49,46 @@ TimeseriesHandler::TimeseriesHandler(
   API &api, const string &name, const JSON::ValuePtr &config) :
   QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + ":")),
   period(HumanDuration::parse(config->getAsString("period"))),
-  key(config->getString("key", "")),
   event(db.getPool()->getEventBase().newEvent(
     this, &TimeseriesHandler::query, 0)) {
 
   if (name.empty()) THROW("Timeseries requires a name");
   if (!period) THROW("Timeseries period cannot be zero");
 
+  // Query return type
+  if (!config->hasString("return")) ret = "list";
   if (ret == "hlist") THROW("Timeseries return type cannot be 'hlist'");
-  if (ret == "list" && !config->hasString("key"))
-    THROW("Timeseries with 'list' return type must provided a 'key' name");
+
+  // Key
+  if (config->has("key")) {
+    key = config->get("key");
+
+    if (!key->isList()) {
+      auto l = config->createList();
+      l->append(key);
+      key = l;
+    }
+
+  } else {
+    if (ret == "list")
+      THROW("Timeseries with 'list' return type must provided a 'key'");
+
+    key = config->createList(); // Empty key
+  }
 
   load();
+}
+
+
+string TimeseriesHandler::resolveKey(const Resolver &resolver) const {
+  string result;
+
+  for (auto it: *key) {
+    if (!result.empty()) result += "\0";
+    result += resolver.selectString("args." + it->asString());
+  }
+
+  return result;
 }
 
 
@@ -96,7 +124,7 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
   auto action   = resolver->selectString("args.action", "query");
   auto since    = resolver->selectTime("args.since", 0);
   auto maxCount = resolver->selectU64("args.max_count", 0);
-  auto key      = resolver->resolve(this->key);
+  auto key      = resolveKey(resolver);
 
   // Get Timeseries
   auto ts = get(key);
@@ -142,9 +170,16 @@ void TimeseriesHandler::query(uint64_t time) {
       else {
         Resolver resolver(api);
 
-        for (auto &e: *result) {
+        for (auto e: *result) {
           resolver.set("args", e);
-          addData(resolver.resolve(key), time, e);
+          string key = resolveKey(resolver);
+
+          for (auto it: *this->key)
+            e->erase(it->asString());
+
+          if (e->size() == 1) e = *e->begin();
+
+          addData(key, time, e);
         }
       }
     }

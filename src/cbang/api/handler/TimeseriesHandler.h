@@ -47,7 +47,7 @@ namespace cb {
       std::string     name;
       EventLevelDB    db;
       uint64_t        period;
-      std::string     key;
+      JSON::ValuePtr  key;
       Event::EventPtr event;
 
       std::map<std::string, SmartPointer<Timeseries>> series;
@@ -56,6 +56,7 @@ namespace cb {
         API &api, const std::string &name, const JSON::ValuePtr &config);
 
       const std::string &getName() const {return name;}
+      std::string resolveKey(const Resolver &resolver) const;
       uint64_t getTimePeriod(uint64_t ts) const {return (ts / period) * period;}
       double getNext() const;
 
