@@ -64,8 +64,6 @@ namespace cb {
       void action(const CtxPtr &ctx);
       void load();
       void schedule();
-      void addData(const std::string &key, uint64_t time,
-        const JSON::ValuePtr &data);
       void query(uint64_t time);
       void query();
       using QueryDef::query;

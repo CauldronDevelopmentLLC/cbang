@@ -112,7 +112,7 @@ SmartPointer<Timeseries> TimeseriesHandler::get(
   if (it != series.end()) return it->second;
   if (!create) return 0;
 
-  LOG_DEBUG(3, "Adding `" << name << "` timeseries with key `" << key << "`");
+  LOG_DEBUG(4, "Adding `" << name << "` timeseries with key `" << key << "`");
   return series[key] = new Timeseries(*this, key);
 }
 
@@ -157,20 +157,14 @@ void TimeseriesHandler::schedule() {
 }
 
 
-void TimeseriesHandler::addData(const string &key, uint64_t time,
-  const JSON::ValuePtr &data) {
-  get(key)->add(time, data);
-}
-
-
 void TimeseriesHandler::query(uint64_t time) {
   auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &result) {
     schedule();
 
     if (status == HTTP::Status::HTTP_OK) {
-      if (ret != "list") addData("", time, result);
+      if (ret != "list") get("")->add(time, result);
       else {
-        Resolver resolver(api);
+        LOG_DEBUG(3, "Storing timeseries results " << name);
 
         for (auto e: *result) {
           string key = resolveKey(*e);
@@ -180,12 +174,15 @@ void TimeseriesHandler::query(uint64_t time) {
 
           if (e->size() == 1) e = *e->begin();
 
-          addData(key, time, e);
+          get(key)->add(time, e);
         }
+
+        LOG_DEBUG(3, "Done " << name);
       }
     }
   };
 
+  LOG_DEBUG(3, "Querying timeseries " << name);
   LOG_DEBUG(5, "querying: " << sql);
 
   query(sql, cb);
