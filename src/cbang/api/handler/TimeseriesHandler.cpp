@@ -47,7 +47,7 @@ using namespace cb::API;
 
 TimeseriesHandler::TimeseriesHandler(
   API &api, const string &name, const JSON::ValuePtr &config) :
-  QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + "\0")),
+  QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + "\0"s)),
   period(HumanDuration::parse(config->getAsString("period"))),
   event(db.getPool()->getEventBase().newEvent(
     this, &TimeseriesHandler::query, 0)) {
@@ -84,7 +84,7 @@ string TimeseriesHandler::resolveKey(const JSON::Value &dict) const {
   string result;
 
   for (auto it: *key) {
-    if (!result.empty()) result += "\0";
+    if (!result.empty()) result += "\0"s;
     result += dict.getAsString(it->asString());
   }
 

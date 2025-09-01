@@ -61,7 +61,7 @@ namespace {
 
 
 Timeseries::Timeseries(TimeseriesHandler &handler, const string &key) :
-  handler(handler), key(key), db(handler.db.ns(key + "\0")) {}
+  handler(handler), key(key), db(handler.db.ns(key + "\0"s)) {}
 
 
 void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
