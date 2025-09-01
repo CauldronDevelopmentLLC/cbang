@@ -236,7 +236,6 @@ cb::API::HandlerPtr cb::API::API::getQuery(const string &name) const {
 
 
 cb::API::HandlerPtr cb::API::API::getQuery(const JSON::ValuePtr &config) {
-
   if (config->hasString("query")) {
     if (config->has("sql")) THROW("Cannot define both 'query' and 'sql'");
     return getQuery(config->getString("query"));

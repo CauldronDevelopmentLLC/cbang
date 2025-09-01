@@ -73,8 +73,9 @@ void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
     JSON::ValuePtr data = new JSON::List;
 
     for (auto &result: *results) {
-      auto time = Time::parse(result.first, TIME_FMT);
-      data->append(makeEntry(time, JSON::Reader::parse(result.second)));
+      auto time  = Time::parse(result.first, TIME_FMT);
+      auto value = JSON::Reader::parse(result.second);
+      data->append(makeEntry(time, value));
     }
 
     LOG_DEBUG(5, data->size() << " results");
@@ -89,6 +90,7 @@ void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
 
 
 void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
+#if 1
   // Load last data point if necessary
   if (last.isNull()) {
     auto cb = [=] (
@@ -101,18 +103,21 @@ void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
     last = JSON::Null::instancePtr();
     return query(0, 1, cb);
   }
+#endif
 
   // Don't record if result is unchanged
-  if (*last != *value) {
+  if (last.isNull() || *last != *value) {
     last = value;
 
     auto key = getKey(time);
     LOG_DEBUG(5, "key: " << key << " value: " << *value);
     db.set(key, value->toString());
 
-    auto entry = makeEntry(time, value);
-    for (auto p: subscribers)
-      if (p.second.isSet()) p.second->next(entry);
+    if (!subscribers.empty()) {
+      auto entry = makeEntry(time, value);
+      for (auto p: subscribers)
+        if (p.second.isSet()) p.second->next(entry);
+    }
   }
 }
 
