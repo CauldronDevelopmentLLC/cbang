@@ -857,7 +857,7 @@ bool DB::waitRead()    const {return status & MYSQL_WAIT_READ;}
 bool DB::waitWrite()   const {return status & MYSQL_WAIT_WRITE;}
 bool DB::waitExcept()  const {return status & MYSQL_WAIT_EXCEPT;}
 bool DB::waitTimeout() const {return status & MYSQL_WAIT_TIMEOUT;}
-int DB::getSocket()    const {return mysql_get_socket(db);}
+int  DB::getSocket()   const {return mysql_get_socket(db);}
 
 
 double DB::getTimeout() const {

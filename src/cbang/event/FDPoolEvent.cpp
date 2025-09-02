@@ -185,7 +185,6 @@ void FDPoolEvent::FDRec::updateEvent() {
 
   if (events) {
     event->renew(fd->getFD(), EF::EVENT_PERSIST | events);
-    event->setPriority(pool.getEventPriority());
     event->add();
 
   } else event->del();

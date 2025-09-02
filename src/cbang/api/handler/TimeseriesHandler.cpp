@@ -177,7 +177,7 @@ void TimeseriesHandler::query(uint64_t time) {
 
 
 void TimeseriesHandler::schedule() {
-  if (results.isSet()) event->activate();
+  if (results.isSet()) event->add(0);
   else if (!event->isPending()) event->add(getNext());
 }
 
@@ -204,7 +204,6 @@ void TimeseriesHandler::process() {
 
         get(key)->add(resultsTime, result);
       }
-
     } catch (const Exception &e) {
       LOG_ERROR(e);
       LOG_DEBUG(3, "Failed " << name);
