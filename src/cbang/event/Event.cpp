@@ -103,15 +103,14 @@ void Event::assign(Base &base, int fd, unsigned events, callback_t cb) {
 
 
 void Event::renew(int fd, unsigned events) {
+  int priority = getPriority();
   del();
   event_assign(e, event_get_base(e), fd, events, event_cb, this);
+  if (priority) setPriority(priority);
 }
 
 
-void Event::renew(int signal) {
-  del();
-  event_assign(e, event_get_base(e), signal, EV_SIGNAL, event_cb, this);
-}
+void Event::renew(int signal) {renew(signal, EV_SIGNAL);}
 
 
 void Event::add(double t) {

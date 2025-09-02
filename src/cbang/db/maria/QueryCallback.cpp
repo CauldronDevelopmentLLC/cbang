@@ -85,10 +85,14 @@ bool QueryCallback::next() {
     if (!db.fetchRowNB()) return false;
 
   case STATE_FETCH:
-    while (db.haveRow()) {
+    // Limit number of rows processed per event
+    unsigned i;
+    for (i = 0; i < 1000 && db.haveRow(); i++) {
       call(EventDB::EVENTDB_ROW);
       if (!db.fetchRowNB()) return false;
     }
+
+    if (db.haveRow()) return resume = true;
     state = STATE_FREE;
     if (!db.freeResultNB()) return false;
 
@@ -119,8 +123,10 @@ void QueryCallback::operator()(Event::Event &, int, unsigned flags) {
   LOG_DEBUG(6, CBANG_FUNC << "() flags=" << flags);
 
   try {
-    if (db.continueNB(db.eventFlagsToDBReady(flags))) {
+    if (resume || db.continueNB(db.eventFlagsToDBReady(flags))) {
+      resume = false;
       if (!next()) return db.renewEvent();
+      if (resume)  return db.rescheduleEvent();
     } else return db.addEvent();
 
   } catch (const Exception &e) {

@@ -150,6 +150,12 @@ void EventDB::addEvent() const {
 }
 
 
+void EventDB::rescheduleEvent() const {
+  event->renew(getSocket(), Base::EVENT_TIMEOUT);
+  event->add(0);
+}
+
+
 void EventDB::endEvent() {event.release();}
 
 

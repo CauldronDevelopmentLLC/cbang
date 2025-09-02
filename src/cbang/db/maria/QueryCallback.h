@@ -42,6 +42,7 @@ namespace cb {
       EventDB::callback_t cb;
       std::string query;
       unsigned retry;
+      bool resume = false;
 
       typedef enum {
         STATE_START,
@@ -57,7 +58,7 @@ namespace cb {
 
     public:
       QueryCallback(EventDB &db, EventDB::callback_t cb,
-                    const std::string &query, unsigned retry = 5);
+        const std::string &query, unsigned retry = 5);
 
       void call(EventDB::state_t state);
       bool next();
