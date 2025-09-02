@@ -47,6 +47,7 @@ namespace cb {
     class EventDB : public DB {
       Event::Base &base;
       SmartPointer<Event::Event> event;
+      int priority = 0;
 
     public:
       typedef enum {
@@ -67,26 +68,29 @@ namespace cb {
       EventDB(Event::Base &base, st_mysql *db = 0);
       ~EventDB();
 
+      int getPriority() const {return priority;}
+      void setPriority(int priority) {this->priority = priority;}
+
       unsigned getEventFlags() const;
 
       void connect(callback_t cb,
-                   const std::string &host = "localhost",
-                   const std::string &user = "root",
-                   const std::string &password = std::string(),
-                   const std::string &dbName = std::string(),
-                   unsigned port = 3306,
-                   const std::string &socketName = std::string(),
-                   flags_t flags = FLAG_DEFAULTS);
+        const std::string &host       = "localhost",
+        const std::string &user       = "root",
+        const std::string &password   = std::string(),
+        const std::string &dbName     = std::string(),
+        unsigned port                 = 3306,
+        const std::string &socketName = std::string(),
+        flags_t flags                 = FLAG_DEFAULTS);
 
       template <class T>
       void connect(T *obj, typename Callback<T>::member_t member,
-                   const std::string &host = "localhost",
-                   const std::string &user = "root",
-                   const std::string &password = std::string(),
-                   const std::string &dbName = std::string(),
-                   unsigned port = 3306,
-                   const std::string &socketName = std::string(),
-                   flags_t flags = FLAG_DEFAULTS) {
+        const std::string &host       = "localhost",
+        const std::string &user       = "root",
+        const std::string &password   = std::string(),
+        const std::string &dbName     = std::string(),
+        unsigned port                 = 3306,
+        const std::string &socketName = std::string(),
+        flags_t flags                 = FLAG_DEFAULTS) {
         using namespace std::placeholders;
         connect(std::bind(member, obj, _1), host, user, password, dbName, port,
                 socketName, flags);

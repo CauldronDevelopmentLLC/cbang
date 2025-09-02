@@ -50,7 +50,7 @@ TimeseriesHandler::TimeseriesHandler(
   QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + "\0"s)),
   period(HumanDuration::parse(config->getAsString("period"))),
   event(db.getPool()->getEventBase().newEvent(
-    this, &TimeseriesHandler::query, 0)) {
+    this, &TimeseriesHandler::process, 0)) {
 
   if (name.empty()) THROW("Timeseries requires a name");
   if (!period) THROW("Timeseries period cannot be zero");
@@ -75,6 +75,8 @@ TimeseriesHandler::TimeseriesHandler(
 
     key = config->createList(); // Empty key
   }
+
+  event->setPriority(4);
 
   load();
 }
@@ -152,44 +154,66 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
 void TimeseriesHandler::load() {schedule();}
 
 
-void TimeseriesHandler::schedule() {
-  if (!event->isPending()) event->add(getNext());
-}
-
-
 void TimeseriesHandler::query(uint64_t time) {
-  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &result) {
-    schedule();
-
-    if (status == HTTP::Status::HTTP_OK) {
-      if (ret != "list") get("")->add(time, result);
+  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &results) {
+    if (status == HTTP::Status::HTTP_OK) try {
+      if (ret != "list") get("")->add(time, results);
       else {
         LOG_DEBUG(3, "Storing timeseries results " << name);
-
-        for (auto e: *result) {
-          string key = resolveKey(*e);
-
-          for (auto it: *this->key)
-            e->erase(it->asString());
-
-          if (e->size() == 1) e = *e->begin();
-
-          get(key)->add(time, e);
-        }
-
-        LOG_DEBUG(3, "Done " << name);
+        this->results = results;
+        resultsTime   = time;
+        it            = results->begin();
       }
-    }
+    } CATCH_ERROR;
+
+    schedule();
   };
 
   LOG_DEBUG(3, "Querying timeseries " << name);
-  LOG_DEBUG(5, "querying: " << sql);
+  LOG_DEBUG(5, "Timeseries query: " << sql);
 
   query(sql, cb);
 }
 
 
-void TimeseriesHandler::query() {query(getTimePeriod(Time::now()));}
+void TimeseriesHandler::schedule() {
+  if (results.isSet()) event->activate();
+  else if (!event->isPending()) event->add(getNext());
+}
+
+
+void TimeseriesHandler::process() {
+  if (results.isSet())
+    for (unsigned i = 0; i < 1000; i++) {
+      if (it == results->end()) {
+        LOG_DEBUG(3, "Done " << name);
+        results.release();
+        schedule();
+        break;
+      }
+
+      auto result = *it;
+      string key  = resolveKey(*result);
+
+      // Don't bother storing key data
+      for (auto it: *this->key)
+        result->erase(it->asString());
+
+      // If there's only one key store just its value
+      if (result->size() == 1) result = *result->begin();
+
+      get(key)->add(resultsTime, result);
+    }
+
+  else query(getTimePeriod(Time::now()));
+}
+
+
+SmartPointer<MariaDB::EventDB> TimeseriesHandler::getDBConnection() const {
+  auto db = QueryDef::getDBConnection();
+  db->setPriority(5); // Lower priority to avoid blocking regular API requests
+  return db;
+}
 
 
 bool TimeseriesHandler::operator()(const CtxPtr &ctx) {

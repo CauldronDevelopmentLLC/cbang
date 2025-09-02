@@ -52,6 +52,10 @@ namespace cb {
 
       std::map<std::string, SmartPointer<Timeseries>> series;
 
+      JSON::ValuePtr results;
+      JSON::Value::iterator it;
+      uint64_t resultsTime = 0;
+
       TimeseriesHandler(
         API &api, const std::string &name, const JSON::ValuePtr &config);
 
@@ -60,13 +64,18 @@ namespace cb {
       uint64_t getTimePeriod(uint64_t ts) const {return (ts / period) * period;}
       double getNext() const;
 
+    protected:
       SmartPointer<Timeseries> get(const std::string &key, bool create = true);
       void action(const CtxPtr &ctx);
       void load();
       void schedule();
-      void query(uint64_t time);
-      void query();
       using QueryDef::query;
+      void query(uint64_t time);
+      void process();
+
+
+      // From QueryDef
+      SmartPointer<MariaDB::EventDB> getDBConnection() const override;
 
       // From Handler
       bool operator()(const CtxPtr &ctx) override;

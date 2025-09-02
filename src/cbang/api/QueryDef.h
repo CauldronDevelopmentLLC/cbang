@@ -48,9 +48,10 @@ namespace cb {
       JSON::ValuePtr fields;
 
       QueryDef(API &api, const JSON::ValuePtr &config);
+      virtual ~QueryDef() {}
 
       const std::string &getSQL() const {return sql;}
-      SmartPointer<MariaDB::EventDB> getDBConnection() const;
+      virtual SmartPointer<MariaDB::EventDB> getDBConnection() const;
 
       SmartPointer<Query> query(const std::string &sql,
         Query::callback_t cb) const;

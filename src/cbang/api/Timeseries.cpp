@@ -90,7 +90,6 @@ void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
 
 
 void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
-#if 1
   // Load last data point if necessary
   if (last.isNull()) {
     auto cb = [=] (
@@ -103,7 +102,6 @@ void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
     last = JSON::Null::instancePtr();
     return query(0, 1, cb);
   }
-#endif
 
   // Don't record if result is unchanged
   if (last.isNull() || *last != *value) {

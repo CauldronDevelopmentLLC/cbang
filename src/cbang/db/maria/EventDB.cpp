@@ -132,6 +132,7 @@ void EventDB::newEvent(Base::callback_t cb) {
   if (event.isSet() && event->isPending()) THROW("Event already pending");
   assertPending();
   event = base.newEvent(getSocket(), cb, getEventFlags());
+  event->setPriority(priority);
   event->add();
 }
 
