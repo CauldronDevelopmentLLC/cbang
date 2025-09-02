@@ -104,7 +104,7 @@ void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
   }
 
   // Don't record if result is unchanged
-  if (last.isNull() || *last != *value) {
+  if (*last != *value) {
     last = value;
 
     auto key = getKey(time);
