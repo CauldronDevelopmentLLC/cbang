@@ -183,7 +183,7 @@ void TimeseriesHandler::schedule() {
 
 
 void TimeseriesHandler::process() {
-  if (results.isSet())
+  if (results.isSet()) try {
     for (unsigned i = 0; i < 1000; i++) {
       if (it == results->end()) {
         LOG_DEBUG(3, "Done " << name);
@@ -192,7 +192,7 @@ void TimeseriesHandler::process() {
         break;
       }
 
-      auto result = *it;
+      auto result = *it++;
       string key  = resolveKey(*result);
 
       // Don't bother storing key data
@@ -204,6 +204,13 @@ void TimeseriesHandler::process() {
 
       get(key)->add(resultsTime, result);
     }
+
+  } catch (const Exception &e) {
+    LOG_ERROR(e);
+    LOG_DEBUG(3, "Failed " << name);
+    results.release();
+    schedule();
+  }
 
   else query(getTimePeriod(Time::now()));
 }
