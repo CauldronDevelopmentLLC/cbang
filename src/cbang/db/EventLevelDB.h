@@ -82,6 +82,10 @@ namespace cb {
     const SmartPointer<Event::ConcurrentPool> &getPool() const {return pool;}
 
 
+    int getPriority() const {return priority;}
+    void setPriority(int priority) {this->priority = priority;}
+
+
     EventLevelDB ns(const std::string &name) {
       return EventLevelDB(LevelDB::ns(name), pool, priority);
     }
@@ -96,8 +100,9 @@ namespace cb {
       int options = 0) const {
 
       SmartPointer<bool> result = new bool(false);
-      auto run = [=] () {*result = LevelDB::has(key, options);};
-      pool->submit(run, [=] (bool success) {if (cb) cb(success, *result);});
+      auto run  = [=] () {*result = LevelDB::has(key, options);};
+      auto done = [=] (bool success) {if (cb) cb(success, *result);};
+      pool->submit(run, done, priority);
     }
 
 
@@ -106,8 +111,9 @@ namespace cb {
       int options = 0) const {
 
       SmartPointer<std::string> result = new std::string;
-      pool->submit([=] () {*result = LevelDB::get(key, options);},
-        [=] (bool success) {if (cb) cb(success, *result);});
+      auto run  = [=] () {*result = LevelDB::get(key, options);};
+      auto done = [=] (bool success) {if (cb) cb(success, *result);};
+      pool->submit(run, done, priority);
     }
 
 
@@ -118,7 +124,7 @@ namespace cb {
       SmartPointer<std::string> result = new std::string;
       auto run  = [=] () {*result = LevelDB::get(key, defaultValue, options);};
       auto done = [cb, result] (bool success) {if (cb) cb(success, *result);};
-      pool->submit(run, done);
+      pool->submit(run, done, priority);
     }
 
 
@@ -159,13 +165,13 @@ namespace cb {
       auto success = [=] () {cb(Status(), results);};
       auto error = [=] (const Exception &e) {cb(Status(new Exception(e)), 0);};
 
-      pool->submit(0, query, success, error);
+      pool->submit(priority, query, success, error);
     }
 
 
     void commit(const SmartPointer<Batch> &batch,
       std::function<void (bool)> cb, int options = 0) {
-      pool->submit([=] () {batch->commit(options);}, cb);
+      pool->submit([=] () {batch->commit(options);}, cb, priority);
     }
 
 
@@ -173,7 +179,7 @@ namespace cb {
       const std::string &begin = std::string(),
       const std::string &end   = std::string()) {
 
-      pool->submit([=] {LevelDB::compact(begin, end);}, cb);
+      pool->submit([=] {LevelDB::compact(begin, end);}, cb, priority);
     }
   };
 }
