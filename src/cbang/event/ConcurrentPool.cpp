@@ -126,7 +126,7 @@ void ConcurrentPool::run() {
 
     // Put Task in completed queue
     completed.push(task);
-    if (!event->isPending()) event->activate();
+    if (!event->isPending()) event->add(0);
     active--;
   }
 }
