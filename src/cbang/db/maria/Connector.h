@@ -45,17 +45,34 @@ namespace cb {
     class Connector {
       Event::Base &base;
 
-      std::string dbUser;
-      std::string dbPass;
-      std::string dbName;
-      std::string dbHost = "127.0.0.1";
-      uint32_t dbPort    = 3306;
-      unsigned dbTimeout = 5;
+      std::string user;
+      std::string password;
+      std::string database;
+      std::string host     = "127.0.0.1";
+      uint32_t    port     = 3306;
+      unsigned    timeout  = 5;
+      int         priority = 0;
 
     public:
       Connector(Event::Base &base) : base(base) {}
 
       void addOptions(Options &options);
+
+      const std::string &getUser()     const {return user;}
+      const std::string &getPassword() const {return password;}
+      const std::string &getDatabase() const {return database;}
+      const std::string &getHost()     const {return host;}
+      uint32_t           getPort()     const {return port;}
+      unsigned           getTimeout()  const {return timeout;}
+      int                getPriority() const {return priority;}
+
+      void setUser    (const std::string &user)     {this->user     = user;}
+      void setPassword(const std::string &password) {this->password = password;}
+      void getDatabase(const std::string &database) {this->database = database;}
+      void getHost    (const std::string &host)     {this->host     = host;}
+      void getPort    (uint32_t port)               {this->port     = port;}
+      void getTimeout (unsigned timeout)            {this->timeout  = timeout;}
+      void getPriority(int priority)                {this->priority = priority;}
 
       SmartPointer<MariaDB::EventDB> getConnection();
     };

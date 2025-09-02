@@ -40,12 +40,12 @@ using namespace cb::MariaDB;
 
 void Connector::addOptions(Options &options) {
   options.pushCategory("Database");
-  options.addTarget("db-host",    dbHost,    "DB host name");
-  options.addTarget("db-user",    dbUser,    "DB user name");
-  options.addTarget("db-pass",    dbPass,    "DB password")->setObscured();;
-  options.addTarget("db-name",    dbName,    "DB name");
-  options.addTarget("db-port",    dbPort,    "DB port");
-  options.addTarget("db-timeout", dbTimeout, "DB timeout");
+  options.addTarget("db-host",    host,     "DB host name");
+  options.addTarget("db-user",    user,     "DB user name");
+  options.addTarget("db-pass",    password, "DB password")->setObscured();;
+  options.addTarget("db-name",    database, "DB name");
+  options.addTarget("db-port",    port,     "DB port");
+  options.addTarget("db-timeout", timeout,  "DB timeout");
   options.popCategory();
 }
 
@@ -56,15 +56,16 @@ SmartPointer<MariaDB::EventDB> Connector::getConnection() {
   auto db = SmartPtr(new MariaDB::EventDB(base));
 
   // Configure
-  db->setConnectTimeout(dbTimeout);
-  db->setReadTimeout(dbTimeout);
-  db->setWriteTimeout(dbTimeout);
+  db->setConnectTimeout(timeout);
+  db->setReadTimeout(timeout);
+  db->setWriteTimeout(timeout);
   db->setReconnect(true);
   db->enableNonBlocking();
   db->setCharacterSet("utf8");
+  db->setPriority(priority);
 
   // Connect
-  db->connectNB(dbHost, dbUser, dbPass, dbName, dbPort);
+  db->connectNB(host, user, password, database, port);
 
   return db;
 }
