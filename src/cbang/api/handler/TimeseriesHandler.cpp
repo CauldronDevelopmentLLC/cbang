@@ -183,36 +183,37 @@ void TimeseriesHandler::schedule() {
 
 
 void TimeseriesHandler::process() {
-  if (results.isSet()) try {
-    for (unsigned i = 0; i < 1000; i++) {
-      if (it == results->end()) {
-        LOG_DEBUG(3, "Done " << name);
-        results.release();
-        schedule();
-        break;
+  if (results.isSet()) {
+    try {
+      for (unsigned i = 0; i < 1000; i++) {
+        if (it == results->end()) {
+          LOG_DEBUG(3, "Done " << name);
+          results.release();
+          break;
+        }
+
+        auto result = *it++;
+        string key  = resolveKey(*result);
+
+        // Don't bother storing key data
+        for (auto it: *this->key)
+          result->erase(it->asString());
+
+        // If there's only one key store just its value
+        if (result->size() == 1) result = *result->begin();
+
+        get(key)->add(resultsTime, result);
       }
 
-      auto result = *it++;
-      string key  = resolveKey(*result);
-
-      // Don't bother storing key data
-      for (auto it: *this->key)
-        result->erase(it->asString());
-
-      // If there's only one key store just its value
-      if (result->size() == 1) result = *result->begin();
-
-      get(key)->add(resultsTime, result);
+    } catch (const Exception &e) {
+      LOG_ERROR(e);
+      LOG_DEBUG(3, "Failed " << name);
+      results.release();
     }
 
-  } catch (const Exception &e) {
-    LOG_ERROR(e);
-    LOG_DEBUG(3, "Failed " << name);
-    results.release();
     schedule();
-  }
 
-  else query(getTimePeriod(Time::now()));
+  } else query(getTimePeriod(Time::now()));
 }
 
 
