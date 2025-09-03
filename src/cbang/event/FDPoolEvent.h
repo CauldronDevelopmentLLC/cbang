@@ -76,7 +76,6 @@ namespace cb {
 
 
       class FDRec {
-        FDPoolEvent &pool;
         FD *fd;
         SmartPointer<Event> event;
         SmartPointer<Event> timeoutEvent;

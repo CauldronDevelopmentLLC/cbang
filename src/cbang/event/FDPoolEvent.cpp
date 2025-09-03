@@ -138,7 +138,7 @@ void FDPoolEvent::FDQueue::pop() {
 
 /******************************************************************************/
 FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, FD *fd) :
-  pool(pool), fd(fd), readQ(pool, fd, true), writeQ(pool, fd, false) {
+  fd(fd), readQ(pool, fd, true), writeQ(pool, fd, false) {
   event = pool.getBase().newEvent(
     fd->getFD(), this, &FDPoolEvent::FDRec::callback);
   timeoutEvent = pool.getBase().newEvent(this, &FDPoolEvent::FDRec::timeout);
