@@ -178,6 +178,7 @@ namespace cb {
 
       void submit(const SmartPointer<Task> &task);
 
+
       void submit(
         int priority, typename TaskFunctions::run_cb_t run,
         typename TaskFunctions::success_cb_t  success  = 0,
@@ -186,12 +187,12 @@ namespace cb {
         submit(new TaskFunctions(priority, run, success, error, complete));
       }
 
+
       void submit(std::function<void ()> run,
         std::function<void (bool)> done, int priority = 0) {
 
-        auto ok = SmartPtr(new bool);
-        auto successCB = [=] () {*ok = true;};
-        auto errorCB   = [=] (const Exception &e) {*ok = false;};
+        auto successCB = [=] () {done(true);};
+        auto errorCB   = [=] (const Exception &e) {done(false);};
 
         submit(priority, run, successCB, errorCB);
       }

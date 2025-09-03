@@ -89,34 +89,12 @@ void Timeseries::query(uint64_t since, unsigned maxResults, const cb_t &cb) {
 }
 
 
-void Timeseries::add(uint64_t time, const JSON::ValuePtr &value) {
-  // Load last data point if necessary
-  if (last.isNull()) {
-    auto cb = [=] (
-      const SmartPointer<Exception> &err, const JSON::ValuePtr &data) {
-      if (err.isNull() && data.isSet() && data->isList() && data->size())
-        last = data->get(0)->get("value");
-      add(time, value);
-    };
+void Timeseries::broadcast(uint64_t time, const JSON::ValuePtr &value) {
+  if (subscribers.empty()) return;
 
-    last = JSON::Null::instancePtr();
-    return query(0, 1, cb);
-  }
-
-  // Don't record if result is unchanged
-  if (*last != *value) {
-    last = value;
-
-    auto key = getKey(time);
-    LOG_DEBUG(5, "key: " << key << " value: " << *value);
-    db.set(key, value->toString());
-
-    if (!subscribers.empty()) {
-      auto entry = makeEntry(time, value);
-      for (auto p: subscribers)
-        if (p.second.isSet()) p.second->next(entry);
-    }
-  }
+  auto entry = makeEntry(time, value);
+  for (auto p: subscribers)
+    if (p.second.isSet()) p.second->next(entry);
 }
 
 
@@ -151,9 +129,4 @@ void Timeseries::unsubscribe(uint64_t id) {
   if (!subscribers.erase(id))
     THROWX("Timeseries does not have subscriber with id " << id,
       HTTP::Status::HTTP_NOT_FOUND);
-}
-
-
-string Timeseries::getKey(uint64_t ts) const {
-  return Time(handler.getTimePeriod(ts)).toString(TIME_FMT);
 }

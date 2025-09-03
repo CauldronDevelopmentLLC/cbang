@@ -29,6 +29,37 @@
                           joseph@cauldrondevelopment.com
 
 \******************************************************************************/
+/*
+  This class handles the storing and recalling of timeseries data.  Queries
+  are made to the SQL DB and those results are stored as a timeseries in
+  LevelDB.
+
+  Timeseries data may either be a single value or a list of values keyed by
+  one or more variables.  The key or keys are specified via the ``key``
+  configuration option.  The key value(s) are removed from the timeseries
+  data to save space.  If the resulting data is a dictionary with a single
+  value then only the value is stored.
+
+  Clients may subscribe to the timeseries via Websocket.  Subscribers will
+  first receive a list of all the recent timeseries data limited by time
+  and total number of results.  Subsequently, new results will be broadcast
+  to all subscribers for as long as they stay connected.
+
+  The last result is tracked in LevelDB.  If a new result is the same as the
+  last result it is not added to the timeseries.  In this way, gaps in the time
+  series are assumed to be repeats of the previous value.
+
+  The "last" result is stored at key "\0".  If the timeseries is a list of
+  values then "last" will be dictionary of key, value pairs, otherwise just the
+  one value.  The "last" value is reloaded when the server is restarted before
+  making further queries.
+
+  The implementation is complicated because care is taken to not dominate the
+  main thread when processing large lists of data.  A low priority event is
+  used, repetitive operations are spread across multiple event callbacks and
+  LevelDB writes are batched.
+*/
+
 
 #include "TimeseriesHandler.h"
 
@@ -43,6 +74,10 @@
 using namespace std;
 using namespace cb;
 using namespace cb::API;
+
+#undef CBANG_LOG_PREFIX
+#define CBANG_LOG_PREFIX "TS:" << name << ":"
+#define TIME_FMT "%Y%m%d%H%M%S"
 
 
 TimeseriesHandler::TimeseriesHandler(
@@ -76,9 +111,9 @@ TimeseriesHandler::TimeseriesHandler(
     key = config->createList(); // Empty key
   }
 
-  event->setPriority(4);
+  event->setPriority(7);
 
-  load();
+  schedule();
 }
 
 
@@ -98,7 +133,7 @@ double TimeseriesHandler::getNext() const {
   auto   now  = Timer::now();
   double next = getTimePeriod(ceil(now)) + period - now;
 
-  LOG_DEBUG(5, "Querying timeseries in " << next << " seconds "
+  LOG_DEBUG(4, "Querying in " << next << " seconds "
     << " current=" << Time(getTimePeriod(ceil(now))).toString()
     << " period="  << period
     << " now="     << Time(now).toString());
@@ -114,10 +149,118 @@ SmartPointer<Timeseries> TimeseriesHandler::get(
   if (it != series.end()) return it->second;
   if (!create) return 0;
 
-  LOG_DEBUG(4, "Adding `" << name << "` timeseries with key `" << key << "`");
+  LOG_DEBUG(5, "Adding key `" << key << "`");
   return series[key] = new Timeseries(*this, key);
 }
 
+
+void TimeseriesHandler::schedule() {
+  if (last.isNull() || results.isSet()) event->add(0);
+  else event->add(getNext());
+}
+
+
+void TimeseriesHandler::process() {
+  if (last.isNull()) {
+    // Try to load the last value
+    LOG_DEBUG(3, "Querying last value");
+
+    auto cb = [this] (bool success, const string &value) {
+      LOG_DEBUG(3, "Last value success=" << (success ? "true" : "false"));
+
+      last = new JSON::Dict;
+      schedule();
+
+      try {
+        if (success) last = JSON::Reader::parse(value);
+      } catch (const Exception &e) {
+        LOG_ERROR("Failed to parse last timeseries result: " << e);
+      }
+    };
+
+    db.get("\0"s, cb);
+
+  } else if (results.isSet()) {
+    // Process a batch of results
+    LOG_DEBUG(4, "Processing result batch");
+
+    try {
+      for (unsigned i = 0; i < 1000; i++) {
+        if (it == results->end()) {
+          LOG_DEBUG(3, "Done " << name);
+          if (batch.isSet()) {
+            auto cb = [=] () {
+              batch->set("\0"s, last->toString());
+              batch->commit();
+            };
+
+            batch.release();
+            db.getPool()->submit(0, cb);
+          }
+          results.release();
+          break;
+        }
+
+        auto result = *it++;
+        string key  = resolveKey(*result);
+
+        // Don't store key data
+        for (auto it: *this->key)
+          result->erase(it->asString());
+
+        // If there's only one key store just its value
+        if (result->size() == 1) result = *result->begin();
+
+        // Don't record if result is unchanged
+        auto it = last->find(key);
+        if (it != last->end() && **it == *result) continue;
+        last->insert(key, result);
+
+        if (batch.isNull()) batch = new LevelDB::Batch(db.batch());
+        batch->set(key + "\0"s + resultsTimeKey, result->toString());
+        get(key)->broadcast(resultsTime, result);
+      }
+    } catch (const Exception &e) {
+      LOG_ERROR(e);
+      LOG_DEBUG(3, "Failed " << name);
+      results.release();
+    }
+
+    schedule();
+
+  } else query(getTimePeriod(Time::now())); // Load next timeseries result
+}
+
+
+void TimeseriesHandler::query(uint64_t time) {
+  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &results) {
+    if (status == HTTP::Status::HTTP_OK) try {
+      resultsTimeKey = Time(getTimePeriod(time)).toString(TIME_FMT);
+
+      if (ret != "list") {
+        if (*last != *results) {
+          last = results;
+          db.set("\0"s, last->toString());
+          db.set("\0"s + resultsTimeKey, results->toString());
+          get("")->broadcast(time, results);
+        }
+
+      } else {
+        LOG_DEBUG(3, "Storing results");
+        this->results  = results;
+        resultsTime    = time;
+        it             = results->begin();
+      }
+    } CATCH_ERROR;
+
+    schedule();
+  };
+
+  LOG_DEBUG(3, "Querying");
+  LOG_DEBUG(5, "query: " << sql);
+
+  query(sql, cb);
+}
 
 
 void TimeseriesHandler::action(const CtxPtr &ctx) {
@@ -126,11 +269,11 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
   auto action   = resolver->selectString("args.action", "query");
   auto since    = resolver->selectTime("args.since", 0);
   auto maxCount = resolver->selectU64("args.max_count", 0);
-  auto key      = resolveKey(*resolver->select("args"));
 
   // Get Timeseries
-  auto ts = get(key);
-  if (ts.isNull() && action == "unsubscribe") return;
+  auto key = ret == "list" ? resolveKey(*resolver->select("args")) : "";
+  auto ts  = get(key, action != "unsubscribe");
+  if (ts.isNull()) return;
 
   // Execute action
   auto cb = [this, ctx] (
@@ -151,74 +294,9 @@ void TimeseriesHandler::action(const CtxPtr &ctx) {
 }
 
 
-void TimeseriesHandler::load() {schedule();}
-
-
-void TimeseriesHandler::query(uint64_t time) {
-  auto cb = [=] (HTTP::Status status, const JSON::ValuePtr &results) {
-    if (status == HTTP::Status::HTTP_OK) try {
-      if (ret != "list") get("")->add(time, results);
-      else {
-        LOG_DEBUG(3, "Storing timeseries results " << name);
-        this->results = results;
-        resultsTime   = time;
-        it            = results->begin();
-      }
-    } CATCH_ERROR;
-
-    schedule();
-  };
-
-  LOG_DEBUG(3, "Querying timeseries " << name);
-  LOG_DEBUG(5, "Timeseries query: " << sql);
-
-  query(sql, cb);
-}
-
-
-void TimeseriesHandler::schedule() {
-  if (results.isSet()) event->add(0);
-  else if (!event->isPending()) event->add(getNext());
-}
-
-
-void TimeseriesHandler::process() {
-  if (results.isSet()) {
-    try {
-      for (unsigned i = 0; i < 1000; i++) {
-        if (it == results->end()) {
-          LOG_DEBUG(3, "Done " << name);
-          results.release();
-          break;
-        }
-
-        auto result = *it++;
-        string key  = resolveKey(*result);
-
-        // Don't bother storing key data
-        for (auto it: *this->key)
-          result->erase(it->asString());
-
-        // If there's only one key store just its value
-        if (result->size() == 1) result = *result->begin();
-
-        get(key)->add(resultsTime, result);
-      }
-    } catch (const Exception &e) {
-      LOG_ERROR(e);
-      LOG_DEBUG(3, "Failed " << name);
-      results.release();
-    }
-
-    schedule();
-
-  } else query(getTimePeriod(Time::now()));
-}
-
-
 SmartPointer<MariaDB::EventDB> TimeseriesHandler::getDBConnection() const {
   auto db = QueryDef::getDBConnection();
-  db->setPriority(5); // Lower priority to avoid blocking regular API requests
+  db->setPriority(8); // Lower priority to avoid blocking regular API requests
   return db;
 }
 

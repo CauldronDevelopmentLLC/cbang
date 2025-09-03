@@ -60,14 +60,13 @@ namespace cb {
       Timeseries(TimeseriesHandler &handler, const std::string &key);
 
       void query(uint64_t since, unsigned maxResults, const cb_t &cb);
-      void add(uint64_t time, const JSON::ValuePtr &value);
+      void broadcast(uint64_t time, const JSON::ValuePtr &value);
 
       SmartPointer<Subscriber> subscribe(
         uint64_t id, uint64_t since, unsigned maxResults, const cb_t &cb);
       void unsubscribe(uint64_t id);
 
     protected:
-      std::string getKey(uint64_t ts) const;
       void query(uint64_t ts);
       void query();
     };
