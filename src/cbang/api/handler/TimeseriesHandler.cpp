@@ -187,16 +187,20 @@ void TimeseriesHandler::process() {
     try {
       for (unsigned i = 0; i < 1000; i++) {
         if (it == results->end()) {
-          LOG_DEBUG(3, "Done " << name);
           if (batch.isSet()) {
-            auto cb = [=] () {
+            LOG_DEBUG(3, "Writing to DB " << name);
+
+            auto cb = [batch = batch, last = last, name = name] () {
               batch->set("\0"s, last->toString());
               batch->commit();
+              LOG_DEBUG(3, "Done " << name);
             };
 
             batch.release();
             db.getPool()->submit(0, cb);
-          }
+
+          } else LOG_DEBUG(3, "No results, done " << name);
+
           results.release();
           break;
         }
@@ -247,9 +251,9 @@ void TimeseriesHandler::query(uint64_t time) {
 
       } else {
         LOG_DEBUG(3, "Storing results");
-        this->results  = results;
-        resultsTime    = time;
-        it             = results->begin();
+        this->results = results;
+        resultsTime   = time;
+        it            = results->begin();
       }
     } CATCH_ERROR;
 
