@@ -56,7 +56,7 @@ ServerApplication::ServerApplication(const string &name,
   if (hasFeature(FEATURE_LIFELINE))
     cmdLine.addTarget("lifeline", lifeline, "The application will watch for "
                       "this process ID and exit if it goes away.  Usually the "
-                      "calling process' PID.")->setType(Option::TYPE_INTEGER);
+                      "calling process' PID.");
 
   if (!hasFeature(FEATURE_SERVER)) return;
 
