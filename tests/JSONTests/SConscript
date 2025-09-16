@@ -35,8 +35,9 @@ Import('*')
 # Local includes
 env.Append(CPPPATH = ['#'])
 
-p1 = env.Program('JSON', 'JSON.cpp');
-p2 = env.Program('JSONDefault', 'JSONDefault.cpp');
-p3 = env.Program('Observable', 'Observable.cpp');
+p1 = env.Program('JSON',         'JSON.cpp')
+p2 = env.Program('JSONDefault',  'JSONDefault.cpp')
+p3 = env.Program('Observable',   'Observable.cpp')
+p4 = env.Program('JSONIterator', 'JSONIterator.cpp')
 
-Return('p1 p2 p3')
+Return('p1 p2 p3 p4')
