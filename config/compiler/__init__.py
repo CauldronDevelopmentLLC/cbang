@@ -502,7 +502,7 @@ def generate(env):
         BoolVariable('depends', 'Enable or disable dependency files', 0),
         BoolVariable('distcc', 'Enable or disable distributed builds', 0),
         BoolVariable('ccache', 'Enable or disable cached builds', 0),
-        BoolVariable('lto', 'Enable or disable link-time optimization', 1),
+        BoolVariable('lto', 'Enable or disable link-time optimization', 0),
         EnumVariable('platform', 'Override default platform', '',
                      allowed_values = ('', 'win32', 'posix', 'darwin')),
         ('ccflags', 'Set extra C and C++ compiler flags', None),
