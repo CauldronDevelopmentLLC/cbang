@@ -212,7 +212,7 @@ void TimeseriesHandler::process() {
         for (auto it: *this->key)
           result->erase(it->asString());
 
-        // If there's only one key store just its value
+        // If there's only one key, store just its value
         if (result->size() == 1) result = *result->begin();
 
         // Don't record if result is unchanged

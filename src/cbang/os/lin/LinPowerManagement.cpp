@@ -126,6 +126,7 @@ unsigned LinPowerManagement::_getIdleSeconds() {
   return 0;
 }
 
+
 bool LinPowerManagement::_getOnBattery() {
   return !acPath.empty() && SystemUtilities::exists(acPath + "/online") &&
     String::trim(SystemUtilities::read(acPath + "/online")) == "0";
