@@ -1,0 +1,16 @@
+iterator
+  "256"
+  "-1"
+  "0xdeadbeef"
+keys()
+  a
+  b
+  c
+entries()
+  a="256"
+  b="-1"
+  c="0xdeadbeef"
+find('c')="0xdeadbeef"
+find('c')==end()=0
+find('x')==end()=1
+find('x')!=end()=0
