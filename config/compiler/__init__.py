@@ -73,6 +73,7 @@ def configure(conf, cstd = 'c99'):
     cc            =     env.get('cc',     '').strip()
     cxx           =     env.get('cxx',    '').strip()
     ranlib        =     env.get('ranlib', '').strip()
+    ar            =     env.get('ar',     '').strip()
     strip         =     env.get('strip',  '').strip()
     debug         = int(env.get('debug'))
     optimize      = int(env.get('optimize'))
@@ -144,6 +145,7 @@ def configure(conf, cstd = 'c99'):
     if cc: env.Replace(CC = cc)
     if cxx: env.Replace(CXX = cxx)
     if ranlib: env.Replace(RANLIB = ranlib)
+    if ar: env.Replace(AR = ar)
     if strip: env.Replace(STRIP = strip)
 
     env['compiler']      = compiler
@@ -484,6 +486,7 @@ def generate(env):
     env.CBAddVariables(
         ('cc', 'Set C compiler executable', ''),
         ('cxx', 'Set C++ compiler executable', ''),
+        ('ar', 'Set ar executable', ''),
         ('ranlib', 'Set ranlib executable', ''),
         ('strip', 'Set strip executable', ''),
         ('optimize', 'Enable or disable optimizations', -1),
