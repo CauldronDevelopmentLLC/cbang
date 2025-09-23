@@ -78,7 +78,7 @@ namespace cb {
       unsigned getFailures() const {return failures;}
 
       void start();
-      void stop();
+      void stop(Error reason = DNS_ERR_SHUTDOWN);
 
       bool transmit(Type type, const std::string &request);
 

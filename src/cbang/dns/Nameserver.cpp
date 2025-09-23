@@ -126,8 +126,7 @@ Nameserver::~Nameserver() {}
 
 
 void Nameserver::start() {
-  failures = 0;
-  waiting  = false;
+  waiting = false;
 
   socket->open(Socket::UDP | (addr.isIPv6() ? Socket::IPV6 : 0));
   socket->setBlocking(false);
@@ -142,11 +141,11 @@ void Nameserver::start() {
 }
 
 
-void Nameserver::stop() {
+void Nameserver::stop(Error reason) {
   for (auto &it: active) {
     auto &query = it.second;
     query.timeout->del();
-    respond(query, new Result(DNS_ERR_SHUTDOWN), 0);
+    respond(query, new Result(reason), 0);
   }
 
   active.clear();
@@ -208,6 +207,10 @@ bool Nameserver::transmit(Type type, const string &request) {
     return false;
 
   } CATCH_DEBUG(4);
+
+  // Restart
+  stop(DNS_ERR_NETFAIL);
+  start();
 
   failures++;
   return false;
