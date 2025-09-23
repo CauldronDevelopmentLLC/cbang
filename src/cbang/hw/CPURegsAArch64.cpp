@@ -37,19 +37,18 @@
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/os/SysError.h>
 
+#include <cstring>
 
 #if defined(__linux__)
 #if defined(__aarch64__)
 #include <asm/hwcap.h>
 #endif
-#include <cstring>
 
 #include <unistd.h>
 #include <sys/auxv.h>
 #endif
 
 #if defined(__APPLE__)
-#include <cstring>
 
 #include <sys/types.h>
 #include <sys/sysctl.h>

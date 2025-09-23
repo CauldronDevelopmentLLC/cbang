@@ -191,15 +191,15 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     memset(&p->si, 0, sizeof(STARTUPINFO));
     p->si.cb = sizeof(STARTUPINFO);
     p->si.hStdInput =
-      (flags & REDIR_STDIN)  ? pipes[0].getChildEnd() :
+      (flags & REDIR_STDIN)  ? pipes[0].getChildEnd().getHandle() :
       GetStdHandle(STD_INPUT_HANDLE);
     p->si.hStdOutput =
-      (flags & REDIR_STDOUT) ? pipes[1].getChildEnd() :
+      (flags & REDIR_STDOUT) ? pipes[1].getChildEnd().getHandle() :
       GetStdHandle(STD_OUTPUT_HANDLE);
     p->si.hStdError =
-      (flags & REDIR_STDERR) ? pipes[2].getChildEnd() :
+      (flags & REDIR_STDERR) ? pipes[2].getChildEnd().getHandle() :
       ((flags & MERGE_STDOUT_AND_STDERR) ?
-       pipes[1].getChildEnd() : GetStdHandle(STD_ERROR_HANDLE));
+       pipes[1].getChildEnd().getHandle() : GetStdHandle(STD_ERROR_HANDLE));
     p->si.dwFlags |= STARTF_USESTDHANDLES;
 
     if (flags & NULL_STDOUT) p->si.hStdOutput = OpenNUL();
