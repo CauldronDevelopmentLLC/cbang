@@ -67,8 +67,7 @@ void Account::addOptions(Options &options) {
   options.pushCategory("ACME v2");
   options.addTarget("acmev2-base", uriBase, "The ACME v2 URI base.");
   options.addTarget("acmev2-emails", emails, "Space separated list of "
-                    "certificate contact emails."
-                    )->setType(Option::TYPE_STRINGS);
+                    "certificate contact emails.");
   options.addTarget("acmev2-retry-wait", retryWait, "The time in seconds to "
                     "wait between retries.");
   options.addTarget("acmev2-renewal-period", renewPeriod, "Renew certificates "
@@ -78,9 +77,9 @@ void Account::addOptions(Options &options) {
 
 
 void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
-                         const string &domains, const string &clientChain,
-                         HTTP::HandlerGroup &group, listener_t cb,
-                         unsigned updateRate) {
+  const string &domains, const string &clientChain, HTTP::HandlerGroup &group,
+  listener_t cb, unsigned updateRate) {
+
   SmartPointer<ACMEv2::KeyCert> keyCert = new KeyCert(domains, clientKey);
   if (!clientChain.empty()) keyCert->getChain().parse(clientChain);
 
