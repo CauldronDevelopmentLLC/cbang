@@ -40,17 +40,18 @@ namespace cb {
   CBANG_DEFINE_EXCEPTION_SUBCLASS(DynamicLibraryException);
 
   class DynamicLibrary {
-    struct private_t;
-
-    const std::string path;
-    private_t *pri;
-
     static bool enabled;
+
+    std::string path;
+    struct impl_t;
+    SmartPointer<impl_t> impl;
 
   public:
     DynamicLibrary(const std::string &path);
+    DynamicLibrary(const std::vector<std::string> &paths);
     ~DynamicLibrary();
 
+    const std::string &getPath() const {return path;}
     void *getSymbol(const std::string &name);
 
     template <typename T>
@@ -58,5 +59,8 @@ namespace cb {
 
     static inline bool isEnabled() {return enabled;}
     static inline void setEnabled(bool x) {enabled = x;}
+
+  private:
+    static SmartPointer<impl_t> load(const std::string &path);
   };
 }

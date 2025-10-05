@@ -56,7 +56,7 @@ static const char *openclLib =
   "/System/Library/Frameworks/OpenCL.framework/OpenCL";
 
 #else
-static const char *openclLib = "libOpenCL.so.1";
+static vector<string> openclLib = {"libOpenCL.so.1", "libOpenCL.so"};
 #endif
 
 
