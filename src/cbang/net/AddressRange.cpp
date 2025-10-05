@@ -57,7 +57,16 @@ void AddressRange::set(const string &spec) {
 
       if (slash != string::npos) {
         uint8_t bits = String::parseU8(spec.substr(slash + 1), true);
-        setBoth(SockAddr::parse(spec.substr(0, slash)));
+
+        // Support abbreviated ranges like '169.254/16'
+        string addr = spec.substr(0, slash);
+        if (addr.find(':') == string::npos) {
+          unsigned i = 0;
+          for (auto c: addr) if (c == '.') i++;
+          for (; i < 3; i++) addr += ".0";
+        }
+
+        setBoth(SockAddr::parse(addr));
         start.setCIDRBits(bits, 0);
         end  .setCIDRBits(bits, 1);
 
