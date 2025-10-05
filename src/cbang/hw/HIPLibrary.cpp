@@ -55,7 +55,10 @@ static const char *hipLib = "/Library/Frameworks/HIP.framework/HIP";
 #define STDCALL
 
 #else
-static const char *hipLib = "libamdhip64.so";
+static vector<string> hipLib = {"/opt/rocm/lib/libamdhip64.so.7",
+  "libamdhip64.so.7", "/opt/rocm/lib/libamdhip64.so.6", "libamdhip64.so.6",
+  "/opt/rocm/lib/libamdhip64.so.5", "libamdhip64.so.5",
+  "/opt/rocm/lib/libamdhip64.so", "libamdhip64.so"};
 #define STDCALL
 #endif
 

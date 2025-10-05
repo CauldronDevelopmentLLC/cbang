@@ -55,7 +55,7 @@ static const char *cudaLib = "/Library/Frameworks/CUDA.framework/CUDA";
 #define STDCALL
 
 #else
-static const char *cudaLib = "libcuda.so";
+static vector<string> cudaLib = {"libcuda.so.1", "libcuda.so"};
 #define STDCALL
 #endif
 
@@ -65,10 +65,10 @@ static const char *cudaLib = "libcuda.so";
 #define CUDA_API
 #endif
 
-#define DYNAMIC_CALL(name, args) {                                  \
-    name##_t name = (name##_t)getSymbol(#name);                     \
-    if ((err = name args)) THROW(#name "() returned " << err);     \
-  }
+#define DYNAMIC_CALL(name, args) {                           \
+  name##_t name = (name##_t)getSymbol(#name);                \
+  if ((err = name args)) THROW(#name "() returned " << err); \
+}
 
 
 namespace {
