@@ -109,7 +109,7 @@ namespace cb {
     void open(unsigned flags = 0, const SockAddr &bindAddr = SockAddr());
     void bind(const SockAddr &addr);
     void listen(int backlog = -1);
-    SmartPointer<Socket> accept(SockAddr &addr);
+    SmartPointer<Socket> accept(SockAddr &addr, unsigned flags);
 
     /// Connect to the specified address and port
     void connect(const SockAddr &addr, const std::string &hostname = "");

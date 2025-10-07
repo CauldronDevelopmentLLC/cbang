@@ -289,7 +289,7 @@ void Socket::listen(int backlog) {
 }
 
 
-SmartPointer<Socket> Socket::accept(SockAddr &addr) {
+SmartPointer<Socket> Socket::accept(SockAddr &addr, unsigned flags) {
   assertOpen();
 
   socket_t s = addr.accept(socket);
@@ -297,9 +297,10 @@ SmartPointer<Socket> Socket::accept(SockAddr &addr) {
   if (s != INVALID_SOCKET) {
     SmartPointer<Socket> aSock = new Socket;
 
-    aSock->socket = s;
+    aSock->socket    = s;
     aSock->connected = true;
-    aSock->setBlocking(blocking);
+    if ( (flags & NONBLOCKING))   aSock->setBlocking(false);
+    if (!(flags & NOCLOSEONEXEC)) aSock->setCloseOnExec(true);
 
     LOG_DEBUG(5, "accept() new connection");
 
