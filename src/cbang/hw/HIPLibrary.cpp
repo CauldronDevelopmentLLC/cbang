@@ -47,7 +47,8 @@ using namespace cb;
 #define CBANG_EXCEPTION DynamicLibraryException
 
 #ifdef _WIN32
-static const char *hipLib = "amdhip64_6.dll";
+static vector<string> hipLib = {"amdhip64_7.dll", "amdhip64_6.dll",
+  "amdhip64.dll"};
 #define STDCALL __stdcall
 
 #elif __APPLE__
