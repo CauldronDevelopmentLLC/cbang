@@ -86,7 +86,7 @@ void Port::accept() {
       return event->del();
 
     SockAddr peerAddr;
-    auto newSocket = socket->accept(peerAddr);
+    auto newSocket = socket->accept(peerAddr, Socket::NONBLOCKING);
     if (newSocket.isNull()) return;
 
     try {
