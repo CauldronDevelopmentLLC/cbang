@@ -49,10 +49,11 @@ using namespace cb;
 
 int main(int argc, char *argv[]) {
   try {
-    string bind = "";
+    string bind      = "";
     string certFile;
     string priFile;
-    string url = "";
+    string url       = "";
+    unsigned timeout = 50;
 
     CommandLine cmdLine;
     Logger::instance().addOptions(cmdLine);
@@ -60,6 +61,7 @@ int main(int argc, char *argv[]) {
 
     cmdLine.addTarget("bind", bind, "Outgoing IP address", 'b');
     cmdLine.addTarget("url", url, "Request URl", 'u');
+    cmdLine.addTarget("timeout", timeout, "Set read/write timeout in seconds");
     cmdLine.add("method", "Request method")->setDefault("GET");
     cmdLine.add("header", 'H', 0, "Add HTTP header <name>=<value>")->
       setType(Option::TYPE_STRINGS);
@@ -82,6 +84,9 @@ int main(int argc, char *argv[]) {
 
     Event::Base base;
     HTTP::Client client(base, sslCtx);
+
+    client.setReadTimeout(timeout);
+    client.setWriteTimeout(timeout);
 
     auto cb =
       [&base] (HTTP::Request &req) {
