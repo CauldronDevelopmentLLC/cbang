@@ -14,8 +14,8 @@ information, configuration and logging facilities, and smart pointers.
 
 C!'s philosophy is to create clean, simple, readable, modular and
 reusable code.  C! also encourages exception based error handling,
-light use of C++ templates and C preprocesor macros.  Event driven
-asynchronoius programing is prefered but threading is also fully
+light use of C++ templates and C preprocessor macros.  Event driven
+asynchronous programming is preferred but threading is also fully
 supported.
 
 C! "leans" on the venerable boost library but also reimplements
@@ -31,13 +31,13 @@ For licensing information please see ``LICENSE`` file.
 
 # Features
 
-  - Smart pointers, both thread safe and non, with downcasting capability.
+  - Smart pointers, both thread safe and non, with down-casting capability.
   - Extensively configurable logging facilities.
   - Stack trace capability with function, file and line. (macOS and Linux only)
   - Exception throwing and catching convenience macros.
-  - Command line parsing and configuration file configuation system.
+  - Command line parsing and configuration file configuration system.
   - HTTP, HTTPS and Websocket client and server.
-  - Automatic ACMEv2 TLS certification aquisition.
+  - Automatic ACMEv2 TLS certification acquisition.
   - OAuth2 logins.
   - Event driven programming via C++ wrapper for libevent.
   - Asynchronous IP address / hostname resolution, parsing and manipulation.
@@ -51,7 +51,7 @@ For licensing information please see ``LICENSE`` file.
   - Embedded Javascript (ECMA) support.
   - Dynamic library and symbol loading.
   - Subprocess handling.
-  - Powermanagment and system idle detection.
+  - Power management and system idle detection.
   - XMacro based enumerations with automatic string parsing and printing.
   - Software build information system.
   - Compile in resource trees from directory of files on disk.
@@ -70,7 +70,7 @@ For licensing information please see ``LICENSE`` file.
   - Human readable size & time formatting.
   - Many other utility classes.
   - Completely contained in it's own C++ namespace.
-  - Consistent and clean code formating <= 80 column width.
+  - Consistent and clean code formatting <= 80 column width.
   - Platform independent API.
 
 # Prerequisites
