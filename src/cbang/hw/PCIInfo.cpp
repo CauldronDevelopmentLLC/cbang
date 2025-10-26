@@ -54,7 +54,7 @@ using namespace std;
 using namespace cb;
 
 
-PCIInfo::PCIInfo(Inaccessible) {detect();}
+PCIInfo::PCIInfo() {detect();}
 
 
 void PCIInfo::add(uint16_t vendorID, uint16_t deviceID, uint8_t busID,
@@ -127,6 +127,8 @@ static string getIORegistryString(io_service_t dev, CFStringRef name) {
 
 
 void PCIInfo::detect() {
+  devices.clear();
+
   try {
 #if defined(_WIN32)
     HDEVINFO info =
@@ -223,10 +225,10 @@ void PCIInfo::detect() {
       f->read(devFun, 2);
       if (f->fail()) break;
 
-      uint8_t busID = String::parseU8("0x" + string(bus, 2));
-      uint8_t devFunID = String::parseU8("0x" + string(devFun, 2));
-      uint8_t slotID = devFunID >> 3;    // Upper 5 bits
-      uint8_t functionID = devFunID & 7; // Lower 3 bits
+      uint8_t busID      = String::parseU8("0x" + string(bus, 2));
+      uint8_t devFunID   = String::parseU8("0x" + string(devFun, 2));
+      uint8_t slotID     = devFunID >> 3; // Upper 5 bits
+      uint8_t functionID = devFunID & 7;  // Lower 3 bits
 
       // Find first tab
       while (f->get() != '\t' && !f->fail()) continue;
