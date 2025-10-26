@@ -32,6 +32,10 @@
 
 #pragma once
 
+#include <cbang/config.h>
+
+#ifdef HAVE_LEVELDB
+
 #include "LevelDB.h"
 
 #include <cbang/SmartPointer.h>
@@ -183,3 +187,5 @@ namespace cb {
     }
   };
 }
+
+#endif // HAVE_LEVELDB
