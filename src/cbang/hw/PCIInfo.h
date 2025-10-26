@@ -34,20 +34,18 @@
 
 #include "PCIDevice.h"
 
-#include <cbang/util/Singleton.h>
-
 
 namespace cb {
-  class PCIInfo : public Singleton<PCIInfo> {
+  class PCIInfo {
     typedef std::vector<PCIDevice> devices_t;
     devices_t devices;
 
   public:
-    PCIInfo(Inaccessible);
+    PCIInfo();
 
     typedef devices_t::const_iterator iterator;
     iterator begin() const {return devices.begin();}
-    iterator end() const {return devices.end();}
+    iterator end()   const {return devices.end();}
 
   protected:
     void add(uint16_t vendorID, uint16_t deviceID, uint8_t busID,
