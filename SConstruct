@@ -113,7 +113,10 @@ subdirs = [''] + '''
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']
 if env.CBConfigEnabled('v8'): subdirs.append('js/v8')
 if env.CBConfigEnabled('mariadb'):
-    subdirs += ['db/maria', 'api', 'api/arg', 'api/handler', 'api/ws']
+    subdirs += ['db/maria']
+
+    if env.CBConfigEnabled('leveldb'):
+        subdirs += ['api', 'api/arg', 'api/handler', 'api/ws']
 
 if env['PLATFORM'] == 'win32': subdirs.append('os/win')
 elif env['PLATFORM'] == 'darwin': subdirs.append('os/osx')
