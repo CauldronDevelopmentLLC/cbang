@@ -510,7 +510,7 @@ def generate(env):
         ('linkflags', 'Set extra linker flags', None),
         ('libs', 'Set extra libs', None),
         EnumVariable(
-            'cxxstd', 'Set C++ language standard', 'c++14',
+            'cxxstd', 'Set C++ language standard', 'c++17',
             allowed_values = ('c++98', 'c++11', 'c++14', 'c++17', 'c++20')),
         BoolVariable('dbgstdcxx', 'Enable GNU libstdc++ debugging', 0),
         EnumVariable(
