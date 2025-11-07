@@ -60,7 +60,7 @@ using std::tr1::unordered_set;
 #else
 
 #include <unordered_set>
-#if defined(_WIN32)
+#if defined(_WIN32) && _MSVC_LANG < 201703L
 using std::tr1::unordered_set;
 #else
 using std::unordered_set;
