@@ -32,6 +32,8 @@
 
 #include "Observable.h"
 
+#include <cbang/Catch.h>
+
 using namespace std;
 using namespace cb::JSON;
 
@@ -55,7 +57,8 @@ void ObservableBase::decParentRef() {
 
 
 void ObservableBase::_notify(list<ValuePtr> &change) {
-  notify(change);
+  // Don't allow exceptions in notify() to affect JSON accessors
+  TRY_CATCH_ERROR(notify(change));
 
   if (parent) {
     change.push_front(key);
