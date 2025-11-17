@@ -177,7 +177,10 @@ def build_function(target, source, env):
     # rpmbuild strips debug information from binaries by default if %install
     # section is present (may be empty)
     if int(env.get('debug')):
+        # Fedora/RHEL
         cmddebug = ' --define "__strip /usr/bin/true"'
+        # openSUSE
+        env.Append(ENV = {'NO_BRP_STRIP_DEBUG' : 'true'})
     else: cmddebug = ''
 
     # Build the package
