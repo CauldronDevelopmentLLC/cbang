@@ -126,7 +126,7 @@ def _GetPackageType(env):
         dist = get_dist()
 
         if dist in ['debian', 'ubuntu']: return 'deb'
-        if dist in ['centos', 'redhat', 'fedora']: return 'rpm'
+        if dist in ['centos', 'rhel', 'fedora']: return 'rpm'
 
         # Try to guess
         print('WARNING: Unrecognized POSIX distribution ' + dist +
