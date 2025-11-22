@@ -187,7 +187,8 @@ def build_function(target, source, env):
     target = str(target[0])
     cmd = 'rpmbuild -bb --define "_topdir %s/build" --define ' \
         '"_rpmfilename %s" --define "cbang_build %s" ' \
-        '--define "__brp_mangle_shebangs %%{nil}"' '%s --target %s %s' % (
+        '--define "__brp_mangle_shebangs %%{nil}" ' \
+        '--define "_build_id_links none"' '%s --target %s %s' % (
             os.getcwd(), target, os.path.realpath(build_dir), cmddebug,
             env.GetPackageArch(), spec_file)
     CommandAction(cmd).execute(target, [], env)
