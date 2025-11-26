@@ -184,13 +184,11 @@ def configure(conf, cstd = 'c99'):
         env.Replace(CC = 'ccache ' + env['CC'])
         env.Replace(CXX = 'ccache ' + env['CXX'])
 
-    # Exceptions
     if compiler_mode == 'msvc':
-        env.AppendUnique(CCFLAGS = ['/EHa']) # Asynchronous
+        env.AppendUnique(CCFLAGS = ['/EHa'])    # Asynchronous exceptions
+        env.AppendUnique(CCFLAGS = ['/nologo']) # Quiet
 
-
-    # Disable troublesome warnings
-    if compiler_mode == 'msvc':
+        # Disable troublesome warnings
         env.CBDefine('_CRT_SECURE_NO_WARNINGS')
 
         for warning in [4297, 4103]:
