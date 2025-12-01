@@ -74,6 +74,8 @@ def configure(conf, cstd = 'c99'):
     ar            =     env.get('ar',     '').strip()
     strip         =     env.get('strip',  '').strip()
     debug         = int(env.get('debug'))
+    harden        = int(env.get('harden'))
+    if harden == -1: harden = not debug
     optimize      = int(env.get('optimize'))
     if optimize == -1: optimize = not debug
     globalopt     = int(env.get('globalopt'))
@@ -275,8 +277,13 @@ def configure(conf, cstd = 'c99'):
 
     # Position independent code
     if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
-    if (compiler_mode == 'gnu' and (5,) <= gcc_version(env) and
-        compiler != 'clang'): env.AppendUnique(LINKFLAGS = '-no-pie')
+
+    # Hardening
+    if compiler_mode == 'gnu' and env['PLATFORM'] != 'darwin' and harden:
+        if optimize: env.CBDefine('_FORTIFY_SOURCE=2')
+        env.AppendUnique(CCFLAGS = ['-fstack-protector-strong'])
+        env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
+        if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
 
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
@@ -333,7 +340,9 @@ def configure(conf, cstd = 'c99'):
     # static
     if static:
         if compiler_mode == 'gnu' and env['PLATFORM'] != 'darwin':
-            env.AppendUnique(LINKFLAGS = ['-static'])
+            if harden and (8,) <= gcc_version(env):
+                env.AppendUnique(LINKFLAGS = ['-static-pie'])
+            else: env.AppendUnique(LINKFLAGS = ['-static'])
 
     elif env.get('mostly_static', False) and compiler == 'gnu':
         env.AppendUnique(LINKFLAGS = ['-static-libstdc++', '-static-libgcc'])
@@ -489,6 +498,7 @@ def generate(env):
         ('mach', 'Set machine instruction set', ''),
         BoolVariable('debug', 'Enable or disable debug options',
                      os.getenv('DEBUG_MODE', 0)),
+        ('harden', 'Enable or disable hardening options', -1),
         BoolVariable('strict', 'Enable or disable strict options', 1),
         BoolVariable('threaded', 'Enable or disable thread support', 1),
         BoolVariable('profile', 'Enable or disable profiler', 0),
