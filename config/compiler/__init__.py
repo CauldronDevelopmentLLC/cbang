@@ -31,9 +31,7 @@
 ################################################################################
 
 import copy
-import re
 import os
-import sys
 from platform import machine, architecture
 from SCons.Script import *
 from subprocess import *
@@ -408,12 +406,11 @@ def FindLibPath(env, lib):
     if lib.startswith(os.sep) or lib.endswith(env['LIBSUFFIX']):
         return lib # Already a path
 
-    eenv = get_lib_path_env(env)
-    cmd = env['CXX'].split()
+    eenv   = get_lib_path_env(env)
+    cmd    = env['CXX'].split()
     libpat = env['LIBPREFIX'] + lib + env['LIBSUFFIX']
-
-    path = Popen(cmd + ['-print-file-name=' + libpat],
-                 stdout = PIPE, env = eenv).communicate()[0].strip()
+    path   = Popen(cmd + ['-print-file-name=' + libpat],
+        stdout = PIPE, env = eenv).communicate()[0].strip()
     if isinstance(path, bytes): path = path.decode()
 
     if path != libpat: return path
@@ -430,8 +427,8 @@ def build_pattern(env, name):
 def prefer_static_libs(env):
     if env.get('compiler_mode', '') != 'gnu': return
 
-    mostly_static = env.get('mostly_static')
-    prefer_static = build_pattern(env, 'prefer_static')
+    mostly_static  = env.get('mostly_static')
+    prefer_static  = build_pattern(env, 'prefer_static')
     prefer_dynamic = build_pattern(env, 'prefer_dynamic')
     require_static = build_pattern(env, 'require_static')
 
@@ -445,7 +442,7 @@ def prefer_static_libs(env):
                 (mostly_static and not prefer_dynamic.match(name)):
             path = FindLibPath(env, name)
             if path is not None:
-                changed = True
+                if path != name: changed = True
                 libs.append(File(path))
                 continue
 
