@@ -279,11 +279,14 @@ def configure(conf, cstd = 'c99'):
     if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
 
     # Hardening
-    if compiler_mode == 'gnu' and env['PLATFORM'] != 'darwin' and harden:
-        if optimize: env.CBDefine('_FORTIFY_SOURCE=2')
-        env.AppendUnique(CCFLAGS = ['-fstack-protector-strong'])
-        env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
-        if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
+    if compiler_mode == 'gnu' and env['PLATFORM'] != 'darwin':
+        if harden:
+            if optimize: env.CBDefine('_FORTIFY_SOURCE=2')
+            env.AppendUnique(CCFLAGS = ['-fstack-protector-strong'])
+            env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
+            if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
+
+        else: env.AppendUnique(LINKFLAGS = ['-no-pie'])
 
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
