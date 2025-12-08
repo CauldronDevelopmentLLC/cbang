@@ -286,7 +286,9 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
             if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
 
-        else: env.AppendUnique(LINKFLAGS = ['-no-pie'])
+        else:
+            env.AppendUnique(CCFLAGS = ['-fno-stack-protector'])
+            env.AppendUnique(LINKFLAGS = ['-no-pie'])
 
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
