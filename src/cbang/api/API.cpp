@@ -140,18 +140,19 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   }
 
   // Pass 3: Register timeseries
-  for (auto e: apis->entries()) {
-    auto api = e.value();
-    category = e.key();
+  if (timeseriesDB.isSet())
+    for (auto e: apis->entries()) {
+      auto api = e.value();
+      category = e.key();
 
-    if (api->hasDict("timeseries"))
-      for (auto e2: api->get("timeseries")->entries()) {
-        string name = category + "." + e2.key();
-        HandlerPtr handler = new TimeseriesHandler(*this, name, e2.value());
-        handler = wrapEndpoint(handler, new Config(*this, e2.value()));
-        addTimeseries(e2.key(), handler);
-      }
-  }
+      if (api->hasDict("timeseries"))
+        for (auto e2: api->get("timeseries")->entries()) {
+          string name = category + "." + e2.key();
+          HandlerPtr handler = new TimeseriesHandler(*this, name, e2.value());
+          handler = wrapEndpoint(handler, new Config(*this, e2.value()));
+          addTimeseries(e2.key(), handler);
+        }
+    }
 
   // Pass 4: Register endpoints and create spec
   for (auto e: apis->entries()) {
@@ -370,7 +371,7 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
       return new QueryHandler(*this, config);
     }
 
-    if (type == "timeseries") {
+    if (type == "timeseries" && timeseriesDB.isSet()) {
       if (config->has("timeseries")) {
         if (config->has("query") || config->has("sql"))
           THROW("Cannot define both 'timeseries' and 'query' or 'sql'");
