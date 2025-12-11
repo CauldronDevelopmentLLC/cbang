@@ -33,8 +33,10 @@
 import copy
 import os
 from platform import machine, architecture
-from SCons.Script import *
+from shutil import which
 from subprocess import *
+
+from SCons.Script import *
 from SCons.Util import MD5signature
 import SCons.Action
 import SCons.Builder
@@ -108,6 +110,9 @@ def configure(conf, cstd = 'c99'):
 
     # Select compiler
     compiler_mode = None
+
+    if compiler == 'default' and env['PLATFORM'] == 'darwin':
+        if which('clang'): compiler = 'clang'
 
     if compiler:
         if compiler == 'gnu':
@@ -279,18 +284,22 @@ def configure(conf, cstd = 'c99'):
     if env['PLATFORM'] != 'win32': env.AppendUnique(CCFLAGS = ['-fPIC'])
 
     # Hardening
-    if compiler_mode == 'gnu' and env['PLATFORM'] != 'darwin':
+    if compiler_mode == 'gnu':
         if harden:
             if optimize: env.CBDefine('_FORTIFY_SOURCE=2')
             env.AppendUnique(CCFLAGS = ['-fstack-protector-strong'])
-            env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
-            if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
+            if env['PLATFORM'] != 'darwin':
+                env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
+                if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
 
-        else: env.AppendUnique(LINKFLAGS = ['-no-pie'])
+        elif env['PLATFORM'] != 'darwin':
+            env.AppendUnique(LINKFLAGS = ['-no-pie'])
 
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
-        if not (compiler == 'clang' and env['PLATFORM'] == 'darwin'):
+        # Apple clang 14+ supports -faligned-new
+        if not (compiler == "clang" and env["PLATFORM"] == "darwin"
+            and gcc_version(env) < (14,)):
             env.AppendUnique(CXXFLAGS = ['-faligned-new'])
 
     # Dependency files
