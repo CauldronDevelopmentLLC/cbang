@@ -255,6 +255,10 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['-flto=auto'])
             env.AppendUnique(CCFLAGS   = ['-flto=auto'])
 
+        elif lto and compiler == 'clang':
+            env.AppendUnique(LINKFLAGS = ['-flto'])
+            env.AppendUnique(CCFLAGS   = ['-flto'])
+
         env.CBDefine('NDEBUG')
 
 
