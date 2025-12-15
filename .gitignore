@@ -53,4 +53,6 @@ build.ninja
 *.orig
 
 # Env files
-/scons-env-options.py
+scons-env-options.py
+/crap
+/.crap
