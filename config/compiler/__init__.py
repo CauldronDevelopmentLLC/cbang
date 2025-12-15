@@ -251,9 +251,10 @@ def configure(conf, cstd = 'c99'):
             if compiler != 'clang': env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
-        if lto and compiler == 'gnu': # Link time optimization
-            env.AppendUnique(LINKFLAGS = ['-flto=auto'])
-            env.AppendUnique(CCFLAGS   = ['-flto=auto'])
+        if lto and compiler in ('gnu', 'clang'): # Link time optimization
+            opt = '-flto=auto' if compiler == 'gnu' else '-flto'
+            env.AppendUnique(LINKFLAGS = [opt])
+            env.AppendUnique(CCFLAGS   = [opt])
 
         env.CBDefine('NDEBUG')
 
