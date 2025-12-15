@@ -165,6 +165,9 @@ if env.get('staticlib'):
                                source = libs))
 
 if env.get('sharedlib'):
+    for flag in ['-pie', '-no-pie']:
+        if flag in env['LINKFLAGS']: env['LINKFLAGS'].remove(flag)
+
     shlib = env.SharedLibrary(
         'lib/cbang' + libversion, src, SHLIBVERSION = version,
         SONAME = env.get('soname'))
