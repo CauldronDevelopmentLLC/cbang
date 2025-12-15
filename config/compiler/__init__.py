@@ -292,9 +292,6 @@ def configure(conf, cstd = 'c99'):
                 env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
                 if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
 
-        elif env['PLATFORM'] != 'darwin':
-            env.AppendUnique(LINKFLAGS = ['-no-pie'])
-
     # Alignment
     if compiler_mode == 'gnu' and (7,) <= gcc_version(env):
         # Apple clang 14+ supports -faligned-new
