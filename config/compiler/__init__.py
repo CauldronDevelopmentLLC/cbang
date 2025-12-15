@@ -32,15 +32,11 @@
 
 import copy
 import os
-from platform import machine, architecture
+import multiprocessing
 from shutil import which
 from subprocess import *
 
 from SCons.Script import *
-from SCons.Util import MD5signature
-import SCons.Action
-import SCons.Builder
-import SCons.Tool
 
 
 def gcc_version_str(env):
@@ -166,27 +162,21 @@ def configure(conf, cstd = 'c99'):
     if compiler == 'gnu': print('  GCC Version:', gcc_version_str(env))
 
 
-    # SCONS_JOBS environment variable
-    if num_jobs < 1 and 'SCONS_JOBS' in os.environ:
-        num_jobs = int(os.environ.get('SCONS_JOBS', num_jobs))
-
-    # Default num jobs
-    if num_jobs < 1:
-        import multiprocessing
-        num_jobs = multiprocessing.cpu_count()
-
+    # Num jobs
+    if num_jobs < 1: num_jobs = int(os.environ.get('SCONS_JOBS', num_jobs))
+    if num_jobs < 1: num_jobs = multiprocessing.cpu_count()
     SetOption('num_jobs', num_jobs)
     print('       Jobs:', GetOption('num_jobs'))
 
 
     # distcc
     if distcc and compiler == 'gnu':
-        env.Replace(CC = 'distcc ' + env['CC'])
+        env.Replace(CC  = 'distcc ' + env['CC'])
         env.Replace(CXX = 'distcc ' + env['CXX'])
 
     # cccache
     if ccache and compiler == 'gnu':
-        env.Replace(CC = 'ccache ' + env['CC'])
+        env.Replace(CC  = 'ccache ' + env['CC'])
         env.Replace(CXX = 'ccache ' + env['CXX'])
 
     if compiler_mode == 'msvc':
