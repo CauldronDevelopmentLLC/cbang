@@ -76,7 +76,6 @@ def configure(conf, cstd = 'c99'):
     if harden == -1: harden = not debug
     optimize      = int(env.get('optimize'))
     if optimize == -1: optimize = not debug
-    globalopt     = int(env.get('globalopt'))
     mach          =     env.get('mach')
     strict        = int(env.get('strict'))
     threaded      = int(env.get('threaded'))
@@ -241,12 +240,20 @@ def configure(conf, cstd = 'c99'):
             if compiler != 'clang': env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
 
-        if lto and compiler in ('gnu', 'clang'): # Link time optimization
+        env.CBDefine('NDEBUG')
+
+
+    # Global optimization (LTO)
+    if lto:
+        if compiler in ('gnu', 'clang'): # Link time optimization
             opt = '-flto=auto' if compiler == 'gnu' else '-flto'
             env.AppendUnique(LINKFLAGS = [opt])
             env.AppendUnique(CCFLAGS   = [opt])
 
-        env.CBDefine('NDEBUG')
+        if compiler == 'msvc':
+            env.AppendUnique(CCFLAGS = ['/GL'])
+            env.AppendUnique(LINKFLAGS = ['/LTCG'])
+            env.AppendUnique(ARFLAGS = ['/LTCG'])
 
 
     # Optimizations
@@ -256,13 +263,6 @@ def configure(conf, cstd = 'c99'):
 
         elif compiler_mode == 'msvc':
             env.AppendUnique(CCFLAGS = ['/O2', '/Zc:throwingNew'])
-
-        # Whole program optimizations
-        if globalopt:
-            if compiler == 'msvc':
-                env.AppendUnique(CCFLAGS = ['/GL'])
-                env.AppendUnique(LINKFLAGS = ['/LTCG'])
-                env.AppendUnique(ARFLAGS = ['/LTCG'])
 
         # Instruction set optimizations
         if compiler == 'msvc':
@@ -494,7 +494,6 @@ def generate(env):
         ('ranlib', 'Set ranlib executable', ''),
         ('strip', 'Set strip executable', ''),
         ('optimize', 'Enable or disable optimizations', -1),
-        ('globalopt', 'Enable or disable global optimizations', 0),
         ('mach', 'Set machine instruction set', ''),
         BoolVariable('debug', 'Enable or disable debug options',
                      os.getenv('DEBUG_MODE', 0)),
