@@ -27,10 +27,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-static char *rcsid = "$OpenBSD: strlcpy.c,v 1.5 2001/05/13 15:40:16 deraadt Exp $";
-#endif /* LIBC_SCCS and not lint */
-
 #include "event2/event-config.h"
 #include "evconfig-private.h"
 
@@ -40,36 +36,20 @@ static char *rcsid = "$OpenBSD: strlcpy.c,v 1.5 2001/05/13 15:40:16 deraadt Exp 
 #include "strlcpy-internal.h"
 
 /*
- * Copy src to string dst of size siz.  At most siz-1 characters
- * will be copied.  Always NUL terminates (unless siz == 0).
- * Returns strlen(src); if retval >= siz, truncation occurred.
+ * Copy src to string dst of length size.  At most size - 1 characters
+ * will be copied.  Always NUL terminates unless size == 0.
+ * Returns strlen(src); if size <= retval, truncation occurred.
  */
-size_t
-event_strlcpy_(dst, src, siz)
-	char *dst;
-	const char *src;
-	size_t siz;
-{
-	register char *d = dst;
-	register const char *s = src;
-	register size_t n = siz;
+size_t event_strlcpy_(char *dst, const char *src, size_t size) {
+  size_t len;
 
-	/* Copy as many bytes as will fit */
-	if (n != 0 && --n != 0) {
-		do {
-			if ((*d++ = *s++) == 0)
-				break;
-		} while (--n != 0);
-	}
+  for (len = 0; len + 1 < size; len++)
+	  if (!(*dst++ = *src++)) return len;
 
-	/* Not enough room in dst, add NUL and traverse rest of src */
-	if (n == 0) {
-		if (siz != 0)
-			*d = '\0';		/* NUL-terminate dst */
-		while (*s++)
-			;
-	}
+  if (len < size) *dst = 0;
 
-	return (s - src - 1);	/* count does not include NUL */
+  while (*src++) len++;
+
+  return len;
 }
 #endif
