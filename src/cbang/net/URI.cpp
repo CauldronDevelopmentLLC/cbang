@@ -458,6 +458,15 @@ void URI::parseUserInfo(const char *&s) {
 
 
 void URI::parseHost(const char *&s) {
+  // Check for IPv6 address
+  if (consume(s, '[')) {
+    host.append(1, '[');
+    while (*s && *s != ']') host.append(1, *s++);
+    if (*s != ']') THROW("Expected closing IPv6 `]`");
+    host.append(1, *s++);
+    return;
+  }
+
   while (true)
     if (contains(HOST_CHARS, *s)) host.append(1, *s++);
     else break;
