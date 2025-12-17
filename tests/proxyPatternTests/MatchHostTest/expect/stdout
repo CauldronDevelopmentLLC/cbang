@@ -1,0 +1,3 @@
+http://example.com/: true
+http://test.example.com/: true
+http://test-example.com/: false

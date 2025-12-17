@@ -1,0 +1,3 @@
+http://[fc00::1]/: true
+http://[fe80::1]/: false
+http://example.com/: false

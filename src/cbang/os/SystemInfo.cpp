@@ -166,31 +166,41 @@ bool SystemInfo::matchesProxyPattern(const string &pattern, const URI &uri) {
   if (pat == "*")  return true;
   if (pat.empty()) return false;
 
-  // Check port
-  unsigned port = 0;
-  auto semi = pat.find_last_of(':');
-  if (semi != string::npos) {
-    port = String::parseU64(pat.substr(semi + 1));
-    if (port != uri.getPort()) return false;
-    pat = pat.substr(0, semi);
-  }
-
-  // Check IP address match
   string host = uri.getHost();
+  if (String::startsWith(host, "[") && String::endsWith(host, "]"))
+    host = host.substr(1, host.length() - 2);
+
+  // Try matching by IP or IP range
   if (SockAddr::isAddress(host)) {
     auto addr = SockAddr::parse(host);
 
-    // Check for CIDR
-    auto slash = pat.find_last_of('/');
-    if (slash != string::npos) return AddressRange(pat).contains(addr);
+    // Try AddressRange
+    if (pat.find_last_of('/') != string::npos)
+      try {
+        return AddressRange(pat).contains(addr);
+      } catch (const Exception &e) {
+        return false;
+      }
 
-    return SockAddr::isAddress(pat) && SockAddr::parse(pat) == addr;
+    // Try Address
+    if (SockAddr::isAddress(pat)) {
+      auto patAddr = SockAddr::parse(pat);
+
+      // Check for port in pattern
+      if (patAddr.getPort()) addr.setPort(uri.getPort());
+
+      return patAddr == addr;
+    }
+
+    return false;
   }
 
-  // Remove .* or . from start of pattern
-  if (pat[0] == '*') pat = pat.substr(1);
-  if (pat[0] == '.') pat = pat.substr(1);
+  // Try matching by host
+
+  // Remove *. or . from start of pattern
+  if (!pat.empty() && pat[0] == '*') pat = pat.substr(1);
+  if (!pat.empty() && pat[0] == '.') pat = pat.substr(1);
 
   // Check domain name match
-  return String::endsWith(host, pat);
+  return host == pat || String::endsWith(host, "." + pat);
 }

@@ -1,0 +1,3 @@
+http://[fc00::]:8080/: true
+http://[fc00::]/: false
+http://127.0.0.1:8080/: false
