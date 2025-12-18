@@ -1407,38 +1407,6 @@ void event_get_assignment(const struct event *event,
 EVENT2_EXPORT_SYMBOL
 size_t event_get_struct_event_size(void);
 
-/**
-   Get the Libevent version.
-
-   Note that this will give you the version of the library that you're
-   currently linked against, not the version of the headers that you've
-   compiled against.
-
-   @return a string containing the version number of Libevent
-*/
-EVENT2_EXPORT_SYMBOL
-const char *event_get_version(void);
-
-/**
-   Return a numeric representation of Libevent's version.
-
-   Note that this will give you the version of the library that you're
-   currently linked against, not the version of the headers you've used to
-   compile.
-
-   The format uses one byte each for the major, minor, and patchlevel parts of
-   the version number.  The low-order byte is unused.  For example, version
-   2.0.1-alpha has a numeric representation of 0x02000100
-*/
-EVENT2_EXPORT_SYMBOL
-ev_uint32_t event_get_version_number(void);
-
-/** As event_get_version, but gives the version of Libevent's headers. */
-#define LIBEVENT_VERSION EVENT__VERSION
-/** As event_get_version_number, but gives the version number of Libevent's
- * headers. */
-#define LIBEVENT_VERSION_NUMBER EVENT__NUMERIC_VERSION
-
 /** Largest number of priorities that Libevent can support. */
 #define EVENT_MAX_PRIORITIES 256
 /**

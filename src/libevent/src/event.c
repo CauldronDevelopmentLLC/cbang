@@ -206,7 +206,7 @@ int event_debug_mode_on_ = 0;
  *        to be shared across threads (if thread support is enabled).
  *
  *        When and if evthreads are initialized, this variable will be evaluated,
- *        and if set to something other than zero, this means the evthread setup 
+ *        and if set to something other than zero, this means the evthread setup
  *        functions were called out of order.
  *
  *        See: "Locks and threading" in the documentation.
@@ -3366,20 +3366,6 @@ event_queue_make_later_events_active(struct event_base *base)
 		TAILQ_INSERT_TAIL(&base->activequeues[evcb->evcb_pri], evcb, evcb_active_next);
 		base->n_deferreds_queued += (evcb->evcb_closure == EV_CLOSURE_CB_SELF);
 	}
-}
-
-/* Functions for debugging */
-
-const char *
-event_get_version(void)
-{
-	return (EVENT__VERSION);
-}
-
-ev_uint32_t
-event_get_version_number(void)
-{
-	return (EVENT__NUMERIC_VERSION);
 }
 
 /*

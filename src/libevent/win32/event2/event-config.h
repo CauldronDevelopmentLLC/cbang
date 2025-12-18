@@ -18,8 +18,6 @@
 #define EVENT__HAVE_TIMERISSET 1
 #define EVENT__HAVE_OPENSSL 1
 
-#define EVENT__NUMERIC_VERSION 0x02010401
-
 #define EVENT__PACKAGE "libevent"
 #define EVENT__PACKAGE_BUGREPORT ""
 #define EVENT__PACKAGE_NAME ""
@@ -40,7 +38,6 @@
 #define EVENT__SIZEOF_VOID_P 4
 #endif
 
-#define EVENT__VERSION "2.1.4-alpha-dev"
 #define EVENT____func__ __FUNCTION__
 
 #ifndef _EVENT___cplusplus
