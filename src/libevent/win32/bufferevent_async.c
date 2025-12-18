@@ -27,7 +27,6 @@
  */
 
 #include "event2/event-config.h"
-#include "evconfig-private.h"
 
 #ifdef EVENT__HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -682,5 +681,3 @@ be_async_ctrl(struct bufferevent *bev, enum bufferevent_ctrl_op op,
 		return -1;
 	}
 }
-
-

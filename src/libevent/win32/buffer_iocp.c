@@ -31,7 +31,6 @@
    objects on Windows.
 */
 #include "event2/event-config.h"
-#include "evconfig-private.h"
 
 #include "event2/buffer.h"
 #include "event2/buffer_compat.h"
