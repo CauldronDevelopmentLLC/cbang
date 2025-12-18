@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "event2/event-config.h"
-#include "evconfig-private.h"
 
 #ifdef _WIN32
 #ifndef _WIN32_WINNT
@@ -338,4 +337,3 @@ evthread_use_windows_threads(void)
 
 	return 0;
 }
-
