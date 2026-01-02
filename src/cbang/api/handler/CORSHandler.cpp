@@ -90,8 +90,11 @@ bool CORSHandler::operator()(const CtxPtr &ctx) {
     string origin = String::toLower(req.inGet("Origin"));
 
     bool match = origins.find(origin) != origins.end();
-    for (auto &pattern: patterns)
+    for (auto &pattern: patterns) {
+      LOG_DEBUG(5, "CORS matching '" << origin << "' against '"
+        << pattern << "'");
       if (match || (match = pattern.match(origin))) break;
+    }
 
     if (match) req.outSet("Access-Control-Allow-Origin", req.inGet("Origin"));
   }
