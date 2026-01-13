@@ -2,7 +2,7 @@
 #                                                                              #
 #         This file is part of the C! library.  A.K.A the cbang library.       #
 #                                                                              #
-#               Copyright (c) 2021-2025, Cauldron Development  Oy              #
+#               Copyright (c) 2021-2026, Cauldron Development  Oy              #
 #               Copyright (c) 2003-2021, Cauldron Development LLC              #
 #                              All rights reserved.                            #
 #                                                                              #
@@ -368,10 +368,10 @@ def Packager(env, name, **kwargs):
 
 def generate(env):
     env.CBAddVariables(
-            ('package_type', 'Override the package type'),
+            ('package_type',  'Override the package type'),
             ('package_build', 'Set package build name'),
             ('package_clean', 'Clean package build files', False),
-            ('package_arch', 'Clean package architecture'),
+            ('package_arch',  'Clean package architecture'),
             )
 
     if env['PLATFORM'] == 'darwin' or int(env.get('cross_osx', 0)):
