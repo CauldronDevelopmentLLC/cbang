@@ -2,7 +2,7 @@
 
           This file is part of the C! library.  A.K.A the cbang library.
 
-                Copyright (c) 2021-2025, Cauldron Development  Oy
+                Copyright (c) 2021-2026, Cauldron Development  Oy
                 Copyright (c) 2003-2021, Cauldron Development LLC
                                All rights reserved.
 
@@ -29,6 +29,7 @@
                           joseph@cauldrondevelopment.com
 
 \******************************************************************************/
+
 /*
   This class handles the storing and recalling of timeseries data.  Queries
   are made to the SQL DB and those results are stored as a timeseries in
