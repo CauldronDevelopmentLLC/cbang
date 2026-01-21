@@ -47,6 +47,12 @@ Context::Context(API &api, const WebsocketPtr &ws) :
   Context(api, ws->getRequest()) {this->ws = ws;}
 
 
+void Context::setSession(const SmartPointer<HTTP::Session> &session) {
+  req.setSession(session);
+  resolver->setSession(session);
+}
+
+
 void Context::reply(HTTP::Status code, const JSON::ValuePtr &msg) const {
   reply(code, [&] (JSON::Sink &sink) {msg->write(sink);});
 }

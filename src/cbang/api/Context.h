@@ -64,6 +64,8 @@ namespace cb {
       const JSON::ValuePtr &getArgs() const {return args;}
       void setArgs(const JSON::ValuePtr &args) {this->args = args;}
 
+      void setSession(const SmartPointer<HTTP::Session> &session);
+
       void reply(HTTP::Status code, const JSON::ValuePtr &msg) const;
       void reply(const JSON::ValuePtr &msg) const;
       void reply(HTTP::Status code,
