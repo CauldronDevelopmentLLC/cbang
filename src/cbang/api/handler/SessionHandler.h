@@ -41,8 +41,6 @@ namespace cb {
     public:
       SessionHandler(API &api, const JSON::ValuePtr &config);
 
-      void createSession(HTTP::Request &req);
-
       // From Handler
       bool operator()(const CtxPtr &ctx) override;
     };

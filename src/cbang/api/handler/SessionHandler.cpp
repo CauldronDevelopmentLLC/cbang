@@ -50,41 +50,34 @@ SessionHandler::SessionHandler(API &api, const JSON::ValuePtr &config) :
   QueryHandler(api, config) {}
 
 
-void SessionHandler::createSession(HTTP::Request &req) {
-  // Create a session
-  auto session = api.getSessionManager().openSession(req.getClientAddr());
-  req.setSession(session);
-
-  // Set session cookie
-  string cookie = api.getSessionManager().getSessionCookie();
-  string sid = session->getID();
-  req.setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
-}
-
-
 bool SessionHandler::operator()(const CtxPtr &ctx) {
   // Check if Session is already loaded
   auto &req = ctx->getRequest();
   if (req.getSession().isSet()) return false;
 
   // Check if we have a session ID
-  string cookie = api.getSessionManager().getSessionCookie();
-  string sid    = req.getSessionID(cookie);
+  auto &sessionMan = api.getSessionManager();
+  string cookie    = sessionMan.getSessionCookie();
+  string sid       = req.getSessionID(cookie);
+
   if (sid.empty()) {
-    createSession(req);
+    // Create new session and set cookie
+    auto session = sessionMan.openSession(req.getClientAddr());
+    ctx->setSession(session);
+    req.setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
     return false;
   }
 
   // Lookup Session in SessionManager
-  if (api.getSessionManager().hasSession(sid)) {
-    req.setSession(api.getSessionManager().lookupSession(sid));
+  if (sessionMan.hasSession(sid)) {
+    ctx->setSession(sessionMan.lookupSession(sid));
     return false;
   }
 
   // Create session
   auto session = SmartPtr(new HTTP::Session(sid, req.getClientAddr()));
-  req.setSession(session);
-  api.getSessionManager().addSession(session);
+  ctx->setSession(session);
+  sessionMan.addSession(session);
 
   // Lookup Session in DB
   if (queryDef->sql.empty()) return false;
