@@ -452,7 +452,15 @@ void SockAddr::bind(socket_t socket) const {
 
 socket_t SockAddr::accept(socket_t socket) {
   socklen_t len = getCapacity();
-  return ::accept(socket, get(), &len);
+
+  SysError::clear();
+  socket_t sock = ::accept(socket, get(), &len);
+
+  if (sock == -1)
+    THROWX("Failed to accept socket on " << toString() << ": " << SysError(),
+      SysError::get());
+
+  return sock;
 }
 
 

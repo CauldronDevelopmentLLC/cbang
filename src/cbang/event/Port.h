@@ -37,6 +37,7 @@
 #include <cbang/SmartPointer.h>
 #include <cbang/net/SockAddr.h>
 #include <cbang/openssl/SSLContext.h>
+#include <cbang/util/Backoff.h>
 
 
 namespace cb {
@@ -54,6 +55,7 @@ namespace cb {
 
       SmartPointer<Socket> socket;
       SmartPointer<Event> event;
+      Backoff backoff = Backoff(0.1, 5);
 
     public:
       Port(Server &server, const SockAddr addr,
@@ -71,6 +73,9 @@ namespace cb {
 
       void activate();
       void accept();
+
+    protected:
+      void addEvent(double delay = 0);
     };
   }
 }
