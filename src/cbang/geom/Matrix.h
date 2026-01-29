@@ -85,10 +85,10 @@ namespace cb {
         T det = data[0][0] * data[1][1] - data[0][1] * data[1][0];
         if (!det) CBANG_THROW("Cannot invert a matrix with zero determinant");
 
-        data[0][0] = data[0][0] / det;
+        data[0][0] =  data[0][0] / det;
         data[0][1] = -data[0][1] / det;
-        data[0][1] = -data[1][0] / det;
-        data[1][1] = data[1][1] / det;
+        data[1][0] = -data[1][0] / det;
+        data[1][1] =  data[1][1] / det;
         std::swap(data[0][0], data[1][1]);
 
       } else { // NxN
