@@ -61,12 +61,7 @@ void Port::open() {
   socket = new Socket;
   socket->open(Socket::NONBLOCKING | Socket::REUSEADDR, addr);
   socket->listen(server.getConnectionBacklog());
-  socket_t fd = socket->get();
-
-  event = server.getBase().newEvent(
-    fd, this, &Port::accept, EVENT_READ | EVENT_PERSIST);
-  if (0 <= priority) event->setPriority(priority);
-  event->add();
+  addEvent();
 }
 
 
@@ -86,13 +81,37 @@ void Port::accept() {
       return event->del();
 
     SockAddr peerAddr;
-    auto newSocket = socket->accept(peerAddr, Socket::NONBLOCKING);
-    if (newSocket.isNull()) return;
+    SmartPointer<Socket> newSocket;
+    try {
+      auto newSocket = socket->accept(peerAddr, Socket::NONBLOCKING);
+      backoff.reset();
+
+    } catch (const Exception &e) {
+      LOG_WARNING(e);
+
+      // In case of accept() error, delay.  This ensures we don't get caught
+      // in a tight loop with errors like EMFILE.
+      return addEvent(backoff.next());
+    }
 
     try {
       server.accept(peerAddr, newSocket, sslCtx);
+
     } catch (const SSLException &e) {
       LOG_DEBUG(4, e.getMessage());
     }
   }
+}
+
+
+void Port::addEvent(double delay) {
+  if (event.isSet()) event->del();
+
+  if (delay) event = server.getBase().newEvent([this] {addEvent();}, 0);
+  else event = server.getBase().newEvent(
+    socket->get(), [this] {accept();}, EVENT_READ | EVENT_PERSIST);
+
+  if (0 <= priority) event->setPriority(priority);
+
+  event->add();
 }
