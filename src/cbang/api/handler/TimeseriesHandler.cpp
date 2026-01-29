@@ -85,8 +85,7 @@ TimeseriesHandler::TimeseriesHandler(
   API &api, const string &name, const JSON::ValuePtr &config) :
   QueryDef(api, config), name(name), db(api.getTimeseriesDB().ns(name + "\0"s)),
   period(HumanDuration::parse(config->getAsString("period"))),
-  event(db.getPool()->getEventBase().newEvent(
-    this, &TimeseriesHandler::process, 0)) {
+  event(db.getPool()->getEventBase().newEvent([this] {process();}, 0)) {
 
   if (name.empty()) THROW("Timeseries requires a name");
   if (!period) THROW("Timeseries period cannot be zero");

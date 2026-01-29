@@ -145,14 +145,9 @@ public:
 
 
   void addSignalEvent(int sig) {
-    auto event = base.newSignal(sig, this, &App::signalEvent);
+    auto event = base.newSignal(sig, [this] {base.loopExit();});
     event->setPriority(0);
     event->add();
-  }
-
-
-  void signalEvent(Event::Event &e, int signal, unsigned flags) {
-    base.loopExit();
   }
 };
 

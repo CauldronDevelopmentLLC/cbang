@@ -59,8 +59,7 @@ using namespace std;
 
 
 Account::Account(HTTP::Client &client) :
-  client(client),
-  retryEvent(client.getBase().newEvent(this, &Account::next)) {}
+  client(client), retryEvent(client.getBase().newEvent([this] {next();})) {}
 
 
 void Account::addOptions(Options &options) {

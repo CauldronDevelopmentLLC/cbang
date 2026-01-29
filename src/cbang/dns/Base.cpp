@@ -63,7 +63,7 @@ void Base::Entry::respond(
 
 
 Base::Base(Event::Base &base) :
-  base(base), pumpEvent(base.newEvent(this, &Base::pump, 0)) {}
+  base(base), pumpEvent(base.newEvent([this] {pump();}, 0)) {}
 
 Base::~Base() {}
 

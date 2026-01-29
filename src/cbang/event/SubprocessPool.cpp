@@ -47,7 +47,7 @@ using namespace cb::Event;
 SubprocessPool::SubprocessPool(Base &base) :
   base(base), maxActive(SystemInfo::instance().getCPUCount()) {
 
-  execEvent = base.newEvent(this, &SubprocessPool::exec);
+  execEvent = base.newEvent([this] {exec();});
   if (base.hasPriorities()) execEvent->setPriority(8);
   execEvent->add();
 
@@ -55,7 +55,7 @@ SubprocessPool::SubprocessPool(Base &base) :
   THROW("SubprocessPool not supported on Windows");
 
 #else
-  signalEvent = base.newSignal(SIGCHLD, this, &SubprocessPool::childSignal);
+  signalEvent = base.newSignal(SIGCHLD, [this] {childSignal();});
   if (base.hasPriorities()) signalEvent->setPriority(7);
   signalEvent->add();
 #endif

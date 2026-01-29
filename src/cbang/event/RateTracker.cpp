@@ -52,7 +52,7 @@ RateTracker::Series::Series(unsigned size) :
 RateTracker::RateTracker(Base &base, const SmartPointer<RateSet> &rates,
   unsigned size, unsigned period) :
   rates(rates), size(size), times(size),
-  event(base.newEvent(this, &RateTracker::measure)) {event->add(period);}
+  event(base.newEvent([this] {measure();})) {event->add(period);}
 
 
 void RateTracker::clear() {

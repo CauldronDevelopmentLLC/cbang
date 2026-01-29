@@ -51,8 +51,8 @@ using namespace std;
 uint64_t Connection::nextID = 0;
 
 
-Connection::Connection(Base &base) : FD(base),
-  timeout(base.newEvent(this, &Connection::timedout)) {
+Connection::Connection(Base &base) :
+    FD(base), timeout(base.newEvent([this] {timedout();})) {
   LOG_DEBUG(4, "Connection opened");
 }
 
