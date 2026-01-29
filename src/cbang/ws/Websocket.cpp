@@ -130,7 +130,7 @@ void Websocket::close(Status status, const string &msg) {
   if (active) {
     active = false;
     TRY_CATCH_ERROR(onClose(status, msg));
-    active = true;
+    active = true; // shutdown() expects active = true
     shutdown();
   }
 }
