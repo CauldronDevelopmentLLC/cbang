@@ -68,7 +68,8 @@ const string &Info::get(const string &category, const string &key) const {
 
   auto it2 = cat.find(key);
   if (it2 == cat.end())
-    THROW("Info category '" << category << "' does have key '" << key << "'.");
+    THROW("Info category '" << category
+      << "' does not have key '" << key << "'.");
 
   return it2.value();
 }
