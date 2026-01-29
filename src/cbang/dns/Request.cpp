@@ -46,7 +46,7 @@ using namespace std;
 
 Request::Request(Base &base, const std::string &request) :
   base(base), request(request) {
-  timeout = base.getEventBase().newEvent(this, &Request::timedout, 0);
+  timeout = base.getEventBase().newEvent([this] {timedout();}, 0);
   timeout->add(base.getRequestTimeout());
 }
 

@@ -141,7 +141,7 @@ FDPoolEvent::FDRec::FDRec(FDPoolEvent &pool, FD *fd) :
   fd(fd), readQ(pool, fd, true), writeQ(pool, fd, false) {
   event = pool.getBase().newEvent(
     fd->getFD(), this, &FDPoolEvent::FDRec::callback);
-  timeoutEvent = pool.getBase().newEvent(this, &FDPoolEvent::FDRec::timeout);
+  timeoutEvent = pool.getBase().newEvent([this] {timeout();});
   timeoutEvent->setPriority(pool.getEventPriority());
 }
 
@@ -236,7 +236,7 @@ void FDPoolEvent::FDRec::timeout() {
 
 /******************************************************************************/
 FDPoolEvent::FDPoolEvent(Base &base) :
-  base(base), flushEvent(base.newEvent(this, &FDPoolEvent::flushFDs)) {}
+  base(base), flushEvent(base.newEvent([this] {flushFDs();})) {}
 
 
 void FDPoolEvent::read(const cb::SmartPointer<Transfer> &t) {

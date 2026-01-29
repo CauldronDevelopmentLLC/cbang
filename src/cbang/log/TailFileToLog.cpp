@@ -45,9 +45,8 @@ using namespace cb;
 TailFileToLog::TailFileToLog(
   Event::Base &base, const string &filename,
   const string &prefix, const char *logDomain, unsigned logLevel) :
-  event(base.newEvent(this, &TailFileToLog::update)),
-  filename(filename), prefix(prefix), logDomain(logDomain),
-  logLevel(logLevel) {event->add(0.25);}
+  event(base.newEvent([this] {update();})), filename(filename), prefix(prefix),
+  logDomain(logDomain), logLevel(logLevel) {event->add(0.25);}
 
 
 void TailFileToLog::update() {

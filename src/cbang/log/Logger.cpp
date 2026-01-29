@@ -77,8 +77,8 @@ bool Logger::tryLock() const {return mutex.tryLock();}
 
 
 void Logger::initEvents(Event::Base &base) {
-  (rotateEvent = base.newEvent(this, &Logger::rotate, 0))->activate();
-  (dateEvent   = base.newEvent(this, &Logger::date,   0))->activate();
+  (rotateEvent = base.newEvent([this] {rotate();}, 0))->activate();
+  (dateEvent   = base.newEvent([this] {date();},   0))->activate();
 }
 
 

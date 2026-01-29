@@ -83,8 +83,7 @@ namespace cb {
         SmartPointer<Event> event;
 
         QueuedTask(Base &base, int priority) :
-          Task(priority),
-          event(base.newEvent(this, &QueuedTask<Data>::dequeue, 0)) {}
+          Task(priority), event(base.newEvent([this] {dequeue();}, 0)) {}
 
 
         virtual void process(Data) = 0;

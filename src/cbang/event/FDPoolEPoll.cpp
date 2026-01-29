@@ -290,7 +290,7 @@ void FDPoolEPoll::FDRec::update() {
 
 /******************************************************************************/
 FDPoolEPoll::FDPoolEPoll(Base &base) :
-  event(base.newEvent(this, &FDPoolEPoll::processResults)) {
+  event(base.newEvent([this] {processResults();})) {
 
   fd = epoll_create1(EPOLL_CLOEXEC);
   if (!fd) THROW("Failed to create epoll");

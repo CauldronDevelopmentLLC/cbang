@@ -45,8 +45,7 @@ bool ConcurrentPool::Task::shouldShutdown() {
 
 
 ConcurrentPool::ConcurrentPool(Base &base, unsigned size) :
-  ThreadPool(size), base(base),
-  event(base.newEvent(this, &ConcurrentPool::complete)) {
+    ThreadPool(size), base(base), event(base.newEvent([this] {complete();})) {
   if (!Base::threadsEnabled())
     THROW("Cannot use Event::ConcurrentPool without threads enabled.  "
           "Call Event::Base::enableThreads() before creating Event::Base.");
