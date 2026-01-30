@@ -46,6 +46,7 @@
 #endif
 
 #include <bfd.h>
+#include <dlfcn.h>
 
 
 #ifndef bfd_get_section_flags
@@ -135,8 +136,12 @@ BFDResolver::~BFDResolver() {
 
 
 void BFDResolver::resolve(
-  void *addr, string &filename, string &function, int &line) {
+    void *addr, string &filename, string &function, int &line) {
   bfd_vma pc = (bfd_vma)addr;
+
+  // Adjust for base which is non-zero for PIC/PIE code
+  Dl_info info;
+  if (dladdr(addr, &info)) pc -= (uintptr_t)info.dli_fbase;
 
   // Find section
   asection *section = 0;

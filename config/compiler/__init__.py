@@ -224,14 +224,13 @@ def configure(conf, cstd = 'c99'):
             env.AppendUnique(LINKFLAGS = ['/DEBUG', '/MAP:${TARGET}.map'])
 
         elif compiler_mode == 'gnu':
-            if compiler == 'gnu':
-                env.AppendUnique(CCFLAGS = ['-g', '-Wall'])
-                if conf.CheckRDynamic():
-                    env.AppendUnique(LINKFLAGS = ['-rdynamic']) # for backtrace
-            else: # clang and others
-                env.AppendUnique(CCFLAGS = ['-g', '-Wall'])
+            if compiler == 'gnu' and conf.CheckRDynamic():
+                env.AppendUnique(LINKFLAGS = ['-rdynamic']) # for backtrace
 
             if strict: env.AppendUnique(CCFLAGS = ['-Werror'])
+
+            env.AppendUnique(
+                CCFLAGS = ['-g', '-Wall', '-fno-omit-frame-pointer'])
 
         env.CBDefine('DEBUG')
 
