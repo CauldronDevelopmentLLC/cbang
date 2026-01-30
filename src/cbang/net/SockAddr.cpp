@@ -46,6 +46,7 @@
 
 typedef int socklen_t;
 #define SOCKET_INPROGRESS WSAEWOULDBLOCK
+#define IS_BLOCK_ERROR(e) ((e) == WSAEWOULDBLOCK)
 
 #else // !_WIN32
 #include <sys/socket.h>
@@ -55,6 +56,7 @@ typedef int socklen_t;
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR   -1
 #define SOCKET_INPROGRESS EINPROGRESS
+#define IS_BLOCK_ERROR(e) ((e) == EAGAIN || (e) == EWOULDBLOCK)
 
 #endif // !_WIN32
 
@@ -456,9 +458,11 @@ socket_t SockAddr::accept(socket_t socket) {
   SysError::clear();
   socket_t sock = ::accept(socket, get(), &len);
 
-  if (sock == -1)
-    THROWX("Failed to accept socket on " << toString() << ": " << SysError(),
-      SysError::get());
+  if (sock == -1) {
+    SysError err;
+    if (IS_BLOCK_ERROR(err.getCode())) return -1;
+    THROWX("Failed to accept socket: " << err, err.getCode());
+  }
 
   return sock;
 }

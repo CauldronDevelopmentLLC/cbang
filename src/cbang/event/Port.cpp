@@ -83,7 +83,8 @@ void Port::accept() {
     SockAddr peerAddr;
     SmartPointer<Socket> newSocket;
     try {
-      auto newSocket = socket->accept(peerAddr, Socket::NONBLOCKING);
+      newSocket = socket->accept(peerAddr, Socket::NONBLOCKING);
+      if (newSocket.isNull()) return;
       backoff.reset();
 
     } catch (const Exception &e) {
@@ -113,5 +114,6 @@ void Port::addEvent(double delay) {
 
   if (0 <= priority) event->setPriority(priority);
 
-  event->add();
+  if (delay) event->add(delay);
+  else event->add();
 }
