@@ -54,7 +54,8 @@ void Context::setSession(const SmartPointer<HTTP::Session> &session) {
 
 
 void Context::reply(HTTP::Status code, const JSON::ValuePtr &msg) const {
-  reply(code, [&] (JSON::Sink &sink) {msg->write(sink);});
+  if (msg.isSet()) reply(code, [&] (JSON::Sink &sink) {msg->write(sink);});
+  else reply(code);
 }
 
 

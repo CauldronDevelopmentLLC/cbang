@@ -46,8 +46,7 @@ QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) :
 
 void QueryHandler::reply(
   const CtxPtr &ctx, HTTP::Status status, const JSON::ValuePtr &result) {
-  if (result.isSet()) ctx->reply(result);
-  else ctx->reply(status);
+  ctx->reply(status, result);
 }
 
 
