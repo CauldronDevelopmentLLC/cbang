@@ -116,14 +116,16 @@ string Resolver::resolve(const string &s, bool sql) const {
   auto cb = [&] (const string &id, const string &spec) -> string {
     auto value = select(id);
 
-    if (value.isSet()) {
-      if ((sql && spec.empty() && value->isString()) || spec == "S")
-        return MariaDB::DB::format(value->asString());
+    if (sql) {
+      if (value.isNull() || value->isNull() || value->isUndefined())
+        return "NULL";
 
-      return value->formatAs(spec);
+      if (spec == "S" ||
+          (spec.empty() && !value->isNumber() && !value->isBoolean()))
+        return MariaDB::DB::format(value->asString());
     }
 
-    if (sql) return "NULL";
+    if (value.isSet()) return value->formatAs(spec);
 
     return "{" + id + (spec.empty() ? string() : (":" + spec)) + "}";
   };
