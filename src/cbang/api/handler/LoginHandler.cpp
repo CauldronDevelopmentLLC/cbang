@@ -69,8 +69,8 @@ void LoginHandler::listProviders(const CtxPtr &ctx) {
 
 bool LoginHandler::operator()(const CtxPtr &ctx) {
   auto resolver      = ctx->getResolver();
-  string provider    = resolver->selectString("provider", "");
-  string redirectURI = resolver->selectString("redirect_uri", "");
+  string provider    = resolver->selectString("args.provider", "");
+  string redirectURI = resolver->selectString("args.redirect_uri", "");
 
   if (!this->provider.empty()) provider = this->provider;
 
