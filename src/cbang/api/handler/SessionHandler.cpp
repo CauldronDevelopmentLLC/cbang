@@ -64,6 +64,7 @@ bool SessionHandler::operator()(const CtxPtr &ctx) {
     // Create new session and set cookie
     auto session = sessionMan.openSession(req.getClientAddr());
     ctx->setSession(session);
+    sid = session->getID();
     req.setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
     return false;
   }
