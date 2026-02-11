@@ -38,6 +38,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <ostream>
 
 
 namespace cb {
@@ -49,6 +50,14 @@ namespace cb {
 
       void add(const std::string &key, const std::string &value);
       void set(HTTP::Request &req);
+
+      void write(std::ostream &stream) const;
     };
+
+    inline static
+    std::ostream &operator<<(std::ostream &stream, const Headers &hdrs) {
+      hdrs.write(stream);
+      return stream;
+    }
   }
 }

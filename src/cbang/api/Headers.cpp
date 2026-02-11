@@ -34,6 +34,7 @@
 
 #include <cbang/String.h>
 #include <cbang/http/Request.h>
+#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb;
@@ -52,5 +53,12 @@ void Headers::add(const string &key, const string &value) {
 
 
 void Headers::set(HTTP::Request &req) {
+  LOG_DEBUG(3, "Headers:\n" << *this);
+
   for (auto &p: *this) req.outSet(p.first, p.second);
+}
+
+
+void Headers::write(ostream &stream) const {
+  for (auto &p: *this) stream << p.first << ": " << p.second << "\n";
 }
