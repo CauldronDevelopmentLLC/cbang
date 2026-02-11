@@ -72,6 +72,11 @@ bool LoginHandler::operator()(const CtxPtr &ctx) {
   string provider    = resolver->selectString("args.provider", "");
   string redirectURI = resolver->selectString("args.redirect_uri", "");
 
+  // Never cache
+  ctx->getRequest().outSet("Cache-Control",   "max-age=0");
+  ctx->getRequest().outSet("X-Accel-Expires", "0");
+  ctx->getRequest().outSet("Vary",            "*");
+
   if (!this->provider.empty()) provider = this->provider;
 
   if (provider.empty()) reportSession(ctx);
