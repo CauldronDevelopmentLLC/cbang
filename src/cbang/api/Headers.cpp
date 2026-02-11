@@ -34,7 +34,6 @@
 
 #include <cbang/String.h>
 #include <cbang/http/Request.h>
-#include <cbang/log/Logger.h>
 
 using namespace std;
 using namespace cb;
@@ -43,7 +42,7 @@ using namespace cb::API;
 
 Headers::Headers(const JSON::ValuePtr &hdrs) {
   for (auto e: hdrs->entries())
-    add(e.key(), e->getString());
+    add(e.key(), e->asString());
 }
 
 
@@ -53,8 +52,6 @@ void Headers::add(const string &key, const string &value) {
 
 
 void Headers::set(HTTP::Request &req) {
-  LOG_DEBUG(3, "Headers:\n" << *this);
-
   for (auto &p: *this) req.outSet(p.first, p.second);
 }
 

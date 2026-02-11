@@ -390,7 +390,8 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
 
 cb::API::HandlerPtr cb::API::API::wrapEndpoint(
   const HandlerPtr &handler, const CfgPtr &cfg) {
-  auto group = SmartPtr(new HandlerGroup);
+  auto config = cfg->getConfig();
+  auto group  = SmartPtr(new HandlerGroup);
 
   // Headers
   if (config->has("headers"))
