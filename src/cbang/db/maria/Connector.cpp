@@ -61,7 +61,7 @@ SmartPointer<MariaDB::EventDB> Connector::getConnection() {
   db->setWriteTimeout(timeout);
   db->setReconnect(true);
   db->enableNonBlocking();
-  db->setCharacterSet("utf8");
+  db->setCharacterSet("utf8mb4");
   db->setPriority(priority);
 
   // Connect
