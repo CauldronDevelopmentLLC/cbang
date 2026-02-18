@@ -227,7 +227,7 @@ void KeyPair::generateDH(unsigned primeLen, int generator,
 
 void KeyPair::generateEC(const string &curve,
                          const SmartPointer<KeyGenCallback> &cb) {
-  KeyContext ctx(EVP_PKEY_DH);
+  KeyContext ctx(EVP_PKEY_EC);
   ctx.keyGenInit();
   ctx.setECCurve(curve);
   ctx.setKeyGenCallback(cb.get());
