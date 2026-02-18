@@ -59,7 +59,6 @@ namespace cb {
       "https://acme-staging-v02.api.letsencrypt.org/directory";
 
     class Account : public HTTP::Method::Enum {
-      SmartPointer<RefCounted> lifetime;
       HTTP::Client &client;
       KeyPair key;
 
@@ -104,6 +103,7 @@ namespace cb {
     protected:
       std::vector<listener_t> listeners;
 
+      SmartPointer<Event::Event> updateEvent;
       SmartPointer<Event::Event> retryEvent;
 
     public:
@@ -139,7 +139,7 @@ namespace cb {
       std::string getThumbprint() const;
       std::string getKeyAuthorization() const;
 
-      void writeJWK(JSON::Sink &sink) const;
+      JSON::ValuePtr getJWK() const;
       std::string getProtected(const URI &uri) const;
       std::string getSignedRequest(const URI &uri,
                                    const std::string &payload) const;
