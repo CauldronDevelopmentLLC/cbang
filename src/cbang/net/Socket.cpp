@@ -295,6 +295,15 @@ SmartPointer<Socket> Socket::accept(SockAddr &addr, unsigned flags) {
   socket_t s = addr.accept(socket);
 
   if (s != INVALID_SOCKET) {
+    // Peek at the buffer without removing data to see if it's still alive
+    // This helps prevent us from wasting time on connections that are dead
+    char buf;
+    int ret = recv(s, &buf, 1, MSG_PEEK | MSG_DONTWAIT);
+    if (!ret || (ret < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
+      close(s); // The client already sent FIN or an error occurred
+      return 0;
+    }
+
     SmartPointer<Socket> aSock = new Socket;
 
     aSock->socket    = s;
