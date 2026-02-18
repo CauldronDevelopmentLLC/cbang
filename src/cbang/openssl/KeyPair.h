@@ -76,6 +76,8 @@ namespace cb {
     BigNum getParam(const char *id) const;
     BigNum getRSA_E() const;
     BigNum getRSA_N() const;
+    BigNum getEC_X() const;
+    BigNum getEC_Y() const;
 
     unsigned size() const; ///< In bytes
 
@@ -124,6 +126,7 @@ namespace cb {
     std::string sign(const std::string &data) const;
     std::string signSHA256(const std::string &data) const;
     std::string signBase64SHA256(const std::string &data) const;
+    std::string signECP1363(const std::string &data) const;
     void verify(const std::string &signature, const std::string &data) const;
     void verifyBase64SHA256(const std::string &sig64,
                             const std::string &data) const;

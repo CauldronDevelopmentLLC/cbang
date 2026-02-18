@@ -166,6 +166,18 @@ BigNum KeyPair::getRSA_N() const {
 }
 
 
+BigNum KeyPair::getEC_X() const {
+  if (!isEC()) THROW("Not an EC key");
+  return getParam(OSSL_PKEY_PARAM_EC_PUB_X);
+}
+
+
+BigNum KeyPair::getEC_Y() const {
+  if (!isEC()) THROW("Not an EC key");
+  return getParam(OSSL_PKEY_PARAM_EC_PUB_Y);
+}
+
+
 unsigned KeyPair::size() const {return EVP_PKEY_size(key);}
 
 
@@ -390,6 +402,26 @@ string KeyPair::signSHA256(const string &data) const {
 
 string KeyPair::signBase64SHA256(const string &data) const {
   return Base64().encode(signSHA256(data));
+}
+
+
+string KeyPair::signECP1363(const string &data) const {
+  string sder = sign(data);
+
+  unsigned char raw_rs[64]; // This will be our P1363 output
+  auto p   = (const unsigned char *)sder.c_str();
+  auto sig = d2i_ECDSA_SIG(0, &p, sder.length());
+
+  const BIGNUM *r, *s;
+  ECDSA_SIG_get0(sig, &r, &s);
+
+  // BN_bn2binpad ensures exactly 32 bytes with leading zeros
+  BN_bn2binpad(r, raw_rs, 32);      // Fill first 32 bytes
+  BN_bn2binpad(s, raw_rs + 32, 32); // Fill last 32 bytes
+
+  ECDSA_SIG_free(sig);
+
+  return string((char *)raw_rs, 64);
 }
 
 
