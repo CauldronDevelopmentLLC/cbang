@@ -38,8 +38,6 @@
 #include <cbang/config/Options.h>
 #include <cbang/net/Base64.h>
 #include <cbang/log/Logger.h>
-#include <cbang/json/BufferWriter.h>
-#include <cbang/util/WeakCallback.h>
 
 #include <cbang/time/Time.h>
 #include <cbang/time/Timer.h>
@@ -88,10 +86,10 @@ void Account::simpleInit(const KeyPair &key, const KeyPair &clientKey,
   add(keyCert);
 
   // Check for renewals at updateRate starting now
-  auto wcb = WeakCallback<RefCounted>(lifetime, [this] () {update();});
-  auto e = client.getBase().newEvent(wcb);
-  e->add(updateRate);
-  e->activate();
+
+  updateEvent = client.getBase().newEvent([this] () {update();});
+  updateEvent->add(updateRate);
+  updateEvent->activate();
 }
 
 
@@ -173,8 +171,7 @@ string Account::getURL(const string &url) const {
 
 
 string Account::getThumbprint() const {
-  string json = JSON::BufferWriter(0, true).toString(this, &Account::writeJWK);
-  return URLBase64().encode(Digest::hash(json, "sha256"));
+  return URLBase64().encode(Digest::hash(getJWK()->toString(), "sha256"));
 }
 
 
@@ -183,18 +180,18 @@ string Account::getKeyAuthorization() const {
 }
 
 
-void Account::writeJWK(JSON::Sink &sink) const {
-  sink.beginDict();
+JSON::ValuePtr Account::getJWK() const {
+  auto d = SmartPtr(new JSON::Dict);
 
   if (key.isRSA()) {
     // Insert order matters
-    sink.insert("e", URLBase64().encode(key.getRSA_E().toBinString()));
-    sink.insert("kty", "RSA");
-    sink.insert("n", URLBase64().encode(key.getRSA_N().toBinString()));
+    d->insert("e", URLBase64().encode(key.getRSA_E().toBinString()));
+    d->insert("kty", "RSA");
+    d->insert("n", URLBase64().encode(key.getRSA_N().toBinString()));
 
   } else THROW("Unsupported key type");
 
-  sink.endDict();
+  return d;
 }
 
 
@@ -202,24 +199,17 @@ string Account::getProtected(const URI &uri) const {
   // TODO Implement ES256 (RFC7518 Section 3.1) and EdDSA var. Ed25519 (RFC8037)
   // signature algorithms.  See IETF ACME draft "Request Authentication".
 
-  JSON::BufferWriter writer(0, true);
+  auto d = SmartPtr(new JSON::Dict);
+  d->insert("alg", "RS256");
 
-  writer.beginDict();
-  writer.insert("alg", "RS256");
-
-  if (!kid.empty()) writer.insert("kid", kid);
-  else {
-    writer.beginInsert("jwk");
-    writeJWK(writer);
-  }
+  if (!kid.empty()) d->insert("kid", kid);
+  else d->insert("jwk", getJWK());
 
   if (nonce.empty()) THROW("Need nonce");
-  writer.insert("nonce", nonce);
-  writer.insert("url", uri.toString());
-  writer.endDict();
-  writer.flush();
+  d->insert("nonce", nonce);
+  d->insert("url", uri.toString());
 
-  return writer.toString();
+  return d->toString();
 }
 
 
@@ -229,74 +219,57 @@ string Account::getSignedRequest(const URI &uri, const string &payload) const {
   string signed64 =
     URLBase64().encode(key.signSHA256(protected64 + "." + payload64));
 
-  JSON::BufferWriter writer(0, true);
-
-  writer.beginDict();
-  writer.insert("protected", protected64);
-  writer.insert("payload", payload64);
-  writer.insert("signature", signed64);
-  writer.endDict();
-  writer.flush();
-
-  return writer.toString();
+  auto d = SmartPtr(new JSON::Dict);
+  d->insert("protected", protected64);
+  d->insert("payload", payload64);
+  d->insert("signature", signed64);
+  return d->toString();
 }
 
 
 string Account::getNewAcctPayload() const {
-  JSON::BufferWriter writer(0, true);
+  auto d = SmartPtr(new JSON::Dict);
 
-  writer.beginDict();
-  writer.insertBoolean("termsOfServiceAgreed", true);
+  d->insertBoolean("termsOfServiceAgreed", true);
 
   if (!emails.empty()) {
     vector<string> list;
     String::tokenize(emails, list);
 
-    writer.insertList("contact");
-    for (auto &item: list) writer.append("mailto:" + item);
-    writer.endList();
+    auto l = d->createList();
+    d->insert("contact", l);
+    for (auto &item: list) l->append("mailto:" + item);
   }
 
-  writer.endDict();
-  writer.flush();
-
-  return writer.toString();
+  return d->toString();
 }
 
 
 string Account::getNewOrderPayload() const {
-  JSON::BufferWriter writer(0, true);
+  auto d = SmartPtr(new JSON::Dict);
 
-  writer.beginDict();
-  writer.insertList("identifiers");
+  auto l = d->createList();
+  d->insert("identifiers", l);
 
   auto &domains = getCurrentDomains();
   for (auto &domain: domains) {
-    writer.appendDict();
-    writer.insert("type", "dns");
-    writer.insert("value", domain);
-    writer.endDict();
+    auto d = l->createDict();
+    l->append(d);
+    d->insert("type", "dns");
+    d->insert("value", domain);
   }
 
-  writer.endList();
-  writer.endDict();
-  writer.flush();
-
-  return writer.toString();
+  return d->toString();
 }
 
 
 string Account::getFinalizePayload() const {
   auto csr = getCurrentKeyCert().makeCSR();
 
-  JSON::BufferWriter writer(0, true);
+  auto d = SmartPtr(new JSON::Dict);
+  d->insert("csr", URLBase64().encode(csr->toDER()));
 
-  writer.beginDict();
-  writer.insert("csr", URLBase64().encode(csr->toDER()));
-  writer.endDict();
-  writer.flush();
-
-  return writer.toString();
+  return d->toString();
 }
 
 
@@ -334,7 +307,7 @@ string Account::getProblemString(const JSON::Value &problem) const {
 void Account::call(const string &url, HTTP::Method method) {
   HTTP::Client::callback_t cb =
     [this] (HTTP::Request &req) {responseHandler(req);};
-  pr = client.call(getURL(url), method, WeakCall(lifetime.get(), cb));
+  pr = client.call(getURL(url), method, cb);
   pr->send();
 }
 
@@ -348,7 +321,7 @@ void Account::post(const string &url, const string &payload) {
 
   HTTP::Client::callback_t cb =
     [this] (HTTP::Request &req) {responseHandler(req);};
-  pr = client.call(uri, HTTP_POST, data, WeakCall(lifetime.get(), cb));
+  pr = client.call(uri, HTTP_POST, data, cb);
   pr->getRequest()->outSet("Content-Type", "application/jose+json");
   pr->send();
 }
