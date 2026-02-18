@@ -90,7 +90,7 @@ namespace cb {
                      const SmartPointer<KeyGenCallback> &cb = 0);
     void generateDH(unsigned primeLen, int generator = 2,
                     const SmartPointer<KeyGenCallback> &cb = 0);
-    void generateEC(const std::string &curve = "secp256r1",
+    void generateEC(const std::string &curve = "prime256v1",
                     const SmartPointer<KeyGenCallback> &cb = 0);
 
     // Export

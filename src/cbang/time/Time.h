@@ -59,6 +59,7 @@ namespace cb {
     static const unsigned SEC_PER_MIN  = 60;
     static const unsigned SEC_PER_HOUR = Time::SEC_PER_MIN  * 60;
     static const unsigned SEC_PER_DAY  = Time::SEC_PER_HOUR * 24;
+    static const unsigned SEC_PER_WEEK = Time::SEC_PER_DAY  * 7;
     static const unsigned SEC_PER_YEAR = Time::SEC_PER_DAY  * 365;
 
     /// @param time In seconds since January 1st, 1970

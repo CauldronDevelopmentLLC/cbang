@@ -466,6 +466,20 @@ void SSLContext::setCheckCRL(bool x) {
 }
 
 
+void SSLContext::setSessionTimeout(unsigned secs) {
+  SSL_CTX_set_timeout(ctx, secs);
+  if (SSL_CTX_get_timeout(ctx) != secs)
+    THROW("Failed to set SSL session timeout to " << secs << " seconds");
+}
+
+
+void SSLContext::setSessionCacheSize(unsigned size) {
+  SSL_CTX_sess_set_cache_size(ctx, size);
+  if (SSL_CTX_sess_get_cache_size(ctx) != size)
+    THROW("Failed to set SSL session cache size to " << size);
+}
+
+
 long SSLContext::getOptions() const {return SSL_CTX_get_options(ctx);}
 void SSLContext::setOptions(long options) {SSL_CTX_set_options(ctx, options);}
 

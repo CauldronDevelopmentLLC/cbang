@@ -96,6 +96,8 @@ namespace cb {
 
     void setVerifyDepth(unsigned depth);
     void setCheckCRL(bool x = true);
+    void setSessionTimeout(unsigned secs);
+    void setSessionCacheSize(unsigned size);
 
     long getOptions() const;
     void setOptions(long options);
