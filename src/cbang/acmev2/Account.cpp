@@ -127,7 +127,7 @@ void Account::update() {
   if (state != STATE_IDLE || !certsReadyForRenewal()) return;
 
   if (directory.isNull()) state = STATE_GET_DIR;
-  else if (kid.empty()) state = STATE_REGISTER;
+  else if (kid.empty())   state = STATE_REGISTER;
   else {
     currentKeyCert = 0;
     state = STATE_NEW_ORDER;
@@ -171,7 +171,8 @@ string Account::getURL(const string &url) const {
 
 
 string Account::getThumbprint() const {
-  return URLBase64().encode(Digest::hash(getJWK()->toString(), "sha256"));
+  string jwk = getJWK()->toString(0, true); // No indent, compact
+  return URLBase64().encode(Digest::hash(jwk, "sha256"));
 }
 
 
@@ -183,11 +184,17 @@ string Account::getKeyAuthorization() const {
 JSON::ValuePtr Account::getJWK() const {
   auto d = SmartPtr(new JSON::Dict);
 
+  // Insert order matters (lexicographical by key)
   if (key.isRSA()) {
-    // Insert order matters
     d->insert("e", URLBase64().encode(key.getRSA_E().toBinString()));
     d->insert("kty", "RSA");
     d->insert("n", URLBase64().encode(key.getRSA_N().toBinString()));
+
+  } else if (key.isEC()) {
+    d->insert("crv", "P-256");
+    d->insert("kty", "EC");
+    d->insert("x", URLBase64().encode(key.getEC_X().toBinString()));
+    d->insert("y", URLBase64().encode(key.getEC_Y().toBinString()));
 
   } else THROW("Unsupported key type");
 
@@ -196,11 +203,11 @@ JSON::ValuePtr Account::getJWK() const {
 
 
 string Account::getProtected(const URI &uri) const {
-  // TODO Implement ES256 (RFC7518 Section 3.1) and EdDSA var. Ed25519 (RFC8037)
-  // signature algorithms.  See IETF ACME draft "Request Authentication".
-
+  // See IETF ACME draft "Request Authentication".
   auto d = SmartPtr(new JSON::Dict);
-  d->insert("alg", "RS256");
+
+  if      (key.isRSA()) d->insert("alg", "RS256");
+  else if (key.isEC())  d->insert("alg", "ES256");
 
   if (!kid.empty()) d->insert("kid", kid);
   else d->insert("jwk", getJWK());
@@ -215,14 +222,17 @@ string Account::getProtected(const URI &uri) const {
 
 string Account::getSignedRequest(const URI &uri, const string &payload) const {
   string protected64 = URLBase64().encode(getProtected(uri));
-  string payload64 = URLBase64().encode(payload);
-  string signed64 =
-    URLBase64().encode(key.signSHA256(protected64 + "." + payload64));
+  string payload64   = URLBase64().encode(payload);
+  string hash        = Digest::hash(protected64 + "." + payload64, "sha256");
+
+  string sig;
+  if      (key.isRSA()) sig = key.sign(hash);
+  else if (key.isEC())  sig = key.signECP1363(hash);
 
   auto d = SmartPtr(new JSON::Dict);
   d->insert("protected", protected64);
-  d->insert("payload", payload64);
-  d->insert("signature", signed64);
+  d->insert("payload",   payload64);
+  d->insert("signature", URLBase64().encode(sig));
   return d->toString();
 }
 
