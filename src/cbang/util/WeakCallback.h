@@ -48,12 +48,10 @@ namespace cb {
     WeakCallback(const typename SmartPointer<T>::Weak &ptr, const cb_t &cb) :
       ptr(ptr), cb(cb) {}
 
-    explicit operator bool() const {return ptr.isSet() && cb;}
-
     void operator()(Args... args) {
-      if (ptr.isNull()) return;
-      SmartPointer<T> strong = ptr; // Prevent deallocation during callback
-      cb(args...);
+      // Check pointer is still alive and prevent deallocation during callback
+      SmartPointer<T> strong = ptr;
+      if (strong.isSet()) cb(args...);
     }
   };
 
