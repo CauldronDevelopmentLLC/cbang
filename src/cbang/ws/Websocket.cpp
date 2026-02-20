@@ -411,7 +411,8 @@ void Websocket::schedulePing() {
 
 void Websocket::message(const char *data, uint64_t length) {
   msgReceived++;
-  if (pingEvent->isPending()) schedulePing(); // Reschedule ping for later
+  if (pingEvent.isSet() && pingEvent->isPending())
+    schedulePing(); // Reschedule ping for later
 
   try {
     onMessage(data, length);
