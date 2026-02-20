@@ -37,5 +37,6 @@ env.Append(CPPPATH = ['#'])
 
 p1 = env.Program('weak', 'weak.cpp')
 p2 = env.Program('refcounted', 'refcounted.cpp')
+p3 = env.Program('smartpointer', 'smartpointer.cpp')
 
-Return('p1 p2')
+Return('p1 p2 p3')

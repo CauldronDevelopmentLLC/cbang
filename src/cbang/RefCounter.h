@@ -36,6 +36,7 @@
 
 #include <atomic>
 #include <string>
+#include <cstdint>
 
 
 namespace cb {
@@ -48,14 +49,15 @@ namespace cb {
     virtual ~RefCounter() {} // Prevent deallocation by others
 
   public:
-    static RefCounter *getCounter(const void *ptr) {return 0;}
-    static RefCounter *getCounter(const RefCounted *ptr);
-    static void setCounter(const void *ptr, RefCounter *counter) {}
-    static void setCounter(const RefCounted *ptr, RefCounter *counter);
+    static RefCounter *_getCounter(const void *ptr) {return 0;}
+    static RefCounter *_getCounter(const RefCounted *ptr);
+    static void _setCounter(const void *ptr, RefCounter *counter) {}
+    static void _setCounter(const RefCounted *ptr, RefCounter *counter);
 
     virtual bool isActive() const = 0;
     virtual unsigned getCount(bool weak) const = 0;
     virtual void incCount(bool weak) = 0;
+    virtual bool tryIncStrong() = 0;
     virtual void decCount(bool weak) = 0;
     virtual void adopted() = 0;
 
@@ -76,67 +78,89 @@ namespace cb {
   class RefCounterImpl : public RefCounter {
   protected:
     T *ptr;
-    std::atomic<unsigned> count;
-    std::atomic<unsigned> weakCount;
+    std::atomic<uint64_t> counts{0x100000000ULL}; // Start with one strong
 
-    RefCounterImpl(T *ptr) : ptr(ptr), count(0), weakCount(0) {}
+    RefCounterImpl(T *ptr) : ptr(ptr) {}
 
   public:
     static unsigned trace;
 
-    static RefCounter *getCounter(T *ptr) {
-      RefCounter *counter = RefCounter::getCounter(ptr);
+    static RefCounter *getCounter(T *ptr, bool weak) {
+      RefCounter *counter = RefCounter::_getCounter(ptr);
 
-      if (!counter) {
-        counter = new RefCounterImpl<T, DeallocT>(ptr);
-        setCounter(ptr, counter);
+      if (counter) {
+        // Existing counter — increment appropriately
+        if (weak) counter->incCount(true);
+        else if (!counter->tryIncStrong()) return 0; // Object destroyed
+        return counter;
       }
 
+      if (weak) raise("Can't create weak pointer to unmanaged object!");
+
+      // New counter, born with strong count of 1
+      counter = new RefCounterImpl<T, DeallocT>(ptr);
+      _setCounter(ptr, counter);
       return counter;
     }
 
     // From RefCounter
-    bool isActive() const override {return ptr;}
+    bool isActive() const override {return getCount(false);}
 
     unsigned getCount(bool weak) const override {
-      return weak ? weakCount : count;
+      return weak ? (counts & 0xffffffff) : (counts >> 32);
     }
 
     void incCount(bool weak) override {
-      unsigned c = getCount(weak);
+      uint64_t delta = weak ? 1 : 0x100000000ULL;
+      uint64_t prev  = counts.fetch_add(delta, std::memory_order_acq_rel);
+      uint32_t c     = (weak ? prev & 0xffffffff : prev >> 32) + 1;
+      log(trace, "incCount() count=%u", c);
+    }
 
-      while (!(weak ? weakCount : count).compare_exchange_weak(c, c + 1))
-        continue;
-
-      log(trace, "incCount() count=%u", c + 1);
+    bool tryIncStrong() override {
+      uint64_t c = counts.load(std::memory_order_relaxed);
+      do {
+        if (!(c >> 32)) return false; // Object already destroyed
+      } while (!counts.compare_exchange_weak(c, c + 0x100000000ULL,
+        std::memory_order_acq_rel, std::memory_order_relaxed));
+      return true;
     }
 
     void decCount(bool weak) override {
-      unsigned c = getCount(weak);
+      // Decrement the appropriate half atomically
+      uint64_t delta = weak ? 1 : 0x100000000ULL;
+      uint64_t prev = counts.fetch_sub(delta, std::memory_order_acq_rel);
 
+      uint32_t strongPrev = prev >> 32;
+      uint32_t weakPrev   = prev & 0xffffffff;
+
+      uint32_t c = weak ? weakPrev : strongPrev;
       if (!c) raise("Already zero!");
-
-      while (!(weak ? weakCount : count).compare_exchange_weak(c, c - 1))
-        if (!c) raise("Already zero!");
 
       log(trace, "decCount() count=%u", c - 1);
 
-      if (c == 1) {
-        if (weak && count == 0) delete this;
+      if (!weak && strongPrev == 1) {
+        // Strong count just hit zero — deallocate the object
+        T *_ptr = ptr;
+        ptr = 0;
+        if (_ptr) DeallocT::dealloc(_ptr);
 
-        if (!weak) {
-          T *_ptr = ptr;
-          if (weakCount == 0) delete this;
-          else ptr = 0; // Deactivate
-          if (_ptr) DeallocT::dealloc(_ptr);
-        }
+        // If there are also no weak refs, destroy the counter itself
+        if (!weakPrev) delete this;
       }
+
+      // Delete if weak count just hit zero and strong was already gone
+      if (weak && weakPrev == 1 && !strongPrev) delete this;
     }
 
     void adopted() override {
-      if (1 < getCount(true) + getCount(false))
+      uint64_t c      = counts.load(std::memory_order_relaxed);
+      uint32_t strong = c >> 32;
+      uint32_t weak   = c & 0xffffffff;
+
+      if (1 < strong + weak)
         raise("Can't adopt pointer with multiple references!");
-      setCounter(ptr, 0);
+      _setCounter(ptr, 0);
       delete this;
     }
   };
@@ -151,12 +175,13 @@ namespace cb {
     RefCounterPhonyImpl() {}
 
   public:
-    static RefCounter *getCounter(const void *ptr) {return &singleton;}
+    static RefCounter *getCounter(const void *, bool) {return &singleton;}
 
     // From RefCounter
     bool isActive() const override {return true;}
     unsigned getCount(bool weak) const override {return 1;}
     void incCount(bool weak) override {}
+    bool tryIncStrong() override {return true;}
     void decCount(bool weak) override {}
     void adopted() override {}
   };

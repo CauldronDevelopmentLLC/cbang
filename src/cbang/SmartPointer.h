@@ -30,7 +30,7 @@
 
 \******************************************************************************/
 
-#include "Exception.h"
+#include "Exception.h" // Up here becase it includes SmartPointer.h
 
 #ifndef CBANG_SMART_POINTER_H
 #define CBANG_SMART_POINTER_H
@@ -135,13 +135,16 @@ namespace cb {
       refCounter(_refCounter), ptr(_ptr) {
       if (!ptr) return;
 
-      // Get RefCounter
-      if (!refCounter) refCounter = CounterT::getCounter(ptr);
-      refCounter->incCount(weak);
+      if (refCounter) {
+        if (weak) refCounter->incCount(true);
+        else if (!refCounter->tryIncStrong()) {
+          refCounter = 0;
+          ptr = 0;
+        }
 
-      if (weak && isPhony()) {
-        release();
-        referenceError("Weak pointer cannot have phony reference");
+      } else {
+        refCounter = CounterT::getCounter(ptr, weak);
+        if (!refCounter) ptr = 0;
       }
     }
 
@@ -225,15 +228,19 @@ namespace cb {
      * @return A reference to this smart pointer.
      */
     PointerT &operator=(const PointerT &smartPtr) {
-      if (*this == smartPtr) return *this;
+      if (refCounter == smartPtr.refCounter) return *this;
 
       release();
 
       if (smartPtr.isSet()) {
-        if (weak && smartPtr.isPhony())
-          referenceError("Weak pointer cannot have phony reference");
         refCounter = smartPtr.refCounter;
-        refCounter->incCount(weak);
+
+        if (weak) refCounter->incCount(true);
+        else if (!refCounter->tryIncStrong()) {
+          refCounter = 0;
+          ptr = 0;
+          return *this;
+        }
         ptr = smartPtr.ptr;
       }
 
