@@ -46,10 +46,12 @@ using namespace std;
 RefCounterPhonyImpl RefCounterPhonyImpl::singleton;
 
 
-RefCounter *RefCounter::getCounter(const RefCounted *ptr) {return ptr->counter;}
+RefCounter *RefCounter::_getCounter(const RefCounted *ptr) {
+  return ptr->counter;
+}
 
 
-void RefCounter::setCounter(
+void RefCounter::_setCounter(
   const RefCounted *ptr, RefCounter *counter) {
   if (ptr->counter && counter) raise("RefCounted::counter already set");
   const_cast<RefCounted *>(ptr)->counter = counter;
