@@ -54,10 +54,8 @@ namespace cb {
 
   class SSL {
     _SSL *ssl;
-    unsigned handshakes = 0;
 
     static bool initialized;
-    static unsigned maxHandshakes;
 
     enum {
       PROCEED,
@@ -105,9 +103,6 @@ namespace cb {
 
     static void init();
 
-    static unsigned getMaxHandshakes() {return maxHandshakes;}
-    static void setMaxHandshakes(unsigned n) {maxHandshakes = n;}
-
     static int passwordCallback(char *buf, int num, int rwflags, void *data);
 
     static void flushErrors();
@@ -125,11 +120,9 @@ namespace cb {
 
     static void loadProvider(const std::string &provider);
 
-    void infoCallback(int where, int ret);
     void limitRenegotiation();
 
   protected:
-    void checkHandshakes();
     bool checkWants();
     void checkError(int ret);
   };

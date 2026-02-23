@@ -76,16 +76,7 @@ using namespace cb;
 #define CBANG_EXCEPTION SSLException
 
 
-namespace {
-  extern "C" void ssl_info_callback(const ::SSL *ssl, int where, int ret) {
-    ((cb::SSL *)SSL_get_app_data(ssl))->infoCallback(where, ret);
-  }
-}
-
-
-
-bool     cb::SSL::initialized   = false;
-unsigned cb::SSL::maxHandshakes = 3;
+bool cb::SSL::initialized = false;
 
 
 cb::SSL::SSL(_SSL *ssl) : ssl(ssl) {
@@ -222,14 +213,6 @@ void cb::SSL::accept() {
   LOG_DEBUG(5, CBANG_FUNC << "()");
   ErrorSentry sentry;
 
-  // Limit renegotiation to prevent DOS attack
-  handshakes = 0;
-  void *ptr = SSL_get_app_data(ssl);
-  if (!ptr) {
-    SSL_set_app_data(ssl, (char *)this);
-    SSL_set_info_callback(ssl, ssl_info_callback);
-  }
-
   lastErr = 0;
   int ret = SSL_accept(ssl);
 
@@ -270,7 +253,6 @@ int cb::SSL::read(char *data, unsigned size) {
   ErrorSentry sentry;
 
   lastErr = 0;
-  checkHandshakes();
   if (!checkWants() || !size) return 0;
 
   int ret = SSL_read(ssl, data, size);
@@ -305,7 +287,6 @@ unsigned cb::SSL::write(const char *data, unsigned size) {
   ErrorSentry sentry;
 
   lastErr = 0;
-  checkHandshakes();
   if (!checkWants() || !size) return 0;
 
   int ret = SSL_write(ssl, data, size);
@@ -411,17 +392,6 @@ void cb::SSL::loadProvider(const string &provider) {
   if (!OSSL_PROVIDER_load(0, provider.c_str()))
     THROW("Failed to load SSL provider: " << provider << ": " << getErrorStr());
 #endif
-}
-
-
-void cb::SSL::infoCallback(int where, int ret) {
-  if (where & SSL_CB_HANDSHAKE_START) handshakes++;
-}
-
-
-void cb::SSL::checkHandshakes() {
-  if (maxHandshakes < handshakes)
-    THROW("Potential Client-Initiated Renegotiation DOS attack detected");
 }
 
 
