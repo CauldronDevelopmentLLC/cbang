@@ -58,9 +58,7 @@ CertificateChain::CertificateChain(const string &pem) :
 }
 
 
-CertificateChain::~CertificateChain() {
-  sk_X509_pop_free(chain, X509_free);
-}
+CertificateChain::~CertificateChain() {sk_X509_pop_free(chain, X509_free);}
 
 
 CertificateChain &CertificateChain::operator=(const CertificateChain &o) {

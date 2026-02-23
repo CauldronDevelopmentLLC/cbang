@@ -88,9 +88,7 @@ KeyPair::KeyPair(const KeyPair &o) : key(o.key) {
 }
 
 
-KeyPair::KeyPair() {
-  key = EVP_PKEY_new();
-}
+KeyPair::KeyPair() {key = EVP_PKEY_new();}
 
 
 KeyPair::KeyPair(const string &key, mac_key_t type, ENGINE *e) {

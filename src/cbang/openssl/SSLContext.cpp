@@ -257,7 +257,8 @@ void SSLContext::loadVerifyLocationsFile(const string &path) {
 
 void SSLContext::loadVerifyLocationsPath(const string &path) {
   if (!SSL_CTX_load_verify_locations(ctx, 0, path.c_str()))
-    THROW("Failed to load verify locations path '" << path << "'");
+    THROW("Failed to load verify locations path '" << path
+      << "': " << cb::SSL::getErrorStr());
 }
 
 
@@ -279,7 +280,7 @@ void SSLContext::loadSystemRootCerts() {
     }
 
     if (!X509_STORE_add_cert(verifyStore, cert)) {
-      auto error = ERR_get_error();
+      auto error = SSL::getError()();
 
       if (ERR_GET_REASON(error) != X509_R_CERT_ALREADY_IN_HASH_TABLE) {
         LOG_ERROR("Error adding system root cert: " << SSL::getErrorStr(error));
@@ -387,7 +388,7 @@ void SSLContext::loadSystemRootCerts() {
         }
 
         if (!X509_STORE_add_cert(verifyStore, xcert)) {
-          auto error = ERR_get_error();
+          auto error = SSL::getError();
 
           if (ERR_GET_REASON(error) != X509_R_CERT_ALREADY_IN_HASH_TABLE) {
             LOG_ERROR("Error adding root cert: " << SSL::getErrorStr(error));
@@ -469,14 +470,16 @@ void SSLContext::setCheckCRL(bool x) {
 void SSLContext::setSessionTimeout(unsigned secs) {
   SSL_CTX_set_timeout(ctx, secs);
   if (SSL_CTX_get_timeout(ctx) != secs)
-    THROW("Failed to set SSL session timeout to " << secs << " seconds");
+    THROW("Failed to set SSL session timeout to " << secs << " seconds"
+      << cb::SSL::getErrorStr());
 }
 
 
 void SSLContext::setSessionCacheSize(unsigned size) {
   SSL_CTX_sess_set_cache_size(ctx, size);
   if (SSL_CTX_sess_get_cache_size(ctx) != size)
-    THROW("Failed to set SSL session cache size to " << size);
+    THROW("Failed to set SSL session cache size to " << size
+      << ": " << cb::SSL::getErrorStr());
 }
 
 

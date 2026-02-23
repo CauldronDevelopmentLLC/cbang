@@ -59,9 +59,7 @@ struct CSR::private_t {
 };
 
 
-CSR::CSR() : csr(0), pri(new private_t) {
-  csr = X509_REQ_new();
-}
+CSR::CSR() : csr(0), pri(new private_t) {csr = X509_REQ_new();}
 
 
 CSR::CSR(const string &pem) : csr(0), pri(new private_t) {

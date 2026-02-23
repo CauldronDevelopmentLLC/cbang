@@ -72,9 +72,7 @@ Certificate::Certificate(const string &pem) : cert(0) {
 }
 
 
-Certificate::~Certificate() {
-  if (cert) X509_free(cert);
-}
+Certificate::~Certificate() {if (cert) X509_free(cert);}
 
 
 Certificate &Certificate::operator=(const Certificate &o) {
