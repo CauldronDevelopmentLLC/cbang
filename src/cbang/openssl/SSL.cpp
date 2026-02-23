@@ -34,6 +34,7 @@
 
 #include "SecurityUtilities.h"
 #include "Certificate.h"
+#include "ErrorSentry.h"
 
 #include <cbang/config.h>
 #include <cbang/log/Logger.h>
@@ -97,7 +98,7 @@ cb::SSL::SSL(const SSL &ssl) : SSL(ssl.ssl) {}
 
 cb::SSL::SSL(SSL_CTX *ctx, BIO *bio) {
   ssl = SSL_new(ctx);
-  if (!ssl) THROW("Failed to create new SSL");
+  if (!ssl) THROW("Failed to create new SSL: " << getErrorStr());
   if (bio) setBIO(bio);
 }
 
@@ -109,17 +110,20 @@ void cb::SSL::setBIO(BIO *bio) {SSL_set_bio(ssl, bio, bio);}
 
 
 void cb::SSL::setFD(int fd) {
-  if (!SSL_set_fd(ssl, fd)) THROW("Failed to set SSL FD to " << fd);
+  if (!SSL_set_fd(ssl, fd))
+  THROW("Failed to set SSL FD to " << fd << ": " << getErrorStr());
 }
 
 
 void cb::SSL::setReadFD(int fd) {
-  if (!SSL_set_rfd(ssl, fd)) THROW("Failed to set SSL read FD to " << fd);
+  if (!SSL_set_rfd(ssl, fd))
+    THROW("Failed to set SSL read FD to " << fd << ": " << getErrorStr());
 }
 
 
 void cb::SSL::setWriteFD(int fd) {
-  if (!SSL_set_wfd(ssl, fd)) THROW("Failed to set SSL write FD to " << fd);
+  if (!SSL_set_wfd(ssl, fd))
+    THROW("Failed to set SSL write FD to " << fd << ": " << getErrorStr());
 }
 
 
@@ -129,7 +133,7 @@ bool cb::SSL::wantsWrite() const {return lastErr == SSL_ERROR_WANT_WRITE;}
 
 void cb::SSL::setCipherList(const string &list) {
   if (!SSL_set_cipher_list(ssl, list.c_str()))
-    THROW("Failed to set cipher list to: " << list);
+    THROW("Failed to set cipher list to: " << list << ": " << getErrorStr());
 }
 
 
@@ -152,13 +156,13 @@ void cb::SSL::verifyPeerCertificate() const {
   if (!hasPeerCertificate()) THROW("Peer did not present a certificate");
 
   if (SSL_get_verify_result(ssl) != X509_V_OK)
-    THROW("Certificate does not verify");
+    THROW("Certificate does not verify: " << getErrorStr());
 }
 
 
 SmartPointer<Certificate> cb::SSL::getPeerCertificate() const {
   if (SSL_get_verify_result(ssl) != X509_V_OK)
-    THROW("Certificate does not verify");
+    THROW("Certificate does not verify: " << getErrorStr());
 
   X509 *cert = SSL_get_peer_certificate(ssl);
   if (!cert) THROW("Peer did not present a certificate");
@@ -184,7 +188,8 @@ vector<SmartPointer<Certificate> > cb::SSL::getVerifiedChain() const {
 
 void cb::SSL::setTLSExtHostname(const string &hostname) {
   if (!SSL_set_tlsext_host_name(ssl, hostname.c_str()))
-    THROW("Failed to set TLS host name extension to '" << hostname << "'");
+    THROW("Failed to set TLS host name extension to '" << hostname
+      << "': " << getErrorStr());
 }
 
 
@@ -194,6 +199,7 @@ void cb::SSL::setAcceptState()  {SSL_set_accept_state(ssl);}
 
 void cb::SSL::connect() {
   LOG_DEBUG(5, CBANG_FUNC << "()");
+  ErrorSentry sentry;
 
   lastErr = 0;
   int ret = SSL_connect(ssl);
@@ -214,6 +220,7 @@ void cb::SSL::connect() {
 
 void cb::SSL::accept() {
   LOG_DEBUG(5, CBANG_FUNC << "()");
+  ErrorSentry sentry;
 
   // Limit renegotiation to prevent DOS attack
   handshakes = 0;
@@ -249,10 +256,9 @@ void cb::SSL::accept() {
 
 
 void cb::SSL::shutdown() {
+  ErrorSentry sentry;
   SSL_shutdown(ssl);
   LOG_DEBUG(5, CBANG_FUNC << "() " << getErrorStr());
-
-  flushErrors(); // Ignore errors
 }
 
 
@@ -261,6 +267,7 @@ unsigned cb::SSL::getPending() const {return SSL_pending(ssl);}
 
 int cb::SSL::read(char *data, unsigned size) {
   LOG_DEBUG(5, CBANG_FUNC << "(size=" << size << ')');
+  ErrorSentry sentry;
 
   lastErr = 0;
   checkHandshakes();
@@ -295,6 +302,7 @@ int cb::SSL::read(char *data, unsigned size) {
 
 unsigned cb::SSL::write(const char *data, unsigned size) {
   LOG_DEBUG(5, CBANG_FUNC << "(size=" << size << ')');
+  ErrorSentry sentry;
 
   lastErr = 0;
   checkHandshakes();
@@ -338,18 +346,18 @@ int cb::SSL::passwordCallback(char *buf, int num, int rwflags, void *data) {
 }
 
 
-void cb::SSL::flushErrors() {while (getError()) continue;}
-unsigned cb::SSL::getError() {return ERR_get_error();}
-unsigned cb::SSL::peekError() {return ERR_peek_error();}
+void cb::SSL::flushErrors()       {ERR_clear_error();}
+unsigned cb::SSL::getError()      {return ERR_get_error();}
+unsigned cb::SSL::peekError()     {return ERR_peek_error();}
 unsigned cb::SSL::peekLastError() {return ERR_peek_last_error();}
 
 
 string cb::SSL::getErrorStr(unsigned err) {
   string result;
-  char buffer[120];
+  char buffer[256];
 
   while (true) {
-    if (!err) err = ERR_get_error();
+    if (!err) err = getError();
     if (!err) break;
 
     ERR_error_string(err, buffer);
@@ -401,7 +409,7 @@ int cb::SSL::findObject(const string &name) {
 void cb::SSL::loadProvider(const string &provider) {
 #if 0x3000000fL <= OPENSSL_VERSION_NUMBER
   if (!OSSL_PROVIDER_load(0, provider.c_str()))
-    THROW("Failed to load SSL provider: " << provider);
+    THROW("Failed to load SSL provider: " << provider << ": " << getErrorStr());
 #endif
 }
 

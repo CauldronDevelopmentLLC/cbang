@@ -30,30 +30,14 @@
 
 \******************************************************************************/
 
-#include "CertificateContext.h"
+#pragma once
 
-#include "Certificate.h"
-#include "CSR.h"
-#include "CRL.h"
+#include "SSL.h"
 
-#include <openssl/x509v3.h>
-
-#include <cstdlib>
-
-using namespace cb;
-
-
-CertificateContext::CertificateContext(const Certificate *issuer,
-                                       const Certificate *subject,
-                                       const CSR *request, const CRL *crl,
-                                       int flags) {
-  ctx = (X509V3_CTX *)malloc(sizeof(X509V3_CTX));
-  if (!ctx) THROW("Failed to allocate memory");
-  X509V3_set_ctx(ctx, issuer ? issuer->getX509() : 0,
-                 subject ? subject->getX509() : 0,
-                 request ? request->getX509_REQ() : 0,
-                 crl ? crl->getX509_CRL() : 0, flags);
+namespace cb {
+  class ErrorSentry {
+  public:
+    ErrorSentry()  {SSL::flushErrors();}
+    ~ErrorSentry() {SSL::flushErrors();}
+  };
 }
-
-
-CertificateContext::~CertificateContext() {free(ctx);}

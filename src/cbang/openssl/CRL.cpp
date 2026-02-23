@@ -199,9 +199,7 @@ void CRL::verify(KeyPair &key) {
 }
 
 
-string CRL::toString() const {
-  return SSTR(*this);
-}
+string CRL::toString() const {return SSTR(*this);}
 
 
 istream &CRL::read(istream &stream) {
