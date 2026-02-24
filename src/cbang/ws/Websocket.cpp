@@ -435,6 +435,7 @@ void Websocket::start() {
 
 
 void Websocket::shutdown() {
+  SmartPointer<HTTP::Conn> strong = connection;
   if (connection.isSet()) connection->close();
   if (active) {
     active = false;
