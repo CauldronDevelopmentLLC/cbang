@@ -98,9 +98,63 @@ namespace cb {
     void setCheckCRL(bool x = true);
     void setSessionTimeout(unsigned secs);
     void setSessionCacheSize(unsigned size);
+    long getSessionCacheMode();
+    void setSessionCacheMode(long mode);
 
     long getOptions() const;
     void setOptions(long options);
+
+    enum option_t {
+      SSL_OP_NO_EXTENDED_MASTER_SECRET                = 1UL << 0,
+      SSL_OP_CLEANSE_PLAINTEXT                        = 1UL << 1,
+      SSL_OP_LEGACY_SERVER_CONNECT                    = 1UL << 2,
+      SSL_OP_ENABLE_KTLS                              = 1UL << 3,
+      SSL_OP_TLSEXT_PADDING                           = 1UL << 4,
+      SSL_OP_SAFARI_ECDHE_ECDSA_BUG                   = 1UL << 6,
+      SSL_OP_IGNORE_UNEXPECTED_EOF                    = 1UL << 7,
+      SSL_OP_ALLOW_CLIENT_RENEGOTIATION               = 1UL << 8,
+      SSL_OP_DISABLE_TLSEXT_CA_NAMES                  = 1UL << 9,
+      SSL_OP_ALLOW_NO_DHE_KEX                         = 1UL << 10,
+      SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS              = 1UL << 11,
+      SSL_OP_NO_QUERY_MTU                             = 1UL << 12,
+      SSL_OP_COOKIE_EXCHANGE                          = 1UL << 13,
+      SSL_OP_NO_TICKET                                = 1UL << 14,
+      SSL_OP_CISCO_ANYCONNECT                         = 1UL << 15,
+      SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION   = 1UL << 16,
+      SSL_OP_NO_COMPRESSION                           = 1UL << 17,
+      SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION        = 1UL << 18,
+      SSL_OP_NO_ENCRYPT_THEN_MAC                      = 1UL << 19,
+      SSL_OP_ENABLE_MIDDLEBOX_COMPAT                  = 1UL << 20,
+      SSL_OP_PRIORITIZE_CHACHA                        = 1UL << 21,
+      SSL_OP_CIPHER_SERVER_PREFERENCE                 = 1UL << 22,
+      SSL_OP_TLS_ROLLBACK_BUG                         = 1UL << 23,
+      SSL_OP_NO_ANTI_REPLAY                           = 1UL << 24,
+      SSL_OP_NO_SSLv3                                 = 1UL << 25,
+      SSL_OP_NO_TLSv1                                 = 1UL << 26,
+      SSL_OP_NO_TLSv1_2                               = 1UL << 27,
+      SSL_OP_NO_TLSv1_1                               = 1UL << 28,
+      SSL_OP_NO_TLSv1_3                               = 1UL << 29,
+      SSL_OP_NO_DTLSv1                                = 1UL << 26,
+      SSL_OP_NO_DTLSv1_2                              = 1UL << 27,
+      SSL_OP_NO_RENEGOTIATION                         = 1UL << 30,
+      SSL_OP_CRYPTOPRO_TLSEXT_BUG                     = 1UL << 31,
+      SSL_OP_NO_TX_CERTIFICATE_COMPRESSION            = 1UL << 32,
+      SSL_OP_NO_RX_CERTIFICATE_COMPRESSION            = 1UL << 33,
+      SSL_OP_ENABLE_KTLS_TX_ZEROCOPY_SENDFILE         = 1UL << 34,
+      SSL_OP_PREFER_NO_DHE_KEX                        = 1UL << 35,
+    };
+
+    enum cache_mode_t {
+      SSL_SESS_CACHE_OFF                              = 0x000,
+      SSL_SESS_CACHE_CLIENT                           = 0x001,
+      SSL_SESS_CACHE_SERVER                           = 0x002,
+      SSL_SESS_CACHE_BOTH                             = 0x003,
+      SSL_SESS_CACHE_NO_AUTO_CLEAR                    = 0x080,
+      SSL_SESS_CACHE_NO_INTERNAL_LOOKUP               = 0x100,
+      SSL_SESS_CACHE_NO_INTERNAL_STORE                = 0x200,
+      SSL_SESS_CACHE_NO_INTERNAL                      = 0x300,
+      SSL_SESS_CACHE_UPDATE_TIME                      = 0x400,
+    };
   };
 }
 

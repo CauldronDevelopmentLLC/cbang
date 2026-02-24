@@ -120,6 +120,8 @@ namespace cb {
 
     static void loadProvider(const std::string &provider);
 
+    static void threadStop(); // Clears OpenSSL's thread local storage
+
     void limitRenegotiation();
 
   protected:

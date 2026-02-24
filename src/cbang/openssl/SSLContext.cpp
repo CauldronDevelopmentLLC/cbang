@@ -483,6 +483,17 @@ void SSLContext::setSessionCacheSize(unsigned size) {
 }
 
 
+long SSLContext::getSessionCacheMode() {
+  return SSL_CTX_get_session_cache_mode(ctx);
+}
+
+
+void SSLContext::setSessionCacheMode(long mode) {
+  SSL_CTX_set_session_cache_mode(ctx, mode);
+}
+
+
+
 long SSLContext::getOptions() const {return SSL_CTX_get_options(ctx);}
 void SSLContext::setOptions(long options) {SSL_CTX_set_options(ctx, options);}
 

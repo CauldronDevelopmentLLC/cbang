@@ -395,6 +395,9 @@ void cb::SSL::loadProvider(const string &provider) {
 }
 
 
+void cb::SSL::threadStop() {OPENSSL_thread_stop();}
+
+
 bool cb::SSL::checkWants() {
   switch (state) {
   case WANTS_ACCEPT:  accept();  break;
