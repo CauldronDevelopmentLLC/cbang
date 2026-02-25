@@ -139,36 +139,35 @@ void Connection::connect(
     LOG_DEBUG(4, "Connection with fd " << socket->get());
 
     // DNS callback
-    DNS::RequestResolve::callback_t dnsCB =
-      [this, hostname, port] (
-        DNS::Error error, const vector<SockAddr> &addrs) {
+    auto dnsCB = [this, hostname, port] (
+      DNS::Error error, const vector<SockAddr> &addrs) {
 
-        if (error || addrs.empty()) {
-          LOG_WARNING("DNS lookup failed for " << hostname);
-          return onConnect(false);
-        }
+      if (error || addrs.empty()) {
+        LOG_WARNING("DNS lookup failed for " << hostname);
+        return onConnect(false);
+      }
 
-        try {
-          // Set address
-          peerAddr = addrs.front();
-          peerAddr.setPort(port);
-          LOG_DEBUG(4, "Connecting to " << peerAddr);
+      try {
+        // Set address
+        peerAddr = addrs.front();
+        peerAddr.setPort(port);
+        LOG_DEBUG(4, "Connecting to " << peerAddr);
 
-          // NOTE, Connect timeout is write timeout
-          getSocket()->connect(peerAddr);
+        // NOTE, Connect timeout is write timeout
+        getSocket()->connect(peerAddr);
 
-          // Wait for socket write
-          Transfer::cb_t writeCB = [this] (bool success) {
-            onConnect(success && isConnected());
-          };
-          canWrite(WeakCall(this, writeCB));
-          return;
+        // Wait for socket write
+        auto writeCB = [this] (bool success) {
+          onConnect(success && isConnected());
+        };
+        canWrite(WeakCall(this, writeCB));
+        return;
 
-        } CATCH_WARNING;
+      } CATCH_WARNING;
 
-        close();
-        onConnect(false);
-      };
+      close();
+      onConnect(false);
+    };
 
     // Start async DNS lookup
     getBase().getDNS().resolve(hostname, WeakCall(this, dnsCB));

@@ -56,7 +56,7 @@ void AddressRangeSet::insert(const string &spec, DNS::Base *dns) {
       auto colon  = spec.find_last_of(':');
       string name = token.substr(0, colon);
 
-      DNS::RequestResolve::callback_t cb = [this, token, name] (
+      auto cb = [this, token, name] (
         DNS::Error error, const vector<SockAddr> &addrs) {
         for (auto &addr: addrs)
           insert(AddressRange(addr));

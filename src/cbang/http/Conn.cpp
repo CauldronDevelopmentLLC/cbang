@@ -54,22 +54,21 @@ void Conn::readChunks(
   const SmartPointer<Request> &req, function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  Event::Transfer::cb_t readCB =
-    [this, req, cb] (bool success) {
-      if (success) {
-        try {
-          // Parse size
-          string line;
-          input.readLine(line, 1024);
-          size_t end = line.find(';');
-          uint32_t size = String::parseU32("0x" + line.substr(0, end));
+  auto readCB = [this, req, cb] (bool success) {
+    if (success) {
+      try {
+        // Parse size
+        string line;
+        input.readLine(line, 1024);
+        size_t end = line.find(';');
+        uint32_t size = String::parseU32("0x" + line.substr(0, end));
 
-          return readChunk(req, size, cb);
-        } CATCH_ERROR;
-      }
+        return readChunk(req, size, cb);
+      } CATCH_ERROR;
+    }
 
-      if (cb) cb(false);
-    };
+    if (cb) cb(false);
+  };
 
   read(WeakCall(this, readCB), input, 1024, "\r\n");
 }
@@ -89,15 +88,14 @@ void Conn::readChunk(
   }
 
   // Read chunk
-  Event::Transfer::cb_t readCB =
-    [this, req, size, cb] (bool success) mutable {
-      if (success && size <= input.getLength()) {
-        input.remove(req->getInputBuffer(), size);
-        input.drain(2); // Remove CRLF
-        readChunks(req, cb); // Next chunk
+  auto readCB = [this, req, size, cb] (bool success) mutable {
+    if (success && size <= input.getLength()) {
+      input.remove(req->getInputBuffer(), size);
+      input.drain(2); // Remove CRLF
+      readChunks(req, cb); // Next chunk
 
-      } else if (cb) cb(false);
-    };
+    } else if (cb) cb(false);
+  };
 
   read(WeakCall(this, readCB), input, size + 2);
 }
@@ -107,31 +105,29 @@ void Conn::readChunkTrailer(
   const SmartPointer<Request> &req, function<void (bool)> cb) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  Event::Transfer::cb_t readCB =
-    [this, req, cb] (bool success) {
-      // No header lines
-      if (input.indexOf("\r\n") == 0) {
-        if (cb) cb(true);
-        return;
-      }
+  auto readCB = [this, req, cb] (bool success) {
+    // No header lines
+    if (input.indexOf("\r\n") == 0) {
+      if (cb) cb(true);
+      return;
+    }
 
-      // Has header lines in trailer
-      Event::Transfer::cb_t readCB =
-        [this, req, cb] (bool success) {
-          try {
-            if (req->getInputHeaders().parse(input)) {
-              if (cb) cb(true);
-              return;
-            }
-          } CATCH_ERROR;
+    // Has header lines in trailer
+    auto readCB = [this, req, cb] (bool success) {
+      try {
+        if (req->getInputHeaders().parse(input)) {
+          if (cb) cb(true);
+          return;
+        }
+      } CATCH_ERROR;
 
-          LOG_WARNING("Incomplete chunk trailer headers");
-          if (cb) cb(false);
-        };
-
-      read(WeakCall(this, readCB), input, maxHeaderSize,
-        "\r\n\r\n");
+      LOG_WARNING("Incomplete chunk trailer headers");
+      if (cb) cb(false);
     };
+
+    read(WeakCall(this, readCB), input, maxHeaderSize,
+      "\r\n\r\n");
+  };
 
   read(WeakCall(this, readCB), input, maxHeaderSize, "\r\n");
 }

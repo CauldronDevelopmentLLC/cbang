@@ -35,6 +35,26 @@
 #include <functional>
 
 namespace cb {
+  // Forward declaration required by callable_args trait below
+  template <typename T, typename... Args> class WeakCallback;
+
+  // Trait to extract Args... from any callable: lambda, std::function, or
+  // function pointer.  Specializations cover the common cases.
+  template <typename F> struct callable_args;
+
+  // std::function<void(Args...)>
+  template <typename... Args>
+  struct callable_args<std::function<void(Args...)>> {
+    template <typename T>
+    using weak_cb = WeakCallback<T, Args...>;
+  };
+
+  // Non-const lambda / functor: deduce from operator()
+  template <typename F>
+  struct callable_args : callable_args<
+    decltype(std::function(std::declval<F>()))> {};
+
+
   template <typename T, typename... Args>
   class WeakCallback {
   public:
@@ -45,24 +65,30 @@ namespace cb {
     cb_t cb;
 
   public:
-    WeakCallback(const typename SmartPointer<T>::Weak &ptr, const cb_t &cb) :
+    WeakCallback(T *ptr, const cb_t &cb) : ptr(ptr), cb(cb) {}
+
+    WeakCallback(const SmartPointer<T> &ptr, const cb_t &cb) :
       ptr(ptr), cb(cb) {}
 
-    void operator()(Args... args) {
+    void operator()(Args... args) const {
       // Check pointer is still alive and prevent deallocation during callback
       SmartPointer<T> strong = ptr;
       if (strong.isSet()) cb(args...);
     }
   };
 
-  template<typename T, typename... Args>
-  WeakCallback<T, Args...> WeakCall(T *ptr, std::function<void (Args...)> cb) {
-    return WeakCallback<T, Args...>(ptr, cb);
+
+  template <typename T, typename F>
+  auto WeakCall(T *ptr, F &&cb) {
+    using cb_t = decltype(std::function(std::forward<F>(cb)));
+    return typename callable_args<cb_t>::template weak_cb<T>(
+      ptr, std::function(std::forward<F>(cb)));
   }
 
-  template<typename T, typename... Args>
-  WeakCallback<T, Args...> WeakCall(
-    const SmartPointer<T> &ptr, std::function<void (Args...)> cb) {
-    return WeakCallback<T, Args...>(ptr, cb);
+  template <typename T, typename F>
+  auto WeakCall(const SmartPointer<T> &ptr, F &&cb) {
+    using cb_t = decltype(std::function(std::forward<F>(cb)));
+    return typename callable_args<cb_t>::template weak_cb<T>(
+      ptr, std::function(std::forward<F>(cb)));
   }
 }
