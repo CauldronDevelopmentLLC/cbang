@@ -65,12 +65,11 @@ void ConnOut::writeRequest(
 
   checkActive(req);
 
-  Event::Transfer::cb_t cb2 =
-    [this, req, continueProcessing, cb] (bool success) {
-      if (cb) TRY_CATCH_ERROR(cb(success));
-      if (!success) return fail(CONN_ERR_EOF, "Failed to write request");
-      if (continueProcessing) readHeader(req);
-   };
+  auto cb2 = [this, req, continueProcessing, cb] (bool success) {
+    if (cb) TRY_CATCH_ERROR(cb(success));
+    if (!success) return fail(CONN_ERR_EOF, "Failed to write request");
+    if (continueProcessing) readHeader(req);
+  };
 
   write(WeakCall(this, cb2), buffer);
 }
@@ -101,37 +100,36 @@ void ConnOut::fail(Event::ConnectionError err, const string &msg) {
 void ConnOut::readHeader(const SmartPointer<Request> &req) {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  Event::Transfer::cb_t cb =
-    [this, req] (bool success) {
-      LOG_DEBUG(4, CBANG_FUNC << "() success=" << success
-                << " length=" << input.getLength());
+  auto cb = [this, req] (bool success) {
+    LOG_DEBUG(4, CBANG_FUNC << "() success=" << success
+              << " length=" << input.getLength());
 
-      if (maxHeaderSize && maxHeaderSize <= input.getLength())
-        return fail(CONN_ERR_BAD_RESPONSE, "Header too large");
+    if (maxHeaderSize && maxHeaderSize <= input.getLength())
+      return fail(CONN_ERR_BAD_RESPONSE, "Header too large");
 
-      if (!success) return fail(CONN_ERR_EOF, "Failed to read response header");
+    if (!success) return fail(CONN_ERR_EOF, "Failed to read response header");
 
-      // Read first line
-      try {
-        string line;
-        input.readLine(line, maxHeaderSize);
-        req->parseResponseLine(line);
-        LOG_DEBUG(4, req->getResponseLine());
+    // Read first line
+    try {
+      string line;
+      input.readLine(line, maxHeaderSize);
+      req->parseResponseLine(line);
+      LOG_DEBUG(4, req->getResponseLine());
 
-      } catch (const Exception &e) {
-        return fail(CONN_ERR_BAD_RESPONSE, e.getMessage());
-      }
+    } catch (const Exception &e) {
+      return fail(CONN_ERR_BAD_RESPONSE, e.getMessage());
+    }
 
-      // Read header block
-      auto hdrs = SmartPtr(new Headers);
-      if (!hdrs->parse(input))
-        return fail(CONN_ERR_BAD_RESPONSE, "Incomplete headers");
+    // Read header block
+    auto hdrs = SmartPtr(new Headers);
+    if (!hdrs->parse(input))
+      return fail(CONN_ERR_BAD_RESPONSE, "Incomplete headers");
 
-      req->setInputHeaders(hdrs);
-      LOG_DEBUG(4, *hdrs);
+    req->setInputHeaders(hdrs);
+    LOG_DEBUG(4, *hdrs);
 
-      readBody(req);
-    };
+    readBody(req);
+  };
 
   // Read until end of header
   read(WeakCall(this, cb), input, getMaxHeaderSize(), "\r\n\r\n");
@@ -190,13 +188,12 @@ void ConnOut::readBody(const SmartPointer<Request> &req) {
   else if (maxBodySize) readSize = maxBodySize;
 
   // Read body
-  Event::Transfer::cb_t cb =
-    [this, req, contentLength] (bool success) {
-      if (0 <= contentLength && input.getLength() < (unsigned)contentLength)
-        return fail(CONN_ERR_EOF, "Failed to read response body");
+  auto cb = [this, req, contentLength] (bool success) {
+    if (0 <= contentLength && input.getLength() < (unsigned)contentLength)
+      return fail(CONN_ERR_EOF, "Failed to read response body");
 
-      process(req);
-    };
+    process(req);
+  };
 
   read(WeakCall(this, cb), input, readSize);
 }

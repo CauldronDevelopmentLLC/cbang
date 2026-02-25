@@ -62,28 +62,27 @@ void ConnIn::writeRequest(
 
   if (getStats().isSet()) getStats()->event(req->getResponseCode().toString());
 
-  Event::Transfer::cb_t cb2 =
-    [this, req, continueProcessing, cb] (bool success) {
-      LOG_DEBUG(6, "Response " << (success ? "successful" : "failed")
-                << " continueProcessing=" << continueProcessing
-                << " persistent=" << req->isPersistent()
-                << " numReqs=" << getNumRequests());
+  auto cb2 = [this, req, continueProcessing, cb] (bool success) {
+    LOG_DEBUG(6, "Response " << (success ? "successful" : "failed")
+              << " continueProcessing=" << continueProcessing
+              << " persistent=" << req->isPersistent()
+              << " numReqs=" << getNumRequests());
 
-      if (cb) TRY_CATCH_ERROR(cb(success));
+    if (cb) TRY_CATCH_ERROR(cb(success));
 
-      // Handle write failure
-      if (!success) return close();
-      if (!continueProcessing) return;
+    // Handle write failure
+    if (!success) return close();
+    if (!continueProcessing) return;
 
-      if (getNumRequests()) pop();
+    if (getNumRequests()) pop();
 
-      // Free connection if not persistent
-      if (!req->isPersistent()) return close();
+    // Free connection if not persistent
+    if (!req->isPersistent()) return close();
 
-      // Handle another request
-      if (getNumRequests()) processRequest(getRequest());
-      else readHeader();
-    };
+    // Handle another request
+    if (getNumRequests()) processRequest(getRequest());
+    else readHeader();
+  };
 
   write(WeakCall(this, cb2), buffer);
 }
@@ -92,14 +91,13 @@ void ConnIn::writeRequest(
 void ConnIn::readHeader() {
   LOG_DEBUG(4, CBANG_FUNC << "()");
 
-  Event::Transfer::cb_t cb =
-    [this] (bool success) {
-      if (maxHeaderSize && maxHeaderSize <= input.getLength())
-        error(HTTP_BAD_REQUEST, "Header too large");
+  auto cb = [this] (bool success) {
+    if (maxHeaderSize && maxHeaderSize <= input.getLength())
+      error(HTTP_BAD_REQUEST, "Header too large");
 
-      else if (!success) close();
-      else processHeader();
-    };
+    else if (!success) close();
+    else processHeader();
+  };
 
   // Read until end of header
   read(WeakCall(this, cb), input, getMaxHeaderSize(), "\r\n\r\n");
@@ -150,11 +148,10 @@ void ConnIn::processHeader() {
       if (expect == "100-continue") {
         string line = "HTTP/" + version.toString() + " 100 Continue\r\n\r\n";
 
-        Event::Transfer::cb_t cb =
-          [this, req] (bool success) {
-            if (success) checkChunked(req);
-            else error(HTTP_BAD_REQUEST, "Failed to send continue");
-          };
+        auto cb = [this, req] (bool success) {
+          if (success) checkChunked(req);
+          else error(HTTP_BAD_REQUEST, "Failed to send continue");
+        };
 
         write(WeakCall(this, cb), line);
         return;
@@ -204,17 +201,16 @@ void ConnIn::checkChunked(const SmartPointer<Request> &req) {
   if (bytes < contentLength) input.expand(contentLength - bytes);
 
   // Read body
-  Event::Transfer::cb_t cb =
-    [this, req, contentLength] (bool success) {
-      if (input.getLength() < contentLength) {
-        LOG_DEBUG(3, "Incomplete request body input=" << input.getLength()
-          << " ContentLength=" << contentLength);
-        return close();
-      }
+  auto cb = [this, req, contentLength] (bool success) {
+    if (input.getLength() < contentLength) {
+      LOG_DEBUG(3, "Incomplete request body input=" << input.getLength()
+        << " ContentLength=" << contentLength);
+      return close();
+    }
 
-      if (contentLength) input.remove(req->getInputBuffer(), contentLength);
-      processIfNext(req);
-    };
+    if (contentLength) input.remove(req->getInputBuffer(), contentLength);
+    processIfNext(req);
+  };
 
   read(WeakCall(this, cb), input, contentLength);
 }

@@ -67,7 +67,7 @@ bool Websocket::isActive() const {
 
 
 void Websocket::connect(HTTP::Client &client, const URI &uri) {
-  HTTP::Client::callback_t cb = [this] (HTTP::Request &req) {
+  auto cb = [this] (HTTP::Request &req) {
     auto code  = req.getResponseCode();
     auto error = req.getConnectionError();
 
@@ -169,75 +169,75 @@ void Websocket::upgrade(HTTP::Request &req) {
   req.reply(HTTP_SWITCHING_PROTOCOLS);
 
   connection = req.getConnection();
+  req.setOnComplete(WeakCall(this, [this] {shutdown();}));
+
   start();
 }
 
 
 void Websocket::readHeader() {
-  Event::Transfer::cb_t cb =
-    [this] (bool success) {
+  auto cb = [this] (bool success) {
+    if (!success)
+      return close(WS_STATUS_PROTOCOL, "Failed to read header start");
+
+    uint8_t header[2];
+    input.copy((char *)header, 2);
+
+    // Client must set mask bit
+    bool mask = header[1] & (1 << 7);
+    if (mask != connection->isIncoming())
+      return close(WS_STATUS_PROTOCOL, "Header mask mismatch");
+
+    // Compute header size
+    uint8_t bytes = mask ? 6 : 2;
+    uint8_t size = header[1] & 0x7f;
+    if (size == 126) bytes += 2;
+    if (size == 127) bytes += 8;
+
+    auto cb = [this, mask, bytes, size] (bool success) {
       if (!success)
-        return close(WS_STATUS_PROTOCOL, "Failed to read header start");
+        return close(WS_STATUS_PROTOCOL, "Failed to read header end");
 
-      uint8_t header[2];
-      input.copy((char *)header, 2);
+      uint8_t header[14];
+      input.remove((char *)header, bytes);
 
-      // Client must set mask bit
-      bool mask = header[1] & (1 << 7);
-      if (mask != connection->isIncoming())
-        return close(WS_STATUS_PROTOCOL, "Header mask mismatch");
+      // Compute frame size
+      if      (size == 126) bytesToRead = hton16((uint16_t &)header[2]);
+      else if (size == 127) bytesToRead = hton64((uint64_t &)header[2]);
+      else                  bytesToRead = size;
+      if (bytesToRead & (1ULL << 63))
+        return close(WS_STATUS_PROTOCOL, "Invalid frame size");
 
-      // Compute header size
-      uint8_t bytes = mask ? 6 : 2;
-      uint8_t size = header[1] & 0x7f;
-      if (size == 126) bytes += 2;
-      if (size == 127) bytes += 8;
+      // Check opcode
+      wsOpCode = (OpCode::enum_t)(header[0] & 0xf);
 
-      Event::Transfer::cb_t cb =
-        [this, mask, bytes, size] (bool success) {
-          if (!success)
-            return close(WS_STATUS_PROTOCOL, "Failed to read header end");
+      LOG_DEBUG(4, CBANG_FUNC << "() opcode=" << wsOpCode
+                << " bytes=" << bytesToRead);
 
-          uint8_t header[14];
-          input.remove((char *)header, bytes);
+      if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
 
-          // Compute frame size
-          if      (size == 126) bytesToRead = hton16((uint16_t &)header[2]);
-          else if (size == 127) bytesToRead = hton64((uint64_t &)header[2]);
-          else                  bytesToRead = size;
-          if (bytesToRead & (1ULL << 63))
-            return close(WS_STATUS_PROTOCOL, "Invalid frame size");
+      // Check total message size
+      auto msgSize = wsMsg.size() + bytesToRead;
+      if (maxMessageSize && maxMessageSize < msgSize)
+        return close(WS_STATUS_TOO_BIG,
+          SSTR("Message size " << msgSize << ">" << maxMessageSize));
 
-          // Check opcode
-          wsOpCode = (OpCode::enum_t)(header[0] & 0xf);
+      // Copy mask
+      if (mask) memcpy(wsMask, &header[bytes - 4], 4);
 
-          LOG_DEBUG(4, CBANG_FUNC << "() opcode=" << wsOpCode
-                    << " bytes=" << bytesToRead);
+      // Last part of message?
+      wsFinish = header[0] & (1 << 7);
 
-          if (wsOpCode != WS_OP_CONTINUE) wsMsg.clear();
+      // Control frames must not be fragmented
+      if ((wsOpCode & 8) && !wsFinish)
+        return close(WS_STATUS_PROTOCOL, "Fragmented control frame");
 
-          // Check total message size
-          auto msgSize = wsMsg.size() + bytesToRead;
-          if (maxMessageSize && maxMessageSize < msgSize)
-            return close(WS_STATUS_TOO_BIG,
-              SSTR("Message size " << msgSize << ">" << maxMessageSize));
-
-          // Copy mask
-          if (mask) memcpy(wsMask, &header[bytes - 4], 4);
-
-          // Last part of message?
-          wsFinish = header[0] & (1 << 7);
-
-          // Control frames must not be fragmented
-          if ((wsOpCode & 8) && !wsFinish)
-            return close(WS_STATUS_PROTOCOL, "Fragmented control frame");
-
-          readBody();
-        };
-
-      // Read rest of header
-      getConnection()->read(WeakCall(this, cb), input, bytes);
+      readBody();
     };
+
+    // Read rest of header
+    getConnection()->read(WeakCall(this, cb), input, bytes);
+  };
 
   // Read first part of header
   getConnection()->read(WeakCall(this, cb), input, 2);
@@ -245,7 +245,7 @@ void Websocket::readHeader() {
 
 
 void Websocket::readBody() {
-  Event::Transfer::cb_t cb = [this] (bool success) {
+  auto cb = [this] (bool success) {
     if (!success) return close(WS_STATUS_PROTOCOL, "Failed to ready body");
 
     if (bytesToRead) {
@@ -269,7 +269,7 @@ void Websocket::readBody() {
     case WS_OP_BINARY:
       if (wsFinish) {
         message(wsMsg.data(), wsMsg.size());
-        wsMsg.clear();
+        vector<char>().swap(wsMsg); // Force vector to release memory
       }
       break;
 
@@ -368,11 +368,10 @@ void Websocket::writeFrame(
       ptr[i] ^= mask[i & 3];
   }
 
-  Event::Transfer::cb_t cb =
-    [this, opcode] (bool success) {
-      // Close connection if write fails or this is a close op code
-      if (!success || opcode == WS_OP_CLOSE) shutdown();
-    };
+  auto cb = [this, opcode] (bool success) {
+    // Close connection if write fails or this is a close op code
+    if (!success || opcode == WS_OP_CLOSE) shutdown();
+  };
 
   getConnection()->write(WeakCall(this, cb), out);
 }

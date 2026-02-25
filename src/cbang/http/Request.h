@@ -47,6 +47,7 @@
 
 #include <string>
 #include <iostream>
+#include <functional>
 
 
 namespace cb {
@@ -82,6 +83,8 @@ namespace cb {
 
       JSON::ValuePtr args;
       JSON::ValuePtr msg;
+
+      std::function<void ()> completeCB;
 
     public:
       Request(const RequestParams &params);
@@ -203,6 +206,9 @@ namespace cb {
         {this->msg = msg;}
       const SmartPointer<JSON::Value> &getJSONMessage();
 
+      void setOnComplete(std::function<void ()> cb) {this->completeCB = cb;}
+      std::function<void ()> getOnComplete() {return completeCB;}
+
       SmartPointer<std::istream> getInputStream() const;
       SmartPointer<std::ostream>
       getOutputStream(Compression compression = COMPRESSION_NONE);
@@ -244,7 +250,7 @@ namespace cb {
       // Callbacks
       virtual void onResponse(Event::ConnectionError error);
       virtual void onRequest();
-      virtual void onComplete() {}
+      virtual void onComplete() {if (completeCB) completeCB();}
 
       // Used by Connection
       bool mustHaveBody() const;
