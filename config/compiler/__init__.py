@@ -175,10 +175,10 @@ def configure(conf, cstd = 'c99'):
     # cccache
     if ccache and compiler == 'gnu':
         if not which('ccache'): print('     ccache:', 'missing')
-        else: print('     ccache:', 'enabled')
-
-        env.Replace(CC  = 'ccache ' + env['CC'])
-        env.Replace(CXX = 'ccache ' + env['CXX'])
+        else:
+            print('     ccache:', 'enabled')
+            env.Replace(CC  = 'ccache ' + env['CC'])
+            env.Replace(CXX = 'ccache ' + env['CXX'])
 
     if compiler_mode == 'msvc':
         env.AppendUnique(CCFLAGS = ['/EHa'])    # Asynchronous exceptions
@@ -232,8 +232,10 @@ def configure(conf, cstd = 'c99'):
 
             if strict: env.AppendUnique(CCFLAGS = ['-Werror'])
 
-            env.AppendUnique(
-                CCFLAGS = ['-g', '-Wall', '-fno-omit-frame-pointer'])
+            env.AppendUnique(CCFLAGS = [
+                '-g3', '-Wall', '-fno-inline', '-fno-omit-frame-pointer'])
+
+            if not optimize: env.AppendUnique(CCFLAGS = ['-Og'])
 
         env.CBDefine('DEBUG')
 
@@ -260,8 +262,7 @@ def configure(conf, cstd = 'c99'):
 
     # Optimizations
     if optimize:
-        if compiler_mode == 'gnu':
-            env.AppendUnique(CCFLAGS = ['-O3'])
+        if compiler_mode == 'gnu': env.AppendUnique(CCFLAGS = ['-O3'])
 
         elif compiler_mode == 'msvc':
             env.AppendUnique(CCFLAGS = ['/O2', '/Zc:throwingNew'])
