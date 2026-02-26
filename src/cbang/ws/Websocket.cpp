@@ -124,7 +124,7 @@ void Websocket::close(Status status, const string &msg) {
     *(uint16_t *)data = hton16(status);
     unsigned len = msg.length() < 123 ? msg.length() : 123;
     memcpy(data + 2, msg.c_str(), len);
-    writeFrame(WS_OP_CLOSE, true, data, 2 + len);
+    TRY_CATCH_ERROR(writeFrame(WS_OP_CLOSE, true, data, 2 + len));
   }
 
   if (active) {
@@ -137,7 +137,8 @@ void Websocket::close(Status status, const string &msg) {
 
 
 void Websocket::ping(const string &payload) {
-  writeFrame(WS_OP_PING, true, payload.data(), payload.size());
+  if (isActive()) writeFrame(WS_OP_PING, true, payload.data(), payload.size());
+  else close(WS_STATUS_DIRTY_CLOSE, "ping");
 }
 
 
@@ -169,7 +170,12 @@ void Websocket::upgrade(HTTP::Request &req) {
   req.reply(HTTP_SWITCHING_PROTOCOLS);
 
   connection = req.getConnection();
-  req.setOnComplete(WeakCall(this, [this] {shutdown();}));
+  auto cb = [this] {
+    SmartPointer<Websocket> self = this;
+    connection.release();
+    shutdown();
+  };
+  req.setOnComplete(WeakCall(this, cb));
 
   start();
 }
@@ -434,8 +440,14 @@ void Websocket::start() {
 
 
 void Websocket::shutdown() {
-  SmartPointer<HTTP::Conn> strong = connection;
-  if (connection.isSet()) connection->close();
+  SmartPointer<Websocket> self = this;
+
+  SmartPointer<HTTP::Conn> conn = connection;
+  if (conn.isSet()) {
+    connection.release();
+    conn->close();
+  }
+
   if (active) {
     active = false;
     TRY_CATCH_ERROR(onShutdown());
