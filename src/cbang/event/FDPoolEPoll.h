@@ -42,8 +42,8 @@
 #include <cbang/thread/Thread.h>
 #include <cbang/util/SPSCQueue.h>
 
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <queue>
 
 
@@ -78,9 +78,14 @@ namespace cb {
         int fd;
         bool read;
 
-        bool operator<(const TimeoutMember &o) const {
-          if (fd == o.fd) return read < o.read;
-          return fd < o.fd;
+        bool operator==(const TimeoutMember &o) const {
+          return fd == o.fd && read == o.read;
+        }
+      };
+
+      struct TimeoutMemberHash {
+        size_t operator()(const TimeoutMember &m) const {
+          return std::hash<int>()(m.fd * 2 + m.read);
         }
       };
 
@@ -147,15 +152,17 @@ namespace cb {
 
       SPSCQueue<Command> cmds;
       SPSCQueue<Command> results;
-      std::set<TimeoutMember> inTimeoutQ;
+      std::unordered_set<TimeoutMember, TimeoutMemberHash> inTimeoutQ;
       std::priority_queue<Timeout> timeoutQ;
-      std::set<int> flushing;
+      std::unordered_set<int> flushing;
 
-      typedef std::map<int, SmartPointer<FDRec> > pool_t;
+      typedef std::unordered_map<int, SmartPointer<FDRec> > pool_t;
       pool_t pool;
 
-      typedef std::map<int, FD *> fds_t;
+      typedef std::unordered_map<int, FD *> fds_t;
       fds_t fds;
+
+      bool queuedResults = false;
 
     public:
       FDPoolEPoll(Base &base);

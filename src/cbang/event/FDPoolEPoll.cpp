@@ -347,25 +347,25 @@ void FDPoolEPoll::queueTimeout(uint64_t time, bool read, int fd) {
 
 void FDPoolEPoll::queueComplete(const SmartPointer<Transfer> &t) {
   results.push({CMD_COMPLETE, t->getFD(), t, 0, 0});
-  event->activate();
+  queuedResults = true;
 }
 
 
 void FDPoolEPoll::queueFlushed(int fd) {
   results.push({CMD_FLUSHED, fd, 0, 0, 0});
-  event->activate();
+  queuedResults = true;
 }
 
 
 void FDPoolEPoll::queueProgress(cmd_t cmd, int fd, uint64_t time, int value) {
   results.push({cmd, fd, 0, time, value});
-  event->activate();
+  queuedResults = true;
 }
 
 
 void FDPoolEPoll::queueStatus(int fd, int status) {
   results.push({CMD_STATUS, fd, 0, 0, status});
-  event->activate();
+  queuedResults = true;
 }
 
 
@@ -440,17 +440,17 @@ void FDPoolEPoll::processResults() {
 
 void FDPoolEPoll::run() {
   epoll_event records[1024];
+  unordered_map<int, int> changed;
 
   while (!shouldShutdown()) {
     int count = epoll_wait(this->fd, records, 1024, 100);
-    if (count == -1) {
-      if (errno != EINTR) {
-        LOG_ERROR("epoll_wait() failed");
-        break;
-      }
+    if (count == -1 && errno != EINTR) {
+      LOG_ERROR("epoll_wait() failed");
+      break;
     }
 
-    map<int, int> changed;
+    queuedResults = false;
+    changed.clear();
 
 #define CHECK_STATUS(STMT)                                              \
     int oldStatus = fd.getStatus();                                     \
@@ -490,6 +490,9 @@ void FDPoolEPoll::run() {
     // Queue status changes
     for (auto p: changed)
       queueStatus(p.first, p.second);
+
+    // Trigger the event once here to avoid expensive repeated calls
+    if (queuedResults) event->activate();
   }
 }
 

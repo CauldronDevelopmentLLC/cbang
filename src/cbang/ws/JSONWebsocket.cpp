@@ -46,21 +46,21 @@ using namespace std;
 
 
 void JSONWebsocket::send(function<void (JSON::Sink &sink)> cb) {
-  vector<char> v;
-  VectorStream<> stream(v);
+  VectorStream<> stream(msgBuf);
   JSON::Writer writer(stream, 0, true);
 
   cb(writer);
 
   writer.close();
   stream.flush();
-  Websocket::send(v.data(), v.size());
+  Websocket::send(msgBuf.data(), msgBuf.size());
+  msgBuf.clear();
 }
 
 
 void JSONWebsocket::send(const JSON::Value &value) {
   LOG_DEBUG(6, "Sending: " << value);
-  send(value.toString());
+  send([&value] (JSON::Sink &sink) {value.write(sink);});
 }
 
 

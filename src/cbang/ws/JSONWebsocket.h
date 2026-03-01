@@ -37,10 +37,14 @@
 #include <cbang/json/JSON.h>
 
 #include <functional>
+#include <vector>
+
 
 namespace cb {
   namespace WS {
     class JSONWebsocket : public Websocket {
+      std::vector<char> msgBuf;
+
     public:
       using Websocket::Websocket;
 
