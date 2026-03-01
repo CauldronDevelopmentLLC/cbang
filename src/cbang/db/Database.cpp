@@ -188,14 +188,8 @@ SmartPointer<Backup> Database::backup(Database &target) {
 }
 
 
-int Database::lastError() const {
-  return db ? sqlite3_errcode(db) : 0;
-}
-
-
-const char *Database::lastErrorMsg() const {
-  return db ? sqlite3_errmsg(db) : 0;
-}
+int Database::lastError() const {return db ? sqlite3_errcode(db) : 0;}
+string Database::lastErrorMsg() const {return db ? sqlite3_errmsg(db) : "";}
 
 
 const char *Database::errorMsg(int code) {

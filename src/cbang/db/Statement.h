@@ -47,9 +47,9 @@ namespace cb {
     class Database;
 
     class Statement {
-      sqlite3_stmt *stmt;
-      bool done;
-      bool validRow;
+      sqlite3_stmt *stmt = 0;
+      bool done          = false;
+      bool validRow      = false;
 
     public:
       Statement(Database &db, const std::string &sql);

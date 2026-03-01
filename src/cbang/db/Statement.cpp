@@ -47,9 +47,7 @@ using namespace cb;
 using namespace cb::DB;
 
 
-Statement::Statement(Database &db, const string &sql) :
-  stmt(0), done(false), validRow(false) {
-
+Statement::Statement(Database &db, const string &sql) {
   LOG_DEBUG(5, "SQL: " << sql);
 
   if (sqlite3_prepare_v2(db.getDB(), sql.data(), sql.length(), &stmt, 0))

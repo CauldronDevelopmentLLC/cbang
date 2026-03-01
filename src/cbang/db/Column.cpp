@@ -36,6 +36,7 @@
 
 #include <sqlite3.h>
 
+using namespace std;
 using namespace cb::DB;
 
 
@@ -44,17 +45,17 @@ Column::type_t Column::getType() const {
 }
 
 
-const char *Column::getDeclType() const {
+string Column::getDeclType() const {
   return sqlite3_column_decltype(stmt, i);
 }
 
 
-const char *Column::getName() const {
+string Column::getName() const {
   return sqlite3_column_name(stmt, i);
 }
 
 
-const char *Column::getOrigin() const {
+string Column::getOrigin() const {
 #ifdef SQLITE_ENABLE_COLUMN_METADATA
   return sqlite3_column_origin_name(stmt, i);
 #else
@@ -63,7 +64,7 @@ const char *Column::getOrigin() const {
 }
 
 
-const char *Column::getTableName() const {
+string Column::getTableName() const {
 #ifdef SQLITE_ENABLE_COLUMN_METADATA
   return sqlite3_column_table_name(stmt, i);
 #else
@@ -72,7 +73,7 @@ const char *Column::getTableName() const {
 }
 
 
-const char *Column::getDBName() const {
+string Column::getDBName() const {
 #ifdef SQLITE_ENABLE_COLUMN_METADATA
   return sqlite3_column_database_name(stmt, i);
 #else
@@ -94,7 +95,7 @@ int64_t Column::toInteger() const {return sqlite3_column_int64(stmt, i);}
 bool Column::toBoolean() const {return toInteger();}
 
 
-const char *Column::toString() const {
-  const char *result = (char *)sqlite3_column_text(stmt, i);
-  return result ? result : "";
+string Column::toString() const {
+  auto result = (char *)sqlite3_column_text(stmt, i);
+  return result ? string(result, sqlite3_column_bytes(stmt, i)) : string();
 }
