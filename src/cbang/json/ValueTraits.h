@@ -32,8 +32,32 @@
 
 #pragma once
 
-#define CBANG_CONCAT(prefix, name) CBANG__CONCAT(prefix, name)
-#define CBANG__CONCAT(prefix, name) prefix##name
+#include "Factory.h"
 
-#define CBANG_STRING(str) CBANG__STRING(str)
-#define CBANG__STRING(str) #str
+
+namespace cb {
+  namespace JSON {
+    // These classes are used to reduce the complexity of the X-Macros
+    // in JSON::Value and JSON::Path
+
+    template <typename T>
+    struct ValueTraits {
+      using ref_t    = T;
+      using create_t = T;
+    };
+
+
+    template <>
+    struct ValueTraits<std::string> {
+      using ref_t    = const std::string &;
+      using create_t = ref_t;
+    };
+
+
+    template <>
+    struct ValueTraits<const Value &> {
+      using create_t = Factory::dummy_t;
+      using ref_t    = const Value &;
+    };
+  }
+}

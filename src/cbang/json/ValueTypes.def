@@ -30,23 +30,23 @@
 
 \******************************************************************************/
 
-//            NAME       TYPE                 PARAM SUFFIX
-CBANG_JSON_VT(Dict,      const Value &,       0,     Dict);
-CBANG_JSON_VT(List,      const Value &,       0,     List);
-CBANG_JSON_VT(Undefined, const Value &,       0,     Undefined);
-CBANG_JSON_VT(Null,      const Value &,       0,     Null);
-CBANG_JSON_VT(Boolean,   bool,                1,     Boolean);
+//            NAME       TYPE           PARAM SUFFIX
+CBANG_JSON_VT(Dict,      const Value &, 0,    Dict);
+CBANG_JSON_VT(List,      const Value &, 0,    List);
+CBANG_JSON_VT(Undefined, const Value &, 0,    Undefined);
+CBANG_JSON_VT(Null,      const Value &, 0,    Null);
+CBANG_JSON_VT(Boolean,   bool,          1,    Boolean);
 
-CBANG_JSON_VT(Number,    double,              1,     );
-CBANG_JSON_VT(String,    const std::string &, 1,     );
+CBANG_JSON_VT(Number,    double,        1,    );
+CBANG_JSON_VT(String,    std::string,   1,    );
 
-CBANG_JSON_VT(S8,        int8_t,              1,     );
-CBANG_JSON_VT(U8,        uint8_t,             1,     );
-CBANG_JSON_VT(S16,       int16_t,             1,     );
-CBANG_JSON_VT(U16,       uint16_t,            1,     );
-CBANG_JSON_VT(S32,       int32_t,             1,     );
-CBANG_JSON_VT(U32,       uint32_t,            1,     );
-CBANG_JSON_VT(S64,       int64_t,             1,     );
-CBANG_JSON_VT(U64,       uint64_t,            1,     );
+CBANG_JSON_VT(S8,        int8_t,        1,    );
+CBANG_JSON_VT(U8,        uint8_t,       1,    );
+CBANG_JSON_VT(S16,       int16_t,       1,    );
+CBANG_JSON_VT(U16,       uint16_t,      1,    );
+CBANG_JSON_VT(S32,       int32_t,       1,    );
+CBANG_JSON_VT(U32,       uint32_t,      1,    );
+CBANG_JSON_VT(S64,       int64_t,       1,    );
+CBANG_JSON_VT(U64,       uint64_t,      1,    );
 
 #undef CBANG_JSON_VT

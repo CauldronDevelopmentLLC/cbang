@@ -63,6 +63,13 @@ namespace cb {
       virtual ValuePtr create(int64_t value) const;
       virtual ValuePtr create(uint64_t value) const;
       virtual ValuePtr create(const std::string &value) const;
+
+      struct dummy_t {};
+      ValuePtr createDict(const dummy_t &) const {return createDict();}
+      ValuePtr createList(const dummy_t &) const {return createList();}
+      ValuePtr createUndefined(const dummy_t &) const
+      {return createUndefined();}
+      ValuePtr createNull(const dummy_t &) const {return createNull();}
     };
   }
 }
