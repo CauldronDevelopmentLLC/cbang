@@ -50,6 +50,7 @@ namespace cb {
   namespace WS {
     class Websocket : virtual public RefCounted, public Enum {
       SmartPointer<HTTP::Conn>::Weak connection;
+      uint64_t id = ~0;
       bool active = false;
 
       unsigned maxMessageSize = std::numeric_limits<int>::max();
@@ -72,7 +73,7 @@ namespace cb {
       Websocket(const SmartPointer<HTTP::Conn> &conn = 0) : connection(conn) {}
       virtual ~Websocket() {}
 
-      uint64_t getID() const;
+      uint64_t getID() const {return id;}
       bool isActive() const;
 
       void setConnection(const SmartPointer<HTTP::Conn> &c) {connection = c;}
