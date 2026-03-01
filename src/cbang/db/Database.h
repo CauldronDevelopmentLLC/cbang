@@ -98,8 +98,7 @@ namespace cb {
       SmartPointer<Backup> backup(Database &target);
 
       int lastError() const;
-      const char *lastErrorMsg() const;
-
+      std::string lastErrorMsg() const;
       static const char *errorMsg(int code);
 
       static std::string escape(const std::string &s);

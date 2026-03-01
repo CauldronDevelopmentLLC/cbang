@@ -35,6 +35,7 @@
 #include "Types.h"
 
 #include <cstdint>
+#include <string>
 
 
 struct sqlite3_stmt;
@@ -52,18 +53,18 @@ namespace cb {
 
       unsigned getIndex() const {return i;}
       type_t getType() const;
-      const char *getDeclType() const;
-      const char *getName() const;
-      const char *getOrigin() const;
-      const char *getTableName() const;
-      const char *getDBName() const;
+      std::string getDeclType() const;
+      std::string getName() const;
+      std::string getOrigin() const;
+      std::string getTableName() const;
+      std::string getDBName() const;
 
       Blob toBlob() const;
       double toDouble() const;
       int64_t toInteger() const;
       bool toBoolean() const;
-      const char *toString() const;
-      const char *toText() const {return toString();}
+      std::string toString() const;
+      std::string toText() const {return toString();}
     };
   }
 }
