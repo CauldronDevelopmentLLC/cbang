@@ -56,11 +56,6 @@ using namespace cb;
 using namespace cb::WS;
 
 
-uint64_t Websocket::getID() const {
-  return connection.isSet() ? connection->getID() : 0;
-}
-
-
 bool Websocket::isActive() const {
   return active && connection.isSet() && connection->isConnected();
 }
@@ -170,6 +165,7 @@ void Websocket::upgrade(HTTP::Request &req) {
   req.reply(HTTP_SWITCHING_PROTOCOLS);
 
   connection = req.getConnection();
+  id         = connection->getID();
   auto cb = [this] {
     SmartPointer<Websocket> self = this;
     connection.release();
@@ -275,7 +271,7 @@ void Websocket::readBody() {
     case WS_OP_BINARY:
       if (wsFinish) {
         message(wsMsg.data(), wsMsg.size());
-        vector<char>().swap(wsMsg); // Force vector to release memory
+        wsMsg.clear();
       }
       break;
 
