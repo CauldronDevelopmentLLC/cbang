@@ -58,10 +58,8 @@ namespace cb {
       bool getBoolean() const override;
       double getNumber() const override;
 
-#define CBANG_JSON_NVT(NAME, TYPE) TYPE get##NAME() const override;
-#include "NumberValueTypes.def"
-
 #define CBANG_JSON_NVT(NAME, TYPE)                                      \
+      TYPE get##NAME() const override;                                  \
       TYPE get##NAME##WithDefault(TYPE defaultValue) const override;
 #include "NumberValueTypes.def"
 

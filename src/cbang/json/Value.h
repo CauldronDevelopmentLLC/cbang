@@ -33,6 +33,7 @@
 #pragma once
 
 #include "ValueType.h"
+#include "ValueTraits.h"
 #include "Factory.h"
 #include "Writer.h"
 #include "Path.h"
@@ -72,24 +73,26 @@ namespace cb {
                       const ValuePtr &defaultValue) const;
 
       // X-Macros
-#define CBANG_JSON_VT(NAME, TYPE, ...)                                   \
-      virtual bool is##NAME() const {return false;}                      \
-                                                                         \
-      bool exists##NAME(const std::string &path) const                   \
-      {return Path(path).exists##NAME(*this);}                           \
-                                                                         \
-      TYPE select##NAME(const std::string &path) const                   \
-      {return Path(path).select##NAME(*this);}                           \
-                                                                         \
-      TYPE select##NAME(const std::string &path,                         \
-                        TYPE defaultValue) const                         \
-      {return Path(path).select##NAME(*this, defaultValue);}             \
-                                                                         \
-      virtual TYPE get##NAME() const {CBANG_TYPE_ERROR("Not a " #NAME);} \
-                                                                         \
-      virtual TYPE get##NAME##WithDefault(TYPE defaultValue) const {     \
-        try {return get##NAME();}                                        \
-        catch (...) {return defaultValue;}                               \
+#define CBANG_JSON_VT(NAME, TYPE, ...)                                     \
+      virtual bool is##NAME() const {return false;}                        \
+                                                                           \
+      bool exists##NAME(const std::string &path) const                     \
+      {return Path(path).exists##NAME(*this);}                             \
+                                                                           \
+      ValueTraits<TYPE>::ref_t select##NAME(const std::string &path) const \
+      {return Path(path).select##NAME(*this);}                             \
+                                                                           \
+      TYPE select##NAME(const std::string &path,                           \
+        ValueTraits<TYPE>::ref_t defaultValue) const                       \
+      {return Path(path).select##NAME(*this, defaultValue);}               \
+                                                                           \
+      virtual ValueTraits<TYPE>::ref_t get##NAME() const                   \
+        {CBANG_TYPE_ERROR("Not a " #NAME);}                                \
+                                                                           \
+      virtual TYPE get##NAME##WithDefault(                                 \
+          ValueTraits<TYPE>::ref_t defaultValue) const {                   \
+        try {return get##NAME();}                                          \
+        catch (...) {return defaultValue;}                                 \
       }
 #include "ValueTypes.def"
 
@@ -144,13 +147,13 @@ namespace cb {
 
       // List X-Macros
 #define CBANG_JSON_VT(NAME, TYPE, PARAM, SUFFIX)                             \
-      void append##SUFFIX(CBANG_IF(PARAM)(TYPE value))                       \
-      {append(create##SUFFIX(CBANG_IF(PARAM)(value)));}                      \
+      void append##SUFFIX(ValueTraits<TYPE>::create_t value = {})            \
+      {append(create##SUFFIX(value));}                                       \
                                                                              \
       TYPE get##NAME(unsigned i) const {return get(i)->get##NAME();}         \
                                                                              \
-      void set##SUFFIX(unsigned i CBANG_IF(PARAM)(CBANG_COMMA() TYPE value)) \
-        {set(i, create##SUFFIX(CBANG_IF(PARAM)(value)));}
+      void set##SUFFIX(unsigned i, ValueTraits<TYPE>::create_t value)        \
+      {set(i, create##SUFFIX(value));}
 #include "ValueTypes.def"
 
       // Dict functions
@@ -191,14 +194,15 @@ namespace cb {
         return !!it && it.value()->is##NAME();                          \
       }                                                                 \
                                                                         \
-      iterator insert##SUFFIX(const std::string &key                    \
-        CBANG_IF(PARAM)(CBANG_COMMA() TYPE value))                      \
-        {return insert(key, create##SUFFIX(CBANG_IF(PARAM)(value)));}   \
+      iterator insert##SUFFIX(const std::string &key,                   \
+        ValueTraits<TYPE>::create_t value = {})                         \
+        {return insert(key, create##SUFFIX(value));}                    \
                                                                         \
-      TYPE get##NAME(const std::string &key) const                      \
+      ValueTraits<TYPE>::ref_t get##NAME(const std::string &key) const  \
       {return get(key)->get##NAME();}                                   \
                                                                         \
-      TYPE get##NAME(const std::string &key, TYPE defaultValue) const { \
+      TYPE get##NAME(const std::string &key,                            \
+          ValueTraits<TYPE>::ref_t defaultValue) const {                \
         auto it = find(key);                                            \
         if (!it) return defaultValue;                                   \
         return (*it)->get##NAME##WithDefault(defaultValue);             \

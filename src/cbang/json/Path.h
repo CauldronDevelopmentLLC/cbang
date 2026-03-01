@@ -33,6 +33,7 @@
 #pragma once
 
 #include "Factory.h"
+#include "ValueTraits.h"
 
 #include <functional>
 
@@ -66,9 +67,12 @@ namespace cb {
         {modify(target, value);}
       void     erase(Value &target) {modify(target, 0);}
 
-#define CBANG_JSON_VT(NAME, TYPE, ...)                                  \
-      TYPE select##NAME(const Value &value) const;                      \
-      TYPE select##NAME(const Value &value, TYPE defaultValue) const;   \
+#define CBANG_JSON_VT(NAME, TYPE, ...)                                    \
+      ValueTraits<TYPE>::ref_t select##NAME(const Value &value) const;    \
+                                                                          \
+      TYPE select##NAME(                                                  \
+        const Value &value, ValueTraits<TYPE>::ref_t defaultValue) const; \
+                                                                          \
       bool exists##NAME(const Value &value) const;
 #include "ValueTypes.def"
    };

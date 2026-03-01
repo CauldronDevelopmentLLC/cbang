@@ -137,7 +137,8 @@ void Path::modify(Value &target, const ValuePtr &value) {
 
 
 #define CBANG_JSON_VT(NAME, TYPE, ...)                              \
-  TYPE Path::select##NAME(const Value &value) const {               \
+  ValueTraits<TYPE>::ref_t                                          \
+  Path::select##NAME(const Value &value) const {                    \
     ValuePtr result = select(value);                                \
                                                                     \
     if (!result->is##NAME())                                        \
@@ -148,7 +149,7 @@ void Path::modify(Value &target, const ValuePtr &value) {
                                                                     \
                                                                     \
   TYPE Path::select##NAME(const Value &value,                       \
-                          TYPE defaultValue) const {                \
+      ValueTraits<TYPE>::ref_t defaultValue) const {                \
     ValuePtr result = select(value, ValuePtr());                    \
                                                                     \
     if (result.isNull() || !result->is##NAME())                     \
