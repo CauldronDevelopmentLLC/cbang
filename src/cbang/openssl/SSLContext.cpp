@@ -280,7 +280,7 @@ void SSLContext::loadSystemRootCerts() {
     }
 
     if (!X509_STORE_add_cert(verifyStore, cert)) {
-      auto error = SSL::getError()();
+      auto error = SSL::getError();
 
       if (ERR_GET_REASON(error) != X509_R_CERT_ALREADY_IN_HASH_TABLE) {
         LOG_ERROR("Error adding system root cert: " << SSL::getErrorStr(error));
