@@ -100,7 +100,7 @@ HIPLibrary::HIPLibrary(Inaccessible) : DynamicLibrary(hipLib) {
   DYNAMIC_CALL(hipInit, (0));
   DYNAMIC_CALL(hipDriverGetVersion, (&version));
 
-  VersionU16 driverVersion(version / 10000000, version % 10000000 / 100000, version % 100000;
+  VersionU16 driverVersion(version / 10000000, version % 10000000 / 100000, version % 100000);
 
   int count = 0;
   DYNAMIC_CALL(hipGetDeviceCount, (&count));
