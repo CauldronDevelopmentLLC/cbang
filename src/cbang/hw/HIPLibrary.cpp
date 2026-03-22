@@ -69,8 +69,8 @@ static vector<string> hipLib = {"/opt/rocm/lib/libamdhip64.so.7",
 #define HIP_API
 #endif
 
-#define DYNAMIC_CALL(name, args) {                                  \
-    name##_t name = (name##_t)getSymbol(#name);                     \
+#define DYNAMIC_CALL(name, args) {                                 \
+    name##_t name = (name##_t)getSymbol(#name);                    \
     if ((err = name args)) THROW(#name "() returned " << err);     \
   }
 
@@ -100,7 +100,8 @@ HIPLibrary::HIPLibrary(Inaccessible) : DynamicLibrary(hipLib) {
   DYNAMIC_CALL(hipInit, (0));
   DYNAMIC_CALL(hipDriverGetVersion, (&version));
 
-  VersionU16 driverVersion(version / 10000000, version % 10000000 / 100000, version % 100000);
+  VersionU16 driverVersion(version / 10000000, version % 10000000 / 100000,
+    version % 100000);
 
   int count = 0;
   DYNAMIC_CALL(hipGetDeviceCount, (&count));
