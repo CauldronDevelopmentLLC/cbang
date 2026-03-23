@@ -111,9 +111,11 @@ namespace cb {
 
     uint64_t getStartTime() const {return startTime;}
     uint64_t getUptime() const;
+    void checkOpenFileLimit(unsigned noFilesRec = 10000);
 
     virtual int init(int argc, char *argv[]);
     virtual void afterCommandLineParse() {}
+    virtual void beforeDroppingPrivileges() {}
     virtual void initialize() {}
     virtual void run() {}
     virtual void printInfo() const;
