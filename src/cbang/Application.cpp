@@ -108,6 +108,10 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     options.add("priority", "Set the process priority. Valid values are: idle, "
                 "low, normal, high or realtime.");
     options.alias("priority", "nice");
+#ifndef _WIN32
+    options.add("set-group", "Run in specified group");
+    options.add("run-as", "Run as specified user");
+#endif
     options.popCategory();
   }
 
@@ -170,8 +174,8 @@ bool Application::_hasFeature(int feature) {
   switch (feature) {
   case FEATURE_CONFIG_FILE:
   case FEATURE_DEBUGGING:
+  case FEATURE_INFO:
   case FEATURE_PRINT_INFO:
-  case FEATURE_SIGNAL_HANDLER:
     return true;
 
   default: return false;
@@ -180,6 +184,26 @@ bool Application::_hasFeature(int feature) {
 
 
 uint64_t Application::getUptime() const {return Time::now() - startTime;}
+
+
+void Application::checkOpenFileLimit(unsigned noFilesRec) {
+#ifndef _WIN32
+  // Check maximum number of open files
+  unsigned noFiles = SystemUtilities::getMaxFiles();
+  if (noFiles < noFilesRec) {
+    SystemUtilities::setMaxFiles(noFilesRec);
+    noFiles = SystemUtilities::getMaxFiles();
+  }
+
+  if (noFiles < noFilesRec)
+    LOG_WARNING("Open file limit of " << noFiles
+      << " is less than recommended value of " << noFilesRec
+      << ", you can increase this value in '/etc/security/limits.conf'");
+
+#else
+  THROW("checkOpenFileLimit() not supported in Windows");
+#endif
+}
 
 
 int Application::init(int argc, char *argv[]) {
@@ -236,12 +260,28 @@ int Application::init(int argc, char *argv[]) {
 
   if (options["log"].hasValue()) logger.startLogFile(options["log"]);
 
-  if (hasFeature(FEATURE_PROCESS_CONTROL))
+  if (hasFeature(FEATURE_PROCESS_CONTROL)) {
     try {
       if (options["priority"].hasValue())
         SystemUtilities::setPriority(
           ProcessPriority::parse(options["priority"]));
-    } CBANG_CATCH_WARNING;
+    } CATCH_WARNING;
+
+    beforeDroppingPrivileges();
+
+#ifndef _WIN32
+    // Set group and user
+    if (options["set-group"].hasValue()) {
+      LOG_INFO(2, "Switching to group " << options["set-group"]);
+      SystemUtilities::setGroup(options["set-group"]);
+    }
+
+    if (options["run-as"].hasValue()) {
+      LOG_INFO(2, "Switching to user " << options["run-as"]);
+      SystemUtilities::setUser(options["run-as"]);
+    }
+#endif // _WIN32
+  }
 
   if (hasFeature(FEATURE_SIGNAL_HANDLER))
     catchExitSignals(); // Also enables SignalManager
