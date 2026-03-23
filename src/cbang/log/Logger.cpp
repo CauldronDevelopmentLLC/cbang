@@ -195,6 +195,12 @@ void Logger::startLogFile(const string &filename) {
 }
 
 
+void Logger::restart() {
+  SmartLock lock(this);
+  startLogFile(logFilename);
+}
+
+
 void Logger::setLogDomainLevels(const string &levels) {
   Option::strings_t entries;
   String::tokenize(levels, entries, ", \t\r\n");

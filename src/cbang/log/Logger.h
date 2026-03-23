@@ -156,6 +156,7 @@ namespace cb {
 
     void startLogFile(const std::string &filename);
     bool getLogFileStarted() const {return logFile.isSet();}
+    void restart();
 
     void setScreenStream(std::ostream &stream);
     void setScreenStream(const SmartPointer<std::ostream> &stream);
