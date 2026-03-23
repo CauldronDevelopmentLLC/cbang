@@ -101,20 +101,6 @@ Application::Application(const string &name, hasFeature_t hasFeature) :
     options.popCategory();
   }
 
-  if (hasFeature(FEATURE_PROCESS_CONTROL)) {
-    options.pushCategory("Process Control");
-    options.add("service", "Ignore user logout or hangup and interrupt signals"
-                )->setDefault(false);
-    options.add("priority", "Set the process priority. Valid values are: idle, "
-                "low, normal, high or realtime.");
-    options.alias("priority", "nice");
-#ifndef _WIN32
-    options.add("set-group", "Run in specified group");
-    options.add("run-as", "Run as specified user");
-#endif
-    options.popCategory();
-  }
-
   logger.addOptions(options);
 
   // Command line
@@ -206,6 +192,40 @@ void Application::checkOpenFileLimit(unsigned noFilesRec) {
 }
 
 
+void Application::addArgsInfo(int argc, char *argv[]) {
+  // Add args to info, obscuring any obscured options
+  Info &info = Info::instance();
+  ostringstream args;
+  bool obscureNext = false;
+
+  for (int i = 1; i < argc; i++) {
+    if (i) args << " ";
+
+    string arg = argv[i];
+    if (2 < arg.length() && arg.substr(0, 2) == "--") {
+      string name = arg.substr(2);
+      size_t equal = name.find('=');
+
+      if (equal != string::npos) name = name.substr(0, equal);
+
+      if (options.has(name) && options[name].isObscured()) {
+        if (equal == string::npos) obscureNext = true;
+        else arg = arg.substr(0, equal + 3) +
+                string(arg.length() - equal - 3, '*');
+      }
+
+    } else if (obscureNext) {
+      arg = string(arg.length(), '*');
+      obscureNext = false;
+    }
+
+    args << arg;
+  }
+
+  info.add(name, "Args", args.str());
+}
+
+
 int Application::init(int argc, char *argv[]) {
   if (initialized) THROW("Already initialized");
   initialized = true;
@@ -218,35 +238,7 @@ int Application::init(int argc, char *argv[]) {
       version = Version(Info::instance().get("Build", "Version"));
   }
 
-  // Add args to info, obscuring any obscured options
-  if (hasFeature(FEATURE_INFO)) {
-    Info &info = Info::instance();
-    ostringstream args;
-    bool obscureNext = false;
-    for (int i = 1; i < argc; i++) {
-      if (i) args << " ";
-
-      string arg = argv[i];
-      if (2 < arg.length() && arg.substr(0, 2) == "--") {
-        string name = arg.substr(2);
-        size_t equal = name.find('=');
-        if (equal != string::npos) name = name.substr(0, equal);
-
-        if (options.has(name) && options[name].isObscured()) {
-          if (equal == string::npos) obscureNext = true;
-          else arg = arg.substr(0, equal + 3) +
-                 string(arg.length() - equal - 3, '*');
-        }
-
-      } else if (obscureNext) {
-        arg = string(arg.length(), '*');
-        obscureNext = false;
-      }
-
-      args << arg;
-    }
-    info.add(name, "Args", args.str());
-  }
+  if (hasFeature(FEATURE_INFO)) addArgsInfo(argc, argv);
 
   // Parse args
   int ret = cmdLine.parse(argc, argv);
@@ -260,35 +252,11 @@ int Application::init(int argc, char *argv[]) {
 
   if (options["log"].hasValue()) logger.startLogFile(options["log"]);
 
-  if (hasFeature(FEATURE_PROCESS_CONTROL)) {
-    try {
-      if (options["priority"].hasValue())
-        SystemUtilities::setPriority(
-          ProcessPriority::parse(options["priority"]));
-    } CATCH_WARNING;
-
-    beforeDroppingPrivileges();
-
-#ifndef _WIN32
-    // Set group and user
-    if (options["set-group"].hasValue()) {
-      LOG_INFO(2, "Switching to group " << options["set-group"]);
-      SystemUtilities::setGroup(options["set-group"]);
-    }
-
-    if (options["run-as"].hasValue()) {
-      LOG_INFO(2, "Switching to user " << options["run-as"]);
-      SystemUtilities::setUser(options["run-as"]);
-    }
-#endif // _WIN32
-  }
-
   if (hasFeature(FEATURE_SIGNAL_HANDLER))
     catchExitSignals(); // Also enables SignalManager
 
   if (hasFeature(FEATURE_PRINT_INFO)) printInfo();
 
-  initialize();
   return ret;
 }
 
@@ -385,13 +353,6 @@ int Application::configAction(Option &option) {
 
 
 void Application::handleSignal(int sig) {
-  if (hasFeature(FEATURE_PROCESS_CONTROL) &&
-      options["service"].toBoolean() && sig == SIGHUP) {
-    LOG_INFO(2, "Service ignoring hangup/logoff signal");
-    return;
-  }
-
   requestExit();
-
   ExitSignalHandler::handleSignal(sig);
 }

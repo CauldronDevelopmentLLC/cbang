@@ -59,7 +59,6 @@ namespace cb {
   class Application : public Features, protected ExitSignalHandler {
   public:
     enum {
-      FEATURE_PROCESS_CONTROL,
       FEATURE_CONFIG_FILE,
       FEATURE_DEBUGGING,
       FEATURE_INFO,
@@ -112,11 +111,11 @@ namespace cb {
     uint64_t getStartTime() const {return startTime;}
     uint64_t getUptime() const;
     void checkOpenFileLimit(unsigned noFilesRec = 10000);
+    void addArgsInfo(int argc, char *argv[]);
 
     virtual int init(int argc, char *argv[]);
     virtual void afterCommandLineParse() {}
     virtual void beforeDroppingPrivileges() {}
-    virtual void initialize() {}
     virtual void run() {}
     virtual void printInfo() const;
     virtual void write(XML::Writer &writer, uint32_t flags = 0) const;
