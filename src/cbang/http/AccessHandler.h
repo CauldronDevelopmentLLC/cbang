@@ -71,6 +71,8 @@ namespace cb {
 
       bool checkGroup(const std::string &name, bool &allow, bool &deny) const;
 
+      std::string toString() const;
+
       // From RequestHandler
       bool operator()(Request &req) override;
     };
