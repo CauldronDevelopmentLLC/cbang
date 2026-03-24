@@ -87,6 +87,8 @@ namespace cb {
 
     uint64_t startTime;
 
+    unsigned exitSignalCount = 0;
+
   public:
     Application(const std::string &name,
                 hasFeature_t hasFeature = Application::_hasFeature);
@@ -135,5 +137,7 @@ namespace cb {
 
     // From SignalHandler
     void handleSignal(int sig) override;
+
+    void exitSignal();
   };
 }

@@ -113,7 +113,7 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   if (config->hasDict("apis")) apis = config->get("apis");
   else {
     apis = new JSON::Dict;
-    apis->insert("", config->get("api"));
+    apis->insert("", config);
   }
 
   // Pass 1: Register args
