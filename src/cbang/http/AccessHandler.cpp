@@ -113,6 +113,22 @@ bool AccessHandler::checkGroup(
 }
 
 
+string AccessHandler::toString() const {
+  set<string> allow(userAllowed);
+  set<string> deny(userDenied);
+
+  for (auto &group: groupAllowed)
+    allow.insert("@" + group);
+
+  for (auto &group: groupDenied)
+    deny.insert("@" + group);
+
+  return "allow: " + String::join(allow, ", ") +
+    "\ndeny: " + String::join(deny, ", ");
+}
+
+
+
 bool AccessHandler::operator()(Request &req) {
   SmartPointer<Session> session = req.getSession();
   string user = req.getUser();
@@ -127,8 +143,8 @@ bool AccessHandler::operator()(Request &req) {
     if (checkGroup("unauthenticated", allow, deny)) group = "@unauthenticated";
 
   } else {
-    allow = userAllow(user);
-    deny  = userDeny(user);
+    allow = allow || userAllow(user);
+    deny  = deny  || userDeny(user);
 
     auto &groups = *session->get("group");
     for (auto e: groups.entries())
