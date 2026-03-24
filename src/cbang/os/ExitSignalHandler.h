@@ -50,8 +50,6 @@ namespace cb {
     void catchExitSignals();
     void ignoreExitSignals();
 
-    bool exitSignal(int signal);
-
     void signal(int sig) {handleSignal(sig);}
 
   protected:

@@ -356,3 +356,14 @@ void Application::handleSignal(int sig) {
   requestExit();
   ExitSignalHandler::handleSignal(sig);
 }
+
+
+void Application::exitSignal() {
+  switch (exitSignalCount++) {
+  case 0: LOG_INFO(1, "Caught exit signal, requesting shutdown");        break;
+  case 1: LOG_INFO(1, "Caught exit signal, next signal will terminate"); break;
+  case 2: LOG_INFO(1, "Caught exit signal, terminating"); exit(1);
+  }
+
+  requestExit();
+}
