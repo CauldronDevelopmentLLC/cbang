@@ -70,31 +70,12 @@ def configure(conf, cxx = True, threads = True):
                 '-fno-builtin-realloc', '-fno-builtin-free'])
 
 
-    # See http://libcwd.sourceforge.net/
-    if env.get('cwd'):
-        libname = 'cwd'
-        if threads:
-            libname += '_r'
-            env.CBDefine('LIBCWD_THREAD_SAFE')
-
-        if env.get('debug'): env.CBDefine('CWDEBUG')
-
-        if conf.CBCheckCXXHeader('libcwd/sys.h'):
-            env.CBDefine('HAVE_LIBCWD')
-
-        conf.CBRequireLib(libname)
-
-        # libcwd does not work if libdl is included anywhere earlier
-        conf.CBRequireLib('dl')
-
-
 def generate(env):
     env.CBAddConfigTest('malloc', configure)
 
     env.CBAddVariables(
         ('dmalloc', 'Compile with dmalloc', 0),
         ('tcmalloc', 'Compile with google perfomrance tools malloc', 0),
-        ('cwd', 'Compile with libcwd', 0),
         ('efence', 'Compile with electric-fence', 0))
 
 
