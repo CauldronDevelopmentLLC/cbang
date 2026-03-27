@@ -52,6 +52,7 @@
 #include <cbang/api/handler/TimeseriesHandler.h>
 #include <cbang/api/handler/WebsocketHandler.h>
 #include <cbang/api/handler/HTTPHandler.h>
+#include <cbang/api/handler/FunctionHandler.h>
 #include <cbang/api/arg/ArgDict.h>
 
 #include <cbang/http/Request.h>
@@ -169,9 +170,26 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
 }
 
 
-void cb::API::API::bind(const string &key, const RequestHandlerPtr &handler) {
+void cb::API::API::bind(const string &key, const HandlerPtr &handler) {
   if (!callbacks.insert(decltype(callbacks)::value_type(key, handler)).second)
     THROW("API binding for '" << key << "' already exists");
+}
+
+
+void cb::API::API::bind(const string &key, callback_t cb) {
+  bind(key, new FunctionHandler(cb));
+}
+
+
+void cb::API::API::bind(const string &key, void_cb_t cb) {
+  callback_t _cb = [cb] (const CtxPtr &ctx) {cb(ctx); return true;};
+  bind(key, _cb);
+}
+
+
+void cb::API::API::bind(const string &key, sink_cb_t cb) {
+  callback_t _cb = [cb] (const CtxPtr &ctx) {ctx->reply(cb); return true;};
+  bind(key, _cb);
 }
 
 
@@ -337,7 +355,7 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
     auto key = config->getString("bind", "<default>");
     auto it  = callbacks.find(key);
     if (it == callbacks.end()) THROW("Bind callback '" << key << "' not found");
-    return new HTTPHandler(it->second);
+    return it->second;
   }
 
   if (type == "pass")      return new PassHandler;
