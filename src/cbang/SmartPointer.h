@@ -101,11 +101,12 @@ namespace cb {
     using CounterMalloc = RefCounterImpl<T, DeallocMalloc>;
     using CounterArray  = RefCounterImpl<T, DeallocArray<T>>;
 
-    using PointerT = SmartPointer<T, weak, DeallocT,        CounterT>;
-    using Weak     = SmartPointer<T, true, DeallocT,        CounterT>;
-    using Phony    = SmartPointer<T, weak, DeallocPhony,    CounterPhony>;
-    using Malloc   = SmartPointer<T, weak, DeallocMalloc,   CounterMalloc>;
-    using Array    = SmartPointer<T, weak, DeallocArray<T>, CounterArray>;
+    using PointerT = SmartPointer<T, weak,  DeallocT,        CounterT>;
+    using Weak     = SmartPointer<T, true,  DeallocT,        CounterT>;
+    using Strong   = SmartPointer<T, false, DeallocT,        CounterT>;
+    using Phony    = SmartPointer<T, weak,  DeallocPhony,    CounterPhony>;
+    using Malloc   = SmartPointer<T, weak,  DeallocMalloc,   CounterMalloc>;
+    using Array    = SmartPointer<T, weak,  DeallocArray<T>, CounterArray>;
 
     /**
      * The copy constructor.  If the smart pointer being copied
@@ -228,7 +229,12 @@ namespace cb {
      * @return A reference to this smart pointer.
      */
     PointerT &operator=(const PointerT &smartPtr) {
-      if (refCounter == smartPtr.refCounter) return *this;
+      if (refCounter == smartPtr.refCounter) {
+        // NOTE: Phony smart pointers all have the same ref counter so comparing
+        // ref counters is not enough
+        if (!isPhony()) return *this;
+        else if (ptr == smartPtr.ptr) return *this;
+      }
 
       release();
 
@@ -373,6 +379,9 @@ namespace cb {
     bool isSet() const {return refCounter && refCounter->isActive() && ptr;}
 
     bool isPhony() const {return dynamic_cast<CounterPhony *>(refCounter);}
+
+    static bool isWeak() {return weak;}
+    Strong toStrongPtr() const {return *this;}
 
   protected:
     void check() const {
