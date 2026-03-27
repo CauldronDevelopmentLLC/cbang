@@ -34,6 +34,9 @@
 
 #include "Config.h"
 #include "HandlerGroup.h"
+#include "HandlerFactory.h"
+
+#include <cbang/api/handler/FunctionHandler.h>
 
 #include <cbang/http/Client.h>
 #include <cbang/http/HandlerGroup.h>
@@ -55,6 +58,13 @@ namespace cb {
 
   namespace API {
     class API : public HTTP::RequestHandler, public HandlerGroup {
+    public:
+      using callback_t        = FunctionHandler::callback_t;
+      using void_cb_t         = std::function<void (const CtxPtr &)>;
+      using sink_cb_t         = std::function<void (JSON::Sink &)>;
+      using RequestHandlerPtr = HTTP::RequestHandlerPtr;
+
+    private:
       Options       &options;
       JSON::ValuePtr config;
 
@@ -70,11 +80,10 @@ namespace cb {
       SmartPointer<EventLevelDB>          timeseriesDB;
       JSON::ValuePtr                      optionValues;
 
-      using RequestHandlerPtr = HTTP::RequestHandlerPtr;
-      std::map<std::string, RequestHandlerPtr> callbacks;
-      std::map<std::string, JSON::ValuePtr>    args;
-      std::map<std::string, HandlerPtr>        queries;
-      std::map<std::string, HandlerPtr>        timeseries;
+      std::map<std::string, HandlerPtr>     callbacks;
+      std::map<std::string, JSON::ValuePtr> args;
+      std::map<std::string, HandlerPtr>     queries;
+      std::map<std::string, HandlerPtr>     timeseries;
 
     public:
       API(Options &options);
@@ -106,16 +115,19 @@ namespace cb {
 
       void load(const JSON::ValuePtr &config);
 
-      void bind(const std::string &key, const RequestHandlerPtr &handler);
+      void bind(const std::string &key, const HandlerPtr &handler);
+      void bind(const std::string &key, callback_t cb);
+      void bind(const std::string &key, void_cb_t cb);
+      void bind(const std::string &key, sink_cb_t cb);
 
       template <class T, typename METHOD_T>
       void bind(const std::string &key, T *obj, METHOD_T method) {
-        bind(key, HTTP::RequestHandlerFactory::create(obj, method));
+        bind(key, HandlerFactory::create(obj, method));
       }
 
       template <class T, typename METHOD_T>
       void bind(const std::string &key, METHOD_T method) {
-        bind(key, HTTP::RequestHandlerFactory::create<T>(method));
+        bind(key, HandlerFactory::create<T>(method));
       }
 
       static std::string resolve(const std::string &category,

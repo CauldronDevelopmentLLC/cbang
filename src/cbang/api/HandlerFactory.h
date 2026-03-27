@@ -32,31 +32,44 @@
 
 #pragma once
 
-#include "RequestHandler.h"
+#include "Handler.h"
 
 #include <functional>
 #include <type_traits>
 
 
 namespace cb {
-  namespace HTTP {
-    class RequestHandlerFactory {
+  namespace HTTP {class Request;}
+
+  namespace API {
+    class HandlerFactory {
     public:
-      using callback_t = std::function<bool (Request &)>;
-      using msg_callback_t =
+      using bool_cb_t = std::function<bool (const CtxPtr &)>;
+      using void_cb_t = std::function<void (const CtxPtr &)>;
+      using sink_cb_t = std::function<void (JSON::Sink &)>;
+
+      using Request = HTTP::Request;
+      using req_cb_t = std::function<bool (Request &)>;
+      using req_msg_cb_t =
         std::function<void (Request &, const JSON::ValuePtr &)>;
-      using sink_callback_t = std::function<void (Request &, JSON::Sink &)>;
-      using msg_sink_callback_t =
+      using req_sink_cb_t = std::function<void (Request &, JSON::Sink &)>;
+      using req_msg_sink_cb_t =
         std::function<void (Request &, const JSON::ValuePtr &, JSON::Sink &)>;
 
-      static SmartPointer<RequestHandler> create(callback_t          cb);
-      static SmartPointer<RequestHandler> create(msg_callback_t      cb);
-      static SmartPointer<RequestHandler> create(sink_callback_t     cb);
-      static SmartPointer<RequestHandler> create(msg_sink_callback_t cb);
+      // API::CtrPtr callbacks
+      static SmartPointer<Handler> create(bool_cb_t cb);
+      static SmartPointer<Handler> create(void_cb_t cb);
+      static SmartPointer<Handler> create(sink_cb_t cb);
+
+      // Old style HTTP::Request callbacks
+      static SmartPointer<Handler> create(req_cb_t cb);
+      static SmartPointer<Handler> create(req_msg_cb_t cb);
+      static SmartPointer<Handler> create(req_sink_cb_t cb);
+      static SmartPointer<Handler> create(req_msg_sink_cb_t cb);
 
       // Bind class methods
       template <typename T, typename Method>
-      static SmartPointer<RequestHandler> create(T* obj, Method method) {
+      static SmartPointer<Handler> create(T* obj, Method method) {
         return create([obj, method](auto&&... args) ->
             decltype(std::invoke(method, obj,
               std::forward<decltype(args)>(args)...)) {
@@ -67,7 +80,7 @@ namespace cb {
 
       // Bind class methods of subclasses of Request
       template <typename T, typename Method>
-      static SmartPointer<RequestHandler> create(Method method) {
+      static SmartPointer<Handler> create(Method method) {
         static_assert(std::is_base_of<Request, T>::value,
           "T must inherit from Request");
 
