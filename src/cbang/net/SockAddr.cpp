@@ -36,6 +36,7 @@
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/os/SysError.h>
+#include <cbang/os/SystemUtilities.h>
 
 #include <string.h>
 
@@ -47,9 +48,16 @@
 typedef int socklen_t;
 #define SOCKET_INPROGRESS WSAEWOULDBLOCK
 #define IS_BLOCK_ERROR(e) ((e) == WSAEWOULDBLOCK)
+#define AF_UNIX -1
+
+struct sockaddr_un {
+  uint16_t sun_family;
+  char sun_path[109];
+};
 
 #else // !_WIN32
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -83,6 +91,7 @@ namespace {
 
 Regex SockAddr::ipv4RE("((" IPV4_RE ")|(\\d+))" PORT_RE "?");
 Regex SockAddr::ipv6RE("(" IPV6_RE ")|(\\[" IPV6_RE "\\]" PORT_RE "?)");
+Regex SockAddr::unixRE("unix:.{1,108}");
 
 
 SockAddr::SockAddr() : data(new uint8_t[getCapacity()]()) {}
@@ -101,6 +110,7 @@ SockAddr::SockAddr(const uint8_t *ip, uint16_t port) : SockAddr() {
 }
 
 
+SockAddr::SockAddr(const string &unix) : SockAddr() {readUnix(unix);}
 SockAddr::~SockAddr() {delete [] data;}
 
 
@@ -126,6 +136,7 @@ bool SockAddr::isZero() const {
 unsigned SockAddr::getLength() const {
   if (isIPv4()) return sizeof(sockaddr_in);
   if (isIPv6()) return sizeof(sockaddr_in6);
+  if (isUnix()) return sizeof(sockaddr_un);
   return 0;
 }
 
@@ -143,6 +154,7 @@ bool SockAddr::isLoopback() const {
 
 bool SockAddr::isIPv4() const {return get()->sa_family == AF_INET;}
 bool SockAddr::isIPv6() const {return get()->sa_family == AF_INET6;}
+bool SockAddr::isUnix() const {return get()->sa_family == AF_UNIX;}
 
 
 unsigned SockAddr::getIPv4() const {
@@ -154,6 +166,12 @@ unsigned SockAddr::getIPv4() const {
 const uint8_t *SockAddr::getIPv6() const {
   if (!isIPv6()) THROW("Not an IPv6 address");
   return get6()->sin6_addr.s6_addr;
+}
+
+
+string SockAddr::getPath() const {
+  if (!isUnix()) THROW("Not a Unix address");
+  return getUn()->sun_path;
 }
 
 
@@ -180,6 +198,18 @@ void SockAddr::setIPv6(const uint8_t *ip) {
 }
 
 
+void SockAddr::setPath(const string &path) {
+  auto addr = getUn();
+
+  unsigned maxLen = sizeof(addr->sun_path) - 1;
+  if (maxLen < path.length())
+    THROW("Unix domain path length > " << maxLen << ": " << path);
+
+  addr->sun_family = AF_UNIX;
+  strncpy(addr->sun_path, path.c_str(), maxLen);
+}
+
+
 unsigned SockAddr::getPort() const {
   if (isIPv4()) return hton16(get4()->sin_port);
   if (isIPv6()) return hton16(get6()->sin6_port);
@@ -188,8 +218,9 @@ unsigned SockAddr::getPort() const {
 
 
 void SockAddr::setPort(unsigned port) {
-  if (isIPv4()) get4()->sin_port  = hton16(port);
-  if (isIPv6()) get6()->sin6_port = hton16(port);
+  if      (isIPv4()) get4()->sin_port  = hton16(port);
+  else if (isIPv6()) get6()->sin6_port = hton16(port);
+  else THROW("SockAddr type does not have a port");
 }
 
 
@@ -217,7 +248,8 @@ string SockAddr::toString(bool withPort) const {
 
     if (port) s = "[" + s + "]:" + String(port);
 
-  } else s = "<unknown sockaddr>";
+  } else if (isUnix()) s = "unix:" + getPath();
+  else s = "<unknown sockaddr>";
 
   return s;
 }
@@ -279,7 +311,16 @@ bool SockAddr::readIPv6(const string &_s) {
 }
 
 
-bool SockAddr::read(const string &s) {return readIPv4(s) || readIPv6(s);}
+bool SockAddr::readUnix(const string &s) {
+  if (!unixRE.match(s)) return false;
+  setPath(s.c_str() + 5);
+  return true;
+}
+
+
+bool SockAddr::read(const string &s) {
+  return readUnix(s) || readIPv4(s) || readIPv6(s);
+}
 
 
 SockAddr SockAddr::parseIPv4(const string &s) {
@@ -296,6 +337,13 @@ SockAddr SockAddr::parseIPv6(const string &s) {
 }
 
 
+SockAddr SockAddr::parseUnix(const string &s) {
+  SockAddr addr;
+  if (!addr.readUnix(s)) THROW("Invalid Unix address: " << s);
+  return addr;
+}
+
+
 SockAddr SockAddr::parse(const string &s) {
   SockAddr addr;
   if (!addr.read(s)) THROW("Invalid socket address: " << s);
@@ -305,6 +353,7 @@ SockAddr SockAddr::parse(const string &s) {
 
 bool SockAddr::isIPv4Address(const string &s) {return SockAddr().readIPv4(s);}
 bool SockAddr::isIPv6Address(const string &s) {return SockAddr().readIPv6(s);}
+bool SockAddr::isUnixAddress(const string &s) {return SockAddr().readUnix(s);}
 bool SockAddr::isAddress(const string &s)     {return SockAddr().read(s);}
 
 
@@ -318,6 +367,7 @@ SockAddr &SockAddr::operator=(const sockaddr &addr) {
   switch (addr.sa_family) {
   case AF_INET:  return *this = (sockaddr_in  &)addr;
   case AF_INET6: return *this = (sockaddr_in6 &)addr;
+  case AF_UNIX:  return *this = (sockaddr_un  &)addr;
   default: THROW("Unsupported sockaddr family: " << addr.sa_family);
   }
 }
@@ -330,6 +380,12 @@ SockAddr &SockAddr::operator=(const sockaddr_in &addr) {
 
 
 SockAddr &SockAddr::operator=(const sockaddr_in6 &addr) {
+  memcpy(data, &addr, sizeof(addr));
+  return *this;
+}
+
+
+SockAddr &SockAddr::operator=(const sockaddr_un &addr) {
   memcpy(data, &addr, sizeof(addr));
   return *this;
 }
@@ -352,7 +408,10 @@ int SockAddr::cmp(const SockAddr &o, bool cmpPorts) const {
     if (ret) return ret;
   }
 
+  if (isUnix()) return getPath().compare(o.getPath());
+
   if (cmpPorts) return compare(getPort(), o.getPort());
+
   return 0;
 }
 
@@ -445,6 +504,7 @@ bool SockAddr::adjacent(const SockAddr &o) const {
 
 void SockAddr::bind(socket_t socket) const {
   if (isNull()) THROW("Cannot bind to null SockAddr");
+  if (isUnix()) SystemUtilities::unlink(getPath());
 
   SysError::clear();
   if (::bind(socket, get(), getLength()))

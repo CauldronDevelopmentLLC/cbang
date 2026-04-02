@@ -42,6 +42,7 @@
 struct sockaddr;
 struct sockaddr_in;
 struct sockaddr_in6;
+struct sockaddr_un;
 
 
 namespace cb {
@@ -50,6 +51,7 @@ namespace cb {
 
     static Regex ipv4RE;
     static Regex ipv6RE;
+    static Regex unixRE;
 
   public:
     SockAddr();
@@ -57,6 +59,7 @@ namespace cb {
     SockAddr(const sockaddr &addr);
     SockAddr(uint32_t ip, uint16_t port = 0);
     SockAddr(const uint8_t *ip, uint16_t port = 0);
+    SockAddr(const std::string &unix);
     ~SockAddr();
 
     bool isNull() const;
@@ -73,16 +76,22 @@ namespace cb {
     const sockaddr_in6 *get6() const {return (const sockaddr_in6 *)data;}
     sockaddr_in6 *get6() {return (sockaddr_in6 *)data;}
 
+    const sockaddr_un *getUn() const {return (const sockaddr_un *)data;}
+    sockaddr_un *getUn() {return (sockaddr_un *)data;}
+
     bool isLoopback() const;
 
     bool isIPv4() const;
     bool isIPv6() const;
+    bool isUnix() const;
 
     uint32_t getIPv4() const;
     const uint8_t *getIPv6() const;
+    std::string getPath() const;
 
     void setIPv4(uint32_t ip);
     void setIPv6(const uint8_t *ip);
+    void setPath(const std::string &path);
 
     unsigned getPort() const;
     void setPort(unsigned port);
@@ -93,20 +102,24 @@ namespace cb {
 
     bool readIPv4(const std::string &s);
     bool readIPv6(const std::string &s);
+    bool readUnix(const std::string &s);
     bool read(const std::string &s);
 
     static SockAddr parseIPv4(const std::string &s);
     static SockAddr parseIPv6(const std::string &s);
+    static SockAddr parseUnix(const std::string &s);
     static SockAddr parse(const std::string &s);
 
     static bool isIPv4Address(const std::string &s);
     static bool isIPv6Address(const std::string &s);
+    static bool isUnixAddress(const std::string &s);
     static bool isAddress(const std::string &s);
 
     SockAddr &operator=(const SockAddr &o);
     SockAddr &operator=(const sockaddr &addr);
     SockAddr &operator=(const sockaddr_in &addr);
     SockAddr &operator=(const sockaddr_in6 &addr);
+    SockAddr &operator=(const sockaddr_un &addr);
 
     int cmp(const SockAddr &o, bool cmpPorts = true) const;
     bool operator< (const SockAddr &a) const {return cmp(a) <  0;}
