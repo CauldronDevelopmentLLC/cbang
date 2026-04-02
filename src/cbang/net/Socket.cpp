@@ -298,8 +298,15 @@ SmartPointer<Socket> Socket::accept(SockAddr &addr, unsigned flags) {
     // Peek at the buffer without removing data to see if it's still alive
     // This helps prevent us from wasting time on connections that are dead
     char buf;
+    SysError::clear();
     int ret = recv(s, &buf, 1, MSG_PEEK | MSG_DONTWAIT);
-    if (!ret || (ret < 0 && errno != EAGAIN && errno != EWOULDBLOCK)) {
+    int err = SysError::get();
+
+#ifdef _WIN32
+    if (!ret || (ret < 0 && err != WSAEWOULDBLOCK)) {
+#else
+    if (!ret || (ret < 0 && err != EAGAIN && err != EWOULDBLOCK)) {
+#endif
       close(s); // The client already sent FIN or an error occurred
       return 0;
     }
