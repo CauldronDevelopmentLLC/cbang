@@ -52,6 +52,7 @@ namespace cb {
       std::string suffix;
       std::string trailer;
       std::string rateKey;
+      int level = 0;
 
       std::string buffer;
       std::string rateMessage;
@@ -62,7 +63,8 @@ namespace cb {
     public:
       impl(const std::string &prefix, const std::string &suffix,
            const std::string &trailer,
-           const std::string &rateKey = std::string());
+           const std::string &rateKey = std::string(),
+           int level = 0);
       ~impl();
 
       std::streamsize write(const char_type *s, std::streamsize n);

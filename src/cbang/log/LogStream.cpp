@@ -39,8 +39,10 @@ using namespace cb;
 
 
 LogDevice::impl::impl(const string &prefix, const string &suffix,
-                      const string &trailer, const string &rateKey) :
-  prefix(prefix), suffix(suffix), trailer(trailer), rateKey(rateKey) {
+                      const string &trailer, const string &rateKey,
+                      int level) :
+  prefix(prefix), suffix(suffix), trailer(trailer), rateKey(rateKey),
+  level(level) {
   Logger::instance().lock();
 }
 
@@ -112,7 +114,7 @@ bool LogDevice::impl::flush() {
   if (buffer.empty()) return true;
 
   // Write to log
-  Logger::instance().write(buffer);
+  Logger::instance().write(buffer, level);
 
   // Flush the buffer
   buffer.clear();

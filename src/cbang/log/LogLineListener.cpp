@@ -39,7 +39,11 @@ using namespace std;
 using namespace cb;
 
 
-void LogLineListener::write(const char *s, unsigned n) {
+void LogLineListener::write(const char *s, unsigned n) {write(s, n, 0);}
+
+
+void LogLineListener::write(const char *s, unsigned n, int level) {
+  currentLevel = level;
   for (unsigned i = 0; i < n; i++) put(s[i]);
 }
 
@@ -56,5 +60,5 @@ void LogLineListener::put(char c) {
 void LogLineListener::flush() {
   buffer[fill] = 0;
   fill = 0;
-  writeln(buffer);
+  writeln(buffer, currentLevel);
 }

@@ -40,12 +40,15 @@ namespace cb {
     static const unsigned size = 4096;
     char buffer[size + 1];
     unsigned fill = 0;
+    int currentLevel = 0;
 
   public:
     virtual void writeln(const char *s) = 0;
+    virtual void writeln(const char *s, int level) {writeln(s);}
 
     // From LogListener
     void write(const char *s, unsigned n) override;
+    void write(const char *s, unsigned n, int level) override;
 
   protected:
     void put(char c);

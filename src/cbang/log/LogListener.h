@@ -37,5 +37,6 @@ namespace cb {
   public:
     virtual ~LogListener() {}
     virtual void write(const char *s, unsigned n) = 0;
+    virtual void write(const char *s, unsigned n, int level) {write(s, n);}
   };
 }

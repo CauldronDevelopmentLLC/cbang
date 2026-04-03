@@ -219,6 +219,8 @@ namespace cb {
     void logBar(const std::string &msg, uint64_t ts) const;
     void write(const char *s, std::streamsize n);
     void write(const std::string &s);
+    void write(const char *s, std::streamsize n, int level);
+    void write(const std::string &s, int level);
     bool flush();
 
     void rotate();

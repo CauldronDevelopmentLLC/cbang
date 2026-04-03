@@ -1,0 +1,1 @@
+{"command": "%(suite-dir)s/loglistener test_counting_errors_and_warnings"}

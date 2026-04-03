@@ -1,0 +1,8 @@
+Import('*')
+
+# Local includes
+env.Append(CPPPATH = ['#'])
+
+p1 = env.Program('loglistener', 'loglistener.cpp')
+
+Return('p1')

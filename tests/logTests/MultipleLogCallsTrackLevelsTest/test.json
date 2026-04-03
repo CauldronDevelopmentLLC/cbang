@@ -1,0 +1,1 @@
+{"command": "%(suite-dir)s/loglistener test_multiple_log_calls_track_levels"}

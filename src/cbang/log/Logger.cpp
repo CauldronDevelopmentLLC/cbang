@@ -456,7 +456,7 @@ Logger::LogStream Logger::createStream(const string &_domain, int level,
 #endif
 
   return new cb::LogStream(
-    new cb::LogDevice::impl(prefix, suffix, trailer, rateKey));
+    new cb::LogDevice::impl(prefix, suffix, trailer, rateKey, level));
 }
 
 
@@ -471,15 +471,21 @@ void Logger::logBar(const string &msg, uint64_t ts) const {
 }
 
 
-void Logger::write(const char *s, streamsize n) {
+void Logger::write(const char *s, streamsize n) {write(s, n, 0);}
+void Logger::write(const string &s) {write(s.data(), s.length());}
+
+
+void Logger::write(const char *s, streamsize n, int level) {
   if (!logFile.isNull()) {logFile->write(s, n); logFileCount++;}
   if (logToScreen && !screenStream.isNull()) screenStream->write(s, n);
-  for (auto &l: listeners) TRY_CATCH_ERROR(l->write(s, n));
+  for (auto &l: listeners) TRY_CATCH_ERROR(l->write(s, n, level));
   flush();
 }
 
 
-void Logger::write(const string &s) {write(s.data(), s.length());}
+void Logger::write(const string &s, int level) {
+  write(s.data(), s.length(), level);
+}
 
 
 bool Logger::flush() {
