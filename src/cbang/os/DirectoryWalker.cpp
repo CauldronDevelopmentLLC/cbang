@@ -64,9 +64,13 @@ bool DirectoryWalker::hasNext() {
   while (!dirStack.empty()) {
     if (!*dirStack.back()) {
       if (listDirs) {
-        nextFile = path.substr(0, path.length() - 1);
-        pop();
-        return true;
+        string parent = path.substr(0, path.length() - 1);
+
+        if (re.match(parent)) {
+          nextFile = parent;
+          pop();
+          return true;
+        }
       }
 
       pop();
