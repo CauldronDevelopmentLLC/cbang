@@ -165,8 +165,8 @@ namespace CBANG_ENUM_NAMESPACE {
 
       if ((cb::String::startsWith(s, "0x") && 2 < s.length() &&
            s.substr(2).find_first_not_of("abcdefABCDEF1234567890") ==
-           std::string::npos) ||
-          s.find_first_not_of("1234567890") == std::string::npos)
+           std::string::npos) || (s.length() &&
+          s.find_first_not_of("1234567890") == std::string::npos))
         return (enum_t)String::parseU32(s);
 
       if (defaultValue != (enum_t)~0) return defaultValue;
