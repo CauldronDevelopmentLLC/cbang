@@ -46,7 +46,7 @@ namespace cb {
   class DirectoryWalker {
     Regex re;
     std::string path;
-    std::vector<SmartPointer<Directory> > dirStack;
+    std::vector<SmartPointer<Directory>> dirStack;
     std::string nextFile;
     unsigned maxDepth;
     bool listDirs;
