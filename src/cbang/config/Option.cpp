@@ -574,7 +574,7 @@ void Option::write(JSON::Sink &sink, bool config) const {
   sink.beginDict();
 
   if (!getHelp().empty()) sink.insert("help",    getHelp());
-  if (hasValue())         sink.insert("value",   *getValue());
+  if (value.isSet())      sink.insert("value",   *getValue());
   if (hasDefault())       sink.insert("default", *getDefault());
 
   sink.insert("type", getTypeString());
