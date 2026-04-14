@@ -164,15 +164,48 @@ BigNum KeyPair::getRSA_N() const {
 }
 
 
+void KeyPair::getEC_XY(BigNum &x, BigNum &y) const {
+#if OPENSSL_VERSION_NUMBER < 0x3000000fL
+  if (!isEC()) THROW("Not an EC key");
+
+  EC_KEY *eckey         = EVP_PKEY_get0_EC_KEY(key);
+  const EC_POINT *point = EC_KEY_get0_public_key(eckey);
+  const EC_GROUP *group = EC_KEY_get0_group(eckey);
+
+  if (EC_POINT_get_affine_coordinates_GFp(
+      group, point, x.get(), y.get(), 0) <= 0)
+    THROW("Failed to get EC coordinates: " << SSL::getErrorStr());
+
+#else
+  x = getEC_X();
+  y = getEC_Y();
+#endif
+}
+
+
 BigNum KeyPair::getEC_X() const {
+#if OPENSSL_VERSION_NUMBER < 0x3000000fL
+  BigNum x, y;
+  getEC_XY(x, y);
+  return x;
+
+#else
   if (!isEC()) THROW("Not an EC key");
   return getParam(OSSL_PKEY_PARAM_EC_PUB_X);
+#endif
 }
 
 
 BigNum KeyPair::getEC_Y() const {
+#if OPENSSL_VERSION_NUMBER < 0x3000000fL
+  BigNum x, y;
+  getEC_XY(x, y);
+  return y;
+
+#else
   if (!isEC()) THROW("Not an EC key");
   return getParam(OSSL_PKEY_PARAM_EC_PUB_Y);
+#endif
 }
 
 
