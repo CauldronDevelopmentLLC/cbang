@@ -166,7 +166,13 @@ void KeyContext::setDHGenerator(int gen) {
 
 
 void KeyContext::setECCurve(const string &curve) {
-  if (EVP_PKEY_CTX_set_group_name(ctx, curve.c_str()) <= 0)
+#if OPENSSL_VERSION_NUMBER < 0x3000000fL
+  int ret = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, SSL::findObject(curve));
+#else
+  int ret = EVP_PKEY_CTX_set_group_name(ctx, curve.c_str());
+#endif
+
+  if (ret <= 0)
     THROW("Failed to set Elliptic Curve curve: " << SSL::getErrorStr());
 }
 

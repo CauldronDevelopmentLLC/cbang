@@ -76,6 +76,7 @@ namespace cb {
     BigNum getParam(const char *id) const;
     BigNum getRSA_E() const;
     BigNum getRSA_N() const;
+    void getEC_XY(BigNum &x, BigNum &y) const;
     BigNum getEC_X() const;
     BigNum getEC_Y() const;
 
