@@ -69,8 +69,7 @@ namespace {
   bool _suppress(const char *fmt) {
     // Suppress annoying error messages caused by DWARF/libbfd incompatibility
     return
-      String::startsWith(fmt, "DWARF error: could not find variable spec") ||
-      String::startsWith(fmt, "DWARF error: found dwarf version");
+      String::startsWith(fmt, "DWARF error: could not find variable spec");
   }
 
 #ifdef HAVE_BFD_ERROR_HANDLER_VPRINTFLIKE
