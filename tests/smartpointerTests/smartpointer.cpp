@@ -361,7 +361,7 @@ bool test_threaded_strong() {
   const int N = 8, ITERS = 10000;
   std::vector<std::thread> threads;
   for (int i = 0; i < N; ++i)
-    threads.emplace_back([&root]() {
+    threads.emplace_back([&root, ITERS]() {
       for (int j = 0; j < ITERS; ++j) {
         SmartPointer<Tracker> local = root; (void)local;
       }
