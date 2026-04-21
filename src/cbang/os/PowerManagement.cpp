@@ -35,6 +35,7 @@
 #include "win/WinPowerManagement.h"
 #include "lin/LinPowerManagement.h"
 #include "osx/MacOSPowerManagement.h"
+#include "bsd/BsdPowerManagement.h"
 
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
@@ -55,6 +56,8 @@ PowerManagement &PowerManagement::instance() {
     singleton = new WinPowerManagement;
 #elif defined(__APPLE__)
     singleton = new MacOSPowerManagement;
+#elif defined(__FreeBSD__) || defined(__OpenBSD__)
+    singleton = new BsdPowerManagement;
 #else
     singleton = new LinPowerManagement;
 #endif

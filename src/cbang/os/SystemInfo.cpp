@@ -38,6 +38,7 @@
 #include "win/WinSystemInfo.h"
 #include "osx/MacOSSystemInfo.h"
 #include "lin/LinSystemInfo.h"
+#include "bsd/BsdSystemInfo.h"
 
 #include <cbang/Info.h>
 #include <cbang/SStream.h>
@@ -72,6 +73,8 @@ SystemInfo &SystemInfo::instance() {
     singleton = new WinSystemInfo;
 #elif defined(__APPLE__)
     singleton = new MacOSSystemInfo;
+#elif defined(__FreeBSD__) || defined(__OpenBSD__)
+    singleton = new BsdSystemInfo;
 #else
     singleton = new LinSystemInfo;
 #endif

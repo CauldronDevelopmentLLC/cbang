@@ -120,6 +120,8 @@ if env.CBConfigEnabled('mariadb'):
 
 if env['PLATFORM'] == 'win32': subdirs.append('os/win')
 elif env['PLATFORM'] == 'darwin': subdirs.append('os/osx')
+elif platform.system() == 'OpenBSD' or platform.system() == 'FreeBSD':
+    subdirs.append('os/bsd')
 else: subdirs.append('os/lin')
 
 src = []
