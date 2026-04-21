@@ -146,9 +146,19 @@ void CertificateStoreContext::setTrust(int trust) {
 
 void CertificateStoreContext::setPurposeInherit(int defPurpose, int purpose,
                                                 int trust) {
+#ifdef LIBRESSL_VERSION_NUMBER
+  int p = purpose ? purpose : defPurpose;
+  if (p && !X509_STORE_CTX_set_purpose(ctx, p))
+    THROW("Failed to set certificate store context purpose: "
+           << SSL::getErrorStr());
+  if (trust && !X509_STORE_CTX_set_trust(ctx, trust))
+    THROW("Failed to set certificate store context trust: "
+           << SSL::getErrorStr());
+#else
   if (!X509_STORE_CTX_purpose_inherit(ctx, defPurpose, purpose, trust))
     THROW("Certificate store context purpose inherit failed: "
            << SSL::getErrorStr());
+#endif
 }
 
 

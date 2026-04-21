@@ -395,7 +395,11 @@ void cb::SSL::loadProvider(const string &provider) {
 }
 
 
-void cb::SSL::threadStop() {OPENSSL_thread_stop();}
+void cb::SSL::threadStop() {
+#ifndef LIBRESSL_VERSION_NUMBER
+  OPENSSL_thread_stop();
+#endif
+}
 
 
 bool cb::SSL::checkWants() {

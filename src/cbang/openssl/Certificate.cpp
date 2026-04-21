@@ -285,9 +285,13 @@ void Certificate::addExtension(const string &name, const string &value,
 
 
 void Certificate::addExtensionAlias(const string &alias, const string &name) {
+#ifdef LIBRESSL_VERSION_NUMBER
+  THROW("Certificate::addExtensionAlias() is not supported on LibreSSL");
+#else
   if (!X509V3_EXT_add_alias(SSL::findObject(alias), SSL::findObject(name)))
     THROW("Failed to alias extension '" << alias << "' to '" << name
            << "': " << SSL::getErrorStr());
+#endif
 }
 
 
