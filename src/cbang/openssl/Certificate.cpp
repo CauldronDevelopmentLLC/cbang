@@ -239,8 +239,29 @@ string Certificate::getExtension(const string &name) const {
   ostringstream stream;
   BOStream bio(stream);
 
-  if (!X509V3_EXT_print(bio.getBIO(), ext, 0, 0))
-    ASN1_STRING_print(bio.getBIO(), X509_EXTENSION_get_data(ext));
+  if (X509V3_EXT_print(bio.getBIO(), ext, 0, 0)) return stream.str();
+
+  // X509V3_EXT_print has no registered printer for this OID.  On OpenSSL we
+  // would normally register one via X509V3_EXT_add_alias(), but LibreSSL does
+  // not export that API.  Fall back to decoding the extension octet-string as
+  // an ASN.1 IA5String (the "nsComment" shape) — this is what all of the
+  // F@H custom extensions are on the wire.
+  ASN1_OCTET_STRING *data = X509_EXTENSION_get_data(ext);
+  if (data) {
+    const unsigned char *p = ASN1_STRING_get0_data(data);
+    long len = ASN1_STRING_length(data);
+    ASN1_IA5STRING *ia5 = d2i_ASN1_IA5STRING(0, &p, len);
+    if (ia5) {
+      stream.write(reinterpret_cast<const char *>(ASN1_STRING_get0_data(ia5)),
+                   ASN1_STRING_length(ia5));
+      ASN1_IA5STRING_free(ia5);
+      return stream.str();
+    }
+  }
+
+  // Last resort: raw ASN.1 dump.  Callers that tokenize the result will
+  // probably not like this, but it preserves prior behaviour.
+  ASN1_STRING_print(bio.getBIO(), X509_EXTENSION_get_data(ext));
 
   return stream.str();
 }
@@ -286,7 +307,13 @@ void Certificate::addExtension(const string &name, const string &value,
 
 void Certificate::addExtensionAlias(const string &alias, const string &name) {
 #ifdef LIBRESSL_VERSION_NUMBER
-  THROW("Certificate::addExtensionAlias() is not supported on LibreSSL");
+  // LibreSSL does not export X509V3_EXT_add_alias().  Instead of failing, rely
+  // on Certificate::getExtension()'s IA5String fallback to decode the aliased
+  // extension at read time — callers only ever use the alias to make the
+  // extension printer render a plain-text payload, which that fallback now
+  // handles directly.
+  (void)alias;
+  (void)name;
 #else
   if (!X509V3_EXT_add_alias(SSL::findObject(alias), SSL::findObject(name)))
     THROW("Failed to alias extension '" << alias << "' to '" << name
