@@ -59,7 +59,7 @@ namespace cb {
     SockAddr(const sockaddr &addr);
     SockAddr(uint32_t ip, uint16_t port = 0);
     SockAddr(const uint8_t *ip, uint16_t port = 0);
-    SockAddr(const std::string &unix);
+    SockAddr(const std::string &unix_path);
     ~SockAddr();
 
     bool isNull() const;

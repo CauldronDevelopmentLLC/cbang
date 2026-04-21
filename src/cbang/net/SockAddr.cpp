@@ -110,7 +110,7 @@ SockAddr::SockAddr(const uint8_t *ip, uint16_t port) : SockAddr() {
 }
 
 
-SockAddr::SockAddr(const string &unix) : SockAddr() {readUnix(unix);}
+SockAddr::SockAddr(const string &unix_path) : SockAddr() {readUnix(unix_path);}
 SockAddr::~SockAddr() {delete [] data;}
 
 
