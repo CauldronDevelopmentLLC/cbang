@@ -43,7 +43,7 @@
 #elif __APPLE__
 #include <machine/endian.h>
 
-#elif __FreeBSD__
+#elif defined(__FreeBSD__) || defined(__OpenBSD__)
 #include <sys/endian.h>
 
 #else // Other POSIX systems
@@ -52,21 +52,21 @@
 
 #if 0
 #define CBANG_SWAP16(OUT, IN)                                           \
-  inline OUT swap16(IN x) {                                             \
+  inline OUT cb_swap16(IN x) {                                          \
     return (((uint16_t)x & (uint16_t)0xff) << 8) |                      \
       (((uint16_t)x & (uint16_t)0xff00U) >> 8);                         \
   }
 
 #define CBANG_SWAP32(OUT, IN)                                           \
-  inline OUT swap32(IN x) {                                             \
-    return (swap16((uint32_t)x & (uint32_t)0xffffUL) << 16) |           \
-      (swap16((uint32_t)x & (uint32_t)0xffff0000UL) >> 16);             \
+  inline OUT cb_swap32(IN x) {                                          \
+    return (cb_swap16((uint32_t)x & (uint32_t)0xffffUL) << 16) |        \
+      (cb_swap16((uint32_t)x & (uint32_t)0xffff0000UL) >> 16);          \
   }
 
 #define CBANG_SWAP64(OUT, IN)                                           \
-  inline OUT swap64(IN x) {                                             \
-    return (swap32((uint64_t)x & (uint64_t)0xffffffffULL) << 32) |      \
-      (swap32((uint64_t)x & (uint64_t)0xffffffff00000000ULL) >> 32);    \
+  inline OUT cb_swap64(IN x) {                                          \
+    return (cb_swap32((uint64_t)x & (uint64_t)0xffffffffULL) << 32) |   \
+      (cb_swap32((uint64_t)x & (uint64_t)0xffffffff00000000ULL) >> 32); \
   }
 
 CBANG_SWAP16(uint16_t, uint8_t);
@@ -104,7 +104,7 @@ CBANG_SWAP64(int64_t,  int64_t);
 #include <limits>
 
 template<typename T>
-uint16_t swap16(T _x) {
+uint16_t cb_swap16(T _x) {
   uint16_t x;
 
   if (std::numeric_limits<T>::is_signed) x = (int16_t)_x;
@@ -115,31 +115,31 @@ uint16_t swap16(T _x) {
 
 
 template<typename T>
-uint32_t swap32(T _x) {
+uint32_t cb_swap32(T _x) {
   uint32_t x;
 
   if (std::numeric_limits<T>::is_signed) x = (int32_t)_x;
   else x = _x;
 
-  return ((uint32_t)swap16(x) << 16) | swap16(x >> 16);
+  return ((uint32_t)cb_swap16(x) << 16) | cb_swap16(x >> 16);
 }
 
 
 template<typename T>
-uint64_t swap64(T _x) {
+uint64_t cb_swap64(T _x) {
   uint64_t x;
 
   if (std::numeric_limits<T>::is_signed) x = (int64_t)_x;
   else x = _x;
 
-  return ((uint64_t)swap32(x) << 32) | swap32(x >> 32);
+  return ((uint64_t)cb_swap32(x) << 32) | cb_swap32(x >> 32);
 }
 
 
 #if BYTE_ORDER == LITTLE_ENDIAN
-#define hton16(x)  swap16(x)
-#define hton32(x)  swap32(x)
-#define hton64(x)  swap64(x)
+#define hton16(x)  cb_swap16(x)
+#define hton32(x)  cb_swap32(x)
+#define hton64(x)  cb_swap64(x)
 
 #define htol16(x)  (x)
 #define htol32(x)  (x)
@@ -150,7 +150,7 @@ uint64_t swap64(T _x) {
 #define hton32(x)  (x)
 #define hton64(x)  (x)
 
-#define htol16(x)  swap16(x)
-#define htol32(x)  swap32(x)
-#define htol64(x)  swap64(x)
+#define htol16(x)  cb_swap16(x)
+#define htol32(x)  cb_swap32(x)
+#define htol64(x)  cb_swap64(x)
 #endif
