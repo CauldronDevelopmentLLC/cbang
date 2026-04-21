@@ -76,9 +76,10 @@
 #include <grp.h>
 #endif // _WIN32
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #include <sys/sysctl.h>
-#endif // __FeeBSD__
+#include <sys/param.h>
+#endif // BSD
 
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
@@ -409,6 +410,54 @@ namespace cb {
         THROW("Failed to get executable path: " <<  SysError());
 
       return (char *)path;
+
+#elif defined(__OpenBSD__) || defined(__NetBSD__)
+      // OpenBSD has no KERN_PROC_PATHNAME and no /proc by default.  Recover
+      // the executable path from argv[0] via sysctl(KERN_PROC_ARGS).  If the
+      // argument is absolute or contains a slash resolve it with realpath();
+      // otherwise walk $PATH looking for the first executable match.
+      int mib[4] = {CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV};
+      size_t size = 0;
+
+      if (sysctl(mib, 4, 0, &size, 0, 0) == -1 || !size)
+        THROW("Failed to size executable argv: " << SysError());
+
+      std::vector<char> buf(size);
+      if (sysctl(mib, 4, buf.data(), &size, 0, 0) == -1)
+        THROW("Failed to get executable argv: " << SysError());
+
+      char **argv = (char **)buf.data();
+      if (!argv[0] || !*argv[0])
+        THROW("Failed to get executable path: empty argv[0]");
+
+      string arg0 = argv[0];
+      char resolved[PATH_MAX + 1];
+
+      if (arg0.find('/') != string::npos) {
+        if (realpath(arg0.c_str(), resolved)) return resolved;
+        THROW("Failed to resolve executable path '" << arg0 << "': "
+              << SysError());
+      }
+
+      const char *pathEnv = getenv("PATH");
+      if (pathEnv && *pathEnv) {
+        string env(pathEnv);
+        size_t start = 0;
+        while (start <= env.size()) {
+          size_t end = env.find(':', start);
+          if (end == string::npos) end = env.size();
+          string dir = env.substr(start, end - start);
+          if (!dir.empty()) {
+            string candidate = dir + "/" + arg0;
+            if (realpath(candidate.c_str(), resolved) &&
+                access(resolved, X_OK) == 0)
+              return resolved;
+          }
+          start = end + 1;
+        }
+      }
+
+      THROW("Failed to locate executable '" << arg0 << "' in PATH");
 
 #else
       char path[PATH_MAX + 1];
