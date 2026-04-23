@@ -32,6 +32,7 @@
 
 #include "LinSystemInfo.h"
 
+#include <cbang/Catch.h>
 #include <cbang/os/SystemUtilities.h>
 
 using namespace cb;
@@ -66,17 +67,40 @@ uint32_t LinSystemInfo::getCPUCount() const {
 
 
 uint64_t LinSystemInfo::getMemoryInfo(memory_info_t type) const {
+  const char *search;
+  switch (type) {
+  case MEM_INFO_TOTAL:  search = "MemTotal:";     break;
+  case MEM_INFO_FREE:   search = "MemFree:";      break;
+  case MEM_INFO_SWAP:   search = "SwapTotal:";    break;
+  case MEM_INFO_USABLE: search = "MemAvailable:"; break;
+  default: THROW("Unsupported memory info type: " << type);
+  }
+
+  try {
+    auto path = "/proc/meminfo";
+    if (SystemUtilities::exists(path)) {
+      auto f = SystemUtilities::iopen(path);
+      string   key;
+      uint64_t kb;
+
+      while (*f >> key >> kb) {
+        if (key == search) return kb * 1024;
+        f->ignore(256, '\n');
+      }
+    }
+  } CATCH_DEBUG(1);
+
   struct sysinfo info;
 
-  if (!sysinfo(&info))
+  if (!sysinfo(&info)) {
+    auto unit = info.mem_unit;
     switch (type) {
-    case MEM_INFO_TOTAL: return (uint64_t)(info.totalram * info.mem_unit);
-    case MEM_INFO_FREE:  return (uint64_t)(info.freeram  * info.mem_unit);
-    case MEM_INFO_SWAP:  return (uint64_t)(info.freeswap * info.mem_unit);
-    case MEM_INFO_USABLE:
-      return (uint64_t)((info.freeram + info.bufferram + info.freeswap) *
-                        info.mem_unit);
+    case MEM_INFO_TOTAL:  return uint64_t(info.totalram)                 * unit;
+    case MEM_INFO_FREE:   return uint64_t(info.freeram)                  * unit;
+    case MEM_INFO_SWAP:   return uint64_t(info.freeswap)                 * unit;
+    case MEM_INFO_USABLE: return uint64_t(info.freeram + info.bufferram) * unit;
     }
+  }
 
   return 0;
 }
