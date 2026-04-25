@@ -54,7 +54,7 @@ namespace cb {
       Event::Base &base;
       SmartPointer<Handler> child;
       std::vector<std::string> cmd;
-      const CtxPtr &ctx;
+      const CtxPtr ctx;
 
       SmartPointer<Event::StreamEventBuffer> inStr;
       SmartPointer<Event::StreamEventBuffer> outStr;
