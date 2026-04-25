@@ -99,6 +99,7 @@ bool CORSHandler::operator()(const CtxPtr &ctx) {
 
   // OPTIONS are done here
   if (req.getMethod() == HTTP::Method::HTTP_OPTIONS) {
+    req.outSet("Content-Length", "0");
     req.reply();
     return true;
   }
