@@ -40,6 +40,7 @@ using namespace std;
 
 void StdModule::define(Sink &exports) {
   exports.insert("require(id)", this, &StdModule::require);
+  exports.insert("readfile(path)", this, &StdModule::readfile);
   exports.insert("print(...)", this, &StdModule::print);
 }
 
@@ -48,6 +49,29 @@ SmartPointer<Value> StdModule::require(Callback &cb, Value &args) {
   return js.require(cb, args);
 }
 
+void test(std::istream& stream) {
+  printf("---test 1\n");
+  int c = 0;
+  while ((c = stream.get()) != EOF) {
+    printf("--@test 2: %d\n", c);
+    // printf("--@readfile 3: %d\n", c);
+    // sink.append(c);
+  }
+}
+
+void StdModule::readfile(const Value &args, Sink &sink) {
+  // For some reason this needs to be done in two steps or `get` apparently segfaults.
+  // std::istream& stream = InputSource::open(args.getString("path"));
+  InputSource file = InputSource::open(args.getString("path"));
+  std::istream& stream = file;
+  
+  sink.beginList();
+  int c = 0;
+  while ((c = stream.get()) != EOF) {
+    sink.append(c);
+  }
+  sink.endList();
+}
 
 void StdModule::print(const Value &args, Sink &sink) {
   for (unsigned i = 0; i < args.length(); i++) {
