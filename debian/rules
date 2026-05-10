@@ -1,19 +1,32 @@
 #!/usr/bin/make -f
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+export DH_VERBOSE = 1
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
 
-include /usr/share/cdbs/1/rules/utils.mk
-include /usr/share/cdbs/1/class/scons.mk
-include /usr/share/cdbs/1/rules/debhelper.mk
-
-LIBPKGNAME = libcbang0
-#SONAME = "$(DEB_UPSTREAM_VERSION)"
-DEB_SCONS_OPTIONS = sharedlib=1 -j8
-DEB_SCONS_INSTALL_OPTIONS += prefix="$(cdbs_curdestdir)/usr"
-DEB_DH_MAKESHLIBS_ARGS = -- -c4
-
-# For scons binary package builds
-ifeq ($(DEB_DEST_DIR),1)
-	DEB_DH_BUILDDEB_ARGS = --destdir=.
+# link to libatomic on armel and mipsel
+ifneq (,$(filter $(DEB_HOST_ARCH), armel mipsel))
+  export DEB_LDFLAGS_MAINT_APPEND += -Wl,--no-as-needed -latomic -Wl,--as-needed
 endif
+
+include /usr/share/dpkg/default.mk  # provides DEB_VERSION
+
+SCONS_OPTIONS = cycles=0 mode=release sharedlib=1 -j$(NUMJOBS) werror=0 clang=1
+
+%:
+        dh $@
+
+override_dh_auto_clean:
+        scons -c
+        find . -name __pycache__|xargs rm -rf
+        rm -rf .sconf_temp config.log
+        rm -rf .sconsign.dblite
+
+override_dh_auto_build:
+        scons $(SCONS_OPTIONS) --jobs=$(NUMJOBS) --no-cache
+
+override_dh_usrlocal:
+        true
+
+override_dh_auto_install:
+        PREFIX=/usr scons prefix=debian/tmp/usr $(SCONS_OPTIONS) install

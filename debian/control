@@ -2,9 +2,9 @@ Source: cbang
 Maintainer: Joseph Coffland <joseph@cauldrondevelopment.com>
 Section: libs
 Priority: optional
-Standards-Version: 4.4.1
+Standards-Version: 4.7.0
 Homepage: http://cbang.org/
-Build-Depends: debhelper (>= 11), cdbs, scons, libssl-dev, libnode-dev
+Build-Depends: debhelper (>= 13), scons, libssl-dev, libnode-dev
 
 Package: libcbang0-dev
 Provides: libcbang-dev
