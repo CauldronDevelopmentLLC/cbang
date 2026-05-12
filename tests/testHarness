@@ -33,6 +33,27 @@
 #   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# Architecture
+# ------------
+#
+# testHarness is a golden-file test runner.  Each test case invokes a
+# program with deterministic input; its stdout, stderr, and exit code
+# are diffed against committed expected output.
+#
+# Major types:
+#   Test        - one test case (leaf, or container of sub-tests).
+#   TestSuite   - a *Tests/ directory: holds tests and child suites.
+#   TestHarness - top-level entry point; subclass of TestSuite.
+#   Check       - pluggable assertion (file diff, exists, size, ...).
+#   Filter      - line transform applied before diff.
+#   Logger      - terminal + JSON output of results.
+#
+# Discovery is by naming convention: *Tests/ are suites, *Test/
+# within a suite are cases.  main() / build_parser() handle the CLI.
+# Runtime state (options, logger, output_stream) is module-global,
+# populated by main().  See tests/README.md for end-user docs.
+
 import argparse
 import sys
 import time
