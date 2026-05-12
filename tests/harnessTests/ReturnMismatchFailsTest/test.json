@@ -1,0 +1,4 @@
+{
+  "args": ["run", "falseTests/FailTest"],
+  "checks": [["file", "return"]]
+}

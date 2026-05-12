@@ -1,0 +1,4 @@
+{
+  "args": ["run", "echoTests/FilterTest"],
+  "checks": [["file", "return"]]
+}

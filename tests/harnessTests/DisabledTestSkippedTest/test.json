@@ -1,0 +1,4 @@
+{
+  "args": ["run", "skipTests/SkipTest"],
+  "checks": [["file", "return"]]
+}

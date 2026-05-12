@@ -1,0 +1,4 @@
+{
+  "args": ["run", "varTests/InterpTest"],
+  "checks": [["file", "return"]]
+}

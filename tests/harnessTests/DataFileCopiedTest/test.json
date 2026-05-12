@@ -1,0 +1,4 @@
+{
+  "args": ["run", "catTests/CopyTest"],
+  "checks": [["file", "return"]]
+}

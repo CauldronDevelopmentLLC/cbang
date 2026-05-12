@@ -1,0 +1,4 @@
+{
+  "args": ["run", "trueTests/PassTest"],
+  "checks": [["file", "return"]]
+}
