@@ -155,7 +155,7 @@ def ensure_parent_dir(file):
 
 def copy_pattern(pattern, dst, ignores = []):
   # shutil.ignore_patterns() is only in v2.6
-  ignore = lambda dir, files: list(filter(lambda f: f in ignores, files))
+  ignore = lambda _, files: list(filter(lambda f: f in ignores, files))
 
   for path in glob.glob(pattern):
     dir, file = os.path.split(path)
@@ -365,8 +365,8 @@ class Logger:
   def start_test(self, test):
     if self.json is not None:
       self.push(test.name)
-      if hasattr(test, 'units') and test.units is not None:
-        self.push('units')
+      if getattr(test, 'subtests', None) is not None:
+        self.push('subtests')
 
     if options.verbose:
       self.stream.write(' '.join(test.get_command()) + '\n')
@@ -386,13 +386,13 @@ class Logger:
     self.depth -= 1
 
     if self.json is not None:
-      if hasattr(test, 'units') and test.units is not None:
-        self.pop('units')
+      if getattr(test, 'subtests', None) is not None:
+        self.pop('subtests')
       self.insert('status', status_names[test.status].lower())
       if test.reason is not None: self.insert('reason', test.reason)
       self.pop(test.name)
 
-    if self.length == 0: return # Don't print if there were Units
+    if self.length == 0: return # Don't print if there were sub-tests
 
     if test.reason is not None:
       self.stream.write(' ' + test.reason)
@@ -695,7 +695,7 @@ class CheckFile(Check):
     expect = self.get_expect(test)
 
     for path in self.get_files(test, True):
-      dir, name = os.path.split(path)
+      _, name = os.path.split(path)
       if path == expect: name = 'expect/' + name
 
       labeled_bar(name)
@@ -979,49 +979,48 @@ class CheckCommand(CheckFile):
 
 
 # ----------------------------------------------------------------------------
-# Unit, Test, Suite
+# Test, Suite
 # ----------------------------------------------------------------------------
 
-class Unit:
+class Test:
+  '''A test case.  Either a leaf (runs a process and diffs output) or
+  a container (aggregates the pass/fail of its sub-tests).'''
+
   def __init__(self, parent, name, command = None,
                test = None, start_test = None, end_test = None, **kwargs):
-    self.parent = parent
-    self.suite = parent
-    self.name = name
-    self.invalid = False
-    self.status = None
-    self.reason = None
-    self.log = logger
+    self.parent   = parent
+    self.name     = name
+    self.subtests = None
+    self.status   = None
+    self.reason   = None
+    self.invalid  = False
+    self.log      = logger
 
-    # Prep config
-    self.config = kwargs
-
-    # Paths
+    # Path and test_dir depend on whether this is a top-level test in a
+    # suite or a sub-test of another test.
     if isinstance(parent, Test):
-      self.path = parent.name + '/' + self.name
-      parent.add_unit(self)
-      self.suite = parent.suite
-      self.test_dir = parent.test_dir
+      self.suite    = parent.suite
+      self.path     = parent.name + '/' + self.name
+      self.test_dir = parent.test_dir          # shared with parent
+      parent.add_subtest(self)
 
     else:
-      self.path = self.name
+      self.suite    = parent
+      self.path     = self.name
       self.test_dir = self.path + '/run'
 
-    self.config['test-dir'] = self.test_dir
-    self.config['data-dir'] = self.data_dir = self.path + '/data'
+    # Config keys exposed for %()s interpolation
+    self.config = kwargs
+    self.config['test-dir']   = self.test_dir
+    self.config['data-dir']   = self.path + '/data'
     self.config['expect-dir'] = self.path + '/expect'
 
-    # Functions
-    self.default_test = self.test
-    if test is not None: self.test = test
-
-    self.default_start_test = self.start_test
+    # Instance-level function overrides (used by programmatic suites)
+    if test       is not None: self.test       = test
     if start_test is not None: self.start_test = start_test
+    if end_test   is not None: self.end_test   = end_test
 
-    self.default_end_test = self.end_test
-    if end_test is not None: self.end_test = end_test
-
-    # Load test config
+    # Load case test.json
     try:
       path = parent.path + '/' + self.path + '/test.json'
       if os.path.exists(path):
@@ -1029,7 +1028,7 @@ class Unit:
 
     except Exception as e:
       raise HarnessError('Failed to parse test.json file in %s: %s' % (
-         self.get_full_name(), e))
+        self.get_full_name(), e))
 
     # Checks
     checks = parent.config.get('checks', []) + self.config.get('checks', [])
@@ -1037,26 +1036,49 @@ class Unit:
     if not checks: self.check = StandardCheck()
     else:
       self.check = CheckGroup()
-
       for check in checks:
         if isinstance(check, Check): self.check.add(check)
         else:
-          if isinstance(check, str):
-            check = [check]
-
+          if isinstance(check, str): check = [check]
           if isinstance(check, (list, tuple)) and len(check):
-            if not check[0] in check_classes:
+            if check[0] not in check_classes:
               raise Exception('Invalid check "%s" in %s' %
                               (check[0], self.name))
-
-            klass = check_classes[check[0]]
-            self.check.add(klass(*check[1:]))
+            self.check.add(check_classes[check[0]](*check[1:]))
 
     # Inherit parent config
     config = copy.deepcopy(parent.config)
-
     config.update(self.config)
     self.config = config
+
+
+  def is_container(self): return self.subtests is not None
+
+
+  def add_subtest(self, test):
+    if self.subtests is None: self.subtests = []
+    self.subtests.append(test)
+
+
+  # Programmatic sub-test factory (used by th.py suites)
+  def Test(self, *args, **kwargs): return Test(self, *args, **kwargs)
+
+
+  def get_full_name(self):
+    if self.parent is not None:
+      return self.parent.get_full_name() + '/' + self.name
+    return self.name
+
+
+  def get(self, name):
+    if not self.is_container(): return None
+    for sub in self.subtests:
+      if name == sub.name: return sub
+
+
+  def get_root_config(self):
+    if self.parent is None: return self.config
+    return self.parent.get_root_config()
 
 
   def config_get(self, name, default = None):
@@ -1067,60 +1089,57 @@ class Unit:
     value = self.config.get(name, default)
     if isinstance(value, str): value = split(value)
 
-    try:
-      return list(map(lambda item: item % self.config, value))
+    try: return list(map(lambda item: item % self.config, value))
     except Exception as e:
       raise HarnessError('Error resolving %s "%s": %s' % (name, value, e))
 
 
-  def get_full_name(self):
-    if self.parent is not None:
-      return self.parent.get_full_name() + '/' + self.name
-    return self.name
-
-
-  def get_root_config(self):
-    if self.parent is None: return self.config
-    return self.parent.get_root_config()
-
-
-  def call_with_less(self, method):
-    stream = output_stream
-    p = None
-
-    try:
-      p = subprocess.Popen(['less', '-R'], stdin = subprocess.PIPE)
-      output_stream = p.stdin
-
-      try:
-        method()
-      except: pass
-
-    finally:
-      if p is not None:
-        p.stdin.flush()
-        p.communicate()
-
-      output_stream = stream
-
-
   def failed(self):
-    if self.status == FAILED or self.status == INVALID or\
-          self.status == UNINITIALIZED: return 1
-    return 0
+    return 1 if self.status in (FAILED, INVALID, UNINITIALIZED) else 0
 
+
+  # ---- disable / enable / cleanup ----
+
+  def is_enabled(self):
+    return not os.path.exists(self.path + '/disable')
+
+
+  def enable(self):
+    try: os.unlink(self.path + '/disable')
+    except: pass
+
+
+  def disable(self):
+    if not os.path.exists(self.path): os.makedirs(self.path)
+    open(self.path + '/disable', 'w').close()
+    self.status = DISABLED
+
+
+  def cleanup(self, force = False):
+    if not os.path.exists(self.test_dir): return
+    if force or not (options.save or
+                     (options.save_failed and self.failed())):
+      remove_tree(self.test_dir)
+
+
+  # ---- inspection ----
 
   def initialize(self):
-    self.check.initialize(self)
-    self.status = INITIALIZED
+    if self.is_container(): list(map(Test.initialize, self.subtests))
+    else:
+      self.check.initialize(self)
+      self.status = INITIALIZED
 
 
   def reset(self):
-    self.check.reset(self)
-    self.status = UNINITIALIZED
+    if self.is_container(): list(map(Test.reset, self.subtests))
+    else:
+      self.check.reset(self)
+      self.status = UNINITIALIZED
 
 
   def view(self):
+    if self.is_container(): return
     labeled_bar('command')
     output_stream.write(quote_cmd(self.get_command()) + '\n')
     self.check.view(self)
@@ -1128,93 +1147,108 @@ class Unit:
 
 
   def diff(self):
+    if self.is_container(): return False
     if not os.path.exists(self.test_dir): self.run()
     if self.check.diff(self): bar()
     return self.failed()
 
 
-  def enable(self): pass
-  def disable(self): pass
-  def is_enabled(self): return True
-  def cleanup(self, force = False): pass
+  def init(self):
+    self.reset()
+    if not os.path.exists(self.test_dir):
+      self.run_interactive()
+      if self.failed(): return 1
+    self.initialize()
 
+
+  def call_with_less(self, method):
+    # Note: 'output_stream = ...' below assigns locally rather than
+    # rebinding the module global; this method does not actually pipe
+    # output to less.  Preserved as-is from the original; see #TODO.
+    stream = output_stream
+    p = None
+    try:
+      p = subprocess.Popen(['less', '-R'], stdin = subprocess.PIPE)
+      output_stream = p.stdin
+      try: method()
+      except: pass
+    finally:
+      if p is not None:
+        p.stdin.flush()
+        p.communicate()
+      output_stream = stream
+
+
+  # ---- leaf execution (process run) ----
 
   def get_stdin_file(self):
     stdin = self.config.get('stdin', None)
-
     if isinstance(stdin, str): return StringIO(stdin)
-
     if stdin is None and 'stdin_file' in self.config:
       path = self.config_get('stdin_file')
       if os.path.exists(path): return open(path, 'rb')
-
     return stdin
 
 
   def get_args(self):
     if 'args' in self.config: return split_cmd_line(self.config['args'])
-
     path = self.config_get('args_file')
     if os.path.exists(path): return split_cmd_line(read_file(path))
-
     return []
 
 
   def get_command(self):
-    # Command
-    if not 'command' in self.config: raise HarnessError('"command" not set')
+    if 'command' not in self.config:
+      raise HarnessError('"command" not set')
     command = split_cmd_line(self.config['command'])
     if options.command_prefix: command = options.command_prefix + command
-
-    # Args
     command = command + self.get_args()
 
-    # Resolve command vars refs
-    try:
-      command = [s % self.config for s in command]
+    try: command = [s % self.config for s in command]
     except Exception as e:
       raise HarnessError('Error resolving command "%s": %s' % (command, e))
 
     return command
 
 
-  def test(self, test = None):
-    stdin = None
-    stdout = None
-    stderr = None
+  # Called from run() as 'self.test(self)' — the test instance is
+  # passed explicitly as the lone argument.  That call form supports
+  # the constructor's test=callback override: when overridden,
+  # self.test is the user's free function and receives the test
+  # instance directly.  When not overridden, self.test is this bound
+  # method; Python adds the implicit self, the explicit one lands in
+  # '_test' below, which is intentionally unused (leading underscore).
+  def test(self, _test = None):
+    stdin      = None
+    stdout     = None
+    stderr     = None
     returncode = None
 
     try:
       output_stream.flush()
 
-      # Environment
       if 'env' in self.parent.config or 'env' in self.config:
         env = self.parent.config.get('env', {})
         env.update(self.config.get('env', {}))
-
       else: env = None
 
-      # Run test
       returncode = execute_proc(
         self.get_command(),
-        shell = self.config.get('shell', False),
-        stdin = self.get_stdin_file(),
-        stdout = open(self.test_dir + '/' + 'stdout', 'w'),
-        stderr = open(self.test_dir + '/' + 'stderr', 'w'),
-        cwd = self.test_dir,
-        env = env,
+        shell   = self.config.get('shell', False),
+        stdin   = self.get_stdin_file(),
+        stdout  = open(self.test_dir + '/stdout', 'w'),
+        stderr  = open(self.test_dir + '/stderr', 'w'),
+        cwd     = self.test_dir,
+        env     = env,
         timeout = self.config['timeout'])
 
     finally:
-      # Close files
       if stdout is not None: stdout.close()
       if stderr is not None: stderr.close()
       if stdin  is not None: stdin.close()
-
       if returncode is None: self.invalid = True
 
-    # Write return code
-    write_file(self.test_dir + '/' + 'return', str(returncode) + '\n')
+    write_file(self.test_dir + '/return', str(returncode) + '\n')
 
 
   def start_test(self):
@@ -1226,8 +1260,6 @@ class Unit:
       self.status = None
       if not os.path.exists(self.test_dir):
         os.makedirs(self.test_dir)
-
-        # Copy files
         for pattern in self.config_get_list('copy', []):
           copy_pattern(pattern, self.test_dir)
 
@@ -1235,18 +1267,40 @@ class Unit:
   def end_test(self): pass
 
 
+  # ---- run() and run_interactive() ----
+
   def run(self):
+    if self.is_container(): return self._run_container()
+    return self._run_leaf()
+
+
+  def _run_container(self):
     self.log.start_test(self)
     self.start_test()
     self.start_time = time.perf_counter()
 
     if self.status is None:
-      # Run it
+      self.status = PASSED
+      for sub in self.subtests:
+        if sub.run_interactive() and self.status == PASSED:
+          self.status = sub.status
+
+    self.end_time = time.perf_counter()
+    self.end_test()
+    self.log.end_test(self)
+
+    return self.failed()
+
+
+  def _run_leaf(self):
+    self.log.start_test(self)
+    self.start_test()
+    self.start_time = time.perf_counter()
+
+    if self.status is None:
       self.check.starting(self)
       self.test(self)
       self.status = self.check.check(self)
-
-      # Check status
       if self.status is None: raise Exception('Test result not set')
       self.reason = self.check.reason
 
@@ -1267,9 +1321,17 @@ class Unit:
     self.end_test()
 
     if self.failed() and options.diff_failed: self.diff()
-    if ((self.failed() and options.view_failed) or options.view_all):
+    if (self.failed() and options.view_failed) or options.view_all:
       self.view()
 
+    return self.failed()
+
+
+  def run_interactive(self):
+    if self.is_container(): return self.run()
+    self.run()
+    if (self.status not in (PASSED, DISABLED) or
+        options.force_interactive): self.interact()
     return self.failed()
 
 
@@ -1283,10 +1345,9 @@ class Unit:
 
       cmd = sys.stdin.readline()[0]
 
-      if cmd == 'a':
+      if   cmd == 'a':
         options.save = True
         sys.exit(0)
-
       elif cmd == 'c': break
       elif cmd == 'x':
         self.disable()
@@ -1301,129 +1362,13 @@ class Unit:
       elif cmd == 'q': options.interactive = False
       elif cmd == 'v': self.view()
       elif cmd == 'V': self.call_with_less(self.view)
-      elif cmd == '\n' or cmd == '\r': break # Continue
-      else: stream.write("Invalid command '" + cmd + "'\n")
+      elif cmd in ('\n', '\r'): break
+      else: stream.write('Invalid command "' + cmd + '"\n')
 
       # Reprint test name and results line
-      if cmd in ['v', 'd']:
+      if cmd in ('v', 'd'):
         self.log.start_test(self)
         self.log.end_test(self)
-
-
-  def run_interactive(self):
-    self.run()
-    if ((self.status != PASSED and self.status != DISABLED) or
-        options.force_interactive): self.interact()
-    return self.failed()
-
-
-class Test(Unit):
-  def __init__(self, *args, **kwargs):
-    Unit.__init__(self, *args, **kwargs)
-
-    self.units = None
-
-
-  def get_full_name(self):
-    if self.suite is not None:
-      return self.suite.get_full_name() + '/' + self.name
-    return self.name
-
-
-  def add_unit(self, unit):
-    if self.units is None: self.units = []
-    self.units.append(unit)
-
-
-  def Unit(self, *args, **kwargs):
-    return Unit(self, self.config, *args, **kwargs)
-
-
-  def Test(self, *args, **kwargs):
-    return self.Unit(*args, **kwargs)
-
-
-  def get(self, name):
-    if self.units is None: return None
-    for unit in self.units:
-      if name == unit.name: return unit
-
-
-  def initialize(self):
-    if self.units is None: Unit.initialize(self)
-    else: list(map(Unit.initialize, self.units))
-
-
-  def reset(self):
-    if self.units is None: Unit.reset(self)
-    else: list(map(Unit.reset, self.units))
-
-
-  def view(self):
-    if self.units is None: Unit.view(self)
-
-
-  def diff(self):
-    if self.units is None: return Unit.diff(self)
-    return False
-
-
-  def init(self):
-    self.reset()
-    if not os.path.exists(self.test_dir):
-      self.run_interactive()
-      if self.failed(): return 1
-
-    self.initialize()
-
-
-  def enable(self):
-    try: os.unlink(self.path + '/' + 'disable')
-    except: pass
-
-
-  def disable(self):
-    if not os.path.exists(self.path): os.makedirs(self.path)
-
-    open(self.path + '/' + 'disable', 'w').close()
-    self.status = DISABLED
-
-
-  def is_enabled(self):
-    return not os.path.exists(self.path + '/' + 'disable')
-
-
-  def cleanup(self, force = False):
-    if os.path.exists(self.test_dir):
-      if force or not (
-        options.save or (options.save_failed and self.failed())):
-        remove_tree(self.test_dir)
-
-
-  def run(self):
-    if self.units is None: Unit.run(self)
-    else:
-      self.log.start_test(self)
-      self.start_test()
-      self.start_time = time.perf_counter()
-
-      if self.status is None:
-        self.status = PASSED
-        for unit in self.units:
-          if unit.run_interactive() and self.status == PASSED:
-            self.status = unit.status
-
-      self.end_time = time.perf_counter()
-      self.end_test()
-      self.log.end_test(self)
-
-    return self.failed()
-
-
-  def run_interactive(self):
-    if self.units is None: return Unit.run_interactive(self)
-    else: return self.run()
-
 
 
 class TestSuite:
@@ -1446,10 +1391,10 @@ class TestSuite:
 
     # Name
     if name is None:
-      if self.path is not None: dir, self.name = os.path.split(self.path)
-      else: dir, self.name = os.path.split(os.getcwd())
+      if self.path is not None: _, self.name = os.path.split(self.path)
+      else: _, self.name = os.path.split(os.getcwd())
 
-      if self.name == '.': dir, self.name = os.path.split(os.getcwd())
+      if self.name == '.': _, self.name = os.path.split(os.getcwd())
     else: self.name = name
 
     # Tests
@@ -1794,7 +1739,7 @@ class TestHarness(TestSuite):
           raise HarnessError('Target not found')
       else: target = self
 
-      if isinstance(target, Unit):
+      if isinstance(target, Test):
         if len(args) != 2:
           raise HarnessError('Command requires argument', True)
 
@@ -1802,23 +1747,20 @@ class TestHarness(TestSuite):
         try:
           os.chdir(target.suite.path)
 
-          if cmd == 'enable': target.enable()
-          elif cmd == 'diff': failures += target.diff()
+          if   cmd == 'enable':  target.enable()
+          elif cmd == 'diff':    failures += target.diff()
           elif cmd == 'disable': target.disable()
-          elif cmd == 'init': failures += target.init()
-          elif cmd == 'reset': target.reset()
-          elif cmd == 'view': target.view()
-          elif cmd == 'build': target.suite.build()
-          elif cmd == 'clean': target.suite.clean()
-          elif cmd in ['run', 'setup']:
-            if isinstance(target, Test):
-              if options.build: target.suite.build()
-              target.suite.begin()
-              if cmd == 'run':
-                failures += target.run_interactive()
-              else: target.start_test()
-              target.suite.end()
-            else: raise HarnessError('Cannot run Unit directly')
+          elif cmd == 'init':    failures += target.init()
+          elif cmd == 'reset':   target.reset()
+          elif cmd == 'view':    target.view()
+          elif cmd == 'build':   target.suite.build()
+          elif cmd == 'clean':   target.suite.clean()
+          elif cmd in ('run', 'setup'):
+            if options.build: target.suite.build()
+            target.suite.begin()
+            if cmd == 'run': failures += target.run_interactive()
+            else: target.start_test()
+            target.suite.end()
           else: raise HarnessError('Invalid command "%s"' % cmd, True)
 
         finally:
