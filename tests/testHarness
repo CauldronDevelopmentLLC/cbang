@@ -97,6 +97,28 @@ bgcolors = {
   }
 
 
+# Runtime state.  main() populates these; module-load defaults let
+# testHarness be imported as a library without running the CLI.
+options       = None
+logger        = None
+output_stream = sys.stdout
+screen_width  = 80
+
+# Default test configuration.  main() copies and augments this.
+default_config = {
+  'top':        None,
+  'script':     'th.py',
+  'stdin_file': '%(data-dir)s/stdin',
+  'args_file':  '%(data-dir)s/args',
+  'copy':       '%(data-dir)s/*',
+  'timeout':    300,
+  }
+
+
+# ----------------------------------------------------------------------------
+# Utility functions
+# ----------------------------------------------------------------------------
+
 def bar():
   output_stream.write(screen_width * '*' + '\n')
 
@@ -228,6 +250,10 @@ class HarnessError(Exception):
     self.msg = msg
     self.show_usage = show_usage
 
+
+# ----------------------------------------------------------------------------
+# Logger
+# ----------------------------------------------------------------------------
 
 class Logger:
   def __init__(self):
@@ -404,6 +430,10 @@ class Logger:
   def end_files(self):
     if self.json is not None: self.pop('files')
 
+
+# ----------------------------------------------------------------------------
+# Filters and Checks
+# ----------------------------------------------------------------------------
 
 class Check:
   def initialize(self, test): pass
@@ -948,6 +978,10 @@ class CheckCommand(CheckFile):
     return CheckFile.check(self, test)
 
 
+# ----------------------------------------------------------------------------
+# Unit, Test, Suite
+# ----------------------------------------------------------------------------
+
 class Unit:
   def __init__(self, parent, name, command = None,
                test = None, start_test = None, end_test = None, **kwargs):
@@ -1223,7 +1257,8 @@ class Unit:
     stdin = self.get_stdin_file()
     if stdin is not None:
       data = stdin.read(10000)
-      if isinstance(data, bytes): data = data.decode('utf-8', errors = 'replace')
+      if isinstance(data, bytes):
+        data = data.decode('utf-8', errors = 'replace')
       self.log.insert('stdin', data)
     self.check.log(self, self.failed())
     self.log.end_files()
@@ -1682,7 +1717,8 @@ def write_junit(harness, path):
     # Skip suites with no direct tests; they only exist to group children.
     if suite.tests:
       ts = ET.SubElement(root, 'testsuite', name = name)
-      counts = dict(tests = 0, failures = 0, errors = 0, skipped = 0, time = 0.0)
+      counts = dict(tests = 0, failures = 0, errors = 0, skipped = 0,
+                    time = 0.0)
     else: ts = counts = None
 
     for test in suite.tests:
@@ -1727,6 +1763,10 @@ def write_junit(harness, path):
   ET.indent(root, space = '  ')
   ET.ElementTree(root).write(path, encoding = 'utf-8', xml_declaration = True)
 
+
+# ----------------------------------------------------------------------------
+# TestHarness
+# ----------------------------------------------------------------------------
 
 class TestHarness(TestSuite):
   def __init__(self, config):
@@ -1842,134 +1882,125 @@ Command:
 '''
 
 
-# Get default screen width
-import platform
-screen_width = min(shutil.get_terminal_size((80, 24)).columns, 100)
-
-output_stream = sys.stdout
-
-config = {
-  'top': os.getcwd(),
-  'script': 'th.py',
-  'stdin_file': '%(data-dir)s/stdin',
-  'args_file': '%(data-dir)s/args',
-  'copy': '%(data-dir)s/*',
-  'timeout': 300
-  }
-
 check_classes = {
-  'exists': CheckFileExists,
-  'size': CheckFileSize,
+  'exists':   CheckFileExists,
+  'size':     CheckFileSize,
   'min_size': CheckFileMinSize,
   'max_size': CheckFileMaxSize,
-  'file': CheckFile,
+  'file':     CheckFile,
   'standard': StandardCheck,
-  'db': CheckDB,
-  'command': CheckCommand
-}
+  'db':       CheckDB,
+  'command':  CheckCommand,
+  }
 
 filter_classes = {
-  'match': MatchFilter,
+  'match':     MatchFilter,
   'not_match': NotMatchFilter,
-  'replace': ReplaceFilter
-}
+  'replace':   ReplaceFilter,
+  }
 
 
-# Setup command line options
-parser = argparse.ArgumentParser(
-  usage = usage, formatter_class = argparse.RawDescriptionHelpFormatter)
-parser.add_argument('-I', '--interactive', help = 'run tests in interactive '
-                    'mode', default = False, action = 'store_true',
-                    dest = 'interactive')
-parser.add_argument('-f', '--force-interactive', help = 'go to interactive '
-                    'mode even if tests pass', default = False,
-                    action = 'store_true', dest = 'force_interactive')
-parser.add_argument('-V', '--valgrind', help = 'run tests under valgrind',
-                    default = False, action = 'store_true', dest = 'valgrind')
-parser.add_argument('-P', '--command-prefix', help = 'prefix test commands',
-                    default = [], dest = 'command_prefix')
-parser.add_argument('-v', help = 'verbose output',
-                    default = False, action = 'store_true', dest = 'verbose')
-parser.add_argument('--no-color', help = 'disable color output',
-                    default = (platform.system() != 'Windows'),
-                    action = 'store_false', dest = 'color')
-parser.add_argument('-c', '--config', help = 'set configuration file',
-                    dest = 'config')
-parser.add_argument('-C', help = 'Change to directory before running tests',
-                    dest = 'chdir', default = None)
-parser.add_argument('-d', '--dump', help = 'print the config and exit',
-                    action = 'store_true', default = False, dest = 'dump_config')
-parser.add_argument('-s', '--save', help = 'save all test results',
-                    action = 'store_true', default = False, dest = 'save')
-parser.add_argument('--save-failed', help = 'save failed test results',
-                    action = 'store_true', default = False, dest = 'save_failed')
-parser.add_argument('--view-failed', help = 'view failed test results',
-                    action = 'store_true', default = False, dest = 'view_failed')
-parser.add_argument('--view-all', help = 'view all test results',
-                    action = 'store_true', default = False, dest = 'view_all')
-parser.add_argument('--diff-failed', help = 'diff failed test results',
-                    action = 'store_true', default = False, dest = 'diff_failed')
-parser.add_argument('--view-unfiltered', help = 'display unfiltered files '
-                    'as well as the filtered results when viewing',
-                    action = 'store_true', default = False,
-                    dest = 'view_unfiltered')
-parser.add_argument('--build', help = 'build tests before running',
-                    default = False, action = 'store_true', dest = 'build')
-parser.add_argument('--json', help = 'write JSON log file', dest = 'output_json')
-parser.add_argument('--junit', help = 'write JUnit XML results file',
-                    dest = 'output_junit')
-parser.add_argument('args', nargs = '*', help = argparse.SUPPRESS)
+# ----------------------------------------------------------------------------
+# CLI and main
+# ----------------------------------------------------------------------------
 
-# Parse args
-options = parser.parse_args()
-args = options.args
+def build_parser():
+  import platform
+  parser = argparse.ArgumentParser(
+    usage = usage, formatter_class = argparse.RawDescriptionHelpFormatter)
 
-# Change dir
-if options.chdir is not None:
-  os.chdir(options.chdir)
-  if options.verbose: print("Changed directory: " + os.getcwd())
+  parser.add_argument('-I', '--interactive', action = 'store_true',
+                      help = 'run tests in interactive mode')
+  parser.add_argument('-f', '--force-interactive', action = 'store_true',
+                      help = 'go to interactive mode even if tests pass')
+  parser.add_argument('-V', '--valgrind', action = 'store_true',
+                      help = 'run tests under valgrind')
+  parser.add_argument('-P', '--command-prefix', default = [],
+                      help = 'prefix test commands')
+  parser.add_argument('-v', dest = 'verbose', action = 'store_true',
+                      help = 'verbose output')
+  parser.add_argument('--no-color', dest = 'color', action = 'store_false',
+                      default = (platform.system() != 'Windows'),
+                      help = 'disable color output')
+  parser.add_argument('-c', '--config', help = 'set configuration file')
+  parser.add_argument('-C', dest = 'chdir',
+                      help = 'change to directory before running tests')
+  parser.add_argument('-d', '--dump', dest = 'dump_config',
+                      action = 'store_true',
+                      help = 'print the config and exit')
+  parser.add_argument('-s', '--save', action = 'store_true',
+                      help = 'save all test results')
+  parser.add_argument('--save-failed', action = 'store_true',
+                      help = 'save failed test results')
+  parser.add_argument('--view-failed', action = 'store_true',
+                      help = 'view failed test results')
+  parser.add_argument('--view-all', action = 'store_true',
+                      help = 'view all test results')
+  parser.add_argument('--diff-failed', action = 'store_true',
+                      help = 'diff failed test results')
+  parser.add_argument('--view-unfiltered', action = 'store_true',
+                      help = 'display unfiltered files as well as the '
+                      'filtered results when viewing')
+  parser.add_argument('--build', action = 'store_true',
+                      help = 'build tests before running')
+  parser.add_argument('--json', dest = 'output_json',
+                      help = 'write JSON log file')
+  parser.add_argument('--junit', dest = 'output_junit',
+                      help = 'write JUnit XML results file')
+  parser.add_argument('args', nargs = '*', help = argparse.SUPPRESS)
 
-# Load config file
-config_file = options.config
-if config_file is not None:
-  with open(config_file) as f:
-    exec(compile(f.read(), config_file, 'exec'), globals(), config)
-
-# Set logger
-logger = Logger()
-
-# Force interactive
-if options.force_interactive: options.interactive = True
-
-# Process name value pairs
-nvRE = re.compile(r'((\w|-)+)=(.*)')
-cmd_args = []
-for arg in args:
-  m = nvRE.match(arg)
-  if m: config[m.group(1)] = m.group(3)
-  else: cmd_args.append(arg)
-
-# Parse command prefix
-options.command_prefix = split_cmd_line(options.command_prefix)
-
-# Valgrind
-if options.valgrind:
-  options.command_prefix = \
-      ['valgrind', '-q', '--trace-children=yes'] + options.command_prefix
+  return parser
 
 
-if options.dump_config:
-  for name, value in config.items():
-    print("%s=%s" % (name, value))
-  sys.exit(0)
+def main():
+  global options, logger, screen_width
 
-# Run
-try:
-  sys.exit(TestHarness(config).run(cmd_args))
+  screen_width = min(shutil.get_terminal_size((80, 24)).columns, 100)
 
-except HarnessError as e:
-  sys.stdout.flush()
-  if e.show_usage: parser.error(e.msg)
-  else: sys.stderr.write('ERROR: ' + e.msg + '\n')
+  parser = build_parser()
+  options = parser.parse_args()
 
-  sys.exit(-1)
+  if options.chdir is not None:
+    os.chdir(options.chdir)
+    if options.verbose: print('Changed directory: ' + os.getcwd())
+
+  config = dict(default_config)
+  config['top'] = os.getcwd()
+
+  if options.config is not None:
+    with open(options.config) as f:
+      exec(compile(f.read(), options.config, 'exec'), globals(), config)
+
+  logger = Logger()
+
+  if options.force_interactive: options.interactive = True
+
+  # Split positional args into name=value config overrides and command args
+  nvRE = re.compile(r'((\w|-)+)=(.*)')
+  cmd_args = []
+  for arg in options.args:
+    m = nvRE.match(arg)
+    if m: config[m.group(1)] = m.group(3)
+    else: cmd_args.append(arg)
+
+  options.command_prefix = split_cmd_line(options.command_prefix)
+
+  if options.valgrind:
+    options.command_prefix = (
+      ['valgrind', '-q', '--trace-children=yes'] + options.command_prefix)
+
+  if options.dump_config:
+    for name, value in config.items(): print('%s=%s' % (name, value))
+    sys.exit(0)
+
+  try:
+    sys.exit(TestHarness(config).run(cmd_args))
+
+  except HarnessError as e:
+    sys.stdout.flush()
+    if e.show_usage: parser.error(e.msg)
+    else: sys.stderr.write('ERROR: ' + e.msg + '\n')
+    sys.exit(-1)
+
+
+if __name__ == '__main__': main()
