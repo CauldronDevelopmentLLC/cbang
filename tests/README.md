@@ -340,8 +340,8 @@ class Suite:
     def __init__(self, suite):
         for case in suite.config['cases'].split(','):
             test = suite.Test(case + 'Test', command = 'myprog ' + case)
-            test.Unit('Variant1', args = ['--mode', '1'])
-            test.Unit('Variant2', args = ['--mode', '2'])
+            test.Test('Variant1', args = ['--mode', '1'])
+            test.Test('Variant2', args = ['--mode', '2'])
 
     def begin(self): pass    # called before suite runs
     def end(self):   pass    # called after suite runs
@@ -349,9 +349,9 @@ class Suite:
     def clean(self): pass    # invoked by `testHarness clean <suite>`
 ```
 
-Tests created this way can also have *Units* — sub-tests sharing the
-parent's setup.  A unit gets its own status; the parent test passes
-only if all units pass.
+Tests created this way can also have *sub-tests* sharing the
+parent's setup.  Each sub-test gets its own status; the parent
+passes only if all sub-tests pass.
 
 The script is loaded with the harness's globals available
 (`CheckFile`, `MatchFilter`, etc.), so the same primitives are
