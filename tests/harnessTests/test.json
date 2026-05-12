@@ -1,0 +1,3 @@
+{
+  "command": "%(top)s/testHarness"
+}

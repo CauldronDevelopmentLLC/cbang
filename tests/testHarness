@@ -33,7 +33,7 @@
 #   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 #   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 #   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from optparse import OptionParser
+import argparse
 import sys
 import time
 import datetime
@@ -42,7 +42,7 @@ import glob
 import subprocess
 import difflib
 import shlex
-from types import *
+import signal
 from tempfile import *
 import shutil
 import re
@@ -51,18 +51,10 @@ import copy
 import operator
 import json
 import filecmp
-from six import string_types
-
-try:
-  from io import StringIO
-except:
-  from StringIO import StringIO
-
-try:
-  from collections import OrderedDict
-except:
-  def OrderedDict():
-    dict()
+import xml.etree.ElementTree as ET
+from collections import OrderedDict
+from functools import reduce
+from io import StringIO
 
 # Test result codes
 PASSED = 0
@@ -131,7 +123,7 @@ def get_time_string():
   utc = datetime.datetime.now(datetime.timezone.utc)
   now = datetime.datetime.now()
   offset = now.hour - utc.hour
-  return now.strftime('%Y-%d-%m %H:%M:%S') + ' UTC%+d' % offset
+  return now.strftime('%Y-%m-%d %H:%M:%S') + ' UTC%+d' % offset
 
 
 def ensure_parent_dir(file):
@@ -158,29 +150,19 @@ def is_readable(obj):
 
 
 def read_file(path):
-  f = None
-
-  try:
-    f = open(path, 'rt')
+  # errors='replace' so non-UTF8 binary output (e.g. base64 test data) does
+  # not crash the JSON logger when capturing test stdout/stderr.
+  with open(path, 'rt', errors='replace') as f:
     return f.read()
-
-  finally:
-    if f is not None: f.close()
 
 
 def write_file(path, data):
-  f = None
-
-  try:
-    f = open(path, 'w')
+  with open(path, 'w') as f:
     f.write(data)
-
-  finally:
-    if f is not None: f.close()
 
 
 def split_cmd_line(cmd):
-  if isinstance(cmd, string_types): return shlex.split(str(cmd))
+  if isinstance(cmd, str): return shlex.split(cmd)
   return cmd
 
 
@@ -203,18 +185,22 @@ def execute_proc(command, timeout, **kwargs):
     if not os.path.isfile(command[0]) and os.path.isfile(command[0] + '.exe'):
       command[0] += '.exe'
 
-    start = time.time()
+    # On POSIX, run in a new session so we can kill the whole process group
+    # on timeout (children of the test binary too).
+    if sys.platform != 'win32' and 'start_new_session' not in kwargs:
+      kwargs['start_new_session'] = True
+
     proc = subprocess.Popen(command, **kwargs)
 
-    # Wait for process to complete
-    while proc.poll() is None:
-      if timeout and timeout < start - time.time():
-        if sys.platform == 'win32': proc.kill()
-        else: os.killpg(proc.pid)
-        raise Exception('Timedout')
-      time.sleep(0.1)
-
-    return proc.returncode
+    try:
+      return proc.wait(timeout=float(timeout) if timeout else None)
+    except subprocess.TimeoutExpired:
+      if sys.platform == 'win32': proc.kill()
+      else:
+        try: os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except ProcessLookupError: pass
+      proc.wait()
+      raise Exception('Timed out')
 
   except Exception as e:
     raise Exception('Running: ' + ' '.join(command) + '\nCaused by:' + str(e))
@@ -588,7 +574,7 @@ class CheckFile(Check):
     self.reason = filename
     self.exists = exists
 
-    if isinstance(filter, string_types): filter = MatchFilter(filter)
+    if isinstance(filter, str): filter = MatchFilter(filter)
     if isinstance(filter, (list, tuple)):
       if not filter[0] in filter_classes:
         raise Exception('Invalid filter "%s"' % filter[0])
@@ -1021,7 +1007,7 @@ class Unit:
       for check in checks:
         if isinstance(check, Check): self.check.add(check)
         else:
-          if isinstance(check, string_types):
+          if isinstance(check, str):
             check = [check]
 
           if isinstance(check, (list, tuple)) and len(check):
@@ -1045,7 +1031,7 @@ class Unit:
 
   def config_get_list(self, name, default = None, split = str.split):
     value = self.config.get(name, default)
-    if isinstance(value, string_types): value = split(value)
+    if isinstance(value, str): value = split(value)
 
     try:
       return list(map(lambda item: item % self.config, value))
@@ -1122,7 +1108,7 @@ class Unit:
   def get_stdin_file(self):
     stdin = self.config.get('stdin', None)
 
-    if isinstance(stdin, string_types): return StringIO(stdin)
+    if isinstance(stdin, str): return StringIO(stdin)
 
     if stdin is None and 'stdin_file' in self.config:
       path = self.config_get('stdin_file')
@@ -1218,6 +1204,7 @@ class Unit:
   def run(self):
     self.log.start_test(self)
     self.start_test()
+    self.start_time = time.perf_counter()
 
     if self.status is None:
       # Run it
@@ -1229,10 +1216,15 @@ class Unit:
       if self.status is None: raise Exception('Test result not set')
       self.reason = self.check.reason
 
+    self.end_time = time.perf_counter()
+
     # Logging
     self.log.start_files()
     stdin = self.get_stdin_file()
-    if stdin is not None: self.log.insert('stdin', stdin.read(10000))
+    if stdin is not None:
+      data = stdin.read(10000)
+      if isinstance(data, bytes): data = data.decode('utf-8', errors = 'replace')
+      self.log.insert('stdin', data)
     self.check.log(self, self.failed())
     self.log.end_files()
     self.log.end_test(self)
@@ -1378,6 +1370,7 @@ class Test(Unit):
     else:
       self.log.start_test(self)
       self.start_test()
+      self.start_time = time.perf_counter()
 
       if self.status is None:
         self.status = PASSED
@@ -1385,6 +1378,7 @@ class Test(Unit):
           if unit.run_interactive() and self.status == PASSED:
             self.status = unit.status
 
+      self.end_time = time.perf_counter()
       self.end_test()
       self.log.end_test(self)
 
@@ -1548,24 +1542,24 @@ class TestSuite:
     for path in paths: self.Test(os.path.basename(path))
 
     # Load script
-    if 'script' in self.config: script = self.path + '/' + self.config['script']
-    else: self.script = self.path + '/' + self.config['script']
+    script = self.path + '/' + self.config.get('script', 'th.py')
 
     if os.path.exists(script):
-      env = {}
-      env.update(globals())
+      env = dict(globals())
 
-      try: execfile(script, env)
+      try:
+        with open(script) as f:
+          exec(compile(f.read(), script, 'exec'), env)
       except Exception as e:
         raise Exception('Exception in "%s": %s' % (script, str(e)))
 
-      if not 'Suite' in env:
+      if 'Suite' not in env:
         raise HarnessError(
           'Test suite "%s" did not define a Suite class' % script)
 
       Suite = env['Suite']
 
-      if not isinstance(Suite, ClassType):
+      if not isinstance(Suite, type):
         raise HarnessError('Test suite "%s" defined non-class Suite' %
                            script)
 
@@ -1676,6 +1670,64 @@ class TestResults:
     for child in suite.children: self.add_suite(child)
 
 
+def write_junit(harness, path):
+  '''Emit Apache Ant-flavor JUnit XML covering all tests in the harness.'''
+  root = ET.Element('testsuites')
+  totals = dict(tests = 0, failures = 0, errors = 0, skipped = 0, time = 0.0)
+
+  def walk(suite, prefix):
+    if not suite.valid: return
+    name = (prefix + '.' if prefix else '') + suite.name
+
+    # Skip suites with no direct tests; they only exist to group children.
+    if suite.tests:
+      ts = ET.SubElement(root, 'testsuite', name = name)
+      counts = dict(tests = 0, failures = 0, errors = 0, skipped = 0, time = 0.0)
+    else: ts = counts = None
+
+    for test in suite.tests:
+      counts['tests'] += 1
+      tc = ET.SubElement(ts, 'testcase', classname = name, name = test.name)
+      duration = getattr(test, 'end_time', 0) - getattr(test, 'start_time', 0)
+      tc.set('time', '%.6f' % duration)
+      counts['time'] += duration
+
+      reason = test.reason or ''
+      if test.status == FAILED:
+        counts['failures'] += 1
+        ET.SubElement(tc, 'failure', type = 'failed', message = reason)
+      elif test.status == UNINITIALIZED:
+        counts['failures'] += 1
+        ET.SubElement(tc, 'failure', type = 'uninitialized',
+                      message = reason or 'no expected output')
+      elif test.status == INVALID:
+        counts['errors'] += 1
+        ET.SubElement(tc, 'error', type = 'invalid',
+                      message = reason or 'invalid')
+      elif test.status == DISABLED:
+        counts['skipped'] += 1
+        ET.SubElement(tc, 'skipped')
+      # PASSED and INITIALIZED: no child element
+
+    if ts is not None:
+      for k in ('tests', 'failures', 'errors', 'skipped'):
+        ts.set(k, str(counts[k]))
+        totals[k] += counts[k]
+      ts.set('time', '%.6f' % counts['time'])
+      totals['time'] += counts['time']
+
+    for child in suite.children: walk(child, name)
+
+  walk(harness, '')
+
+  for k in ('tests', 'failures', 'errors', 'skipped'):
+    root.set(k, str(totals[k]))
+  root.set('time', '%.6f' % totals['time'])
+
+  ET.indent(root, space = '  ')
+  ET.ElementTree(root).write(path, encoding = 'utf-8', xml_declaration = True)
+
+
 class TestHarness(TestSuite):
   def __init__(self, config):
     TestSuite.__init__(self, config)
@@ -1762,11 +1814,14 @@ class TestHarness(TestSuite):
       data = json.dumps(self.log.json, indent = 2, separators = [',', ': '])
       write_file(options.output_json, data)
 
+    if options.output_junit is not None:
+      write_junit(self, options.output_junit)
+
     return failures
 
 
 usage = '''\
-Usage: %prog [options] [command] [name=value...]
+%(prog)s [options] [command] [name=value...]
 
 Command:
   enable <target>      enable a previously disabled a test
@@ -1789,14 +1844,7 @@ Command:
 
 # Get default screen width
 import platform
-
-if platform.system() == 'Windows' or True: screen_width = 80
-else:
-  import curses
-  win = curses.initscr()
-  screen_height, screen_width = win.getmaxyx()
-  if screen_width > 100: screen_width = 100
-  curses.endwin()
+screen_width = min(shutil.get_terminal_size((80, 24)).columns, 100)
 
 output_stream = sys.stdout
 
@@ -1828,48 +1876,53 @@ filter_classes = {
 
 
 # Setup command line options
-parser = OptionParser(usage = usage)
-parser.add_option('-I', '--interactive', help = 'run tests in interactive mode',
-                  default = False, action = 'store_true', dest = 'interactive')
-parser.add_option('-f', '--force-interactive', help = 'go to interactive mode '
-                  'even if tests pass', default = False, action = 'store_true',
-                  dest = 'force_interactive')
-parser.add_option('-V', '--valgrind', help = 'run tests under valgrind',
-                  default = False, action = 'store_true', dest = 'valgrind')
-parser.add_option('-P', '--command-prefix', help = 'prefix test commands',
-                  default = [], dest = 'command_prefix')
-parser.add_option('-v', '', help = 'verbose output',
-                  default = False, action = 'store_true', dest = 'verbose')
-parser.add_option('', '--no-color', help = 'disable color output',
-                  default = (platform.system() != 'Windows'),
-                  action = 'store_false', dest = 'color')
-parser.add_option('-c', '--config', help = 'set configuration file',
-                  dest = 'config')
-parser.add_option('-C', '', help = 'Change to directory before running tests',
-                  dest = 'chdir', default = None)
-parser.add_option('-d', '--dump', help = 'print the config and exit',
-                  action = 'store_true', default = False, dest = 'dump_config')
-parser.add_option('-s', '--save', help = 'save all test results',
-                  action = 'store_true', default = False, dest = 'save')
-parser.add_option('', '--save-failed', help = 'save failed test results',
-                  action = 'store_true', default = False, dest = 'save_failed')
-parser.add_option('', '--view-failed', help = 'view failed test results',
-                  action = 'store_true', default = False, dest = 'view_failed')
-parser.add_option('', '--view-all', help = 'view all test results',
-                  action = 'store_true', default = False, dest = 'view_all')
-parser.add_option('', '--diff-failed', help = 'diff failed test results',
-                  action = 'store_true', default = False, dest = 'diff_failed')
-parser.add_option('', '--view-unfiltered', help = 'display unfiltered files '
-                  'as well as the filtered results when viewing',
-                  action = 'store_true', default = False,
-                  dest = 'view_unfiltered')
-parser.add_option('', '--build', help = 'build tests before running',
-                  default = False, action = 'store_true', dest = 'build')
-parser.add_option('', '--json', help = 'write JSON log file',
-                  dest = 'output_json')
+parser = argparse.ArgumentParser(
+  usage = usage, formatter_class = argparse.RawDescriptionHelpFormatter)
+parser.add_argument('-I', '--interactive', help = 'run tests in interactive '
+                    'mode', default = False, action = 'store_true',
+                    dest = 'interactive')
+parser.add_argument('-f', '--force-interactive', help = 'go to interactive '
+                    'mode even if tests pass', default = False,
+                    action = 'store_true', dest = 'force_interactive')
+parser.add_argument('-V', '--valgrind', help = 'run tests under valgrind',
+                    default = False, action = 'store_true', dest = 'valgrind')
+parser.add_argument('-P', '--command-prefix', help = 'prefix test commands',
+                    default = [], dest = 'command_prefix')
+parser.add_argument('-v', help = 'verbose output',
+                    default = False, action = 'store_true', dest = 'verbose')
+parser.add_argument('--no-color', help = 'disable color output',
+                    default = (platform.system() != 'Windows'),
+                    action = 'store_false', dest = 'color')
+parser.add_argument('-c', '--config', help = 'set configuration file',
+                    dest = 'config')
+parser.add_argument('-C', help = 'Change to directory before running tests',
+                    dest = 'chdir', default = None)
+parser.add_argument('-d', '--dump', help = 'print the config and exit',
+                    action = 'store_true', default = False, dest = 'dump_config')
+parser.add_argument('-s', '--save', help = 'save all test results',
+                    action = 'store_true', default = False, dest = 'save')
+parser.add_argument('--save-failed', help = 'save failed test results',
+                    action = 'store_true', default = False, dest = 'save_failed')
+parser.add_argument('--view-failed', help = 'view failed test results',
+                    action = 'store_true', default = False, dest = 'view_failed')
+parser.add_argument('--view-all', help = 'view all test results',
+                    action = 'store_true', default = False, dest = 'view_all')
+parser.add_argument('--diff-failed', help = 'diff failed test results',
+                    action = 'store_true', default = False, dest = 'diff_failed')
+parser.add_argument('--view-unfiltered', help = 'display unfiltered files '
+                    'as well as the filtered results when viewing',
+                    action = 'store_true', default = False,
+                    dest = 'view_unfiltered')
+parser.add_argument('--build', help = 'build tests before running',
+                    default = False, action = 'store_true', dest = 'build')
+parser.add_argument('--json', help = 'write JSON log file', dest = 'output_json')
+parser.add_argument('--junit', help = 'write JUnit XML results file',
+                    dest = 'output_junit')
+parser.add_argument('args', nargs = '*', help = argparse.SUPPRESS)
 
 # Parse args
-options, args = parser.parse_args()
+options = parser.parse_args()
+args = options.args
 
 # Change dir
 if options.chdir is not None:
@@ -1877,9 +1930,10 @@ if options.chdir is not None:
   if options.verbose: print("Changed directory: " + os.getcwd())
 
 # Load config file
-if options.config is not None: config_file = options.config
-else: config_file = None
-if config_file is not None: execfile(config_file, globals(), config)
+config_file = options.config
+if config_file is not None:
+  with open(config_file) as f:
+    exec(compile(f.read(), config_file, 'exec'), globals(), config)
 
 # Set logger
 logger = Logger()

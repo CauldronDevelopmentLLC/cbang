@@ -1,0 +1,9 @@
+{
+  "checks": [
+    "standard",
+    ["exists", "out.txt"],
+    ["size", "out.txt", 10],
+    ["min_size", "out.txt", 5],
+    ["max_size", "out.txt", 20]
+  ]
+}
