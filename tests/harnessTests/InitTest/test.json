@@ -1,0 +1,4 @@
+{
+  "command": ["sh", "-c", "%(top)s/testHarness init trueTests/TheTest && %(top)s/testHarness run trueTests/TheTest"],
+  "checks": [["file", "return"]]
+}
