@@ -135,7 +135,7 @@ namespace cb {
       std::string toString() const override;
 
       int utf8Length() const {
-        return v8::String::Cast(*value)->Utf8Length(getIso());
+        return v8::String::Cast(*value)->Utf8LengthV2(getIso());
       }
 
       // Object
