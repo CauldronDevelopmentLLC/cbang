@@ -1,0 +1,15 @@
+{
+  "name": "cbang-www",
+  "version": "1.0.0",
+  "description": "cbang.org static site (VitePress)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev":     "vitepress dev .",
+    "build":   "vitepress build .",
+    "preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "vitepress": "^1.5.0"
+  }
+}
