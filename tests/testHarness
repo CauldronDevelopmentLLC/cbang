@@ -89,7 +89,7 @@ status_names = [
   'PASSED',
   'FAILED',
   'UNINITIALIZED',
-  'INITIALZED',
+  'INITIALIZED',
   'INVALID',
   'DISABLED',
   ]
@@ -1009,13 +1009,14 @@ class Test:
 
   def __init__(self, parent, name, command = None,
                test = None, start_test = None, end_test = None, **kwargs):
-    self.parent   = parent
-    self.name     = name
-    self.subtests = None
-    self.status   = None
-    self.reason   = None
-    self.invalid  = False
-    self.log      = logger
+    self.parent    = parent
+    self.name      = name
+    self.subtests  = None
+    self.status    = None
+    self.reason    = None
+    self.invalid   = False
+    self.init_mode = False
+    self.log       = logger
 
     # Path and test_dir depend on whether this is a top-level test in a
     # suite or a sub-test of another test.
@@ -1177,9 +1178,14 @@ class Test:
   def init(self):
     self.reset()
     if not os.path.exists(self.test_dir):
-      self.run_interactive()
-      if self.failed(): return 1
-    self.initialize()
+      # _run_leaf will promote UNINITIALIZED to INITIALIZED in init mode
+      # so the printed status matches the post-run state.
+      self.init_mode = True
+      try: self.run_interactive()
+      finally: self.init_mode = False
+      if self.status in (FAILED, INVALID): return 1
+    else: self.initialize()
+    return 0
 
 
   def call_with_less(self, method):
@@ -1324,6 +1330,13 @@ class Test:
       self.status = self.check.check(self)
       if self.status is None: raise Exception('Test result not set')
       self.reason = self.check.reason
+
+      # In init mode, promote the expected UNINITIALIZED to INITIALIZED
+      # (copying captured output to expect/) before the line is printed,
+      # so the user sees one clean status.
+      if self.init_mode and self.status == UNINITIALIZED:
+        self.check.initialize(self)
+        self.status = INITIALIZED
 
     self.end_time = time.perf_counter()
 
