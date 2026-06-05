@@ -71,7 +71,7 @@ uint64_t LinSystemInfo::getMemoryInfo(memory_info_t type) const {
   switch (type) {
   case MEM_INFO_TOTAL:  search = "MemTotal:";     break;
   case MEM_INFO_FREE:   search = "MemFree:";      break;
-  case MEM_INFO_SWAP:   search = "SwapTotal:";    break;
+  case MEM_INFO_SWAP:   search = "SwapFree:";     break;
   case MEM_INFO_USABLE: search = "MemAvailable:"; break;
   default: THROW("Unsupported memory info type: " << type);
   }
