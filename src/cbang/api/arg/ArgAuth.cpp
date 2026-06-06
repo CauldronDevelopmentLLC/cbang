@@ -70,7 +70,7 @@ JSON::ValuePtr ArgAuth::operator()(
   if (session.isNull()) unauthorized();
 
   for (auto &group: groups)
-    if (session->getBoolean(group, false)) {
+    if (session->hasGroup(group)) {
       if (allow) return value;
       unauthorized();
     }
