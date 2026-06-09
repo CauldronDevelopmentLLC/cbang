@@ -1,0 +1,4 @@
+200
+HTTP_OK
+SQL: CALL StorePhoto(?, 'cat.png')
+BIND[0]: 504E470044415441

@@ -48,11 +48,11 @@ Query::Query(const QueryDef &def, callback_t cb) :
 }
 
 
-void Query::exec(const string &sql) {
+void Query::exec(const string &sql, const vector<string> &params) {
   // Stay alive until DB callbacks are complete
   auto self = SmartPtr(this);
   auto cb = [self] (state_t state) {self->callback(state);};
-  db->query(cb, sql);
+  db->query(cb, sql, params);
 }
 
 

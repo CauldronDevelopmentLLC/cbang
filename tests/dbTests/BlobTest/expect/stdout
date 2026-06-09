@@ -1,0 +1,4 @@
+200
+HTTP_OK
+SQL: CALL StoreBlob(?, 'application/octet-stream')
+BIND[0]: 0001020D0AFFFE20627974657300

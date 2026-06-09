@@ -76,6 +76,7 @@ namespace {
 
   deque<Response> g_pending;   // queued query outcomes, FIFO
   vector<string>  g_queries;   // captured SQL, in order
+  vector<vector<string>> g_binds; // captured bound params, per query
   int             g_fd = -1;   // always-readable fd backing every NB wait
 
   const int PENDING = MYSQL_WAIT_READ;
@@ -95,9 +96,10 @@ namespace {
 
 
 // --- FakeDB controller -----------------------------------------------------
-void FakeDB::reset() {g_pending.clear(); g_queries.clear();}
+void FakeDB::reset() {g_pending.clear(); g_queries.clear(); g_binds.clear();}
 void FakeDB::push(const Response &r) {g_pending.push_back(r);}
 const vector<string> &FakeDB::queries() {return g_queries;}
+const vector<vector<string>> &FakeDB::binds() {return g_binds;}
 
 
 // --- connection / library --------------------------------------------------
@@ -183,6 +185,7 @@ int mysql_stmt_prepare_start(int *, MYSQL_STMT *s, const char *q,
 int mysql_stmt_prepare_cont(int *ret, MYSQL_STMT *s, int) {
   Conn *c = S(s);
   g_queries.push_back(c->pendingSQL);
+  g_binds.push_back({}); // filled by mysql_stmt_bind_param, if called
 
   if (g_pending.empty()) c->cur = Response();
   else {c->cur = g_pending.front(); g_pending.pop_front();}
@@ -197,6 +200,25 @@ int mysql_stmt_prepare_cont(int *ret, MYSQL_STMT *s, int) {
   c->sqlstate = "00000";
 
   *ret = 0; // a failure (if any) surfaces at execute, as in a stored proc
+  return 0;
+}
+
+unsigned long mysql_stmt_param_count(MYSQL_STMT *s) {
+  // Count ``?`` placeholders outside single-quoted literals
+  unsigned long n = 0;
+  bool quoted = false;
+  for (char c: S(s)->pendingSQL) {
+    if (c == '\'') quoted = !quoted;
+    else if (c == '?' && !quoted) n++;
+  }
+  return n;
+}
+
+my_bool mysql_stmt_bind_param(MYSQL_STMT *s, MYSQL_BIND *b) {
+  unsigned long n = mysql_stmt_param_count(s);
+  for (unsigned long i = 0; i < n; i++)
+    g_binds.back().push_back(
+      string((const char *)b[i].buffer, b[i].buffer_length));
   return 0;
 }
 

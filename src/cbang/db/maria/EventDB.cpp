@@ -99,10 +99,15 @@ void EventDB::close(callback_t cb) {
 
 void EventDB::query(callback_t cb, const string &s,
   const SmartPointer<const JSON::Value> &dict) {
+  query(cb, dict.isNull() ? s : format(s, dict->getDict()), vector<string>());
+}
+
+
+void EventDB::query(callback_t cb, const string &s,
+  const vector<string> &params) {
   LOG_DEBUG(5, CBANG_FUNC << "() sql=" << s);
 
-  string query = dict.isNull() ? s : format(s, dict->getDict());
-  auto queryCB = SmartPtr(new QueryCallback(*this, cb, query));
+  auto queryCB = SmartPtr(new QueryCallback(*this, cb, s, params));
 
   // By wrapping the event callback in a lambda the SmartPointer is kept alive
   auto reply =

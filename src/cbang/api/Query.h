@@ -67,7 +67,8 @@ namespace cb {
       Query(const QueryDef &def, callback_t cb);
       virtual ~Query() {}
 
-      void exec(const std::string &sql);
+      void exec(const std::string &sql,
+                const std::vector<std::string> &params = {});
       static return_t getReturnType(const std::string &name);
 
     protected:
