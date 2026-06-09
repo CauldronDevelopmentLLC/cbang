@@ -1,0 +1,8 @@
+{
+  "args": [
+    "PUT",
+    "/body-info",
+    "Content-Type: text/plain",
+    "-stdin"
+  ]
+}

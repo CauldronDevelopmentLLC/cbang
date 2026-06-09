@@ -31,8 +31,10 @@
 \******************************************************************************/
 
 #include "Context.h"
+#include "Blob.h"
 
 #include <cbang/log/Logger.h>
+#include <cbang/http/MultipartParser.h>
 
 using namespace std;
 using namespace cb;
@@ -45,6 +47,29 @@ Context::Context(API &api, HTTP::Request &req) :
 
 Context::Context(API &api, const WebsocketPtr &ws) :
   Context(api, ws->getRequest()) {this->ws = ws;}
+
+
+void Context::parseBody() {
+  if (!req.getInputBuffer().getLength()) return;
+
+  string type     = req.inFind("Content-Type");
+  string boundary = HTTP::MultipartParser::getBoundary(type);
+
+  if (boundary.empty()) {
+    resolver->set("body", new Blob(req.getInput(), type));
+    return;
+  }
+
+  // Multipart: file parts under ``{files.*}``, plain fields into args
+  auto files = SmartPtr(new JSON::Dict);
+  for (auto &part: HTTP::MultipartParser::parse(req.getInput(), boundary)) {
+    if (part.isFile())
+      files->insert(part.name, new Blob(part.data, part.type, part.filename));
+    else args->insert(part.name, part.data);
+  }
+
+  if (files->size()) resolver->set("files", files);
+}
 
 
 void Context::setSession(const SmartPointer<HTTP::Session> &session) {

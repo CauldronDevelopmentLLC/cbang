@@ -35,13 +35,16 @@
 // no network.  An event loop is pumped so async statements (exec, query)
 // complete; synchronous handlers reply in-line.
 //
-//   apiDispatch <config> <METHOD> <path> [Name: value ...]
+//   apiDispatch <config> <METHOD> <path> [-stdin] [Name: value ...]
 //
-// The http-root, favicon and scripts options default to "<config-dir>/...".
-// Output is the status code, the response headers, then the body.
+// With -stdin the request body is read from stdin.  The http-root, favicon
+// and scripts options default to "<config-dir>/...".  Output is the status
+// code, the response headers, then the body.
 
 #include <cbang/Catch.h>
+#include <cbang/Exception.h>
 #include <cbang/String.h>
+#include <cbang/os/SystemUtilities.h>
 #include <cbang/json/YAMLReader.h>
 #include <cbang/config/Options.h>
 #include <cbang/api/API.h>
@@ -71,6 +74,8 @@ int main(int argc, char *argv[]) {
     // Keep logs off stdout (which carries the response) and deterministic
     Logger::instance().setScreenStream(cerr);
     Logger::instance().setLogTime(false);
+    Logger::instance().setLogColor(false);
+    Exception::printLocations = false;
 
     string configPath = argv[1];
     string method     = argv[2];
@@ -95,9 +100,11 @@ int main(int argc, char *argv[]) {
     params.uri    = URI(path);
 
     // Remaining args are request headers in "Name: value" form.
+    bool readBody = false;
     params.hdrs = new HTTP::Headers;
     for (int i = 4; i < argc; i++) {
       string h = argv[i];
+      if (h == "-stdin") {readBody = true; continue;}
       auto colon = h.find(':');
       if (colon == string::npos) THROW("Expected 'Name: value': " << h);
       params.hdrs->insert(
@@ -105,6 +112,11 @@ int main(int argc, char *argv[]) {
     }
 
     HTTP::Request req(params);
+
+    if (readBody) {
+      string body = SystemUtilities::read(cin);
+      if (!body.empty()) req.getInputBuffer().add(body);
+    }
 
     api(req);
 

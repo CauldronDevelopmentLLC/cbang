@@ -81,6 +81,41 @@ endpoints:
         - exec: {cmd: '{options.scripts}/pass.py'}
         - {handler: status, code: 200, text: chained}
 
+  # Binary side channel -----------------------------------------------------
+
+  # Raw body metadata resolves; the echo envelope surfaces the values
+  /body-info:
+    put:
+      exec:
+        cmd: '{options.scripts}/echo.py'
+        input: {size: '{body.size}', type: '{body.type}'}
+
+  # Bytes embedded in a string context is an error
+  /body-bad:
+    put:
+      exec:
+        cmd: '{options.scripts}/echo.py'
+        input: {bad: 'x-{body}'}
+
+  # Typed numeric compare against body metadata
+  /body-if:
+    put:
+      if:   {'=': ['{body.size}', 5]}
+      then: {handler: status, code: 200, text: five}
+      else: {handler: status, code: 200, text: other}
+
+  # Multipart: plain fields fold into args, file parts under {files.*}
+  /upload:
+    args: {caption: {type: string}}
+    post:
+      exec:
+        cmd: '{options.scripts}/echo.py'
+        input:
+          caption:  '{args.caption}'
+          filename: '{files.photo.filename}'
+          type:     '{files.photo.type}'
+          size:     '{files.photo.size}'
+
   /.*:
     get:
       path: '{options.http-root}'

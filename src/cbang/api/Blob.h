@@ -32,55 +32,29 @@
 
 #pragma once
 
-#include <cbang/api/Resolver.h>
-#include <cbang/api/Websocket.h>
-#include <cbang/http/Request.h>
+#include <cbang/json/Dict.h>
 
-#include <functional>
 
 namespace cb {
   namespace API {
-    class API;
-    class Websocket;
-
-    class Context : public cb::HTTP::Status::Enum {
-      API &api;
-      HTTP::Request &req;
-      WebsocketPtr ws;
-      JSON::ValuePtr args;
-      SmartPointer<Resolver> resolver;
+    // A binary value: a raw request body or an uploaded file part.  The bytes
+    // are held aside from JSON while the metadata (``size``, ``type``,
+    // ``filename``) resolves like any other dict, so ``{body.size}`` works
+    // but interpolating the bytes into a string or JSON is an error.  The
+    // bytes themselves are only valid bound whole into a SQL query or
+    // written as the raw response body.
+    class Blob : public JSON::Dict {
+      std::string data;
 
     public:
-      Context(API &api, HTTP::Request &req);
-      Context(API &api, const WebsocketPtr &ws);
+      Blob(const std::string &data, const std::string &type,
+           const std::string &filename = std::string());
 
-      HTTP::Request &getRequest() const {return req;}
-      const WebsocketPtr &getWebsocket() const {return ws;}
+      const std::string &getData() const {return data;}
 
-      const SmartPointer<Resolver> &getResolver() const {return resolver;}
-      void setResolver(const SmartPointer<Resolver> &resolver)
-        {this->resolver = resolver;}
-
-      const JSON::ValuePtr &getArgs() const {return args;}
-      void setArgs(const JSON::ValuePtr &args) {this->args = args;}
-
-      void parseBody();
-
-      void setSession(const SmartPointer<HTTP::Session> &session);
-
-      void reply(HTTP::Status code, const JSON::ValuePtr &msg) const;
-      void reply(const JSON::ValuePtr &msg) const;
-      void reply(HTTP::Status code,
-        std::function<void (JSON::Sink &sink)> cb) const;
-      void reply(std::function<void (JSON::Sink &sink)> cb) const;
-      void reply(HTTP::Status code = HTTP_OK,
-        const std::string &text = "") const;
-      void reply(const std::exception &e) const;
-      void reply(const Exception &e) const;
-
-      void errorHandler(std::function<void ()> cb) const;
+      // From JSON::Value
+      JSON::ValuePtr copy(bool deep = false) const override;
+      void write(JSON::Sink &sink) const override;
     };
-
-    using CtxPtr = SmartPointer<Context>;
   }
 }
