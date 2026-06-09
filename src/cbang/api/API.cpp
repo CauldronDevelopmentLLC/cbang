@@ -591,6 +591,68 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
         paramSpec->append(argSpec);
       }
 
+    // Add request body spec from body / files declarations
+    auto body  = cfg->getBody();
+    auto files = cfg->getFiles();
+    if (body.isSet() || files.isSet()) {
+      auto bodySpec = config->createDict();
+      methodSpec->insert("requestBody", bodySpec);
+      auto content = config->createDict();
+
+      auto binarySchema = [&] () {
+        auto schema = config->createDict();
+        schema->insert("type", "string");
+        schema->insert("format", "binary");
+        return schema;
+      };
+
+      if (body.isSet()) {
+        if (body->getBoolean("required", false))
+          bodySpec->insertBoolean("required", true);
+        if (body->hasString("help"))
+          bodySpec->insert("description", body->get("help"));
+
+        auto media = config->createDict();
+        media->insert("schema", binarySchema());
+
+        if (!body->has("type"))
+          content->insert("application/octet-stream", media);
+        else {
+          auto type = body->get("type");
+          if (type->isList())
+            for (auto &t: *type) content->insert(t->asString(), media);
+          else content->insert(type->asString(), media);
+        }
+
+      } else { // multipart/form-data with one binary property per file
+        auto schema = config->createDict();
+        schema->insert("type", "object");
+        auto props = config->createDict();
+        schema->insert("properties", props);
+        auto required = config->createList();
+
+        for (auto e: files->entries()) {
+          auto prop = binarySchema();
+          if (e.value()->hasString("help"))
+            prop->insert("description", e.value()->get("help"));
+          props->insert(e.key(), prop);
+          if (e.value()->getBoolean("required", false))
+            required->append(e.key());
+        }
+
+        if (required->size()) {
+          schema->insert("required", required);
+          bodySpec->insertBoolean("required", true);
+        }
+
+        auto media = config->createDict();
+        media->insert("schema", schema);
+        content->insert("multipart/form-data", media);
+      }
+
+      bodySpec->insert("content", content);
+    }
+
     // TODO Add security spec from access handlers
     // TODO add response schemas
   }

@@ -49,6 +49,7 @@
 #include <cbang/db/maria/Connector.h>
 #include <cbang/http/Request.h>
 #include <cbang/http/RequestParams.h>
+#include <cbang/http/RequestErrorHandler.h>
 #include <cbang/net/URI.h>
 #include <cbang/event/Base.h>
 #include <cbang/log/Logger.h>
@@ -235,7 +236,9 @@ int main(int argc, char *argv[]) {
     HTTP::Request req(params);
     if (!body.empty()) req.getInputBuffer().add(body.data(), body.length());
 
-    api(req);
+    // Dispatch as the server does, so handler throws reply with a status
+    HTTP::RequestErrorHandler errorHandler(api);
+    errorHandler(req);
 
     for (unsigned i = 0; !req.isReplying() && i < 100000; i++) base.loopOnce();
     if (!req.isReplying()) THROW("Request never replied");

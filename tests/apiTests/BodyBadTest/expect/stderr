@@ -1,2 +1,1 @@
-ERROR:Exception: String format error at character 7
-ERROR:Caused by: A binary value is only valid bound whole into a SQL query or written as the response body
+WARNING:String format error at character 7: A binary value is only valid bound whole into a SQL query or written as the response body

@@ -1,0 +1,10 @@
+--B1
+Content-Disposition: form-data; name="caption"
+
+hi
+--B1
+Content-Disposition: form-data; name="photo"; filename="x.txt"
+Content-Type: text/plain
+
+TXT
+--B1--

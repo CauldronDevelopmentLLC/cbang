@@ -1,0 +1,3 @@
+{
+  "args": ["POST", "/upload", "Content-Type: multipart/form-data; boundary=B1", "-stdin"]
+}

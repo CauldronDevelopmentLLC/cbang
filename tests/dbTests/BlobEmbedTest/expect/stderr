@@ -1,1 +1,0 @@
-ERROR:Exception: SQL has 0 placeholders but 1 bound parameters; a binary {ref} cannot be embedded in a string

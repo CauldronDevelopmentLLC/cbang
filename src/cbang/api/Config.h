@@ -51,6 +51,8 @@ namespace cb {
 
       SmartPointer<HTTP::AccessHandler> access;
       SmartPointer<ArgDict> args;
+      JSON::ValuePtr body;
+      JSON::ValuePtr files;
 
     public:
       Config(API &api, const JSON::ValuePtr &config,
@@ -63,6 +65,8 @@ namespace cb {
       const SmartPointer<HTTP::AccessHandler> &getAccessHandler() const
         {return access;}
       const SmartPointer<ArgDict> &getArgs() const {return args;}
+      const JSON::ValuePtr &getBody() const {return body;}
+      const JSON::ValuePtr &getFiles() const {return files;}
 
       SmartPointer<Config> createChild(
         const JSON::ValuePtr &config, const std::string &pattern = "");
