@@ -1,0 +1,6 @@
+--BoUnDaRy123
+Content-Disposition: form-data; filename="weird; name=spoof"; name="real"
+Content-Type: text/plain
+
+body
+--BoUnDaRy123--

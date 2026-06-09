@@ -50,17 +50,45 @@ using namespace cb;
 using namespace cb::MariaDB;
 
 
+namespace cb {
+  namespace MariaDB {
+    // Bound output columns for the binary protocol.  Every column is bound as
+    // a string so fetched data matches what the text protocol produced and the
+    // existing accessors (getString/getDouble/...) keep working.
+    struct Binding {
+      vector<MYSQL_BIND>   binds;
+      vector<vector<char>> data;
+      vector<unsigned long> length;
+      vector<my_bool>      isNull;
+      vector<my_bool>      error;
+
+      void resize(unsigned n) {
+        binds .assign(n, MYSQL_BIND());
+        data  .assign(n, vector<char>());
+        length.assign(n, 0);
+        isNull.assign(n, 0);
+        error .assign(n, 0);
+      }
+    };
+  }
+}
+
+
 DB::DB(st_mysql *db) :
-  db(db ? db : mysql_init(0)), res(0), nonBlocking(false), connected(false),
-  stored(false), status(0), continueFunc(0) {
+  db(db ? db : mysql_init(0)), nonBlocking(false), connected(false),
+  status(0), continueFunc(0) {
   LOG_DEBUG(5, CBANG_FUNC << "()");
   if (!this->db) RAISE_DB_ERROR("Failed to create MariaDB");
+  binding = new Binding;
 }
 
 
 DB::~DB() {
   LOG_DEBUG(5, CBANG_FUNC << "()");
+  freeMeta();
+  if (stmt) mysql_stmt_close(stmt);
   if (db) mysql_close(db);
+  delete binding;
 }
 
 
@@ -338,67 +366,59 @@ bool DB::useNB(const string &dbName) {
 }
 
 
-void DB::query(const string &s) {
-  assertConnected();
-  assertNotPending();
-
-  if (mysql_real_query(db, s.data(), s.length()))
-    RAISE_DB_ERROR("Query failed");
-}
-
-
 bool DB::queryNB(const string &s) {
   assertConnected();
   assertNotPending();
   assertNonBlocking();
 
+  if (!stmt && !(stmt = mysql_stmt_init(db)))
+    RAISE_DB_ERROR("Failed to allocate statement");
+
+  rowReady = false;
+
   int ret = 0;
-  status = mysql_real_query_start(&ret, db, s.data(), s.length());
+  status = mysql_stmt_prepare_start(&ret, stmt, s.data(), s.length());
+  LOG_DEBUG(5, CBANG_FUNC << "() status=" << status);
 
-  LOG_DEBUG(5, CBANG_FUNC << "() status=" << status << " ret=" << ret);
+  if (status) {continueFunc = &DB::prepareContinue; return false;}
+  if (ret) RAISE_DB_ERROR("Prepare failed");
 
-  if (status) {
-    continueFunc = &DB::queryContinue;
-    return false;
-  }
+  return startExecute();
+}
 
-  if (ret) RAISE_DB_ERROR("Query failed");
+
+bool DB::startExecute() {
+  // No input parameters are bound yet — all values are interpolated into the
+  // SQL.  Binary parameter binding will hook in here.
+  int ret = 0;
+  status = mysql_stmt_execute_start(&ret, stmt);
+
+  if (status) {continueFunc = &DB::executeContinue; return false;}
+  if (ret) RAISE_DB_ERROR("Execute failed");
 
   return true;
 }
 
 
-void DB::flushResults() {
-  while (true) {
-    storeResult();
-    if (haveResult()) freeResult();
-    if (!moreResults()) break;
-    nextResult();
+void DB::freeMeta() {if (meta) {mysql_free_result(meta); meta = 0;}}
+
+
+void DB::setupResultBind() {
+  unsigned n = mysql_num_fields(meta);
+  binding->resize(n);
+
+  for (unsigned i = 0; i < n; i++) {
+    MYSQL_BIND &b = binding->binds[i];
+    b.buffer_type   = MYSQL_TYPE_STRING; // fetch every column as text
+    b.buffer        = 0;
+    b.buffer_length = 0;
+    b.length        = &binding->length[i];
+    b.is_null       = &binding->isNull[i];
+    b.error         = &binding->error[i];
   }
-}
 
-
-void DB::useResult() {
-  assertConnected();
-  assertNotPending();
-  assertNotHaveResult();
-
-  res = mysql_use_result(db);
-  if (!res) RAISE_DB_ERROR("Failed to use result");
-
-  stored = false;
-}
-
-
-void DB::storeResult() {
-  assertConnected();
-  assertNotPending();
-  assertNotHaveResult();
-
-  res = mysql_store_result(db);
-
-  if (res) stored = true;
-  else if (mysql_field_count(db)) RAISE_DB_ERROR("Failed to store result");
+  if (mysql_stmt_bind_result(stmt, binding->binds.data()))
+    RAISE_DB_ERROR("Failed to bind result");
 }
 
 
@@ -408,53 +428,39 @@ bool DB::storeResultNB() {
   assertConnected();
   assertNotPending();
   assertNonBlocking();
-  assertNotHaveResult();
 
-  status = mysql_store_result_start(&res, db);
-  if (status) {
-    continueFunc = &DB::storeResultContinue;
-    return false;
-  }
+  rowReady = false;
+  freeMeta();
 
-  if (res) stored = true;
-  else if (hasError()) RAISE_DB_ERROR("Failed to store result");
+  meta = mysql_stmt_result_metadata(stmt);
+  if (!meta) return true; // No result set (e.g. INSERT/UPDATE/OK)
+
+  setupResultBind();
+
+  int ret = 0;
+  status = mysql_stmt_store_result_start(&ret, stmt);
+  if (status) {continueFunc = &DB::storeResultContinue; return false;}
+  if (ret) RAISE_DB_ERROR("Failed to store result");
 
   return true;
 }
 
 
-bool DB::haveResult() const {return res;}
-
-
-bool DB::nextResult() {
-  assertConnected();
-  assertNotHaveResult();
-  assertNotPending();
-
-  int ret = mysql_next_result(db);
-  if (0 < ret) RAISE_DB_ERROR("Failed to get next result");
-
-  return ret == 0;
-}
+bool DB::haveResult() const {return meta;}
 
 
 bool DB::nextResultNB() {
   LOG_DEBUG(5, CBANG_FUNC << "()");
 
   assertConnected();
-  assertNotHaveResult();
   assertNotPending();
   assertNonBlocking();
 
   int ret = 0;
-  status = mysql_next_result_start(&ret, db);
-  if (status) {
-    continueFunc = &DB::nextResultContinue;
-    return false;
-  }
+  status = mysql_stmt_next_result_start(&ret, stmt);
+  if (status) {continueFunc = &DB::nextResultContinue; return false;}
 
   if (0 < ret) RAISE_DB_ERROR("Failed to get next result");
-  if (ret) LOG_DEBUG(5, "No more results");
 
   return true;
 }
@@ -462,16 +468,7 @@ bool DB::nextResultNB() {
 
 bool DB::moreResults() const {
   assertConnected();
-  return mysql_more_results(db);
-}
-
-
-void DB::freeResult() {
-  assertNotPending();
-  assertHaveResult();
-  mysql_free_result(res);
-  res = 0;
-  stored = false;
+  return mysql_stmt_more_results(stmt);
 }
 
 
@@ -480,43 +477,27 @@ bool DB::freeResultNB() {
 
   assertNotPending();
   assertNonBlocking();
-  assertHaveResult();
 
-  status = mysql_free_result_start(res);
-  if (status) {
-    continueFunc = &DB::freeResultContinue;
-    return false;
-  }
+  rowReady = false;
+  freeMeta();
 
-  res = 0;
+  my_bool ret = 0;
+  status = mysql_stmt_free_result_start(&ret, stmt);
+  if (status) {continueFunc = &DB::freeResultContinue; return false;}
 
   return true;
 }
 
 
-uint64_t DB::getRowCount() const {
-  assertHaveResult();
-  return mysql_num_rows(res);
-}
+uint64_t DB::getRowCount() const {return stmt ? mysql_stmt_num_rows(stmt) : 0;}
 
 
 uint64_t DB::getAffectedRowCount() const {
-  assertHaveResult();
-  return mysql_affected_rows(db);
+  return stmt ? mysql_stmt_affected_rows(stmt) : 0;
 }
 
 
-unsigned DB::getFieldCount() const {
-  assertHaveResult();
-  return mysql_num_fields(res);
-}
-
-
-bool DB::fetchRow() {
-  assertNotPending();
-  assertHaveResult();
-  return mysql_fetch_row(res);
-}
+unsigned DB::getFieldCount() const {return meta ? mysql_num_fields(meta) : 0;}
 
 
 bool DB::fetchRowNB() {
@@ -526,27 +507,38 @@ bool DB::fetchRowNB() {
   assertNonBlocking();
   assertHaveResult();
 
-  MYSQL_ROW row = 0;
-  status = mysql_fetch_row_start(&row, res);
-  if (status) {
-    continueFunc = &DB::fetchRowContinue;
-    return false;
-  }
+  status = mysql_stmt_fetch_start(&fetchRet, stmt);
+  if (status) {continueFunc = &DB::fetchRowContinue; return false;}
 
+  processFetch();
   return true;
 }
 
 
-bool DB::haveRow() const {return res && res->current_row;}
+void DB::processFetch() {
+  if (fetchRet == MYSQL_NO_DATA) {rowReady = false; return;}
+  if (fetchRet == 1) RAISE_DB_ERROR("Fetch failed");
 
+  // fetchRet is 0 or MYSQL_DATA_TRUNCATED.  The initial bind used a zero-length
+  // buffer, so pull each non-null column into a right-sized buffer.
+  unsigned n = getFieldCount();
+  for (unsigned i = 0; i < n; i++) {
+    if (binding->isNull[i]) continue;
 
-void DB::seekRow(uint64_t row) {
-  assertHaveResult();
-  if (!stored) RAISE_ERROR("Must use storeResult() before seekRow()");
-  if (mysql_num_rows(res) <= row)
-    RAISE_ERROR("Row seek out of range " << row);
-  mysql_data_seek(res, row);
+    unsigned long len = binding->length[i];
+    if (binding->data[i].size() < len) binding->data[i].resize(len);
+
+    MYSQL_BIND &b   = binding->binds[i];
+    b.buffer        = binding->data[i].empty() ? 0 : binding->data[i].data();
+    b.buffer_length = binding->data[i].size();
+    mysql_stmt_fetch_column(stmt, &b, i, 0);
+  }
+
+  rowReady = true;
 }
+
+
+bool DB::haveRow() const {return rowReady;}
 
 
 void DB::appendRow(JSON::Sink &sink, int first, int count) const {
@@ -600,7 +592,7 @@ SmartPointer<JSON::Value> DB::getRowDict(int first, int last,
 
 Field DB::getField(unsigned i) const {
   assertInFieldRange(i);
-  return &mysql_fetch_fields(res)[i];
+  return &mysql_fetch_fields(meta)[i];
 }
 
 
@@ -611,13 +603,13 @@ Field::type_t DB::getType(unsigned i) const {
 
 unsigned DB::getLength(unsigned i) const {
   assertInFieldRange(i);
-  return mysql_fetch_lengths(res)[i];
+  return binding->length[i];
 }
 
 
 const char *DB::getData(unsigned i) const {
   assertInFieldRange(i);
-  return res->current_row[i];
+  return binding->isNull[i] ? 0 : binding->data[i].data();
 }
 
 
@@ -652,13 +644,13 @@ JSON::ValuePtr DB::getJSON(unsigned i) const {
 
 bool DB::getNull(unsigned i) const {
   assertInFieldRange(i);
-  return !res->current_row[i];
+  return binding->isNull[i];
 }
 
 
 string DB::getString(unsigned i) const {
-  unsigned length = getLength(i);
-  return string(res->current_row[i], length);
+  if (getNull(i)) return "";
+  return string(binding->data[i].data(), binding->length[i]);
 }
 
 
@@ -705,9 +697,9 @@ uint64_t DB::getBit(unsigned i) const {
     RAISE_ERROR("Field " << i << " is not bit");
 
   uint64_t x = 0;
-  for (const char *ptr = res->current_row[i]; *ptr; ptr++) {
+  for (char c: getString(i)) {
     x <<= 1;
-    if (*ptr == '1') x |= 1;
+    if (c == '1') x |= 1;
   }
 
   return x;
@@ -718,38 +710,32 @@ void DB::getSet(unsigned i, set<string> &s) const {
   if (getType(i) != Field::TYPE_SET)
     RAISE_ERROR("Field " << i << " is not a set");
 
-  const char *start = res->current_row[i];
-  const char *end = start;
-
-  while (*end) {
-    if (*end == ',') {
-      s.insert(string(start, end - start));
+  string v = getString(i);
+  size_t start = 0;
+  for (size_t end = 0; end <= v.size(); end++)
+    if (end == v.size() || v[end] == ',') {
+      if (start < end) s.insert(v.substr(start, end - start));
       start = end + 1;
     }
-    end++;
-  }
 }
 
 
 double DB::getTime(unsigned i) const {
   assertInFieldRange(i);
 
-  char *s = res->current_row[i];
-  unsigned len = res->lengths[i];
+  string time = getString(i);
 
   // Parse decimal part
   double decimal = 0;
-  char *ptr = strchr(s, '.');
-  if (ptr) {
-    decimal = String::parseDouble(ptr);
-    len = ptr - s;
+  auto dot = time.find('.');
+  if (dot != string::npos) {
+    decimal = String::parseDouble(time.substr(dot));
+    time = time.substr(0, dot);
   }
-
-  string time = string(s, len);
 
   switch (getType(i)) {
   case Field::TYPE_YEAR:
-    if (len == 2) return decimal + Time::parse(time, "%y");
+    if (time.length() == 2) return decimal + Time::parse(time, "%y");
     return decimal + Time::parse(time, "%Y");
 
   case Field::TYPE_DATE:
@@ -782,10 +768,18 @@ string DB::rowToString() const {
 
 
 string DB::getInfo() const {return mysql_info(db);}
-const char *DB::getSQLState() const {return mysql_sqlstate(db);}
-bool DB::hasError() const {return mysql_errno(db);}
-string DB::getError() const {return mysql_error(db);}
-unsigned DB::getErrorNumber() const {return mysql_errno(db);}
+
+const char *DB::getSQLState() const {
+  return stmt ? mysql_stmt_sqlstate(stmt) : mysql_sqlstate(db);
+}
+
+bool     DB::hasError()       const {return getErrorNumber();}
+string   DB::getError()       const {
+  return stmt ? mysql_stmt_error(stmt) : mysql_error(db);
+}
+unsigned DB::getErrorNumber() const {
+  return stmt ? mysql_stmt_errno(stmt) : mysql_errno(db);
+}
 
 
 void DB::raiseError(const string &msg, bool withDBError) const {
@@ -1011,15 +1005,21 @@ bool DB::useContinue(unsigned ready) {
 }
 
 
-bool DB::queryContinue(unsigned ready) {
+bool DB::prepareContinue(unsigned ready) {
   int ret = 0;
-  status = mysql_real_query_cont(&ret, this->db, ready);
-
-  LOG_DEBUG(5, CBANG_FUNC << "() ready=" << ready << " status=" << status
-            << " ret=" << ret);
-
+  status = mysql_stmt_prepare_cont(&ret, stmt, ready);
   if (status) return false;
-  if (ret) RAISE_DB_ERROR("Query failed");
+  if (ret) RAISE_DB_ERROR("Prepare failed");
+
+  return startExecute();
+}
+
+
+bool DB::executeContinue(unsigned ready) {
+  int ret = 0;
+  status = mysql_stmt_execute_cont(&ret, stmt, ready);
+  if (status) return false;
+  if (ret) RAISE_DB_ERROR("Execute failed");
 
   return true;
 }
@@ -1028,11 +1028,10 @@ bool DB::queryContinue(unsigned ready) {
 bool DB::storeResultContinue(unsigned ready) {
   LOG_DEBUG(5, CBANG_FUNC << "()");
 
-  status = mysql_store_result_cont(&res, this->db, ready);
+  int ret = 0;
+  status = mysql_stmt_store_result_cont(&ret, stmt, ready);
   if (status) return false;
-
-  if (res) stored = true;
-  else if (hasError()) RAISE_DB_ERROR("Failed to store result");
+  if (ret) RAISE_DB_ERROR("Failed to store result");
 
   return true;
 }
@@ -1042,11 +1041,9 @@ bool DB::nextResultContinue(unsigned ready) {
   LOG_DEBUG(5, CBANG_FUNC << "()");
 
   int ret = 0;
-  status = mysql_next_result_cont(&ret, this->db, ready);
+  status = mysql_stmt_next_result_cont(&ret, stmt, ready);
   if (status) return false;
-
   if (0 < ret) RAISE_DB_ERROR("Failed to get next result");
-  if (ret) LOG_DEBUG(5, "No more results");
 
   return true;
 }
@@ -1055,20 +1052,20 @@ bool DB::nextResultContinue(unsigned ready) {
 bool DB::freeResultContinue(unsigned ready) {
   LOG_DEBUG(5, CBANG_FUNC << "()");
 
-  status = mysql_free_result_cont(res, ready);
-  if (status) return false;
+  my_bool ret = 0;
+  status = mysql_stmt_free_result_cont(&ret, stmt, ready);
 
-  res = 0;
-
-  return true;
+  return !status;
 }
 
 
 bool DB::fetchRowContinue(unsigned ready) {
   LOG_DEBUG(5, CBANG_FUNC << "()");
 
-  MYSQL_ROW row = 0;
-  status = mysql_fetch_row_cont(&row, res, ready);
+  status = mysql_stmt_fetch_cont(&fetchRet, stmt, ready);
+  if (status) return false;
 
-  return !status;
+  processFetch();
+
+  return true;
 }

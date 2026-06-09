@@ -1,0 +1,36 @@
+---
+# DB-free fixture: every endpoint is a SQL query whose result is supplied by
+# the linked-in libmariadb fake (see FakeMariaDB.*).  dbQuery selects the
+# endpoint + canned result per scenario.
+jmpapi: 1.2.0
+info: {title: db test, version: 0.0.0}
+
+endpoints:
+  /dict/{id}:
+    args: {id: {type: u32}}
+    get: {sql: "CALL UserGet({args.id})", return: dict}
+
+  /names:
+    get: {sql: "CALL Names()", return: list}
+
+  /list:
+    get: {sql: "CALL UserList()", return: list}
+
+  /one:
+    get: {sql: "SELECT COUNT(*) FROM users", return: one}
+
+  /u64:
+    get: {sql: "SELECT id FROM users LIMIT 1", return: u64}
+
+  /flag:
+    get: {sql: "SELECT active FROM users LIMIT 1", return: bool}
+
+  /full/{id}:
+    args: {id: {type: u32}}
+    get: {fields: ["*", teams], sql: "CALL UserFull({args.id})"}
+
+  /grid:
+    get: {sql: "CALL Grid()", return: hlist}
+
+  /err:
+    get: {sql: "CALL Boom()", return: dict}
