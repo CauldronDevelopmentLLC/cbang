@@ -30,57 +30,29 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "Blob.h"
 
-#include <cbang/api/Resolver.h>
-#include <cbang/api/Websocket.h>
-#include <cbang/http/Request.h>
+#include <cbang/Exception.h>
 
-#include <functional>
+using namespace std;
+using namespace cb;
+using namespace cb::API;
 
-namespace cb {
-  namespace API {
-    class API;
-    class Websocket;
 
-    class Context : public cb::HTTP::Status::Enum {
-      API &api;
-      HTTP::Request &req;
-      WebsocketPtr ws;
-      JSON::ValuePtr args;
-      SmartPointer<Resolver> resolver;
+Blob::Blob(const string &data, const string &type, const string &filename) :
+  data(data) {
+  insert("size", (uint64_t)data.size());
+  if (!type.empty())     insert("type",     type);
+  if (!filename.empty()) insert("filename", filename);
+}
 
-    public:
-      Context(API &api, HTTP::Request &req);
-      Context(API &api, const WebsocketPtr &ws);
 
-      HTTP::Request &getRequest() const {return req;}
-      const WebsocketPtr &getWebsocket() const {return ws;}
+JSON::ValuePtr Blob::copy(bool deep) const {
+  return const_cast<Blob *>(this); // Immutable, so share rather than copy
+}
 
-      const SmartPointer<Resolver> &getResolver() const {return resolver;}
-      void setResolver(const SmartPointer<Resolver> &resolver)
-        {this->resolver = resolver;}
 
-      const JSON::ValuePtr &getArgs() const {return args;}
-      void setArgs(const JSON::ValuePtr &args) {this->args = args;}
-
-      void parseBody();
-
-      void setSession(const SmartPointer<HTTP::Session> &session);
-
-      void reply(HTTP::Status code, const JSON::ValuePtr &msg) const;
-      void reply(const JSON::ValuePtr &msg) const;
-      void reply(HTTP::Status code,
-        std::function<void (JSON::Sink &sink)> cb) const;
-      void reply(std::function<void (JSON::Sink &sink)> cb) const;
-      void reply(HTTP::Status code = HTTP_OK,
-        const std::string &text = "") const;
-      void reply(const std::exception &e) const;
-      void reply(const Exception &e) const;
-
-      void errorHandler(std::function<void ()> cb) const;
-    };
-
-    using CtxPtr = SmartPointer<Context>;
-  }
+void Blob::write(JSON::Sink &sink) const {
+  THROW("A binary value is only valid bound whole into a SQL query or "
+        "written as the response body");
 }

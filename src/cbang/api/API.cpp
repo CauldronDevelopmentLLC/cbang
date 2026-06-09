@@ -600,6 +600,7 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
 bool cb::API::API::operator()(HTTP::Request &req) {
   auto ctx = SmartPtr(new Context(*this, req));
   ctx->setArgs(req.parseArgs());
+  ctx->parseBody();
 
   // The terminal continuation: nothing handled the request.  Reply 404 so an
   // async chain that falls through still responds (the captured `ctx` keeps

@@ -1,0 +1,10 @@
+--XbOuNdX
+Content-Disposition: form-data; name="caption"
+
+A cat
+--XbOuNdX
+Content-Disposition: form-data; name="photo"; filename="cat.png"
+Content-Type: image/png
+
+PNGDATA
+--XbOuNdX--

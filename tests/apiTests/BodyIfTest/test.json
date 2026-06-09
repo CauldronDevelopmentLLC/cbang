@@ -1,0 +1,8 @@
+{
+  "args": [
+    "PUT",
+    "/body-if",
+    "Content-Type: application/octet-stream",
+    "-stdin"
+  ]
+}
