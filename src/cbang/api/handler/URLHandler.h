@@ -48,7 +48,7 @@ namespace cb {
         const std::string &pattern, const SmartPointer<Handler> &child);
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override;
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
     };
   }
 }

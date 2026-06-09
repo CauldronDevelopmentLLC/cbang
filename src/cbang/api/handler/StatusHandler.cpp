@@ -48,7 +48,6 @@ StatusHandler::StatusHandler(const JSON::ValuePtr &config) :
 }
 
 
-bool StatusHandler::operator()(const CtxPtr &ctx) {
+void StatusHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   ctx->reply(code, text);
-  return true;
 }

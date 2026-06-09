@@ -46,7 +46,7 @@ namespace cb {
         methods(methods), child(child) {}
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override;
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
     };
   }
 }

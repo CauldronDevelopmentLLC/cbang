@@ -43,7 +43,7 @@
 #include <cbang/api/handler/LoginHandler.h>
 #include <cbang/api/handler/LogoutHandler.h>
 #include <cbang/api/handler/SpecHandler.h>
-#include <cbang/api/handler/ArgFilterHandler.h>
+#include <cbang/api/handler/ExecHandler.h>
 #include <cbang/api/handler/PassHandler.h>
 #include <cbang/api/handler/HeadersHandler.h>
 #include <cbang/api/handler/RedirectHandler.h>
@@ -415,15 +415,15 @@ cb::API::HandlerPtr cb::API::API::wrapEndpoint(
   if (config->has("headers"))
     group->add(new HeadersHandler(config->get("headers")));
 
-  // Arg filter
-  if (config->has("arg-filter")) {
+  // Exec pre-step
+  if (config->has("exec")) {
     if (procPool.isNull())
-      THROW("API cannot have 'arg-filter' without Event::SubprocessPool");
+      THROW("API cannot have 'exec' without Event::SubprocessPool");
 
-    auto filter = config->get("arg-filter");
-    group->add(new ArgFilterHandler(*this, filter, handler));
+    group->add(new ExecHandler(*this, config->get("exec")));
+  }
 
-  } else group->add(handler);
+  group->add(handler);
 
   // Validation
   return cfg->addValidation(group);
@@ -576,5 +576,11 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
 bool cb::API::API::operator()(HTTP::Request &req) {
   auto ctx = SmartPtr(new Context(*this, req));
   ctx->setArgs(req.parseArgs());
-  return operator()(ctx);
+
+  // The terminal continuation: nothing handled the request.  Reply 404 so an
+  // async chain that falls through still responds (the captured `ctx` keeps
+  // the request alive).
+  operator()(ctx, [] (const CtxPtr &ctx) {ctx->reply(HTTP_NOT_FOUND);});
+
+  return true;
 }

@@ -36,12 +36,19 @@
 
 #include <cbang/http/Status.h>
 
+#include <functional>
+
 namespace cb {
   namespace API {
+    // A continuation: invoke to pass control to the rest of the handler chain.
+    using Cont = std::function<void (const CtxPtr &)>;
+
     class Handler : public HTTP::Status::Enum {
     public:
       virtual ~Handler() {}
-      virtual bool operator()(const CtxPtr &ctx) = 0;
+
+      // Either reply via the Context, or call next(ctx) to pass downstream.
+      virtual void operator()(const CtxPtr &ctx, const Cont &next) = 0;
     };
 
     using HandlerPtr = SmartPointer<Handler>;

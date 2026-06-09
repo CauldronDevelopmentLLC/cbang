@@ -81,7 +81,7 @@ namespace cb {
       SmartPointer<MariaDB::EventDB> getDBConnection() const override;
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override;
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
    };
   }
 }

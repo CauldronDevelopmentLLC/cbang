@@ -49,8 +49,10 @@ namespace cb {
     public:
       FunctionHandler(callback_t cb) : cb(cb) {}
 
-      // From Handler
-      bool operator()(const CtxPtr &ctx) override {return cb(ctx);}
+      // From Handler.  The callback returns true if it handled the request.
+      void operator()(const CtxPtr &ctx, const Cont &next) override {
+        if (!cb(ctx)) next(ctx);
+      }
     };
   }
 }

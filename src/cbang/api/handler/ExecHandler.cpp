@@ -30,30 +30,55 @@
 
 \******************************************************************************/
 
-#include "ArgFilterHandler.h"
-#include "ArgFilterProcess.h"
+#include "ExecHandler.h"
+#include "ExecProcess.h"
 
 #include <cbang/api/API.h>
+#include <cbang/api/Resolver.h>
+#include <cbang/os/Subprocess.h>
+#include <cbang/json/Dict.h>
+#include <cbang/json/String.h>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-ArgFilterHandler::ArgFilterHandler(
-  API &api, const JSON::ValuePtr &config, const SmartPointer<Handler> &child) :
-    api(api), child(child) {
+ExecHandler::ExecHandler(API &api, const JSON::ValuePtr &config) :
+  api(api) {
 
-  if (config->isString()) Subprocess::parse(config->toString(), cmd);
+  JSON::ValuePtr cmdVal;
+
+  if (config->isString()) cmdVal = config;
   else {
-    if (!config->isList()) THROW("Invalid arg-filter config");
-    for (auto &v: *config) cmd.push_back(v->asString());
+    if (!config->isDict()) THROW("Invalid exec config");
+    cmdVal = config->get("cmd");
+    if (config->has("input")) input = config->get("input");
+  }
+
+  if (cmdVal->isString()) Subprocess::parse(cmdVal->asString(), cmd);
+  else if (cmdVal->isList()) for (auto &v: *cmdVal) cmd.push_back(v->asString());
+  else THROW("exec 'cmd' must be a string or list");
+
+  // Default envelope sends the request args
+  if (input.isNull()) {
+    input = new JSON::Dict;
+    input->insert("args", new JSON::String("{args}"));
   }
 }
 
 
-bool ArgFilterHandler::operator()(const CtxPtr &ctx) {
+void ExecHandler::operator()(const CtxPtr &ctx, const Cont &next) {
+  auto resolver = ctx->getResolver();
+
+  // Resolve the command and input envelope against the request
+  vector<string> rcmd;
+  for (auto &arg: cmd) rcmd.push_back(resolver->resolve(arg));
+
+  auto in = input->copy(true);
+  resolver->resolve(*in);
+
   auto &pool = api.getProcPool();
-  pool.enqueue(new ArgFilterProcess(pool.getBase(), child, cmd, ctx));
-  return true;
+  pool.enqueue(
+    new ExecProcess(pool.getBase(), rcmd, in->toString(), ctx, next));
 }

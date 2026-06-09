@@ -45,8 +45,8 @@ WSQueryHandler::WSQueryHandler(API &api, const JSON::ValuePtr &config) :
   api(api), category(api.getCategory()), query(config->getString("query")) {}
 
 
-bool WSQueryHandler::operator()(const CtxPtr &ctx) {
+void WSQueryHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   string name = ctx->getResolver()->resolve(query);
   auto handler = api.getQuery(category, name);
-  return handler->operator()(ctx);
+  (*handler)(ctx, next);
 }

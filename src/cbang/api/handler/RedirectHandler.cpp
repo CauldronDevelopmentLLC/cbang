@@ -48,7 +48,7 @@ RedirectHandler::RedirectHandler(const JSON::ValuePtr &config) :
   location(config->getString("location")) {}
 
 
-bool RedirectHandler::operator()(const CtxPtr &ctx) {
+void RedirectHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   ctx->getRequest().outSet("Location", location);
-  return StatusHandler::operator()(ctx);
+  StatusHandler::operator()(ctx, next);
 }

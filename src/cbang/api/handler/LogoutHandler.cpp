@@ -44,7 +44,7 @@ LogoutHandler::LogoutHandler(API &api, const JSON::ValuePtr &config) :
   QueryHandler(api, config) {}
 
 
-bool LogoutHandler::operator()(const CtxPtr &ctx) {
+void LogoutHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto &req = ctx->getRequest();
 
   auto cb = [this, &req] (HTTP::Status status, const JSON::ValuePtr &result) {
@@ -63,5 +63,4 @@ bool LogoutHandler::operator()(const CtxPtr &ctx) {
   };
 
   queryDef->query(ctx->getResolver(), cb);
-  return true;
 }

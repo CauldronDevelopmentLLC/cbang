@@ -30,14 +30,13 @@
 
 \******************************************************************************/
 
-#include "ArgFilterProcess.h"
+#include "ExecProcess.h"
 
 #include <cbang/Catch.h>
 #include <cbang/api/Context.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/PipeEventBuffer.h>
 #include <cbang/http/Request.h>
-#include <cbang/http/RequestErrorHandler.h>
 #include <cbang/http/Enum.h>
 #include <cbang/log/Logger.h>
 #include <cbang/json/Reader.h>
@@ -48,7 +47,7 @@ using namespace Event;
 using namespace cb::API;
 
 
-void ArgFilterProcess::exec() {
+void ExecProcess::exec() {
   Subprocess::exec(cmd, Subprocess::SHELL   | Subprocess::REDIR_STDERR |
                    Subprocess::REDIR_STDOUT | Subprocess::REDIR_STDIN);
 
@@ -62,29 +61,41 @@ void ArgFilterProcess::exec() {
     base, getPipeErr(), SSTR("PID:" << getPID() << ':'),
     CBANG_LOG_DOMAIN, CBANG_LOG_WARNING_LEVEL);
 
-  inStr->add(ctx->getArgs()->toString());
+  inStr->add(input);
   inStr->write();
 }
 
 
-void ArgFilterProcess::done() {
+void ExecProcess::done() {
   try {
     outStr->read();
     errStr->flush();
 
     string output = outStr->toString();
-    if (output.empty()) THROW("No output from arg-filter");
+    if (output.empty()) THROW("No output from exec");
 
     auto results  = JSON::Reader::parse(output);
     unsigned code = results->getU32("code", 200);
 
-    if (code == 200) {
-      if (results->hasDict("data"))
+    if (200 <= code && code < 300) {
+      // Merge returned args ("data" is the legacy alias)
+      if (results->hasDict("args")) ctx->getArgs()->merge(results->getDict("args"));
+      else if (results->hasDict("data"))
         ctx->getArgs()->merge(results->getDict("data"));
 
-      ctx->errorHandler([&] {
-        if (!(*child)(ctx)) ctx->reply(HTTP::Status::HTTP_NOT_FOUND);
-      });
+      // Response headers
+      if (results->hasDict("headers"))
+        for (auto e: results->getDict("headers").entries())
+          ctx->getRequest().outSet(e.key(), e.value()->asString());
+
+      // An explicit response short-circuits the pipeline
+      if (results->has("response")) {
+        ctx->reply((HTTP::Status::enum_t)code, results->get("response"));
+        return;
+      }
+
+      // Otherwise continue to the next statement
+      ctx->errorHandler([&] {next(ctx);});
       return;
     }
 

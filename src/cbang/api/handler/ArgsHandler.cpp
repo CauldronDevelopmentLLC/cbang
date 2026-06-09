@@ -38,12 +38,12 @@ using namespace cb;
 using namespace cb::API;
 
 
-bool ArgsHandler::operator()(const CtxPtr &ctx) {
+void ArgsHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   CtxPtr childCtx = new Context(*ctx);
 
   auto resolver = SmartPtr(new Resolver(ctx->getResolver()));
   resolver->set("args", validator(ctx, ctx->getArgs()));
   childCtx->setResolver(resolver);
 
-  return child->operator()(childCtx);
+  (*child)(childCtx, next);
 }

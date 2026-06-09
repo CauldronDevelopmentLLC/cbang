@@ -52,7 +52,7 @@ namespace cb {
         const CtxPtr &ctx, HTTP::Status status, const JSON::ValuePtr &result);
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override;
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
     };
   }
 }
