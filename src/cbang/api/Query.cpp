@@ -32,6 +32,7 @@
 
 #include "Query.h"
 #include "QueryDef.h"
+#include "Blob.h"
 
 #include <cbang/log/Logger.h>
 
@@ -58,6 +59,7 @@ void Query::exec(const string &sql, const vector<string> &params) {
 
 Query::return_t Query::getReturnType(const string &name) {
   if (name == "ok")     return &Query::returnOk;
+  if (name == "binary") return &Query::returnBinary;
   if (name == "hlist")  return &Query::returnHList;
   if (name == "list")   return &Query::returnList;
   if (name == "fields") return &Query::returnFields;
@@ -92,6 +94,29 @@ void Query::errorReply(HTTP::Status code, const string &msg) {
   sink.endDict();
 
   reply(code);
+}
+
+
+void Query::returnBinary(MariaDB::EventDB::state_t state) {
+  switch (state) {
+  case MariaDB::EventDB::EVENTDB_ROW:
+    if (!rowCount++) {
+      binaryData = db->getString(0); // binary-safe, keeps length
+
+      // The content-type key takes precedence over a second column
+      if (contentType.empty() && 1 < db->getFieldCount() && !db->isNull(1))
+        contentType = db->getString(1);
+    }
+    break;
+
+  case MariaDB::EventDB::EVENTDB_DONE:
+    if (!rowCount) errorReply(HTTP_NOT_FOUND);
+    else cb(HTTP_OK, new Blob(binaryData, contentType.empty() ?
+                              "application/octet-stream" : contentType));
+    break;
+
+  default: returnOk(state);
+  }
 }
 
 

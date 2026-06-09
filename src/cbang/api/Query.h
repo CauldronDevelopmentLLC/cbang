@@ -61,11 +61,17 @@ namespace cb {
       bool closeField       = true;
       unsigned rowCount     = 0;
 
+      std::string binaryData; // for ``return: binary``
+      std::string contentType;
+
       JSON::Builder sink;
 
     public:
       Query(const QueryDef &def, callback_t cb);
       virtual ~Query() {}
+
+      void setContentType(const std::string &contentType)
+        {this->contentType = contentType;}
 
       void exec(const std::string &sql,
                 const std::vector<std::string> &params = {});
@@ -78,6 +84,7 @@ namespace cb {
       void errorReply(HTTP::Status code, const std::string &msg = "");
 
       // MariaDB::EventDB callbacks
+      void returnBinary(state_t state);
       void returnHList (state_t state);
       void returnList  (state_t state);
       void returnBool  (state_t state);

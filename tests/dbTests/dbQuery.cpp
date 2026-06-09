@@ -164,6 +164,25 @@ namespace {
         "\r\n--XbOuNdX--\r\n";
       FakeDB::push(Response()); // OK, no result set
 
+    } else if (s == "Binary") {
+      path = "/image";
+      push(result({{"data", FakeDB::BLOB}},
+                  {{Cell(string("IMG\0\xff\r\nBYTES", 12))}}));
+
+    } else if (s == "BinaryTypeCol") {
+      path = "/image";
+      push(result({{"data", FakeDB::BLOB}, {"type", FakeDB::STRING}},
+                  {{Cell(string("PNG\0DATA", 8)), Cell("image/png")}}));
+
+    } else if (s == "BinaryCTKey") {
+      path = "/image-gif"; // the content-type key beats the second column
+      push(result({{"data", FakeDB::BLOB}, {"type", FakeDB::STRING}},
+                  {{Cell(string("GIF\0DATA", 8)), Cell("image/png")}}));
+
+    } else if (s == "BinaryNotFound") {
+      path = "/image";
+      push(result({{"data", FakeDB::BLOB}}, {}));
+
     } else if (s == "BlobEmbed") {
       method = "PUT";
       path   = "/blob-embed";

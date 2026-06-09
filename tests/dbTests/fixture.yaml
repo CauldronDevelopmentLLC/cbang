@@ -48,3 +48,11 @@ endpoints:
   # the bound parameter count does not match
   /blob-embed:
     put: {sql: "SELECT 'x-{body}'", return: ok}
+
+  # Binary response: column 1 of row 1 is the raw body; the Content-Type
+  # comes from the content-type key, else a second column, else octet-stream
+  /image:
+    get: {sql: "CALL GetImage()", return: binary}
+
+  /image-gif:
+    get: {sql: "CALL GetImage()", return: binary, content-type: image/gif}

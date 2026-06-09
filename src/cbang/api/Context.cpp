@@ -79,6 +79,15 @@ void Context::setSession(const SmartPointer<HTTP::Session> &session) {
 
 
 void Context::reply(HTTP::Status code, const JSON::ValuePtr &msg) const {
+  // A binary value is written as the raw response body
+  auto *blob = dynamic_cast<Blob *>(msg.get());
+  if (blob) {
+    if (ws.isSet()) THROW("Binary reply not supported over websocket");
+    req.setContentType(blob->getString("type", "application/octet-stream"));
+    req.reply(code, Event::Buffer(blob->getData()));
+    return;
+  }
+
   if (msg.isSet()) reply(code, [&] (JSON::Sink &sink) {msg->write(sink);});
   else reply(code);
 }
