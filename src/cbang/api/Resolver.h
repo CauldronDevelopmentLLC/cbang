@@ -51,6 +51,9 @@ namespace cb {
       SmartPointer<Resolver> parent;
       JSON::Dict vars;
 
+      JSON::ValuePtr resolveValue(
+        const JSON::ValuePtr &value, bool sql) const;
+
     public:
       Resolver(const SmartPointer<Resolver> parent = 0) : parent(parent) {}
       Resolver(API &api);

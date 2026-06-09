@@ -41,6 +41,7 @@
 #include <cbang/db/maria/DB.h>
 
 #include <set>
+#include <vector>
 
 using namespace std;
 using namespace cb;
@@ -134,15 +135,44 @@ string Resolver::resolve(const string &s, bool sql) const {
 }
 
 
+JSON::ValuePtr Resolver::resolveValue(
+  const JSON::ValuePtr &value, bool sql) const {
+  if (value->isList() || value->isDict()) {resolve(*value, sql); return value;}
+
+  if (value->isString()) {
+    const string &s = value->getString();
+
+    // A lone reference with no format spec resolves to the native value
+    if (!sql && 2 <= s.length() && s.front() == '{' && s.back() == '}') {
+      string id = s.substr(1, s.length() - 2);
+      if (id.find_first_of("{}:") == string::npos) {
+        auto v = select(id);
+        return v.isSet() ? v->copy(true) : value; // Missing: leave literal
+      }
+    }
+
+    if (s.find('{') != string::npos) return new JSON::String(resolve(s, sql));
+  }
+
+  return value;
+}
+
+
 void Resolver::resolve(JSON::Value &value, bool sql) const {
-  if (value.isString()) {
+  if (value.isList())
+    for (unsigned i = 0; i < value.size(); i++)
+      value.set(i, resolveValue(value.get(i), sql));
+
+  else if (value.isDict()) {
+    // Collect keys first; resolveValue may replace entries in place
+    std::vector<std::string> keys;
+    for (auto e: value.entries()) keys.push_back(e.key());
+    for (auto &key: keys) value.insert(key, resolveValue(value.get(key), sql));
+
+  } else if (value.isString()) {
+    // Top-level string: resolve in place (cannot retype without a parent)
     auto sPtr = dynamic_cast<JSON::String *>(&value);
-    if (!sPtr) THROW("Expected JSON::String");
-
-    string &s = sPtr->getValue();
-    if (s.find('{') != string::npos) s = resolve(s, sql);
-
-  } else if (value.isList() || value.isDict())
-    for (auto e: value.entries())
-      resolve(*e.value(), sql);
+    if (sPtr && sPtr->getValue().find('{') != string::npos)
+      sPtr->getValue() = resolve(sPtr->getValue(), sql);
+  }
 }
