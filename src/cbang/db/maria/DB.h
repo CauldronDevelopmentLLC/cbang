@@ -158,8 +158,10 @@ namespace cb {
       void use(const std::string &db);
       bool useNB(const std::string &db);
 
-      // Query (prepared statement: prepare + bind + execute)
-      bool queryNB(const std::string &s);
+      // Query (prepared statement: prepare + bind + execute).  ``params``
+      // are bound, in order, to the ``?`` placeholders in the SQL.
+      bool queryNB(const std::string &s,
+                   const std::vector<std::string> &params = {});
 
       // Result set
       bool storeResultNB();

@@ -80,4 +80,5 @@ namespace FakeDB {
   void reset();
   void push(const Response &r);                // queue one query's outcome
   const std::vector<std::string> &queries();   // SQL sent, in order
+  const std::vector<std::vector<std::string>> &binds(); // params, per query
 }

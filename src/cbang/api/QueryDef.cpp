@@ -68,5 +68,24 @@ SmartPointer<Query> QueryDef::query(
 
 SmartPointer<Query> QueryDef::query(
   const ResolverPtr &resolver, Query::callback_t cb) const {
-  return query(resolver->resolve(sql, true), cb);
+  vector<string> params;
+  string s = resolver->resolveSQL(sql, params);
+
+  // Check the bound parameters match the ? placeholders, counting quote-aware
+  // so a binary ref resolved inside a string literal is caught here with a
+  // clear error rather than failing at execute.
+  unsigned placeholders = 0;
+  bool quoted = false;
+  for (char c: s) {
+    if (c == '\'') quoted = !quoted;
+    else if (c == '?' && !quoted) placeholders++;
+  }
+  if (placeholders != params.size())
+    THROW("SQL has " << placeholders << " placeholders but "
+          << params.size() << " bound parameters; a binary {ref} cannot be "
+          "embedded in a string");
+
+  auto query = SmartPtr(new Query(*this, cb));
+  query->exec(s, params);
+  return query;
 }

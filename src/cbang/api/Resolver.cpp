@@ -32,6 +32,7 @@
 
 #include "Resolver.h"
 #include "API.h"
+#include "Blob.h"
 
 #include <cbang/log/Logger.h>
 #include <cbang/json/Null.h>
@@ -114,10 +115,28 @@ uint64_t Resolver::selectTime(const string &path, uint64_t defaultValue) const {
 
 
 string Resolver::resolve(const string &s, bool sql) const {
+  return resolve(s, sql, 0);
+}
+
+
+string Resolver::resolveSQL(const string &s, vector<string> &params) const {
+  return resolve(s, true, &params);
+}
+
+
+string Resolver::resolve(
+  const string &s, bool sql, vector<string> *params) const {
   auto cb = [&] (const string &id, const string &spec) -> string {
     auto value = select(id);
 
     if (sql) {
+      auto *blob = dynamic_cast<Blob *>(value.get());
+      if (blob) {
+        if (!params) THROW("Binary value '" << id << "' not supported here");
+        params->push_back(blob->getData());
+        return "?";
+      }
+
       if (value.isNull() || value->isNull() || value->isUndefined())
         return "NULL";
 

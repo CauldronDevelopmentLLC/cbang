@@ -62,6 +62,11 @@ namespace cb {
       vector<my_bool>      isNull;
       vector<my_bool>      error;
 
+      // Bound input parameters
+      vector<string>        params;
+      vector<MYSQL_BIND>    paramBinds;
+      vector<unsigned long> paramLength;
+
       void resize(unsigned n) {
         binds .assign(n, MYSQL_BIND());
         data  .assign(n, vector<char>());
@@ -366,7 +371,7 @@ bool DB::useNB(const string &dbName) {
 }
 
 
-bool DB::queryNB(const string &s) {
+bool DB::queryNB(const string &s, const vector<string> &params) {
   assertConnected();
   assertNotPending();
   assertNonBlocking();
@@ -375,6 +380,7 @@ bool DB::queryNB(const string &s) {
     RAISE_DB_ERROR("Failed to allocate statement");
 
   rowReady = false;
+  binding->params = params;
 
   int ret = 0;
   status = mysql_stmt_prepare_start(&ret, stmt, s.data(), s.length());
@@ -388,8 +394,31 @@ bool DB::queryNB(const string &s) {
 
 
 bool DB::startExecute() {
-  // No input parameters are bound yet — all values are interpolated into the
-  // SQL.  Binary parameter binding will hook in here.
+  auto &params = binding->params;
+  unsigned count = mysql_stmt_param_count(stmt);
+  if (count != params.size())
+    RAISE_ERROR("SQL expects " << count << " bound parameters but "
+                << params.size() << " were provided");
+
+  if (!params.empty()) {
+    auto &binds   = binding->paramBinds;
+    auto &lengths = binding->paramLength;
+
+    binds.assign(params.size(), MYSQL_BIND());
+    lengths.assign(params.size(), 0);
+
+    for (unsigned i = 0; i < params.size(); i++) {
+      lengths[i]             = params[i].length();
+      binds[i].buffer_type   = MYSQL_TYPE_BLOB;
+      binds[i].buffer        = (void *)params[i].data();
+      binds[i].buffer_length = params[i].length();
+      binds[i].length        = &lengths[i];
+    }
+
+    if (mysql_stmt_bind_param(stmt, binds.data()))
+      RAISE_DB_ERROR("Failed to bind parameters");
+  }
+
   int ret = 0;
   status = mysql_stmt_execute_start(&ret, stmt);
 

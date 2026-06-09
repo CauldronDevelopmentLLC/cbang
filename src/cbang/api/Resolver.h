@@ -35,6 +35,8 @@
 #include <cbang/String.h>
 #include <cbang/json/Dict.h>
 
+#include <vector>
+
 
 namespace cb {
   namespace HTTP {
@@ -53,6 +55,8 @@ namespace cb {
 
       JSON::ValuePtr resolveValue(
         const JSON::ValuePtr &value, bool sql) const;
+      std::string resolve(const std::string &s, bool sql,
+                          std::vector<std::string> *params) const;
 
     public:
       Resolver(const SmartPointer<Resolver> parent = 0) : parent(parent) {}
@@ -71,6 +75,10 @@ namespace cb {
       uint64_t selectTime(const std::string &path, uint64_t defaultValue) const;
 
       std::string resolve(const std::string &s, bool sql = false) const;
+      // SQL resolve collecting bound parameters: a binary ref emits a ``?``
+      // placeholder and appends its bytes to ``params``.
+      std::string resolveSQL(
+        const std::string &s, std::vector<std::string> &params) const;
       void resolve(JSON::Value &value, bool sql = false) const;
     };
 

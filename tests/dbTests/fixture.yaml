@@ -34,3 +34,17 @@ endpoints:
 
   /err:
     get: {sql: "CALL Boom()", return: dict}
+
+  # Binary parameter binding: a binary ref becomes a bound ? placeholder
+  /blob:
+    put: {sql: "CALL StoreBlob({body}, {body.type})", return: ok}
+
+  /photo:
+    post:
+      sql: "CALL StorePhoto({files.photo}, {files.photo.filename})"
+      return: ok
+
+  # A binary ref inside a SQL string literal: the ? is not a placeholder, so
+  # the bound parameter count does not match
+  /blob-embed:
+    put: {sql: "SELECT 'x-{body}'", return: ok}

@@ -43,8 +43,9 @@ using namespace cb::MariaDB;
 
 
 QueryCallback::QueryCallback(EventDB &db, EventDB::callback_t cb,
-                             const string &query, unsigned retry) :
-  db(db), cb(cb), query(query), retry(retry) {}
+                             const string &query,
+                             const vector<string> &params, unsigned retry) :
+  db(db), cb(cb), query(query), params(params), retry(retry) {}
 
 
 void QueryCallback::call(EventDB::state_t state) {
@@ -67,7 +68,7 @@ bool QueryCallback::next() {
   case STATE_START:
     state = STATE_QUERY;
     LOG_DEBUG(5, "SQL: " << query);
-    if (!db.queryNB(query)) return false;
+    if (!db.queryNB(query, params)) return false;
 
   case STATE_QUERY:
     state = STATE_STORE;

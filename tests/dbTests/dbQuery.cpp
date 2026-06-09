@@ -41,6 +41,7 @@
 #include "FakeMariaDB.h"
 
 #include <cbang/Catch.h>
+#include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/json/YAMLReader.h>
 #include <cbang/config/Options.h>
@@ -79,9 +80,10 @@ namespace {
   void push(const Result &r) {Response resp; resp.results = {r}; FakeDB::push(resp);}
 
 
-  // Map a scenario name to (method, path) and queue its canned result(s).
-  // Returns false for an unknown scenario.
-  bool setup(const string &s, string &method, string &path) {
+  // Map a scenario name to (method, path), an optional request body, and
+  // queue its canned result(s).  Returns false for an unknown scenario.
+  bool setup(const string &s, string &method, string &path, string &body,
+             string &contentType) {
     method = "GET";
 
     if (s == "Dict") {
@@ -142,6 +144,33 @@ namespace {
       resp.sqlstate = "45000";
       FakeDB::push(resp);
 
+    } else if (s == "Blob") {
+      method = "PUT";
+      path   = "/blob";
+      body   = string("\x00\x01\x02\r\n\xff\xfe bytes\x00", 14);
+      contentType = "application/octet-stream";
+      FakeDB::push(Response()); // OK, no result set
+
+    } else if (s == "Upload") {
+      method = "POST";
+      path   = "/photo";
+      contentType = "multipart/form-data; boundary=XbOuNdX";
+      body =
+        "--XbOuNdX\r\n"
+        "Content-Disposition: form-data; name=\"photo\"; "
+        "filename=\"cat.png\"\r\n"
+        "Content-Type: image/png\r\n\r\n" +
+        string("PNG\0DATA", 8) +
+        "\r\n--XbOuNdX--\r\n";
+      FakeDB::push(Response()); // OK, no result set
+
+    } else if (s == "BlobEmbed") {
+      method = "PUT";
+      path   = "/blob-embed";
+      body   = "bytes";
+      contentType = "application/octet-stream";
+      // No response: the bind/placeholder count mismatch errors first
+
     } else return false;
 
     return true;
@@ -162,14 +191,17 @@ int main(int argc, char *argv[]) {
     // Keep logs off stdout and deterministic
     Logger::instance().setScreenStream(cerr);
     Logger::instance().setLogTime(false);
+    Logger::instance().setLogColor(false);
+    Exception::printLocations = false;
 
     Event::Base base(false);
     Options options;
     API::API api(options);
 
-    string method, path;
+    string method, path, body, contentType;
     FakeDB::reset();
-    if (!setup(scenario, method, path)) THROW("Unknown scenario: " << scenario);
+    if (!setup(scenario, method, path, body, contentType))
+      THROW("Unknown scenario: " << scenario);
 
     api.setDBConnector(new MariaDB::Connector(base));
     api.load(JSON::YAMLReader::parseFile(configPath));
@@ -177,7 +209,12 @@ int main(int argc, char *argv[]) {
     HTTP::RequestParams params;
     params.method = HTTP::Method::parse(method, HTTP::Method::HTTP_GET);
     params.uri    = URI(path);
+
+    params.hdrs = new HTTP::Headers;
+    if (!contentType.empty()) params.hdrs->insert("Content-Type", contentType);
+
     HTTP::Request req(params);
+    if (!body.empty()) req.getInputBuffer().add(body.data(), body.length());
 
     api(req);
 
@@ -194,7 +231,13 @@ int main(int argc, char *argv[]) {
 
     cout << req.getOutput();
 
-    for (auto &q: FakeDB::queries()) cout << "\nSQL: " << q;
+    auto &queries = FakeDB::queries();
+    auto &binds   = FakeDB::binds();
+    for (unsigned i = 0; i < queries.size(); i++) {
+      cout << "\nSQL: " << queries[i];
+      for (unsigned j = 0; j < binds[i].size(); j++)
+        cout << "\nBIND[" << j << "]: " << MariaDB::DB::toHex(binds[i][j]);
+    }
 
     return 0;
   } CATCH_ERROR;
