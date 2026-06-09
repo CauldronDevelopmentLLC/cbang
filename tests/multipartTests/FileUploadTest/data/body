@@ -1,0 +1,10 @@
+--BoUnDaRy123
+Content-Disposition: form-data; name="caption"
+
+A cat
+--BoUnDaRy123
+Content-Disposition: form-data; name="photo"; filename="cat.png"
+Content-Type: image/png
+
+PNGDATA
+--BoUnDaRy123--

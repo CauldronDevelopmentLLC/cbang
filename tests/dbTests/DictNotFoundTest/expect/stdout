@@ -1,0 +1,4 @@
+404
+Content-Type: application/json
+{"error":"HTTP_NOT_FOUND","code":404}
+SQL: CALL UserGet(99)

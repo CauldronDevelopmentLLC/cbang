@@ -1,0 +1,4 @@
+200
+Content-Type: application/json
+true
+SQL: SELECT active FROM users LIMIT 1

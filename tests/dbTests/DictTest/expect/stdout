@@ -1,0 +1,4 @@
+200
+Content-Type: application/json
+{"id":42,"name":"Bob"}
+SQL: CALL UserGet(42)

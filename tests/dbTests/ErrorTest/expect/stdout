@@ -1,0 +1,4 @@
+400
+Content-Type: application/json
+{"error":"DB:1644: boom","code":400}
+SQL: CALL Boom()

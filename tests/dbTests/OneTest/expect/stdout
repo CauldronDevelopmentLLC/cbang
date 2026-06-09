@@ -1,0 +1,4 @@
+200
+Content-Type: application/json
+7
+SQL: SELECT COUNT(*) FROM users

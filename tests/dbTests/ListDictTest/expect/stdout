@@ -1,0 +1,4 @@
+200
+Content-Type: application/json
+[{"id":1,"name":"A"},{"id":2,"name":"B"}]
+SQL: CALL UserList()

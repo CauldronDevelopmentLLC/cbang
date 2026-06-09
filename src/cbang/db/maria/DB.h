@@ -44,10 +44,13 @@
 
 struct st_mysql;
 struct st_mysql_res;
+struct st_mysql_stmt;
 
 
 namespace cb {
   namespace MariaDB {
+    struct Binding; // Bound result-column buffers (defined in DB.cpp)
+
     class DB {
     public:
       typedef enum {
@@ -90,13 +93,16 @@ namespace cb {
 
     protected:
       st_mysql *db;
-      st_mysql_res *res;
+      st_mysql_stmt *stmt = 0;
+      st_mysql_res  *meta = 0;     // result-set field metadata
+      Binding       *binding = 0;  // bound result-column buffers (PIMPL)
 
       typedef bool (DB::*continue_func_t)(unsigned ready);
 
       bool nonBlocking;
       bool connected;
-      bool stored;
+      bool rowReady = false;       // a row is currently fetched
+      int  fetchRet = 0;           // last mysql_stmt_fetch result code
       int status;
       continue_func_t continueFunc;
 
@@ -152,28 +158,20 @@ namespace cb {
       void use(const std::string &db);
       bool useNB(const std::string &db);
 
-      // Query
-      void query(const std::string &s);
+      // Query (prepared statement: prepare + bind + execute)
       bool queryNB(const std::string &s);
 
       // Result set
-      void flushResults();
-      void useResult();
-      void storeResult();
       bool storeResultNB();
       bool haveResult() const;
-      bool nextResult();
       bool nextResultNB();
       bool moreResults() const;
-      void freeResult();
       bool freeResultNB();
       uint64_t getRowCount() const;
       uint64_t getAffectedRowCount() const;
       unsigned getFieldCount() const;
-      bool fetchRow();
       bool fetchRowNB();
       bool haveRow() const;
-      void seekRow(uint64_t row);
       void appendRow(JSON::Sink &sink, int first = 0, int last = -1) const;
       void insertRow(JSON::Sink &sink, int first = 0, int last = -1,
                      bool withNulls = true) const;
@@ -272,6 +270,12 @@ namespace cb {
       static bool threadSafe();
 
     protected:
+      // Prepared-statement helpers
+      bool startExecute();      // bind params + execute (after prepare)
+      void setupResultBind();   // result metadata + bind output columns
+      void processFetch();      // pull the fetched row into bound buffers
+      void freeMeta();
+
       // Continue non-blocking calls
       bool closeContinue(unsigned ready);
       bool connectContinue(unsigned ready);
@@ -279,7 +283,8 @@ namespace cb {
       bool changeUserContinue(unsigned ready);
       bool pingContinue(unsigned ready);
       bool useContinue(unsigned ready);
-      bool queryContinue(unsigned ready);
+      bool prepareContinue(unsigned ready);
+      bool executeContinue(unsigned ready);
       bool storeResultContinue(unsigned ready);
       bool nextResultContinue(unsigned ready);
       bool freeResultContinue(unsigned ready);
