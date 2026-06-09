@@ -42,7 +42,8 @@ using namespace cb::API;
 
 
 QueryDef::QueryDef(API &api, const JSON::ValuePtr &config) :
-  api(api), sql(String::trim(config->getString("sql", ""))) {
+  api(api), sql(String::trim(config->getString("sql", ""))),
+  contentType(config->getString("content-type", "")) {
 
   if (sql.empty()) THROW("Query must have 'sql'");
 
@@ -61,6 +62,7 @@ SmartPointer<Query> QueryDef::query(
   const string &sql, Query::callback_t cb) const {
 
   auto query = SmartPtr(new Query(*this, cb));
+  query->setContentType(contentType);
   query->exec(sql);
   return query;
 }
@@ -86,6 +88,8 @@ SmartPointer<Query> QueryDef::query(
           "embedded in a string");
 
   auto query = SmartPtr(new Query(*this, cb));
+  query->setContentType(
+    contentType.empty() ? contentType : resolver->resolve(contentType));
   query->exec(s, params);
   return query;
 }
