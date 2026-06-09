@@ -35,6 +35,7 @@
 #include <cbang/api/API.h>
 #include <cbang/api/HandlerGroup.h>
 #include <cbang/api/handler/ArgsHandler.h>
+#include <cbang/api/handler/BodyHandler.h>
 #include <cbang/api/handler/HTTPHandler.h>
 #include <cbang/http/AccessHandler.h>
 
@@ -47,7 +48,9 @@ Config::Config(API &api, const JSON::ValuePtr &config, const string &pattern,
   SmartPointer<Config> parent) :
   api(api), config(config), pattern(pattern), parent(parent),
   access(parent.isSet() ? parent->access : 0),
-  args(parent.isSet() ? parent->args : 0) {
+  args(parent.isSet() ? parent->args : 0),
+  body(parent.isSet() ? parent->body : 0),
+  files(parent.isSet() ? parent->files : 0) {
 
   if (!config->isDict()) return;
 
@@ -55,6 +58,9 @@ Config::Config(API &api, const JSON::ValuePtr &config, const string &pattern,
     args = args.isSet() ? new ArgDict(*args) : new ArgDict(api);
     args->load(config->get("args"));
   }
+
+  if (config->has("body"))  body  = config->get("body");
+  if (config->has("files")) files = config->get("files");
 
   if (config->has("allow") || config->has("deny")) {
     access = access.isSet() ?
@@ -77,6 +83,8 @@ HandlerPtr Config::addValidation(const HandlerPtr &_handler) const {
   HandlerPtr handler = _handler;
 
   if (args.isSet()) handler = new ArgsHandler(*args, handler);
+  if (body.isSet() || files.isSet())
+    handler = new BodyHandler(body, files, handler);
 
   if (access.isSet()) {
     auto group = SmartPtr(new HandlerGroup);

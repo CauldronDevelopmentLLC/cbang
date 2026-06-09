@@ -32,47 +32,31 @@
 
 #pragma once
 
-#include "Handler.h"
+#include <cbang/api/Handler.h>
 
 #include <cbang/json/Value.h>
 
+
 namespace cb {
-  namespace HTTP {class AccessHandler;}
-
   namespace API {
-    class API;
-    class ArgDict;
-
-    class Config : public RefCounted {
-      API &api;
-      JSON::ValuePtr config;
-      std::string pattern;
-      SmartPointer<Config> parent;
-
-      SmartPointer<HTTP::AccessHandler> access;
-      SmartPointer<ArgDict> args;
-      JSON::ValuePtr body;
-      JSON::ValuePtr files;
+    // Validates declared ``body:`` / ``files:`` blocks before the statement
+    // runs: ``required`` -> 400, ``max-size`` -> 413, ``type`` -> 415.
+    class BodyHandler : public Handler {
+      JSON::ValuePtr body;   // the body: spec, if any
+      JSON::ValuePtr files;  // the files: dict of specs, if any
+      HandlerPtr child;
 
     public:
-      Config(API &api, const JSON::ValuePtr &config,
-        const std::string &pattern = "", SmartPointer<Config> parent = 0);
-      virtual ~Config();
+      BodyHandler(const JSON::ValuePtr &body, const JSON::ValuePtr &files,
+                  const HandlerPtr &child) :
+        body(body), files(files), child(child) {}
 
-      const std::string &getPattern() const {return pattern;}
-      const JSON::ValuePtr &getConfig() const {return config;}
+      // From Handler
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
 
-      const SmartPointer<HTTP::AccessHandler> &getAccessHandler() const
-        {return access;}
-      const SmartPointer<ArgDict> &getArgs() const {return args;}
-      const JSON::ValuePtr &getBody() const {return body;}
-      const JSON::ValuePtr &getFiles() const {return files;}
-
-      SmartPointer<Config> createChild(
-        const JSON::ValuePtr &config, const std::string &pattern = "");
-      HandlerPtr addValidation(const HandlerPtr &handler) const;
+    protected:
+      void validate(const CtxPtr &ctx, const std::string &ref,
+                    const std::string &what, const JSON::Value &spec) const;
     };
-
-    using CfgPtr = SmartPointer<Config>;
   }
 }

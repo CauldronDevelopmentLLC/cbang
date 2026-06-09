@@ -50,6 +50,7 @@
 #include <cbang/api/API.h>
 #include <cbang/http/Request.h>
 #include <cbang/http/RequestParams.h>
+#include <cbang/http/RequestErrorHandler.h>
 #include <cbang/http/Headers.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/SubprocessPool.h>
@@ -118,7 +119,9 @@ int main(int argc, char *argv[]) {
       if (!body.empty()) req.getInputBuffer().add(body);
     }
 
-    api(req);
+    // Dispatch as the server does, so handler throws reply with a status
+    HTTP::RequestErrorHandler errorHandler(api);
+    errorHandler(req);
 
     // Drive the event loop until an async chain (exec, query) replies
     while (!req.isReplying()) eventBase.loopOnce();
