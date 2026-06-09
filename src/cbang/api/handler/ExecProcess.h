@@ -38,34 +38,29 @@
 #include <cbang/api/Handler.h>
 
 #include <vector>
+#include <string>
 
 
 namespace cb {
-  namespace Event {
-    class Base;
-    class Request;
-  }
+  namespace Event {class Base;}
 
   namespace API {
-    class Context;
-    class Handler;
-
-    class ArgFilterProcess : public Event::AsyncSubprocess {
+    class ExecProcess : public Event::AsyncSubprocess {
       Event::Base &base;
-      SmartPointer<Handler> child;
       std::vector<std::string> cmd;
+      std::string input;
       const CtxPtr ctx;
+      const Cont next;
 
       SmartPointer<Event::StreamEventBuffer> inStr;
       SmartPointer<Event::StreamEventBuffer> outStr;
       SmartPointer<Event::StreamLogger>      errStr;
 
     public:
-      ArgFilterProcess(
-        Event::Base &base,
-        SmartPointer<Handler> child,
-        const std::vector<std::string> &cmd, const CtxPtr &ctx) :
-        base(base), child(child), cmd(cmd), ctx(ctx) {}
+      ExecProcess(
+        Event::Base &base, const std::vector<std::string> &cmd,
+        const std::string &input, const CtxPtr &ctx, const Cont &next) :
+        base(base), cmd(cmd), input(input), ctx(ctx), next(next) {}
 
       // From AsyncSubprocess
       void exec() override;

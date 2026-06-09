@@ -35,6 +35,7 @@
 using namespace cb::API;
 
 
-bool MethodHandler::operator()(const CtxPtr &ctx) {
-  return (ctx->getRequest().getMethod() & methods) && child->operator()(ctx);
+void MethodHandler::operator()(const CtxPtr &ctx, const Cont &next) {
+  if (ctx->getRequest().getMethod() & methods) (*child)(ctx, next);
+  else next(ctx);
 }

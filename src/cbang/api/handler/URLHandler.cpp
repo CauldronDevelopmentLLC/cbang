@@ -44,11 +44,11 @@ URLHandler::URLHandler(
   re(HTTP::URLPatternMatcher::toRE2Pattern(pattern), false), child(child) {}
 
 
-bool URLHandler::operator()(const CtxPtr &ctx) {
+void URLHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   Regex::Match m;
   string path = ctx->getRequest().getURI().getPath();
 
-  if (!re.match(path, m)) return false;
+  if (!re.match(path, m)) return next(ctx);
 
   // Handle URL args
   auto &names = re.getGroupIndexMap();
@@ -70,8 +70,8 @@ bool URLHandler::operator()(const CtxPtr &ctx) {
 
     CtxPtr childCtx = new Context(*ctx);
     childCtx->setArgs(args);
-    return child->operator()(childCtx);
+    return (*child)(childCtx, next);
   }
 
-  return child->operator()(ctx);
+  (*child)(ctx, next);
 }

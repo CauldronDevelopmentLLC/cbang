@@ -45,8 +45,8 @@ WSTimeseriesHandler::WSTimeseriesHandler(API &api,
   timeseries(config->getString("timeseries")) {}
 
 
-bool WSTimeseriesHandler::operator()(const CtxPtr &ctx) {
+void WSTimeseriesHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   string name = ctx->getResolver()->resolve(timeseries);
   auto handler = api.getTimeseries(category, name);
-  return handler->operator()(ctx);
+  (*handler)(ctx, next);
 }

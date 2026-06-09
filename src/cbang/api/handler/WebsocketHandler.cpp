@@ -59,10 +59,18 @@ void WebsocketHandler::onMessage(const WebsocketPtr &ws,
   ctx->getResolver()->set("msg", msg);
 
   ctx->errorHandler([&] () {
-    for (auto handler: handlers)
-      if (handler->operator()(ctx)) return;
+    // Fold the message handlers into a chain; falling off the end is an error
+    Cont chain = [msg] (const CtxPtr &) {
+      THROW("Unhandled Websocket message " << msg->toString());
+    };
 
-    THROW("Unhandled Websocket message " << msg->toString());
+    for (auto it = handlers.rbegin(); it != handlers.rend(); ++it) {
+      auto handler = *it;
+      Cont rest    = chain;
+      chain = [handler, rest] (const CtxPtr &ctx) {(*handler)(ctx, rest);};
+    }
+
+    chain(ctx);
   });
 }
 
@@ -117,13 +125,11 @@ void WebsocketHandler::loadHandlers(const JSON::ValuePtr &list) {
 }
 
 
-bool WebsocketHandler::operator()(const CtxPtr &ctx) {
+void WebsocketHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto &req = ctx->getRequest();
-  if (String::toLower(req.inFind("Upgrade")) != "websocket") return false;
+  if (String::toLower(req.inFind("Upgrade")) != "websocket") return next(ctx);
 
   auto ws = SmartPtr(new Websocket(*this, req));
   ws->upgrade(req);
   add(ws);
-
-  return true;
 }

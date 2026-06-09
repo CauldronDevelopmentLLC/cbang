@@ -32,12 +32,13 @@
 
 // Offline driver for the API handler chain.  Builds an API from a config
 // file, dispatches one synthetic request, and prints the captured response —
-// no network, no event loop.  Only synchronous handlers complete in-line.
+// no network.  An event loop is pumped so async statements (exec, query)
+// complete; synchronous handlers reply in-line.
 //
-//   apiDispatch <config> <METHOD> <path>
+//   apiDispatch <config> <METHOD> <path> [Name: value ...]
 //
-// The http-root and favicon options default to "<config-dir>/www".  Output is
-// the status code, the response headers, a blank line, then the body.
+// The http-root, favicon and scripts options default to "<config-dir>/...".
+// Output is the status code, the response headers, then the body.
 
 #include <cbang/Catch.h>
 #include <cbang/String.h>
@@ -47,6 +48,8 @@
 #include <cbang/http/Request.h>
 #include <cbang/http/RequestParams.h>
 #include <cbang/http/Headers.h>
+#include <cbang/event/Base.h>
+#include <cbang/event/SubprocessPool.h>
 
 #include <iostream>
 #include <sstream>
@@ -74,8 +77,12 @@ int main(int argc, char *argv[]) {
     Options options;
     options.add("http-root", "")->set(base + "/www");
     options.add("favicon",   "")->set(base + "/www/favicon.ico");
+    options.add("scripts",   "")->set(base + "/scripts");
+
+    Event::Base eventBase(false);
 
     API::API api(options);
+    api.setProcPool(new Event::SubprocessPool(eventBase));
     api.load(JSON::YAMLReader::parseFile(configPath));
 
     HTTP::RequestParams params;
@@ -96,7 +103,8 @@ int main(int argc, char *argv[]) {
 
     api(req);
 
-    if (!req.isReplying()) {cout << "NO REPLY" << endl; return 0;}
+    // Drive the event loop until an async chain (exec, query) replies
+    while (!req.isReplying()) eventBase.loopOnce();
 
     cout << (unsigned)req.getResponseCode() << "\n";
 

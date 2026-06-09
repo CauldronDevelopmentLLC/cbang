@@ -305,7 +305,6 @@ SmartPointer<MariaDB::EventDB> TimeseriesHandler::getDBConnection() const {
 }
 
 
-bool TimeseriesHandler::operator()(const CtxPtr &ctx) {
+void TimeseriesHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   action(ctx);
-  return true;
 }

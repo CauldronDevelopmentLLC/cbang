@@ -48,7 +48,7 @@ namespace cb {
       WSQueryHandler(API &api, const JSON::ValuePtr &config);
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override;
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
     };
   }
 }

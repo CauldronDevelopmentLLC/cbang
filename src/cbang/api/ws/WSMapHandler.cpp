@@ -48,8 +48,8 @@ WSMapHandler::WSMapHandler(WebsocketHandler &handler,
 }
 
 
-bool WSMapHandler::operator()(const CtxPtr &ctx) {
+void WSMapHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto it = handlers.find(ctx->getResolver()->selectString(key));
-  if (it == handlers.end()) return false;
-  return it->second->operator()(ctx);
+  if (it == handlers.end()) return next(ctx);
+  (*it->second)(ctx, next);
 }

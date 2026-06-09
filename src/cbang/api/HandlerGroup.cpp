@@ -42,10 +42,15 @@ void HandlerGroup::add(const SmartPointer<Handler> &handler) {
 }
 
 
-bool HandlerGroup::operator()(const CtxPtr &ctx) {
-  for (auto &handler: handlers)
-    if ((*handler)(ctx))
-      return true;
+void HandlerGroup::operator()(const CtxPtr &ctx, const Cont &next) {
+  // Fold the children right-to-left into one continuation: each handler's
+  // `next` runs the remaining handlers and finally the group's own `next`.
+  Cont chain = next;
+  for (auto it = handlers.rbegin(); it != handlers.rend(); ++it) {
+    auto handler = *it;
+    Cont rest    = chain;
+    chain = [handler, rest] (const CtxPtr &ctx) {(*handler)(ctx, rest);};
+  }
 
-  return false;
+  chain(ctx);
 }

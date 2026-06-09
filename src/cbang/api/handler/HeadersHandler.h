@@ -44,9 +44,9 @@ namespace cb {
       HeadersHandler(const JSON::ValuePtr &config) : Headers(config) {}
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override {
+      void operator()(const CtxPtr &ctx, const Cont &next) override {
         set(ctx->getRequest());
-        return false;
+        next(ctx);
       }
     };
   }

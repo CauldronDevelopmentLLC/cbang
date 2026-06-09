@@ -41,17 +41,19 @@ namespace cb {
   namespace API {
     class API;
 
-    class ArgFilterHandler : public Handler {
+    // Runs an external program as a pipeline step.  Sends a JSON metadata
+    // envelope on stdin and applies the program's JSON result (see
+    // doc/exec.md).
+    class ExecHandler : public Handler {
       API &api;
-      SmartPointer<Handler> child;
       std::vector<std::string> cmd;
+      JSON::ValuePtr input;
 
     public:
-      ArgFilterHandler(API &api, const JSON::ValuePtr &config,
-        const SmartPointer<Handler> &child);
+      ExecHandler(API &api, const JSON::ValuePtr &config);
 
       // From Handler
-      bool operator()(const CtxPtr &ctx) override;
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
     };
   }
 }

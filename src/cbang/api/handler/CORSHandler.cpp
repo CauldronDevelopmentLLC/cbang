@@ -78,7 +78,7 @@ CORSHandler::CORSHandler(const JSON::ValuePtr &config) {
 }
 
 
-bool CORSHandler::operator()(const CtxPtr &ctx) {
+void CORSHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   // Add headers
   Headers::set(ctx->getRequest());
 
@@ -101,8 +101,8 @@ bool CORSHandler::operator()(const CtxPtr &ctx) {
   if (req.getMethod() == HTTP::Method::HTTP_OPTIONS) {
     req.outSet("Content-Length", "0");
     req.reply();
-    return true;
+    return;
   }
 
-  return false;
+  next(ctx);
 }

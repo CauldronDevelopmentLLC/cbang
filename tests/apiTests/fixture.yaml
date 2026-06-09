@@ -22,6 +22,18 @@ endpoints:
       origins: ['https://example.com']
       methods: [GET, OPTIONS]
 
+  /echo/{name}:
+    args: {name: {type: string}}
+    get:
+      exec: '{options.scripts}/echo.py'
+
+  /calc/{n}:
+    args: {n: {type: u32}}
+    get:
+      exec:
+        cmd: '{options.scripts}/echo.py'
+        input: {n: '{args.n}', label: 'x-{args.n}'}
+
   /.*:
     get:
       path: '{options.http-root}'

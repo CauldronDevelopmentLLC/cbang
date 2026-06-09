@@ -36,6 +36,6 @@ using namespace cb;
 using namespace cb::API;
 
 
-bool HTTPHandler::operator()(const CtxPtr &ctx) {
-  return child->operator()(ctx->getRequest());
+void HTTPHandler::operator()(const CtxPtr &ctx, const Cont &next) {
+  if (!child->operator()(ctx->getRequest())) next(ctx);
 }

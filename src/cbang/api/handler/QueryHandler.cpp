@@ -50,11 +50,10 @@ void QueryHandler::reply(
 }
 
 
-bool QueryHandler::operator()(const CtxPtr &ctx) {
+void QueryHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto cb = [this, ctx] (HTTP::Status status, const JSON::ValuePtr &result) {
     reply(ctx, status, result);
   };
 
   queryDef->query(ctx->getResolver(), cb);
-  return true;
 }

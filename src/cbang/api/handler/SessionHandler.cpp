@@ -50,10 +50,10 @@ SessionHandler::SessionHandler(API &api, const JSON::ValuePtr &config) :
   QueryHandler(api, config) {}
 
 
-bool SessionHandler::operator()(const CtxPtr &ctx) {
+void SessionHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   // Check if Session is already loaded
   auto &req = ctx->getRequest();
-  if (req.getSession().isSet()) return false;
+  if (req.getSession().isSet()) return next(ctx);
 
   // Check if we have a session ID
   auto &sessionMan = api.getSessionManager();
@@ -66,13 +66,13 @@ bool SessionHandler::operator()(const CtxPtr &ctx) {
     ctx->setSession(session);
     sid = session->getID();
     req.setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
-    return false;
+    return next(ctx);
   }
 
   // Lookup Session in SessionManager
   if (sessionMan.hasSession(sid)) {
     ctx->setSession(sessionMan.lookupSession(sid));
-    return false;
+    return next(ctx);
   }
 
   // Create session
@@ -81,9 +81,9 @@ bool SessionHandler::operator()(const CtxPtr &ctx) {
   sessionMan.addSession(session);
 
   // Lookup Session in DB
-  if (queryDef->sql.empty()) return false;
+  if (queryDef->sql.empty()) return next(ctx);
 
-  auto cb = [this, session, &req, ctx] (
+  auto cb = [this, session, ctx, next] (
     HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
       if (session->hasString("user")) {
@@ -91,14 +91,12 @@ bool SessionHandler::operator()(const CtxPtr &ctx) {
         session->addGroup("authenticated");
       }
 
-      // Restart API request processing
-      req.getConnection().cast<HTTP::ConnIn>()->getServer().dispatch(req);
+      // Continue processing with the loaded session
+      next(ctx);
 
     } else reply(ctx, status, result);
   };
 
   auto query = SmartPtr(new SessionQuery(*queryDef, req.getSession(), cb));
   query->exec(ctx->getResolver()->resolve(queryDef->getSQL(), true));
-
-  return true;
 }

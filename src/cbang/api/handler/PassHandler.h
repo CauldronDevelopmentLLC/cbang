@@ -40,7 +40,9 @@ namespace cb {
     class PassHandler : public Handler {
     public:
       // From Handler
-      bool operator()(const CtxPtr &ctx) override {return false;}
+      void operator()(const CtxPtr &ctx, const Cont &next) override {
+        next(ctx);
+      }
     };
   }
 }

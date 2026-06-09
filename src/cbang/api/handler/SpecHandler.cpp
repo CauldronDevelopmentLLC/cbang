@@ -44,7 +44,6 @@ SpecHandler::SpecHandler(API &api, const JSON::ValuePtr &config) :
   api(api), config(config) {}
 
 
-bool SpecHandler::operator()(const CtxPtr &ctx) {
+void SpecHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   ctx->reply(api.getSpec());
-  return true;
 }

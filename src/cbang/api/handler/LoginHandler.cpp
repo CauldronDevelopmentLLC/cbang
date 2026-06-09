@@ -67,7 +67,7 @@ void LoginHandler::listProviders(const CtxPtr &ctx) {
 }
 
 
-bool LoginHandler::operator()(const CtxPtr &ctx) {
+void LoginHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto resolver      = ctx->getResolver();
   string provider    = resolver->selectString("args.provider", "");
   string redirectURI = resolver->selectString("args.redirect_uri", "");
@@ -93,6 +93,4 @@ bool LoginHandler::operator()(const CtxPtr &ctx) {
       *queryDef, cb, resolver, ctx->getRequest(), provider, redirectURI));
     login->login();
   }
-
-  return true;
 }

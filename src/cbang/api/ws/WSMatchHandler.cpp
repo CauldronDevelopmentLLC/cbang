@@ -45,8 +45,8 @@ WSMatchHandler::WSMatchHandler(const JSON::ValuePtr &config,
   schema(new JSON::Schema::RootSchema(*config)), child(child) {}
 
 
-bool WSMatchHandler::operator()(const CtxPtr &ctx) {
+void WSMatchHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto msg = ctx->getResolver()->select("msg");
-  if (msg.isNull() || !schema->match(*msg)) return false;
-  return child->operator()(ctx);
+  if (msg.isNull() || !schema->match(*msg)) return next(ctx);
+  (*child)(ctx, next);
 }
