@@ -1,391 +1,292 @@
 # cbang API Framework
 
-`cb::API::API` is cbang's declarative REST/RPC framework.  You describe
-your endpoints in a JSON spec, bind handler callbacks to named keys
-referenced from the spec, and the framework routes requests, parses
-arguments, dispatches DB queries, enforces auth, and writes JSON
+`cb::API::API` is cbang's declarative REST/RPC framework.  You describe your
+endpoints in a YAML or JSON config, optionally bind C++ callbacks to named
+keys referenced from the config, and the framework routes requests, validates
+arguments, dispatches DB queries, enforces access control, and writes JSON
 responses — all event-driven on the cbang HTTP stack.
 
-It's the natural choice for cbang-based services that expose more than
-a handful of endpoints.
+The config schema is the JmpAPI schema; the config must declare
+`jmpapi: 1.2.0` (or later).
 
 ## Concepts
 
-- **`cb::API::API`** — the registry.  Loads a JSON spec, holds
-  handler callbacks, exposes itself as an `HTTP::RequestHandler` you
-  can mount on your `HTTP::Server`.
-- **Endpoint** — one URL pattern + HTTP method + handler.  Defined
-  declaratively in the spec.
-- **Spec** — a JSON document mapping URL patterns to endpoint
-  configs.  Endpoint configs can reference named callbacks, named
-  queries (DB-backed), timeseries (LevelDB-backed), or built-in
-  handlers (login, logout, session, redirect, etc.).
-- **Callback** — your C++ code that implements an endpoint.  Three
-  signatures, from simplest to richest: sink-callback (just write a
-  JSON response), void-callback (the framework auto-replies), and
-  full callback (you decide when/how to reply).
-- **`cb::API::Context`** — passed to your callbacks.  Bundles the
-  request, websocket (if upgraded), args (parsed from the URL +
-  query + body), and a `reply(...)` shortcut.
-- **`cb::API::QueryDef`** — declarative SQL query bound to a name.
-  Resolves DB connection, parameterizes from args, streams results
-  to a JSON sink.
-- **Built-in helpers** — sessions, OAuth2 login, MariaDB pool,
-  subprocess pool, timeseries DB are wired in if you provide them.
+- **`cb::API::API`** — the registry.  Loads a config, holds bound callbacks
+  and named queries, and is itself an `HTTP::RequestHandler` you can mount on
+  an `HTTP::Server`.
+- **Endpoint** — a URL pattern with per-method configs.
+- **Statement** — a method body: a single handler config, an `if`/`then`/
+  `else` conditional, or a list of statements run as a sequence.
+- **Handler chain** — handlers take `(ctx, next)` where `next` is a
+  continuation.  A handler replies, or calls `next(ctx)` to pass downstream —
+  including from an async callback, so sequences and conditionals work across
+  DB queries and subprocesses.
+- **`cb::API::Context`** — bundles the request, parsed args, the resolver,
+  and `reply(...)` shortcuts.  Held by `SmartPointer`; replies may come from
+  any later callback.
+- **Resolver** — interpolates `{refs}` (args, session, options, request body
+  metadata) into SQL, headers, exec input, and conditions.
 
 ## Minimal example
 
 ```cpp
 #include <cbang/api/API.h>
-#include <cbang/api/Context.h>
 #include <cbang/http/Server.h>
+#include <cbang/json/YAMLReader.h>
 
-class MyService {
-  cb::Event::Base  base;
-  cb::HTTP::Server http{base};
-  cb::API::API     api;
+cb::Event::Base  base;
+cb::HTTP::Server http(base);
+cb::API::API     api(options);
 
-public:
-  MyService(cb::Options &opts) : api(opts) {
-    // Bind C++ callbacks to names referenced in the spec.
-    api.bind("hello", [] (cb::JSON::Sink &sink) {
-      sink.beginDict();
-      sink.insert("msg", "world");
-      sink.endDict();
-    });
-
-    api.bind("echo", [] (const cb::API::CtxPtr &ctx) {
-      ctx->reply(ctx->getArgs());          // echo args back
-    });
-
-    // Load the spec.
-    api.load(cb::JSON::Reader::parseFile("api.json"));
-
-    // Mount on the HTTP server.
-    http.addHandler("/api/.*", &api);
-  }
-
-  void run() {
-    http.init(api.getOptions());
-    base.dispatch();
-  }
-};
-```
-
-And `api.json`:
-
-```json
-{
-  "/hello":            { "handler": "hello" },
-  "/echo":             { "handler": "echo", "methods": "POST" },
-  "/items/<id:uint>":  { "query": "get-item" }
-}
-```
-
-The framework will:
-- Match incoming requests against URL patterns
-- Resolve arg types (`<id:uint>` becomes an integer arg named `id`)
-- For named-handler endpoints, dispatch to your bound callback
-- For named-query endpoints, run the SQL and stream rows to the
-  response
-- Auto-emit `application/json` responses with appropriate status
-  codes
-
-## Spec format
-
-The spec is a JSON map of URL pattern → endpoint config.  Patterns
-use `<name>` for path variables, optionally typed with `:type`:
-
-```
-/users/<id:uint>/posts/<slug>
-```
-
-Recognised types include `uint`, `int`, `bool`, `string`,
-`uuid`, `path` (matches `/`).
-
-Endpoint config fields you'll commonly use:
-
-| Field | Meaning |
-|---|---|
-| `handler` | Name of a bound callback (see `bind`). |
-| `query` | Name of a `QueryDef` registered via `addQuery`. |
-| `timeseries` | Name of a timeseries handler. |
-| `methods` | HTTP method or array (`"GET"`, `["GET","POST"]`). |
-| `args` | Named arg-spec reference; constrains/validates body/query args. |
-| `auth` | Required permission level (used with sessions). |
-| `category` | Group endpoints in generated specs/docs. |
-| `redirect` | Redirect response. |
-| `description` | Free-text for generated docs. |
-
-Endpoint configs can nest:
-
-```json
-{
-  "/api/v1": {
-    "category": "v1",
-    "/users":       { "query": "list-users" },
-    "/users/<id:uint>": {
-      "GET":    { "query": "get-user" },
-      "PATCH":  { "handler": "update-user" },
-      "DELETE": { "handler": "delete-user" }
-    }
-  }
-}
-```
-
-Method-keyed sub-objects route by HTTP verb.
-
-## Callbacks
-
-Three signatures, picked by which overload of `bind` you use.
-
-### Sink callback — simplest
-
-For "always return this JSON":
-
-```cpp
-api.bind("ping", [] (cb::JSON::Sink &sink) {
+api.bind("hello", [] (cb::JSON::Sink &sink) {
   sink.beginDict();
-  sink.insert("ok", true);
+  sink.insert("msg", "world");
   sink.endDict();
 });
+
+api.setDBConnector(new cb::MariaDB::Connector(base));
+api.load(cb::JSON::YAMLReader::parseFile("api.yaml"));
+
+http.addHandler(&api);
 ```
 
-The framework wraps it in a 200 response.  No access to the
-request, args, or session.
+And `api.yaml`:
 
-### Void callback — most common
+```yaml
+jmpapi: 1.2.0
+info: {title: My API, version: 1.0.0}
 
-For "do something with args; return JSON or an error":
+endpoints:
+  /hello:
+    get: {bind: hello}
+
+  /users/{id}:
+    args: {id: {type: u32}}
+    get: {sql: "CALL UserGet({args.id})", return: dict}
+```
+
+## Config structure
+
+Top-level keys:
+
+| Key | Meaning |
+|---|---|
+| `jmpapi` | Schema version, at least `1.2.0`.  Required. |
+| `info` | OpenAPI info block (title, version, ...). |
+| `endpoints` | URL pattern → endpoint config. |
+| `args` | Named, reusable arg declarations. |
+| `queries` | Named, reusable SQL queries. |
+| `apis` | Optional category → `{args, queries, endpoints}` grouping; categories become OpenAPI tags. |
+
+URL patterns capture path segments with `{name}`, e.g.
+`/users/{id}/posts/{slug}`; captures become args.  Patterns nest: a key
+starting with `/` inside an endpoint config is a sub-pattern.
+
+Method keys (`get`, `put`, `post`, `delete`, ..., `any`, or a combination
+like `get|put`) hold the method's statement.  Validation keys (`args`,
+`allow`/`deny`, `body`/`files`) may sit at the endpoint or method level;
+children inherit them.
+
+## Endpoint types
+
+The endpoint type is given by the `handler` key, or inferred: `bind` →
+bound callback, `sql`/`query` → DB query, `timeseries`, `path` → file,
+`resource`, else `pass`.
+
+| Handler | Purpose |
+|---|---|
+| `bind` | Dispatch to a C++ callback registered with `api.bind(key, ...)`. |
+| `query` (or `sql`) | Run SQL and stream the result as JSON.  See below. |
+| `status` | Fixed status reply (`code`, `text`). |
+| `redirect` | Redirect (`location`, `code`). |
+| `cors` | CORS headers / preflight (`origins`, `methods`, ...). |
+| `file` / `resource` | Serve from disk / compiled-in resources. |
+| `spec` | Serve the generated OpenAPI spec. |
+| `websocket` | Upgrade and route websocket messages. |
+| `login` / `logout` | OAuth2 session login flow (with the session/OAuth2 subsystems injected). |
+| `timeseries` | LevelDB-backed timeseries query/subscribe. |
+| `pass` | Do nothing; pass to the next handler. |
+
+A `handlers` list runs several handler configs in order.
+
+## Statements, sequences and pre-steps
+
+A method body is a *statement*: a handler config, a conditional, or a YAML
+list of statements folded into a chain (each statement either replies or
+passes to the next):
+
+```yaml
+/resize/{n}:
+  put:
+    - exec: {cmd: '{options.scripts}/check.py'}   # may reply or pass
+    - {sql: "CALL Resize({args.n})"}
+```
+
+Within a statement, `headers:` (response headers) and `exec:` run as
+pre-steps before the endpoint handler.
+
+### Exec
+
+`exec` runs an external program through the subprocess pool
+(`api.setProcPool(...)`).  Its `input` envelope is resolved and written to
+the program's stdin as JSON; the program's JSON reply can merge `args`, set
+`headers`, and either continue the chain or reply directly.
+
+```yaml
+get:
+  exec:
+    cmd: '{options.scripts}/transform.py'
+    input: {n: '{args.n}', label: 'x-{args.n}'}
+```
+
+### Conditions
+
+`if`/`then`/`else` selects a statement at request time.  Evaluation is
+continuation-based, so async conditions compose with `and`/`or`
+short-circuiting:
+
+```yaml
+get:
+  if:   {'<': ['{args.n}', 100]}
+  then: {handler: status, code: 200, text: small}
+  else: {handler: status, code: 200, text: big}
+```
+
+| Condition | True when |
+|---|---|
+| `exists: <path>` | The file path (after interpolation) exists. |
+| `=` / `!=` / `<` / `<=` | JSON comparison of the two operands. |
+| `not` | The sub-condition is false. |
+| `and` / `or` | All / any of the sub-conditions (short-circuit). |
+| `sql` | The query returns a truthy single value (async). |
+| `cmd` | The command exits 0 (async, subprocess pool). |
+
+## Interpolation and typed values
+
+`{ref}` interpolates from the resolver namespaces: `{args.*}`,
+`{session.*}`, `{group}`, `{options.*}`, plus the binary roots below.  In
+SQL, strings are quoted and escaped; numbers and booleans are not.  A config
+value that is a lone `'{ref}'` resolves to the referenced *native* JSON value
+(number, bool, ...), not a string — which is what makes numeric compares and
+typed `exec` input work.
+
+## Queries
+
+`sql` (or `query: <name>` for one defined under `queries:`) runs through the
+injected `MariaDB::Connector` as a prepared statement.  `return` selects the
+result shape:
+
+| `return` | Response |
+|---|---|
+| `ok` | `200` with no body content (default). |
+| `dict` | First row as an object; no row → `404`. |
+| `list` | Rows as a list (single column → scalars, else objects). |
+| `hlist` | Header row of column names, then row lists. |
+| `fields` | Multiple result sets mapped by the `fields` list. |
+| `one` | Single value, row 1 / column 1; no row → `404`. |
+| `bool` / `u64` / `s64` | Single value, coerced. |
+| `binary` | Raw response body.  See below. |
+
+## Binary data
+
+JSON has no byte type, so binary rides outside the args dict.  A raw request
+body is exposed as `{body}` (`.size`, `.type`); `multipart/form-data` file
+parts as `{files.<name>}` (`.filename`, `.type`, `.size`); plain multipart
+fields fold into `{args.*}`.
+
+A binary ref used in SQL is **bound as a real prepared-statement parameter**
+(the resolver emits `?` and passes the bytes through), so blobs of any
+content and size are safe.  Metadata refs interpolate normally.  Using the
+bytes inside a larger string is an error.
+
+```yaml
+/avatar:
+  put:
+    body: {required: true, max-size: 1MB, type: image/*}
+    sql:  "CALL SetAvatar({session.user}, {body}, {body.type})"
+
+/avatar/{id}:
+  get:
+    args: {id: {type: u32}}
+    sql:  "CALL GetAvatar({args.id})"
+    return: binary
+```
+
+`return: binary` replies with row 1 / column 1 as the raw body.  The
+`Content-Type` comes from the `content-type` key (interpolated), else a
+second selected column, else `application/octet-stream`; no row → `404`.
+
+`body:` and `files:` declaration blocks validate before the statement runs:
+`required` → `400`, `max-size` (`5MB`, `512K`, ...) → `413`, `type` (a media
+type, `*` glob, or list) → `415`.  Declarations also appear in the OpenAPI
+spec as the request body.
+
+## Bound C++ callbacks
+
+Three signatures, picked by the `bind` overload:
 
 ```cpp
-api.bind("get-item", [&] (const cb::API::CtxPtr &ctx) {
-  auto args = ctx->getArgs();
-  uint64_t id = args->getU64("id");
-
-  if (auto item = store.find(id))
-    ctx->reply(item->toJSON());
-  else
-    ctx->reply(cb::HTTP::HTTP_NOT_FOUND, "no such item");
+api.bind("ping", [] (cb::JSON::Sink &sink) {...});      // write JSON, 200
+api.bind("get",  [] (const cb::API::CtxPtr &ctx) {      // full control
+  uint64_t id = ctx->getArgs()->getU64("id");
+  ctx->reply(...);                                       // now or later
 });
 ```
 
-`ctx->getArgs()` returns a `JSON::ValuePtr` with path/query/body
-arguments merged.
-
-### Full callback — most control
+`Context` shortcuts:
 
 ```cpp
-api.bind("upload", [&] (const cb::API::CtxPtr &ctx) {
-  auto &req = ctx->getRequest();
-  req.getInputStream()->...;        // pull body manually
-  // ... long-running work, async ...
-  // call ctx->reply(...) eventually
-});
-```
-
-Use when you need streaming, custom headers, deferred replies, or
-WebSocket upgrades.
-
-## Context shortcuts
-
-```cpp
-ctx->reply(200, "OK")                            // plain text
 ctx->reply(json)                                 // JSON value
-ctx->reply([&] (cb::JSON::Sink &sink) { ... })   // streamed JSON
-ctx->reply(exception)                            // error mapping
-ctx->getArgs()                                   // merged args
+ctx->reply(code, "message")                      // status + text
+ctx->reply([&] (cb::JSON::Sink &sink) {...})     // streamed JSON
+ctx->getArgs()                                   // merged, validated args
 ctx->getRequest()                                // HTTP::Request &
 ctx->getWebsocket()                              // WebsocketPtr (or null)
-ctx->setSession(session)                         // attach a session
 ```
 
-The `reply(exception)` overload picks an HTTP status from cbang's
-known exception hierarchy and includes the message.
+Replying with a `cb::API::Blob` sends a raw binary response.
 
-## Queries (`QueryDef`)
+## Subsystem injection
 
-For database-backed endpoints — point a URL at a SQL query, let
-the framework do the rest:
+All optional; set the ones your config uses, before `load()`:
 
 ```cpp
-class GetUser : public cb::API::QueryDef {
-public:
-  cb::SmartPointer<cb::MariaDB::EventDB> getDBConnection() const override
-  { return /* pool->get() */; }
-  // ... define query and arg shape ...
-};
-
-api.addQuery("get-user", new GetUser);
+api.setDBConnector(connector);        // sql / query endpoints
+api.setProcPool(procPool);            // exec and cmd conditions
+api.setSessionManager(sessions);      // sessions, allow/deny groups
+api.setOAuth2Providers(providers);    // login endpoints
+api.setClient(httpClient);            // OAuth2 HTTP client
+api.setTimeseriesDB(levelDB);         // timeseries endpoints
 ```
 
-In the spec:
+## OpenAPI spec
 
-```json
-{
-  "/users/<id:uint>": { "query": "get-user" }
-}
+`load()` builds an OpenAPI 3.1 spec from the config: paths, parameters from
+`args`, request bodies from `body`/`files`, tags from `apis` categories,
+descriptions from `help`.  `hide: true` omits an endpoint.  Serve it with:
+
+```yaml
+/openapi-spec:
+  get: {handler: spec}
 ```
-
-The framework binds the path's `id` to the SQL's `${id}`
-placeholder, runs the query async, and streams the result rows
-back as JSON.  See `cbang/api/QueryDef.h`, `cbang/api/Query.h`,
-`cbang/api/SessionQuery.h`.
-
-## Sessions, OAuth2, MariaDB, Subprocess pool
-
-Wire up the supporting subsystems by injection — `API` takes a
-SmartPointer for each.  All optional; only set the ones you use.
-
-```cpp
-api.setClient(httpClient);
-api.setOAuth2Providers(oauth2Providers);
-api.setSessionManager(sessionManager);
-api.setDBConnector(mariaDBConnector);
-api.setProcPool(procPool);
-api.setTimeseriesDB(levelDB);
-```
-
-Once set, endpoint configs in the spec can reference auth, login,
-queries, timeseries, etc., and the framework wires them through.
-
-OAuth2 endpoints are typically:
-
-```json
-{
-  "/auth/google":           { "login":  "google" },
-  "/auth/google/callback":  { "login":  "google" },
-  "/logout":                { "logout": true }
-}
-```
-
-The Login handler uses the configured `OAuth2::Providers` to do the
-flow.
-
-## Mount on HTTP server
-
-`cb::API::API` is itself an `HTTP::RequestHandler`.  Mount it under
-a URL prefix:
-
-```cpp
-http.addHandler("/api/.*", &api);
-```
-
-Or expose it under multiple prefixes / aliases as needed.  The API
-internally strips the prefix before matching against its spec.
-
-## OpenAPI / spec export
-
-The framework keeps a `spec` JSON that mirrors the loaded
-configuration.  Expose it as a read-only endpoint for clients and
-documentation:
-
-```cpp
-api.bind("api-spec", [&] (cb::JSON::Sink &sink) {
-  api.getSpec()->write(sink);
-});
-```
-
-```json
-{ "/api-spec": { "handler": "api-spec" } }
-```
-
-## Patterns
-
-### Validate args before handling
-
-Define a named arg-spec and reference it:
-
-```json
-{
-  "args": {
-    "create-user": {
-      "name":  { "type": "string", "required": true },
-      "email": { "type": "string", "pattern": "^[^@]+@[^@]+$" }
-    }
-  },
-  "/users": {
-    "POST": { "handler": "create-user", "args": "create-user" }
-  }
-}
-```
-
-The framework rejects requests with bad args before the handler
-sees them.
-
-### Long-running endpoint
-
-```cpp
-api.bind("compute", [&] (const cb::API::CtxPtr &ctx) {
-  procPool.run(WeakCall(this, [ctx] (auto &result) {
-    ctx->reply(result.toJSON());      // fires when subprocess finishes
-  }));
-  // Don't reply yet — we'll reply from the subprocess callback.
-});
-```
-
-`Context` is held by `SmartPointer`; the reply can come from any
-later callback.
-
-### Session-protected endpoint
-
-```json
-{
-  "/me": {
-    "auth":    "user",
-    "query":   "current-user"
-  }
-}
-```
-
-With a `SessionManager` configured, the framework verifies the
-session cookie and rejects unauthenticated requests automatically.
-
-### Streaming a large response
-
-```cpp
-api.bind("export", [&] (const cb::API::CtxPtr &ctx) {
-  ctx->reply([&] (cb::JSON::Sink &sink) {
-    sink.beginList();
-    for (auto &row: rows) {
-      sink.beginAppend();
-      sink.beginDict();
-      sink.insert("id",   row.id);
-      sink.insert("name", row.name);
-      sink.endDict();
-    }
-    sink.endList();
-  });
-});
-```
-
-The sink writes directly to the response socket — no
-intermediate buffer.
 
 ## Common pitfalls
 
-- **Bind name mismatch.**  A spec referencing `"handler": "foo"`
-  with no `api.bind("foo", ...)` results in a runtime 500 on the
-  first request.  Bind before calling `api.load`.
-- **Forgetting `setDBConnector`** when the spec uses
-  `"query": "..."`.  Same kind of failure.
-- **Replying twice.**  Each Context maps to one HTTP response.  Two
-  `reply()` calls are a bug.
-- **Returning instead of replying.**  Async endpoints that return
-  without calling `reply` leave the request hanging.  Track this
-  explicitly with WeakCall-bound callbacks.
-- **Calling DB methods synchronously inside a handler.**  Use the
-  async MariaDB API (or QueryDef machinery).  Blocking the loop
-  blocks every other endpoint.
-- **No spec at all.**  Without `api.load(...)`, the API object
-  routes nothing.
+- **Bind name mismatch.**  A config referencing `bind: foo` with no
+  `api.bind("foo", ...)` fails at `load()`.  Bind first.
+- **Missing subsystem.**  `sql:` without `setDBConnector`, or `exec:`
+  without `setProcPool`, fails at `load()`.
+- **Replying twice.**  Each Context maps to one HTTP response.
+- **Returning without replying or passing.**  An async handler that drops
+  both `ctx` and `next` leaves the request hanging.
+- **Binary refs in string context.**  `'x-{body}'` is an error anywhere;
+  `{body}` is only valid bound whole into SQL or as the response body.
 
 ## See also
 
-- `cbang/api/API.h`, `cbang/api/Context.h`,
-  `cbang/api/Handler.h`, `cbang/api/QueryDef.h`,
-  `cbang/api/JSONResponse.h`, `cbang/api/Login.h`,
-  `cbang/api/Websocket.h`, `cbang/api/Timeseries.h`.
+- `cbang/api/API.h`, `cbang/api/Context.h`, `cbang/api/Handler.h`,
+  `cbang/api/Resolver.h`, `cbang/api/QueryDef.h`, `cbang/api/Blob.h`,
+  `cbang/api/condition/`, `cbang/api/handler/`.
 - [WebServer.md](WebServer.md) — the underlying HTTP layer.
-- [JSON.md](JSON.md) — for the sink-based response writing.
-- [MariaDB.md](MariaDB.md) — for the DB backing `QueryDef`.
+- [JSON.md](JSON.md) — sink-based response writing.
+- [MariaDB.md](MariaDB.md) — the DB layer behind queries.

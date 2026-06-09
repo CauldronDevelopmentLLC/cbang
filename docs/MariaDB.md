@@ -1,55 +1,45 @@
 # cbang MariaDB / MySQL
 
 cbang's MariaDB binding wraps the MariaDB C client library
-(`libmariadbclient`) and adds an event-driven async layer
-(`cb::MariaDB::EventDB`) that runs all I/O through your
-`cb::Event::Base`.  Use the sync `DB` for simple scripts and short
-queries; use `EventDB` when MariaDB calls are part of a long-running
-service that can't block.
+(`libmariadbclient`) with an event-driven async layer that runs all I/O
+through your `cb::Event::Base`.  Queries execute as **prepared statements**
+(`mysql_stmt_*`) over the binary protocol, with support for bound
+parameters — including binary blobs.
+
+The query path is non-blocking only; it is designed to be driven from the
+event loop, normally via `EventDB`.  Connection management has both blocking
+and non-blocking variants.
 
 ## Concepts
 
-- **`cb::MariaDB::DB`** — a single MariaDB connection.  Sync by
-  default; non-blocking mode is available via `enableNonBlocking()`.
-- **`cb::MariaDB::EventDB`** — `DB` subclass that drives the
-  non-blocking handshake through the libevent loop and reports
-  progress via a callback.
-- **`cb::MariaDB::Field`** — typed accessor for one cell of one row.
-- **`cb::MariaDB::QueryCallback`** — internal helper that runs a
-  full async query lifecycle and re-emits events to your callback.
-- **`cb::MariaDB::Connector`** — connection pool with retry / reuse
-  on top of `EventDB`.
+- **`cb::MariaDB::DB`** — a single connection plus one prepared statement.
+  Blocking and non-blocking (`*NB`) connection methods; non-blocking
+  query/result methods.
+- **`cb::MariaDB::EventDB`** — `DB` subclass that drives the non-blocking
+  calls through the libevent loop and reports progress via a callback.
+  This is the class you normally use.
+- **`cb::MariaDB::Field`** — column metadata (name, type, width) for the
+  current result set.
+- **`cb::MariaDB::QueryCallback`** — internal state machine that runs one
+  query lifecycle (prepare → bind → execute → result sets → rows) and
+  re-emits events to your callback.
+- **`cb::MariaDB::Connector`** — connection factory: configures and starts
+  a fresh non-blocking `EventDB` per `getConnection()`.
 
 The protocol talks to MariaDB and MySQL interchangeably.
 
-## Sync API (`DB`)
+## Connection
 
-For one-off scripts, batch tools, or short-lived migrations.
+Connection methods come in blocking and non-blocking pairs: `connect` /
+`connectNB`, `ping` / `pingNB`, `close` / `closeNB`, `use` / `useNB`,
+`changeUser` / `changeUserNB`, `resetConnection` / `resetConnectionNB`.
+The `*NB` forms return `false` when the operation is pending; completion is
+driven via `continueNB()` (see Non-blocking driving below) — or use
+`EventDB`, which does this for you.
 
-```cpp
-#include <cbang/db/maria/DB.h>
+### Options
 
-cb::MariaDB::DB db;
-
-db.connect("db.example.com", "user", "secret", "mydb", 3306);
-
-db.query("INSERT INTO users(name) VALUES('alice')");
-
-db.query("SELECT id, name FROM users WHERE active = 1");
-db.storeResult();                 // pull the result set client-side
-while (db.fetchRow()) {
-  int64_t     id   = db.getField(0).getS64();
-  std::string name = db.getField(1).getString();
-}
-db.freeResult();
-```
-
-`fetchRow()` returns `false` at end-of-set.  `nextResult()` advances
-to the next result set if `FLAG_MULTI_RESULTS` is enabled.
-
-### Connection options
-
-Set before `connect()`:
+Set before connecting:
 
 | Method | Effect |
 |---|---|
@@ -62,56 +52,42 @@ Set before `connect()`:
 | `setCharacterSet(name)` | e.g. `"utf8mb4"` |
 | `setDefaultFile(path)` / `readDefaultGroup(name)` | Load my.cnf |
 | `setLocalInFile(b)` | Enable `LOAD DATA LOCAL INFILE` |
+| `enableNonBlocking()` | Required before any `*NB` call |
 
-Pass `flags` to `connect()` to enable/disable features
+Pass `flags` to `connect()` to enable/disable protocol features
 (`FLAG_DEFAULTS` enables multi-statements + multi-results).
-
-### Parameterised queries
-
-The MariaDB C API doesn't have prepared parameters at the wire level
-in the way SQLite does.  cbang's helpers accept a JSON dict
-parameter map and substitute into the query string.  See the
-`EventDB::query(cb, sql, dict)` overloads below.
-
-For unparameterised raw queries, escape input with
-`mysql_real_escape_string` (exposed via the underlying `st_mysql *`
-from `DB::getDB()`) or limit raw SQL to trusted inputs.
 
 ## Async API (`EventDB`)
 
-The right choice for any cbang application that already runs on a
-`cb::Event::Base`.  Non-blocking from connect to teardown: no
-thread, no stall in the loop.
+The right choice for any cbang application that runs on a
+`cb::Event::Base`.  Non-blocking from connect to teardown.
 
 ```cpp
 #include <cbang/db/maria/EventDB.h>
 
-cb::Event::Base       base;
-cb::MariaDB::EventDB  db(base);
+cb::Event::Base      base;
+cb::MariaDB::EventDB db(base);
 
+db.enableNonBlocking();
 db.connect([&] (cb::MariaDB::EventDB::state_t state) {
-  if (state == cb::MariaDB::EventDB::EVENTDB_DONE) {
-    // Connected — start querying
-    runFirstQuery();
-  } else if (state == cb::MariaDB::EventDB::EVENTDB_ERROR) {
-    LOG_ERROR("Connect failed: " << db.getError());
-  }
+  if (state == cb::MariaDB::EventDB::EVENTDB_DONE) runFirstQuery();
+  else LOG_ERROR("Connect failed: " << db.getError());
 }, "db.example.com", "user", "secret", "mydb");
 
 base.dispatch();
 ```
 
-The callback signature is `void(state_t)` and the same set of
-states is used by every async method:
+The callback signature is `void (state_t)` and the same states are used by
+every async method:
 
 | State | Meaning |
 |---|---|
 | `EVENTDB_BEGIN_RESULT` | A result set is starting |
-| `EVENTDB_ROW` | A row is ready; call `getField(i)` to read it |
+| `EVENTDB_ROW` | A row is ready; read it now |
 | `EVENTDB_END_RESULT` | The result set is exhausted |
-| `EVENTDB_RETRY` | Connection lost / transient error; retrying |
-| `EVENTDB_DONE` | The operation is complete |
-| `EVENTDB_ERROR` | Permanent failure; check `getError()` |
+| `EVENTDB_RETRY` | Deadlock detected; the query is being retried |
+| `EVENTDB_DONE` | The operation completed |
+| `EVENTDB_ERROR` | Failure; check `getError()` |
 
 `EventDB` also has member-function overloads
 (`connect(this, &Class::onConnect, ...)`) like the rest of cbang.
@@ -122,41 +98,44 @@ states is used by every async method:
 db.query([&] (cb::MariaDB::EventDB::state_t state) {
   switch (state) {
   case cb::MariaDB::EventDB::EVENTDB_ROW:
-    rows.emplace_back(
-      db.getField(0).getS64(),
-      db.getField(1).getString());
+    rows.emplace_back(db.getS64(0), db.getString(1));
     break;
-  case cb::MariaDB::EventDB::EVENTDB_DONE:
-    onResults(std::move(rows));
-    break;
-  case cb::MariaDB::EventDB::EVENTDB_ERROR:
-    onError(db.getError());
-    break;
+  case cb::MariaDB::EventDB::EVENTDB_DONE:  onResults(rows);          break;
+  case cb::MariaDB::EventDB::EVENTDB_ERROR: onError(db.getError());   break;
   default: break;
   }
 }, "SELECT id, name FROM users WHERE active = 1");
 ```
 
-The callback fires once per state transition.  `EVENTDB_ROW` fires
-once per row in the result; read fields via `db.getField(i)` while
-in that state.
+`EVENTDB_ROW` fires once per row; read fields during that state.  The query
+runs as a prepared statement: prepare, bind, execute, then rows stream over
+the binary protocol.
 
-### Parameterised queries with a JSON dict
+### Bound parameters
+
+Parameters bind to `?` placeholders in order — binary-safe, any content,
+no quoting or escaping:
 
 ```cpp
-auto params = cb::JSON::build([] (cb::JSON::Sink &sink) {
-  sink.beginDict();
-  sink.insert("min_id", 1000);
-  sink.insert("active", true);
-  sink.endDict();
-});
-
-db.query(cb, "SELECT * FROM users WHERE id >= ${min_id} AND active = ${active}",
-         params);
+std::vector<std::string> params = {imageBytes};
+db.query(cb, "CALL StoreImage(?, 'image/png')", params);
 ```
 
-The dict's keys are interpolated into `${name}` placeholders, with
-correct quoting/escaping per the value's JSON type.
+This is also how the API framework binds `{body}` / `{files.*}` blob refs
+(see [API.md](API.md)).
+
+### Interpolated parameters
+
+For non-binary values there is also string interpolation from a JSON dict:
+`{name}` references are replaced with the dict value, quoted and escaped per
+its JSON type (strings quoted, numbers and booleans bare, null → `NULL`):
+
+```cpp
+cb::JSON::ValuePtr dict = new cb::JSON::Dict;
+dict->insert("min_id", 1000);
+
+db.query(cb, "SELECT * FROM users WHERE id >= {min_id}", dict);
+```
 
 ### Other operations
 
@@ -165,149 +144,83 @@ db.ping(cb);                   // liveness check
 db.close(cb);                  // graceful close (async)
 ```
 
-## Reading fields
+## Reading rows
 
-`getField(i)` returns a `cb::MariaDB::Field` that exposes typed
-accessors:
+Typed cell accessors live on `DB` and apply to the current row:
 
 ```cpp
-auto f = db.getField(0);
-
-if (f.isNull()) ...;
-
-auto t   = f.getType();          // INT, STRING, DECIMAL, BLOB, DATE, ...
-auto i   = f.getS64();
-auto u   = f.getU64();
-auto d   = f.getDouble();
-auto s   = f.getString();
-auto raw = f.getBlob();
+db.isNull(i);
+db.getString(i);               // binary-safe, keeps length
+db.getS64(i);  db.getU64(i);  db.getDouble(i);  db.getBoolean(i);
+db.getJSON(i);                 // cell as a typed JSON value
+db.writeRowDict(sink);         // whole row into a JSON sink
+db.getRowList();  db.getRowDict();
 ```
 
-The `Field` is only valid for the current row; advance with the next
-callback firing.
+`getField(i)` returns column *metadata* (`getName()`, `getType()`,
+`isNumber()`, ...).  Row data is only valid during `EVENTDB_ROW`; copy what
+you need before returning.
 
-## Connector — pooling
+## Connector
 
-For services that issue many queries, a single connection is a
-bottleneck and a single point of failure.  `cb::MariaDB::Connector`
-provides a small pool of `EventDB` connections, with retry on dead
-connections.
+`cb::MariaDB::Connector` turns connection settings (or command-line
+options) into ready-to-use non-blocking connections:
 
 ```cpp
 #include <cbang/db/maria/Connector.h>
 
-cb::MariaDB::Connector pool(base);
-pool.setOption("host",     "db.example.com");
-pool.setOption("user",     "user");
-pool.setOption("password", "secret");
-pool.setOption("database", "mydb");
-pool.init();
+cb::MariaDB::Connector connector(base);
+connector.addOptions(options);   // --db-host, --db-user, --db-pass,
+                                 // --db-name, --db-port, --db-timeout
 
-pool.query([&] (cb::MariaDB::EventDB::state_t state) {
-  // same state machine as direct EventDB::query
-}, "SELECT * FROM users", params);
+auto db = connector.getConnection();   // a fresh, connecting EventDB
+db->query(cb, "SELECT 1");
 ```
 
-The Connector hands each `query()` to a free connection (opening a
-new one if needed, up to the pool max).  Tune via
-`pool.setMaxConnections(n)` and friends.
+Each `getConnection()` returns a new `EventDB` already configured
+(timeouts, reconnect, `utf8mb4`, non-blocking) with `connectNB()` started;
+queueing a query on it completes once the connection is up.
+
+## Non-blocking driving (low level)
+
+If you drive `DB` yourself instead of using `EventDB`: every `*NB` method
+returns `false` when the operation would block.  Wait for the socket
+(`getSocket()`, `waitRead()` / `waitWrite()` / `waitTimeout()`), then call
+`continueNB(ready)` until it returns `true`.  The query lifecycle is
+`queryNB(sql, params)` → `storeResultNB()` → `fetchRowNB()` /
+`haveRow()` → `freeResultNB()` → `moreResults()` / `nextResultNB()`.
 
 ## Threading
 
-The async API is single-threaded — it runs on the same loop as
-everything else.  The sync API is also not internally threaded; if
-you must call it from multiple threads, give each thread its own
-`DB` connection.  Don't share a `DB` instance across threads.
-
-## Configuration via `cb::Application`
-
-If your app uses cbang's options system, `Connector::addOptions()`
-registers the standard MariaDB options on the command line:
-
-```cpp
-pool.addOptions(app.getOptions());
-// --mariadb-host, --mariadb-user, --mariadb-password, --mariadb-database,
-// --mariadb-port, --mariadb-socket, --mariadb-pool-size, ...
-```
+The async API is single-threaded — it runs on the same loop as everything
+else.  Don't share a `DB` across threads; create one per thread or use
+per-loop connections from a `Connector`.
 
 ## Errors
 
-The libmariadbclient error string is available via
-`db.getError()`; the numeric code via `db.getErrorNumber()`.  The
-async API forwards permanent errors as `EVENTDB_ERROR` and
-recoverable ones as `EVENTDB_RETRY` (the next state will be the
-real outcome).
-
-Wrap sync calls in try/catch for `cb::Exception`.
-
-## Patterns
-
-### Query with bound parameters
-
-```cpp
-void Service::find(uint64_t id, std::function<void(...)> done) {
-  auto params = cb::JSON::build([id] (cb::JSON::Sink &s) {
-    s.beginDict();
-    s.insert("id", id);
-    s.endDict();
-  });
-
-  pool.query(WeakCall(this, [this, done] (auto state) {
-    if (state == cb::MariaDB::EventDB::EVENTDB_ROW)  rows.push_back(...);
-    if (state == cb::MariaDB::EventDB::EVENTDB_DONE) done(std::move(rows));
-    if (state == cb::MariaDB::EventDB::EVENTDB_ERROR) onError(pool.getError());
-  }), "SELECT * FROM users WHERE id = ${id}", params);
-}
-```
-
-### Streaming a large result
-
-Process rows as they arrive instead of accumulating:
-
-```cpp
-pool.query([&] (auto state) {
-  if (state == cb::MariaDB::EventDB::EVENTDB_ROW)
-    sink->writeRow(pool.getField(0).getString());
-  if (state == cb::MariaDB::EventDB::EVENTDB_DONE)
-    sink->end();
-}, "SELECT name FROM big_table");
-```
-
-Each row callback fires from the event loop — no need to buffer the
-whole result.
-
-### Reconnect on transient failure
-
-```cpp
-db.setReconnect(true);     // libmariadbclient-level auto-reconnect
-```
-
-The async layer also reports `EVENTDB_RETRY` when it transparently
-reconnects on a dropped connection.  Tune retries via
-`QueryCallback`'s constructor parameter.
+`getError()`, `getErrorNumber()` and `getSQLState()` report the statement
+error if one is active, else the connection error.  The async layer
+forwards failures as `EVENTDB_ERROR` and retries deadlocks
+(`EVENTDB_RETRY`, then the real outcome).  All methods throw
+`cb::Exception` on hard failures.
 
 ## Common pitfalls
 
-- **Mixing sync and async on the same `DB`.**  Once you've called
-  `enableNonBlocking()` (or used `EventDB`), the connection is
-  managed by the loop; don't issue sync calls on it.
-- **Reading fields outside `EVENTDB_ROW`.**  The row data is
-  invalidated as soon as the next state fires.  Copy what you need
-  during the row callback.
-- **Sharing a connection across threads.**  Not safe.  Use a
-  `Connector` or one `DB` per thread.
-- **Ignoring `EVENTDB_RETRY`.**  Harmless if treated as
-  intermediate — but if you maintain your own state machine on top,
-  don't treat retry as failure.
-- **Untrusted query strings.**  Use the JSON-dict parameter form;
-  don't concatenate user input into SQL.
+- **Reading fields outside `EVENTDB_ROW`.**  Row data is invalidated when
+  the next state fires.  Copy during the row callback.
+- **Sharing a connection across threads.**  Not safe.
+- **Ignoring `EVENTDB_RETRY`.**  Treat it as intermediate; don't count it
+  as failure in your own state machine.
+- **Untrusted input in SQL strings.**  Use `?` bound parameters or the
+  JSON-dict interpolation, which quotes and escapes; never concatenate.
+- **Forgetting `enableNonBlocking()`** before `*NB` calls on a raw `DB`
+  (`EventDB` via `Connector` is already configured).
 
 ## See also
 
 - `cbang/db/maria/DB.h`, `cbang/db/maria/EventDB.h`,
   `cbang/db/maria/Field.h`, `cbang/db/maria/QueryCallback.h`,
   `cbang/db/maria/Connector.h`.
-- [EventSystem.md](EventSystem.md) — the loop the async client runs
-  on.
-- [JSON.md](JSON.md) — for the parameter dict.
-- [SQLite.md](SQLite.md) — the local / embedded counterpart.
+- [EventSystem.md](EventSystem.md) — the loop the async client runs on.
+- [API.md](API.md) — the declarative API framework built on this layer.
+- [JSON.md](JSON.md) — for the parameter dict and row sinks.
