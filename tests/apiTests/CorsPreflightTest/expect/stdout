@@ -1,0 +1,5 @@
+200
+Access-Control-Allow-Methods: POST,PUT,GET,OPTIONS,DELETE
+Access-Control-Allow-Headers: DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Set-Cookie,Authorization
+Access-Control-Allow-Origin: https://example.com
+Content-Length: 0

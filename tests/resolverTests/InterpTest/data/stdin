@@ -1,0 +1,1 @@
+{"context": {"args": {"q": "hello", "page": 2, "user": {"name": "Bob"}}}, "template": "search={args.q} page={args.page} who={args.user.name}"}
