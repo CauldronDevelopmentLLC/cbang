@@ -1,0 +1,28 @@
+---
+# DB-free fixture exercising the synchronous handler chain offline.
+jmpapi: 1.1.0
+info: {title: api test, version: 0.0.0}
+
+endpoints:
+  /favicon.ico:
+    get: {path: '{options.favicon}'}
+
+  /redir:
+    get: {handler: redirect, location: /target, code: 301}
+
+  /down:
+    get: {handler: status, code: 503, text: Maintenance}
+
+  /openapi-spec:
+    get: {handler: spec}
+
+  /cors-test:
+    any:
+      handler: cors
+      origins: ['https://example.com']
+      methods: [GET, OPTIONS]
+
+  /.*:
+    get:
+      path: '{options.http-root}'
+      index: index.html

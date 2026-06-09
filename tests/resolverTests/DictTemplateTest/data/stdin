@@ -1,0 +1,1 @@
+{"context": {"args": {"id": 5, "path": "a/b"}}, "template": {"key": "id-{args.id}", "p": "/root/{args.path}"}}

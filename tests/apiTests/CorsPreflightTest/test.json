@@ -1,0 +1,5 @@
+{
+  "args": ["OPTIONS", "/cors-test",
+           "Origin: https://example.com",
+           "Access-Control-Request-Method: GET"]
+}
