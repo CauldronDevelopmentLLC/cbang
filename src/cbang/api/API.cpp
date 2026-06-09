@@ -44,6 +44,7 @@
 #include <cbang/api/handler/LogoutHandler.h>
 #include <cbang/api/handler/SpecHandler.h>
 #include <cbang/api/handler/ExecHandler.h>
+#include <cbang/api/handler/ConditionalHandler.h>
 #include <cbang/api/handler/PassHandler.h>
 #include <cbang/api/handler/HeadersHandler.h>
 #include <cbang/api/handler/RedirectHandler.h>
@@ -98,7 +99,7 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
   Resolver(*this).resolve(*config);
 
   // Check JmpAPI version
-  const Version minVer("1.1.0");
+  const Version minVer("1.2.0");
   Version version(config->getString("jmpapi", "0.0.0"));
   if (version < minVer) THROW("API version must be at least " << minVer);
 
@@ -406,23 +407,27 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
 }
 
 
-cb::API::HandlerPtr cb::API::API::wrapEndpoint(
-  const HandlerPtr &handler, const CfgPtr &cfg) {
-  auto config = cfg->getConfig();
-  auto group  = SmartPtr(new HandlerGroup);
-
+void cb::API::API::addSteps(
+  HandlerGroup &group, const JSON::ValuePtr &config) {
   // Headers
   if (config->has("headers"))
-    group->add(new HeadersHandler(config->get("headers")));
+    group.add(new HeadersHandler(config->get("headers")));
 
   // Exec pre-step
   if (config->has("exec")) {
     if (procPool.isNull())
       THROW("API cannot have 'exec' without Event::SubprocessPool");
 
-    group->add(new ExecHandler(*this, config->get("exec")));
+    group.add(new ExecHandler(*this, config->get("exec")));
   }
+}
 
+
+cb::API::HandlerPtr cb::API::API::wrapEndpoint(
+  const HandlerPtr &handler, const CfgPtr &cfg) {
+  auto group = SmartPtr(new HandlerGroup);
+
+  addSteps(*group, cfg->getConfig());
   group->add(handler);
 
   // Validation
@@ -430,17 +435,36 @@ cb::API::HandlerPtr cb::API::API::wrapEndpoint(
 }
 
 
+cb::API::HandlerPtr cb::API::API::createStatementHandler(const CfgPtr &cfg) {
+  auto config = cfg->getConfig();
+
+  // Sequence: a list of statements folded into a chain
+  if (config->isList()) {
+    auto group = SmartPtr(new HandlerGroup);
+    for (auto &item: *config)
+      group->add(createStatementHandler(cfg->createChild(item)));
+    return group;
+  }
+
+  // Conditional
+  if (config->has("if")) return new ConditionalHandler(*this, cfg);
+
+  // A single statement: pre-steps then the endpoint handler.  Method-level
+  // validation is applied by the caller, not here.
+  auto group = SmartPtr(new HandlerGroup);
+  addSteps(*group, config);
+  group->add(createEndpointHandler(getEndpointTypes(config), cfg));
+  return group;
+}
+
+
 cb::API::HandlerPtr cb::API::API::createMethodsHandler(
   const string &methods, const CfgPtr &cfg) {
-  auto config = cfg->getConfig();
-  auto types  = getEndpointTypes(config);
-
-  LOG_INFO(3, "Adding endpoint " << methods << " " << cfg->getPattern()
-    << " (" << types->toString(0, true) << ")");
+  LOG_INFO(3, "Adding endpoint " << methods << " " << cfg->getPattern());
 
   addToSpec(methods, cfg);
 
-  return wrapEndpoint(createEndpointHandler(types, cfg), cfg);
+  return cfg->addValidation(createStatementHandler(cfg));
 }
 
 

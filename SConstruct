@@ -116,7 +116,7 @@ if env.CBConfigEnabled('mariadb'):
     subdirs += ['db/maria']
 
     if env.CBConfigEnabled('leveldb'):
-        subdirs += ['api', 'api/arg', 'api/handler', 'api/ws']
+        subdirs += ['api', 'api/arg', 'api/condition', 'api/handler', 'api/ws']
 
 if env['PLATFORM'] == 'win32': subdirs.append('os/win')
 elif env['PLATFORM'] == 'darwin': subdirs.append('os/osx')

@@ -1,6 +1,6 @@
 ---
 # DB-free fixture exercising the synchronous handler chain offline.
-jmpapi: 1.1.0
+jmpapi: 1.2.0
 info: {title: api test, version: 0.0.0}
 
 endpoints:
@@ -33,6 +33,53 @@ endpoints:
       exec:
         cmd: '{options.scripts}/echo.py'
         input: {n: '{args.n}', label: 'x-{args.n}'}
+
+  # Conditions ------------------------------------------------------------
+
+  # Typed numeric compare: lone '{args.n}' resolves to a number
+  /cmp/{n}:
+    args: {n: {type: u32}}
+    get:
+      if:   {'<': ['{args.n}', 100]}
+      then: {handler: status, code: 200, text: small}
+      else: {handler: status, code: 200, text: big}
+
+  # File existence with interpolated path
+  /exists/{name}:
+    args: {name: {type: string}}
+    get:
+      if:   {exists: '{options.http-root}/{args.name}'}
+      then: {handler: status, code: 200, text: found}
+      else: {handler: status, code: 404, text: missing}
+
+  # Nested boolean logic: and / not
+  /bool/{n}:
+    args: {n: {type: u32}}
+    get:
+      if:
+        and:
+          - {'<':  ['{args.n}', 100]}
+          - {not: {'=': ['{args.n}', 0]}}
+      then: {handler: status, code: 200, text: 'yes'}
+      else: {handler: status, code: 200, text: 'no'}
+
+  # Async cmd condition judged by exit status (resumes on the event loop)
+  /cmd/{n}:
+    args: {n: {type: u32}}
+    get:
+      if:   {cmd: 'test {args.n} -lt 100'}
+      then: {handler: status, code: 200, text: lt}
+      else: {handler: status, code: 200, text: ge}
+
+  # Sequence body: a non-replying exec passes to the next statement
+  /seq/{n}:
+    args: {n: {type: u32}}
+    get:
+      if:   {'=': ['{args.n}', 0]}
+      then: {handler: status, code: 200, text: zero}
+      else:
+        - exec: {cmd: '{options.scripts}/pass.py'}
+        - {handler: status, code: 200, text: chained}
 
   /.*:
     get:

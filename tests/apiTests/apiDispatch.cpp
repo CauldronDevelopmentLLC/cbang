@@ -50,6 +50,7 @@
 #include <cbang/http/Headers.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/SubprocessPool.h>
+#include <cbang/log/Logger.h>
 
 #include <iostream>
 #include <sstream>
@@ -66,6 +67,10 @@ int main(int argc, char *argv[]) {
            << " <config> <METHOD> <path> [Name: value ...]" << endl;
       return 1;
     }
+
+    // Keep logs off stdout (which carries the response) and deterministic
+    Logger::instance().setScreenStream(cerr);
+    Logger::instance().setLogTime(false);
 
     string configPath = argv[1];
     string method     = argv[2];
