@@ -153,8 +153,10 @@ namespace cb {
         const JSON::ValuePtr &config) const;
       virtual HandlerPtr createEndpointHandler(
         const JSON::ValuePtr &types, const CfgPtr &cfg);
+      void addSteps(HandlerGroup &group, const JSON::ValuePtr &config);
       virtual HandlerPtr wrapEndpoint(
         const HandlerPtr &handler, const CfgPtr &cfg);
+      virtual HandlerPtr createStatementHandler(const CfgPtr &cfg);
       virtual HandlerPtr createMethodsHandler(
         const std::string &methods, const CfgPtr &cfg);
       virtual HandlerPtr createAPIHandler(const CfgPtr &cfg);

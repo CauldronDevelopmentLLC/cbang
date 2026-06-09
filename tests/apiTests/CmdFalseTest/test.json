@@ -1,0 +1,8 @@
+{
+  "args": ["GET", "/cmd/200"],
+  "checks": [
+    ["file", "stdout"],
+    ["file", "stderr", ["not_match", ".*WARNING"]],
+    ["file", "return"]
+  ]
+}
