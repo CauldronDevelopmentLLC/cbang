@@ -64,6 +64,7 @@ namespace cb {
 
       // Bound input parameters
       vector<string>        params;
+      vector<my_bool>       paramNull;
       vector<MYSQL_BIND>    paramBinds;
       vector<unsigned long> paramLength;
 
@@ -371,7 +372,7 @@ bool DB::useNB(const string &dbName) {
 }
 
 
-bool DB::queryNB(const string &s, const vector<string> &params) {
+bool DB::queryNB(const string &s, const vector<JSON::ValuePtr> &params) {
   assertConnected();
   assertNotPending();
   assertNonBlocking();
@@ -380,7 +381,17 @@ bool DB::queryNB(const string &s, const vector<string> &params) {
     RAISE_DB_ERROR("Failed to allocate statement");
 
   rowReady = false;
-  binding->params = params;
+
+  // Convert params to bound buffers; nulls bind NULL, booleans bind 1/0
+  binding->params.clear();
+  binding->paramNull.clear();
+  for (auto &p: params) {
+    bool null = p.isNull() || p->isNull() || p->isUndefined();
+    binding->paramNull.push_back(null);
+    binding->params.push_back(
+      null ? string() :
+      p->isBoolean() ? string(p->getBoolean() ? "1" : "0") : p->asString());
+  }
 
   int ret = 0;
   status = mysql_stmt_prepare_start(&ret, stmt, s.data(), s.length());
@@ -409,7 +420,8 @@ bool DB::startExecute() {
 
     for (unsigned i = 0; i < params.size(); i++) {
       lengths[i]             = params[i].length();
-      binds[i].buffer_type   = MYSQL_TYPE_BLOB;
+      binds[i].buffer_type   =
+        binding->paramNull[i] ? MYSQL_TYPE_NULL : MYSQL_TYPE_BLOB;
       binds[i].buffer        = (void *)params[i].data();
       binds[i].buffer_length = params[i].length();
       binds[i].length        = &lengths[i];

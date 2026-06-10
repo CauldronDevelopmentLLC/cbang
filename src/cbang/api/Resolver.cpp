@@ -39,7 +39,6 @@
 #include <cbang/json/String.h>
 #include <cbang/config/Options.h>
 #include <cbang/http/Request.h>
-#include <cbang/db/maria/DB.h>
 
 #include <set>
 #include <vector>
@@ -75,16 +74,19 @@ void Resolver::setSession(const SmartPointer<HTTP::Session> &session) {
 JSON::ValuePtr Resolver::select(const string &path) const {
   if (path.empty()) return 0;
 
-  // Return ``null`` if not found
-  if (path[0] == '~') {
-    auto result = select(path.substr(1));
-    if (result.isNull()) return JSON::Null::instancePtr();
-    return result;
-  }
-
   auto result = vars.select(path, 0);
   if (result.isSet()) return result;
   return parent.isSet() ? parent->select(path) : 0;
+}
+
+
+// A ``~`` marks the ref optional: missing resolves to null rather than an
+// error, except in a partial resolve which leaves it for a later resolve.
+JSON::ValuePtr Resolver::selectRef(const string &id, bool partial) const {
+  bool opt = !id.empty() && id[0] == '~';
+  auto value = select(opt ? id.substr(1) : id);
+  if (value.isNull() && opt && !partial) return JSON::Null::instancePtr();
+  return value;
 }
 
 
@@ -114,40 +116,39 @@ uint64_t Resolver::selectTime(const string &path, uint64_t defaultValue) const {
 }
 
 
-string Resolver::resolve(const string &s, bool sql) const {
-  return resolve(s, sql, 0);
+string Resolver::resolve(const string &s, bool partial) const {
+  return resolve(s, partial, 0);
 }
 
 
-string Resolver::resolveSQL(const string &s, vector<string> &params) const {
-  return resolve(s, true, &params);
+string Resolver::resolveSQL(
+  const string &s, vector<JSON::ValuePtr> &params) const {
+  return resolve(s, false, &params);
 }
 
 
 string Resolver::resolve(
-  const string &s, bool sql, vector<string> *params) const {
+  const string &s, bool partial, vector<JSON::ValuePtr> *params) const {
   auto cb = [&] (const string &id, const string &spec) -> string {
-    auto value = select(id);
+    auto value = selectRef(id, partial);
 
-    if (sql) {
-      auto *blob = dynamic_cast<Blob *>(value.get());
-      if (blob) {
-        if (!params) THROW("Binary value '" << id << "' not supported here");
-        params->push_back(blob->getData());
-        return "?";
-      }
-
-      if (value.isNull() || value->isNull() || value->isUndefined())
-        return "NULL";
-
-      if (spec == "S" ||
-          (spec.empty() && !value->isNumber() && !value->isBoolean()))
-        return MariaDB::DB::format(value->asString());
+    if (value.isNull()) {
+      if (partial) // Leave for a later resolve with more vars
+        return "{" + id + (spec.empty() ? string() : (":" + spec)) + "}";
+      THROW("Variable '" << id << "' not found; use {~" << id
+            << "} to resolve null when missing");
     }
 
-    if (value.isSet()) return value->formatAs(spec);
+    if (params) { // SQL: every ref is bound as a statement parameter
+      auto *blob = dynamic_cast<Blob *>(value.get());
+      params->push_back(
+        blob ? new JSON::String(blob->getData()) :
+        spec.empty() || value->isNull() ? value :
+        new JSON::String(value->formatAs(spec)));
+      return "?";
+    }
 
-    return "{" + id + (spec.empty() ? string() : (":" + spec)) + "}";
+    return value->formatAs(spec);
   };
 
   return String(s).format(cb);
@@ -155,43 +156,51 @@ string Resolver::resolve(
 
 
 JSON::ValuePtr Resolver::resolveValue(
-  const JSON::ValuePtr &value, bool sql) const {
-  if (value->isList() || value->isDict()) {resolve(*value, sql); return value;}
+  const JSON::ValuePtr &value, bool partial) const {
+  if (value->isList() || value->isDict()) {
+    resolve(*value, partial);
+    return value;
+  }
 
   if (value->isString()) {
     const string &s = value->getString();
 
     // A lone reference with no format spec resolves to the native value
-    if (!sql && 2 <= s.length() && s.front() == '{' && s.back() == '}') {
+    if (2 <= s.length() && s.front() == '{' && s.back() == '}') {
       string id = s.substr(1, s.length() - 2);
       if (id.find_first_of("{}:") == string::npos) {
-        auto v = select(id);
-        return v.isSet() ? v->copy(true) : value; // Missing: leave literal
+        auto v = selectRef(id, partial);
+        if (v.isSet()) return v->copy(true);
+        if (partial) return value; // Leave for a later resolve
+        THROW("Variable '" << id << "' not found; use {~" << id
+              << "} to resolve null when missing");
       }
     }
 
-    if (s.find('{') != string::npos) return new JSON::String(resolve(s, sql));
+    if (s.find('{') != string::npos)
+      return new JSON::String(resolve(s, partial));
   }
 
   return value;
 }
 
 
-void Resolver::resolve(JSON::Value &value, bool sql) const {
+void Resolver::resolve(JSON::Value &value, bool partial) const {
   if (value.isList())
     for (unsigned i = 0; i < value.size(); i++)
-      value.set(i, resolveValue(value.get(i), sql));
+      value.set(i, resolveValue(value.get(i), partial));
 
   else if (value.isDict()) {
     // Collect keys first; resolveValue may replace entries in place
     std::vector<std::string> keys;
     for (auto e: value.entries()) keys.push_back(e.key());
-    for (auto &key: keys) value.insert(key, resolveValue(value.get(key), sql));
+    for (auto &key: keys)
+      value.insert(key, resolveValue(value.get(key), partial));
 
   } else if (value.isString()) {
     // Top-level string: resolve in place (cannot retype without a parent)
     auto sPtr = dynamic_cast<JSON::String *>(&value);
     if (sPtr && sPtr->getValue().find('{') != string::npos)
-      sPtr->getValue() = resolve(sPtr->getValue(), sql);
+      sPtr->getValue() = resolve(sPtr->getValue(), partial);
   }
 }

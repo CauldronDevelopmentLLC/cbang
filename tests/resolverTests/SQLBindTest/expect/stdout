@@ -1,0 +1,7 @@
+CALL F(?, ?, ?, ?, ?, ?)
+PARAM[0]: "O'Brien"
+PARAM[1]: 42
+PARAM[2]: true
+PARAM[3]: null
+PARAM[4]: "3"
+PARAM[5]: "42"

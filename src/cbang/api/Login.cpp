@@ -67,7 +67,11 @@ void Login::loginComplete() {
   };
 
   if (def.sql.empty()) cb(HTTP_OK, 0);
-  else exec(resolver->resolve(def.getSQL(), true));
+  else {
+    vector<JSON::ValuePtr> params;
+    string s = resolver->resolveSQL(def.getSQL(), params);
+    exec(s, params);
+  }
 }
 
 

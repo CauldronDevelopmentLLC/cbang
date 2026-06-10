@@ -96,8 +96,9 @@ void cb::API::API::load(const JSON::ValuePtr &config) {
 
   optionValues = options.getConfigJSON();
 
-  // Resolve variables
-  Resolver(*this).resolve(*config);
+  // Resolve variables.  A partial resolve: only {options.*} exists yet, so
+  // missing refs, including {~refs}, stay literal for request-time resolution.
+  Resolver(*this).resolve(*config, true);
 
   // Check JmpAPI version
   const Version minVer("1.2.0");

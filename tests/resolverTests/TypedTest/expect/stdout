@@ -1,1 +1,1 @@
-{"num":800,"bool":true,"str":"Bob","obj":{"w":1,"h":2},"list":[1,2,3],"embedded":"px-800","missing":"{args.nope}","nullref":null,"fmt":"800"}
+{"num":800,"bool":true,"str":"Bob","obj":{"w":1,"h":2},"list":[1,2,3],"embedded":"px-800","nullref":null,"fmt":"800"}

@@ -1,4 +1,5 @@
 200
 Content-Type: application/json
 {"id":42,"name":null}
-SQL: CALL UserGet(42)
+SQL: CALL UserGet(?)
+BIND[0]: 3432

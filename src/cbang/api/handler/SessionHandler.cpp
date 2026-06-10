@@ -98,5 +98,7 @@ void SessionHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   };
 
   auto query = SmartPtr(new SessionQuery(*queryDef, req.getSession(), cb));
-  query->exec(ctx->getResolver()->resolve(queryDef->getSQL(), true));
+  vector<JSON::ValuePtr> params;
+  string s = ctx->getResolver()->resolveSQL(queryDef->getSQL(), params);
+  query->exec(s, params);
 }

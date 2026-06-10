@@ -74,7 +74,7 @@ namespace cb {
         {this->contentType = contentType;}
 
       void exec(const std::string &sql,
-                const std::vector<std::string> &params = {});
+                const std::vector<JSON::ValuePtr> &params = {});
       static return_t getReturnType(const std::string &name);
 
     protected:

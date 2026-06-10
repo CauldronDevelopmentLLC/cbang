@@ -1,1 +1,2 @@
-x={args.nope}
+ERROR:Exception: String format error at character 12
+ERROR:Caused by: Variable 'args.nope' not found; use {~args.nope} to resolve null when missing

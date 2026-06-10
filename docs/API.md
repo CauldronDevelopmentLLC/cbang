@@ -161,14 +161,17 @@ get:
 | `sql` | The query returns a truthy single value (async). |
 | `cmd` | The command exits 0 (async, subprocess pool). |
 
-## Interpolation and typed values
+## Variables and typed values
 
-`{ref}` interpolates from the resolver namespaces: `{args.*}`,
-`{session.*}`, `{group}`, `{options.*}`, plus the binary roots below.  In
-SQL, strings are quoted and escaped; numbers and booleans are not.  A config
-value that is a lone `'{ref}'` resolves to the referenced *native* JSON value
+`{ref}` resolves from the resolver namespaces: `{args.*}`, `{session.*}`,
+`{group}`, `{options.*}`, plus the binary roots below.  In SQL every ref is
+bound as a prepared-statement parameter (never spliced into the SQL text);
+elsewhere refs interpolate as strings.  A missing ref is a request-time
+error; a `{~ref}` resolves null (SQL `NULL`) when missing.  A config value
+that is a lone `'{ref}'` resolves to the referenced *native* JSON value
 (number, bool, ...), not a string — which is what makes numeric compares and
-typed `exec` input work.
+typed `exec` input work.  `{options.*}` refs resolve into the config once at
+load time and so may form SQL text.
 
 ## Queries
 
@@ -194,10 +197,10 @@ body is exposed as `{body}` (`.size`, `.type`); `multipart/form-data` file
 parts as `{files.<name>}` (`.filename`, `.type`, `.size`); plain multipart
 fields fold into `{args.*}`.
 
-A binary ref used in SQL is **bound as a real prepared-statement parameter**
-(the resolver emits `?` and passes the bytes through), so blobs of any
-content and size are safe.  Metadata refs interpolate normally.  Using the
-bytes inside a larger string is an error.
+A binary ref used in SQL binds its bytes, exactly like any other ref, so
+blobs of any content and size are safe.  Metadata refs resolve normally.
+Like any ref, the bytes cannot sit inside a string literal — assemble
+strings in SQL with `CONCAT()`.
 
 ```yaml
 /avatar:

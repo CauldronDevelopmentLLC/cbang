@@ -1,0 +1,1 @@
+{"path":"/srv/{args.path}","opt":"v={~args.nope}","lone":"{args.user}"}

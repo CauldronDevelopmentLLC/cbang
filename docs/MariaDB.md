@@ -114,14 +114,15 @@ the binary protocol.
 ### Bound parameters
 
 Parameters bind to `?` placeholders in order — binary-safe, any content,
-no quoting or escaping:
+no quoting or escaping.  Params are JSON values: a null binds SQL `NULL`,
+a boolean binds `1`/`0`, anything else binds its string value:
 
 ```cpp
-std::vector<std::string> params = {imageBytes};
+std::vector<cb::JSON::ValuePtr> params = {new cb::JSON::String(imageBytes)};
 db.query(cb, "CALL StoreImage(?, 'image/png')", params);
 ```
 
-This is also how the API framework binds `{body}` / `{files.*}` blob refs
+This is also how the API framework binds every `{ref}` in config SQL
 (see [API.md](API.md)).
 
 ### Interpolated parameters
