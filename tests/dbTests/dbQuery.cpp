@@ -44,7 +44,7 @@
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/json/YAMLReader.h>
-#include <cbang/config/Options.h>
+#include <cbang/config/CommandLine.h>
 #include <cbang/api/API.h>
 #include <cbang/db/maria/Connector.h>
 #include <cbang/http/Request.h>
@@ -188,6 +188,19 @@ namespace {
                   {{Cell(string("ORIG\0BYTES", 10))}})); // ImageGet
       push(Response()); // ImageSetSize: OK
 
+    } else if (s == "AssetUpload") {
+      method = "POST";
+      path   = "/asset?id=42";
+      contentType = "multipart/form-data; boundary=XbOuNdX";
+      body =
+        "--XbOuNdX\r\n"
+        "Content-Disposition: form-data; name=\"file\"; "
+        "filename=\"pic.png\"\r\n"
+        "Content-Type: image/png\r\n\r\n" +
+        string("PNG\0DATA", 8) +
+        "\r\n--XbOuNdX--\r\n";
+      push(result({{"id", FakeDB::STRING}}, {{Cell("42")}})); // AssetSave
+
     } else if (s == "Binary") {
       path = "/image";
       push(result({{"data", FakeDB::BLOB}},
@@ -223,26 +236,36 @@ namespace {
 
 int main(int argc, char *argv[]) {
   try {
-    if (argc < 3) {
-      cerr << "Usage: " << argv[0] << " <fixture.yaml> <scenario>" << endl;
-      return 1;
-    }
-
-    string configPath = argv[1];
-    string scenario   = argv[2];
-
-    // Keep logs off stdout and deterministic
+    // Keep logs off stdout and deterministic; command line options may
+    // override, e.g. --verbosity=5 (debug logging requires a DEBUG build)
     Logger::instance().setScreenStream(cerr);
     Logger::instance().setLogTime(false);
     Logger::instance().setLogColor(false);
     Exception::printLocations = false;
 
+    Options options;
+    options.add("scripts", "Path to exec scripts.");
+    Logger::instance().addOptions(options);
+
+    CommandLine cmdLine;
+    cmdLine.setKeywordOptions(&options);
+    cmdLine.setUsageArgs("<fixture.yaml> <scenario>");
+    cmdLine.parse(argc, argv);
+
+    auto &args = cmdLine.getPositionalArgs();
+    if (args.size() != 2) {
+      cmdLine.usage(cerr, argv[0]);
+      return 1;
+    }
+
+    string configPath = args[0];
+    string scenario   = args[1];
+
     auto slash = configPath.find_last_of('/');
     string dir = slash == string::npos ? "." : configPath.substr(0, slash);
+    if (!options["scripts"].hasValue()) options["scripts"].set(dir + "/scripts");
 
     Event::Base base(false);
-    Options options;
-    options.add("scripts", "")->set(dir + "/scripts");
     API::API api(options);
 
     string method, path, body, contentType;

@@ -88,6 +88,24 @@ endpoints:
           return: pass
         - reply: '{files.out}'
 
+  # Multipart upload + exec renditions merged into the existing {files.*}
+  # root + optional ~refs bound as blobs (the production asset shape)
+  /asset:
+    post:
+      args: {id: {}}
+      files: {file: {required: true, max-size: 16MB}}
+      steps:
+        - exec:
+            cmd:   '{options.scripts}/renditions.py'
+            input: {src: '{files.file}', type: '{files.file.type}',
+                    filename: '{files.file.filename}'}
+        - sql: >
+            CALL AssetSave({args.id}, {files.file.filename},
+              {files.file.type}, {files.file},
+              {~files.web}, {~files.web.type},
+              {~files.thumb}, {~files.thumb.type})
+          return: one
+
   # Binary response: column 1 of row 1 is the raw body; the Content-Type
   # comes from the content-type key, else a second column, else octet-stream
   /image:

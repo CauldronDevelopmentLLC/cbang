@@ -1,0 +1,10 @@
+200
+Content-Type: application/json
+"42"
+SQL: CALL AssetSave('42', 'pic.png',
+  'image/png', ?,
+  ?, 'image/jpeg',
+  ?, 'image/jpeg')
+BIND[0]: 504E470044415441
+BIND[1]: 5745423A504E470044415441
+BIND[2]: 5448554D423A504E470044415441
