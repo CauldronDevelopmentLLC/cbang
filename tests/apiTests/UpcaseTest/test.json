@@ -1,0 +1,3 @@
+{
+  "args": ["PUT", "/upcase", "Content-Type: text/plain", "-stdin"]
+}

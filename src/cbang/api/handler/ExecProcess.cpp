@@ -33,8 +33,10 @@
 #include "ExecProcess.h"
 
 #include <cbang/Catch.h>
+#include <cbang/api/Blob.h>
 #include <cbang/api/Context.h>
 #include <cbang/event/Base.h>
+#include <cbang/os/SystemUtilities.h>
 #include <cbang/event/PipeEventBuffer.h>
 #include <cbang/http/Request.h>
 #include <cbang/http/Enum.h>
@@ -48,6 +50,7 @@ using namespace cb::API;
 
 
 void ExecProcess::exec() {
+  set("TMPDIR", tmpDir->getPath());
   Subprocess::exec(cmd, Subprocess::SHELL   | Subprocess::REDIR_STDERR |
                    Subprocess::REDIR_STDOUT | Subprocess::REDIR_STDIN);
 
@@ -87,6 +90,29 @@ void ExecProcess::done() {
       if (results->hasDict("headers"))
         for (auto e: results->getDict("headers").entries())
           ctx->getRequest().outSet(e.key(), e.value()->asString());
+
+      // Files the program wrote become binary values under {files.*}
+      if (results->hasDict("files")) {
+        auto resolver = ctx->getResolver();
+        auto files    = resolver->select("files");
+        if (files.isNull()) {
+          files = new JSON::Dict;
+          resolver->set("files", files);
+        }
+
+        for (auto e: results->getDict("files").entries()) {
+          string path, type, filename;
+          if (e.value()->isString()) path = e.value()->getString();
+          else {
+            path     = e.value()->getString("path");
+            type     = e.value()->getString("type", "");
+            filename = e.value()->getString("filename", "");
+          }
+
+          files->insert(
+            e.key(), new Blob(SystemUtilities::read(path), type, filename));
+        }
+      }
 
       // An explicit response short-circuits the pipeline
       if (results->has("response")) {

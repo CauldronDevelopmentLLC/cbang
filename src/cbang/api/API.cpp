@@ -38,6 +38,7 @@
 
 #include <cbang/api/handler/MethodHandler.h>
 #include <cbang/api/handler/URLHandler.h>
+#include <cbang/api/handler/ReplyHandler.h>
 #include <cbang/api/handler/StatusHandler.h>
 #include <cbang/api/handler/QueryHandler.h>
 #include <cbang/api/handler/LoginHandler.h>
@@ -303,6 +304,7 @@ string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
   if (!type.empty()) return type;
 
   if (config->has("bind"))       return "bind";
+  if (config->has("reply"))      return "reply";
   if (config->has("timeseries")) return "timeseries";
   if (config->has("sql"))        return "query";
   if (config->has("query"))      return "query";
@@ -360,6 +362,7 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
   }
 
   if (type == "pass")      return new PassHandler;
+  if (type == "reply")     return new ReplyHandler(config);
   if (type == "cors")      return new CORSHandler(config);
   if (type == "status")    return new StatusHandler(config);
   if (type == "redirect")  return new RedirectHandler(config);
@@ -438,10 +441,23 @@ cb::API::HandlerPtr cb::API::API::wrapEndpoint(
 cb::API::HandlerPtr cb::API::API::createStatementHandler(const CfgPtr &cfg) {
   auto config = cfg->getConfig();
 
-  // Sequence: a list of statements folded into a chain
+  // Sequence: a list of statements folded into a chain.  A bare list is
+  // shorthand for {steps: [...]}.
   if (config->isList()) {
     auto group = SmartPtr(new HandlerGroup);
     for (auto &item: *config)
+      group->add(createStatementHandler(cfg->createChild(item)));
+    return group;
+  }
+
+  // Explicit sequence: lets the statement also carry keys (args, help, ...)
+  if (config->has("steps")) {
+    if (config->has("if") || getEndpointType(config) != "pass")
+      THROW("'steps' cannot be combined with a handler key or 'if'");
+
+    auto group = SmartPtr(new HandlerGroup);
+    addSteps(*group, config); // headers / exec pre-steps
+    for (auto &item: *config->get("steps"))
       group->add(createStatementHandler(cfg->createChild(item)));
     return group;
   }
@@ -533,7 +549,8 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
   if (hideCategory) return;
 
   auto config = cfg->getConfig();
-  if (config->getBoolean("hide", false)) return;
+  bool isDict = config->isDict(); // a method body may be a bare steps list
+  if (isDict && config->getBoolean("hide", false)) return;
 
   auto paths = spec->get("paths");
   auto path  = cfg->getPattern();
@@ -555,7 +572,7 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
     }
 
     // Add description from help
-    if (config->hasString("help"))
+    if (isDict && config->hasString("help"))
       methodSpec->insert("description", config->get("help"));
 
     // Add parameter spec from path and args handlers

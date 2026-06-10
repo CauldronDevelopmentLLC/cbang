@@ -43,6 +43,7 @@ using namespace cb::API;
 
 QueryDef::QueryDef(API &api, const JSON::ValuePtr &config) :
   api(api), sql(String::trim(config->getString("sql", ""))),
+  into(config->getString("into", "")),
   contentType(config->getString("content-type", "")) {
 
   if (sql.empty()) THROW("Query must have 'sql'");
@@ -50,6 +51,9 @@ QueryDef::QueryDef(API &api, const JSON::ValuePtr &config) :
   if (config->hasList("fields")) fields = config->get("fields");
   ret = config->getString("return", fields.isNull() ? "ok" : "fields");
   Query::getReturnType(ret); // Check that return type is valid
+
+  if (!into.empty() && ret == "pass")
+    THROW("Query cannot have both 'into' and 'return: pass'");
 }
 
 

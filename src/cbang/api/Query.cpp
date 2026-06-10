@@ -59,6 +59,7 @@ void Query::exec(const string &sql, const vector<string> &params) {
 
 Query::return_t Query::getReturnType(const string &name) {
   if (name == "ok")     return &Query::returnOk;
+  if (name == "pass")   return &Query::returnPass;
   if (name == "binary") return &Query::returnBinary;
   if (name == "hlist")  return &Query::returnHList;
   if (name == "list")   return &Query::returnList;
@@ -94,6 +95,12 @@ void Query::errorReply(HTTP::Status code, const string &msg) {
   sink.endDict();
 
   reply(code);
+}
+
+
+void Query::returnPass(MariaDB::EventDB::state_t state) {
+  // Run the query and discard any results
+  if (state != MariaDB::EventDB::EVENTDB_ROW) returnOk(state);
 }
 
 

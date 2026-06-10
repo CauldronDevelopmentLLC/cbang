@@ -34,14 +34,55 @@
 #include "ExecProcess.h"
 
 #include <cbang/api/API.h>
+#include <cbang/api/Blob.h>
 #include <cbang/api/Resolver.h>
 #include <cbang/os/Subprocess.h>
+#include <cbang/os/SystemUtilities.h>
+#include <cbang/os/TemporaryDirectory.h>
 #include <cbang/json/Dict.h>
 #include <cbang/json/String.h>
+
+#include <filesystem>
 
 using namespace std;
 using namespace cb;
 using namespace cb::API;
+
+
+namespace {
+  // Write binary envelope values to files in ``dir`` and substitute their
+  // paths, recursing through dicts and lists
+  void writeBlobs(JSON::Value &value, const string &dir) {
+    auto writeOne = [&] (const string &name, const Blob &blob) {
+      string path = dir + "/" + name;
+      for (unsigned i = 0; SystemUtilities::exists(path); i++)
+        path = dir + "/" + name + "." + String(i);
+
+      auto &data = blob.getData();
+      SystemUtilities::oopen(path)->write(data.data(), data.length());
+      return path;
+    };
+
+    if (value.isDict()) {
+      vector<string> keys;
+      for (auto e: value.entries()) keys.push_back(e.key());
+
+      for (auto &key: keys) {
+        auto v = value.get(key);
+        auto *blob = dynamic_cast<Blob *>(v.get());
+        if (blob) value.insert(key, writeOne(key, *blob));
+        else writeBlobs(*v, dir);
+      }
+
+    } else if (value.isList())
+      for (unsigned i = 0; i < value.size(); i++) {
+        auto v = value.get(i);
+        auto *blob = dynamic_cast<Blob *>(v.get());
+        if (blob) value.set(i, new JSON::String(writeOne(String(i), *blob)));
+        else writeBlobs(*v, dir);
+      }
+  }
+}
 
 
 ExecHandler::ExecHandler(API &api, const JSON::ValuePtr &config) :
@@ -78,7 +119,14 @@ void ExecHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   auto in = input->copy(true);
   resolver->resolve(*in);
 
+  // A private temp dir for this step, exported to the process as TMPDIR and
+  // removed when the step completes.  Binary envelope values are written to
+  // files there and replaced by their paths.
+  auto tmpDir = SmartPtr(new TemporaryDirectory(
+    std::filesystem::temp_directory_path().string()));
+  writeBlobs(*in, tmpDir->getPath());
+
   auto &pool = api.getProcPool();
   pool.enqueue(
-    new ExecProcess(pool.getBase(), rcmd, in->toString(), ctx, next));
+    new ExecProcess(pool.getBase(), rcmd, in->toString(), tmpDir, ctx, next));
 }

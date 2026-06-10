@@ -52,6 +52,7 @@
 #include <cbang/http/RequestErrorHandler.h>
 #include <cbang/net/URI.h>
 #include <cbang/event/Base.h>
+#include <cbang/event/SubprocessPool.h>
 #include <cbang/log/Logger.h>
 
 #include <mysql/mysqld_error.h>
@@ -165,6 +166,28 @@ namespace {
         "\r\n--XbOuNdX--\r\n";
       FakeDB::push(Response()); // OK, no result set
 
+    } else if (s == "Pipe") {
+      path = "/pipe/7";
+      push(Response()); // LogAccess: OK, no result set
+      push(result({{"id", FakeDB::LONG}, {"name", FakeDB::STRING}},
+                  {{Cell("7"), Cell("Bob")}})); // UserGet
+
+    } else if (s == "BlobPipe") {
+      path = "/blob-pipe";
+      push(result({{"data", FakeDB::BLOB}, {"type", FakeDB::STRING}},
+                  {{Cell(string("IMG\0DATA", 8)), Cell("image/png")}}));
+      push(Response()); // StoreCopy: OK, no result set
+
+    } else if (s == "Resize") {
+      method = "PUT";
+      path   = "/resize/3/64";
+      body   = string("ORIG\0BYTES", 10);
+      contentType = "application/octet-stream";
+      push(Response()); // ImageSet: OK
+      push(result({{"data", FakeDB::BLOB}},
+                  {{Cell(string("ORIG\0BYTES", 10))}})); // ImageGet
+      push(Response()); // ImageSetSize: OK
+
     } else if (s == "Binary") {
       path = "/image";
       push(result({{"data", FakeDB::BLOB}},
@@ -214,8 +237,12 @@ int main(int argc, char *argv[]) {
     Logger::instance().setLogColor(false);
     Exception::printLocations = false;
 
+    auto slash = configPath.find_last_of('/');
+    string dir = slash == string::npos ? "." : configPath.substr(0, slash);
+
     Event::Base base(false);
     Options options;
+    options.add("scripts", "")->set(dir + "/scripts");
     API::API api(options);
 
     string method, path, body, contentType;
@@ -224,6 +251,7 @@ int main(int argc, char *argv[]) {
       THROW("Unknown scenario: " << scenario);
 
     api.setDBConnector(new MariaDB::Connector(base));
+    api.setProcPool(new Event::SubprocessPool(base));
     api.load(JSON::YAMLReader::parseFile(configPath));
 
     HTTP::RequestParams params;

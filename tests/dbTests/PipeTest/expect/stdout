@@ -1,0 +1,5 @@
+200
+Content-Type: application/json
+{"user":{"id":7,"name":"Bob"},"name":"Bob"}
+SQL: CALL LogAccess(7)
+SQL: CALL UserGet(7)

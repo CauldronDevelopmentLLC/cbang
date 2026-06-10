@@ -51,9 +51,18 @@ void QueryHandler::reply(
 
 
 void QueryHandler::operator()(const CtxPtr &ctx, const Cont &next) {
-  auto cb = [this, ctx] (HTTP::Status status, const JSON::ValuePtr &result) {
-    reply(ctx, status, result);
-  };
+  auto cb =
+    [this, ctx, next] (HTTP::Status status, const JSON::ValuePtr &result) {
+      // On success a ``return: pass`` query continues the chain and an
+      // ``into:`` query captures its result and continues.  Errors reply.
+      if (status == HTTP::Status::HTTP_OK &&
+          (queryDef->ret == "pass" || !queryDef->into.empty())) {
+        if (!queryDef->into.empty() && result.isSet())
+          ctx->getResolver()->set(queryDef->into, result);
+        ctx->errorHandler([&] {next(ctx);});
+
+      } else reply(ctx, status, result);
+    };
 
   queryDef->query(ctx->getResolver(), cb);
 }
