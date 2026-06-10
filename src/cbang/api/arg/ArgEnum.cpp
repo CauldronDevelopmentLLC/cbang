@@ -49,7 +49,7 @@ JSON::ValuePtr ArgEnum::operator()(
   const CtxPtr &ctx, const JSON::ValuePtr &value) const {
 
   for (auto v: *values)
-    if (*v == *value) return value;
+    if (v->asString() == value->asString()) return value;
 
   THROW("Must be one of: " << values->toString());
 }
