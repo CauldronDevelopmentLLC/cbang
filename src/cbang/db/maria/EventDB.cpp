@@ -170,7 +170,7 @@ void EventDB::callback(callback_t cb) {
       try {
         if (continueNB(eventFlagsToDBReady(flags)))
           TRY_CATCH_ERROR(cb(EventDB::EVENTDB_DONE));
-        else addEvent();
+        else renewEvent(); // The wait flags may have changed
 
       } catch (const Exception &e) {
         TRY_CATCH_ERROR(cb(EventDB::EVENTDB_ERROR));

@@ -128,7 +128,9 @@ void QueryCallback::operator()(Event::Event &, int, unsigned flags) {
       resume = false;
       if (!next()) return db.renewEvent();
       if (resume)  return db.rescheduleEvent();
-    } else return db.addEvent();
+      // The operation is still pending; the wait flags may have changed
+      // (e.g. a large write blocked), so renew rather than re-add.
+    } else return db.renewEvent();
 
   } catch (const Exception &e) {
     // Retry deadlocks

@@ -222,8 +222,12 @@ my_bool mysql_stmt_bind_param(MYSQL_STMT *s, MYSQL_BIND *b) {
   return 0;
 }
 
-int mysql_stmt_execute_start(int *, MYSQL_STMT *) {return PENDING;}
-int mysql_stmt_execute_cont(int *ret, MYSQL_STMT *s, int) {
+// Execute demands a WRITE wait, as the real client does when a large bound
+// parameter overflows the socket buffer.  An event re-armed with stale READ
+// flags never completes (the bug this guards against spins the driver loop).
+int mysql_stmt_execute_start(int *, MYSQL_STMT *) {return MYSQL_WAIT_WRITE;}
+int mysql_stmt_execute_cont(int *ret, MYSQL_STMT *s, int ready) {
+  if (!(ready & MYSQL_WAIT_WRITE)) return MYSQL_WAIT_WRITE; // still pending
   Conn *c = S(s);
   if (c->cur.errnoVal) {
     c->errnoVal = c->cur.errnoVal;
