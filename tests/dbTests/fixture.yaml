@@ -49,6 +49,45 @@ endpoints:
   /blob-embed:
     put: {sql: "SELECT 'x-{body}'", return: ok}
 
+  # Pipeline: pass discards, into captures, reply shapes
+  /pipe/{id}:
+    args: {id: {type: u32}}
+    get:
+      - sql: "CALL LogAccess({args.id})"
+        return: pass
+      - sql: "CALL UserGet({args.id})"
+        return: dict
+        into: user
+      - reply: {user: '{user}', name: '{user.name}'}
+
+  # Captured binary: re-bound into SQL and served via reply
+  /blob-pipe:
+    get:
+      - sql: "CALL GetImage()"
+        return: binary
+        into: img
+      - sql: "CALL StoreCopy({img})"
+        return: pass
+      - reply: '{img}'
+
+  # Acceptance: upload -> store -> fetch -> exec transform -> store -> reply
+  /resize/{id}/{size}:
+    args: {id: {type: u32}, size: {type: u32}}
+    put:
+      body: {required: true}
+      steps:
+        - sql: "CALL ImageSet({args.id}, {body})"
+          return: pass
+        - sql: "CALL ImageGet({args.id})"
+          return: binary
+          into: original
+        - exec:
+            cmd: '{options.scripts}/transform.py'
+            input: {src: '{original}', size: '{args.size}'}
+        - sql: "CALL ImageSetSize({args.id}, {args.size}, {files.out})"
+          return: pass
+        - reply: '{files.out}'
+
   # Binary response: column 1 of row 1 is the raw body; the Content-Type
   # comes from the content-type key, else a second column, else octet-stream
   /image:

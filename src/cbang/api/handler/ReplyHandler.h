@@ -30,39 +30,27 @@
 
 \******************************************************************************/
 
-#include "QueryHandler.h"
+#pragma once
 
-#include <cbang/api/API.h>
-#include <cbang/api/Resolver.h>
+#include <cbang/api/Handler.h>
 
-using namespace std;
-using namespace cb;
-using namespace cb::API;
+#include <cbang/json/Value.h>
 
 
-QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) :
-  api(api), queryDef(new QueryDef(api, config)) {}
+namespace cb {
+  namespace API {
+    // Replies with the ``reply:`` template resolved against the request.
+    // A binary value replies as the raw response body.  A sibling ``code:``
+    // sets the response status.
+    class ReplyHandler : public Handler {
+      JSON::ValuePtr tmpl;
+      HTTP::Status code;
 
+    public:
+      ReplyHandler(const JSON::ValuePtr &config);
 
-void QueryHandler::reply(
-  const CtxPtr &ctx, HTTP::Status status, const JSON::ValuePtr &result) {
-  ctx->reply(status, result);
-}
-
-
-void QueryHandler::operator()(const CtxPtr &ctx, const Cont &next) {
-  auto cb =
-    [this, ctx, next] (HTTP::Status status, const JSON::ValuePtr &result) {
-      // On success a ``return: pass`` query continues the chain and an
-      // ``into:`` query captures its result and continues.  Errors reply.
-      if (status == HTTP::Status::HTTP_OK &&
-          (queryDef->ret == "pass" || !queryDef->into.empty())) {
-        if (!queryDef->into.empty() && result.isSet())
-          ctx->getResolver()->set(queryDef->into, result);
-        ctx->errorHandler([&] {next(ctx);});
-
-      } else reply(ctx, status, result);
+      // From Handler
+      void operator()(const CtxPtr &ctx, const Cont &next) override;
     };
-
-  queryDef->query(ctx->getResolver(), cb);
+  }
 }

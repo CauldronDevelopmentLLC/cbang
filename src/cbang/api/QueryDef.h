@@ -45,6 +45,7 @@ namespace cb {
       API &api;
       std::string sql;
       std::string ret;
+      std::string into;        // capture the result instead of replying
       std::string contentType; // for ``return: binary``
       JSON::ValuePtr fields;
 

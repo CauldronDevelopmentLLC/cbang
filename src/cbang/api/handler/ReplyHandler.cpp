@@ -30,39 +30,27 @@
 
 \******************************************************************************/
 
-#include "QueryHandler.h"
+#include "ReplyHandler.h"
 
-#include <cbang/api/API.h>
 #include <cbang/api/Resolver.h>
 
-using namespace std;
 using namespace cb;
 using namespace cb::API;
 
 
-QueryHandler::QueryHandler(API &api, const JSON::ValuePtr &config) :
-  api(api), queryDef(new QueryDef(api, config)) {}
+ReplyHandler::ReplyHandler(const JSON::ValuePtr &config) :
+  tmpl(config->get("reply")),
+  code((HTTP::Status::enum_t)config->getU32("code", HTTP_OK)) {}
 
 
-void QueryHandler::reply(
-  const CtxPtr &ctx, HTTP::Status status, const JSON::ValuePtr &result) {
-  ctx->reply(status, result);
-}
+void ReplyHandler::operator()(const CtxPtr &ctx, const Cont &next) {
+  ctx->errorHandler([&] {
+    // Resolve a copy inside a list so a lone '{ref}' keeps its native type,
+    // binary included.
+    auto wrapper = tmpl->createList();
+    wrapper->append(tmpl->copy(true));
+    ctx->getResolver()->resolve(*wrapper);
 
-
-void QueryHandler::operator()(const CtxPtr &ctx, const Cont &next) {
-  auto cb =
-    [this, ctx, next] (HTTP::Status status, const JSON::ValuePtr &result) {
-      // On success a ``return: pass`` query continues the chain and an
-      // ``into:`` query captures its result and continues.  Errors reply.
-      if (status == HTTP::Status::HTTP_OK &&
-          (queryDef->ret == "pass" || !queryDef->into.empty())) {
-        if (!queryDef->into.empty() && result.isSet())
-          ctx->getResolver()->set(queryDef->into, result);
-        ctx->errorHandler([&] {next(ctx);});
-
-      } else reply(ctx, status, result);
-    };
-
-  queryDef->query(ctx->getResolver(), cb);
+    ctx->reply(code, wrapper->get(0));
+  });
 }

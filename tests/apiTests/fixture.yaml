@@ -120,6 +120,35 @@ endpoints:
           type:     '{files.photo.type}'
           size:     '{files.photo.size}'
 
+  # Explicit steps: the method dict keeps its keys beside the pipeline
+  /steps/{n}:
+    get:
+      args: {n: {type: u32}}
+      help: Steps test.
+      steps:
+        - if:   {'=': ['{args.n}', 0]}
+          then: {handler: status, code: 200, text: zero}
+        - {handler: status, code: 200, text: nonzero}
+
+  # Exec file round-trip: body -> temp file -> transformed file -> reply
+  /upcase:
+    put:
+      body: {required: true, max-size: 1K}
+      steps:
+        - exec:
+            cmd: '{options.scripts}/upcase.py'
+            input: {src: '{body}'}
+        - reply: '{files.out}'
+
+  # reply: shapes a response from resolved values
+  /reply/{n}:
+    get:
+      args: {n: {type: u32}}
+      reply: {n: '{args.n}', label: 'x-{args.n}'}
+
+  /reply-code:
+    get: {reply: created, code: 201}
+
   /.*:
     get:
       path: '{options.http-root}'

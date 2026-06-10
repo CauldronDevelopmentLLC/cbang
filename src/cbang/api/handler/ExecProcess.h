@@ -36,6 +36,7 @@
 #include <cbang/event/StreamEventBuffer.h>
 #include <cbang/event/StreamLogger.h>
 #include <cbang/api/Handler.h>
+#include <cbang/os/TemporaryDirectory.h>
 
 #include <vector>
 #include <string>
@@ -49,6 +50,7 @@ namespace cb {
       Event::Base &base;
       std::vector<std::string> cmd;
       std::string input;
+      SmartPointer<TemporaryDirectory> tmpDir;
       const CtxPtr ctx;
       const Cont next;
 
@@ -59,8 +61,11 @@ namespace cb {
     public:
       ExecProcess(
         Event::Base &base, const std::vector<std::string> &cmd,
-        const std::string &input, const CtxPtr &ctx, const Cont &next) :
-        base(base), cmd(cmd), input(input), ctx(ctx), next(next) {}
+        const std::string &input,
+        const SmartPointer<TemporaryDirectory> &tmpDir, const CtxPtr &ctx,
+        const Cont &next) :
+        base(base), cmd(cmd), input(input), tmpDir(tmpDir), ctx(ctx),
+        next(next) {}
 
       // From AsyncSubprocess
       void exec() override;

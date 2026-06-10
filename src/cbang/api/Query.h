@@ -84,6 +84,7 @@ namespace cb {
       void errorReply(HTTP::Status code, const std::string &msg = "");
 
       // MariaDB::EventDB callbacks
+      void returnPass  (state_t state);
       void returnBinary(state_t state);
       void returnHList (state_t state);
       void returnList  (state_t state);
