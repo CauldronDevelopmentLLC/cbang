@@ -159,9 +159,11 @@ namespace cb {
       bool useNB(const std::string &db);
 
       // Query (prepared statement: prepare + bind + execute).  ``params``
-      // are bound, in order, to the ``?`` placeholders in the SQL.
+      // are bound, in order, to the ``?`` placeholders in the SQL.  A JSON
+      // null binds SQL NULL, a boolean binds 1 or 0, anything else binds
+      // its string value.
       bool queryNB(const std::string &s,
-                   const std::vector<std::string> &params = {});
+                   const std::vector<JSON::ValuePtr> &params = {});
 
       // Result set
       bool storeResultNB();

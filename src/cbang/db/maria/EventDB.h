@@ -113,7 +113,7 @@ namespace cb {
       void query(callback_t cb, const std::string &s,
                  const SmartPointer<const JSON::Value> &dict = 0);
       void query(callback_t cb, const std::string &s,
-                 const std::vector<std::string> &params);
+                 const std::vector<JSON::ValuePtr> &params);
 
       template <class T>
       void query(T *obj, typename Callback<T>::member_t member,

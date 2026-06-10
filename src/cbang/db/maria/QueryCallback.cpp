@@ -44,7 +44,8 @@ using namespace cb::MariaDB;
 
 QueryCallback::QueryCallback(EventDB &db, EventDB::callback_t cb,
                              const string &query,
-                             const vector<string> &params, unsigned retry) :
+                             const vector<JSON::ValuePtr> &params,
+                             unsigned retry) :
   db(db), cb(cb), query(query), params(params), retry(retry) {}
 
 

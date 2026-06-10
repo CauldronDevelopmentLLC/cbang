@@ -1,0 +1,4 @@
+500
+Content-Type: text/plain
+Connection: close
+String format error at character 20: Variable 'args.nope' not found; use {~args.nope} to resolve null when missing

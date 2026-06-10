@@ -53,10 +53,11 @@ namespace cb {
       SmartPointer<Resolver> parent;
       JSON::Dict vars;
 
+      JSON::ValuePtr selectRef(const std::string &id, bool partial) const;
       JSON::ValuePtr resolveValue(
-        const JSON::ValuePtr &value, bool sql) const;
-      std::string resolve(const std::string &s, bool sql,
-                          std::vector<std::string> *params) const;
+        const JSON::ValuePtr &value, bool partial) const;
+      std::string resolve(const std::string &s, bool partial,
+                          std::vector<JSON::ValuePtr> *params) const;
 
     public:
       Resolver(const SmartPointer<Resolver> parent = 0) : parent(parent) {}
@@ -74,12 +75,15 @@ namespace cb {
       uint64_t selectU64(const std::string &path, uint64_t defaultValue) const;
       uint64_t selectTime(const std::string &path, uint64_t defaultValue) const;
 
-      std::string resolve(const std::string &s, bool sql = false) const;
-      // SQL resolve collecting bound parameters: a binary ref emits a ``?``
-      // placeholder and appends its bytes to ``params``.
+      // A missing {ref} is an error and a missing {~ref} resolves null,
+      // except in a partial resolve, which leaves missing refs unresolved
+      // for a later resolve with more vars, e.g. at request time.
+      std::string resolve(const std::string &s, bool partial = false) const;
+      // SQL resolve: every ref becomes a ``?`` placeholder and its value is
+      // appended to ``params``; a missing {~ref} binds NULL.
       std::string resolveSQL(
-        const std::string &s, std::vector<std::string> &params) const;
-      void resolve(JSON::Value &value, bool sql = false) const;
+        const std::string &s, std::vector<JSON::ValuePtr> &params) const;
+      void resolve(JSON::Value &value, bool partial = false) const;
     };
 
     using ResolverPtr = SmartPointer<Resolver>;

@@ -1,4 +1,5 @@
 200
 Content-Type: application/json
 {"id":5,"name":"Z","teams":["x","y"]}
-SQL: CALL UserFull(5)
+SQL: CALL UserFull(?)
+BIND[0]: 35

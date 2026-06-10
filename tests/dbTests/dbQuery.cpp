@@ -220,6 +220,20 @@ namespace {
       path = "/image";
       push(result({{"data", FakeDB::BLOB}}, {}));
 
+    } else if (s == "OptNull") {
+      method = "POST";
+      path   = "/opt";
+      push(Response()); // OptSave: OK, no result set
+
+    } else if (s == "OptSet") {
+      method = "POST";
+      path   = "/opt?a=hi";
+      push(Response()); // OptSave: OK, no result set
+
+    } else if (s == "StrictMissing") {
+      path = "/strict";
+      // No response: the missing {args.nope} errors before any query
+
     } else if (s == "BlobEmbed") {
       method = "PUT";
       path   = "/blob-embed";
@@ -308,8 +322,11 @@ int main(int argc, char *argv[]) {
     auto &binds   = FakeDB::binds();
     for (unsigned i = 0; i < queries.size(); i++) {
       cout << "\nSQL: " << queries[i];
-      for (unsigned j = 0; j < binds[i].size(); j++)
-        cout << "\nBIND[" << j << "]: " << MariaDB::DB::toHex(binds[i][j]);
+      for (unsigned j = 0; j < binds[i].size(); j++) {
+        auto &bind = binds[i][j];
+        cout << "\nBIND[" << j << "]: "
+             << (bind == "\\N" ? "NULL" : MariaDB::DB::toHex(bind));
+      }
     }
 
     return 0;

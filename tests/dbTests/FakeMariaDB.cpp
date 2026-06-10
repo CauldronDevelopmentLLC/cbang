@@ -218,6 +218,7 @@ my_bool mysql_stmt_bind_param(MYSQL_STMT *s, MYSQL_BIND *b) {
   unsigned long n = mysql_stmt_param_count(s);
   for (unsigned long i = 0; i < n; i++)
     g_binds.back().push_back(
+      b[i].buffer_type == MYSQL_TYPE_NULL ? "\\N" : // mysqldump NULL marker
       string((const char *)b[i].buffer, b[i].buffer_length));
   return 0;
 }

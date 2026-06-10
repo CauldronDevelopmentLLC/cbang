@@ -1,4 +1,5 @@
 200
 HTTP_OK
-SQL: CALL StorePhoto(?, 'cat.png')
+SQL: CALL StorePhoto(?, ?)
 BIND[0]: 504E470044415441
+BIND[1]: 6361742E706E67

@@ -1,0 +1,1 @@
+{"context": {"options": {"root": "/srv"}}, "template": {"path": "{options.root}/{args.path}", "opt": "v={~args.nope}", "lone": "{args.user}"}, "partial": true}

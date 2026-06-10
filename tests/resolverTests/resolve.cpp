@@ -34,16 +34,20 @@
 //
 //   {"context": {"args": {...}, "options": {...}, ...},
 //    "template": <string or JSON value>,
-//    "sql": <bool, optional>}
+//    "sql": <bool, optional>, "partial": <bool, optional>}
 //
-// Each key under "context" becomes a resolver namespace.  A string template
-// is resolved and printed verbatim; a JSON template is resolved in place and
-// printed as compact JSON (so typed substitution is visible).
+// Each key under "context" becomes a resolver namespace.  With "sql" the
+// template is resolved as SQL and the bound parameters are printed as
+// PARAM[i] lines.  Otherwise a string template is resolved and printed
+// verbatim and a JSON template is resolved in place and printed as compact
+// JSON (so typed substitution is visible).  "partial" leaves missing refs
+// unresolved.
 
 #include <cbang/Catch.h>
 #include <cbang/json/Reader.h>
 #include <cbang/json/Value.h>
 #include <cbang/api/Resolver.h>
+#include <cbang/log/Logger.h>
 
 #include <iostream>
 
@@ -54,6 +58,11 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   try {
+    // Deterministic logs
+    Logger::instance().setLogTime(false);
+    Logger::instance().setLogColor(false);
+    Exception::printLocations = false;
+
     auto input = JSON::Reader::parse(cin);
 
     Resolver resolver;
@@ -61,12 +70,21 @@ int main(int argc, char *argv[]) {
       for (auto e: input->get("context")->entries())
         resolver.set(e.key(), e.value());
 
-    bool sql  = input->getBoolean("sql", false);
-    auto tmpl = input->get("template");
+    bool sql     = input->getBoolean("sql", false);
+    bool partial = input->getBoolean("partial", false);
+    auto tmpl    = input->get("template");
 
-    if (tmpl->isString()) cout << resolver.resolve(tmpl->getString(), sql) << endl;
+    if (sql) {
+      vector<JSON::ValuePtr> params;
+      cout << resolver.resolveSQL(tmpl->getString(), params) << endl;
+      for (unsigned i = 0; i < params.size(); i++)
+        cout << "PARAM[" << i << "]: " << params[i]->toString(0, true) << endl;
+
+    } else if (tmpl->isString())
+      cout << resolver.resolve(tmpl->getString(), partial) << endl;
+
     else {
-      resolver.resolve(*tmpl, sql);
+      resolver.resolve(*tmpl, partial);
       cout << tmpl->toString(0, true) << endl;
     }
 
