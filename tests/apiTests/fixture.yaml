@@ -149,6 +149,19 @@ endpoints:
   /reply-code:
     get: {reply: created, code: 201}
 
+  # {request.*}: request metadata resolver root
+  /request-info:
+    get:
+      reply: {method: '{request.method}', host: '{request.host}',
+              path: '{request.path}', ip: '{request.ip}'}
+
+  # {request.headers.*}: headers resolve on demand, case-insensitive
+  /header-info:
+    get:
+      reply: {ua: '{request.headers.User-Agent}',
+              lc: '{request.headers.user-agent}',
+              missing: '{~request.headers.X-Nope}'}
+
   /.*:
     get:
       path: '{options.http-root}'

@@ -1,0 +1,3 @@
+200
+Content-Type: application/json
+{"method":"GET","host":"example.com:8080","path":"/request-info","ip":"<unknown sockaddr>"}

@@ -164,7 +164,8 @@ get:
 ## Variables and typed values
 
 `{ref}` resolves from the resolver namespaces: `{args.*}`, `{session.*}`,
-`{group}`, `{options.*}`, plus the binary roots below.  In SQL every ref is
+`{group}`, `{options.*}`, `{request.*}` (`method`, `host`, `path`, `ip`),
+plus the binary roots below.  In SQL every ref is
 bound as a prepared-statement parameter (never spliced into the SQL text);
 elsewhere refs interpolate as strings.  A missing ref is a request-time
 error; a `{~ref}` resolves null (SQL `NULL`) when missing.  A config value
