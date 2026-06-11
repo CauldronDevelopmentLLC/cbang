@@ -48,12 +48,68 @@ using namespace cb;
 using namespace cb::API;
 
 
+namespace {
+  // The {request.*} root.  Values materialize on first reference, so an
+  // unreferenced value costs nothing.  Holds the Request, like Context, so
+  // the request must outlive resolution.
+  //
+  // Note, behind a reverse proxy ``host`` and ``ip`` are what the proxy
+  // sends; e.g. nginx needs ``proxy_set_header Host $host;`` to pass the
+  // original host and ``ip`` is the proxy's address.
+  class HeaderDict : public JSON::Dict {
+    const HTTP::Request &req;
+
+  public:
+    HeaderDict(const HTTP::Request &req) : req(req) {}
+
+    Iterator find(const string &key) const override {
+      auto it = JSON::Dict::find(key);
+      if (!it && req.inHas(key)) {
+        const_cast<HeaderDict *>(this)->insert(key, req.inFind(key));
+        it = JSON::Dict::find(key);
+      }
+      return it;
+    }
+  };
+
+
+  class RequestDict : public JSON::Dict {
+    const HTTP::Request &req;
+
+  public:
+    RequestDict(const HTTP::Request &req) : req(req) {}
+
+    Iterator find(const string &key) const override {
+      auto it = JSON::Dict::find(key);
+
+      if (!it) {
+        auto *self = const_cast<RequestDict *>(this);
+
+        if (key == "method")
+          self->insert(key, req.getMethod().toString());
+        else if (key == "host")    self->insert(key, req.inFind("Host"));
+        else if (key == "path")    self->insert(key, req.getURI().getPath());
+        else if (key == "ip")
+          self->insert(key, req.getClientAddr().toString(false));
+        else if (key == "headers") self->insert(key, new HeaderDict(req));
+        else return it;
+
+        it = JSON::Dict::find(key);
+      }
+
+      return it;
+    }
+  };
+}
+
+
 Resolver::Resolver(API &api) {
   vars.insert("options", api.getOptions());
 }
 
 
 Resolver::Resolver(API &api, const HTTP::Request &req) : Resolver(api) {
+  set("request", new RequestDict(req));
   setSession(req.getSession());
 }
 
