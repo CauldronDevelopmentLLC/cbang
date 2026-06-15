@@ -61,7 +61,8 @@ int main(int argc, char *argv[]) {
     // Deterministic logs
     Logger::instance().setLogTime(false);
     Logger::instance().setLogColor(false);
-    Exception::printLocations = false;
+    Exception::printLocations    = false;
+    Exception::enableStackTraces = false;
 
     auto input = JSON::Reader::parse(cin);
 

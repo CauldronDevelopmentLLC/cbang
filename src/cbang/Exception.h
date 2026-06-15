@@ -71,6 +71,12 @@ namespace cb {
     static bool printLocations;
     static unsigned causePrintLevel;
 
+    /**
+     * @return A "\nCaught at: <location>" suffix for the CATCH macros, or
+     *         an empty string when printLocations is false.
+     */
+    static std::string catchLocation(const FileLocation &location);
+
     Exception(const std::string &message = "", int code = 0,
               const FileLocation &location = FileLocation(),
               const SmartPointer<Exception> &cause = 0);

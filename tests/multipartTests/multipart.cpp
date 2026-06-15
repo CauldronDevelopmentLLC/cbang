@@ -54,6 +54,8 @@ int main(int argc, char *argv[]) {
   Logger::instance().setScreenStream(cerr);
   Logger::instance().setLogTime(false);
   Logger::instance().setLogColor(false);
+  Exception::printLocations    = false;
+  Exception::enableStackTraces = false;
 
   try {
     if (argc != 3) return usage(argv[0]);

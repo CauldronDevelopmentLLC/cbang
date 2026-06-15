@@ -1,0 +1,4 @@
+{
+  "checks": [["file", "stdout", ["not_match", ".*ERROR:"]],
+             ["file", "return"]]
+}

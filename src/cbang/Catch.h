@@ -36,7 +36,7 @@
 
 
 #ifdef DEBUG
-#define CBANG_CATCH_LOCATION << "\nCaught at: " << CBANG_FILE_LOCATION
+#define CBANG_CATCH_LOCATION << cb::Exception::catchLocation(CBANG_FILE_LOCATION)
 #else // DEBUG
 #define CBANG_CATCH_LOCATION
 #endif // DEBUG

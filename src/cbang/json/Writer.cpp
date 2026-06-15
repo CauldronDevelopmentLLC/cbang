@@ -253,10 +253,19 @@ string Writer::escape(const string &s, const char *fmt) {
           code = (code << 6) | (*it2 & 0x3f);
         }
 
+        // Reject overlong encodings, surrogates and out-of-range code
+        // points so we never emit invalid UTF-8
+        static const uint32_t minCode[] = {0x80, 0x800, 0x10000};
+        if (valid && (code < minCode[width - 1] ||
+                      (0xd800 <= code && code <= 0xdfff) || 0x10ffff < code))
+          valid = false;
+
         if (!valid) result.append(encode(*it, fmt)); // Encode character
         else {
-          if (0x2000 <= code && code < 0x2100)
-            // Always encode Javascript line separators
+          if (code == 0x2028 || code == 0x2029)
+            // Escape the JavaScript line separators U+2028 and U+2029,
+            // which are invalid in pre-ES2019 string literals (e.g. JSON
+            // embedded in a <script> tag)
             result.append(encode(code, fmt));
 
           else result.append(it, it2 + 1); // Otherwise, pass valid UTF-8

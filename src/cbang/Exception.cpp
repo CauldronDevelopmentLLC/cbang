@@ -110,6 +110,12 @@ ostream &Exception::print(ostream &stream, unsigned level) const {
 string Exception::toString() const {return SSTR(*this);}
 
 
+string Exception::catchLocation(const FileLocation &location) {
+  if (!printLocations) return string();
+  return SSTR("\nCaught at: " << location);
+}
+
+
 void Exception::write(JSON::Sink &sink, bool withDebugInfo) const {
   sink.beginDict();
 

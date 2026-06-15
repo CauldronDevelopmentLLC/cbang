@@ -282,7 +282,7 @@ string Reader::parseString() {
       switch (c) {
       case '"': case '\\': case '/': s += c; break;
       case 'b': s += '\b'; break;
-      case 'f': s += '\b'; break;
+      case 'f': s += '\f'; break;
       case 'n': s += '\n'; break;
       case 'r': s += '\r'; break;
       case 't': s += '\t'; break;
@@ -306,27 +306,57 @@ string Reader::parseString() {
       }
 
       case 'u': {
-        uint16_t code = 0;
+        auto readHex4 = [&] () {
+          uint32_t code = 0;
 
-        for (unsigned i = 0; i < 4; i++) {
-          code <<= 4;
-          c = get();
+          for (unsigned i = 0; i < 4; i++) {
+            code <<= 4;
+            char h = get();
 
-          if ('0' <= c && c <= '9') code += c - '0';
-          else if ('a' <= c && c <= 'f') code += c - 'a' + 10;
-          else if ('A' <= c && c <= 'F') code += c - 'A' + 10;
-          else error("Invalid unicode escape sequence in JSON");
-        }
+            if      ('0' <= h && h <= '9') code += h - '0';
+            else if ('a' <= h && h <= 'f') code += h - 'a' + 10;
+            else if ('A' <= h && h <= 'F') code += h - 'A' + 10;
+            else error("Invalid unicode escape sequence in JSON");
+          }
+
+          return code;
+        };
+
+        uint32_t code = readHex4();
+
+        // Characters above U+FFFF (e.g. emoji) are escaped as a UTF-16
+        // surrogate pair: a high surrogate followed by a low surrogate.
+        // They must be combined into one code point; emitting each half
+        // on its own would produce invalid UTF-8 (a 0xD800-0xDFFF code
+        // point) that downstream consumers reject.
+        if (0xd800 <= code && code <= 0xdbff) {
+          if (get() != '\\' || get() != 'u')
+            error("Expected low surrogate in JSON unicode escape");
+
+          uint32_t low = readHex4();
+          if (low < 0xdc00 || 0xdfff < low)
+            error("Invalid low surrogate in JSON unicode escape");
+
+          code = 0x10000 + ((code - 0xd800) << 10) + (low - 0xdc00);
+
+        } else if (0xdc00 <= code && code <= 0xdfff)
+          error("Unexpected low surrogate in JSON unicode escape");
 
         if (code < 0x80) s += (char)code;
         else if (code < 0x800) {
-          s += 0xc0 | (code >> 6);
-          s += 0x80 | (code & 0x3f);
+          s += (char)(0xc0 | (code >> 6));
+          s += (char)(0x80 | (code & 0x3f));
+
+        } else if (code < 0x10000) {
+          s += (char)(0xe0 | (code >> 12));
+          s += (char)(0x80 | ((code >> 6) & 0x3f));
+          s += (char)(0x80 | (code & 0x3f));
 
         } else {
-          s += 0xe0 | (code >> 12);
-          s += 0x80 | ((code >> 6) & 0x3f);
-          s += 0x80 | (code & 0x3f);
+          s += (char)(0xf0 | (code >> 18));
+          s += (char)(0x80 | ((code >> 12) & 0x3f));
+          s += (char)(0x80 | ((code >> 6) & 0x3f));
+          s += (char)(0x80 | (code & 0x3f));
         }
 
         break;
@@ -370,11 +400,12 @@ string Reader::parseString() {
       //
       // See: http://en.wikipedia.org/wiki/UTF-8
 
-      // Compute code width
+      // Compute code width and the bits the lead byte contributes
       unsigned width = 0;
-      if ((c & 0xe0) == 0xc0) width = 1;
-      else if ((c & 0xf0) == 0xe0) width = 2;
-      else if ((c & 0xf8) == 0xf0) width = 3;
+      uint32_t code = 0;
+      if      ((c & 0xe0) == 0xc0) {width = 1; code = c & 0x1f;}
+      else if ((c & 0xf0) == 0xe0) {width = 2; code = c & 0x0f;}
+      else if ((c & 0xf8) == 0xf0) {width = 3; code = c & 0x07;}
       else error(SSTR("Invalid UTF-8 byte '" <<
                       String::printf("0x%02x", (unsigned)c)
                       << " in JSON string"));
@@ -384,8 +415,19 @@ string Reader::parseString() {
         c = get();
         if ((c & 0xc0) != 0x80)
           error("Incomplete UTF-8 sequence in JSON string");
+        code = (code << 6) | (c & 0x3f);
         s += c;
       }
+
+      // Reject overlong encodings, UTF-16 surrogates and code points
+      // beyond U+10FFFF, none of which are valid UTF-8 (RFC 3629)
+      static const uint32_t minCode[] = {0x80, 0x800, 0x10000};
+      if (code < minCode[width - 1])
+        error("Overlong UTF-8 encoding in JSON string");
+      if (0xd800 <= code && code <= 0xdfff)
+        error("UTF-8 encoded surrogate in JSON string");
+      if (0x10ffff < code)
+        error("UTF-8 code point beyond U+10FFFF in JSON string");
 
     } else s += c;
   }
