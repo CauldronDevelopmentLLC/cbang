@@ -71,6 +71,43 @@ endpoints:
       then: {handler: status, code: 200, text: lt}
       else: {handler: status, code: 200, text: ge}
 
+  # Truthiness test: a bare ref is true when set and not zero/empty/null
+  /truthy/{n}:
+    args: {n: {type: u32}}
+    get:
+      if:   '{args.n}'
+      then: {handler: status, code: 200, text: truthy}
+      else: {handler: status, code: 200, text: falsy}
+
+  # Bare optional ref: absent resolves null (falsy)
+  /flag:
+    get:
+      if:   '{~request.headers.X-Flag}'
+      then: {handler: status, code: 200, text: set}
+      else: {handler: status, code: 200, text: unset}
+
+  # 'not' wraps a bare scalar truthiness test too
+  /not-flag:
+    get:
+      if:   {not: '{~request.headers.X-Flag}'}
+      then: {handler: status, code: 200, text: unset}
+      else: {handler: status, code: 200, text: set}
+
+  # '= null' matches only a missing optional ref
+  /null-flag:
+    get:
+      if:   {'=': ['{~request.headers.X-Flag}', null]}
+      then: {handler: status, code: 200, text: absent}
+      else: {handler: status, code: 200, text: present}
+
+  # A numeric 0 is falsy for truthiness but is NOT null
+  /zero-null/{n}:
+    args: {n: {type: u32}}
+    get:
+      if:   {'=': ['{args.n}', null]}
+      then: {handler: status, code: 200, text: isnull}
+      else: {handler: status, code: 200, text: notnull}
+
   # Sequence body: a non-replying exec passes to the next statement
   /seq/{n}:
     args: {n: {type: u32}}

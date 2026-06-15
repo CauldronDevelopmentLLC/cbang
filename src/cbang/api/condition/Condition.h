@@ -52,6 +52,9 @@ namespace cb {
       // Evaluate against the request, delivering the result to `done`.
       virtual void operator()(const CtxPtr &ctx, const BoolCallback &done) = 0;
 
+      // Truthiness: set and not false/empty/zero/null (see doc/conditions.md).
+      static bool truthy(const JSON::ValuePtr &v);
+
       static SmartPointer<Condition> parse(
         API &api, const JSON::ValuePtr &config);
     };

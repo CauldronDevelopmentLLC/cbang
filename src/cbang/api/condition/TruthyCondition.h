@@ -30,30 +30,22 @@
 
 \******************************************************************************/
 
-#include "SQLCondition.h"
+#pragma once
 
-#include <cbang/api/API.h>
-#include <cbang/api/Resolver.h>
-#include <cbang/json/Dict.h>
-#include <cbang/json/String.h>
-
-using namespace std;
-using namespace cb;
-using namespace cb::API;
+#include "Condition.h"
 
 
-SQLCondition::SQLCondition(API &api, const JSON::ValuePtr &config) {
-  auto qc = SmartPtr(new JSON::Dict);
-  qc->insert("sql", new JSON::String(config->asString()));
-  qc->insert("return", new JSON::String("one"));
-  queryDef = new QueryDef(api, qc);
-}
+namespace cb {
+  namespace API {
+    // A bare scalar value (a ref or literal) used as a truthiness test
+    class TruthyCondition : public Condition {
+      JSON::ValuePtr value;
 
+    public:
+      TruthyCondition(const JSON::ValuePtr &value) : value(value) {}
 
-void SQLCondition::operator()(const CtxPtr &ctx, const BoolCallback &done) {
-  queryDef->query(ctx->getResolver(),
-    [done] (HTTP::Status status, const JSON::ValuePtr &result) {
-      unsigned code = status;
-      done(200 <= code && code < 300 && Condition::truthy(result));
-    });
+      // From Condition
+      void operator()(const CtxPtr &ctx, const BoolCallback &done) override;
+    };
+  }
 }

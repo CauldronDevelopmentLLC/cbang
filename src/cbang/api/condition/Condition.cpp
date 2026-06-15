@@ -37,8 +37,10 @@
 #include "BoolOpCondition.h"
 #include "SQLCondition.h"
 #include "CmdCondition.h"
+#include "TruthyCondition.h"
 
 #include <cbang/Exception.h>
+#include <cbang/json/Value.h>
 
 #include <vector>
 
@@ -47,9 +49,23 @@ using namespace cb;
 using namespace cb::API;
 
 
+bool cb::API::Condition::truthy(const JSON::ValuePtr &v) {
+  if (v.isNull() || v->isNull() || v->isUndefined()) return false;
+  if (v->isBoolean()) return v->getBoolean();
+  if (v->isNumber())  return v->getNumber() != 0;
+  if (v->isString())  return !v->getString().empty();
+  if (v->isList() || v->isDict()) return v->size();
+  return true;
+}
+
+
 // Fully qualified so `Condition` is unambiguous despite cb::Condition.
 ConditionPtr cb::API::Condition::parse(
   API &api, const JSON::ValuePtr &config) {
+  // A bare scalar value (a ref or literal) is a truthiness test
+  if (!config->isDict() && !config->isList())
+    return new TruthyCondition(config);
+
   if (!config->isDict() || config->size() != 1)
     THROW("Condition must be a dict with exactly one key");
 

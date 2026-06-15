@@ -54,8 +54,6 @@ namespace cb {
       JSON::Dict vars;
 
       JSON::ValuePtr selectRef(const std::string &id, bool partial) const;
-      JSON::ValuePtr resolveValue(
-        const JSON::ValuePtr &value, bool partial) const;
       std::string resolve(const std::string &s, bool partial,
                           std::vector<JSON::ValuePtr> *params) const;
 
@@ -84,6 +82,9 @@ namespace cb {
       std::string resolveSQL(
         const std::string &s, std::vector<JSON::ValuePtr> &params) const;
       void resolve(JSON::Value &value, bool partial = false) const;
+      // Resolve a single value; a lone {ref} retypes to its native JSON value.
+      JSON::ValuePtr resolveValue(
+        const JSON::ValuePtr &value, bool partial = false) const;
     };
 
     using ResolverPtr = SmartPointer<Resolver>;
