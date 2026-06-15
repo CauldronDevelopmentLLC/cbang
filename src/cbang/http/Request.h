@@ -53,6 +53,7 @@
 namespace cb {
   class URI;
   class SSL;
+  class AddressRangeSet;
 
   namespace HTTP {
     class Request : virtual public RefCounted, public Enum {
@@ -162,6 +163,15 @@ namespace cb {
       const JSON::ValuePtr &parseArgs();
 
       SockAddr getClientAddr() const;
+
+      // Resolve the real client behind trusted reverse proxies.  Returns
+      // `peer` unless it is in `trusted`, in which case the right-most
+      // X-Forwarded-For entry that is not itself trusted is returned, else
+      // X-Real-IP, else `peer`.  Static and header-injected so it is unit
+      // testable without a live connection.
+      static SockAddr resolveClientAddr(
+        const SockAddr &peer, const AddressRangeSet &trusted,
+        const std::string &xForwardedFor, const std::string &xRealIP);
 
       bool inHas(const std::string &name) const;
       std::string inFind(const std::string &name) const;

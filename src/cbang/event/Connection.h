@@ -69,6 +69,7 @@ namespace cb {
       ~Connection();
 
       void setServer(Server *server) {this->server = server;}
+      bool hasServer() const {return server;}
       Server &getServer() const;
 
       void setTTL(double sec);

@@ -36,6 +36,7 @@
 
 #include <cbang/event/Server.h>
 #include <cbang/net/URI.h>
+#include <cbang/net/AddressRangeSet.h>
 #include <cbang/util/Version.h>
 
 
@@ -55,10 +56,14 @@ namespace cb {
       unsigned maxBodySize   = std::numeric_limits<int>::max();
       unsigned maxHeaderSize = std::numeric_limits<int>::max();
 
+      AddressRangeSet trustedProxies;
+
     public:
       Server(Event::Base &base, const SmartPointer<SSLContext> &sslCtx = 0);
 
       const SmartPointer<SSLContext> &getSSLContext() const {return sslCtx;}
+
+      const AddressRangeSet &getTrustedProxies() const {return trustedProxies;}
 
       bool getLogPrefix() const {return logPrefix;}
       void setLogPrefix(bool logPrefix) {this->logPrefix = logPrefix;}

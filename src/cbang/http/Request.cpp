@@ -33,9 +33,12 @@
 #include "Request.h"
 #include "Conn.h"
 #include "Cookie.h"
+#include "Server.h"
 
 #include <cbang/Exception.h>
 #include <cbang/Catch.h>
+#include <cbang/String.h>
+#include <cbang/net/AddressRangeSet.h>
 #include <cbang/event/Event.h>
 #include <cbang/event/BufferStream.h>
 #include <cbang/openssl/SSL.h>
@@ -187,7 +190,43 @@ const JSON::ValuePtr &Request::parseArgs() {
 
 
 SockAddr Request::getClientAddr() const {
-  return connection.isSet() ? connection->getPeerAddr() : SockAddr();
+  if (!connection.isSet()) return SockAddr();
+
+  SockAddr peer = connection->getPeerAddr();
+  if (!connection->hasServer()) return peer;
+
+  auto server = dynamic_cast<Server *>(&connection->getServer());
+  if (!server) return peer;
+
+  return resolveClientAddr(
+    peer, server->getTrustedProxies(),
+    inHas("X-Forwarded-For") ? inGet("X-Forwarded-For") : string(),
+    inHas("X-Real-IP")       ? inGet("X-Real-IP")       : string());
+}
+
+
+SockAddr Request::resolveClientAddr(
+  const SockAddr &peer, const AddressRangeSet &trusted,
+  const string &xForwardedFor, const string &xRealIP) {
+  // An untrusted peer's forwarded headers are not believed (anti-spoofing)
+  if (!trusted.contains(peer)) return peer;
+
+  // Trusted proxy: the right-most X-Forwarded-For entry that is not itself a
+  // trusted proxy is the real client (walks back through a proxy chain).
+  if (!xForwardedFor.empty()) {
+    vector<string> parts;
+    String::tokenize(xForwardedFor, parts, ", \t");
+    for (auto it = parts.rbegin(); it != parts.rend(); it++)
+      try {
+        SockAddr addr = SockAddr::parse(*it);
+        if (!trusted.contains(addr)) return addr;
+      } catch (const Exception &) {} // Skip a malformed entry
+  }
+
+  if (!xRealIP.empty())
+    try {return SockAddr::parse(xRealIP);} catch (const Exception &) {}
+
+  return peer;
 }
 
 
@@ -656,7 +695,8 @@ void Request::onResponse(Event::ConnectionError error) {
 
 
 void Request::onRequest() {
-  LOG_INFO(2, "< " << getRequestLine());
+  LOG_INFO(2,
+    "< " << getClientAddr().toString(false) << ' ' << getRequestLine());
   LOG_DEBUG(5, getInputHeaders() << '\n');
   LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
 }

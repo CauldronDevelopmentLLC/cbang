@@ -53,9 +53,11 @@ namespace {
   // unreferenced value costs nothing.  Holds the Request, like Context, so
   // the request must outlive resolution.
   //
-  // Note, behind a reverse proxy ``host`` and ``ip`` are what the proxy
-  // sends; e.g. nginx needs ``proxy_set_header Host $host;`` to pass the
-  // original host and ``ip`` is the proxy's address.
+  // Note, behind a reverse proxy ``host`` is what the proxy sends; e.g.
+  // nginx needs ``proxy_set_header Host $host;`` to pass the original host.
+  // ``ip`` is the real client when the proxy is listed in
+  // ``http-trusted-proxies`` and forwards X-Forwarded-For / X-Real-IP;
+  // otherwise it is the connecting peer's address.
   class HeaderDict : public JSON::Dict {
     const HTTP::Request &req;
 

@@ -82,6 +82,15 @@ void Server::addOptions(Options &options) {
   options.addTarget("http-max-headers-size", maxHeaderSize,
                     "Maximum size of the HTTP request headers.");
 
+  opt = options.add("http-trusted-proxies", "A space separated list of "
+                    "trusted reverse-proxy addresses or CIDR ranges.  When a "
+                    "request arrives from one of these the client address is "
+                    "taken from its X-Forwarded-For or X-Real-IP header; "
+                    "otherwise these headers are ignored.  Set empty to never "
+                    "trust them.");
+  opt->setType(Option::TYPE_STRINGS);
+  opt->setDefault("127.0.0.0/8 ::1");
+
   options.alias("connection-timeout", "http-timeout");
   options.alias("connection-backlog", "http-connection-backlog");
   options.alias("max-connections",    "http-max-connections");
@@ -113,6 +122,11 @@ void Server::init(Options &options) {
   // Configure ports
   auto addresses = options["http-addresses"].toStrings();
   for (auto &addr: addresses) addListenPort(SockAddr::parse(addr));
+
+  // Trusted reverse proxies
+  trustedProxies.clear();
+  for (auto &p: options["http-trusted-proxies"].toStrings())
+    trustedProxies.insert(p);
 
 #ifdef HAVE_OPENSSL
   // SSL
