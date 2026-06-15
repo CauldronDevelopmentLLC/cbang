@@ -151,7 +151,12 @@ bool AccessHandler::operator()(Request &req) {
       if (e->getBoolean())
         if (checkGroup(e.key(), allow, deny)) group = "@" + e.key();
 
-    if (checkGroup("authenticated", allow, deny)) group = "@authenticated";
+    // Only honor an "authenticated" rule when this session is actually
+    // authenticated.  An anonymous request still has a (non-null) session
+    // to carry its cookie, so checkGroup() alone would match every
+    // request against an allow: [$authenticated] rule.
+    if (session->hasGroup("authenticated") &&
+        checkGroup("authenticated", allow, deny)) group = "@authenticated";
   }
 
   LOG_INFO(allow ? 5 : 3, "allow(" << req.getURI().getPath() << ", "
