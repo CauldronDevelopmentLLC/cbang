@@ -66,6 +66,11 @@ void SessionHandler::operator()(const CtxPtr &ctx, const Cont &next) {
     ctx->setSession(session);
     sid = session->getID();
     req.setCookie(cookie, sid, "", "/", 0, 0, false, true, "None");
+
+    // A response that sets the session cookie must never be stored by a
+    // shared cache, or the new session ID would be served to other clients
+    req.outSet("Cache-Control", "no-store");
+
     return next(ctx);
   }
 
