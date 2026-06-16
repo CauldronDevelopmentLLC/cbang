@@ -50,6 +50,8 @@
 #include <cbang/http/Request.h>
 #include <cbang/http/RequestParams.h>
 #include <cbang/http/RequestErrorHandler.h>
+#include <cbang/http/Client.h>
+#include <cbang/oauth2/Providers.h>
 #include <cbang/net/URI.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/SubprocessPool.h>
@@ -85,7 +87,7 @@ namespace {
   // Map a scenario name to (method, path), an optional request body, and
   // queue its canned result(s).  Returns false for an unknown scenario.
   bool setup(const string &s, string &method, string &path, string &body,
-             string &contentType) {
+             string &contentType, string &auth) {
     method = "GET";
 
     if (s == "Dict") {
@@ -241,6 +243,15 @@ namespace {
       contentType = "application/octet-stream";
       // No response: the bind/placeholder count mismatch errors first
 
+    } else if (s == "SessionArgError") {
+      // A root async session SQL lookup runs, then a nested endpoint's arg
+      // validation throws 400.  The throw must reply cleanly, not escape the
+      // session callback into the DB event loop.  Authorization supplies a
+      // session id so the session handler takes its async DB-lookup branch.
+      path = "/item/abc"; // 'abc' fails the u32 arg
+      auth = "testsid";
+      push(Response()); // AuthSession: OK, no result set
+
     } else return false;
 
     return true;
@@ -255,7 +266,8 @@ int main(int argc, char *argv[]) {
     Logger::instance().setScreenStream(cerr);
     Logger::instance().setLogTime(false);
     Logger::instance().setLogColor(false);
-    Exception::printLocations = false;
+    Exception::printLocations    = false;
+    Exception::enableStackTraces = false;
 
     Options options;
     options.add("scripts", "Path to exec scripts.");
@@ -282,13 +294,21 @@ int main(int argc, char *argv[]) {
     Event::Base base(false);
     API::API api(options);
 
-    string method, path, body, contentType;
+    string method, path, body, contentType, auth;
     FakeDB::reset();
-    if (!setup(scenario, method, path, body, contentType))
+    if (!setup(scenario, method, path, body, contentType, auth))
       THROW("Unknown scenario: " << scenario);
 
     api.setDBConnector(new MariaDB::Connector(base));
     api.setProcPool(new Event::SubprocessPool(base));
+
+    // The 'session' handler registers only with these three set
+    if (!auth.empty()) {
+      api.setClient(new HTTP::Client(base));
+      api.setOAuth2Providers(new OAuth2::Providers);
+      api.setSessionManager(new HTTP::SessionManager);
+    }
+
     api.load(JSON::YAMLReader::parseFile(configPath));
 
     HTTP::RequestParams params;
@@ -297,6 +317,7 @@ int main(int argc, char *argv[]) {
 
     params.hdrs = new HTTP::Headers;
     if (!contentType.empty()) params.hdrs->insert("Content-Type", contentType);
+    if (!auth.empty())        params.hdrs->insert("Authorization", auth);
 
     HTTP::Request req(params);
     if (!body.empty()) req.getInputBuffer().add(body.data(), body.length());

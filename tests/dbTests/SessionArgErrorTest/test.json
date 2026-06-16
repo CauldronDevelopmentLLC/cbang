@@ -1,0 +1,4 @@
+{
+  "command": "%(suite-dir)s/dbQuery %(suite-dir)s/sessionFixture.yaml",
+  "args": ["SessionArgError"]
+}

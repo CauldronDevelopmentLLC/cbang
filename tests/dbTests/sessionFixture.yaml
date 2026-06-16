@@ -1,0 +1,17 @@
+---
+# Session fixture: a root async session SQL lookup runs on every request,
+# then routing falls through to the matching endpoint.  Used to check that a
+# downstream throw (arg validation) after the async session step replies
+# cleanly instead of escaping the session callback into the DB event loop.
+jmpapi: 1.2.0
+info: {title: session test, version: 0.0.0}
+
+endpoints:
+  /.*:
+    get:
+      handler: session
+      sql: "CALL AuthSession({session.id})"
+
+  /item/{n}:
+    args: {n: {type: u32}}
+    get: {sql: "CALL GetItem({args.n})", return: dict}

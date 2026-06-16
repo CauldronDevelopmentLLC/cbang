@@ -1,0 +1,5 @@
+400
+Content-Type: application/json
+{"message":"Invalid argument 'n'='abc' Invalid unsigned 32-bit value 'abc'","code":400}
+SQL: CALL AuthSession(?)
+BIND[0]: 74657374736964

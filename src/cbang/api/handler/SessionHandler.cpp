@@ -96,8 +96,10 @@ void SessionHandler::operator()(const CtxPtr &ctx, const Cont &next) {
         session->addGroup("authenticated");
       }
 
-      // Continue processing with the loaded session
-      next(ctx);
+      // Continue processing with the loaded session.  Wrap so a downstream
+      // throw (e.g. arg validation) replies cleanly instead of escaping this
+      // async callback into the DB event loop.
+      ctx->errorHandler([&] {next(ctx);});
 
     } else reply(ctx, status, result);
   };

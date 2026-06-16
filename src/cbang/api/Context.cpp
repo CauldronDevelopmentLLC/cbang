@@ -141,7 +141,9 @@ void Context::reply(const std::exception &e) const {
 
 
 void Context::reply(const Exception &e) const {
-  if (400 <= e.getCode() && e.getCode() < 600)
+  bool client = 400 <= e.getCode() && e.getCode() < 600;
+
+  if (client)
     LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
       << e.getMessages());
 
@@ -150,7 +152,11 @@ void Context::reply(const Exception &e) const {
     LOG_DEBUG(3, e);
   }
 
-  reply([&] (JSON::Sink &sink) {e.write(sink);});
+  // Reply with the exception's HTTP status, not 200 (reply(cb) is HTTP_OK).
+  // Omit debug info (location/stack trace) so it is never leaked to clients.
+  HTTP::Status code =
+    client ? (HTTP::Status::enum_t)e.getCode() : HTTP_INTERNAL_SERVER_ERROR;
+  reply(code, [&] (JSON::Sink &sink) {e.write(sink, false);});
 }
 
 
