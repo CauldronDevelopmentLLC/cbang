@@ -71,9 +71,11 @@ void Websocket::connect(HTTP::Client &client, const URI &uri) {
       start();
 
     } else {
+      // Release refs first so a reconnect from onClose() is not clobbered
+      outConn.release();
+      connection.release();
       onClose(WS_STATUS_NONE,
         SSTR("Connection failed: error=" << error << " code=" << code));
-      connection.release();
     }
   };
 
@@ -88,7 +90,11 @@ void Websocket::connect(HTTP::Client &client, const URI &uri) {
   req->outSet("Upgrade",               "websocket");
   req->outSet("Connection",            "upgrade");
 
-  connection = client.send(req);
+  // Hold a strong reference to the outgoing connection; other refs are weak
+  outConn = client.send(req);
+  connection = outConn;
+  // Cache ID like upgrade() does, since the weak ref may not outlive us
+  id = outConn->getID();
 }
 
 
@@ -439,10 +445,10 @@ void Websocket::shutdown() {
   SmartPointer<Websocket> self = this;
 
   SmartPointer<HTTP::Conn> conn = connection;
-  if (conn.isSet()) {
-    connection.release();
-    conn->close();
-  }
+  // Clear members first; conn->close() callbacks may re-enter this class
+  outConn.release();
+  connection.release();
+  if (conn.isSet()) conn->close();
 
   if (active) {
     active = false;

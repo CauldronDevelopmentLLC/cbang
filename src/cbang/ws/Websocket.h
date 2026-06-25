@@ -50,6 +50,7 @@ namespace cb {
   namespace WS {
     class Websocket : virtual public RefCounted, public Enum {
       SmartPointer<HTTP::Conn>::Weak connection;
+      SmartPointer<HTTP::Conn> outConn;
       uint64_t id = ~0;
       bool active = false;
 
