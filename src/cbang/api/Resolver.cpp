@@ -39,6 +39,7 @@
 #include <cbang/json/String.h>
 #include <cbang/config/Options.h>
 #include <cbang/http/Request.h>
+#include <cbang/Info.h>
 
 #include <set>
 #include <vector>
@@ -102,11 +103,53 @@ namespace {
       return it;
     }
   };
+
+
+  // One category of the cb::Info singleton.  A key materializes from Info on
+  // first reference, so an unreferenced key costs nothing.
+  class InfoCategoryDict : public JSON::Dict {
+    const string category;
+
+  public:
+    InfoCategoryDict(const string &category) : category(category) {}
+
+    Iterator find(const string &key) const override {
+      auto it = JSON::Dict::find(key);
+
+      if (!it && Info::instance().has(category, key)) {
+        const_cast<InfoCategoryDict *>(this)->insert(
+          key, Info::instance().get(category, key));
+        it = JSON::Dict::find(key);
+      }
+
+      return it;
+    }
+  };
+
+
+  // The {info.*} root, backed by the cb::Info singleton (application, build
+  // and system metadata).  Reference a value as {info.<category>.<key>}, e.g.
+  // the app version as {info.Build.Version}.  Categories and keys materialize
+  // lazily on first reference; nothing is copied up front.
+  class InfoDict : public JSON::Dict {
+  public:
+    Iterator find(const string &key) const override {
+      auto it = JSON::Dict::find(key);
+
+      if (!it) {
+        const_cast<InfoDict *>(this)->insert(key, new InfoCategoryDict(key));
+        it = JSON::Dict::find(key);
+      }
+
+      return it;
+    }
+  };
 }
 
 
 Resolver::Resolver(API &api) {
   vars.insert("options", api.getOptions());
+  vars.insert("info",    new InfoDict);
 }
 
 
