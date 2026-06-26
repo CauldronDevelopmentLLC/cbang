@@ -487,6 +487,9 @@ namespace cb {
         if (exists(path))
           THROW("'" << path << "' exists but is not a directory");
 
+        if (isLink(path))
+          THROW("'" << path << "' is a dangling symlink");
+
         mkdir(path, true);
 
         LOG_DEBUG(5, "Created directory '" << path << "'");
