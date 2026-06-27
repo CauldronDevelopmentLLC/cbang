@@ -72,11 +72,16 @@ uint64_t WinSystemInfo::getMemoryInfo(memory_info_t type) const {
   GlobalMemoryStatusEx(&info);
 
   switch (type) {
-  case MEM_INFO_TOTAL: return (uint64_t)info.ullTotalPhys;
-  case MEM_INFO_FREE:  return (uint64_t)info.ullAvailPhys;
-  case MEM_INFO_SWAP:  return (uint64_t)info.ullAvailPageFile;
+  case MEM_INFO_TOTAL:
+    return (uint64_t)info.ullTotalPhys;
+
+  case MEM_INFO_FREE:
   case MEM_INFO_USABLE:
-    return (uint64_t)(info.ullAvailPhys + info.ullAvailPageFile);
+    return (uint64_t)info.ullAvailPhys;
+
+  case MEM_INFO_SWAP:
+    return info.ullAvailPageFile > info.ullAvailPhys ?
+      (uint64_t)(info.ullAvailPageFile - info.ullAvailPhys) : 0;
   }
 
   return 0;
