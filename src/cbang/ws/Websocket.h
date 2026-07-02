@@ -86,7 +86,7 @@ namespace cb {
       uint64_t getMessagesSent() const {return msgSent;}
       uint64_t getMessagesReceived() const {return msgReceived;}
 
-      void connect(HTTP::Client &client, const URI &uri);
+      SmartPointer<HTTP::Conn> connect(HTTP::Client &client, const URI &uri);
 
       void send(const char *data, unsigned length);
       void send(const std::string &s);

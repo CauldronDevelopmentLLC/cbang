@@ -61,7 +61,8 @@ bool Websocket::isActive() const {
 }
 
 
-void Websocket::connect(HTTP::Client &client, const URI &uri) {
+SmartPointer<HTTP::Conn> Websocket::connect(
+    HTTP::Client &client, const URI &uri) {
   auto cb = [this] (HTTP::Request &req) {
     auto code  = req.getResponseCode();
     auto error = req.getConnectionError();
@@ -88,7 +89,9 @@ void Websocket::connect(HTTP::Client &client, const URI &uri) {
   req->outSet("Upgrade",               "websocket");
   req->outSet("Connection",            "upgrade");
 
-  connection = client.send(req);
+  auto con   = client.send(req);
+  connection = con;
+  return con; // Return the strong ref
 }
 
 
