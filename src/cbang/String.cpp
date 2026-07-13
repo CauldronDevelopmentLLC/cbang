@@ -316,7 +316,7 @@ namespace cb {
     float v = strtof(s.c_str(), &end);
     if (errno || (full && end && *end)) return false;
     value = v;
-    return false;
+    return true;
   }
 
 
