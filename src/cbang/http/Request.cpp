@@ -104,8 +104,7 @@ bool Request::isOk() const {
 
 string Request::getResponseLine() const {
   return SSTR("HTTP/" << version << ' ' << (int)responseCode << ' '
-              << (responseCodeLine.empty() ?
-                  responseCode.getDescription() : responseCodeLine));
+    << responseCodeLine);
 }
 
 
@@ -685,7 +684,7 @@ void Request::redirect(const URI &uri, Status code) {
 void Request::onResponse(Event::ConnectionError error) {
   if (error) LOG_DEBUG(4, "< " << error);
   else {
-    LOG_INFO(2, "< " << getResponseLine());
+    LOG_INFO(2, "< " << (int)responseCode << ' ' << responseCodeLine);
     LOG_DEBUG(5, getInputHeaders() << '\n');
     LOG_DEBUG(6, inputBuffer.hexdump() << '\n');
   }
@@ -737,7 +736,8 @@ void Request::parseResponseLine(const string &line) {
   responseCode = Status::parse(parts[1]);
   if (!responseCode) THROW("Bad response code " << parts[1]);
 
-  if (parts.size() == 3) responseCodeLine = parts[2];
+  responseCodeLine =
+    parts.size() == 3 ? parts[2] : responseCode.getDescription();
 }
 
 
@@ -811,7 +811,7 @@ void Request::writeRequest(Event::Buffer &buf) {
   if (mayHaveBody() && !outHas("Content-Length"))
     outSet("Content-Length", String(outputBuffer.getLength()));
 
-  LOG_INFO(2, "> " << getRequestLine());
+  LOG_INFO(2, "> " << method << ' ' << uri);
   LOG_DEBUG(5, getOutputHeaders() << '\n');
   LOG_DEBUG(6, outputBuffer.hexdump() << '\n');
 }
