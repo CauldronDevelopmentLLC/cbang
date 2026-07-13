@@ -67,7 +67,8 @@ namespace {
     size_t   setIdx  = 0;
     size_t   pos     = 0;            // next row to fetch in the current set
     const vector<Cell> *row = 0;     // row last returned by fetch
-    MYSQL_BIND *rbind = 0;           // bound result columns (mysql_stmt_bind_result)
+    vector<MYSQL_BIND> rbinds;       // bound result columns, COPIED like the
+                                     // real client (mysql_stmt_bind_result)
     unsigned errnoVal = 0;
     string   error;
     string   sqlstate = "00000";
@@ -92,6 +93,46 @@ namespace {
 
   bool hasSet(Conn *c) {return c->haveCur && c->setIdx < c->cur.results.size();}
   const Result *curSet(Conn *c) {return hasSet(c) ? &c->cur.results[c->setIdx] : 0;}
+
+  int colType(Conn *c, unsigned i) {
+    const Result *set = curSet(c);
+    return set && i < set->cols.size() ? set->cols[i].type : FakeDB::STRING;
+  }
+
+
+  // Deliver one column into a string-bound buffer, modelling how libmariadb
+  // converts a value fetched as text.  cbang always binds MYSQL_TYPE_STRING.
+  //
+  // For text-on-wire types (integer, DECIMAL, temporal, string, blob) the full
+  // length is always reported, so a caller that under-sized the buffer sees the
+  // truncation and can re-fetch at the reported length.
+  //
+  // FLOAT/DOUBLE are the trap: libmariadb renders them with ma_gcvt() whose
+  // field width IS the bound buffer_length, so a caller that binds a zero (or
+  // too-small) buffer gets a truncated/empty number AND a reported length no
+  // larger than that buffer -- the full value can never be recovered.  Binding
+  // a wide buffer up front is the only fix, which is exactly what this exercises.
+  void fillColumn(MYSQL_BIND &b, const Cell &cell, int type,
+                  unsigned long offset = 0) {
+    if (b.is_null) *b.is_null = cell.null;
+    if (cell.null) {if (b.length) *b.length = 0; return;}
+
+    const string &full = cell.data;
+    bool isFP = type == FakeDB::FLOAT || type == FakeDB::DOUBLE;
+
+    // Bytes actually produced by the (modelled) text conversion.
+    size_t produced = full.size();
+    if (isFP && b.buffer_length < produced) produced = b.buffer_length; // gcvt width
+
+    if (b.length) *b.length = isFP ? produced : full.size();
+    if (b.error)  *b.error  = produced < full.size();
+
+    if (b.buffer && b.buffer_length && offset < produced) {
+      size_t n = produced - offset;
+      if (n > b.buffer_length) n = b.buffer_length;
+      memcpy(b.buffer, full.data() + offset, n);
+    }
+  }
 }
 
 
@@ -194,7 +235,7 @@ int mysql_stmt_prepare_cont(int *ret, MYSQL_STMT *s, int) {
   c->setIdx  = 0;
   c->pos     = 0;
   c->row     = 0;
-  c->rbind   = 0;
+  c->rbinds.clear();
   c->errnoVal = 0;
   c->error.clear();
   c->sqlstate = "00000";
@@ -260,7 +301,13 @@ MYSQL_RES *mysql_stmt_result_metadata(MYSQL_STMT *s) {
 }
 
 my_bool mysql_stmt_bind_result(MYSQL_STMT *s, MYSQL_BIND *b) {
-  S(s)->rbind = b;
+  // The real client copies the bind array, so later edits to the caller's
+  // array are invisible until it rebinds.  Copy too, so a driver that grows a
+  // buffer without rebinding is caught (it would read into freed memory).
+  Conn *c = S(s);
+  const Result *set = curSet(c);
+  unsigned n = set ? set->cols.size() : 0;
+  c->rbinds.assign(b, b + n);
   return 0;
 }
 
@@ -280,14 +327,15 @@ int mysql_stmt_fetch_cont(int *ret, MYSQL_STMT *s, int) {
 
   c->row = &set->rows[c->pos++];
 
-  // Report null + length per column; the data is pulled by fetch_column.
-  for (size_t i = 0; c->rbind && i < c->row->size(); i++) {
-    const Cell &cell = (*c->row)[i];
-    if (c->rbind[i].is_null) *c->rbind[i].is_null = cell.null;
-    if (c->rbind[i].length)  *c->rbind[i].length  = cell.null ? 0 : cell.data.size();
+  // Fill every bound buffer, as the real client does; a value longer than its
+  // buffer is truncated but reports its full length (except FLOAT/DOUBLE).
+  bool truncated = false;
+  for (size_t i = 0; i < c->rbinds.size() && i < c->row->size(); i++) {
+    fillColumn(c->rbinds[i], (*c->row)[i], colType(c, i));
+    if (c->rbinds[i].error && *c->rbinds[i].error) truncated = true;
   }
 
-  *ret = 0;
+  *ret = truncated ? MYSQL_DATA_TRUNCATED : 0;
   return 0;
 }
 
@@ -295,17 +343,7 @@ int mysql_stmt_fetch_column(MYSQL_STMT *s, MYSQL_BIND *b, unsigned int col,
   unsigned long offset) {
   Conn *c = S(s);
   if (!c->row || col >= c->row->size()) return 0;
-
-  const Cell &cell = (*c->row)[col];
-  if (b->length)  *b->length  = cell.data.size();
-  if (b->is_null) *b->is_null = cell.null;
-
-  if (!cell.null && b->buffer && b->buffer_length && offset < cell.data.size()) {
-    unsigned long n = cell.data.size() - offset;
-    if (n > b->buffer_length) n = b->buffer_length;
-    memcpy(b->buffer, cell.data.data() + offset, n);
-  }
-
+  fillColumn(*b, (*c->row)[col], colType(c, col), offset);
   return 0;
 }
 

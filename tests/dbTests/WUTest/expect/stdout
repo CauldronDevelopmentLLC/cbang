@@ -1,0 +1,4 @@
+200
+Content-Type: application/json
+{"user":"Fahnatic","team":224497,"credit":1268930,"days":0.0856,"code":"Ok"}
+SQL: CALL WU()

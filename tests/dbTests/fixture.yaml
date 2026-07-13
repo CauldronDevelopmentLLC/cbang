@@ -123,3 +123,14 @@ endpoints:
 
   /image-gif:
     get: {sql: "CALL GetImage()", return: binary, content-type: image/gif}
+
+  # A single scalar whose column type is set per scenario.  Exercises numeric
+  # rendering: FLOAT/DOUBLE regressed to 0, while DECIMAL and long strings did
+  # not, so the type drives whether the bug reproduces.
+  /scalar:
+    get: {sql: "SELECT val FROM t LIMIT 1", return: one}
+
+  # A work-unit-shaped row of mixed types, mirroring the real ProjectWUList
+  # response that first surfaced the FLOAT-returns-0 bug.
+  /wu:
+    get: {sql: "CALL WU()", return: dict}

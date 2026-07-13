@@ -43,14 +43,21 @@
 #include <vector>
 
 namespace FakeDB {
-  // MariaDB field type codes (subset) — see cb::MariaDB::Field::type_t.
+  // MariaDB field type codes (subset) — see cb::MariaDB::Field::type_t.  The
+  // FLOAT/DOUBLE distinction matters: libmariadb converts those binary types to
+  // text using the caller's buffer_length as the field width, so the fake must
+  // model them differently from the text-on-wire types (see fillColumn).
   enum Type {
-    TINY     = 1,
-    LONG     = 3,
-    DOUBLE   = 5,
-    LONGLONG = 8,
-    BLOB     = 252,
-    STRING   = 253,
+    DECIMAL    = 0,
+    TINY       = 1,
+    LONG       = 3,
+    FLOAT      = 4,
+    DOUBLE     = 5,
+    LONGLONG   = 8,
+    DATETIME   = 12,
+    NEWDECIMAL = 246,
+    BLOB       = 252,
+    STRING     = 253,
   };
 
   struct Cell {

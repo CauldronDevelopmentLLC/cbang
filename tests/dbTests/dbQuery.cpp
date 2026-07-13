@@ -243,6 +243,46 @@ namespace {
       contentType = "application/octet-stream";
       // No response: the bind/placeholder count mismatch errors first
 
+    } else if (s == "Float") {
+      // FLOAT column: regressed to 0 because the binary->text conversion was
+      // width-limited by a zero-length bound buffer.  Must round-trip in full.
+      path = "/scalar";
+      push(result({{"val", FakeDB::FLOAT}}, {{Cell("1268930")}}));
+
+    } else if (s == "FloatNegative") {
+      path = "/scalar";
+      push(result({{"val", FakeDB::FLOAT}}, {{Cell("-0.5")}}));
+
+    } else if (s == "Double") {
+      path = "/scalar";
+      push(result({{"val", FakeDB::DOUBLE}}, {{Cell("123456789.5")}}));
+
+    } else if (s == "FloatNull") {
+      path = "/scalar";
+      push(result({{"val", FakeDB::FLOAT}}, {{Cell()}})); // SQL NULL
+
+    } else if (s == "Decimal") {
+      // NEWDECIMAL is text on the wire, so it never regressed -- a control
+      // proving the fix is specific to the binary float types.
+      path = "/scalar";
+      push(result({{"val", FakeDB::NEWDECIMAL}}, {{Cell("0.0856")}}));
+
+    } else if (s == "BigString") {
+      // Longer than MIN_RESULT_BUFFER: forces the grow + fetch_column + rebind
+      // path, so a stale rebind (reading freed memory) would corrupt this.
+      path = "/scalar";
+      push(result({{"val", FakeDB::STRING}}, {{Cell(string(600, 'A'))}}));
+
+    } else if (s == "WU") {
+      // The real ProjectWUList shape: the FLOAT credit sits between an integer
+      // and a decimal, both of which always worked.
+      path = "/wu";
+      push(result({{"user", FakeDB::STRING}, {"team", FakeDB::LONG},
+                   {"credit", FakeDB::FLOAT}, {"days", FakeDB::NEWDECIMAL},
+                   {"code", FakeDB::STRING}},
+                  {{Cell("Fahnatic"), Cell("224497"), Cell("1268930"),
+                    Cell("0.0856"), Cell("Ok")}}));
+
     } else if (s == "SessionArgError") {
       // A root async session SQL lookup runs, then a nested endpoint's arg
       // validation throws 400.  The throw must reply cleanly, not escape the
