@@ -208,6 +208,14 @@ namespace {
       push(result({{"data", FakeDB::BLOB}},
                   {{Cell(string("IMG\0\xff\r\nBYTES", 12))}}));
 
+    } else if (s == "BigBinary") {
+      // A blob far larger than any single fetch buffer: it must come back whole,
+      // not truncated/empty (the bug that returned 0-byte assets over ~64 KiB).
+      path = "/image";
+      string big;
+      for (unsigned i = 0; i < 100000; i++) big.push_back((char)(i & 0xff));
+      push(result({{"data", FakeDB::BLOB}}, {{Cell(big)}}));
+
     } else if (s == "BinaryTypeCol") {
       path = "/image";
       push(result({{"data", FakeDB::BLOB}, {"type", FakeDB::STRING}},

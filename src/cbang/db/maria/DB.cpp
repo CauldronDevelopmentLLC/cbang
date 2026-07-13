@@ -78,17 +78,18 @@ namespace cb {
     };
 
 
-    // Result columns are fetched as text.  The bound buffer must be non-zero
-    // and wide enough up front: libmariadb converts FLOAT/DOUBLE to text with
-    // ma_gcvt() using the bound buffer_length as the output field width, so a
-    // zero (or too small) buffer yields an empty/truncated number and a
-    // reported length that never lets the value be recovered.  MIN_RESULT_BUFFER
-    // comfortably exceeds MAX_DOUBLE_STRING_REP_LENGTH (~331) so every numeric
-    // and temporal value converts in full on the first fetch.  Longer values
-    // (BLOB/TEXT) are grown on demand in processFetch(), so MAX_RESULT_BUFFER is
-    // only a pre-allocation cap, not a limit on the value size.
-    static const unsigned long MIN_RESULT_BUFFER =   512;
-    static const unsigned long MAX_RESULT_BUFFER = 65536;
+    // Result columns are fetched as text.  mysql_stmt_fetch() runs against a
+    // zero-length buffer purely to report each column's length, then
+    // processFetch() pulls each value with mysql_stmt_fetch_column() into a
+    // buffer sized to that length -- but never below MIN_RESULT_BUFFER.  That
+    // floor is what fixes FLOAT/DOUBLE: libmariadb renders them to text with
+    // ma_gcvt() using buffer_length as the field width, and the zero-length
+    // probe reports their length as 0, so without a floor the re-fetch would
+    // ask for a zero-width conversion and get an empty string.  512 comfortably
+    // exceeds MAX_DOUBLE_STRING_REP_LENGTH (~331).  BLOB/TEXT columns report
+    // their true (larger) length and are sized to it exactly, so there is no
+    // upper bound and large values are never truncated.
+    static const unsigned long MIN_RESULT_BUFFER = 512;
   }
 }
 
@@ -460,22 +461,16 @@ void DB::freeMeta() {if (meta) {mysql_free_result(meta); meta = 0;}}
 void DB::setupResultBind() {
   unsigned n = mysql_num_fields(meta);
   binding->resize(n);
-  MYSQL_FIELD *fields = mysql_fetch_fields(meta);
 
   for (unsigned i = 0; i < n; i++) {
-    // Fetch every column as text.  Size the buffer from the column width but
-    // never below MIN_RESULT_BUFFER (so numeric/temporal conversions are never
-    // width-limited) nor above MAX_RESULT_BUFFER (so a huge BLOB/TEXT column is
-    // not pre-allocated in full; such values grow in processFetch()).
-    unsigned long size = (unsigned long)fields[i].length + 1;
-    if (size < MIN_RESULT_BUFFER) size = MIN_RESULT_BUFFER;
-    if (size > MAX_RESULT_BUFFER) size = MAX_RESULT_BUFFER;
-    binding->data[i].resize(size);
-
+    // Bind a zero-length buffer: mysql_stmt_fetch() then reports each column's
+    // length without copying, and processFetch() pulls the value into a
+    // right-sized buffer.  The statement keeps its own copy of these binds, so
+    // resizing our buffers later does not disturb it (no rebind needed).
     MYSQL_BIND &b = binding->binds[i];
     b.buffer_type   = MYSQL_TYPE_STRING; // fetch every column as text
-    b.buffer        = binding->data[i].data();
-    b.buffer_length = size;
+    b.buffer        = 0;
+    b.buffer_length = 0;
     b.length        = &binding->length[i];
     b.is_null       = &binding->isNull[i];
     b.error         = &binding->error[i];
@@ -583,33 +578,29 @@ void DB::processFetch() {
   if (fetchRet == MYSQL_NO_DATA) {rowReady = false; return;}
   if (fetchRet == 1) RAISE_DB_ERROR("Fetch failed");
 
-  // fetchRet is 0 or MYSQL_DATA_TRUNCATED.  The bound buffers hold the row,
-  // except any column whose value was longer than its buffer (a large
-  // BLOB/TEXT): libmariadb still reports the full length there, so grow that
-  // column's buffer and re-pull just it with mysql_stmt_fetch_column().
-  // Numeric and temporal text always fits the MIN_RESULT_BUFFER floor, so only
-  // genuinely oversized values take this path.
-  bool regrew = false;
+  // fetchRet is 0 or MYSQL_DATA_TRUNCATED.  The initial bind used a zero-length
+  // buffer, so mysql_stmt_fetch() reported each column's length without
+  // copying; pull every non-null column into its own buffer.  The buffer is at
+  // least MIN_RESULT_BUFFER bytes so FLOAT/DOUBLE columns -- which libmariadb
+  // renders to text with a field width equal to buffer_length, and which the
+  // probe reports as length 0 -- come out in full rather than empty.  Larger
+  // values (BLOB/TEXT) report their true length and are sized to it exactly.
+  // mysql_stmt_fetch_column() takes the buffer explicitly, so the statement's
+  // own (zero-length) bound copy is untouched and needs no rebind between rows.
   unsigned n = getFieldCount();
-
   for (unsigned i = 0; i < n; i++) {
     if (binding->isNull[i]) continue;
-    if (binding->length[i] <= binding->data[i].size()) continue;
 
-    binding->data[i].resize(binding->length[i]);
+    unsigned long need = binding->length[i];
+    if (need < MIN_RESULT_BUFFER) need = MIN_RESULT_BUFFER;
+    if (binding->data[i].size() < need) binding->data[i].resize(need);
+
     MYSQL_BIND &b   = binding->binds[i];
     b.buffer        = binding->data[i].data();
     b.buffer_length = binding->data[i].size();
     if (mysql_stmt_fetch_column(stmt, &b, i, 0))
       RAISE_DB_ERROR("Failed to fetch column");
-    regrew = true;
   }
-
-  // Growing a buffer reallocates it, so the pointers mysql_stmt_bind_result()
-  // copied into the statement are now stale; rebind before the next row is
-  // fetched into them.
-  if (regrew && mysql_stmt_bind_result(stmt, binding->binds.data()))
-    RAISE_DB_ERROR("Failed to rebind result");
 
   rowReady = true;
 }
