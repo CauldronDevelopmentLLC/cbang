@@ -281,6 +281,15 @@ namespace {
       path = "/scalar";
       push(result({{"val", FakeDB::STRING}}, {{Cell(string(600, 'A'))}}));
 
+    } else if (s == "BigRow") {
+      // A large column beside small ones -- the shape of the asset-metadata row
+      // whose big base64 thumbnail sat next to small scalars.  Each column is
+      // sized independently, so the large value must not disturb its siblings.
+      path = "/dict/42";
+      push(result({{"id", FakeDB::LONG}, {"data", FakeDB::STRING},
+                   {"name", FakeDB::STRING}},
+                  {{Cell("42"), Cell(string(2000, 'x')), Cell("Bob")}}));
+
     } else if (s == "WU") {
       // The real ProjectWUList shape: the FLOAT credit sits between an integer
       // and a decimal, both of which always worked.
