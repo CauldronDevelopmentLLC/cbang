@@ -18,19 +18,29 @@ if not env.GetOption('clean'):
 
 # Test
 Export('env')
+
+def set_enabled(test, enabled):
+    # Toggle the testHarness 'disable' marker based on feature availability
+    for t in Glob('%s/*Test' % test):
+        disable = '%s/disable' % t
+        if enabled:
+            try: os.unlink(disable)
+            except OSError: pass
+        elif not os.path.exists(disable): open(disable, 'w').close()
+
 tests = []
 for test in Glob('*Tests'):
     script = str(test) + '/SConscript'
     if not os.path.exists(script): continue
+    name = str(test)
 
-    if str(test) in ('cryptoTests', 'iostreamTests', 'serverTests'
-                     ) and not env.CBConfigEnabled('openssl'):
+    if name in ('cryptoTests', 'iostreamTests', 'serverTests'):
+        enabled = env.CBConfigEnabled('openssl')
+    elif name == 'dbTests': enabled = env.CBConfigEnabled('mariadb')
+    else: enabled = True
 
-        # TODO This permanently disables the test, it should be only temporary
-        for t in Glob('%s/*Test' % test):
-            open('%s/disable' % t, 'w').close()
-
-    else: tests.append(SConscript(script))
+    set_enabled(name, enabled)
+    if enabled: tests.append(SConscript(script))
 
 conf.Finish()
 
