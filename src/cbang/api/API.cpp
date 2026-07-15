@@ -67,6 +67,8 @@
 #include <cbang/json/Value.h>
 #include <cbang/log/Logger.h>
 
+#include <memory>
+
 using namespace cb;
 using namespace std;
 using namespace cb::API;
@@ -677,15 +679,32 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
 }
 
 
-bool cb::API::API::operator()(HTTP::Request &req) {
+void cb::API::API::operator()(
+  HTTP::Request &req, const HTTP::RequestCont &next) {
   auto ctx = SmartPtr(new Context(*this, req));
   ctx->setArgs(req.parseArgs());
   ctx->parseBody();
 
-  // The terminal continuation: nothing handled the request.  Reply 404 so an
-  // async chain that falls through still responds (the captured `ctx` keeps
-  // the request alive).
-  operator()(ctx, [] (const CtxPtr &ctx) {ctx->reply(HTTP_NOT_FOUND);});
+  // Run the API's continuation chain.  On fall-through (nothing matched a
+  // configured endpoint) continue to `next` so handlers registered after the
+  // API still get a chance to respond.  The captured `ctx` keeps the request
+  // alive across any asynchronous steps.
+  operator()(ctx, [next] (const CtxPtr &ctx) {next(ctx->getRequest());});
+}
 
-  return true;
+
+bool cb::API::API::operator()(HTTP::Request &req) {
+  // Synchronous entry point.  See HTTP::HandlerGroup::operator() for the
+  // sync/async fall-through handling.  The flags are shared so they stay valid
+  // if the terminal runs after this returns.
+  auto sync    = std::make_shared<bool>(true);
+  auto handled = std::make_shared<bool>(true);
+
+  (*this)(req, [sync, handled] (HTTP::Request &req) {
+    if (*sync) *handled = false;
+    else req.sendError(HTTP_NOT_FOUND);
+  });
+
+  *sync = false;
+  return *handled;
 }

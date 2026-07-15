@@ -56,6 +56,7 @@ namespace cb {
       bool match(const URI &uri, JSON::ValuePtr args) const;
 
       // From RequestHandler
+      void operator()(Request &req, const RequestCont &next) override;
       bool operator()(Request &req) override;
     };
   }

@@ -37,6 +37,8 @@
 #include "IndexHandler.h"
 #include "FileHandler.h"
 
+#include <memory>
+
 using namespace cb::HTTP;
 using namespace cb;
 using namespace std;
@@ -78,11 +80,41 @@ SmartPointer<HandlerGroup> HandlerGroup::addGroup(
 }
 
 
-bool HandlerGroup::operator()(Request &req) {
-  for (auto &handler: handlers)
-    if ((*handler)(req)) return true;
+void HandlerGroup::operator()(Request &req, const RequestCont &next) {
+  // Fold the handlers right-to-left into one continuation: each handler's
+  // `next` runs the remaining handlers and finally the group's own `next`.
+  RequestCont chain = next;
+  for (auto it = handlers.rbegin(); it != handlers.rend(); ++it) {
+    auto handler = *it;
+    RequestCont rest = chain;
+    chain = [handler, rest] (Request &req) {(*handler)(req, rest);};
+  }
 
-  return false;
+  chain(req);
+}
+
+
+bool HandlerGroup::operator()(Request &req) {
+  // Synchronous entry point for the asynchronous chain.  Routing is
+  // synchronous, so a request that matches nothing unwinds to the terminal
+  // continuation before this returns; report that as "not handled" so an
+  // enclosing handler (or RequestErrorHandler) can respond.  A handler that
+  // takes the request asynchronously never reaches the terminal, so it is
+  // reported as handled; if such a chain later falls through we must respond
+  // ourselves since the synchronous caller has already moved on.
+  //
+  // The flags are shared so they remain valid if the terminal runs after this
+  // returns (i.e. a handler deferred and the chain later fell through).
+  auto sync    = std::make_shared<bool>(true);
+  auto handled = std::make_shared<bool>(true);
+
+  (*this)(req, [sync, handled] (Request &req) {
+    if (*sync) *handled = false;
+    else req.sendError(HTTP_NOT_FOUND);
+  });
+
+  *sync = false;
+  return *handled;
 }
 
 

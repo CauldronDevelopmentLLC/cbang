@@ -166,6 +166,8 @@ namespace cb {
       virtual void addToSpec(const std::string &methods, const CfgPtr &cfg);
 
       // From HTTP::RequestHandler
+      void operator()(
+        HTTP::Request &req, const HTTP::RequestCont &next) override;
       bool operator()(HTTP::Request &req) override;
 
       using HandlerGroup::operator();

@@ -75,6 +75,12 @@ bool RE2PatternMatcher::match(const URI &uri, JSON::ValuePtr resultArgs) const {
 }
 
 
+void RE2PatternMatcher::operator()(Request &req, const RequestCont &next) {
+  if (match(req.getURI(), req.getArgs())) (*child)(req, next);
+  else next(req);
+}
+
+
 bool RE2PatternMatcher::operator()(Request &req) {
   if (!match(req.getURI(), req.getArgs())) return false;
   return (*child)(req);

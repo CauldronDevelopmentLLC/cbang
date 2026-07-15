@@ -40,8 +40,21 @@
 
 namespace cb {
   namespace HTTP {
+    // A continuation: invoke to pass control to the rest of the handler chain.
+    typedef std::function<void (Request &)> RequestCont;
+
+
     struct RequestHandler : public Enum {
       virtual ~RequestHandler() {}
+
+      // Asynchronous dispatch.  Either respond to the request or call
+      // next(req) to pass it to the rest of the chain.  The default bridges
+      // to the synchronous handler: if it does not take the request, continue.
+      virtual void operator()(Request &req, const RequestCont &next) {
+        if (!(*this)(req)) next(req);
+      }
+
+      // Synchronous handler.  Return true if the request was handled.
       virtual bool operator()(Request &req) {return false;};
     };
 

@@ -48,6 +48,12 @@ bool MethodMatcher::match(Method method) const {
 }
 
 
+void MethodMatcher::operator()(Request &req, const RequestCont &next) {
+  if (match(req.getMethod())) (*child)(req, next);
+  else next(req);
+}
+
+
 bool MethodMatcher::operator()(Request &req) {
   return match(req.getMethod()) && (*child)(req);
 }

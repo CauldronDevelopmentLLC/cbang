@@ -1,2 +1,4 @@
 404
-HTTP_NOT_FOUND
+Content-Type: text/plain
+Connection: close
+404 HTTP_NOT_FOUND
