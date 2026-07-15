@@ -37,6 +37,7 @@ for test in Glob('*Tests'):
     if name in ('cryptoTests', 'iostreamTests', 'serverTests'):
         enabled = env.CBConfigEnabled('openssl')
     elif name == 'dbTests': enabled = env.CBConfigEnabled('mariadb')
+    elif name == 'apiTests': enabled = env.CBConfigEnabled('leveldb')
     else: enabled = True
 
     set_enabled(name, enabled)
