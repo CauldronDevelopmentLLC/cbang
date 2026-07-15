@@ -104,7 +104,8 @@ bool Request::isOk() const {
 
 string Request::getResponseLine() const {
   return SSTR("HTTP/" << version << ' ' << (int)responseCode << ' '
-    << responseCodeLine);
+   << (responseCodeLine.empty() ?
+     responseCode.getDescription() : responseCodeLine));
 }
 
 
