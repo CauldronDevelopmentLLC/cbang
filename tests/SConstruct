@@ -34,10 +34,13 @@ for test in Glob('*Tests'):
     if not os.path.exists(script): continue
     name = str(test)
 
+    # The api module is only built with leveldb, so tests that use it require it
     if name in ('cryptoTests', 'iostreamTests', 'serverTests'):
         enabled = env.CBConfigEnabled('openssl')
-    elif name == 'dbTests': enabled = env.CBConfigEnabled('mariadb')
-    elif name == 'apiTests': enabled = env.CBConfigEnabled('leveldb')
+    elif name in ('apiTests', 'resolverTests'):
+        enabled = env.CBConfigEnabled('leveldb')
+    elif name == 'dbTests':
+        enabled = env.CBConfigEnabled('mariadb') and env.CBConfigEnabled('leveldb')
     else: enabled = True
 
     set_enabled(name, enabled)
