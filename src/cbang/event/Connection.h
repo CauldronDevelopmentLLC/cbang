@@ -90,7 +90,7 @@ namespace cb {
                   const SmartPointer<SSLContext> &sslCtx);
       void openSSL(SSLContext &sslCtx, const std::string &hostname);
       void connect(const std::string &hostname, uint32_t port,
-                   const SockAddr &bind);
+                   const SockAddr &bind = SockAddr());
 
       virtual void onConnect(bool success) {}
 

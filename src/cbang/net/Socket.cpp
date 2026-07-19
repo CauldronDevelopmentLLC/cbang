@@ -256,8 +256,17 @@ void Socket::open(unsigned flags, const SockAddr &bindAddr) {
   if (isOpen()) THROW("Socket already open");
 
   if (bindAddr.isIPv6()) flags |= Socket::IPV6;
+  if (bindAddr.isUnix()) flags |= Socket::UNIX;
 
-  auto net  = (flags & Socket::IPV6) ? AF_INET6   : AF_INET;
+  int net = AF_INET;
+  if (flags & Socket::UNIX) {
+#ifdef _WIN32
+    THROW("Unix domain sockets are not supported on Windows");
+#else
+    net = AF_UNIX;
+#endif
+  } else if (flags & Socket::IPV6) net = AF_INET6;
+
   auto type = (flags & Socket::UDP)  ? SOCK_DGRAM : SOCK_STREAM;
   socket = ::socket(net, type, 0);
 

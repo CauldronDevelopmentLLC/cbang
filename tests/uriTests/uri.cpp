@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
         cout << setw(w) << "Scheme: " << uri.getScheme() << endl;
         cout << setw(w) << "Host: " << uri.getHost() << endl;
         cout << setw(w) << "Port: " << uri.getPort() << endl;
+        if (uri.isUnix())
+          cout << setw(w) << "Unix: " << uri.getUnixPath() << endl;
         cout << setw(w) << "Path: " << uri.getPath() << endl;
         cout << setw(w) << "User: " << uri.getUser() << endl;
         cout << setw(w) << "Pass: " << uri.getPass() << endl;

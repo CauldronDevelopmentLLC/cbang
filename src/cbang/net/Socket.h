@@ -78,6 +78,7 @@ namespace cb {
       NOCLOSEONEXEC = 1 << 5,
       REUSEADDR     = 1 << 6,
       KEEPALIVE     = 1 << 7,
+      UNIX          = 1 << 8, ///< Create an AF_UNIX (Unix domain) socket
     };
 
 

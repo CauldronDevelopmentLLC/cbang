@@ -35,6 +35,7 @@
 #include <cbang/String.h>
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
+#include <cbang/net/SockAddr.h>
 
 #include <sstream>
 #include <cctype>
@@ -97,7 +98,46 @@ URI::URI(
   scheme(scheme), host(host), port(port) {setPath(path);}
 
 
+namespace {
+  // A "<scheme>+unix" scheme names Unix-domain-socket transport; the SSL
+  // requirement, default port, etc. come from the base scheme.
+  bool hasUnixSuffix(const string &scheme) {
+    return 5 < scheme.size() &&
+      scheme.compare(scheme.size() - 5, 5, "+unix") == 0;
+  }
+
+  string baseScheme(const string &scheme) {
+    return hasUnixSuffix(scheme) ? scheme.substr(0, scheme.size() - 5) : scheme;
+  }
+}
+
+
+bool URI::isUnix() const {return hasUnixSuffix(scheme);}
+
+
+void URI::setUnixPath(const string &path) {
+  unixPath = path;
+  if (host.empty()) host = "localhost"; // Sane default Host header / TLS SNI
+}
+
+
+URI URI::fromAddress(
+  const string &scheme, const string &addr, const string &path) {
+  if (SockAddr::isUnixAddress(addr)) {
+    URI uri;
+    uri.setScheme(scheme + "+unix");
+    uri.setUnixPath(SockAddr::parseUnix(addr).getPath());
+    uri.setPath(path);
+    return uri;
+  }
+
+  return URI(scheme + "://" + addr + path);
+}
+
+
 string URI::getAddress() const {
+  if (isUnix()) return "unix:" + unixPath;
+
   if (port) {
     if (!host.empty() && host.find_first_not_of("1234567890:.") == string::npos)
       return "[" + host + "]:" + String(port);
@@ -110,6 +150,7 @@ string URI::getAddress() const {
 
 
 unsigned URI::getPort() const {
+  if (isUnix()) return 0; // No port for a Unix domain socket
   if (port || scheme.empty()) return port;
 
   unsigned port = portFromScheme(scheme);
@@ -217,8 +258,9 @@ unsigned URI::portFromScheme(const string &scheme) {
 }
 
 
-bool URI::schemeRequiresSSL(const std::string &scheme) {
+bool URI::schemeRequiresSSL(const std::string &_scheme) {
   // TODO not exhaustive
+  string scheme = baseScheme(_scheme); // Strip any "+unix" transport suffix
   return
     scheme == "sftp"      ||
     scheme == "https"     ||
@@ -246,6 +288,7 @@ void URI::clear() {
   user.clear();
   pass.clear();
   frag.clear();
+  unixPath.clear();
 }
 
 
@@ -300,7 +343,12 @@ void URI::read(const char *uri) {
 
 ostream &URI::write(ostream &stream) const {
   if (!scheme.empty()) stream << scheme << ':';
-  if (!host.empty()) {
+
+  if (isUnix())
+    // Percent-encode the socket path (including '/') as the authority
+    stream << "//" << encode(unixPath, UNRESERVED_CHARS);
+
+  else if (!host.empty()) {
     stream << "//";
 
     if (!user.empty()) stream << encode(user, USER_PASS_CHARS);
@@ -418,8 +466,24 @@ void URI::parseScheme(const char *&s) {
 void URI::parseNetPath(const char *&s) {
   match(s, '/');
   consume(s, '/');
-  parseAuthority(s);
+  if (isUnix()) parseUnixAuthority(s);
+  else parseAuthority(s);
   if (*s == '/') parsePath(s);
+}
+
+
+void URI::parseUnixAuthority(const char *&s) {
+  // The authority is the percent-encoded Unix socket path.  It ends at the
+  // first literal '/' (which begins the HTTP path), '?' or '#'.
+  string p;
+
+  while (*s && *s != '/' && *s != '?' && *s != '#')
+    if (*s == '%') p.append(1, parseEscape(s));
+    else p.append(1, *s++);
+
+  if (p.empty()) THROW("Expected Unix socket path");
+
+  setUnixPath(p);
 }
 
 

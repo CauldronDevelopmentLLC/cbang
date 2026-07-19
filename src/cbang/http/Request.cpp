@@ -193,6 +193,12 @@ SockAddr Request::getClientAddr() const {
   if (!connection.isSet()) return SockAddr();
 
   SockAddr peer = connection->getPeerAddr();
+
+  // A Unix-domain-socket peer is a local connection with no IP address; treat
+  // it as loopback so it has a usable address (and, if trusted, can forward a
+  // client address via X-Forwarded-For like any other local proxy).
+  if (peer.isUnix()) peer = SockAddr((uint32_t)0x7f000001, (uint16_t)0);
+
   if (!connection->hasServer()) return peer;
 
   auto server = dynamic_cast<Server *>(&connection->getServer());

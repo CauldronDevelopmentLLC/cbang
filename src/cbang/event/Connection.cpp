@@ -131,15 +131,10 @@ void Connection::connect(
     LOG_DEBUG(5, "Connecting to " << hostname << ":" << port);
     if (stats.isSet()) stats->event("outgoing");
 
-    // Open and bind new socket
-    auto socket = SmartPtr(new Socket);
-    socket->open(Socket::NONBLOCKING, bind);
-    setSocket(socket);
-
-    LOG_DEBUG(4, "Connection with fd " << socket->get());
-
-    // DNS callback
-    auto dnsCB = [this, hostname, port] (
+    // DNS callback.  A literal IPv4/IPv6/Unix address resolves immediately
+    // (no lookup).  The socket is opened here, once the address family is
+    // known, so Unix and IPv6 targets get a socket of the matching family.
+    auto dnsCB = [this, hostname, port, bind] (
       DNS::Error error, const vector<SockAddr> &addrs) {
 
       if (error || addrs.empty()) {
@@ -150,8 +145,19 @@ void Connection::connect(
       try {
         // Set address
         peerAddr = addrs.front();
-        peerAddr.setPort(port);
+        if (!peerAddr.isUnix()) peerAddr.setPort(port);
         LOG_DEBUG(4, "Connecting to " << peerAddr);
+
+        // Open a socket of the resolved address family
+        unsigned flags = Socket::NONBLOCKING;
+        if (peerAddr.isUnix()) flags |= Socket::UNIX;
+        else if (peerAddr.isIPv6()) flags |= Socket::IPV6;
+
+        auto socket = SmartPtr(new Socket);
+        socket->open(flags, peerAddr.isUnix() ? SockAddr() : bind);
+        setSocket(socket);
+
+        LOG_DEBUG(4, "Connection with fd " << socket->get());
 
         // NOTE, Connect timeout is write timeout
         getSocket()->connect(peerAddr);
@@ -169,7 +175,7 @@ void Connection::connect(
       onConnect(false);
     };
 
-    // Start async DNS lookup
+    // Start async DNS lookup (short-circuits literal addresses)
     getBase().getDNS().resolve(hostname, WeakCall(this, dnsCB));
     return;
 

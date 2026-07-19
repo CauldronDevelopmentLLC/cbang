@@ -188,7 +188,11 @@ bool Option::hasDefault() const {
 
 
 bool Option::isDefault() const {
-  return hasDefault() && isSet() && *value == *getDefault();
+  // getDefault() can be null even when hasDefault() is true: it inherits from
+  // a parent whose hasValue() counts a default, while getValue() returns the
+  // parent's (null) set value.  Guard the dereferences.
+  return hasDefault() && isSet() && !value.isNull() &&
+    !getDefault().isNull() && *value == *getDefault();
 }
 
 

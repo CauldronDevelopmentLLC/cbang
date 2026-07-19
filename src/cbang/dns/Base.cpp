@@ -151,8 +151,9 @@ RequestPtr Base::resolve(
   auto req = SmartPtr(new RequestResolve(*this, name, cb, ipv6));
 
   SockAddr addr;
-  if ((ipv6 && addr.readIPv6(name)) || (!ipv6 && addr.readIPv4(name))) {
-    // This is an already resolved address
+  if (addr.readUnix(name) ||
+      (ipv6 && addr.readIPv6(name)) || (!ipv6 && addr.readIPv4(name))) {
+    // An already resolved literal address (IPv4/IPv6/Unix); no lookup needed
     auto result = SmartPtr(new Result(DNS_ERR_NOERROR));
     result->addrs.push_back(addr);
     req->respond(result);

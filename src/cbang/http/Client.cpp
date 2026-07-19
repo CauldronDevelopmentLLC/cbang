@@ -79,6 +79,15 @@ SmartPointer<Conn> Client::send(const SmartPointer<Request> &req) const {
     if (sslCtx.isNull()) THROW("Client lacks SSLContext");
   }
 
+  // A Unix domain socket URI ("<scheme>+unix://...") is connected to directly,
+  // bypassing proxies.  The "unix:PATH" address resolves without a DNS lookup.
+  if (uri.isUnix()) {
+    if (sslCtx.isSet()) conn->openSSL(*sslCtx, uri.getHost());
+    conn->queueRequest(req);
+    conn->connect("unix:" + uri.getUnixPath(), 0, bindAddr);
+    return conn;
+  }
+
   // Proxy
   URI connectURI = uri;
   auto proxy = SystemInfo::instance().getProxy(uri);

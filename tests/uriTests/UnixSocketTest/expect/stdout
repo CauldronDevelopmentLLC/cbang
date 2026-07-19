@@ -1,0 +1,11 @@
+https+unix://%2Frun%2Ffah%2Fcs.sock/api/ws/update => {
+     URI: https+unix://%2frun%2ffah%2fcs.sock/api/ws/update
+  Scheme: https+unix
+    Host: localhost
+    Port: 0
+    Unix: /run/fah/cs.sock
+    Path: /api/ws/update
+    User: 
+    Pass: 
+   Query: 
+}

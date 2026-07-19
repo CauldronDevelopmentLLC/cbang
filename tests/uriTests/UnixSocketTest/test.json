@@ -1,0 +1,5 @@
+{
+  "args": [
+    "https+unix://%%2Frun%%2Ffah%%2Fcs.sock/api/ws/update"
+  ]
+}

@@ -49,6 +49,7 @@ namespace cb {
     std::string user;
     std::string pass;
     std::string frag;
+    std::string unixPath; // Set for a "<scheme>+unix" Unix-domain-socket URI
 
   public:
     static const char *DEFAULT_UNESCAPED;
@@ -63,6 +64,17 @@ namespace cb {
     std::string getAddress() const;
     const std::string &getHost() const {return host;}
     unsigned getPort() const;
+
+    // A "<scheme>+unix" URI (e.g. ``http+unix``/``https+unix``) whose authority
+    // is a percent-encoded Unix domain socket path, connected to directly.
+    bool isUnix() const;
+    const std::string &getUnixPath() const {return unixPath;}
+    void setUnixPath(const std::string &path);
+
+    // Build a URI for a network ("host[:port]") or Unix ("unix:PATH") address.
+    // A Unix address yields a "<scheme>+unix" URI, connected to directly.
+    static URI fromAddress(const std::string &scheme, const std::string &addr,
+                           const std::string &path = "/");
     const std::string &getPath() const {return path;}
     std::string getEscapedPath() const;
     std::string getEscapedPathAndQuery() const;
@@ -110,6 +122,7 @@ namespace cb {
     void parseScheme(const char *&s);
     void parseNetPath(const char *&s);
     void parseAuthority(const char *&s);
+    void parseUnixAuthority(const char *&s);
     std::string parseUserPass(const char *&s);
     void parseUserInfo(const char *&s);
     void parseHost(const char *&s);
