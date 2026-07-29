@@ -463,7 +463,17 @@ SmartPointer<JSON::Value> Request::getInputJSON() const {
   Event::Buffer buf = inputBuffer;
   if (!buf.getLength()) return 0;
   Event::BufferStream<> stream(buf);
-  return JSON::Reader(stream).parse();
+
+  // A request body which will not parse is the client's mistake, so report it
+  // as one.  Without a status the parse error escapes as a plain exception and
+  // the handler answers 500, blaming the server for a malformed request.  The
+  // error handler logs this message and replies with a bodyless status, so the
+  // parse detail reaches the log without being echoed back to the client.
+  try {
+    return JSON::Reader(stream).parse();
+  } catch (const Exception &e) {
+    THROWCX("Malformed JSON request body", e, HTTP_BAD_REQUEST);
+  }
 }
 
 
