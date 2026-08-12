@@ -34,8 +34,12 @@
 
 #include <cbang/String.h>
 #include <cbang/Catch.h>
+#include <cbang/os/Directory.h>
 #include <cbang/os/SystemUtilities.h>
 #include <cbang/log/Logger.h>
+
+#include <algorithm>
+#include <vector>
 
 
 #if defined(_WIN32)
@@ -57,10 +61,11 @@ using namespace cb;
 PCIInfo::PCIInfo() {detect();}
 
 
-void PCIInfo::add(uint16_t vendorID, uint16_t deviceID, uint8_t busID,
-                  uint8_t slotID, uint8_t functionID, const string &name) {
-  devices.push_back(
-    PCIDevice(vendorID, deviceID, busID, slotID, functionID, name));
+void PCIInfo::add(uint16_t vendorID, uint16_t deviceID, int32_t domainID,
+                  uint8_t busID, uint8_t slotID, uint8_t functionID,
+                  const string &name) {
+  devices.push_back(PCIDevice(
+    vendorID, deviceID, domainID, busID, slotID, functionID, name));
 }
 
 
@@ -163,7 +168,8 @@ void PCIInfo::detect() {
 
       string description = getDevRegProp(info, dev, SPDRP_DEVICEDESC);
 
-      add(vendorID, deviceID, busID, slotID, functionID, description);
+      // TODO Windows does not report the PCI domain (segment)
+      add(vendorID, deviceID, -1, busID, slotID, functionID, description);
     }
 
 #elif defined(__APPLE__)
@@ -206,14 +212,53 @@ void PCIInfo::detect() {
           if (kr == KERN_SUCCESS) description = devName;
         }
 
-        // Add it
-        add(vendorID, deviceID, busID, slotID, functionID, description);
+        // Add it.  Note, macOS does not report the PCI domain.
+        add(vendorID, deviceID, -1, busID, slotID, functionID, description);
       }
 
       IOObjectRelease(iter);
     }
 
 #else
+    // Prefer sysfs.  It reports the PCI domain, unlike /proc/bus/pci/devices.
+    // Without the domain, devices in different domains, e.g. GPUs passed
+    // through to a VM, appear to have the same address.
+    const string sysfs = "/sys/bus/pci/devices";
+
+    if (SystemUtilities::isDirectory(sysfs)) {
+      vector<string> names;
+      for (Directory dir(sysfs); dir; dir.next())
+        names.push_back(dir.getFilename());
+      sort(names.begin(), names.end());
+
+      for (auto &name: names)
+        try {
+          // Parse address, e.g. 0001:00:1f.3
+          vector<string> parts;
+          if (String::tokenize(name, parts, ":.") != 4) continue;
+
+          int32_t domainID   = String::parseU32("0x" + parts[0]);
+          uint8_t busID      = String::parseU8 ("0x" + parts[1]);
+          uint8_t slotID     = String::parseU8 ("0x" + parts[2]);
+          uint8_t functionID = String::parseU8 ("0x" + parts[3]);
+
+          string path = sysfs + "/" + name + "/";
+          uint16_t vendorID =
+            String::parseU16(SystemUtilities::read(path + "vendor"));
+          uint16_t deviceID =
+            String::parseU16(SystemUtilities::read(path + "device"));
+
+          // TODO Need device description
+          add(vendorID, deviceID, domainID, busID, slotID, functionID);
+        } CBANG_CATCH_WARNING;
+
+      return;
+    }
+
+    // Fallback for systems without sysfs, e.g. some containers.  PCI domains
+    // are not reported here.
+    LOG_INFO(3, "'" << sysfs << "' not found, using /proc/bus/pci/devices");
+
     SmartPointer<iostream> f =
       SystemUtilities::open("/proc/bus/pci/devices", ios::in);
 
@@ -244,7 +289,7 @@ void PCIInfo::detect() {
       uint16_t deviceID = String::parseU16("0x" + string(device, 4));
 
       // TODO Need device description
-      add(vendorID, deviceID, busID, slotID, functionID);
+      add(vendorID, deviceID, -1, busID, slotID, functionID);
 
       // Skip to end of line
       while (f->get() != '\n' && !f->fail()) continue;

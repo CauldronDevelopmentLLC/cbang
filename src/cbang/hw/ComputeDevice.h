@@ -48,6 +48,7 @@ namespace cb {
     int32_t     platformIndex  = -1;
     int32_t     deviceIndex    = -1;
     bool        gpu            = false;
+    int         pciDomain      = -1;
     int         pciBus         = -1;
     int         pciSlot        = -1;
     int         pciFunction    = -1;

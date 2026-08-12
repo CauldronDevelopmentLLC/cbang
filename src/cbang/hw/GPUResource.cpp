@@ -43,12 +43,11 @@ using namespace cb;
 
 namespace {
   template <typename LIB>
-  ComputeDevice match(int16_t busID, int16_t slotID, int16_t functionID) {
+  ComputeDevice match(const PCIDevice &pci) {
     try {
       auto &lib = LIB::instance();
       for (auto &dev: lib)
-        if (dev.gpu && busID == dev.pciBus && slotID == dev.pciSlot)
-          return dev;
+        if (dev.gpu && pci.getID() == dev.getPCIID()) return dev;
 
     } catch (const DynamicLibraryException &e) {}
 
@@ -58,7 +57,5 @@ namespace {
 
 
 GPUResource::GPUResource(const GPU &gpu, const PCIDevice &pci) :
-  GPU(gpu), pci(pci),
-  cuda(match<CUDALibrary>(getBusID(), getSlotID(), getFunctionID())),
-  hip(match<HIPLibrary>(getBusID(), getSlotID(), getFunctionID())),
-  opencl(match<OpenCLLibrary>(getBusID(), getSlotID(), getFunctionID())) {}
+  GPU(gpu), pci(pci), cuda(match<CUDALibrary>(pci)),
+  hip(match<HIPLibrary>(pci)), opencl(match<OpenCLLibrary>(pci)) {}

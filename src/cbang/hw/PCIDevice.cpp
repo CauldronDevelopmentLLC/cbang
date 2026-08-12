@@ -40,11 +40,11 @@ using namespace std;
 using namespace cb;
 
 
-PCIDevice::PCIDevice(uint16_t vendorID, uint16_t deviceID, int16_t busID ,
-                     int16_t slotID, int16_t functionID,
+PCIDevice::PCIDevice(uint16_t vendorID, uint16_t deviceID, int32_t domainID,
+                     int16_t busID, int16_t slotID, int16_t functionID,
                      const string &description) :
-  vendor(0), device(deviceID), bus(busID), slot(slotID), function(functionID),
-  description(description) {
+  vendor(0), device(deviceID), domain(domainID), bus(busID), slot(slotID),
+  function(functionID), description(description) {
   setVendorID(vendorID);
 }
 
@@ -55,11 +55,25 @@ void PCIDevice::setVendorID(uint16_t vendorID) {
 }
 
 
+string PCIDevice::makeID(int32_t domain, int32_t bus, int32_t slot,
+                         int32_t function) {
+#if defined(_WIN32) || defined(__APPLE__)
+  domain = -1; // PCI domains are not enumerated on these platforms
+#endif
+
+  auto part = [] (int32_t x) {
+    return x == -1 ? string("??") : String::printf("%02d", x);
+  };
+
+  // Omit domain zero so IDs are unchanged on single domain systems
+  string d = 0 < domain ? part(domain) + ":" : "";
+
+  return d + part(bus) + ":" + part(slot) + ":" + part(function);
+}
+
+
 string PCIDevice::getID() const {
-  string b = bus      == -1 ? "??" : String::printf("%02d", bus);
-  string s = slot     == -1 ? "??" : String::printf("%02d", slot);
-  string f = function == -1 ? "??" : String::printf("%02d", function);
-  return b + ":" + s + ":" + f;
+  return makeID(domain, bus, slot, function);
 }
 
 
@@ -74,6 +88,7 @@ string PCIDevice::getDeviceIDStr() const {
 
 
 bool PCIDevice::operator<(const PCIDevice &d) const {
+  if (domain        != d.domain)        return domain        < d.domain;
   if (bus           != d.bus)           return bus           < d.bus;
   if (slot          != d.slot)          return slot          < d.slot;
   if (function      != d.function)      return function      < d.function;
@@ -85,6 +100,7 @@ bool PCIDevice::operator<(const PCIDevice &d) const {
 void PCIDevice::read(const JSON::Value &value) {
   setVendorID(value.getU16("vendor"));
   device      = value.getU16("device");
+  domain      = value.getS32("domain", -1);
   bus         = value.getS16("bus", -1);
   slot        = value.getS16("slot", -1);
   function    = value.getS16("function", -1);
@@ -97,6 +113,7 @@ void PCIDevice::write(JSON::Sink &sink) const {
 
   sink.insert("vendor", getVendorID());
   sink.insert("device", device);
+  if (0 <= domain)          sink.insert("domain",      domain);
   if (0 <= bus)             sink.insert("bus",         bus);
   if (0 <= slot)            sink.insert("slot",        slot);
   if (0 <= function)        sink.insert("function",    function);

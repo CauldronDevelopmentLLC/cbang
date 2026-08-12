@@ -147,6 +147,7 @@ namespace {
     CL_DEVICE_TOPOLOGY_TYPE_PCIE_AMD = 0x0001,
     CL_DEVICE_PCI_BUS_ID_NV =          0x4008,
     CL_DEVICE_PCI_SLOT_ID_NV =         0x4009,
+    CL_DEVICE_PCI_DOMAIN_ID_NV =       0x400a,
     CL_DEVICE_PCI_BUS_INFO_KHR =       0x410f,
   };
 }
@@ -377,6 +378,12 @@ void OpenCLLibrary::getNVIDIAPCIInfo(void *device, ComputeDevice &cd) {
     cd.pciSlot     = slotID >> 3;
     cd.pciFunction = slotID & 7;
   }
+
+  // Note, PCI domain is not reported by older drivers
+  cl_int domainID = -1;
+  TRY_CATCH_DEBUG(3, DYNAMIC_CALL(this, clGetDeviceInfo,
+    (device, CL_DEVICE_PCI_DOMAIN_ID_NV, sizeof(domainID), &domainID, 0)));
+  if (domainID != -1) cd.pciDomain = domainID;
 }
 
 
@@ -405,6 +412,7 @@ void OpenCLLibrary::getKHRPCIBusInfo(void *device, ComputeDevice &cd) {
     this, clGetDeviceInfo,
     (device, CL_DEVICE_PCI_BUS_INFO_KHR, sizeof(info), &info, 0));
 
+  cd.pciDomain   = info.pci_domain;
   cd.pciBus      = info.pci_bus;
   cd.pciSlot     = info.pci_device;
   cd.pciFunction = info.pci_function;

@@ -88,6 +88,7 @@ namespace {
 
   const int HIP_DEVICE_ATTRIBUTE_PCI_BUS_ID = 67;
   const int HIP_DEVICE_ATTRIBUTE_PCI_DEVICE_ID = 68;
+  const int HIP_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID = 69;
   const int HIP_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 23;
   const int HIP_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 61;
 }
@@ -134,6 +135,8 @@ HIPLibrary::HIPLibrary(Inaccessible) : DynamicLibrary(hipLib) {
 #endif
       cd.pciBus  = getAttribute(HIP_DEVICE_ATTRIBUTE_PCI_BUS_ID, device);
       cd.pciSlot = getAttribute(HIP_DEVICE_ATTRIBUTE_PCI_DEVICE_ID, device);
+      TRY_CATCH_DEBUG(3, cd.pciDomain =
+                      getAttribute(HIP_DEVICE_ATTRIBUTE_PCI_DOMAIN_ID, device));
 
       HIPuuid uuid = {{0,}};
       DYNAMIC_CALL(hipDeviceGetUuid, (&uuid, device));

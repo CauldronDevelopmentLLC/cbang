@@ -31,6 +31,7 @@
 \******************************************************************************/
 
 #include "ComputeDevice.h"
+#include "PCIDevice.h"
 
 #include <cbang/String.h>
 
@@ -63,8 +64,5 @@ bool ComputeDevice::isPCIValid() const {
 
 
 string ComputeDevice::getPCIID() const {
-  string bus  = pciBus      == -1 ? "??" : String::printf("%02d", pciBus);
-  string slot = pciSlot     == -1 ? "??" : String::printf("%02d", pciSlot);
-  string func = pciFunction == -1 ? "??" : String::printf("%02d", pciFunction);
-  return bus + ":" + slot + ":" + func;
+  return PCIDevice::makeID(pciDomain, pciBus, pciSlot, pciFunction);
 }

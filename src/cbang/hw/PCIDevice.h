@@ -46,15 +46,16 @@ namespace cb {
   class PCIDevice : public JSON::Serializable {
     const PCIVendor *vendor;
     uint16_t         device;
+    int32_t          domain;
     int16_t          bus;
     int16_t          slot;
     int16_t          function;
     std::string      description;
 
   public:
-    PCIDevice(uint16_t vendorID = 0, uint16_t deviceID = 0, int16_t busID = -1,
-              int16_t slotID = -1, int16_t functionID = -1,
-              const std::string &description = "");
+    PCIDevice(uint16_t vendorID = 0, uint16_t deviceID = 0,
+              int32_t domainID = -1, int16_t busID = -1, int16_t slotID = -1,
+              int16_t functionID = -1, const std::string &description = "");
     PCIDevice(const JSON::Value &value) {read(value);}
 
     const PCIVendor *getVendor() const {return vendor;}
@@ -62,6 +63,7 @@ namespace cb {
     uint16_t    getVendorID  () const {return vendor ? vendor->getID()   : 0;}
     std::string getVendorName() const {return vendor ? vendor->getName() : "";}
     uint16_t    getDeviceID  () const {return device;}
+    int32_t     getDomainID  () const {return domain;}
     int16_t     getBusID     () const {return bus;}
     int16_t     getSlotID    () const {return slot;}
     int16_t     getFunctionID() const {return function;}
@@ -69,10 +71,15 @@ namespace cb {
 
     void setVendorID   (uint16_t vendorID);
     void setDeviceID   (uint16_t device)      {this->device   = device;}
+    void setDomainID   (int32_t  domain)      {this->domain   = domain;}
     void setBusID      (uint8_t  bus)         {this->bus      = bus;}
     void setSlotID     (uint8_t  slot)        {this->slot     = slot;}
     void setFunctionID (uint8_t  function)    {this->function = function;}
     void setDescription(const std::string &x) {description    = x;}
+
+    /// @return A PCI address ID.  The domain is omitted if zero or unknown.
+    static std::string makeID(int32_t domain, int32_t bus, int32_t slot,
+                              int32_t function);
 
     std::string getID()          const;
     std::string getVendorIDStr() const;

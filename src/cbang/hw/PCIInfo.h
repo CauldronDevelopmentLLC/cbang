@@ -48,8 +48,8 @@ namespace cb {
     iterator end()   const {return devices.end();}
 
   protected:
-    void add(uint16_t vendorID, uint16_t deviceID, uint8_t busID,
-             uint8_t slotID, uint8_t functionID,
+    void add(uint16_t vendorID, uint16_t deviceID, int32_t domainID,
+             uint8_t busID, uint8_t slotID, uint8_t functionID,
              const std::string &name = std::string());
 
     void detect();
