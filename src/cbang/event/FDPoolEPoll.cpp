@@ -108,14 +108,12 @@ uint64_t FDPoolEPoll::FDQueue::getNextTimeout() const {
 }
 
 
-void FDPoolEPoll::FDQueue::updateTimeout(bool wasActive, bool nowActive) {
-  if (!nowActive || closed) last = 0;
-  else if (!wasActive) {
-    last = Time::now();
+void FDPoolEPoll::FDQueue::updateTimeout() {
+  if (empty() || closed) {last = 0; return;}
 
-    if (getTimeout())
-      fdr.getPool().queueTimeout(getNextTimeout(), read, fdr.getFD());
-  }
+  if (!last) last = Time::now();
+  if (getTimeout())
+    fdr.getPool().queueTimeout(getNextTimeout(), read, fdr.getFD());
 }
 
 
@@ -147,14 +145,15 @@ void FDPoolEPoll::FDQueue::transfer() {
 
   if (ret < 0) close();
   else {
-    last = Time::now();
+    uint64_t now = Time::now();
+    if (0 < ret) last = now; // Only actual progress defers the timeout
 
     cmd_t cmd = read ? CMD_READ_PROGRESS : CMD_WRITE_PROGRESS;
-    pool.queueProgress(cmd, fdr.getFD(), last, ret);
+    pool.queueProgress(cmd, fdr.getFD(), now, ret);
 
     if (front()->isFinished()) {
       cmd = read ? CMD_READ_FINISHED : CMD_WRITE_FINISHED;
-      pool.queueProgress(cmd, fdr.getFD(), last, front()->getLength());
+      pool.queueProgress(cmd, fdr.getFD(), now, front()->getLength());
       pool.queueComplete(front());
       pop();
     }
@@ -242,6 +241,7 @@ void FDPoolEPoll::FDRec::transfer(unsigned events) {
 void FDPoolEPoll::FDRec::flush() {
   readQ.flush();
   writeQ.flush();
+  events = 0; // Closing the fd removes it from epoll, force ADD on reuse
   pool.queueFlushed(fd);
 }
 
@@ -265,6 +265,11 @@ void FDPoolEPoll::FDRec::process(cmd_t cmd,
 void FDPoolEPoll::FDRec::update() {
   readQ.transferPending();
 
+  // Timeouts follow queue state, not the epoll event mask.  With SSL the mask
+  // may poll the opposite direction from the queue with the active transfer.
+  readQ .updateTimeout();
+  writeQ.updateTimeout();
+
   unsigned newEvents = getEvents();
   if (events == newEvents) return;
 
@@ -277,10 +282,6 @@ void FDPoolEPoll::FDRec::update() {
   if (epoll_ctl(pool.getFD(), op, fd, &ev) && op != EPOLL_CTL_DEL)
     LOG_ERROR("epoll_ctl(" << epollOpString(op) << ") failed for fd " << fd
               << ": " << SysError());
-
-  // Update timeouts
-  readQ .updateTimeout(events & FD::READ_EVENT,  newEvents & FD::READ_EVENT);
-  writeQ.updateTimeout(events & FD::WRITE_EVENT, newEvents & FD::WRITE_EVENT);
 
   // Update events
   events = newEvents;

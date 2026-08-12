@@ -116,7 +116,7 @@ namespace cb {
         bool wantsWrite() const;
         uint64_t getTimeout() const;
         uint64_t getNextTimeout() const;
-        void updateTimeout(bool wasActive, bool nowActive);
+        void updateTimeout();
         void timeout(uint64_t now);
         void transfer();
         void transferPending();

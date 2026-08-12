@@ -70,14 +70,15 @@ void FDPoolEvent::FDQueue::transfer() {
   }
 
   int ret = front()->transfer();
-  last = Time::now();
+  uint64_t now = Time::now();
+  if (0 < ret) last = now; // Only actual progress defers the timeout
 
   if (ret < 0) close();
   else {
     if (pool.getStats().isSet())
-      pool.getStats()->event(read ? "read" : "write", ret, last);
+      pool.getStats()->event(read ? "read" : "write", ret, now);
 
-    fd->progressEvent(read, ret, last);
+    fd->progressEvent(read, ret, now);
 
     if (front()->isFinished()) {
       fd->progressEnd(read, front()->getLength());
