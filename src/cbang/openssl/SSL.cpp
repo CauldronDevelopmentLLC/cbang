@@ -61,6 +61,7 @@
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 #include <openssl/opensslv.h>
 
 #if 0x3000000fL <= OPENSSL_VERSION_NUMBER
@@ -181,6 +182,24 @@ void cb::SSL::setTLSExtHostname(const string &hostname) {
   if (!SSL_set_tlsext_host_name(ssl, hostname.c_str()))
     THROW("Failed to set TLS host name extension to '" << hostname
       << "': " << getErrorStr());
+}
+
+
+// Verify the peer's certificate chain and that it was issued for ``hostname``.
+// Without this the peer is not authenticated at all.
+void cb::SSL::setVerifyHostname(const string &hostname) {
+  ErrorSentry sentry;
+  auto param = SSL_get0_param(ssl);
+
+  X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+
+  // An IP address must be matched against the certificate's IP addresses
+  if (!X509_VERIFY_PARAM_set1_ip_asc(param, hostname.c_str()) &&
+      !X509_VERIFY_PARAM_set1_host(param, hostname.data(), hostname.length()))
+    THROW("Failed to set verification hostname to '" << hostname << "': "
+          << getErrorStr());
+
+  SSL_set_verify(ssl, SSL_VERIFY_PEER, 0); // Keep the context's callback
 }
 
 

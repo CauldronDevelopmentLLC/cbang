@@ -75,20 +75,19 @@ using namespace cb;
 namespace {
   extern "C" {
     int verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
-#ifdef DEBUG
-      X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
-      int err = X509_STORE_CTX_get_error(ctx);
-      int depth = X509_STORE_CTX_get_error_depth(ctx);
-
+      // Log the reason, a failed handshake is otherwise reported as only EOF
       if (!preverify_ok) {
-        char buf[256];
-        X509_NAME_oneline(X509_get_subject_name(cert), buf, 256);
+        X509 *cert = X509_STORE_CTX_get_current_cert(ctx);
+        int err    = X509_STORE_CTX_get_error(ctx);
+        int depth  = X509_STORE_CTX_get_error_depth(ctx);
+        char buf[256] = {};
 
-        LOG_DEBUG(4, "SSL verify error:" << err << ':' <<
-                  X509_verify_cert_error_string(err) << ":depth="
-                  << depth << buf);
+        if (cert) X509_NAME_oneline(X509_get_subject_name(cert), buf, 256);
+
+        LOG_WARNING("SSL verify error:" << err << ':'
+                    << X509_verify_cert_error_string(err) << ":depth=" << depth
+                    << buf);
       }
-#endif
 
       return preverify_ok;
     }

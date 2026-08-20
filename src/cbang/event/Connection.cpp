@@ -118,6 +118,7 @@ void Connection::openSSL(SSLContext &sslCtx, const string &hostname) {
   if (getFD() != -1) ssl->setFD(getFD());
   ssl->setConnectState();
   ssl->setTLSExtHostname(hostname);
+  ssl->setVerifyHostname(hostname);
   setSSL(ssl);
 #endif // HAVE_OPENSSL
 }

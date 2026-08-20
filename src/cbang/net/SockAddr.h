@@ -84,6 +84,9 @@ namespace cb {
     bool isIPv4() const;
     bool isIPv6() const;
     bool isUnix() const;
+    bool isIPv4Mapped() const;
+
+    SockAddr unmapIPv4() const;
 
     uint32_t getIPv4() const;
     const uint8_t *getIPv6() const;

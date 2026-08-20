@@ -62,8 +62,9 @@ void Server::addOptions(Options &options) {
 
   options.add("allow", "Client addresses which are allowed to connect to this "
               "server.  This option overrides addresses which are denied in "
-              "the deny option.  The pattern 0/0 matches all addresses."
-              )->setDefault("0/0");
+              "the deny option.  Address ranges never span address families, "
+              "so matching all addresses requires both 0/0 and ::/0."
+              )->setDefault("0/0 ::/0");
   options.add("deny", "Client address which are not allowed to connect to this "
               "server.")->setDefault("");
 

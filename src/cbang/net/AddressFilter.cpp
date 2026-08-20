@@ -43,7 +43,11 @@ void AddressFilter::deny (AddressRange &range) {denyList .insert(range);}
 void AddressFilter::allow(AddressRange &range) {allowList.insert(range);}
 
 
-bool AddressFilter::isAllowed(const SockAddr &addr) const {
+bool AddressFilter::isAllowed(const SockAddr &_addr) const {
+  // Ranges never span address families so an IPv4-mapped IPv6 peer, which a
+  // dual-stack listener sees, must be matched against the IPv4 rules
+  auto addr = _addr.unmapIPv4();
+
   return allowList.contains(addr) || !denyList.contains(addr);
 }
 

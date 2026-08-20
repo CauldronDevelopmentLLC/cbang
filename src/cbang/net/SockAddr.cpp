@@ -157,6 +157,22 @@ bool SockAddr::isIPv6() const {return get()->sa_family == AF_INET6;}
 bool SockAddr::isUnix() const {return get()->sa_family == AF_UNIX;}
 
 
+bool SockAddr::isIPv4Mapped() const {
+  return isIPv6() && !memcmp(getIPv6(), "\0\0\0\0\0\0\0\0\0\0\xff\xff", 12);
+}
+
+
+// An IPv4-mapped IPv6 address, e.g. ``::ffff:127.0.0.1``, is the IPv4 address
+// it maps to and must compare equal to it.
+SockAddr SockAddr::unmapIPv4() const {
+  if (!isIPv4Mapped()) return *this;
+
+  auto ip = getIPv6();
+  return SockAddr(((uint32_t)ip[12] << 24) | ((uint32_t)ip[13] << 16) |
+                  ((uint32_t)ip[14] << 8) | ip[15], getPort());
+}
+
+
 unsigned SockAddr::getIPv4() const {
   if (!isIPv4()) THROW("Not an IPv4 address");
   return hton32(get4()->sin_addr.s_addr);
