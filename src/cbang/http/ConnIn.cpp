@@ -138,7 +138,22 @@ void ConnIn::processHeader() {
 
   // If this is a request without a body, then we are done
   if (!req->mayHaveBody()) return processIfNext(req);
-  else if (req->inHas("Upgrade")) error(HTTP_BAD_REQUEST, "Cannot upgrade");
+
+  // An Upgrade header is advisory.  A server that will not switch protocols is
+  // free to ignore it and answer normally, and it has to: ordinary HTTP client
+  // libraries offer "h2c" unprompted, so failing the request over it rejects
+  // perfectly good traffic.  Answering with an error here also sent a response
+  // and then let the request be handled anyway.
+  //
+  // Still say it happened.  This is the connection layer, so the peer and the
+  // protocol asked for are otherwise nowhere in the log, and an upgrade nothing
+  // here serves is worth being able to see.  A warning rather than debug output
+  // so noticing it does not depend on the log level.
+  else if (req->inHas("Upgrade"))
+    // The logger already prefixes this with the connection id
+    LOG_WARNING(getPeerAddr() << ':' << "Ignoring upgrade to '"
+                << req->inFind("Upgrade") << "': " << method << ' '
+                << uri.getPath());
 
   // Handle 100 HTTP continue
   if (Version(1, 1) <= version) {

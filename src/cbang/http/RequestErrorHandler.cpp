@@ -42,7 +42,16 @@ using namespace cb::HTTP;
 
 bool RequestErrorHandler::operator()(Request &req) {
   try {
-    if (!child(req)) req.sendError(Status::HTTP_NOT_FOUND);
+    if (!child(req)) {
+      // Nothing handled the request.  Name the client and what it asked for:
+      // this is the only record of it, and a run of these from one address is
+      // how vulnerability scanning shows up in a log.  Same shape as the
+      // exception case below so one pattern matches both.
+      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
+                  << "Not found: " << req.getMethod() << ' '
+                  << req.getURI().getPath());
+      req.sendError(Status::HTTP_NOT_FOUND);
+    }
 
   } catch (cb::Exception &e) {
     if (400 <= e.getCode() && e.getCode() < 600) {
