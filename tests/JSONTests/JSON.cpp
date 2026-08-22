@@ -46,7 +46,20 @@ int main(int argc, char *argv[]) {
   try {
     ValuePtr data;
 
-    if (argc == 2 && string(argv[1]) == "--yaml") {
+    // Malformed UTF-8 is repaired by default and rejected with --strict, so the
+    // two behaviors need separate cases over the same inputs.  Print why it was
+    // rejected rather than letting it reach the handler below: the message is
+    // the point of the case, and a stack trace is not comparable between builds.
+    if (argc == 2 && string(argv[1]) == "--strict") {
+      try {
+        Reader reader(cin, true);
+        data = reader.parse();
+        if (!data.isNull()) cout << *data;
+      } catch (const cb::Exception &e) {
+        cout << "rejected: " << e.getMessage() << endl;
+      }
+
+    } else if (argc == 2 && string(argv[1]) == "--yaml") {
       YAMLReader reader(cin);
       YAMLReader::docs_t docs;
 

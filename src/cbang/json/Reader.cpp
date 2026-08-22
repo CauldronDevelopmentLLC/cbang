@@ -400,34 +400,55 @@ string Reader::parseString() {
       //
       // See: http://en.wikipedia.org/wiki/UTF-8
 
+      // A malformed sequence is only fatal in strict mode.  Refusing the whole
+      // document over one bad byte loses everything else in it, and real senders
+      // do produce these: a work server that put a raw binary token in a
+      // message string encoded byte 0x0d as the overlong "\xc0\x8d", which cost
+      // an entire configuration update.  So collect the sequence, then decide.
+      //
+      // Substituting U+FFFD rather than passing the bytes through means what we
+      // hand back is always valid UTF-8, so anything that re-serializes it stays
+      // valid too.  It is lossy by design; strict mode is there for callers that
+      // would rather be told.
+      string bad;
+
       // Compute code width and the bits the lead byte contributes
       unsigned width = 0;
       uint32_t code = 0;
       if      ((c & 0xe0) == 0xc0) {width = 1; code = c & 0x1f;}
       else if ((c & 0xf0) == 0xe0) {width = 2; code = c & 0x0f;}
       else if ((c & 0xf8) == 0xf0) {width = 3; code = c & 0x07;}
-      else error(SSTR("Invalid UTF-8 byte '" <<
-                      String::printf("0x%02x", (unsigned)c)
-                      << " in JSON string"));
+      else bad = SSTR("Invalid UTF-8 byte '"
+                      << String::printf("0x%02x", (unsigned)c)
+                      << "' in JSON string");
 
-      s += c;
-      for (unsigned i = 0; i < width; i++) {
-        c = get();
-        if ((c & 0xc0) != 0x80)
-          error("Incomplete UTF-8 sequence in JSON string");
-        code = (code << 6) | (c & 0x3f);
-        s += c;
+      // Peek at the continuation bytes rather than consuming them.  A byte that
+      // does not continue this sequence may well start the next one, or end the
+      // string, and must still be seen by the loop above.
+      string seq(1, (char)c);
+      for (unsigned i = 0; bad.empty() && i < width; i++) {
+        if ((stream.peek() & 0xc0) != 0x80)
+          bad = "Incomplete UTF-8 sequence in JSON string";
+        else {
+          c = get();
+          code = (code << 6) | (c & 0x3f);
+          seq += (char)c;
+        }
       }
 
-      // Reject overlong encodings, UTF-16 surrogates and code points
-      // beyond U+10FFFF, none of which are valid UTF-8 (RFC 3629)
+      // Overlong encodings, UTF-16 surrogates and code points beyond U+10FFFF
+      // are all invalid UTF-8 (RFC 3629)
       static const uint32_t minCode[] = {0x80, 0x800, 0x10000};
-      if (code < minCode[width - 1])
-        error("Overlong UTF-8 encoding in JSON string");
-      if (0xd800 <= code && code <= 0xdfff)
-        error("UTF-8 encoded surrogate in JSON string");
-      if (0x10ffff < code)
-        error("UTF-8 code point beyond U+10FFFF in JSON string");
+      if (bad.empty() && code < minCode[width - 1])
+        bad = "Overlong UTF-8 encoding in JSON string";
+      if (bad.empty() && 0xd800 <= code && code <= 0xdfff)
+        bad = "UTF-8 encoded surrogate in JSON string";
+      if (bad.empty() && 0x10ffff < code)
+        bad = "UTF-8 code point beyond U+10FFFF in JSON string";
+
+      if (bad.empty()) s += seq;
+      else if (strict) error(bad);
+      else s += "\xef\xbf\xbd"; // U+FFFD REPLACEMENT CHARACTER
 
     } else s += c;
   }
