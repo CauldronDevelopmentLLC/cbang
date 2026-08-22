@@ -151,7 +151,7 @@ void ConnIn::processHeader() {
   // so noticing it does not depend on the log level.
   else if (req->inHas("Upgrade"))
     // The logger already prefixes this with the connection id
-    LOG_WARNING(getPeerAddr() << ':' << "Ignoring upgrade to '"
+    LOG_WARNING(getPeerAddr().toString(false) << ':' << "Ignoring upgrade to '"
                 << req->inFind("Upgrade") << "': " << method << ' '
                 << uri.getPath());
 

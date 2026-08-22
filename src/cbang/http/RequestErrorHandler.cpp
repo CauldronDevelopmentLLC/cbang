@@ -46,8 +46,11 @@ bool RequestErrorHandler::operator()(Request &req) {
       // Nothing handled the request.  Name the client and what it asked for:
       // this is the only record of it, and a run of these from one address is
       // how vulnerability scanning shows up in a log.  Same shape as the
-      // exception case below so one pattern matches both.
-      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
+      // exception case below so one pattern matches both.  The address is
+      // printed without its port, as the request line is: the ephemeral port
+      // identifies nothing and only gets in the way of reading the address back.
+      LOG_WARNING("REQ" << req.getID() << ':'
+                  << req.getClientAddr().toString(false) << ':'
                   << "Not found: " << req.getMethod() << ' '
                   << req.getURI().getPath());
       req.sendError(Status::HTTP_NOT_FOUND);
@@ -55,7 +58,8 @@ bool RequestErrorHandler::operator()(Request &req) {
 
   } catch (cb::Exception &e) {
     if (400 <= e.getCode() && e.getCode() < 600) {
-      LOG_WARNING("REQ" << req.getID() << ':' << req.getClientAddr() << ':'
+      LOG_WARNING("REQ" << req.getID() << ':'
+                  << req.getClientAddr().toString(false) << ':'
                   << e.getMessages());
       req.reply((Status::enum_t)e.getCode());
 
