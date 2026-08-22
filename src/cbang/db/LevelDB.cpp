@@ -336,7 +336,7 @@ void LevelDB::compact(const string &begin, const string &end) {
   SmartPointer<leveldb::Slice> beginSlice =
     begin.empty() ? 0 : new leveldb::Slice(begin);
   SmartPointer<leveldb::Slice> endSlice =
-    end.empty() ? 0 : new leveldb::Slice(begin);
+    end.empty() ? 0 : new leveldb::Slice(end);
 
   db->CompactRange(beginSlice.get(), endSlice.get());
 }
