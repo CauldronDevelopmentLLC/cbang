@@ -39,6 +39,7 @@ namespace cb {
   public:
     // From SystemInfo
     uint32_t getCPUCount() const override;
+    std::set<unsigned> getPerformanceCPUs() const override;
     uint64_t getMemoryInfo(memory_info_t type) const override;
     Version getOSVersion() const override;
     std::string getMachineID() const override;

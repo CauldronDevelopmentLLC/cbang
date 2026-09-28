@@ -57,12 +57,79 @@ namespace {
     if (!value) value = SystemUtilities::getenv(String::toUpper(name));
     return String::trim(string(value ? value : ""));
   }
+
+
+  string readSys(const string &path) {
+    try {
+      if (SystemUtilities::exists(path))
+        return String::trim(SystemUtilities::read(path));
+    } CATCH_DEBUG(5);
+
+    return "";
+  }
+
+
+  // Parse a Linux CPU list, e.g. "0-7,16,18-19"
+  set<unsigned> parseCPUList(const string &s) {
+    set<unsigned> cpus;
+    vector<string> ranges;
+    String::tokenize(s, ranges, ",");
+
+    for (auto &range: ranges) {
+      auto dash  = range.find('-');
+      auto first = String::parseU32(range.substr(0, dash), true);
+      auto last  = dash == string::npos ? first :
+        String::parseU32(range.substr(dash + 1), true);
+
+      for (auto cpu = first; cpu <= last; cpu++) cpus.insert(cpu);
+    }
+
+    return cpus;
+  }
+
+
+  map<unsigned, double> readPerCPU(const set<unsigned> &cpus,
+                                   const string &file) {
+    map<unsigned, double> perf;
+
+    for (auto cpu: cpus) {
+      string value =
+        readSys("/sys/devices/system/cpu/cpu" + String(cpu) + "/" + file);
+      if (value.empty()) return {};
+      perf[cpu] = String::parseDouble(value, true);
+    }
+
+    return perf;
+  }
 }
 
 
 uint32_t LinSystemInfo::getCPUCount() const {
   long cpus = sysconf(_SC_NPROCESSORS_ONLN);
   return cpus < 1 ? 1 : cpus;
+}
+
+
+set<unsigned> LinSystemInfo::getPerformanceCPUs() const {
+  try {
+    auto online = parseCPUList(readSys("/sys/devices/system/cpu/online"));
+    if (online.size() < 2) return {};
+
+    // Intel hybrid CPUs have separate PMUs for P-cores and E-cores
+    auto pCores = parseCPUList(readSys("/sys/devices/cpu_core/cpus"));
+    auto eCores = parseCPUList(readSys("/sys/devices/cpu_atom/cpus"));
+    if (!pCores.empty() && !eCores.empty()) return pCores;
+
+    // ARM and RISC-V report relative CPU capacity
+    auto perf = readPerCPU(online, "cpu_capacity");
+
+    // Otherwise, compare max CPU frequencies, e.g. AMD Zen 5 & Zen 5c
+    if (perf.empty()) perf = readPerCPU(online, "cpufreq/cpuinfo_max_freq");
+
+    return selectFastestCPUs(perf);
+  } CATCH_WARNING;
+
+  return {};
 }
 
 

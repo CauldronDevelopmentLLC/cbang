@@ -40,6 +40,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <set>
 
 
 namespace cb {
@@ -79,6 +80,7 @@ namespace cb {
     int  exitFlags   = 0;
 
     std::string wd;
+    std::set<unsigned> affinity;
 
   public:
     Subprocess();
@@ -101,6 +103,12 @@ namespace cb {
     PipeEnd &getPipeErr() {return getPipe(2);}
 
     void setWorkingDirectory(const std::string &wd) {this->wd = wd;}
+
+    /// Restrict the process to the specified logical CPUs.  Indices are as
+    /// returned by SystemInfo::getPerformanceCPUs().  An empty set means no
+    /// restriction.  Not supported on macOS.
+    void setAffinity(const std::set<unsigned> &cpus) {affinity = cpus;}
+    const std::set<unsigned> &getAffinity() const {return affinity;}
 
     void exec(const std::vector<std::string> &args, unsigned flags = 0,
               ProcessPriority priority = PRIORITY_INHERIT);

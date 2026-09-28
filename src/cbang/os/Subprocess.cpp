@@ -56,6 +56,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#ifdef __linux__
+#include <sched.h>
+#endif
 #endif // _WIN32
 
 using namespace cb;
@@ -274,11 +278,30 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     // Priority
     cFlags |= priorityToClass(priority);
 
+    // Start suspended so affinity is set before the process runs
+    if (!affinity.empty()) cFlags |= CREATE_SUSPENDED;
+
     // Start process
     if (!CreateProcess(0, (LPSTR)command.c_str(), 0, 0, TRUE, cFlags,
                        (LPVOID)env, dir, &p->si, &p->pi))
       THROW("Failed to create process with: " << command << ": "
              << SysError());
+
+    // Affinity
+    if (!affinity.empty()) {
+      DWORD_PTR mask = 0, procMask = 0, sysMask = 0;
+
+      for (auto cpu: affinity)
+        if (cpu < sizeof(mask) * 8) mask |= (DWORD_PTR)1 << cpu;
+
+      if (GetProcessAffinityMask(p->pi.hProcess, &procMask, &sysMask))
+        mask &= procMask;
+
+      if (!mask || !SetProcessAffinityMask(p->pi.hProcess, mask))
+        LOG_WARNING("Failed to set process affinity: " << SysError());
+
+      ResumeThread(p->pi.hThread);
+    }
 
     if (flags & W32_WAIT_FOR_INPUT_IDLE) {
       int ret = WaitForInputIdle(p->pi.hProcess, 5000);
@@ -292,6 +315,18 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
     for (auto &arg: _args)
       args.push_back((char *)arg.c_str());
     args.push_back(0); // Sentinal
+
+#ifdef __linux__
+    // Affinity
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+    for (auto cpu: affinity)
+      if (cpu < CPU_SETSIZE) CPU_SET(cpu, &cpuSet);
+
+#else // __linux__
+    if (!affinity.empty())
+      LOG_WARNING("Subprocess CPU affinity not supported on this platform");
+#endif // __linux__
 
 #ifdef __APPLE__
     // vfork deprecated in macos 12.0, previously discouraged
@@ -335,6 +370,12 @@ void Subprocess::exec(const vector<string> &_args, unsigned flags,
 
       // Priority
       SystemUtilities::setPriority(priority);
+
+#ifdef __linux__
+      // Affinity
+      if (CPU_COUNT(&cpuSet) && sched_setaffinity(0, sizeof(cpuSet), &cpuSet))
+        perror("Setting CPU affinity");
+#endif // __linux__
 
       // Working directory
       if (wd != "") SystemUtilities::chdir(wd);

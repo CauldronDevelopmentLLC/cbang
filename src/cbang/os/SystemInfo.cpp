@@ -52,6 +52,8 @@
 #include <cbang/net/SockAddr.h>
 #include <cbang/net/AddressRange.h>
 
+#include <algorithm>
+
 #include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
 #include <cbang/boost/EndInclude.h>
@@ -78,6 +80,11 @@ SystemInfo &SystemInfo::instance() {
   }
 
   return *singleton;
+}
+
+
+uint32_t SystemInfo::getPerformanceCPUCount() const {
+  return getPerformanceCPUs().size();
 }
 
 
@@ -157,6 +164,33 @@ void SystemInfo::add(Info &info) {
   try {
     info.add(category, "Hostname", getHostname());
   } catch (...) {}
+}
+
+
+set<unsigned> SystemInfo::selectFastestCPUs(const map<unsigned, double> &perf) {
+  // Split CPUs at the largest relative gap in performance.  This separates
+  // P-cores from E-cores even when some P-cores are slightly faster than
+  // others, e.g. Intel favored cores or ARM prime cores.
+  vector<double> values;
+  for (auto &p: perf)
+    if (0 < p.second) values.push_back(p.second);
+    else return {}; // Unknown
+
+  sort(values.rbegin(), values.rend());
+
+  double cutoff = 0;
+  double minRatio = 0.85; // Gaps smaller than 15% are not significant
+  for (unsigned i = 1; i < values.size(); i++) {
+    double ratio = values[i] / values[i - 1];
+    if (ratio < minRatio) {minRatio = ratio; cutoff = values[i - 1];}
+  }
+
+  set<unsigned> cpus;
+  if (cutoff)
+    for (auto &p: perf)
+      if (cutoff <= p.second) cpus.insert(p.first);
+
+  return cpus;
 }
 
 

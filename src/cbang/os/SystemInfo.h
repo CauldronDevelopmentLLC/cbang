@@ -38,6 +38,8 @@
 #include <cbang/net/URI.h>
 
 #include <cstdint>
+#include <set>
+#include <map>
 
 
 namespace cb {
@@ -61,7 +63,11 @@ namespace cb {
     static SystemInfo &instance();
 
     virtual uint32_t getCPUCount() const = 0;
-    virtual uint32_t getPerformanceCPUCount() const {return 0;}
+
+    /// Logical CPU indices of the fastest cores on hybrid CPUs.  Returns an
+    /// empty set if all cores are the same or the topology is unknown.
+    virtual std::set<unsigned> getPerformanceCPUs() const {return {};}
+    virtual uint32_t getPerformanceCPUCount() const;
 
     virtual uint64_t getMemoryInfo(memory_info_t type) const = 0;
     uint64_t getTotalMemory()    const {return getMemoryInfo(MEM_INFO_TOTAL);}
@@ -80,5 +86,9 @@ namespace cb {
     static bool matchesProxyPattern(const std::string &pattern, const URI &uri);
 
     void add(Info &info);
+
+  protected:
+    static std::set<unsigned>
+    selectFastestCPUs(const std::map<unsigned, double> &perf);
   };
 }

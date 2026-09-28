@@ -65,6 +65,52 @@ uint32_t WinSystemInfo::getCPUCount() const {
 }
 
 
+set<unsigned> WinSystemInfo::getPerformanceCPUs() const {
+  // Only machines with a single processor group are supported.  CPU indices
+  // are bit positions in that group's affinity mask.
+  if (GetActiveProcessorGroupCount() != 1) return {};
+
+  DWORD size = 0;
+  GetLogicalProcessorInformationEx(RelationProcessorCore, 0, &size);
+  if (!size) return {};
+
+  vector<uint8_t> buf(size);
+  auto data = buf.data();
+  if (!GetLogicalProcessorInformationEx(RelationProcessorCore,
+      (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)data, &size)) return {};
+
+  // Higher EfficiencyClass means higher performance
+  map<unsigned, BYTE> classes;
+  BYTE maxClass = 0;
+  BYTE minClass = 255;
+
+  for (DWORD offset = 0; offset < size;) {
+    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(data + offset);
+    if (!info->Size) return {};
+    offset += info->Size;
+
+    if (info->Relationship != RelationProcessorCore) continue;
+    auto &proc = info->Processor;
+    if (proc.GroupCount != 1 || proc.GroupMask[0].Group) return {};
+
+    BYTE eClass = proc.EfficiencyClass;
+    if (maxClass < eClass) maxClass = eClass;
+    if (eClass < minClass) minClass = eClass;
+
+    KAFFINITY mask = proc.GroupMask[0].Mask;
+    for (unsigned i = 0; i < sizeof(mask) * 8; i++)
+      if (mask & ((KAFFINITY)1 << i)) classes[i] = eClass;
+  }
+
+  set<unsigned> cpus;
+  if (minClass < maxClass)
+    for (auto &p: classes)
+      if (p.second == maxClass) cpus.insert(p.first);
+
+  return cpus;
+}
+
+
 uint64_t WinSystemInfo::getMemoryInfo(memory_info_t type) const {
   MEMORYSTATUSEX info;
 
