@@ -30,34 +30,20 @@
 
 \******************************************************************************/
 
-#pragma once
+#include "GPUDevice.h"
 
-#include "GPU.h"
-#include "ComputeDevice.h"
-#include "PCIInfo.h"
+using namespace std;
+using namespace cb;
 
 
-namespace cb {
-  class GPUResource : public GPU {
-    PCIDevice pci;
-    ComputeDevice cuda;
-    ComputeDevice hip;
-    ComputeDevice opencl;
+string GPUDevice::getUUID() const {
+  for (auto *cd: {&opencl, &cuda, &hip})
+    if (!cd->uuid.empty()) return cd->uuid;
 
-  public:
-    GPUResource() {}
-    GPUResource(const GPU &gpu, const PCIDevice &pci);
+  return string();
+}
 
-    const PCIDevice &getPCI() const {return pci;}
-    const ComputeDevice &getCUDA() const {return cuda;}
-    void setCUDA(const ComputeDevice &cuda) {this->cuda = cuda;}
-    const ComputeDevice &getHIP() const {return hip;}
-    void setHIP(const ComputeDevice &hip) {this->hip = hip;}
-    const ComputeDevice &getOpenCL() const {return opencl;}
-    void setOpenCL(const ComputeDevice &opencl) {this->opencl = opencl;}
 
-    int16_t getBusID() const {return pci.getBusID();}
-    int16_t getSlotID() const {return pci.getSlotID();}
-    int16_t getFunctionID() const {return pci.getFunctionID();}
-  };
+bool GPUDevice::hasComputeDevice() const {
+  return opencl.isValid() || cuda.isValid() || hip.isValid();
 }

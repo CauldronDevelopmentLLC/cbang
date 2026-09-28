@@ -30,32 +30,26 @@
 
 \******************************************************************************/
 
-#include "GPUResource.h"
-#include "CUDALibrary.h"
-#include "HIPLibrary.h"
-#include "OpenCLLibrary.h"
-#include "GPUVendor.h"
+#pragma once
 
-#include <cbang/Catch.h>
+#include "GPUDevice.h"
 
-using namespace cb;
+#include <vector>
 
 
-namespace {
-  template <typename LIB>
-  ComputeDevice match(const PCIDevice &pci) {
-    try {
-      auto &lib = LIB::instance();
-      for (auto &dev: lib)
-        if (dev.gpu && pci.getID() == dev.getID()) return dev;
+namespace cb {
+  class GPUIndex;
 
-    } catch (const DynamicLibraryException &e) {}
+  /// Finds the GPUs on this system with OpenCL, CUDA, HIP and the PCI bus.
+  class GPUInfo {
+    typedef std::vector<GPUDevice> gpus_t;
+    gpus_t gpus;
 
-    return ComputeDevice();
-  }
+  public:
+    GPUInfo(const GPUIndex &index);
+
+    typedef gpus_t::const_iterator iterator;
+    iterator begin() const {return gpus.begin();}
+    iterator end()   const {return gpus.end();}
+  };
 }
-
-
-GPUResource::GPUResource(const GPU &gpu, const PCIDevice &pci) :
-  GPU(gpu), pci(pci), cuda(match<CUDALibrary>(pci)),
-  hip(match<HIPLibrary>(pci)), opencl(match<OpenCLLibrary>(pci)) {}
