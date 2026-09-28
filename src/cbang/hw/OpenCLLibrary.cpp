@@ -335,6 +335,7 @@ int32_t OpenCLLibrary::getVendorID(void *device) {
 
   // Integrated AMD cards on Apple return wrong vendor ID
   if (vendorID == 0x1021d00) vendorID = 0x1002;
+  if (vendorID == 0x1027f00) vendorID = GPUVendor::VENDOR_APPLE;
 
   return vendorID;
 }
