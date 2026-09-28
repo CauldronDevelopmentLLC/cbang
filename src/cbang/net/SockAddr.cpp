@@ -81,9 +81,9 @@ namespace {
   // Addresses used to be validated by a Regex before being parsed here.  A
   // Regex holds a lazily built DFA cache which is not safe to share between
   // threads, and these were process wide statics, so parsing an address off
-  // the event thread could abort the process.  inet_pton() already validates,
-  // so the patterns were removed.  Ports are still checked here because
-  // String::parse() is more lenient than the old pattern.
+  // the event thread could abort the process.  The patterns were removed and
+  // the checks they made are done by hand below.  IPv6 is still validated by
+  // inet_pton().
   bool parsePort(const std::string &s, uint16_t &port) {
     // Ports are decimal.  String::parse() reads base 0, which would treat a
     // leading zero as octal.  The old pattern allowed only "0" or a leading
@@ -92,6 +92,37 @@ namespace {
     if (s.find_first_not_of("0123456789") != std::string::npos) return false;
 
     return String::parse<uint16_t>(s, port, true);
+  }
+
+
+  // inet_pton() is not used for IPv4 because platforms disagree on what it
+  // accepts.  glibc rejects an octet with a leading zero but macOS accepts
+  // it.  Like the old pattern, accept only four decimal octets 0-255 with no
+  // leading zeros.
+  bool parseDottedQuad(const std::string &s, uint32_t &ip) {
+    size_t start = 0;
+    ip = 0;
+
+    for (unsigned i = 0; i < 4; i++) {
+      size_t end = i < 3 ? s.find('.', start) : s.length();
+      if (end == std::string::npos) return false;
+
+      size_t len = end - start;
+      if (!len || 3 < len || (1 < len && s[start] == '0')) return false;
+
+      unsigned octet = 0;
+      for (size_t j = start; j < end; j++) {
+        if (s[j] < '0' || '9' < s[j]) return false;
+        octet = octet * 10 + s[j] - '0';
+      }
+
+      if (255 < octet) return false;
+
+      ip = (ip << 8) | octet;
+      start = end + 1;
+    }
+
+    return true;
   }
 }
 
@@ -298,13 +329,12 @@ bool SockAddr::readIPv4(const string &_s) {
     return true;
   }
 
-  if (inet_pton(AF_INET, s.data(), &get4()->sin_addr) == 1) {
-    get()->sa_family = AF_INET;
-    setPort(port);
-    return true;
-  }
+  uint32_t ip = 0;
+  if (!parseDottedQuad(s, ip)) return false;
 
-  return false;
+  setIPv4(ip);
+  setPort(port);
+  return true;
 }
 
 
