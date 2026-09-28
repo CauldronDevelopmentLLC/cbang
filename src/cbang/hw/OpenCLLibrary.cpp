@@ -41,6 +41,12 @@
 #include <cstdint>
 #include <cstring>
 
+#ifdef __APPLE__
+#include <cbang/os/osx/MacOSString.h>
+
+#include <IOKit/IOKitLib.h>
+#endif
+
 using namespace std;
 using namespace cb;
 
@@ -206,6 +212,43 @@ namespace {
 
     return string(data.get(), strnlen(data.get(), size));
   }
+
+
+#ifdef __APPLE__
+  string getIORegistryString(io_service_t dev, CFStringRef name) {
+    MacOSRef<CFTypeRef> ref(
+      IORegistryEntryCreateCFProperty(dev, name, kCFAllocatorDefault, 0));
+
+    if (!ref || CFGetTypeID(ref) != CFStringGetTypeID()) return string();
+
+    return MacOSString::convert((CFStringRef)ref.get());
+  }
+
+
+  // Apple silicon GPUs are part of the SoC and are not on the PCI bus.  Their
+  // device ID is the SoC ID from IONameMatched, e.g. "gpu,t8112" is 0x8112 on
+  // M2.  Assumes one GPU per SoC.
+  bool getAppleSoCInfo(ComputeDevice &cd) {
+    MacOSRef<io_iterator_t> iter;
+    if (IOServiceGetMatchingServices(
+          kIOMasterPortDefault, IOServiceMatching("IOAccelerator"),
+          &iter.get()) != kIOReturnSuccess) return false;
+
+    for (MacOSRef<io_service_t> dev(IOIteratorNext(iter)); dev;
+         dev = IOIteratorNext(iter)) {
+      string name = getIORegistryString(dev, CFSTR("IONameMatched"));
+
+      uint16_t id;
+      if (name.size() == 9 && String::startsWith(name, "gpu,t") &&
+          String::parse("0x" + name.substr(5), id, true)) {
+        cd.deviceID = id;
+        return true;
+      }
+    }
+
+    return false;
+  }
+#endif // __APPLE__
 }
 
 
@@ -218,6 +261,8 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
   SmartPointer<cl_platform_id>::Array platforms =
     new cl_platform_id[numPlatforms];
   DYNAMIC_CALL(this, clGetPlatformIDs, (numPlatforms, platforms.get(), 0));
+
+  unsigned socCount = 0;
 
   for (cl_uint i = 0; i < numPlatforms; i++) {
     cl_platform_id platform = platforms[i];
@@ -269,8 +314,14 @@ OpenCLLibrary::OpenCLLibrary(Inaccessible) : DynamicLibrary(openclLib) {
 
         else TRY_CATCH_DEBUG(3, getPCIInfo(device, cd));
 
+        if (!cd.isValid()) continue;
+
+        // Integrated GPUs which are not on the PCI bus
+        if (cd.gpu && !cd.isIDValid() && getSoCInfo(device, cd))
+          cd.socIndex = socCount++;
+
         // Add device
-        if (cd.isValid()) this->devices.push_back(cd);
+        this->devices.push_back(cd);
       } CATCH_ERROR;
   }
 }
@@ -394,6 +445,16 @@ void OpenCLLibrary::getPCIInfo(void *device, ComputeDevice &cd) {
   case GPUVendor::VENDOR_NVIDIA: getNVIDIAPCIInfo(device, cd); break;
   case GPUVendor::VENDOR_INTEL: // TODO What about Intel?
   default: break;
+  }
+}
+
+
+bool OpenCLLibrary::getSoCInfo(void *device, ComputeDevice &cd) {
+  switch (cd.vendorID) {
+#ifdef __APPLE__
+  case GPUVendor::VENDOR_APPLE: return getAppleSoCInfo(cd);
+#endif
+  default: return false;
   }
 }
 

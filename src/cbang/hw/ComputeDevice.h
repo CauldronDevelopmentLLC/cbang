@@ -45,6 +45,7 @@ namespace cb {
     VersionU16  driverVersion;
     VersionU16  computeVersion;
     int32_t     vendorID       = -1;
+    int32_t     deviceID       = -1; // Only set for devices not on the PCI bus
     int32_t     platformIndex  = -1;
     int32_t     deviceIndex    = -1;
     bool        gpu            = false;
@@ -52,12 +53,15 @@ namespace cb {
     int         pciBus         = -1;
     int         pciSlot        = -1;
     int         pciFunction    = -1;
+    int         socIndex       = -1; // Integrated GPUs not on the PCI bus
     std::string uuid;
 
     bool isValid() const;
     void print(std::ostream &stream) const;
     bool isPCIValid() const;
-    std::string getPCIID() const;
+    bool isIDValid() const;
+    /// @return The PCI address or "soc:<n>" for GPUs not on the PCI bus.
+    std::string getID() const;
   };
 
 

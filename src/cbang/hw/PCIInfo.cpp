@@ -49,6 +49,8 @@
 #include <cstring>
 
 #elif defined(__APPLE__)
+#include <cbang/os/osx/MacOSRef.h>
+
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOKitLib.h>
 #endif
@@ -174,15 +176,15 @@ void PCIInfo::detect() {
 
 #elif defined(__APPLE__)
     // Detect PCI devices on OSX
-    io_iterator_t iter;
+    MacOSRef<io_iterator_t> iter;
     kern_return_t kr;
     if (IOServiceGetMatchingServices(
-          kIOMasterPortDefault, IOServiceMatching("IOPCIDevice"), &iter) ==
-        kIOReturnSuccess) {
+          kIOMasterPortDefault, IOServiceMatching("IOPCIDevice"),
+          &iter.get()) == kIOReturnSuccess) {
 
       // Iterate through PCI device results
-      io_service_t dev;
-      while ((dev = IOIteratorNext(iter))) {
+      for (MacOSRef<io_service_t> dev(IOIteratorNext(iter)); dev;
+           dev = IOIteratorNext(iter)) {
         uint16_t vendorID = getIORegistryNumber(dev, CFSTR("vendor-id"));
         uint16_t deviceID = getIORegistryNumber(dev, CFSTR("device-id"));
 
@@ -192,17 +194,13 @@ void PCIInfo::detect() {
         uint8_t slotID = 0;
         uint8_t functionID = 0;
 
-        CFDataRef reg = getIORegistryProperty(dev, CFSTR("reg"));
-        if (reg) {
-          if (3 < CFDataGetLength(reg)) {
-            uint8_t *data = (uint8_t *)CFDataGetBytePtr(reg);
+        MacOSRef<CFDataRef> reg(getIORegistryProperty(dev, CFSTR("reg")));
+        if (reg && 3 < CFDataGetLength(reg)) {
+          uint8_t *data = (uint8_t *)CFDataGetBytePtr(reg);
 
-            busID = data[2];
-            slotID = data[1] >> 3;
-            functionID = data[1] & 7;
-          }
-
-          CFRelease(reg);
+          busID = data[2];
+          slotID = data[1] >> 3;
+          functionID = data[1] & 7;
         }
 
         string description = getIORegistryString(dev, CFSTR("model"));
@@ -215,8 +213,6 @@ void PCIInfo::detect() {
         // Add it.  Note, macOS does not report the PCI domain.
         add(vendorID, deviceID, -1, busID, slotID, functionID, description);
       }
-
-      IOObjectRelease(iter);
     }
 
 #else

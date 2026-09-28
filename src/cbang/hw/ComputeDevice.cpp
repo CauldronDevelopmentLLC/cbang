@@ -51,7 +51,8 @@ void ComputeDevice::print(ostream &stream) const {
     << " Device:"   << name << " (" << deviceIndex << ')'
     << " Vendor:"
     << ((vendorID == -1) ? "?" : String::printf("0x%x", vendorID))
-    << " PCI:"      << getPCIID()
+    << ((deviceID == -1) ? "" : String::printf(":0x%x", deviceID))
+    << " ID:"       << getID()
     << " Compute:"  << computeVersion
     << " Driver:"   << driverVersion
     << " GPU:"      << (gpu ? "true" : "false");
@@ -63,6 +64,12 @@ bool ComputeDevice::isPCIValid() const {
 }
 
 
-string ComputeDevice::getPCIID() const {
+bool ComputeDevice::isIDValid() const {
+  return isPCIValid() || socIndex != -1;
+}
+
+
+string ComputeDevice::getID() const {
+  if (!isPCIValid() && socIndex != -1) return "soc:" + String(socIndex);
   return PCIDevice::makeID(pciDomain, pciBus, pciSlot, pciFunction);
 }

@@ -35,11 +35,17 @@
 #ifdef __APPLE__
 
 #include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
 
 
 namespace cb {
   template <typename T>
   class MacOSRef {
+    // CoreFoundation and IOKit objects are released differently
+    static void release(CFTypeRef ref)   {CFRelease(ref);}
+    static void release(io_object_t ref) {IOObjectRelease(ref);}
+    static void retain(CFTypeRef ref)    {CFRetain(ref);}
+    static void retain(io_object_t ref)  {IOObjectRetain(ref);}
 
   protected:
     T ref;
@@ -47,7 +53,7 @@ namespace cb {
   public:
     explicit MacOSRef(const MacOSRef<T> &o) {*this = o;}
     explicit MacOSRef(T ref = 0) : ref(ref) {}
-    virtual ~MacOSRef() {if (ref) CFRelease(ref);}
+    virtual ~MacOSRef() {if (ref) release(ref);}
 
 
     const T &get() const {return ref;}
@@ -56,7 +62,7 @@ namespace cb {
 
     MacOSRef<T> &operator=(const T &_ref) {
       if (ref != _ref) {
-        if (ref) CFRelease(ref);
+        if (ref) release(ref);
         ref = _ref;
       }
 
@@ -66,9 +72,9 @@ namespace cb {
 
     MacOSRef<T> &operator=(const MacOSRef<T> &o) {
       if (ref != o.ref) {
-        if (ref) CFRelease(ref);
+        if (ref) release(ref);
         ref = o.ref;
-        if (ref) CFRetain(ref);
+        if (ref) retain(ref);
       }
 
       return *this;

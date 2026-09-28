@@ -47,7 +47,7 @@ namespace {
     try {
       auto &lib = LIB::instance();
       for (auto &dev: lib)
-        if (dev.gpu && pci.getID() == dev.getPCIID()) return dev;
+        if (dev.gpu && pci.getID() == dev.getID()) return dev;
 
     } catch (const DynamicLibraryException &e) {}
 

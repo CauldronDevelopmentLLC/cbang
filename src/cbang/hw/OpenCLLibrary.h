@@ -66,6 +66,7 @@ namespace cb {
     void getAMDPCIInfo(void *device, ComputeDevice &cd);
     void getNVIDIAPCIInfo(void *device, ComputeDevice &cd);
     void getPCIInfo(void *device, ComputeDevice &cd);
+    bool getSoCInfo(void *device, ComputeDevice &cd);
     void getKHRDeviceUUID(void *device, ComputeDevice &cd);
     void getKHRPCIBusInfo(void *device, ComputeDevice &cd);
   };
