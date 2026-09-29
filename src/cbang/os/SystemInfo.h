@@ -40,6 +40,7 @@
 #include <cstdint>
 #include <set>
 #include <map>
+#include <vector>
 
 
 namespace cb {
@@ -69,6 +70,12 @@ namespace cb {
     virtual std::set<unsigned> getPerformanceCPUs() const {return {};}
     virtual uint32_t getPerformanceCPUCount() const;
 
+    typedef enum {
+      CPU_AFFINITY_NONE,
+      CPU_AFFINITY_HINT,
+      CPU_AFFINITY_HARD,
+    } cpu_affinity_capability_t;
+
     virtual uint64_t getMemoryInfo(memory_info_t type) const = 0;
     uint64_t getTotalMemory()    const {return getMemoryInfo(MEM_INFO_TOTAL);}
     uint64_t getFreeMemory()     const {return getMemoryInfo(MEM_INFO_FREE);}
@@ -82,6 +89,36 @@ namespace cb {
 
     virtual void getNameservers(std::vector<SockAddr> &addrs);
     virtual URI getProxy(const URI &uri) const = 0;
+
+    // Append new virtual API after the existing virtual interface.
+
+    /// Affinity enforcement supported by cbang on the current platform.
+    /// NONE means no CPU-placement control, HINT means scheduler guidance
+    /// without a placement guarantee.  HARD means an OS-level restriction
+    /// mechanism exists, not that every affinity call is guaranteed to work.
+    virtual cpu_affinity_capability_t getCPUAffinityCapability() const
+      {return CPU_AFFINITY_NONE;}
+
+    /// Logical CPUs currently available to the calling execution context.
+    /// On Linux this is the calling thread's affinity/cpuset mask.  On other
+    /// platforms with a readable process mask it reflects that restriction;
+    /// otherwise the default is the logical CPU range from getCPUCount().
+    /// An empty set means availability could not be represented reliably.
+    virtual std::set<unsigned> getAvailableCPUs() const;
+
+    /// Logical CPUs grouped by performance level, fastest first.  Returns an
+    /// empty vector if the topology cannot be classified into distinct levels.
+    /// Platforms may expose more than two levels.
+    virtual std::vector<std::set<unsigned>>
+    getCPUPerformanceLevels() const {return {};}
+
+    /// Logical CPUs grouped by physical core.  Each set contains the online
+    /// logical CPUs that share one physical core.  A core without SMT is a
+    /// singleton set.  Returns an empty vector when the mapping cannot be
+    /// determined reliably.
+    virtual std::vector<std::set<unsigned>>
+    getCPUCoreThreads() const {return {};}
+
 
     static bool matchesProxyPattern(const std::string &pattern, const URI &uri);
 
