@@ -65,6 +65,29 @@ using namespace std;
 namespace fs = boost::filesystem;
 
 
+namespace {
+  string formatCPUGroups(const vector<set<unsigned>> &groups) {
+    string result;
+
+    for (auto &group: groups) {
+      if (!result.empty()) result += ' ';
+      result += '[';
+
+      bool first = true;
+      for (auto cpu: group) {
+        if (!first) result += ',';
+        result += String(cpu);
+        first = false;
+      }
+
+      result += ']';
+    }
+
+    return result;
+  }
+}
+
+
 SystemInfo *SystemInfo::singleton = 0;
 
 
@@ -80,6 +103,13 @@ SystemInfo &SystemInfo::instance() {
   }
 
   return *singleton;
+}
+
+
+set<unsigned> SystemInfo::getAvailableCPUs() const {
+  set<unsigned> cpus;
+  for (uint32_t cpu = 0; cpu < getCPUCount(); cpu++) cpus.insert(cpu);
+  return cpus;
 }
 
 
@@ -149,6 +179,16 @@ void SystemInfo::add(Info &info) {
            << " Model "    << cpuInfo->getModel()
            << " Stepping " << cpuInfo->getStepping()));
   info.add(category, "CPUs", String(getCPUCount()));
+
+  auto levels = getCPUPerformanceLevels();
+  if (!levels.empty())
+    info.add(category, "CPU Performance Levels", formatCPUGroups(levels));
+
+  auto cores = getCPUCoreThreads();
+  if (!cores.empty()) {
+    info.add(category, "CPU Cores", String(cores.size()));
+    info.add(category, "CPU Core Threads", formatCPUGroups(cores));
+  }
 
   info.add(category, "Memory", HumanSize(getTotalMemory()).toString() + "B");
   info.add(category, "Free Memory",
