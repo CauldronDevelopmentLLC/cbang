@@ -1,0 +1,1 @@
+ERROR:ClickHouse:62: Syntax error: failed at position 1 (SELEC): SELEC 1. Expected one of: Query. (SYNTAX_ERROR)

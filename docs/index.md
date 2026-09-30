@@ -71,10 +71,10 @@ features:
       rotation.
     link: /ACMEv2
     linkText: ACMEv2 docs
-  - title: SQL — SQLite & MariaDB
+  - title: SQL — SQLite, MariaDB & ClickHouse
     details: >-
-      Idiomatic C++ wrappers around both. Prepared statements, parameter
-      binding, RAII transactions, and an async MariaDB client that integrates
+      Idiomatic C++ wrappers. Prepared statements, parameter binding, RAII
+      transactions, and async MariaDB and ClickHouse clients that integrate
       with the event loop.
     link: /SQLite
     linkText: Database docs

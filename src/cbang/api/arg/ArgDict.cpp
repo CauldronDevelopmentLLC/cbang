@@ -76,6 +76,15 @@ void ArgDict::add(const string &name, const JSON::ValuePtr &_arg) {
 }
 
 
+bool ArgDict::has(const string &source) const {
+  for (auto &p: validators)
+    if ((p.second->hasSource() ? p.second->getSource() : p.first) == source)
+      return true;
+
+  return false;
+}
+
+
 void ArgDict::appendSpecs(JSON::Value &spec) const {
   for (auto &p: validators) {
     auto argSpec = p.second->getSpec();

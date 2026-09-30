@@ -41,6 +41,8 @@
 #include <cbang/api/handler/ReplyHandler.h>
 #include <cbang/api/handler/StatusHandler.h>
 #include <cbang/api/handler/QueryHandler.h>
+#include <cbang/api/handler/ClickHouseHandler.h>
+#include <cbang/api/handler/ClickHouseInsertHandler.h>
 #include <cbang/api/handler/LoginHandler.h>
 #include <cbang/api/handler/LogoutHandler.h>
 #include <cbang/api/handler/SpecHandler.h>
@@ -306,13 +308,15 @@ string cb::API::API::getEndpointType(const JSON::ValuePtr &config) const {
   string type = config->getString("handler", "");
   if (!type.empty()) return type;
 
-  if (config->has("bind"))       return "bind";
-  if (config->has("reply"))      return "reply";
-  if (config->has("timeseries")) return "timeseries";
-  if (config->has("sql"))        return "query";
-  if (config->has("query"))      return "query";
-  if (config->has("path"))       return "file";
-  if (config->has("resource"))   return "resource";
+  if (config->has("bind"))              return "bind";
+  if (config->has("reply"))             return "reply";
+  if (config->has("timeseries"))        return "timeseries";
+  if (config->has("sql"))               return "query";
+  if (config->has("query"))             return "query";
+  if (config->has("clickhouse"))        return "clickhouse";
+  if (config->has("clickhouse-insert")) return "clickhouse-insert";
+  if (config->has("path"))              return "file";
+  if (config->has("resource"))          return "resource";
 
   return "pass";
 }
@@ -376,6 +380,14 @@ cb::API::HandlerPtr cb::API::API::createEndpointHandler(
   if (type == "resource")
     return new HTTPHandler(
       new HTTP::ResourceHandler(config->getString("resource")));
+
+  if (type == "clickhouse" || type == "clickhouse-insert") {
+    if (clickHouse.isNull())
+      THROW("Cannot have '" << type << "' in API without a ClickHouse client");
+
+    if (type == "clickhouse") return new ClickHouseHandler(*this, config);
+    return new ClickHouseInsertHandler(*this, config);
+  }
 
   if (client.isSet() && oauth2Providers.isSet() && sessionManager.isSet()) {
     if (config->hasString("sql") && connector.isNull())

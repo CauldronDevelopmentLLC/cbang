@@ -1,0 +1,17 @@
+200
+Content-Type: application/json
+[1]
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM max_execution_time: 10
+PARAM max_result_rows: 100
+PARAM max_rows_to_read: 18446744073709551615
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM readonly: 2
+PARAM result_overflow_mode: throw
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT id FROM grow.users

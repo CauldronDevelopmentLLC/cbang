@@ -1,0 +1,11 @@
+200
+HTTP_OK
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: ALTER TABLE grow.users DELETE WHERE id = 0

@@ -34,19 +34,22 @@
 //
 //   {"context": {"args": {...}, "options": {...}, ...},
 //    "template": <string or JSON value>,
-//    "sql": <bool, optional>, "partial": <bool, optional>}
+//    "sql": <bool, optional>, "clickhouse": <bool, optional>,
+//    "partial": <bool, optional>}
 //
 // Each key under "context" becomes a resolver namespace.  With "sql" the
 // template is resolved as SQL and the bound parameters are printed as
-// PARAM[i] lines.  Otherwise a string template is resolved and printed
-// verbatim and a JSON template is resolved in place and printed as compact
-// JSON (so typed substitution is visible).  "partial" leaves missing refs
-// unresolved.
+// PARAM[i] lines.  With "clickhouse" it is resolved as ClickHouse SQL and
+// each parameter is printed as PARAM[name] with its value as sent.
+// Otherwise a string template is resolved and printed verbatim and a JSON
+// template is resolved in place and printed as compact JSON (so typed
+// substitution is visible).  "partial" leaves missing refs unresolved.
 
 #include <cbang/Catch.h>
 #include <cbang/json/Reader.h>
 #include <cbang/json/Value.h>
 #include <cbang/api/Resolver.h>
+#include <cbang/db/clickhouse/Client.h>
 #include <cbang/log/Logger.h>
 
 #include <iostream>
@@ -71,15 +74,23 @@ int main(int argc, char *argv[]) {
       for (auto e: input->get("context")->entries())
         resolver.set(e.key(), e.value());
 
-    bool sql     = input->getBoolean("sql", false);
-    bool partial = input->getBoolean("partial", false);
-    auto tmpl    = input->get("template");
+    bool sql        = input->getBoolean("sql", false);
+    bool clickHouse = input->getBoolean("clickhouse", false);
+    bool partial    = input->getBoolean("partial", false);
+    auto tmpl       = input->get("template");
 
     if (sql) {
       vector<JSON::ValuePtr> params;
       cout << resolver.resolveSQL(tmpl->getString(), params) << endl;
       for (unsigned i = 0; i < params.size(); i++)
         cout << "PARAM[" << i << "]: " << params[i]->toString(0, true) << endl;
+
+    } else if (clickHouse) {
+      JSON::Dict params;
+      cout << resolver.resolveClickHouse(tmpl->getString(), params) << endl;
+      for (auto e: params.entries())
+        cout << "PARAM[" << e.key() << "]: "
+             << ClickHouse::Client::formatParam(*e.value()) << endl;
 
     } else if (tmpl->isString())
       cout << resolver.resolve(tmpl->getString(), partial) << endl;

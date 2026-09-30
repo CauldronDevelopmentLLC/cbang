@@ -1,0 +1,169 @@
+---
+# ClickHouse fixture: every endpoint runs against an in-process fake
+# ClickHouse (see chQuery.cpp) which records each request it is sent and
+# answers with the scenario's canned response.
+jmpapi: 1.2.0
+info: {title: ClickHouse test, version: 0.0.0}
+
+endpoints:
+  # Return modes, as for sql: queries.  ok is the default.
+  /ok:
+    get: {clickhouse: "OPTIMIZE TABLE grow.events"}
+
+  /ok-select:
+    get: {clickhouse: "SELECT 1"}
+
+  /pass:
+    get:
+      - {clickhouse: "SELECT id FROM grow.users", return: pass}
+      - reply: {passed: true}
+
+  /names:
+    get: {clickhouse: "SELECT name FROM grow.users", return: list}
+
+  /users:
+    get: {clickhouse: "SELECT id, name FROM grow.users", return: list}
+
+  /grid:
+    get: {clickhouse: "SELECT a, b FROM grow.grid", return: hlist}
+
+  /user/{id}:
+    args: {id: {type: u32}}
+    get:
+      clickhouse: "SELECT id, name FROM grow.users WHERE id = {args.id:UInt32}"
+      return: dict
+
+  /count:
+    get: {clickhouse: "SELECT count() FROM grow.users", return: one}
+
+  /active:
+    get: {clickhouse: "SELECT count() > 0 FROM grow.users", return: bool}
+
+  /max:
+    get: {clickhouse: "SELECT max(id) FROM grow.users", return: u64}
+
+  /min:
+    get: {clickhouse: "SELECT min(delta) FROM grow.users", return: s64}
+
+  # into: captures a result and continues the chain
+  /into:
+    get:
+      - clickhouse: "SELECT max(id) AS top FROM grow.users"
+        return: dict
+        into: stats
+      - clickhouse: "SELECT name FROM grow.users WHERE id = {stats.top:UInt64}"
+        return: one
+        into: name
+      - reply: {top: '{stats.top}', name: '{name}'}
+
+  # Typed server-side parameters, numbered in order of appearance.  A
+  # DateTime parameter only parses "YYYY-MM-DD hh:mm:ss", so ISO 8601 times
+  # are passed as a String.
+  /events:
+    get:
+      args:
+        since: {type: time}
+        type:  {optional: true}
+      clickhouse: >-
+        SELECT toDate(ts) AS day, type, count() AS events
+        FROM {options.db}.events
+        WHERE ts >= parseDateTime64BestEffort({args.since:String}, 3)
+          AND ({~args.type:Nullable(String)} IS NULL
+               OR type = {~args.type:Nullable(String)})
+        GROUP BY day, type ORDER BY day, type
+      return: list
+      settings: {max_execution_time: 10}
+
+  # Every JSON type as a parameter value
+  /format:
+    post:
+      args:
+        s:  {}
+        e:  {}
+        n:  {optional: true}
+        t:  {}
+        f:  {}
+        i:  {}
+        u:  {}
+        d:  {}
+        a:  {}
+        an: {}
+        m:  {}
+        c:  {}
+      clickhouse: >-
+        SELECT {args.s:String}, {args.e:String}, {~args.n:Nullable(String)},
+          {args.t:Bool}, {args.f:Bool}, {args.i:Int64}, {args.u:UInt64},
+          {args.d:Float64},
+          {args.a:Array(String)}, {args.an:Array(Array(Nullable(UInt8)))},
+          {args.m:Map(String, String)},
+          {args.c:Enum8('a:b' = 1, 'c' = 2)}, {~args.x:Nullable(UInt32)}
+      return: ok
+
+  /untyped/{id}:
+    args: {id: {}}
+    get: {clickhouse: "SELECT {args.id}", return: one}
+
+  /missing:
+    get: {clickhouse: "SELECT {args.nope:String}", return: one}
+
+  /binary:
+    put: {clickhouse: "SELECT length({body:String})", return: u64}
+
+  # {{ }} escapes are literal braces, {options.*} is spliced at load time
+  /escape:
+    get:
+      clickhouse: >-
+        SELECT '{{"a": 1}}' AS json, match(name, '^[a-z]{{3,8}}$') AS ok
+        FROM {options.db}.users
+      return: list
+
+  # Settings resolve per request.  A setting which resolves null is not sent.
+  /settings:
+    get:
+      args: {limit: {type: u32}, rows: {type: u64, optional: true}}
+      clickhouse: "SELECT id FROM grow.users"
+      settings:
+        max_execution_time: 10
+        max_result_rows: '{args.limit}'
+        max_rows_to_read: '{~args.rows}'
+        result_overflow_mode: throw
+      return: list
+
+  # Query endpoints send readonly=2 unless readonly: false
+  /write:
+    get:
+      clickhouse: "ALTER TABLE grow.users DELETE WHERE id = 0"
+      readonly: false
+
+  /slow:
+    get: {clickhouse: "SELECT sleep(3)", return: one}
+
+  /error:
+    get: {clickhouse: "SELEC 1", return: one}
+
+  # Async inserts
+  /insert:
+    post:
+      args: {batch: {type: u32, optional: true}}
+      clickhouse-insert:
+        table: grow.events
+        row:
+          type:    {max: 8}
+          n:       {type: u32}
+          machine: {optional: true}
+        set:
+          source: test
+          method: '{request.method}'
+          batch:  '{~args.batch}'
+        max-rows: 3
+
+  # No row validation, no wait, extra settings.  A setting which resolves
+  # null is not sent.
+  /insert-open:
+    post:
+      clickhouse-insert:
+        table: events
+        wait: false
+        settings:
+          async_insert_busy_timeout_max_ms: 500
+          insert_deduplication_token: '{~request.headers.Idempotency-Key}'

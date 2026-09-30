@@ -56,6 +56,7 @@ export default defineConfig({
           {text: 'JSON',             link: '/JSON'},
           {text: 'SQLite',           link: '/SQLite'},
           {text: 'MariaDB',          link: '/MariaDB'},
+          {text: 'ClickHouse',       link: '/ClickHouse'},
           {text: 'String Utilities', link: '/String'},
         ],
       },

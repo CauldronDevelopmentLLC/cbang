@@ -203,6 +203,8 @@ namespace cb {
     // Formatting
     using format_cb_t = std::function<std::string (
       const std::string &id, const std::string &spec)>;
-    std::string format(format_cb_t cb);
+    // With ``keepEscapes`` the ``{{`` and ``}}`` escapes are kept, so the
+    // result is itself a format string, for a later format with more refs.
+    std::string format(format_cb_t cb, bool keepEscapes = false);
   };
 }

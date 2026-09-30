@@ -49,6 +49,7 @@
 #include <cbang/http/SessionManager.h>
 #include <cbang/db/EventLevelDB.h>
 #include <cbang/db/maria/Connector.h>
+#include <cbang/db/clickhouse/Client.h>
 
 #include <functional>
 
@@ -78,6 +79,7 @@ namespace cb {
       SmartPointer<MariaDB::Connector>    connector;
       SmartPointer<Event::SubprocessPool> procPool;
       SmartPointer<EventLevelDB>          timeseriesDB;
+      SmartPointer<ClickHouse::Client>    clickHouse;
       JSON::ValuePtr                      optionValues;
 
       std::map<std::string, HandlerPtr>     callbacks;
@@ -105,6 +107,8 @@ namespace cb {
         {procPool = x;}
       void setTimeseriesDB(const SmartPointer<EventLevelDB> &x)
         {timeseriesDB = x;}
+      void setClickHouse(const SmartPointer<ClickHouse::Client> &x)
+        {clickHouse = x;}
 
       HTTP::Client          &getClient()          {return *client;}
       OAuth2::Providers     &getOAuth2Providers() {return *oauth2Providers;}
@@ -112,6 +116,7 @@ namespace cb {
       MariaDB::Connector    &getDBConnector()     {return *connector;}
       Event::SubprocessPool &getProcPool()        {return *procPool;}
       EventLevelDB          &getTimeseriesDB()    {return *timeseriesDB;}
+      ClickHouse::Client    &getClickHouse()      {return *clickHouse;}
 
       void load(const JSON::ValuePtr &config);
 

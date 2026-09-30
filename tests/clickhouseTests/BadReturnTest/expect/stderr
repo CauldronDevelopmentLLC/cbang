@@ -1,0 +1,1 @@
+ERROR:Exception: Unsupported ClickHouse query return type 'binary'

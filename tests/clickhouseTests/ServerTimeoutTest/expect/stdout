@@ -1,0 +1,13 @@
+504
+Content-Type: application/json
+{"error":"ClickHouse:159: Timeout exceeded: elapsed 1001.5 ms, maximum: 1000 ms. (TIMEOUT_EXCEEDED)","code":504}
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT sleep(3)

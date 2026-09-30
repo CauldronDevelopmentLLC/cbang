@@ -1,0 +1,8 @@
+{
+  "args": [
+    "PUT",
+    "/int64",
+    "Content-Type: application/json",
+    "-stdin"
+  ]
+}

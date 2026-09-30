@@ -74,13 +74,20 @@ namespace cb {
       uint64_t selectTime(const std::string &path, uint64_t defaultValue) const;
 
       // A missing {ref} is an error and a missing {~ref} resolves null,
-      // except in a partial resolve, which leaves missing refs unresolved
-      // for a later resolve with more vars, e.g. at request time.
+      // except in a partial resolve, which leaves missing refs and the
+      // {{ }} escapes for a later resolve with more vars, e.g. at request
+      // time.
       std::string resolve(const std::string &s, bool partial = false) const;
       // SQL resolve: every ref becomes a ``?`` placeholder and its value is
       // appended to ``params``; a missing {~ref} binds NULL.
       std::string resolveSQL(
         const std::string &s, std::vector<JSON::ValuePtr> &params) const;
+      // ClickHouse resolve: every ref carries a ClickHouse type, e.g.
+      // ``{args.id:UInt32}``, and becomes a server-side parameter
+      // ``{p0:UInt32}``, ``{p1:...}``, ... whose value is inserted in the
+      // ``params`` dict by name; a missing {~ref} binds NULL.
+      std::string resolveClickHouse(
+        const std::string &s, JSON::Value &params) const;
       void resolve(JSON::Value &value, bool partial = false) const;
       // Resolve a single value; a lone {ref} retypes to its native JSON value.
       JSON::ValuePtr resolveValue(

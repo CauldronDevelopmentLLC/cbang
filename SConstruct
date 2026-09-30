@@ -107,7 +107,7 @@ if 'boost' not in disable_local: env.CBConfigDef('HAVE_LOCAL_BOOST')
 # Source
 subdirs = [''] + '''
   oauth2 boost comp config db debug dns enum event geom http hw io js json log
-  net os parse thread time util ws xml json/schema
+  net os parse thread time util ws xml json/schema db/clickhouse
 '''.split()
 
 if env.CBConfigEnabled('openssl'): subdirs += ['openssl', 'acmev2']

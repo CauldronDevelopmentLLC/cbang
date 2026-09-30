@@ -56,6 +56,10 @@ using namespace std;
 #define USER_PASS_CHARS    UNRESERVED_CHARS ";&=+$,"
 #define NAME_CHARS         UNRESERVED_CHARS ";/?:@+$,"
 #define VALUE_CHARS        NAME_CHARS "="
+// A query '+' is read as is but written escaped, since many servers, e.g.
+// ClickHouse, decode a raw '+' in a query as a space
+#define QUERY_NAME_CHARS   UNRESERVED_CHARS ";/?:@$,"
+#define QUERY_VALUE_CHARS  QUERY_NAME_CHARS "="
 #define PATH_SEGMENT_CHARS UNRESERVED_CHARS ":@&=+$,"
 #define HOST_CHARS         ALPHANUMERIC_CHARS "-."
 #define SCHEME_CHARS       ALPHANUMERIC_CHARS "+-."
@@ -376,8 +380,9 @@ ostream &URI::writeQuery(ostream &stream) const {
   for (auto it = begin(); it != end(); it++) {
     if (it != begin()) stream << '&';
 
-    stream << encode(it->first, NAME_CHARS);
-    if (!it->second.empty()) stream << '=' << encode(it->second, VALUE_CHARS);
+    stream << encode(it->first, QUERY_NAME_CHARS);
+    if (!it->second.empty())
+      stream << '=' << encode(it->second, QUERY_VALUE_CHARS);
   }
 
   return stream;

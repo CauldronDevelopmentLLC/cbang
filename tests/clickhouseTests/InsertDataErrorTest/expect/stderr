@@ -1,0 +1,2 @@
+WARNING:ClickHouse:467: Invalid boolean value, should be true/false, 1/0, but it starts with the '"' character: (while reading the value of key b): (at row 1)
+WARNING:: While executing WaitForAsyncInsert. (CANNOT_PARSE_BOOL)

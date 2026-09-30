@@ -59,16 +59,6 @@ namespace cb {
         const CtxPtr &ctx, const JSON::ValuePtr &value) const override {
         T n;
 
-        if (value->isNumber()) n = (T)value->getNumber();
-        else if (value->isString())
-          n = String::parse<T>(value->getString(), true);
-        else CBANG_THROW("Must be a number or string");
-
-        if (!std::isnan(min) && n < (T)min)
-          CBANG_THROW("Must be greater than or equal to " << (T)min);
-        if (!std::isnan(max) && (T)max < n)
-          CBANG_THROW("Must be less than or equal to " << (T)max);
-
         if (value->isNumber()) {
           double x = value->getNumber();
 
@@ -81,7 +71,19 @@ namespace cb {
             CBANG_THROW("Greater than maximum value "
                         << (double)std::numeric_limits<T>::max()
                         << " for numeric type");
-        }
+
+          // An integer by its digits, as a double would round 64-bit values
+          n = value->isInteger() ?
+            String::parse<T>(value->toString(), true) : (T)x;
+
+        } else if (value->isString())
+          n = String::parse<T>(value->getString(), true);
+        else CBANG_THROW("Must be a number or string");
+
+        if (!std::isnan(min) && n < (T)min)
+          CBANG_THROW("Must be greater than or equal to " << (T)min);
+        if (!std::isnan(max) && (T)max < n)
+          CBANG_THROW("Must be less than or equal to " << (T)max);
 
         return value->create(n);
       }

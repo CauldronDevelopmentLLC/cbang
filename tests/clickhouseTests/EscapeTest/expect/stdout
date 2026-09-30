@@ -1,0 +1,13 @@
+200
+Content-Type: application/json
+[]
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT '{"a": 1}' AS json, match(name, '^[a-z]{3,8}$') AS ok FROM grow.users

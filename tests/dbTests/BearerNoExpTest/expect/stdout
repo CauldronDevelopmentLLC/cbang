@@ -1,0 +1,3 @@
+200
+Content-Type: application/json
+{"id":"5d657383f49b17d17172f2a34dfff18e5fd21abbdeefa2be5303e25f48171cb9","user":"as1-events","group":{"grow-ingest":true}}

@@ -1,0 +1,30 @@
+200
+HTTP_OK
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM param_p0: back\\slash tab\t nl\n 'single' "double" é☃😀
+PARAM param_p1: 
+PARAM param_p10: {'k\'ey':'v\\al','n':'\n'}
+PARAM param_p11: a:b
+PARAM param_p12: \N
+PARAM param_p2: \N
+PARAM param_p3: true
+PARAM param_p4: false
+PARAM param_p5: -9223372036854775808
+PARAM param_p6: 18446744073709551615
+PARAM param_p7: 1.5
+PARAM param_p8: ['it\'s','back\\slash','tab\t','\\N','']
+PARAM param_p9: [[1,NULL],[]]
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT {p0:String}, {p1:String}, {p2:Nullable(String)},
+  {p3:Bool}, {p4:Bool}, {p5:Int64}, {p6:UInt64},
+  {p7:Float64},
+  {p8:Array(String)}, {p9:Array(Array(Nullable(UInt8)))},
+  {p10:Map(String, String)},
+  {p11:Enum8('a:b' = 1, 'c' = 2)}, {p12:Nullable(UInt32)}

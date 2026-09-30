@@ -1,0 +1,3 @@
+400
+Content-Type: application/json
+{"message":"Row 0: Unknown field 'bogus'","code":400}

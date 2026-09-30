@@ -1,0 +1,4 @@
+{
+  "command": "%(suite-dir)s/chQuery %(suite-dir)s/badTable.yaml",
+  "args": ["Load"]
+}

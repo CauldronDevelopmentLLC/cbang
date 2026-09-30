@@ -1,0 +1,5 @@
+{
+  "args": [
+    "http://example.com/p?q=a+b%%2Bc&r=x%%20y"
+  ]
+}

@@ -213,7 +213,7 @@ namespace cb {
     errno = 0;
     char *end = 0;
     long long v = strtoll(s.c_str(), &end, 0);
-    if (errno || v < -numeric_limits<int64_t>::max() ||
+    if (errno || v < numeric_limits<int64_t>::min() ||
         numeric_limits<int64_t>::max() < v || (full && end && *end))
       return false;
 
@@ -240,7 +240,7 @@ namespace cb {
     errno = 0;
     char *end = 0;
     long v = strtol(s.c_str(), &end, 0);
-    if (errno || v < -numeric_limits<int32_t>::max() ||
+    if (errno || v < numeric_limits<int32_t>::min() ||
         numeric_limits<int32_t>::max() < v || (full && end && *end))
       return false;
 
@@ -265,7 +265,7 @@ namespace cb {
   template <>
   bool String::parse<int16_t>(const string &s, int16_t &value, bool full) {
     int32_t v;
-    if (!parse<int32_t>(s, v, full) || v < -32767 || 32767 < v) return false;
+    if (!parse<int32_t>(s, v, full) || v < -32768 || 32767 < v) return false;
     value = (int16_t)v;
     return true;
   }
@@ -283,7 +283,7 @@ namespace cb {
   template <>
   bool String::parse<int8_t>(const string &s, int8_t &value, bool full) {
     int32_t v;
-    if (!parse<int32_t>(s, v, full) || v < -127 || 127 < v) return false;
+    if (!parse<int32_t>(s, v, full) || v < -128 || 127 < v) return false;
     value = (int8_t)v;
     return true;
   }
@@ -855,7 +855,7 @@ string String::transcode(
 }
 
 
-string String::format(format_cb_t cb) {
+string String::format(format_cb_t cb, bool keepEscapes) {
   string result;
   result.reserve(length());
   int index = 0;
@@ -866,7 +866,7 @@ string String::format(format_cb_t cb) {
       case '{':
         if (++it == end()) THROW("Unmatched '{'");
 
-        if (*it == '{') result.push_back('{');
+        if (*it == '{') result.append(keepEscapes ? "{{" : "{");
         else {
           string fmt;
 
@@ -902,8 +902,9 @@ string String::format(format_cb_t cb) {
         break;
 
       case '}':
-        if ((it + 1) != end() && *(it + 1) == '}') result.push_back(*it++);
-        else THROW("Unmatched '}'");
+        if ((it + 1) == end() || *(it + 1) != '}') THROW("Unmatched '}'");
+        result.append(keepEscapes ? "}}" : "}");
+        it++;
         break;
 
       default: result.push_back(*it); break;

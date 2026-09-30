@@ -1,0 +1,1 @@
+{"context": {"args": {"id": 42, "name": "O'Brien \\ \t", "tags": ["a", "b'c", null], "on": true, "attrs": {"k": 1.5}}}, "template": "SELECT {args.id:UInt32}, {args.name:String}, {~args.nope:Nullable(String)}, {args.tags:Array(Nullable(String))}, {args.on:Bool}, {args.attrs:Map(String, Float64)}, {args.name:Enum8('a:b' = 1)}, '{{literal}}'", "clickhouse": true}

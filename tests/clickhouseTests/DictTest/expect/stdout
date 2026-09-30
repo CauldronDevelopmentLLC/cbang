@@ -1,0 +1,14 @@
+200
+Content-Type: application/json
+{"id":42,"name":"Bob"}
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM param_p0: 42
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT id, name FROM grow.users WHERE id = {p0:UInt32}

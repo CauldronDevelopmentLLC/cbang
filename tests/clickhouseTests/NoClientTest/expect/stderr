@@ -1,0 +1,1 @@
+ERROR:Exception: Cannot have 'clickhouse' in API without a ClickHouse client

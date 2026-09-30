@@ -1,0 +1,2 @@
+WARNING:ClickHouse:117: Unknown field found while parsing JSONEachRow format: zzz: (at row 1)
+WARNING:: While executing WaitForAsyncInsert. (INCORRECT_DATA)

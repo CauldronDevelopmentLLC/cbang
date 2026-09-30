@@ -1,0 +1,1 @@
+{"context": {"args": {"id": 42}}, "template": "SELECT {args.id}", "clickhouse": true}

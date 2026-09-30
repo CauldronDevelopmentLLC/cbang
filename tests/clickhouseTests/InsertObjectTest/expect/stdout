@@ -1,0 +1,19 @@
+200
+Content-Type: application/json
+{"rows":1}
+
+CH: POST /
+PARAM async_insert: 1
+PARAM database: testdb
+PARAM date_time_input_format: best_effort
+PARAM default_format: JSONCompact
+PARAM input_format_null_as_default: 1
+PARAM input_format_skip_unknown_fields: 0
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM query: INSERT INTO grow.events FORMAT JSONEachRow
+PARAM wait_end_of_query: 1
+PARAM wait_for_async_insert: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: {"machine":"m1","n":3,"type":"wu","source":"test","method":"POST","batch":7}
+

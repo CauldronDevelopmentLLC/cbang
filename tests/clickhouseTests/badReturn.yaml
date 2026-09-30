@@ -1,0 +1,6 @@
+---
+# ClickHouse queries support the sql: return types except binary and fields
+jmpapi: 1.2.0
+endpoints:
+  /image:
+    get: {clickhouse: "SELECT data FROM grow.images", return: binary}

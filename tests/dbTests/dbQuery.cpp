@@ -32,9 +32,10 @@
 
 // Offline driver for the API query path.  Builds an API with a real
 // MariaDB::Connector/EventDB whose libmariadb calls are satisfied by the
-// linked-in fake (FakeMariaDB.*).  A scenario selects the endpoint and the
-// canned result set(s); the request is dispatched and the captured response
-// plus the SQL actually sent are printed.  No database, no network.
+// linked-in fake (FakeMariaDB.*).  A scenario selects the endpoint, request
+// headers and the canned result set(s); the request is dispatched, more than
+// once to exercise caching, and the captured responses plus the SQL actually
+// sent are printed.  No database, no network.
 //
 //   dbQuery <fixture.yaml> <scenario>
 
@@ -51,11 +52,14 @@
 #include <cbang/http/RequestParams.h>
 #include <cbang/http/RequestErrorHandler.h>
 #include <cbang/http/Client.h>
+#include <cbang/http/BearerSessionManager.h>
 #include <cbang/oauth2/Providers.h>
 #include <cbang/net/URI.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/SubprocessPool.h>
 #include <cbang/log/Logger.h>
+#include <cbang/log/LogListener.h>
+#include <cbang/os/SystemUtilities.h>
 
 #include <mysql/mysqld_error.h>
 
@@ -84,10 +88,61 @@ namespace {
   void push(const Result &r) {Response resp; resp.results = {r}; FakeDB::push(resp);}
 
 
-  // Map a scenario name to (method, path), an optional request body, and
-  // queue its canned result(s).  Returns false for an unknown scenario.
+  // The fixture's directory, and the scenario's bearer token, if any, from
+  // bearer/<name>.jwt.  See bearer/make.py.  A token must never reach the DB
+  // or the log.
+  string fixtures;
+  string token;
+
+  string bearer(const string &name) {
+    string path = fixtures + "/bearer/" + name + ".jwt";
+    token = String::trim(SystemUtilities::read(path));
+    return "Bearer " + token;
+  }
+
+
+  // An AuthSession() hit: a logged in user and their groups
+  void pushSession() {
+    Response resp;
+    resp.results = {
+      result({{"user", FakeDB::STRING}}, {{Cell("alice")}}),
+      result({{"group", FakeDB::STRING}}, {{Cell("admin")}}),
+    };
+    FakeDB::push(resp);
+  }
+
+
+  // Accepts bearer tokens signed by the first two test keys, as during a key
+  // rotation.  Opens new sessions with a fixed ID, so their cookies are
+  // deterministic.
+  class TestSessionManager : public HTTP::BearerSessionManager {
+  public:
+    TestSessionManager() {readPublicKeys(fixtures + "/bearer/public.pem");}
+
+    // From HTTP::SessionManager
+    SmartPointer<HTTP::Session> openSession(const SockAddr &addr) override {
+      SmartPointer<HTTP::Session> session = new HTTP::Session("newsid", addr);
+      addSession(session);
+      return session;
+    }
+  };
+
+
+  // Everything logged, to check that a raw token never is
+  class LogCapture : public LogListener {
+  public:
+    string log;
+
+    // From LogListener
+    void write(const char *s, unsigned n) override {log.append(s, n);}
+  };
+
+
+  // Map a scenario name to (method, path), an optional request body and
+  // headers, and queue its canned result(s).  Returns false for an unknown
+  // scenario.  The request is sent ``requests`` times.
   bool setup(const string &s, string &method, string &path, string &body,
-             string &contentType, string &auth) {
+             string &contentType, HTTP::Headers &hdrs, unsigned &requests) {
     method = "GET";
 
     if (s == "Dict") {
@@ -306,12 +361,133 @@ namespace {
       // session callback into the DB event loop.  Authorization supplies a
       // session id so the session handler takes its async DB-lookup branch.
       path = "/item/abc"; // 'abc' fails the u32 arg
-      auth = "testsid";
+      hdrs.insert("Authorization", "testsid");
       push(Response()); // AuthSession: OK, no result set
+
+    } else if (s == "SessionID") {
+      // A session ID in Authorization is looked up and loads the session
+      path = "/whoami";
+      hdrs.insert("Authorization", "testsid");
+      pushSession();
+
+    } else if (s == "BearerSession") {
+      // The token's own session: its ID is the token's SHA-256, its user the
+      // sub claim and its groups the groups claim only, not "authenticated".
+      // Nothing reaches the DB.
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("valid"));
+
+    } else if (s == "BearerIngest") {
+      method = "POST";
+      path   = "/ingest"; // allow: [$grow-ingest]
+      hdrs.insert("Authorization", bearer("valid"));
+
+    } else if (s == "BearerDenied") {
+      path = "/admin"; // allow: [$admin]
+      hdrs.insert("Authorization", bearer("valid"));
+
+    } else if (s == "BearerNotAuthenticated") {
+      path = "/private"; // allow: [$authenticated]
+      hdrs.insert("Authorization", bearer("valid"));
+
+    } else if (s == "BearerNoGroups") {
+      method = "POST";
+      path   = "/ingest";
+      hdrs.insert("Authorization", bearer("no-groups"));
+
+    } else if (s == "BearerRotated") {
+      // Signed with the second key
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("rotated"));
+
+    } else if (s == "BearerNoExp") {
+      // Valid until the key is rotated
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("no-exp"));
+
+    } else if (s == "BearerLowerCase") {
+      path = "/whoami";
+      bearer("valid");
+      hdrs.insert("Authorization", "bearer  " + token);
+
+    } else if (s == "BearerCache") {
+      // Verified once, then the second request is answered from the cache
+      path     = "/whoami";
+      requests = 2;
+      hdrs.insert("Authorization", bearer("valid"));
+
+    } else if (s == "BearerOtherKey") {
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("other-key"));
+
+    } else if (s == "BearerExpired") {
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("expired"));
+
+    } else if (s == "BearerNotYet") {
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("not-yet"));
+
+    } else if (s == "BearerNoSub") {
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("no-sub"));
+
+    } else if (s == "BearerTampered") {
+      // The claims were changed after signing
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("tampered"));
+
+    } else if (s == "BearerAlgNone") {
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("alg-none"));
+
+    } else if (s == "BearerHS256") {
+      // HMAC keyed with the public key
+      path = "/whoami";
+      hdrs.insert("Authorization", bearer("hs256"));
+
+    } else if (s == "BearerMalformed") {
+      path  = "/whoami";
+      token = "not.a.jwt";
+      hdrs.insert("Authorization", "Bearer " + token);
+
+    } else if (s == "BearerEmpty") {
+      path = "/whoami";
+      hdrs.insert("Authorization", "Bearer");
+
+    } else if (s == "BearerOverlong") {
+      path  = "/whoami";
+      token = string(8193, 'x');
+      hdrs.insert("Authorization", "Bearer " + token);
 
     } else return false;
 
     return true;
+  }
+
+
+  // Dispatch one request as the server does and print the response
+  void dispatch(API::API &api, Event::Base &base,
+                const HTTP::RequestParams &params, const string &body) {
+    HTTP::Request req(params);
+    if (!body.empty()) req.getInputBuffer().add(body.data(), body.length());
+
+    // As in the server, so handler throws reply with a status
+    HTTP::RequestErrorHandler errorHandler(api);
+    errorHandler(req);
+
+    for (unsigned i = 0; !req.isReplying() && i < 100000; i++) base.loopOnce();
+    if (!req.isReplying()) THROW("Request never replied");
+
+    cout << (unsigned)req.getResponseCode() << "\n";
+
+    ostringstream hs;
+    req.getOutputHeaders().write(hs);
+    string headers = hs.str();
+    headers.erase(remove(headers.begin(), headers.end(), '\r'), headers.end());
+    cout << headers;
+
+    cout << req.getOutput();
   }
 }
 
@@ -325,6 +501,9 @@ int main(int argc, char *argv[]) {
     Logger::instance().setLogColor(false);
     Exception::printLocations    = false;
     Exception::enableStackTraces = false;
+
+    auto logs = SmartPtr(new LogCapture);
+    Logger::instance().addListener(logs);
 
     Options options;
     options.add("scripts", "Path to exec scripts.");
@@ -346,55 +525,40 @@ int main(int argc, char *argv[]) {
 
     auto slash = configPath.find_last_of('/');
     string dir = slash == string::npos ? "." : configPath.substr(0, slash);
+    fixtures = dir;
     if (!options["scripts"].hasValue()) options["scripts"].set(dir + "/scripts");
 
     Event::Base base(false);
     API::API api(options);
 
-    string method, path, body, contentType, auth;
+    string method, path, body, contentType;
+    HTTP::Headers hdrs;
+    unsigned requests = 1;
     FakeDB::reset();
-    if (!setup(scenario, method, path, body, contentType, auth))
+    if (!setup(scenario, method, path, body, contentType, hdrs, requests))
       THROW("Unknown scenario: " << scenario);
 
     api.setDBConnector(new MariaDB::Connector(base));
     api.setProcPool(new Event::SubprocessPool(base));
 
     // The 'session' handler registers only with these three set
-    if (!auth.empty()) {
-      api.setClient(new HTTP::Client(base));
-      api.setOAuth2Providers(new OAuth2::Providers);
-      api.setSessionManager(new HTTP::SessionManager);
-    }
+    api.setClient(new HTTP::Client(base));
+    api.setOAuth2Providers(new OAuth2::Providers);
+    api.setSessionManager(new TestSessionManager);
 
     api.load(JSON::YAMLReader::parseFile(configPath));
 
     HTTP::RequestParams params;
     params.method = HTTP::Method::parse(method, HTTP::Method::HTTP_GET);
     params.uri    = URI(path);
+    if (!contentType.empty()) hdrs.insert("Content-Type", contentType);
 
-    params.hdrs = new HTTP::Headers;
-    if (!contentType.empty()) params.hdrs->insert("Content-Type", contentType);
-    if (!auth.empty())        params.hdrs->insert("Authorization", auth);
-
-    HTTP::Request req(params);
-    if (!body.empty()) req.getInputBuffer().add(body.data(), body.length());
-
-    // Dispatch as the server does, so handler throws reply with a status
-    HTTP::RequestErrorHandler errorHandler(api);
-    errorHandler(req);
-
-    for (unsigned i = 0; !req.isReplying() && i < 100000; i++) base.loopOnce();
-    if (!req.isReplying()) THROW("Request never replied");
-
-    cout << (unsigned)req.getResponseCode() << "\n";
-
-    ostringstream hs;
-    req.getOutputHeaders().write(hs);
-    string headers = hs.str();
-    headers.erase(remove(headers.begin(), headers.end(), '\r'), headers.end());
-    cout << headers;
-
-    cout << req.getOutput();
+    // Repeated requests share the API, e.g. its caches
+    for (unsigned i = 0; i < requests; i++) {
+      if (i) cout << "\n";
+      params.hdrs = new HTTP::Headers(hdrs);
+      dispatch(api, base, params, body);
+    }
 
     auto &queries = FakeDB::queries();
     auto &binds   = FakeDB::binds();
@@ -402,10 +566,15 @@ int main(int argc, char *argv[]) {
       cout << "\nSQL: " << queries[i];
       for (unsigned j = 0; j < binds[i].size(); j++) {
         auto &bind = binds[i][j];
+        if (!token.empty() && bind.find(token) != string::npos)
+          THROW("Raw token bound");
         cout << "\nBIND[" << j << "]: "
              << (bind == "\\N" ? "NULL" : MariaDB::DB::toHex(bind));
       }
     }
+
+    if (!token.empty() && logs->log.find(token) != string::npos)
+      THROW("Raw token logged");
 
     return 0;
   } CATCH_ERROR;

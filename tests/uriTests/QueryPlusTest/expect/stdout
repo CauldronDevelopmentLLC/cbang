@@ -1,0 +1,10 @@
+http://example.com/p?q=a+b%2Bc&r=x%20y => {
+     URI: http://example.com/p?q=a%2bb%2bc&r=x%20y
+  Scheme: http
+    Host: example.com
+    Port: 80
+    Path: /p
+    User: 
+    Pass: 
+   Query: q='a+b+c', r='x y'
+}

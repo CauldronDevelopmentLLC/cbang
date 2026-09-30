@@ -228,6 +228,36 @@ string Resolver::resolveSQL(
 }
 
 
+string Resolver::resolveClickHouse(const string &s, JSON::Value &params) const {
+  auto cb = [&] (const string &id, const string &spec) -> string {
+    // The type follows the first colon.  format() splits at the last, which
+    // may be inside the type, e.g. Enum8('a:b' = 1).
+    string ref = spec.empty() ? id : id + ":" + spec;
+    size_t pos = ref.find(':');
+
+    if (pos == string::npos)
+      THROW("ClickHouse ref {" << ref << "} needs a type, e.g. {" << ref
+            << ":String}");
+
+    string name = ref.substr(0, pos);
+    auto value  = selectRef(name, false);
+    if (value.isNull())
+      THROW("Variable '" << name << "' not found; use {~" << ref
+            << "} to resolve null when missing");
+
+    if (dynamic_cast<Blob *>(value.get()))
+      THROW("Binary value '" << name << "' cannot be a ClickHouse parameter");
+
+    string param = "p" + String(params.size());
+    params.insert(param, value);
+
+    return "{" + param + ref.substr(pos) + "}";
+  };
+
+  return String(s).format(cb);
+}
+
+
 string Resolver::resolve(
   const string &s, bool partial, vector<JSON::ValuePtr> *params) const {
   auto cb = [&] (const string &id, const string &spec) -> string {
@@ -252,7 +282,7 @@ string Resolver::resolve(
     return value->formatAs(spec);
   };
 
-  return String(s).format(cb);
+  return String(s).format(cb, partial);
 }
 
 

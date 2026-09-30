@@ -3,6 +3,7 @@
 # then routing falls through to the matching endpoint.  Used to check that a
 # downstream throw (arg validation) after the async session step replies
 # cleanly instead of escaping the session callback into the DB event loop.
+# Also, that a session ID in Authorization loads the session.
 jmpapi: 1.2.0
 info: {title: session test, version: 0.0.0}
 
@@ -15,3 +16,6 @@ endpoints:
   /item/{n}:
     args: {n: {type: u32}}
     get: {sql: "CALL GetItem({args.n})", return: dict}
+
+  /whoami:
+    get: {allow: [$authenticated], reply: {user: '{session.user}'}}

@@ -1,0 +1,1 @@
+{"context": {"options": {"db": "grow"}}, "template": {"sql": "SELECT '{{\"a\": 1}}' FROM {options.db}.t WHERE a = {args.a:UInt8} AND b = '}}' AND c = '{{'", "lone": "{{x}}"}, "partial": true}

@@ -1,0 +1,3 @@
+400
+Content-Type: application/json
+{"message":"Row 1: Missing argument 'type'","code":400}

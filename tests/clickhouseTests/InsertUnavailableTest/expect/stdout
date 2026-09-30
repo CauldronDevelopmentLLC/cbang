@@ -1,0 +1,3 @@
+503
+Content-Type: application/json
+{"error":"ClickHouse: Connection failed: End of file","code":503}

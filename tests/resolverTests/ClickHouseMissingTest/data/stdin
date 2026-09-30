@@ -1,0 +1,1 @@
+{"context": {"args": {}}, "template": "SELECT {args.nope:String}", "clickhouse": true}

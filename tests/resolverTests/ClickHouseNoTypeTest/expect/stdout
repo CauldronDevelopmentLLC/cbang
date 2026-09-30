@@ -1,0 +1,2 @@
+ERROR:Exception: String format error at character 15
+ERROR:Caused by: ClickHouse ref {args.id} needs a type, e.g. {args.id:String}

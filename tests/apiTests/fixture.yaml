@@ -129,6 +129,17 @@ endpoints:
         cmd: '{options.scripts}/echo.py'
         input: {size: '{body.size}', type: '{body.type}'}
 
+  # 64-bit integer args are exact, from JSON numbers or strings
+  /int64:
+    put:
+      args: {u: {type: u64}, s: {type: s64}}
+      reply: {u: '{args.u}', s: '{args.s}'}
+
+  /int8:
+    get:
+      args: {n: {type: s8}}
+      reply: {n: '{args.n}'}
+
   # Bytes embedded in a string context is an error
   /body-bad:
     put:

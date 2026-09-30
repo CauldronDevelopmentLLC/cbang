@@ -91,13 +91,15 @@ children inherit them.
 ## Endpoint types
 
 The endpoint type is given by the `handler` key, or inferred: `bind` →
-bound callback, `sql`/`query` → DB query, `timeseries`, `path` → file,
-`resource`, else `pass`.
+bound callback, `sql`/`query` → DB query, `clickhouse`, `clickhouse-insert`,
+`timeseries`, `path` → file, `resource`, else `pass`.
 
 | Handler | Purpose |
 |---|---|
 | `bind` | Dispatch to a C++ callback registered with `api.bind(key, ...)`. |
 | `query` (or `sql`) | Run SQL and stream the result as JSON.  See below. |
+| `clickhouse` | Run a ClickHouse query and reply with its result.  See below. |
+| `clickhouse-insert` | Insert the JSON rows of the request body into ClickHouse. |
 | `status` | Fixed status reply (`code`, `text`). |
 | `redirect` | Redirect (`location`, `code`). |
 | `cors` | CORS headers / preflight (`origins`, `methods`, ...). |
@@ -172,13 +174,14 @@ roots below.  `{args.*}` holds exactly the args declared by the `args:`
 blocks in scope — anything undeclared, including an undeclared URL capture,
 is dropped, and a method with no `args:` anywhere in its chain has no
 `args` root at all.  In SQL every ref is
-bound as a prepared-statement parameter (never spliced into the SQL text);
-elsewhere refs interpolate as strings.  A missing ref is a request-time
-error; a `{~ref}` resolves null (SQL `NULL`) when missing.  A config value
-that is a lone `'{ref}'` resolves to the referenced *native* JSON value
-(number, bool, ...), not a string — which is what makes numeric compares and
-typed `exec` input work.  `{options.*}` refs resolve into the config once at
-load time and so may form SQL text.
+bound as a prepared-statement parameter (never spliced into the SQL text), in
+ClickHouse SQL as a typed server-side parameter; elsewhere refs interpolate
+as strings.  A missing ref is a request-time error; a `{~ref}` resolves null
+(SQL `NULL`) when missing.  A config value that is a lone `'{ref}'` resolves
+to the referenced *native* JSON value (number, bool, ...), not a string —
+which is what makes numeric compares and typed `exec` input work.
+`{options.*}` refs resolve into the config once at load time and so may form
+SQL text.  `{{` and `}}` write literal braces.
 
 ## Queries
 
@@ -196,6 +199,98 @@ result shape:
 | `one` | Single value, row 1 / column 1; no row → `404`. |
 | `bool` / `u64` / `s64` | Single value, coerced. |
 | `binary` | Raw response body.  See below. |
+
+## ClickHouse queries
+
+`clickhouse` runs SQL through the injected `ClickHouse::Client` (see
+[ClickHouse.md](ClickHouse.md)):
+
+```yaml
+/stats/events:
+  get:
+    args:
+      since: {type: time}
+      type:  {type: string, optional: true}
+    clickhouse: >-
+      SELECT toDate(ts) AS day, type, count() AS events
+      FROM grow.events
+      WHERE ts >= parseDateTime64BestEffort({args.since:String}, 3)
+        AND ({~args.type:Nullable(String)} IS NULL
+             OR type = {~args.type:Nullable(String)})
+      GROUP BY day, type ORDER BY day, type
+    return: list
+    settings: {max_execution_time: 10}
+```
+
+Every `{ref}` carries a ClickHouse type after a colon, e.g.
+`{args.id:UInt32}`.  At request time the refs become server-side parameters
+`{p0:UInt32}`, `{p1:...}`, numbered in order of appearance, and their values
+are sent separately, so they are never spliced into the SQL.  A ref without a
+type, or a binary ref, is a request-time error.  A `{~ref:Type}` binds NULL
+when missing, so its type should be `Nullable(...)`.  `{options.*}` refs take
+no type; as with `sql`, they are spliced into the SQL at load time.  A list
+value binds as an array and a dict as a map.
+
+| Key | Meaning |
+|---|---|
+| `clickhouse` | The SQL. |
+| `return` | As for `sql`: `ok` (default), `pass`, `list`, `hlist`, `dict`, `one`, `bool`, `u64` or `s64`. |
+| `into` | Capture the result as this var and continue, as for `sql`. |
+| `settings` | Extra ClickHouse settings, resolved per request.  One which resolves null is not sent. |
+| `readonly` | Default `true`, which sends `readonly=2`.  `false` allows writes. |
+
+A query only reads unless `readonly: false`; writes should normally go
+through `clickhouse-insert`.  Read-only queries use the reader login,
+`clickhouse-reader-user`, when one is configured, so the server can enforce
+it too; `readonly: false` queries and inserts use `clickhouse-user`.  A ClickHouse error replies `500` with
+`{"error": "ClickHouse:<code>: <message>", "code": 500}` and is logged.  A
+timeout, ClickHouse's (code 159) or the client's, replies `504`, and failing
+to reach ClickHouse `503`.
+
+## ClickHouse inserts
+
+`clickhouse-insert` appends the rows of a JSON request body, one row object
+or a list of them, to a table with a ClickHouse async insert:
+
+```yaml
+/events:
+  post:
+    allow: [$ingest]
+    body: {required: true, max-size: 16MB, type: application/json}
+    clickhouse-insert:
+      table: grow.events
+      row:
+        type:    {type: string, max: 64}
+        machine: {type: string, optional: true}
+      set:
+        source: as
+        ingested_by: '{session.user}'
+      max-rows: 10000
+```
+
+| Key | Meaning |
+|---|---|
+| `table` | Required `[db.]table`, checked at load. |
+| `row` | Arg declarations, as for `args`, validating each row.  A field neither declared nor in `set` is rejected. |
+| `set` | Fields set in every row, overwriting the client's, resolved per request.  A lone `'{ref}'` keeps its native type. |
+| `max-rows` | Default `10000`. |
+| `wait` | Default `true`: reply once ClickHouse has written the rows. |
+| `settings` | Extra ClickHouse settings, resolved per request.  One which resolves null is not sent. |
+
+The insert sends `async_insert=1`, `wait_for_async_insert` from `wait`,
+`date_time_input_format=best_effort`, `input_format_skip_unknown_fields=0`
+and `input_format_null_as_default=1`, then `settings`, and replies
+`{"rows": N}`.  Nothing is buffered in the API: durability comes from
+ClickHouse acknowledging the insert and from clients retrying failures.
+
+| Failure | Reply |
+|---|---|
+| The body is not JSON, not objects, or has trailing data | `400` |
+| A row fails `row` validation or has an unknown field | `400`, naming the row index and field |
+| More than `max-rows` rows | `413` |
+| ClickHouse rejects the data: a parse, type or constraint error code | `400`, with ClickHouse's message |
+| ClickHouse cannot be reached or times out | `503`, for the client to retry |
+| Any other ClickHouse error | `500` |
 
 ## Binary data
 
@@ -231,6 +326,32 @@ second selected column, else `application/octet-stream`; no row → `404`.
 type, `*` glob, or list) → `415`.  Declarations also appear in the OpenAPI
 spec as the request body.
 
+## Bearer tokens
+
+Machine clients may send `Authorization: Bearer <JWT>` instead of a session
+ID.  Install an `HTTP::BearerSessionManager` with the public keys that sign
+the tokens, and the usual `session` handler does the rest:
+
+```cpp
+auto sessions = SmartPtr(new cb::HTTP::BearerSessionManager);
+sessions->readPublicKeys("bearer.pub"); // One or more PEM public keys
+api.setSessionManager(sessions);
+```
+
+A token signed with RS256 by one of the keys gets a session whose ID,
+`{session.id}`, is the token's SHA-256, whose user, `{session.user}`, is its
+`sub` claim and whose groups are its `groups` claim.  It is not in
+`authenticated`, so `allow: [$authenticated]` does not admit a token; allow
+its groups instead.
+
+- The token is verified locally, never looked up in the DB, and the session
+  is cached until its `exp` claim, if any.
+- An invalid, expired (`exp`) or not yet valid (`nbf`) token, or one signed
+  otherwise, e.g. `"alg": "none"`, replies `401`.
+- A token is revoked only by rotating the signing key.  Keys may overlap
+  during a rotation: list both until tokens signed with the new key are in
+  use.
+
 ## Bound C++ callbacks
 
 Three signatures, picked by the `bind` overload:
@@ -263,10 +384,13 @@ All optional; set the ones your config uses, before `load()`:
 ```cpp
 api.setDBConnector(connector);        // sql / query endpoints
 api.setProcPool(procPool);            // exec and cmd conditions
-api.setSessionManager(sessions);      // sessions, allow/deny groups
+api.setSessionManager(sessions);      // sessions, allow/deny groups, and
+                                      // bearer tokens with a
+                                      // BearerSessionManager
 api.setOAuth2Providers(providers);    // login endpoints
 api.setClient(httpClient);            // OAuth2 HTTP client
 api.setTimeseriesDB(levelDB);         // timeseries endpoints
+api.setClickHouse(clickHouse);        // clickhouse / clickhouse-insert
 ```
 
 ## OpenAPI spec
@@ -284,8 +408,9 @@ descriptions from `help`.  `hide: true` omits an endpoint.  Serve it with:
 
 - **Bind name mismatch.**  A config referencing `bind: foo` with no
   `api.bind("foo", ...)` fails at `load()`.  Bind first.
-- **Missing subsystem.**  `sql:` without `setDBConnector`, or `exec:`
-  without `setProcPool`, fails at `load()`.
+- **Missing subsystem.**  `sql:` without `setDBConnector`, `exec:`
+  without `setProcPool`, or `clickhouse:` without `setClickHouse`, fails at
+  `load()`.
 - **Replying twice.**  Each Context maps to one HTTP response.
 - **Returning without replying or passing.**  An async handler that drops
   both `ctx` and `next` leaves the request hanging.
@@ -298,6 +423,14 @@ descriptions from `help`.  `hide: true` omits an endpoint.  Serve it with:
 - **Optional arg without `~`.**  An `optional: true` arg is absent when not
   supplied, so it must be referenced `{~args.x}`.  An arg with a `default:`
   is always present and uses `{args.x}`.
+- **ClickHouse DateTime parameters.**  `{args.t:DateTime64(3)}` only parses
+  `YYYY-MM-DD hh:mm:ss[.fff]` or a Unix time, not ISO 8601 with `T`, `Z` or
+  an offset, which a `type: time` arg is.  Use
+  `parseDateTime64BestEffort({args.t:String}, 3)` or a `Date` parameter.
+- **Literal braces in SQL.**  A regex `'\d{4}'` or JSON `'{}'` in `sql:` or
+  `clickhouse:` must be written `'\d{{4}}'`, `'{{}}'`.
+- **String length.**  A `string` arg's length limits are `min` and `max`;
+  unknown keys such as `max-length` are ignored.
 
 ## See also
 
@@ -307,3 +440,4 @@ descriptions from `help`.  `hide: true` omits an endpoint.  Serve it with:
 - [WebServer.md](WebServer.md) — the underlying HTTP layer.
 - [JSON.md](JSON.md) — sink-based response writing.
 - [MariaDB.md](MariaDB.md) — the DB layer behind queries.
+- [ClickHouse.md](ClickHouse.md) — the client behind ClickHouse endpoints.

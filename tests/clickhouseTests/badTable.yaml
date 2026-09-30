@@ -1,0 +1,7 @@
+---
+# The insert table is spliced into SQL, so it must be a [db.]table name
+jmpapi: 1.2.0
+endpoints:
+  /insert:
+    post:
+      clickhouse-insert: {table: "grow.events; DROP TABLE grow.users"}

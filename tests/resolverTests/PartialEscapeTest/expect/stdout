@@ -1,0 +1,1 @@
+{"sql":"SELECT '{{\"a\": 1}}' FROM grow.t WHERE a = {args.a:UInt8} AND b = '}}' AND c = '{{'","lone":"{{x}}"}

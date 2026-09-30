@@ -1,0 +1,20 @@
+400
+Content-Type: application/json
+{"error":"ClickHouse:467: Invalid boolean value, should be true/false, 1/0, but it starts with the '\"' character: (while reading the value of key b): (at row 1)\n: While executing WaitForAsyncInsert. (CANNOT_PARSE_BOOL)","code":400}
+
+CH: POST /
+PARAM async_insert: 1
+PARAM async_insert_busy_timeout_max_ms: 500
+PARAM database: testdb
+PARAM date_time_input_format: best_effort
+PARAM default_format: JSONCompact
+PARAM input_format_null_as_default: 1
+PARAM input_format_skip_unknown_fields: 0
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM query: INSERT INTO events FORMAT JSONEachRow
+PARAM wait_end_of_query: 1
+PARAM wait_for_async_insert: 0
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: {"b":"maybe"}
+

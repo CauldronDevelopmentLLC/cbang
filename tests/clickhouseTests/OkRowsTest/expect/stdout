@@ -1,0 +1,13 @@
+500
+Content-Type: application/json
+{"error":"DB row unexpected with query return type 'ok'","code":500}
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT 1

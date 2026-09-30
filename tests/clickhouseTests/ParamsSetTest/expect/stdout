@@ -1,0 +1,20 @@
+200
+Content-Type: application/json
+[]
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM max_execution_time: 10
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM param_p0: 2026-09-01T00:00:00.5+02:00
+PARAM param_p1: it's\ta\\test
+PARAM param_p2: it's\ta\\test
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT toDate(ts) AS day, type, count() AS events FROM grow.events WHERE ts >= parseDateTime64BestEffort({p0:String}, 3)
+  AND ({p1:Nullable(String)} IS NULL
+       OR type = {p2:Nullable(String)})
+GROUP BY day, type ORDER BY day, type

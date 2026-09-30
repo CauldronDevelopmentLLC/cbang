@@ -1,0 +1,8 @@
+SELECT {p0:UInt32}, {p1:String}, {p2:Nullable(String)}, {p3:Array(Nullable(String))}, {p4:Bool}, {p5:Map(String, Float64)}, {p6:Enum8('a:b' = 1)}, '{literal}'
+PARAM[p0]: 42
+PARAM[p1]: O'Brien \\ \t
+PARAM[p2]: \N
+PARAM[p3]: ['a','b\'c',NULL]
+PARAM[p4]: true
+PARAM[p5]: {'k':1.5}
+PARAM[p6]: O'Brien \\ \t

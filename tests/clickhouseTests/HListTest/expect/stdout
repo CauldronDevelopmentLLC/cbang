@@ -1,0 +1,13 @@
+200
+Content-Type: application/json
+[["a","b"],[1,["x"]],[3,[]]]
+
+CH: POST /
+PARAM database: testdb
+PARAM default_format: JSONCompact
+PARAM output_format_json_quote_64bit_integers: 0
+PARAM readonly: 2
+PARAM wait_end_of_query: 1
+X-ClickHouse-User: tester
+X-ClickHouse-Key: secret
+BODY: SELECT a, b FROM grow.grid

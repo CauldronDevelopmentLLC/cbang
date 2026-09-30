@@ -51,6 +51,7 @@ namespace cb {
 
       void load(const JSON::ValuePtr &def);
       void add(const std::string &name, const JSON::ValuePtr &arg);
+      bool has(const std::string &source) const;
       void appendSpecs(JSON::Value &spec) const;
 
       // From ArgConstraint

@@ -1,0 +1,26 @@
+---
+# Bearer token fixture: JWTs are verified by the session manager, see
+# bearer/make.py, so the usual session handler is all it takes.  A token's
+# session is never looked up in the DB.
+jmpapi: 1.2.0
+info: {title: bearer test, version: 0.0.0}
+
+endpoints:
+  /.*:
+    get|post:
+      handler: session
+      sql: "CALL AuthSession({session.id})"
+
+  /whoami:
+    get:
+      reply: {id: '{session.id}', user: '{~session.user}', group: '{group}'}
+
+  /ingest:
+    post: {allow: [$grow-ingest], reply: {user: '{session.user}'}}
+
+  /admin:
+    get: {allow: [$admin], reply: {admin: true}}
+
+  # Logged in users only, which a token's session is not
+  /private:
+    get: {allow: [$authenticated], reply: {private: true}}
