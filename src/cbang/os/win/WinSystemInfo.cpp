@@ -40,6 +40,7 @@
 #include <windows.h>
 #include <sysinfoapi.h>
 #include <iphlpapi.h>
+#include <cstddef>
 
 #pragma comment(lib, "iphlpapi.lib")
 
@@ -163,25 +164,36 @@ vector<set<unsigned>> WinSystemInfo::getCPUPerformanceLevels() const {
       (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)data, &size)) return {};
 
   map<BYTE, set<unsigned>> classes;
+  set<unsigned> covered;
 
   for (DWORD offset = 0; offset < size;) {
+    if (size - offset < offsetof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
+        Processor)) return {};
     auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(data + offset);
-    if (!info->Size) return {};
+    if (!info->Size || info->Size > size - offset) return {};
     offset += info->Size;
 
     if (info->Relationship != RelationProcessorCore) continue;
+    if (info->Size < offsetof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
+        Processor) + sizeof(PROCESSOR_RELATIONSHIP)) return {};
     auto &proc = info->Processor;
     if (proc.GroupCount != 1 || proc.GroupMask[0].Group) return {};
 
     auto &cpus = classes[proc.EfficiencyClass];
     KAFFINITY mask = proc.GroupMask[0].Mask;
+    if (!mask) return {};
 
     for (unsigned i = 0; i < sizeof(mask) * 8; i++)
-      if (mask & ((KAFFINITY)1 << i)) cpus.insert(i);
+      if (mask & ((KAFFINITY)1 << i)) {
+        if (!covered.insert(i).second) return {};
+        cpus.insert(i);
+      }
   }
 
-  // One class means the system is homogeneous for this purpose.
-  if (classes.size() < 2) return {};
+  auto count = GetActiveProcessorCount(0);
+  if (!count || covered.size() != count) return {};
+
+  // Preserve a complete single class instead of conflating it with failure.
 
   vector<set<unsigned>> levels;
   for (auto it = classes.rbegin(); it != classes.rend(); it++)

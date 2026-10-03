@@ -106,9 +106,12 @@ namespace cb {
     /// An empty set means availability could not be represented reliably.
     virtual std::set<unsigned> getAvailableCPUs() const;
 
-    /// Logical CPUs grouped by performance level, fastest first.  Returns an
-    /// empty vector if the topology cannot be classified into distinct levels.
-    /// Platforms may expose more than two levels.
+    /// Online logical CPUs grouped by detected performance level, fastest
+    /// first. One level represents a homogeneous classification; an empty
+    /// vector means classification is unavailable or unreliable. Nonempty
+    /// results contain nonempty, disjoint sets covering all online CPUs.
+    /// Platforms may expose more than two levels. Classification may use
+    /// platform-specific heuristics.
     virtual std::vector<std::set<unsigned>>
     getCPUPerformanceLevels() const {return {};}
 
