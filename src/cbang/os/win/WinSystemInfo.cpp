@@ -40,6 +40,7 @@
 #include <windows.h>
 #include <sysinfoapi.h>
 #include <iphlpapi.h>
+#include <cstddef>
 
 #pragma comment(lib, "iphlpapi.lib")
 
@@ -50,6 +51,16 @@ using namespace std;
 namespace {
   URI schemelessURI(const string &s) {
     return s.find("://") == string::npos ? "http://" + s : s;
+  }
+
+
+  bool hasRepresentableAffinityMask() {
+    // WOW64 folds 64-bit affinity masks into 32 bits.  Reject any single
+    // processor group that is wider than the current process can represent.
+    if (GetActiveProcessorGroupCount() != 1) return false;
+
+    auto count = GetActiveProcessorCount(0);
+    return count && count <= sizeof(KAFFINITY) * 8;
   }
 }
 
@@ -65,10 +76,36 @@ uint32_t WinSystemInfo::getCPUCount() const {
 }
 
 
+SystemInfo::cpu_affinity_capability_t
+WinSystemInfo::getCPUAffinityCapability() const {
+  // The current cbang affinity representation is a flat mask for one
+  // processor group.  Do not advertise hard affinity when that representation
+  // cannot address the machine correctly.
+  return hasRepresentableAffinityMask() ?
+    CPU_AFFINITY_HARD : CPU_AFFINITY_NONE;
+}
+
+
+set<unsigned> WinSystemInfo::getAvailableCPUs() const {
+  // Keep the flat-mask limitation; reject unrepresentable WOW64 groups too.
+  if (!hasRepresentableAffinityMask()) return {};
+
+  DWORD_PTR processMask = 0, systemMask = 0;
+  if (!GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask))
+    return {};
+
+  set<unsigned> cpus;
+  for (unsigned cpu = 0; cpu < sizeof(processMask) * 8; cpu++)
+    if (processMask & ((DWORD_PTR)1 << cpu)) cpus.insert(cpu);
+
+  return cpus;
+}
+
+
 set<unsigned> WinSystemInfo::getPerformanceCPUs() const {
   // Only machines with a single processor group are supported.  CPU indices
   // are bit positions in that group's affinity mask.
-  if (GetActiveProcessorGroupCount() != 1) return {};
+  if (!hasRepresentableAffinityMask()) return {};
 
   DWORD size = 0;
   GetLogicalProcessorInformationEx(RelationProcessorCore, 0, &size);
@@ -108,6 +145,106 @@ set<unsigned> WinSystemInfo::getPerformanceCPUs() const {
       if (p.second == maxClass) cpus.insert(p.first);
 
   return cpus;
+}
+
+
+vector<set<unsigned>> WinSystemInfo::getCPUPerformanceLevels() const {
+  // EfficiencyClass is ordered but is not limited to two values.  Preserve
+  // every class reported by Windows instead of assuming a P/E-only topology.
+  // Keep the same representable flat-mask limitation as getPerformanceCPUs().
+  if (!hasRepresentableAffinityMask()) return {};
+
+  DWORD size = 0;
+  GetLogicalProcessorInformationEx(RelationProcessorCore, 0, &size);
+  if (!size) return {};
+
+  vector<uint8_t> buf(size);
+  auto data = buf.data();
+  if (!GetLogicalProcessorInformationEx(RelationProcessorCore,
+      (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)data, &size)) return {};
+
+  map<BYTE, set<unsigned>> classes;
+  set<unsigned> covered;
+
+  for (DWORD offset = 0; offset < size;) {
+    if (size - offset < offsetof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
+        Processor)) return {};
+    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(data + offset);
+    if (!info->Size || info->Size > size - offset) return {};
+    offset += info->Size;
+
+    if (info->Relationship != RelationProcessorCore) continue;
+    if (info->Size < offsetof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX,
+        Processor) + sizeof(PROCESSOR_RELATIONSHIP)) return {};
+    auto &proc = info->Processor;
+    if (proc.GroupCount != 1 || proc.GroupMask[0].Group) return {};
+
+    auto &cpus = classes[proc.EfficiencyClass];
+    KAFFINITY mask = proc.GroupMask[0].Mask;
+    if (!mask) return {};
+
+    for (unsigned i = 0; i < sizeof(mask) * 8; i++)
+      if (mask & ((KAFFINITY)1 << i)) {
+        if (!covered.insert(i).second) return {};
+        cpus.insert(i);
+      }
+  }
+
+  auto count = GetActiveProcessorCount(0);
+  if (!count || covered.size() != count) return {};
+
+  // Preserve a complete single class instead of conflating it with failure.
+
+  vector<set<unsigned>> levels;
+  for (auto it = classes.rbegin(); it != classes.rend(); it++)
+    levels.push_back(it->second);
+
+  return levels;
+}
+
+
+vector<set<unsigned>> WinSystemInfo::getCPUCoreThreads() const {
+  // CPU indices used by cbang affinity are bit positions in one processor
+  // group's affinity mask.  Require that the full group fit that mask.
+  if (!hasRepresentableAffinityMask()) return {};
+
+  DWORD size = 0;
+  GetLogicalProcessorInformationEx(RelationProcessorCore, 0, &size);
+  if (!size) return {};
+
+  vector<uint8_t> buf(size);
+  auto data = buf.data();
+  if (!GetLogicalProcessorInformationEx(RelationProcessorCore,
+      (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)data, &size)) return {};
+
+  vector<set<unsigned>> cores;
+  set<unsigned> covered;
+
+  for (DWORD offset = 0; offset < size;) {
+    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(data + offset);
+    if (!info->Size) return {};
+    offset += info->Size;
+
+    if (info->Relationship != RelationProcessorCore) continue;
+    auto &proc = info->Processor;
+    if (proc.GroupCount != 1 || proc.GroupMask[0].Group) return {};
+
+    set<unsigned> core;
+    KAFFINITY mask = proc.GroupMask[0].Mask;
+    for (unsigned i = 0; i < sizeof(mask) * 8; i++)
+      if (mask & ((KAFFINITY)1 << i)) core.insert(i);
+
+    if (core.empty()) return {};
+    for (auto cpu: core)
+      if (!covered.insert(cpu).second) return {}; // Overlap is inconsistent
+
+    cores.push_back(core);
+  }
+
+  auto count = GetActiveProcessorCount(0);
+  if (!count || covered.size() != count) return {};
+
+  return cores;
 }
 
 

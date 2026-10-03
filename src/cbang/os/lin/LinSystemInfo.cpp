@@ -50,6 +50,11 @@ using namespace std;
 #endif
 
 #include <unistd.h>
+#include <cmath>
+
+#ifdef __linux__
+#include <sched.h>
+#endif
 
 namespace {
   string get_proxy_var(const char *name) {
@@ -110,6 +115,42 @@ uint32_t LinSystemInfo::getCPUCount() const {
 }
 
 
+SystemInfo::cpu_affinity_capability_t
+LinSystemInfo::getCPUAffinityCapability() const {
+#ifdef __linux__
+  // sched_getaffinity() fails if the fixed cpu_set_t is too small to
+  // represent the kernel's CPU affinity mask.  Do not advertise hard
+  // affinity when cbang cannot represent that mask.
+  cpu_set_t cpuSet;
+  CPU_ZERO(&cpuSet);
+
+  if (sched_getaffinity(0, sizeof(cpuSet), &cpuSet))
+    return CPU_AFFINITY_NONE;
+
+  return CPU_AFFINITY_HARD;
+#else
+  return CPU_AFFINITY_NONE;
+#endif
+}
+
+
+set<unsigned> LinSystemInfo::getAvailableCPUs() const {
+#ifdef __linux__
+  cpu_set_t cpuSet;
+  CPU_ZERO(&cpuSet);
+  if (sched_getaffinity(0, sizeof(cpuSet), &cpuSet)) return {};
+
+  set<unsigned> cpus;
+  for (unsigned cpu = 0; cpu < CPU_SETSIZE; cpu++)
+    if (CPU_ISSET(cpu, &cpuSet)) cpus.insert(cpu);
+
+  return cpus;
+#else
+  return SystemInfo::getAvailableCPUs();
+#endif
+}
+
+
 set<unsigned> LinSystemInfo::getPerformanceCPUs() const {
   try {
     auto online = parseCPUList(readSys("/sys/devices/system/cpu/online"));
@@ -127,6 +168,131 @@ set<unsigned> LinSystemInfo::getPerformanceCPUs() const {
     if (perf.empty()) perf = readPerCPU(online, "cpufreq/cpuinfo_max_freq");
 
     return selectFastestCPUs(perf);
+  } CATCH_WARNING;
+
+  return {};
+}
+
+
+vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
+  try {
+    auto online = parseCPUList(readSys("/sys/devices/system/cpu/online"));
+    if (online.empty()) return {};
+    if (online.size() == 1) return {online};
+
+    // Intel hybrid PMUs identify the core classes directly.  Current kernels
+    // may expose cpu_core, cpu_atom and cpu_lowpower, so do not assume there
+    // are exactly two classes.  Only use the PMU classification when the
+    // classes are disjoint and together cover every online CPU.
+    vector<set<unsigned>> intel;
+    for (auto name: {"cpu_core", "cpu_atom", "cpu_lowpower"}) {
+      auto cpus = parseCPUList(
+        readSys("/sys/devices/" + string(name) + "/cpus"));
+      if (!cpus.empty()) intel.push_back(cpus);
+    }
+
+    if (!intel.empty()) {
+      set<unsigned> covered;
+      bool valid = true;
+
+      for (auto &cpus: intel)
+        for (auto cpu: cpus)
+          if (!online.count(cpu) || !covered.insert(cpu).second)
+            valid = false;
+
+      if (valid && covered == online) return intel;
+      // Partial/contradictory PMU evidence must not become one frequency class.
+      return {};
+    }
+
+    // ARM and RISC-V expose relative CPU capacity.  Capacity is an ordered
+    // performance measure and may describe more than two classes.
+    auto perf = readPerCPU(online, "cpu_capacity");
+    if (!perf.empty()) {
+      map<double, set<unsigned>> classes;
+      for (auto &p: perf) {
+        if (!isfinite(p.second) || p.second <= 0) return {};
+        classes[p.second].insert(p.first);
+      }
+
+      vector<set<unsigned>> levels;
+      for (auto it = classes.rbegin(); it != classes.rend(); it++)
+        levels.push_back(it->second);
+      return levels;
+    }
+
+    // Max frequency is only a fallback, e.g. AMD Zen/Zen-c.  Small frequency
+    // differences can occur inside one core class, so preserve the existing
+    // selectFastestCPUs() heuristic instead of treating each value as a class.
+    perf = readPerCPU(online, "cpufreq/cpuinfo_max_freq");
+    if (perf.size() != online.size()) return {};
+    for (auto &p: perf)
+      if (!isfinite(p.second) || p.second <= 0) return {};
+
+    auto fastest = selectFastestCPUs(perf);
+    // Valid complete measurements with no significant gap form one class
+    // under the existing frequency heuristic.
+    if (fastest.empty()) return {online};
+
+    set<unsigned> slower;
+    for (auto cpu: online)
+      if (!fastest.count(cpu)) slower.insert(cpu);
+    if (slower.empty()) return {online};
+
+    return {fastest, slower};
+  } CATCH_WARNING;
+
+  return {};
+}
+
+
+vector<set<unsigned>> LinSystemInfo::getCPUCoreThreads() const {
+  try {
+    auto online = parseCPUList(readSys("/sys/devices/system/cpu/online"));
+    if (online.empty()) return {};
+
+    vector<set<unsigned>> cores;
+    set<unsigned> covered;
+
+    for (auto cpu: online) {
+      if (covered.count(cpu)) continue;
+
+      auto siblings = parseCPUList(readSys(
+        "/sys/devices/system/cpu/cpu" + String(cpu) +
+        "/topology/thread_siblings_list"));
+      if (siblings.empty()) return {};
+
+      // Sysfs topology may include an offline sibling.  Report only online
+      // logical CPUs because these are the IDs that can actually be pinned.
+      set<unsigned> core;
+      for (auto sibling: siblings)
+        if (online.count(sibling)) core.insert(sibling);
+
+      if (core.empty() || !core.count(cpu)) return {};
+
+      // Require a symmetric view from every online sibling.  This avoids
+      // returning a partial or internally inconsistent topology during a
+      // hotplug/topology transition.
+      for (auto sibling: core) {
+        auto peerSiblings = parseCPUList(readSys(
+          "/sys/devices/system/cpu/cpu" + String(sibling) +
+          "/topology/thread_siblings_list"));
+        if (peerSiblings.empty()) return {};
+
+        set<unsigned> peerCore;
+        for (auto peer: peerSiblings)
+          if (online.count(peer)) peerCore.insert(peer);
+        if (peerCore != core) return {};
+      }
+
+      for (auto sibling: core)
+        if (!covered.insert(sibling).second) return {}; // Overlapping cores
+
+      cores.push_back(core);
+    }
+
+    if (covered != online) return {};
+    return cores;
   } CATCH_WARNING;
 
   return {};
