@@ -50,6 +50,7 @@ using namespace std;
 #endif
 
 #include <unistd.h>
+#include <cmath>
 
 #ifdef __linux__
 #include <sched.h>
@@ -176,7 +177,8 @@ set<unsigned> LinSystemInfo::getPerformanceCPUs() const {
 vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
   try {
     auto online = parseCPUList(readSys("/sys/devices/system/cpu/online"));
-    if (online.size() < 2) return {};
+    if (online.empty()) return {};
+    if (online.size() == 1) return {online};
 
     // Intel hybrid PMUs identify the core classes directly.  Current kernels
     // may expose cpu_core, cpu_atom and cpu_lowpower, so do not assume there
@@ -189,7 +191,7 @@ vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
       if (!cpus.empty()) intel.push_back(cpus);
     }
 
-    if (1 < intel.size()) {
+    if (!intel.empty()) {
       set<unsigned> covered;
       bool valid = true;
 
@@ -199,6 +201,8 @@ vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
             valid = false;
 
       if (valid && covered == online) return intel;
+      // Partial/contradictory PMU evidence must not become one frequency class.
+      return {};
     }
 
     // ARM and RISC-V expose relative CPU capacity.  Capacity is an ordered
@@ -206,8 +210,10 @@ vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
     auto perf = readPerCPU(online, "cpu_capacity");
     if (!perf.empty()) {
       map<double, set<unsigned>> classes;
-      for (auto &p: perf) classes[p.second].insert(p.first);
-      if (classes.size() < 2) return {};
+      for (auto &p: perf) {
+        if (!isfinite(p.second) || p.second <= 0) return {};
+        classes[p.second].insert(p.first);
+      }
 
       vector<set<unsigned>> levels;
       for (auto it = classes.rbegin(); it != classes.rend(); it++)
@@ -219,13 +225,19 @@ vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
     // differences can occur inside one core class, so preserve the existing
     // selectFastestCPUs() heuristic instead of treating each value as a class.
     perf = readPerCPU(online, "cpufreq/cpuinfo_max_freq");
+    if (perf.size() != online.size()) return {};
+    for (auto &p: perf)
+      if (!isfinite(p.second) || p.second <= 0) return {};
+
     auto fastest = selectFastestCPUs(perf);
-    if (fastest.empty()) return {};
+    // Valid complete measurements with no significant gap form one class
+    // under the existing frequency heuristic.
+    if (fastest.empty()) return {online};
 
     set<unsigned> slower;
     for (auto cpu: online)
       if (!fastest.count(cpu)) slower.insert(cpu);
-    if (slower.empty()) return {};
+    if (slower.empty()) return {online};
 
     return {fastest, slower};
   } CATCH_WARNING;
