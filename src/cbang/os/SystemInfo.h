@@ -65,16 +65,26 @@ namespace cb {
 
     virtual uint32_t getCPUCount() const = 0;
 
+    /// Logical CPUs the current process may run on.  On Linux this is the
+    /// calling thread's affinity mask.  Returns an empty set if CPU affinity
+    /// is not supported.
+    virtual std::set<unsigned> getAvailableCPUs() const {return {};}
+
+    /// Online logical CPUs grouped by performance level, fastest first.
+    /// Returns one level if all cores are the same or an empty vector if the
+    /// topology is unknown.
+    virtual std::vector<std::set<unsigned>>
+    getCPUPerformanceLevels() const {return {};}
+
+    /// Online logical CPUs grouped by physical core.  Returns an empty vector
+    /// if the topology is unknown.
+    virtual std::vector<std::set<unsigned>>
+    getCPUCoreThreads() const {return {};}
+
     /// Logical CPU indices of the fastest cores on hybrid CPUs.  Returns an
     /// empty set if all cores are the same or the topology is unknown.
-    virtual std::set<unsigned> getPerformanceCPUs() const {return {};}
+    std::set<unsigned> getPerformanceCPUs() const;
     virtual uint32_t getPerformanceCPUCount() const;
-
-    typedef enum {
-      CPU_AFFINITY_NONE,
-      CPU_AFFINITY_HINT,
-      CPU_AFFINITY_HARD,
-    } cpu_affinity_capability_t;
 
     virtual uint64_t getMemoryInfo(memory_info_t type) const = 0;
     uint64_t getTotalMemory()    const {return getMemoryInfo(MEM_INFO_TOTAL);}
@@ -90,45 +100,12 @@ namespace cb {
     virtual void getNameservers(std::vector<SockAddr> &addrs);
     virtual URI getProxy(const URI &uri) const = 0;
 
-    // Append new virtual API after the existing virtual interface.
-
-    /// Affinity enforcement supported by cbang on the current platform.
-    /// NONE means no CPU-placement control, HINT means scheduler guidance
-    /// without a placement guarantee.  HARD means an OS-level restriction
-    /// mechanism exists, not that every affinity call is guaranteed to work.
-    virtual cpu_affinity_capability_t getCPUAffinityCapability() const
-      {return CPU_AFFINITY_NONE;}
-
-    /// Logical CPUs currently available to the calling execution context.
-    /// On Linux this is the calling thread's affinity/cpuset mask.  On other
-    /// platforms with a readable process mask it reflects that restriction;
-    /// otherwise the default is the logical CPU range from getCPUCount().
-    /// An empty set means availability could not be represented reliably.
-    virtual std::set<unsigned> getAvailableCPUs() const;
-
-    /// Online logical CPUs grouped by detected performance level, fastest
-    /// first. One level represents a homogeneous classification; an empty
-    /// vector means classification is unavailable or unreliable. Nonempty
-    /// results contain nonempty, disjoint sets covering all online CPUs.
-    /// Platforms may expose more than two levels. Classification may use
-    /// platform-specific heuristics.
-    virtual std::vector<std::set<unsigned>>
-    getCPUPerformanceLevels() const {return {};}
-
-    /// Logical CPUs grouped by physical core.  Each set contains the online
-    /// logical CPUs that share one physical core.  A core without SMT is a
-    /// singleton set.  Returns an empty vector when the mapping cannot be
-    /// determined reliably.
-    virtual std::vector<std::set<unsigned>>
-    getCPUCoreThreads() const {return {};}
-
-
     static bool matchesProxyPattern(const std::string &pattern, const URI &uri);
 
     void add(Info &info);
 
   protected:
-    static std::set<unsigned>
-    selectFastestCPUs(const std::map<unsigned, double> &perf);
+    static std::vector<std::set<unsigned>>
+    clusterCPUs(const std::map<unsigned, double> &perf);
   };
 }

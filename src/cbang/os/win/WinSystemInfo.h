@@ -39,9 +39,7 @@ namespace cb {
   public:
     // From SystemInfo
     uint32_t getCPUCount() const override;
-    cpu_affinity_capability_t getCPUAffinityCapability() const override;
     std::set<unsigned> getAvailableCPUs() const override;
-    std::set<unsigned> getPerformanceCPUs() const override;
     std::vector<std::set<unsigned>>
     getCPUPerformanceLevels() const override;
     std::vector<std::set<unsigned>>
