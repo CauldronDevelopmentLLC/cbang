@@ -83,14 +83,21 @@ void SessionHandler::operator()(const CtxPtr &ctx, const Cont &next) {
   // Create session
   auto session = SmartPtr(new HTTP::Session(sid, req.getClientAddr()));
   ctx->setSession(session);
-  sessionMan.addSession(session);
 
   // Lookup Session in DB
-  if (queryDef->sql.empty()) return next(ctx);
+  if (queryDef->sql.empty()) {
+    sessionMan.addSession(session);
+    return next(ctx);
+  }
 
   auto cb = [this, session, ctx, next] (
     HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
+      // Cache the session only once the DB has answered.  After a failed
+      // lookup the next request asks the DB again, rather than finding a
+      // session with no user and being treated as anonymous.
+      api.getSessionManager().addSession(session);
+
       if (session->hasString("user")) {
         LOG_DEBUG(3, "Authenticated: " << session->getString("user"));
         session->addGroup("authenticated");

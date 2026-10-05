@@ -1,0 +1,1 @@
+ERROR:Exception: DB:1290: The MariaDB server is running with the --read-only option so it cannot execute this statement

@@ -370,6 +370,21 @@ namespace {
       hdrs.insert("Authorization", "testsid");
       pushSession();
 
+    } else if (s == "SessionRetry") {
+      // The session lookup fails, here because the DB is read-only, then
+      // succeeds.  The failed lookup must not leave the session cached with
+      // no user: the second request looks it up again and is authenticated.
+      path     = "/whoami";
+      requests = 2;
+      hdrs.insert("Authorization", "testsid");
+      Response resp;
+      resp.errnoVal = ER_OPTION_PREVENTS_STATEMENT;
+      resp.error    = "The MariaDB server is running with the --read-only "
+        "option so it cannot execute this statement";
+      resp.sqlstate = "HY000";
+      FakeDB::push(resp);
+      pushSession();
+
     } else if (s == "BearerSession") {
       // The token's own session: its ID is the token's SHA-256, its user the
       // sub claim and its groups the groups claim only, not "authenticated".

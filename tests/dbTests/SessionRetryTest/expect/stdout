@@ -1,0 +1,10 @@
+500
+Content-Type: application/json
+{"error":"DB:1290: The MariaDB server is running with the --read-only option so it cannot execute this statement","code":500}
+200
+Content-Type: application/json
+{"user":"alice"}
+SQL: CALL AuthSession(?)
+BIND[0]: 74657374736964
+SQL: CALL AuthSession(?)
+BIND[0]: 74657374736964
