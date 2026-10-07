@@ -185,7 +185,7 @@ void SystemInfo::add(Info &info) {
 
   auto cores = getCPUCoreThreads();
   if (!cores.empty()) {
-    info.add(category, "CPU Cores", String(cores.size()));
+    info.add(category, "CPU Cores", String(static_cast<uint64_t>(cores.size())));
     info.add(category, "CPU Core Threads", formatCPUGroups(cores));
   }
 
