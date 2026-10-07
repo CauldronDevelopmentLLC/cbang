@@ -45,6 +45,7 @@
 #include <cerrno>
 
 #include <sys/epoll.h>
+#include <sys/eventfd.h>
 #include <unistd.h>
 
 using namespace cb::Event;
@@ -294,13 +295,25 @@ FDPoolEPoll::FDPoolEPoll(Base &base) :
   event(base.newEvent([this] {processResults();})) {
 
   fd = epoll_create1(EPOLL_CLOEXEC);
-  if (!fd) THROW("Failed to create epoll");
+  if (fd == -1) THROW("Failed to create epoll: " << SysError());
+
+  wakeFD = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+  if (wakeFD == -1) THROW("Failed to create eventfd: " << SysError());
+
+  struct epoll_event ev;
+  memset(&ev, 0, sizeof(ev));
+  ev.events = EPOLLIN;
+  ev.data.fd = wakeFD;
+  if (epoll_ctl(fd, EPOLL_CTL_ADD, wakeFD, &ev))
+    THROW("Failed to add eventfd to epoll: " << SysError());
+
   start();
 }
 
 
 FDPoolEPoll::~FDPoolEPoll() {
   join();
+  if (wakeFD != -1) close(wakeFD);
   if (fd != -1) close(fd);
 }
 
@@ -374,6 +387,18 @@ void FDPoolEPoll::queueCommand(cmd_t cmd, int fd,
                                const SmartPointer<Transfer> &tran) {
   LOG_DEBUG(5, CBANG_FUNC << "() fd=" << fd << " cmd=" << cmd);
   cmds.push({cmd, fd, tran});
+  wake();
+}
+
+
+void FDPoolEPoll::wake() {
+  // Ring once until the pool thread answers.  The command is pushed first and
+  // the thread clears the flag before it drains cmds, so none is missed.
+  if (wakePending.exchange(true)) return;
+
+  uint64_t one = 1;
+  if (::write(wakeFD, &one, sizeof(one)) != sizeof(one))
+    LOG_ERROR("Failed to wake the FD pool: " << SysError());
 }
 
 
@@ -386,6 +411,10 @@ FDPoolEPoll::FDRec &FDPoolEPoll::getFD(int fd) {
 
 
 void FDPoolEPoll::processResults() {
+  // Cleared before draining, so a result queued from here on activates the
+  // event again
+  resultsPending = false;
+
   while (!results.empty()) {
     auto &cmd = results.top();
     LOG_DEBUG(5, CBANG_FUNC << "() fd=" << cmd.fd << " cmd=" << cmd.cmd);
@@ -461,6 +490,15 @@ void FDPoolEPoll::run() {
 
     for (int i = 0; i < count; i++)
       try {
+        // The doorbell.  Cleared before the commands are drained below.
+        if (records[i].data.fd == wakeFD) {
+          uint64_t n;
+          if (::read(wakeFD, &n, sizeof(n)) == -1 && errno != EAGAIN)
+            LOG_ERROR("Failed to read the FD pool's eventfd: " << SysError());
+          wakePending = false;
+          continue;
+        }
+
         unsigned events = epoll_to_fd_events(records[i].events);
         auto &fd        = getFD(records[i].data.fd);
         CHECK_STATUS(fd.transfer(events));
@@ -492,8 +530,9 @@ void FDPoolEPoll::run() {
     for (auto p: changed)
       queueStatus(p.first, p.second);
 
-    // Trigger the event once here to avoid expensive repeated calls
-    if (queuedResults) event->activate();
+    // Trigger the event once here to avoid expensive repeated calls, and not
+    // at all while it is still pending, since activating takes libevent's lock
+    if (queuedResults && !resultsPending.exchange(true)) event->activate();
   }
 }
 
