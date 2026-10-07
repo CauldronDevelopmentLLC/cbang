@@ -42,6 +42,7 @@
 #include <cbang/thread/Thread.h>
 #include <cbang/util/SPSCQueue.h>
 
+#include <atomic>
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
@@ -54,6 +55,15 @@ namespace cb {
     class FDPoolEPoll :
       public FDPool, public Thread, public FDPoolEPollCommand::Enum {
       int fd = -1;
+
+      // Wakes the pool thread when a command is queued, so it need not wait
+      // out its epoll timeout.  A doorbell only: the commands stay in cmds.
+      int wakeFD = -1;
+      std::atomic<bool> wakePending{false};
+
+      // Whether the results event is active and not yet processed, so the
+      // pool thread need not activate it, and take libevent's lock, again
+      std::atomic<bool> resultsPending{false};
 
       SmartPointer<Event> event;
 
@@ -187,6 +197,7 @@ namespace cb {
     protected:
       void queueStatus(int fd, int status);
       void queueCommand(cmd_t cmd, int fd, const SmartPointer<Transfer> &tran);
+      void wake();
       FDRec &getFD(int fd);
       void processResults();
 
