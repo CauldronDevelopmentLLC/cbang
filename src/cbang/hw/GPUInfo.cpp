@@ -36,6 +36,7 @@
 #include "OpenCLLibrary.h"
 #include "CUDALibrary.h"
 #include "HIPLibrary.h"
+#include "GPUVendor.h"
 
 #include <cbang/Exception.h>
 #include <cbang/log/Logger.h>
@@ -110,6 +111,18 @@ GPUInfo::GPUInfo(const GPUIndex &index) {
     gpu.setSpecies(entry.getSpecies());
     if (gpu.getDescription().empty())
       gpu.setDescription(entry.getDescription());
+
+#ifdef __APPLE__
+    // Every Apple silicon GPU supports Metal
+    if (gpu.getVendorID() == GPUVendor::VENDOR_APPLE && gpu.getDeviceID() &&
+        gpu.getOpenCL().isValid()) {
+      ComputeDevice metal = gpu.getOpenCL();
+      metal.platform      = "Metal";
+      metal.platformIndex = 0;
+      metal.deviceIndex   = metal.socIndex;
+      gpu.setMetal(metal);
+    }
+#endif
 
     gpus.push_back(gpu);
   }
