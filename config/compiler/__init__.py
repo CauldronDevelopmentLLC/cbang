@@ -282,7 +282,7 @@ def configure(conf, cstd = 'c99'):
         if harden:
             if optimize: env.CBDefine('_FORTIFY_SOURCE=2')
             env.AppendUnique(CCFLAGS = ['-fstack-protector-strong'])
-            if env['PLATFORM'] != 'darwin':
+            if compiler != 'clang':
                 env.AppendUnique(LINKFLAGS = ['-Wl,-z,relro,-z,now'])
                 if not static: env.AppendUnique(LINKFLAGS = ['-pie'])
 
