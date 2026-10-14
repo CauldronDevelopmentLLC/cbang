@@ -241,8 +241,11 @@ def configure(conf, cstd = 'c99'):
 
     else: # !debug
         if compiler_mode == 'gnu': # Strip symbols
-            if compiler != 'clang': env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
             env.AppendUnique(LINKFLAGS = ['-Wl,-x'])
+            if env['PLATFORM'] == 'darwin':
+                # -s is obsolete in Apple ld and is equivalent to -x,-S
+                env.AppendUnique(LINKFLAGS = ['-Wl,-S'])
+            else: env.AppendUnique(LINKFLAGS = ['-Wl,-s'])
 
         env.CBDefine('NDEBUG')
 
