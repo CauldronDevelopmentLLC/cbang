@@ -63,7 +63,7 @@ bool FileHandler::operator()(Request &req) {
 
     // Remove unsafe parts
     vector<string> parts;
-    String::tokenize(orig, parts, "/");
+    String::tokenize(orig, parts, SystemUtilities::path_separators);
     vector<string> result;
 
     for (auto &part: parts) {
