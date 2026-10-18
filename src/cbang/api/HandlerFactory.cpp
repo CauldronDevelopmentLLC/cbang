@@ -70,6 +70,7 @@ SmartPointer<Handler> HandlerFactory::create(req_msg_cb_t cb) {
     auto msg  = req.getJSONMessage();
     if (msg.isNull()) msg = req.parseArgs();
     cb(ctx->getRequest(), msg);
+    if (!req.isReplying()) req.reply();
     return true;
   });
 }

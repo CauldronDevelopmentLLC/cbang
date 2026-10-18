@@ -64,6 +64,50 @@ using namespace cb;
 using namespace std;
 
 
+// Member callbacks of every signature API::bind() accepts.  Each replies, or
+// leaves the reply to the binding, as its signature's contract requires.
+struct Callbacks {
+  using CtxPtr = API::CtxPtr;
+  using Request = HTTP::Request;
+
+  static const HTTP::Status::enum_t OK = HTTP::Status::HTTP_OK;
+
+  bool ctxBool(const CtxPtr &ctx) {ctx->reply(OK, "ctx-bool"); return true;}
+  bool ctxBoolPass(const CtxPtr &ctx) {return false;}
+  void ctxVoid(const CtxPtr &ctx) {ctx->reply(OK, "ctx-void");}
+  void sink(JSON::Sink &sink) {sink.write("sink");}
+  bool req(Request &req) {req.reply(OK, "req"); return true;}
+  void reqSink(Request &req, JSON::Sink &sink) {sink.write("req-sink");}
+
+  void reqMsg(Request &req, const JSON::ValuePtr &msg) {
+    req.send([&] (JSON::Sink &sink) {msg->write(sink);});
+  }
+
+  void reqMsgReply(Request &req, const JSON::ValuePtr &msg) {
+    req.reply(HTTP::Status::HTTP_CREATED, "req-msg-reply");
+  }
+
+  void reqMsgSink(Request &req, const JSON::ValuePtr &msg, JSON::Sink &sink) {
+    msg->write(sink);
+  }
+
+
+  void bind(API::API &api) {
+#define BIND(NAME, METHOD) api.bind(NAME, this, &Callbacks::METHOD)
+    BIND("ctx-bool",      ctxBool);
+    BIND("ctx-bool-pass", ctxBoolPass);
+    BIND("ctx-void",      ctxVoid);
+    BIND("sink",          sink);
+    BIND("req",           req);
+    BIND("req-msg",       reqMsg);
+    BIND("req-msg-reply", reqMsgReply);
+    BIND("req-sink",      reqSink);
+    BIND("req-msg-sink",  reqMsgSink);
+#undef BIND
+  }
+};
+
+
 int main(int argc, char *argv[]) {
   try {
     if (argc < 4) {
@@ -94,6 +138,8 @@ int main(int argc, char *argv[]) {
 
     API::API api(options);
     api.setProcPool(new Event::SubprocessPool(eventBase));
+    Callbacks callbacks;
+    callbacks.bind(api);
     api.load(JSON::YAMLReader::parseFile(configPath));
 
     HTTP::RequestParams params;
@@ -123,8 +169,14 @@ int main(int argc, char *argv[]) {
     HTTP::RequestErrorHandler errorHandler(api);
     errorHandler(req);
 
-    // Drive the event loop until an async chain (exec, query) replies
-    while (!req.isReplying()) eventBase.loopOnce();
+    // Drive the event loop until an async chain (exec, query) replies.  Fail
+    // rather than hang if nothing ever replies.
+    bool timedOut = false;
+    auto timeout = eventBase.newEvent([&] () {timedOut = true;}, 0);
+    timeout->add(10);
+
+    while (!req.isReplying() && !timedOut) eventBase.loopOnce();
+    if (!req.isReplying()) THROW("Request never replied");
 
     cout << (unsigned)req.getResponseCode() << "\n";
 

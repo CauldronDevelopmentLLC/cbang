@@ -67,15 +67,12 @@ namespace cb {
       static SmartPointer<Handler> create(req_sink_cb_t cb);
       static SmartPointer<Handler> create(req_msg_sink_cb_t cb);
 
-      // Bind class methods
-      template <typename T, typename Method>
-      static SmartPointer<Handler> create(T* obj, Method method) {
-        return create([obj, method](auto&&... args) ->
-            decltype(std::invoke(method, obj,
-              std::forward<decltype(args)>(args)...)) {
-          return std::invoke(
-            method, obj, std::forward<decltype(args)>(args)...);
-        });
+      // Bind class methods.  The exact signature selects the create() overload,
+      // otherwise a bool method is ambiguous with the void overload.
+      template <typename T, typename R, typename... Args>
+      static SmartPointer<Handler> create(T *obj, R (T::*method)(Args...)) {
+        return create(std::function<R (Args...)>(
+          [obj, method] (Args... args) {return (obj->*method)(args...);}));
       }
 
       // Bind class methods of subclasses of Request

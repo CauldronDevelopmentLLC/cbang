@@ -210,6 +210,17 @@ endpoints:
               lc: '{request.headers.user-agent}',
               missing: '{~request.headers.X-Nope}'}
 
+  # C++ callbacks bound with API::bind(), one per signature
+  /bind/ctx-bool:      {get: ctx-bool}
+  /bind/ctx-bool-pass: {get: ctx-bool-pass}
+  /bind/ctx-void:      {get: ctx-void}
+  /bind/sink:          {get: sink}
+  /bind/req:           {get: req}
+  /bind/req-msg:       {get: req-msg}
+  /bind/req-msg-reply: {get: req-msg-reply}
+  /bind/req-sink:      {get: req-sink}
+  /bind/req-msg-sink:  {get: req-msg-sink}
+
   /.*:
     get:
       path: '{options.http-root}'

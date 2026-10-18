@@ -561,7 +561,8 @@ void cb::API::API::addTagSpec(const string &tag, const JSON::ValuePtr &config) {
 
 
 void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
-  if (hideCategory) return;
+  // Root level methods apply to all paths and are not endpoints
+  if (hideCategory || cfg->getPattern().empty()) return;
 
   auto config = cfg->getConfig();
   bool isDict = config->isDict(); // a method body may be a bare steps list
