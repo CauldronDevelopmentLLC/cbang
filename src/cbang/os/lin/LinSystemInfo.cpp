@@ -51,6 +51,10 @@ using namespace std;
 
 #include <unistd.h>
 
+#ifdef __linux__
+#include <sched.h>
+#endif
+
 namespace {
   string get_proxy_var(const char *name) {
     auto value = SystemUtilities::getenv(String::toLower(name));
@@ -88,6 +92,24 @@ namespace {
   }
 
 
+  set<unsigned> readOnlineCPUs() {
+    return parseCPUList(readSys("/sys/devices/system/cpu/online"));
+  }
+
+
+  // Online CPUs sharing a physical core with the given CPU, including itself
+  set<unsigned> readCoreCPUs(unsigned cpu, const set<unsigned> &online) {
+    auto siblings = parseCPUList(readSys("/sys/devices/system/cpu/cpu" +
+      String(cpu) + "/topology/thread_siblings_list"));
+
+    set<unsigned> core;
+    for (auto sibling: siblings)
+      if (online.count(sibling)) core.insert(sibling);
+
+    return core;
+  }
+
+
   map<unsigned, double> readPerCPU(const set<unsigned> &cpus,
                                    const string &file) {
     map<unsigned, double> perf;
@@ -110,15 +132,47 @@ uint32_t LinSystemInfo::getCPUCount() const {
 }
 
 
-set<unsigned> LinSystemInfo::getPerformanceCPUs() const {
-  try {
-    auto online = parseCPUList(readSys("/sys/devices/system/cpu/online"));
-    if (online.size() < 2) return {};
+set<unsigned> LinSystemInfo::getAvailableCPUs() const {
+  set<unsigned> cpus;
 
-    // Intel hybrid CPUs have separate PMUs for P-cores and E-cores
-    auto pCores = parseCPUList(readSys("/sys/devices/cpu_core/cpus"));
-    auto eCores = parseCPUList(readSys("/sys/devices/cpu_atom/cpus"));
-    if (!pCores.empty() && !eCores.empty()) return pCores;
+#ifdef __linux__
+  // Fails if the affinity mask does not fit in cpu_set_t
+  cpu_set_t cpuSet;
+  CPU_ZERO(&cpuSet);
+
+  if (!sched_getaffinity(0, sizeof(cpuSet), &cpuSet))
+    for (unsigned cpu = 0; cpu < CPU_SETSIZE; cpu++)
+      if (CPU_ISSET(cpu, &cpuSet)) cpus.insert(cpu);
+#endif
+
+  return cpus;
+}
+
+
+vector<set<unsigned>> LinSystemInfo::getCPUPerformanceLevels() const {
+  try {
+    auto online = readOnlineCPUs();
+    if (online.empty()) return {};
+
+    // Intel hybrid CPUs have a separate PMU for each core type, fastest first
+    vector<set<unsigned>> levels;
+    set<unsigned> covered;
+
+    for (auto name: {"cpu_core", "cpu_atom", "cpu_lowpower"}) {
+      auto cpus =
+        parseCPUList(readSys("/sys/devices/" + string(name) + "/cpus"));
+      if (cpus.empty()) continue;
+
+      for (auto cpu: cpus)
+        if (!online.count(cpu) || !covered.insert(cpu).second) return {};
+
+      levels.push_back(cpus);
+    }
+
+    if (!levels.empty()) {
+      if (covered != online) return {}; // Incomplete
+      return levels;
+    }
 
     // ARM and RISC-V report relative CPU capacity
     auto perf = readPerCPU(online, "cpu_capacity");
@@ -126,7 +180,38 @@ set<unsigned> LinSystemInfo::getPerformanceCPUs() const {
     // Otherwise, compare max CPU frequencies, e.g. AMD Zen 5 & Zen 5c
     if (perf.empty()) perf = readPerCPU(online, "cpufreq/cpuinfo_max_freq");
 
-    return selectFastestCPUs(perf);
+    return clusterCPUs(perf);
+  } CATCH_WARNING;
+
+  return {};
+}
+
+
+vector<set<unsigned>> LinSystemInfo::getCPUCoreThreads() const {
+  try {
+    auto online = readOnlineCPUs();
+    if (online.empty()) return {};
+
+    vector<set<unsigned>> cores;
+    set<unsigned> covered;
+
+    for (auto cpu: online) {
+      if (covered.count(cpu)) continue;
+
+      auto core = readCoreCPUs(cpu, online);
+      if (!core.count(cpu)) return {};
+
+      // All siblings must agree, otherwise the topology is changing
+      for (auto sibling: core)
+        if (readCoreCPUs(sibling, online) != core) return {};
+
+      for (auto sibling: core)
+        if (!covered.insert(sibling).second) return {}; // Overlapping cores
+
+      cores.push_back(core);
+    }
+
+    return cores;
   } CATCH_WARNING;
 
   return {};

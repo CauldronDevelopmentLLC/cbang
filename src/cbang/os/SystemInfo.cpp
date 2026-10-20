@@ -52,7 +52,7 @@
 #include <cbang/net/SockAddr.h>
 #include <cbang/net/AddressRange.h>
 
-#include <algorithm>
+#include <cmath>
 
 #include <cbang/boost/StartInclude.h>
 #include <boost/filesystem/operations.hpp>
@@ -63,6 +63,29 @@ using namespace cb;
 using namespace std;
 
 namespace fs = boost::filesystem;
+
+
+namespace {
+  string formatCPUGroups(const vector<set<unsigned>> &groups) {
+    string result;
+
+    for (auto &group: groups) {
+      if (!result.empty()) result += ' ';
+      result += '[';
+
+      bool first = true;
+      for (auto cpu: group) {
+        if (!first) result += ',';
+        result += String(cpu);
+        first = false;
+      }
+
+      result += ']';
+    }
+
+    return result;
+  }
+}
 
 
 SystemInfo *SystemInfo::singleton = 0;
@@ -80,6 +103,12 @@ SystemInfo &SystemInfo::instance() {
   }
 
   return *singleton;
+}
+
+
+set<unsigned> SystemInfo::getPerformanceCPUs() const {
+  auto levels = getCPUPerformanceLevels();
+  return 1 < levels.size() ? levels[0] : set<unsigned>();
 }
 
 
@@ -150,6 +179,16 @@ void SystemInfo::add(Info &info) {
            << " Stepping " << cpuInfo->getStepping()));
   info.add(category, "CPUs", String(getCPUCount()));
 
+  auto levels = getCPUPerformanceLevels();
+  if (!levels.empty())
+    info.add(category, "CPU Performance Levels", formatCPUGroups(levels));
+
+  auto cores = getCPUCoreThreads();
+  if (!cores.empty()) {
+    info.add(category, "CPU Cores", String(static_cast<uint64_t>(cores.size())));
+    info.add(category, "CPU Core Threads", formatCPUGroups(cores));
+  }
+
   info.add(category, "Memory", HumanSize(getTotalMemory()).toString() + "B");
   info.add(category, "Free Memory",
            HumanSize(getFreeMemory()).toString() + "B");
@@ -167,30 +206,28 @@ void SystemInfo::add(Info &info) {
 }
 
 
-set<unsigned> SystemInfo::selectFastestCPUs(const map<unsigned, double> &perf) {
-  // Split CPUs at the largest relative gap in performance.  This separates
-  // P-cores from E-cores even when some P-cores are slightly faster than
-  // others, e.g. Intel favored cores or ARM prime cores.
-  vector<double> values;
+vector<set<unsigned>>
+SystemInfo::clusterCPUs(const map<unsigned, double> &perf) {
+  // Split CPUs into levels at each significant relative gap in performance.
+  // This keeps cores of one type together even when some are slightly faster
+  // than others, e.g. Intel favored cores.
+  map<double, set<unsigned>> cpusByPerf;
   for (auto &p: perf)
-    if (0 < p.second) values.push_back(p.second);
+    if (isfinite(p.second) && 0 < p.second)
+      cpusByPerf[p.second].insert(p.first);
     else return {}; // Unknown
 
-  sort(values.rbegin(), values.rend());
+  vector<set<unsigned>> levels;
+  double last = 0;
 
-  double cutoff = 0;
-  double minRatio = 0.85; // Gaps smaller than 15% are not significant
-  for (unsigned i = 1; i < values.size(); i++) {
-    double ratio = values[i] / values[i - 1];
-    if (ratio < minRatio) {minRatio = ratio; cutoff = values[i - 1];}
+  for (auto it = cpusByPerf.rbegin(); it != cpusByPerf.rend(); it++) {
+    // Gaps smaller than 15% are not significant
+    if (levels.empty() || it->first / last < 0.85) levels.push_back({});
+    levels.back().insert(it->second.begin(), it->second.end());
+    last = it->first;
   }
 
-  set<unsigned> cpus;
-  if (cutoff)
-    for (auto &p: perf)
-      if (cutoff <= p.second) cpus.insert(p.first);
-
-  return cpus;
+  return levels;
 }
 
 
