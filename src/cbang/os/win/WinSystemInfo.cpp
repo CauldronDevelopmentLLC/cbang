@@ -40,6 +40,7 @@
 #include <windows.h>
 #include <sysinfoapi.h>
 #include <iphlpapi.h>
+#include <cstddef>
 
 #pragma comment(lib, "iphlpapi.lib")
 
@@ -50,6 +51,78 @@ using namespace std;
 namespace {
   URI schemelessURI(const string &s) {
     return s.find("://") == string::npos ? "http://" + s : s;
+  }
+
+
+  bool hasRepresentableAffinityMask() {
+    // WOW64 folds 64-bit affinity masks into 32 bits.  Reject any single
+    // processor group that is wider than the current process can represent.
+    if (GetActiveProcessorGroupCount() != 1) return false;
+
+    auto count = GetActiveProcessorCount(0);
+    return count && count <= sizeof(KAFFINITY) * 8;
+  }
+
+
+  set<unsigned> maskToCPUs(KAFFINITY mask) {
+    set<unsigned> cpus;
+
+    for (unsigned i = 0; i < sizeof(mask) * 8; i++)
+      if (mask & ((KAFFINITY)1 << i)) cpus.insert(i);
+
+    return cpus;
+  }
+
+
+  struct ProcessorCore {
+    BYTE efficiencyClass;
+    set<unsigned> cpus;
+  };
+
+
+  vector<ProcessorCore> getProcessorCores() {
+    // Only machines with a single processor group are supported.  CPU indices
+    // are bit positions in that group's affinity mask.
+    if (!hasRepresentableAffinityMask()) return {};
+
+    DWORD size = 0;
+    GetLogicalProcessorInformationEx(RelationProcessorCore, 0, &size);
+    if (!size) return {};
+
+    vector<uint8_t> buf(size);
+    auto data = buf.data();
+    if (!GetLogicalProcessorInformationEx(RelationProcessorCore,
+        (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)data, &size)) return {};
+
+    const DWORD header =
+      offsetof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, Processor);
+    vector<ProcessorCore> cores;
+    set<unsigned> covered;
+
+    for (DWORD offset = 0; offset < size;) {
+      if (size - offset < header) return {};
+      auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(data + offset);
+      if (!info->Size || size - offset < info->Size) return {};
+      offset += info->Size;
+
+      if (info->Relationship != RelationProcessorCore) continue;
+      if (info->Size < header + sizeof(PROCESSOR_RELATIONSHIP)) return {};
+
+      auto &proc = info->Processor;
+      if (proc.GroupCount != 1 || proc.GroupMask[0].Group) return {};
+
+      auto cpus = maskToCPUs(proc.GroupMask[0].Mask);
+      if (cpus.empty()) return {};
+
+      for (auto cpu: cpus)
+        if (!covered.insert(cpu).second) return {}; // Overlapping cores
+
+      cores.push_back({proc.EfficiencyClass, cpus});
+    }
+
+    if (covered.size() != GetActiveProcessorCount(0)) return {}; // Incomplete
+
+    return cores;
   }
 }
 
@@ -65,49 +138,35 @@ uint32_t WinSystemInfo::getCPUCount() const {
 }
 
 
-set<unsigned> WinSystemInfo::getPerformanceCPUs() const {
-  // Only machines with a single processor group are supported.  CPU indices
-  // are bit positions in that group's affinity mask.
-  if (GetActiveProcessorGroupCount() != 1) return {};
+set<unsigned> WinSystemInfo::getAvailableCPUs() const {
+  if (!hasRepresentableAffinityMask()) return {};
 
-  DWORD size = 0;
-  GetLogicalProcessorInformationEx(RelationProcessorCore, 0, &size);
-  if (!size) return {};
+  DWORD_PTR processMask = 0, systemMask = 0;
+  if (!GetProcessAffinityMask(GetCurrentProcess(), &processMask, &systemMask))
+    return {};
 
-  vector<uint8_t> buf(size);
-  auto data = buf.data();
-  if (!GetLogicalProcessorInformationEx(RelationProcessorCore,
-      (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)data, &size)) return {};
+  return maskToCPUs(processMask);
+}
 
+
+vector<set<unsigned>> WinSystemInfo::getCPUPerformanceLevels() const {
   // Higher EfficiencyClass means higher performance
-  map<unsigned, BYTE> classes;
-  BYTE maxClass = 0;
-  BYTE minClass = 255;
+  map<BYTE, set<unsigned>> classes;
+  for (auto &core: getProcessorCores())
+    classes[core.efficiencyClass].insert(core.cpus.begin(), core.cpus.end());
 
-  for (DWORD offset = 0; offset < size;) {
-    auto info = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX)(data + offset);
-    if (!info->Size) return {};
-    offset += info->Size;
+  vector<set<unsigned>> levels;
+  for (auto it = classes.rbegin(); it != classes.rend(); it++)
+    levels.push_back(it->second);
 
-    if (info->Relationship != RelationProcessorCore) continue;
-    auto &proc = info->Processor;
-    if (proc.GroupCount != 1 || proc.GroupMask[0].Group) return {};
+  return levels;
+}
 
-    BYTE eClass = proc.EfficiencyClass;
-    if (maxClass < eClass) maxClass = eClass;
-    if (eClass < minClass) minClass = eClass;
 
-    KAFFINITY mask = proc.GroupMask[0].Mask;
-    for (unsigned i = 0; i < sizeof(mask) * 8; i++)
-      if (mask & ((KAFFINITY)1 << i)) classes[i] = eClass;
-  }
-
-  set<unsigned> cpus;
-  if (minClass < maxClass)
-    for (auto &p: classes)
-      if (p.second == maxClass) cpus.insert(p.first);
-
-  return cpus;
+vector<set<unsigned>> WinSystemInfo::getCPUCoreThreads() const {
+  vector<set<unsigned>> cores;
+  for (auto &core: getProcessorCores()) cores.push_back(core.cpus);
+  return cores;
 }
 
 
