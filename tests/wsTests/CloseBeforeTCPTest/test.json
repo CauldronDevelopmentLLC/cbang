@@ -1,0 +1,6 @@
+{
+  "args": [
+    "close_before_tcp"
+  ],
+  "notes": "50 connections: the close frame must arrive before TCP closes every time (#10)."
+}

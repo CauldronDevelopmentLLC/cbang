@@ -1,0 +1,6 @@
+{
+  "args": [
+    "fragmented"
+  ],
+  "notes": "TEXT + CONTINUE + CONTINUE is delivered as one message."
+}

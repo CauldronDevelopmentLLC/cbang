@@ -57,7 +57,8 @@ using namespace cb::WS;
 
 
 bool Websocket::isActive() const {
-  return active && connection.isSet() && connection->isConnected();
+  return active && !closing && connection.isSet() &&
+    connection->isConnected();
 }
 
 
@@ -114,22 +115,39 @@ void Websocket::send(const string &s) {send(s.data(), s.length());}
 void Websocket::close(Status status, const string &msg) {
   LOG_DEBUG(4, CBANG_FUNC << '(' << status << ", " << msg << ')');
 
+  if (closing) return; // Close frame already sent, shutdown pending
   pingEvent.release();
   pongEvent.release();
 
-  if (isActive()) {
-    uint8_t data[125];
-    *(uint16_t *)data = hton16(status);
-    unsigned len = msg.length() < 123 ? msg.length() : 123;
-    memcpy(data + 2, msg.c_str(), len);
-    TRY_CATCH_ERROR(writeFrame(WS_OP_CLOSE, true, data, 2 + len));
-  }
+  bool sent = false;
+  if (isActive())
+    try {
+      // RFC 6455 7.4.1: these codes are for local reporting only and must
+      // not be sent.  Send an empty close, which the peer reports as 1005.
+      if (status == WS_STATUS_NONE || status == WS_STATUS_DIRTY_CLOSE ||
+          status == WS_STATUS_TLS_FAILED)
+        writeFrame(WS_OP_CLOSE, true, 0, 0);
+
+      else {
+        uint8_t data[125];
+        *(uint16_t *)data = hton16(status);
+        unsigned len = msg.length() < 123 ? msg.length() : 123;
+        memcpy(data + 2, msg.c_str(), len);
+        writeFrame(WS_OP_CLOSE, true, data, 2 + len);
+      }
+
+      sent = true;
+    } CATCH_ERROR;
 
   if (active) {
     active = false;
     TRY_CATCH_ERROR(onClose(status, msg));
     active = true; // shutdown() expects active = true
-    shutdown();
+
+    // Closing the connection now would discard the queued close frame.
+    // writeFrame()'s callback shuts down once it is written or fails.
+    if (sent) closing = true;
+    else shutdown();
   }
 }
 
@@ -378,7 +396,12 @@ void Websocket::writeFrame(
     if (!success || opcode == WS_OP_CLOSE) shutdown();
   };
 
-  getConnection()->write(WeakCall(this, cb), out);
+  if (opcode == WS_OP_CLOSE) {
+    // close() leaves the shutdown to this callback, so keep this alive
+    SmartPointer<Websocket> self = this;
+    getConnection()->write([self, cb] (bool success) {cb(success);}, out);
+
+  } else getConnection()->write(WeakCall(this, cb), out);
 }
 
 
@@ -431,7 +454,8 @@ void Websocket::message(const char *data, uint64_t length) {
 
 
 void Websocket::start() {
-  active = true;
+  active  = true;
+  closing = false;
   onOpen();
   readHeader();
   schedulePing();

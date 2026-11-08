@@ -1,0 +1,12 @@
+--- client log ---
+client: onOpen
+client: onMessage len=5 "hello"
+client: onClose 1000 "done"
+client: onShutdown
+client: exit 0
+--- server log ---
+server: onOpen
+server: onMessage len=5 "hello"
+server: onClose 1000 "done"
+server: onShutdown
+server: exit 0

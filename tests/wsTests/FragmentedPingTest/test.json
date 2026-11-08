@@ -1,0 +1,6 @@
+{
+  "args": [
+    "fragmented_ping"
+  ],
+  "notes": "QUESTIONABLE: a ping between fragments of a message corrupts it (\"plo\" instead of \"Hello\") and the pong is lost. RFC 6455 5.4 allows control frames between fragments."
+}

@@ -1,0 +1,6 @@
+{
+  "args": [
+    "close_normal"
+  ],
+  "notes": "Close 1000 with a reason is echoed unchanged."
+}

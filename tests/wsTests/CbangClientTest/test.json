@@ -1,0 +1,6 @@
+{
+  "args": [
+    "cbang_client"
+  ],
+  "notes": "cbang client connect(), send, echo, close 1000; both sides log a clean close."
+}

@@ -1,0 +1,6 @@
+{
+  "args": [
+    "close_no_code"
+  ],
+  "notes": "Client close with an empty payload is answered with an empty close, not 1005 (#9). Server reports 1005 locally."
+}

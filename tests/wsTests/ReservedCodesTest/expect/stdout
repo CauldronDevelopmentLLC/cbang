@@ -1,0 +1,31 @@
+client[None]: upgrade 101 accept=ok
+client[None]: frame op=CLOSE fin=1 mask=0 len=0 hex=-
+client[None]:   close no status
+client[None]: tcp closed
+client[1005]: upgrade 101 accept=ok
+client[1005]: frame op=CLOSE fin=1 mask=0 len=0 hex=-
+client[1005]:   close no status
+client[1005]: tcp closed
+client[1006]: upgrade 101 accept=ok
+client[1006]: frame op=CLOSE fin=1 mask=0 len=0 hex=-
+client[1006]:   close no status
+client[1006]: tcp closed
+client[1015]: upgrade 101 accept=ok
+client[1015]: frame op=CLOSE fin=1 mask=0 len=0 hex=-
+client[1015]:   close no status
+client[1015]: tcp closed
+reserved codes sent by server: none
+--- server log ---
+server: onOpen
+server: onClose 1005 ""
+server: onShutdown
+server: onOpen
+server: onClose 1005 "r"
+server: onShutdown
+server: onOpen
+server: onClose 1006 "r"
+server: onShutdown
+server: onOpen
+server: onClose 1015 "r"
+server: onShutdown
+server: exit 0

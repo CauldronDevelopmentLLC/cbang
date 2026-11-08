@@ -1,0 +1,6 @@
+{
+  "args": [
+    "server_close"
+  ],
+  "notes": "Server close(1000, \"bye\") arrives intact, a later send() throws, onClose fires once. QUESTIONABLE: the server closes TCP right after its close frame without waiting for the client's close reply."
+}

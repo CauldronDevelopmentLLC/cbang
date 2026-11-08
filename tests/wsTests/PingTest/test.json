@@ -1,0 +1,6 @@
+{
+  "args": [
+    "ping"
+  ],
+  "notes": "A ping is answered with a pong carrying the same payload. QUESTIONABLE: the pong is deferred about 5 seconds (schedulePong)."
+}

@@ -1,0 +1,6 @@
+{
+  "args": [
+    "unmasked"
+  ],
+  "notes": "An unmasked client frame is rejected with 1002. The unread frame body makes the server's close send a TCP reset."
+}

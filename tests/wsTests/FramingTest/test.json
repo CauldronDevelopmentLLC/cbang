@@ -1,0 +1,6 @@
+{
+  "args": [
+    "framing"
+  ],
+  "notes": "Payload lengths 0, 125, 126, 65535, 65536; server frames are unmasked; send() splits 65536 into 65535 + 1. QUESTIONABLE: an empty message is delivered to onMessage but send() of zero bytes writes no frame, so it is never echoed."
+}

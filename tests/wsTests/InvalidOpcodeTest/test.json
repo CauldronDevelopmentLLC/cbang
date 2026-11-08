@@ -1,0 +1,6 @@
+{
+  "args": [
+    "invalid_opcode"
+  ],
+  "notes": "Reserved opcodes 3 and 11 are rejected with 1002."
+}

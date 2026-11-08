@@ -1,0 +1,7 @@
+50 of 50: close frame, then tcp closed
+--- server log ---
+50x server: onOpen
+25x server: onClose 1005 ""
+50x server: onShutdown
+25x server: onClose 1000 "x"
+server: exit 0

@@ -1,0 +1,6 @@
+{
+  "args": [
+    "cbang_client_wire"
+  ],
+  "notes": "cbang client frames seen by a raw server: masked, close 1000 \"done\". QUESTIONABLE: the client closes TCP right after its close frame without waiting for the server's reply."
+}

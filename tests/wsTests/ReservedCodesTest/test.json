@@ -1,0 +1,6 @@
+{
+  "args": [
+    "reserved_codes"
+  ],
+  "notes": "Server never sends 1005, 1006 or 1015. QUESTIONABLE: a peer close carrying 1005/1006/1015 is accepted and passed to onClose instead of failing with 1002."
+}

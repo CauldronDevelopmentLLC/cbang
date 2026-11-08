@@ -35,7 +35,7 @@ for test in Glob('*Tests'):
     name = str(test)
 
     # The api module is only built with leveldb, so tests that use it require it
-    if name in ('cryptoTests', 'iostreamTests', 'serverTests'):
+    if name in ('cryptoTests', 'iostreamTests', 'serverTests', 'wsTests'):
         enabled = env.CBConfigEnabled('openssl')
     elif name in ('apiTests', 'resolverTests'):
         enabled = env.CBConfigEnabled('leveldb')

@@ -1,0 +1,9 @@
+client: upgrade 101 accept=ok
+client: frame op=CLOSE fin=1 mask=0 len=0 hex=-
+client:   close no status
+client: tcp closed
+--- server log ---
+server: onOpen
+server: onClose 1005 ""
+server: onShutdown
+server: exit 0

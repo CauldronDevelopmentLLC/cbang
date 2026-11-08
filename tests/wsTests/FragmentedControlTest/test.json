@@ -1,0 +1,6 @@
+{
+  "args": [
+    "fragmented_control"
+  ],
+  "notes": "PING or CLOSE without FIN is rejected with 1002."
+}

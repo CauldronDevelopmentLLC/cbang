@@ -52,6 +52,7 @@ namespace cb {
       SmartPointer<HTTP::Conn>::Weak connection;
       uint64_t id = ~0;
       bool active = false;
+      bool closing = false;
 
       unsigned maxMessageSize = std::numeric_limits<int>::max();
 

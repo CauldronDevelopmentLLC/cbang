@@ -1,0 +1,16 @@
+client[PING]: upgrade 101 accept=ok
+client[PING]: frame op=CLOSE fin=1 mask=0 len=26 hex=03ea467261676d656e74656420636f6e74726f6c206672616d65
+client[PING]:   close status=1002 reason='Fragmented control frame'
+client[PING]: tcp reset
+client[CLOSE]: upgrade 101 accept=ok
+client[CLOSE]: frame op=CLOSE fin=1 mask=0 len=26 hex=03ea467261676d656e74656420636f6e74726f6c206672616d65
+client[CLOSE]:   close status=1002 reason='Fragmented control frame'
+client[CLOSE]: tcp reset
+--- server log ---
+server: onOpen
+server: onClose 1002 "Fragmented control frame"
+server: onShutdown
+server: onOpen
+server: onClose 1002 "Fragmented control frame"
+server: onShutdown
+server: exit 0

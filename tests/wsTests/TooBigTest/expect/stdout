@@ -1,0 +1,25 @@
+client[16]: upgrade 101 accept=ok
+client[16]: frame op=TEXT fin=1 mask=0 len=16 hex=6162636465666768696a6b6c6d6e6f70
+client[16]: frame op=CLOSE fin=1 mask=0 len=2 hex=03e8
+client[16]:   close status=1000 reason=''
+client[16]: tcp closed
+client[17]: upgrade 101 accept=ok
+client[17]: frame op=CLOSE fin=1 mask=0 len=20 hex=03f14d6573736167652073697a652031373e3136
+client[17]:   close status=1009 reason='Message size 17>16'
+client[17]: tcp reset
+client[10+10]: upgrade 101 accept=ok
+client[10+10]: frame op=CLOSE fin=1 mask=0 len=20 hex=03f14d6573736167652073697a652032303e3136
+client[10+10]:   close status=1009 reason='Message size 20>16'
+client[10+10]: tcp reset
+--- server log ---
+server: onOpen
+server: onMessage len=16 "abcdefghijklmnop"
+server: onClose 1000 ""
+server: onShutdown
+server: onOpen
+server: onClose 1009 "Message size 17>16"
+server: onShutdown
+server: onOpen
+server: onClose 1009 "Message size 20>16"
+server: onShutdown
+server: exit 0

@@ -1,0 +1,29 @@
+client: upgrade 101 accept=ok
+client: send TEXT len=0
+client: no frame within 2s
+client: send TEXT len=125
+client: frame op=TEXT fin=1 mask=0 len=125 sha1=9bf0979cc75db0a0
+client: echo matches: True
+client: send TEXT len=126
+client: frame op=TEXT fin=1 mask=0 len=126 sha1=5e8f7c3ba1dc355c
+client: echo matches: True
+client: send TEXT len=65535
+client: frame op=TEXT fin=1 mask=0 len=65535 sha1=e03cc2a07fb559fa
+client: echo matches: True
+client: send TEXT len=65536
+client: frame op=TEXT fin=0 mask=0 len=65535 sha1=e03cc2a07fb559fa
+client: frame op=CONTINUE fin=1 mask=0 len=1 hex=70
+client: echo matches: True
+client: frame op=CLOSE fin=1 mask=0 len=2 hex=03e8
+client:   close status=1000 reason=''
+client: tcp closed
+--- server log ---
+server: onOpen
+server: onMessage len=0 ""
+server: onMessage len=125 fnv1a=c8630db0
+server: onMessage len=126 fnv1a=39eeaeb2
+server: onMessage len=65535 fnv1a=887a6c17
+server: onMessage len=65536 fnv1a=3fb8a625
+server: onClose 1000 ""
+server: onShutdown
+server: exit 0

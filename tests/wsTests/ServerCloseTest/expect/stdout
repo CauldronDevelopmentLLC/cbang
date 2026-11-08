@@ -1,0 +1,11 @@
+client: upgrade 101 accept=ok
+client: frame op=CLOSE fin=1 mask=0 len=5 hex=03e8627965
+client:   close status=1000 reason='bye'
+client: tcp closed
+--- server log ---
+server: onOpen
+server: onMessage len=2 "hi"
+server: onClose 1000 "bye"
+server: send after close: refused: Websocket not active
+server: onShutdown
+server: exit 0

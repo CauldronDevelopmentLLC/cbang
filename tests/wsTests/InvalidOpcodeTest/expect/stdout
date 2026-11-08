@@ -1,0 +1,16 @@
+client[3]: upgrade 101 accept=ok
+client[3]: frame op=CLOSE fin=1 mask=0 len=16 hex=03ea496e76616c6964206f70636f6465
+client[3]:   close status=1002 reason='Invalid opcode'
+client[3]: tcp closed
+client[11]: upgrade 101 accept=ok
+client[11]: frame op=CLOSE fin=1 mask=0 len=16 hex=03ea496e76616c6964206f70636f6465
+client[11]:   close status=1002 reason='Invalid opcode'
+client[11]: tcp closed
+--- server log ---
+server: onOpen
+server: onClose 1002 "Invalid opcode"
+server: onShutdown
+server: onOpen
+server: onClose 1002 "Invalid opcode"
+server: onShutdown
+server: exit 0

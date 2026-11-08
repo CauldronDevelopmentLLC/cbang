@@ -1,0 +1,9 @@
+client: upgrade 101 accept=ok
+client: frame op=CLOSE fin=1 mask=0 len=22 hex=03ea486561646572206d61736b206d69736d61746368
+client:   close status=1002 reason='Header mask mismatch'
+client: tcp reset
+--- server log ---
+server: onOpen
+server: onClose 1002 "Header mask mismatch"
+server: onShutdown
+server: exit 0
