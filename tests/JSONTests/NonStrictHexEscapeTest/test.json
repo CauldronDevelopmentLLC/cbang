@@ -1,0 +1,1 @@
+{"checks": [["file", "stdout"], ["file", "return"]], "timeout": 10}

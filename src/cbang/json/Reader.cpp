@@ -296,7 +296,7 @@ string Reader::parseString() {
           c = get();
           if ('0' <= c && c <= '9') code += c - '0';
           else if ('a' <= c && c <= 'f') code += c - 'a' + 10;
-          else if ('A' <= c && c <= 'F') code += c - 'F' + 10;
+          else if ('A' <= c && c <= 'F') code += c - 'A' + 10;
           else error(SSTR("Invalid hex character '" << String::escapeC(c)
                           << "' in JSON string"));
         }
