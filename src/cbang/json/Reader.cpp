@@ -134,7 +134,7 @@ char Reader::next() {
     case '\n': case '\r': case '\t': case ' ': get(); break;
 
     case '#':
-      while (stream.peek() != '\n') get();
+      while (good() && stream.peek() != '\n') get();
       break;
 
     default: return stream.peek();
