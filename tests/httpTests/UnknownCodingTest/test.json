@@ -1,0 +1,6 @@
+{
+  "args": [
+    "unknown_coding"
+  ],
+  "notes": "A Transfer-Encoding other than chunked is refused with 400 and the connection closed."
+}

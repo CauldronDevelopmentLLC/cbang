@@ -1,0 +1,6 @@
+{
+  "args": [
+    "chunked_delete"
+  ],
+  "notes": "A chunked DELETE body is read."
+}

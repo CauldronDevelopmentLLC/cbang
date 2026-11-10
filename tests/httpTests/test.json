@@ -1,0 +1,3 @@
+{
+  "command": "python3 %(suite-dir)s/httptest.py %(suite-dir)s/httpEcho"
+}

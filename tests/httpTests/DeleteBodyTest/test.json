@@ -1,0 +1,6 @@
+{
+  "args": [
+    "delete_body"
+  ],
+  "notes": "A DELETE body is read, so the GET after it is answered."
+}

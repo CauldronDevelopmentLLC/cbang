@@ -1,0 +1,6 @@
+{
+  "args": [
+    "both_framings"
+  ],
+  "notes": "Transfer-Encoding plus Content-Length is refused with 400 and the connection closed; the GET after it is not answered."
+}

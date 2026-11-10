@@ -1,0 +1,6 @@
+{
+  "args": [
+    "get_body"
+  ],
+  "notes": "A GET body is read, so the GET after it is answered."
+}

@@ -136,8 +136,11 @@ void ConnIn::processHeader() {
   auto req = server.createRequest({this, method, uri, version, hdrs});
   push(req);
 
-  // If this is a request without a body, then we are done
-  if (!req->mayHaveBody()) return processIfNext(req);
+  // The headers, not the method, say whether there is a body (RFC 9112 6.3).
+  // Skipping the body of e.g. a DELETE left it on the connection, to be read
+  // as the next request.
+  if (!req->inHas("Transfer-Encoding") && !req->inHas("Content-Length"))
+    return processIfNext(req);
 
   // An Upgrade header is advisory.  A server that will not switch protocols is
   // free to ignore it and answer normally, and it has to: ordinary HTTP client
@@ -149,7 +152,8 @@ void ConnIn::processHeader() {
   // protocol asked for are otherwise nowhere in the log, and an upgrade nothing
   // here serves is worth being able to see.  A warning rather than debug output
   // so noticing it does not depend on the log level.
-  else if (req->inHas("Upgrade"))
+  // Methods without a body, such as a Websocket's GET, upgrade elsewhere.
+  if (req->mayHaveBody() && req->inHas("Upgrade"))
     // The logger already prefixes this with the connection id
     LOG_WARNING(getPeerAddr().toString(false) << ':' << "Ignoring upgrade to '"
                 << req->inFind("Upgrade") << "': " << method << ' '
@@ -184,6 +188,16 @@ void ConnIn::checkChunked(const SmartPointer<Request> &req) {
 
   // Handle chunked data
   string xferEnc = String::toLower(req->inFind("Transfer-Encoding"));
+
+  // Both framings, or a coding we can't decode, is how a request is smuggled
+  // past a proxy that reads it differently (RFC 9112 6.1, 6.3).  The framing
+  // can't be trusted, so neither can the rest of the connection.
+  if (!xferEnc.empty() &&
+      (xferEnc != "chunked" || req->inHas("Content-Length"))) {
+    req->setPersistent(false);
+    return error(HTTP_BAD_REQUEST, "Invalid request body framing");
+  }
+
   if (xferEnc == "chunked") {
     auto cb =
       [this, req] (bool success) {

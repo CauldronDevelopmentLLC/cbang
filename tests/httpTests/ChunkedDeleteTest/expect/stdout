@@ -1,0 +1,2 @@
+response 200 DELETE /x body="hello"
+connection open
