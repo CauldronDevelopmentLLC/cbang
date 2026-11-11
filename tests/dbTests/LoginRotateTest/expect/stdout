@@ -1,0 +1,21 @@
+307
+Cache-Control: no-store
+X-Accel-Expires: 0
+Vary: *
+Set-Cookie: sid=rotated1; Path=/; Secure; SameSite=None
+Location: /done
+Content-Length: 0
+
+401
+Content-Type: application/json
+{"message":"Access denied","code":401}
+200
+Content-Type: application/json
+{"user":"alice"}
+SQL: CALL AuthSession(?)
+BIND[0]: 706C616E746564
+SQL: CALL Login(?, ?)
+BIND[0]: 726F746174656431
+BIND[1]: 706C616E746564
+SQL: CALL AuthSession(?)
+BIND[0]: 706C616E746564

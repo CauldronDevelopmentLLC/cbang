@@ -1,0 +1,30 @@
+---
+# Login fixture: logins whose SQL sees the session's new ID and, after a
+# rotation, its old one.  A session the session manager doesn't have is
+# looked up in the DB.
+jmpapi: 1.2.0
+info: {title: login test, version: 0.0.0}
+
+endpoints:
+  /.*:
+    get:
+      handler: session
+      sql: "CALL AuthSession({session.id})"
+
+  /login/none:
+    get:
+      handler: login
+      provider: none
+      redirect: /done
+      sql: "CALL Login({session.id}, {~session.previous_id})"
+
+  # Starts an OAuth2 login with the "test" provider, which replies with the
+  # provider's URL to redirect to
+  /login/{provider}:
+    args: {provider: {type: string}}
+    get:
+      handler: login
+      sql: "CALL Login({session.id}, {~session.previous_id})"
+
+  /whoami:
+    get: {allow: [$authenticated], reply: {user: '{session.user}'}}

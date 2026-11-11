@@ -47,12 +47,48 @@ using namespace cb::API;
 Login::Login(const QueryDef &def, callback_t cb,
   const ResolverPtr &resolver, HTTP::Request &req, const string &provider,
   const string &redirectURI) : Query(def, cb), resolver(resolver),
-  provider(provider), redirectURI(redirectURI), session(req.getSession()),
-  uri(req.getURI()) {}
+  provider(provider), redirectURI(redirectURI), req(req),
+  session(req.getSession()), uri(req.getURI()) {}
+
+
+JSON::ValuePtr Login::getSessionReply(
+  API &api, const SmartPointer<HTTP::Session> &session) {
+  if (session.isNull()) return session;
+
+  bool withID =
+    api.hasSessionManager() && api.getSessionManager().getLoginReplyID();
+  if (!session->has("previous_id") && (withID || !session->has("id")))
+    return session;
+
+  auto reply = session->copy();
+  if (reply->has("previous_id")) reply->erase("previous_id");
+  if (!withID && reply->has("id")) reply->erase("id");
+  return reply;
+}
+
+
+void Login::rotateSession() {
+  if (!def.api.hasSessionManager()) return;
+  auto &sessionMan = def.api.getSessionManager();
+  if (!sessionMan.getRotateOnLogin()) return;
+
+  // A new session ID, so one known before the login, e.g. planted in the
+  // cookie, is worthless after it.  The login's SQL, and its callback, see
+  // the new ID as {session.id} and the old one as {session.previous_id},
+  // e.g. to move data kept under the old ID.
+  string oldID = sessionMan.rotateSession(session);
+  session->insert("previous_id", oldID);
+  sessionMan.sendCookie(req, session->getID());
+
+  // A cookie must never be cached
+  req.outSet("Cache-Control", "no-store");
+}
 
 
 void Login::loginComplete() {
   auto origCB = cb;
+
+  rotateSession();
 
   cb = [this, origCB] (HTTP::Status status, const JSON::ValuePtr &result) {
     if (status == HTTP_OK) {
@@ -60,10 +96,12 @@ void Login::loginComplete() {
       session->addGroup("authenticated");
 
       // Respond with session
-      return origCB(status, session);
-    }
+      origCB(status, getSessionReply(def.api, session));
 
-    origCB(status, result);
+    } else origCB(status, result);
+
+    // Only the login's SQL and callback see the old ID
+    if (session->has("previous_id")) session->erase("previous_id");
   };
 
   if (def.sql.empty()) cb(HTTP_OK, 0);
@@ -94,7 +132,8 @@ void Login::login() {
     return oauth2->verify(def.api.getClient(), *session, uri, cb);
   }
 
-  // Respond with Session ID and redirect URL
+  // Respond with the redirect URL.  Its state is bound to the session ID
+  // but is not the ID, which must not reach URLs and logs.
   string sid = session->getID();
   URI redirect = oauth2->getRedirectURL(uri.getPath(), sid);
   if (!redirectURI.empty()) {
@@ -103,7 +142,8 @@ void Login::login() {
   }
 
   sink.beginDict();
-  sink.insert("id", sid);
+  if (def.api.hasSessionManager() &&
+      def.api.getSessionManager().getLoginReplyID()) sink.insert("id", sid);
   sink.insert("redirect", redirect);
   sink.endDict();
 

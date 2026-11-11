@@ -49,6 +49,7 @@ namespace cb {
       std::string provider;
       std::string redirectURI;
 
+      HTTP::Request &req;
       SmartPointer<HTTP::Session> session;
       URI uri;
       unsigned resultCount = 0;
@@ -60,7 +61,13 @@ namespace cb {
 
       void login();
 
+      /// The session as a login replies with it: without its ID unless the
+      /// session manager's login-reply-id is set.  See SessionManager.
+      static JSON::ValuePtr getSessionReply(
+        API &api, const SmartPointer<HTTP::Session> &session);
+
     protected:
+      void rotateSession();
       void loginComplete();
       void processProfile(const JSON::ValuePtr &profile);
 

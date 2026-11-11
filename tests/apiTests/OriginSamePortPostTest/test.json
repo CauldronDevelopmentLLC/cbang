@@ -1,0 +1,9 @@
+{
+  "args": [
+    "PUT",
+    "/origin",
+    "-origin-check",
+    "Host: api.example.com:443",
+    "Origin: https://API.example.com"
+  ]
+}

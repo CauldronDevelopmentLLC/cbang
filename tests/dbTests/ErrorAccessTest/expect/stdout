@@ -1,0 +1,5 @@
+401
+Content-Type: application/json
+{"error":"HTTP_UNAUTHORIZED","code":401}
+Logged: 1
+SQL: CALL Boom()

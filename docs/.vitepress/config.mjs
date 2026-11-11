@@ -70,6 +70,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          {text: 'Upgrade notes',           link: '/Upgrade'},
           {text: 'Building V8 (Linux)',     link: '/Build_V8_Linux'},
           {text: 'Profiling with perf',     link: '/how_to_profile_with_linux_perf'},
         ],

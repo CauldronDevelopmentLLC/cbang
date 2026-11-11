@@ -1,6 +1,6 @@
 500
 Content-Type: application/json
-{"error":"DB:1290: The MariaDB server is running with the --read-only option so it cannot execute this statement","code":500}
+{"error":"HTTP_INTERNAL_SERVER_ERROR","code":500}
 200
 Content-Type: application/json
 {"user":"alice"}

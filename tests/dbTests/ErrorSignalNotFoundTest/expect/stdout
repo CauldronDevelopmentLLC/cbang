@@ -1,0 +1,4 @@
+404
+Content-Type: application/json
+{"error":"DB:1643: Project not found","code":404}
+SQL: CALL Boom()

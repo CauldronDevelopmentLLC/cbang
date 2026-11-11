@@ -69,6 +69,14 @@ void LoginHandler::processProfile(
   session.addGroup("authenticated");
   LOG_INFO(2, "Authenticated: " << email);
 
+  // A new session ID, so one known before the login is worthless after it.
+  // The cookie as when the session was opened.
+  if (sessionManager->getRotateOnLogin()) {
+    sessionManager->rotateSession(req.getSession());
+    req.setCookie(sessionManager->getSessionCookie(), session.getID(), "",
+                  "/");
+  }
+
   // Redirect the client to same path with out query params.
   req.redirect(req.getURI().getPath());
 }

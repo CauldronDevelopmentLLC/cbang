@@ -1,0 +1,8 @@
+{
+  "args": [
+    "POST",
+    "/origin",
+    "Host: api.example.com",
+    "Origin: https://evil.example.org"
+  ]
+}

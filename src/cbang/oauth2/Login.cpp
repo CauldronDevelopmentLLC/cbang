@@ -54,10 +54,10 @@ bool Login::requestToken(HTTP::Request &req, const string &state,
                          const string &redirectURI) {
   auto &uri = req.getURI();
   if (provider->isForgery(uri, state)) {
+    // Never log the session ID
     LOG_DEBUG(3, "Failed anti-forgery check: uri code="
-              << (uri.has("code") ? uri.get("code") : "<null>") << " uri state="
-              << (uri.has("state") ? uri. get("state") : "<null>")
-              << " server state=" << state);
+              << (uri.has("code") ? "<set>" : "<null>") << " uri state="
+              << (uri.has("state") ? uri.get("state") : "<null>"));
 
     return false;
   }

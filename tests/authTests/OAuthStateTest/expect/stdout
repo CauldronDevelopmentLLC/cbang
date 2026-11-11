@@ -1,0 +1,17 @@
+state is not the session ID: yes
+state does not contain the session ID: yes
+nonce of 128 bits: yes
+a new state each time: yes
+state checks for its session: yes
+state refused for another session: yes
+session ID as state refused: yes
+empty state refused: yes
+empty key refused: yes
+tampered HMAC refused: yes
+another nonce refused: yes
+redirect state is not the session ID: yes
+redirect URL does not contain the session ID: yes
+callback accepted: yes
+callback for another session refused: yes
+callback without code refused: yes
+callback with the session ID as state refused: yes

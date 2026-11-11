@@ -39,6 +39,7 @@
 #include <cbang/log/Logger.h>
 
 #include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
 
 #include <cstring>
 
@@ -847,6 +848,14 @@ string   DB::getError()       const {
 }
 unsigned DB::getErrorNumber() const {
   return stmt ? mysql_stmt_errno(stmt) : mysql_errno(db);
+}
+
+
+bool DB::isUserError() const {
+  unsigned err = getErrorNumber();
+  if (err == ER_SIGNAL_EXCEPTION || err == ER_SIGNAL_NOT_FOUND) return true;
+  const char *state = getSQLState();
+  return state && state[0] == '4' && state[1] == '5';
 }
 
 

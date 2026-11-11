@@ -225,3 +225,7 @@ endpoints:
     get:
       path: '{options.http-root}'
       index: index.html
+
+  # Origin check, on with the -origin-check flag: see apiDispatch
+  /origin:
+    any: {reply: {ok: true}}

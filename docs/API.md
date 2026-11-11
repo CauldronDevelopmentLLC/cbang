@@ -352,6 +352,28 @@ its groups instead.
   during a rotation: list both until tokens signed with the new key are in
   use.
 
+## Logins and sessions
+
+A `login` endpoint with an OAuth2 provider first replies `{redirect}`, the
+provider's URL.  The `state` in that URL is a random nonce with an HMAC keyed
+with the session ID, never the ID itself.  When the provider sends the browser
+back, the state is checked against the session.
+
+A successful login gives the session a new ID and cookie (option
+`session-rotate-on-login`, on by default), so an ID known before the login is
+worthless after it.  The login's `sql` sees the new ID as `{session.id}` and
+the old one as `{~session.previous_id}`.  Login replies leave out the
+session ID unless `session-login-reply-id` is set.  See
+[Upgrade notes](/Upgrade).
+
+`api.setOriginCheck(true)` refuses cross-origin requests that may change
+state, and cross-origin WebSocket upgrades, with `403`.  A request without an
+`Origin` header is allowed.
+
+A DB error reaches the client only if a procedure raised it with `SIGNAL`
+and its status is below 500.  For any other error the client gets only the
+status, and the full text is logged.
+
 ## Bound C++ callbacks
 
 Three signatures, picked by the `bind` overload:

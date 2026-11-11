@@ -1,0 +1,15 @@
+307
+Cache-Control: max-age=0
+X-Accel-Expires: 0
+Vary: *
+Location: /done
+Content-Length: 0
+
+200
+Content-Type: application/json
+{"user":"alice"}
+SQL: CALL AuthSession(?)
+BIND[0]: 706C616E746564
+SQL: CALL Login(?, ?)
+BIND[0]: 706C616E746564
+BIND[1]: NULL

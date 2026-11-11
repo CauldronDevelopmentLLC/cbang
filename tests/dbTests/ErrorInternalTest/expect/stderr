@@ -1,0 +1,1 @@
+ERROR:Exception: DB:1146: Table 'app.users' doesn't exist

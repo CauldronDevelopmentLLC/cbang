@@ -1,0 +1,9 @@
+returns the old ID: yes
+new ID differs: yes
+new ID is 43 characters: yes
+old ID closed: yes
+new ID open: yes
+same session under the new ID: yes
+session data kept: yes
+rotate-on-login on by default: yes
+login-reply-id off by default: yes

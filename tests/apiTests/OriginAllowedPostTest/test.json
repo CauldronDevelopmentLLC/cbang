@@ -1,0 +1,9 @@
+{
+  "args": [
+    "DELETE",
+    "/origin",
+    "-origin-check",
+    "Host: 127.0.0.1:8080",
+    "Origin: https://app.example.com"
+  ]
+}

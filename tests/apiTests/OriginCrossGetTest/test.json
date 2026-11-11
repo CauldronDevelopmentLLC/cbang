@@ -1,0 +1,9 @@
+{
+  "args": [
+    "GET",
+    "/origin",
+    "-origin-check",
+    "Host: api.example.com",
+    "Origin: https://evil.example.org"
+  ]
+}

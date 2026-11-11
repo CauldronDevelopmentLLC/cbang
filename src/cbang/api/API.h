@@ -52,6 +52,7 @@
 #include <cbang/db/clickhouse/Client.h>
 
 #include <functional>
+#include <set>
 
 
 namespace cb {
@@ -87,6 +88,9 @@ namespace cb {
       std::map<std::string, HandlerPtr>     queries;
       std::map<std::string, HandlerPtr>     timeseries;
 
+      bool originCheck = false;
+      std::set<std::string> allowedOrigins;
+
     public:
       API(Options &options);
       ~API();
@@ -113,6 +117,20 @@ namespace cb {
       HTTP::Client          &getClient()          {return *client;}
       OAuth2::Providers     &getOAuth2Providers() {return *oauth2Providers;}
       HTTP::SessionManager  &getSessionManager()  {return *sessionManager;}
+      bool hasSessionManager() const {return sessionManager.isSet();}
+
+      /// Origin check, a CSRF defense, off by default.  When on, a request
+      /// that may change state, any but GET, HEAD and OPTIONS, and every
+      /// WebSocket upgrade, is refused with 403 if it has an Origin header
+      /// other than the request's own Host or an allowed origin.  A request
+      /// with no Origin, e.g. from a non-browser client, is allowed.
+      bool getOriginCheck() const {return originCheck;}
+      void setOriginCheck(bool x) {originCheck = x;}
+      /// An origin, as "<scheme>://<host>[:<port>]", allowed besides the
+      /// request's own Host, e.g. the site's public URL behind a proxy that
+      /// changes Host, or an origin CORS allows.
+      void addAllowedOrigin(const std::string &origin);
+      bool isOriginAllowed(const HTTP::Request &req) const;
       MariaDB::Connector    &getDBConnector()     {return *connector;}
       Event::SubprocessPool &getProcPool()        {return *procPool;}
       EventLevelDB          &getTimeseriesDB()    {return *timeseriesDB;}

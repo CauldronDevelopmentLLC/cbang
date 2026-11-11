@@ -1,0 +1,6 @@
+{
+  "command": "%(suite-dir)s/dbQuery %(suite-dir)s/loginFixture.yaml",
+  "args": [
+    "LoginStart"
+  ]
+}

@@ -32,16 +32,17 @@
 
 #include "SessionManager.h"
 
+#include "Request.h"
+
 #include <cbang/config.h>
 #include <cbang/config/Options.h>
 #include <cbang/util/Random.h>
+#include <cbang/net/Base64.h>
 #include <cbang/json/JSON.h>
 
-#ifdef HAVE_OPENSSL
-#include <cbang/openssl/Digest.h>
-#endif
-
 #include <vector>
+#include <random>
+#include <cstring>
 
 using namespace std;
 using namespace cb;
@@ -50,31 +51,61 @@ using namespace cb::HTTP;
 
 void SessionManager::addOptions(Options &options) {
   options.pushCategory("Session Management");
-
   options.addTarget("session-timeout", timeout, "The maximum time in seconds, "
                     "from the most recent usage, before a session timesout.  "
                     "Zero for no timeout.");
   options.addTarget("session-lifetime", lifetime, "The maximum session "
                     "lifetime in seconds.  Zero for unlimited lifetime.");
   options.addTarget("session-cookie", cookie, "The session cookie name.");
-
+  options.addTarget("session-rotate-on-login", rotateOnLogin, "Give a "
+                    "session a new ID when it logs in, so an ID known before "
+                    "the login, e.g. one planted in the cookie, is worthless "
+                    "after it.");
+  options.addTarget("session-login-reply-id", loginReplyID, "Include the "
+                    "session ID in the reply that starts an OAuth2 login, as "
+                    "{id, redirect}.  Only for clients that send the ID "
+                    "themselves rather than use the cookie.");
   options.popCategory();
 }
 
 
 string SessionManager::generateID(const SockAddr &addr) {
+  // 256 bits from a CSPRNG.  With OpenSSL, Random is RAND_bytes().
+  uint8_t bytes[32];
+
 #ifdef HAVE_OPENSSL
-  Digest digest("sha256");
-
-  digest.update(addr.toString(false));
-  digest.updateWith(Time::now());
-  digest.updateWith(Random::instance().rand<uint64_t>());
-
-  return digest.toURLBase64();
+  Random::instance().bytes(bytes, sizeof(bytes));
 #else
-
-  return SSTR("0x" << hex << Random::instance().rand<uint64_t>());
+  // Without OpenSSL Random is rand(), which is predictable
+  random_device rd;
+  for (unsigned i = 0; i < sizeof(bytes); i += 4) {
+    uint32_t x = rd();
+    memcpy(bytes + i, &x, 4);
+  }
 #endif
+
+  return URLBase64().encode((const char *)bytes, sizeof(bytes));
+}
+
+
+void SessionManager::sendCookie(Request &req, const string &sid) const {
+  req.setCookie(cookie, sid, "", "/", 0, 0, cookieHTTPOnly, cookieSecure,
+                cookieSameSite);
+}
+
+
+string SessionManager::rotateSession(const SmartPointer<Session> &session) {
+  string oldID = session->getID();
+
+  // Drop the old ID only if it is this session's, never another's
+  auto it = sessions.find(oldID);
+  if (it != sessions.end() && it->second.get() == session.get())
+    sessions.erase(it);
+
+  session->setID(generateID(SockAddr()));
+  sessions[session->getID()] = session;
+
+  return oldID;
 }
 
 

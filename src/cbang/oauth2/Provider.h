@@ -77,9 +77,21 @@ namespace cb {
       void verify(HTTP::Client &client, const HTTP::Session &session,
                   const URI &uri, profile_cb_t done);
 
+      /// The OAuth2 state sent to the provider is never the second argument
+      /// itself, normally the session ID, which must not reach URLs and
+      /// logs.  It is a random nonce and an HMAC of it keyed with that
+      /// argument, see makeState(), and isForgery() checks it against the
+      /// same argument.
       virtual URI getRedirectURL(
         const std::string &path, const std::string &state) const;
       virtual bool isForgery(const URI &uri, const std::string &state) const;
+
+      /// A new OAuth2 state bound to key: a 128-bit random nonce and a
+      /// SHA-256 HMAC of it, keyed with key, both URL Base64.
+      virtual std::string makeState(const std::string &key) const;
+      /// True if state was made by makeState() with key
+      virtual bool checkState(const std::string &state,
+                              const std::string &key) const;
       virtual URI getVerifyURL(const URI &uri, const std::string &state) const;
       virtual URI getProfileURL(const std::string &token) const;
 

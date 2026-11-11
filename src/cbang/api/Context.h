@@ -54,6 +54,7 @@ namespace cb {
       Context(API &api, HTTP::Request &req);
       Context(API &api, const WebsocketPtr &ws);
 
+      API &getAPI() const {return api;}
       HTTP::Request &getRequest() const {return req;}
       const WebsocketPtr &getWebsocket() const {return ws;}
 

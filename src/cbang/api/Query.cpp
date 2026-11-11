@@ -297,7 +297,13 @@ void Query::returnOk(MariaDB::EventDB::state_t state) {
 
     string errMsg =
       SSTR("DB:" << db->getErrorNumber() << ": " << db->getError());
-    errorReply(error, errMsg);
+
+    // Only errors a procedure raised for the user, with SIGNAL, reach the
+    // client, and never with a 5xx.  The server's own errors may show the
+    // schema or data, so the client gets the status alone and the log gets
+    // the full text.
+    bool forUser = db->isUserError() && error < HTTP_INTERNAL_SERVER_ERROR;
+    errorReply(error, forUser ? errMsg : string());
     if (error == HTTP_INTERNAL_SERVER_ERROR) THROW(errMsg);
     LOG_WARNING(errMsg);
 

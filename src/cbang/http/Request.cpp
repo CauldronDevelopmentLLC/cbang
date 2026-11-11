@@ -768,6 +768,10 @@ void Request::write(write_cb_t cb) {
     return;
   }
 
+  // A response that must not have a body, e.g. 204, 304 or to HEAD, has
+  // none, whatever was written to it: a body there breaks HTTP framing
+  if (connection->isIncoming() && !mustHaveBody()) outputBuffer.clear();
+
   Event::Buffer out;
   writeHeaders(out);
   if (outputBuffer.getLength()) out.add(outputBuffer);

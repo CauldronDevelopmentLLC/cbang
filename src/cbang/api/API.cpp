@@ -692,8 +692,65 @@ void cb::API::API::addToSpec(const string &methods, const CfgPtr &cfg) {
 }
 
 
+namespace {
+  // host[:port] with the scheme's default port removed
+  string originAuthority(const string &scheme, string authority) {
+    if ((scheme == "https" || scheme == "wss") &&
+        String::endsWith(authority, ":443"))
+      authority = authority.substr(0, authority.length() - 4);
+    if ((scheme == "http" || scheme == "ws") &&
+        String::endsWith(authority, ":80"))
+      authority = authority.substr(0, authority.length() - 3);
+    return authority;
+  }
+}
+
+
+void cb::API::API::addAllowedOrigin(const string &origin) {
+  string o = String::toLower(String::trim(origin));
+  while (String::endsWith(o, "/")) o = o.substr(0, o.length() - 1);
+  allowedOrigins.insert(o);
+}
+
+
+bool cb::API::API::isOriginAllowed(const HTTP::Request &req) const {
+  if (!originCheck) return true;
+
+  // Requests that change nothing, except a WebSocket upgrade
+  using M = HTTP::Method;
+  auto method = req.getMethod();
+  bool upgrade = String::toLower(req.inFind("Upgrade")) == "websocket";
+  if (!upgrade && (method == M::HTTP_GET || method == M::HTTP_HEAD ||
+                   method == M::HTTP_OPTIONS)) return true;
+
+  // No Origin, e.g. a non-browser client
+  if (!req.inHas("Origin")) return true;
+
+  string origin = String::toLower(String::trim(req.inGet("Origin")));
+  if (allowedOrigins.count(origin)) return true;
+
+  // Same origin: the Origin's host and port are the request's Host
+  size_t sep = origin.find("://");
+  if (sep == string::npos || !req.inHas("Host")) return false;
+  string scheme = origin.substr(0, sep);
+  string host   = String::toLower(String::trim(req.inGet("Host")));
+  if (host.empty()) return false;
+
+  return originAuthority(scheme, origin.substr(sep + 3)) ==
+    originAuthority(scheme, host);
+}
+
+
 void cb::API::API::operator()(
   HTTP::Request &req, const HTTP::RequestCont &next) {
+  if (!isOriginAllowed(req)) {
+    LOG_WARNING("Refused cross-origin " << req.getMethod() << ' '
+                << req.getURI().getPath() << " from Origin "
+                << req.inGet("Origin"));
+    return req.sendJSONError(HTTP::Status::HTTP_FORBIDDEN,
+                             "Cross-origin request refused");
+  }
+
   auto ctx = SmartPtr(new Context(*this, req));
   ctx->setArgs(req.parseArgs());
   ctx->parseBody();

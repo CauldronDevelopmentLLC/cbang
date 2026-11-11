@@ -35,7 +35,7 @@
 // no network.  An event loop is pumped so async statements (exec, query)
 // complete; synchronous handlers reply in-line.
 //
-//   apiDispatch <config> <METHOD> <path> [-stdin] [Name: value ...]
+//   apiDispatch <config> <METHOD> <path> [-stdin] [-origin-check] [Name: value ...]
 //
 // With -stdin the request body is read from stdin.  The http-root, favicon
 // and scripts options default to "<config-dir>/...".  Output is the status
@@ -152,6 +152,12 @@ int main(int argc, char *argv[]) {
     for (int i = 4; i < argc; i++) {
       string h = argv[i];
       if (h == "-stdin") {readBody = true; continue;}
+      if (h == "-origin-check") {
+        // The site's own Host plus one allowed origin
+        api.setOriginCheck(true);
+        api.addAllowedOrigin("https://app.example.com/");
+        continue;
+      }
       auto colon = h.find(':');
       if (colon == string::npos) THROW("Expected 'Name: value': " << h);
       params.hdrs->insert(

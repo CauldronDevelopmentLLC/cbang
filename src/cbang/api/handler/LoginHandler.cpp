@@ -51,7 +51,7 @@ void LoginHandler::reportSession(const CtxPtr &ctx) {
   if (session.isNull() || !session->hasGroup("authenticated"))
     ctx->reply(HTTP_UNAUTHORIZED, "Not logged in");
 
-  else ctx->reply(session); // Respond with session JSON
+  else ctx->reply(Login::getSessionReply(api, session)); // Session JSON
 }
 
 

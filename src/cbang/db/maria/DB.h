@@ -226,6 +226,11 @@ namespace cb {
       bool hasError() const;
       std::string getError() const;
       unsigned getErrorNumber() const;
+      /// True for an error a stored procedure raised with SIGNAL, meant for
+      /// the user: SQLSTATE class '45', user-defined, or the error numbers
+      /// SIGNAL gives without MYSQL_ERRNO.  Other errors are the server's
+      /// and may show the schema or data, so are not for users.
+      bool isUserError() const;
       void raiseError(const std::string &msg, bool withDBError = true) const;
       unsigned getWarningCount() const;
 

@@ -1,0 +1,3 @@
+403
+Content-Type: application/json
+{"code":403,"error":"Cross-origin request refused"}

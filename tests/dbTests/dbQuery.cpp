@@ -54,6 +54,7 @@
 #include <cbang/http/Client.h>
 #include <cbang/http/BearerSessionManager.h>
 #include <cbang/oauth2/Providers.h>
+#include <cbang/oauth2/Provider.h>
 #include <cbang/net/URI.h>
 #include <cbang/event/Base.h>
 #include <cbang/event/SubprocessPool.h>
@@ -113,19 +114,72 @@ namespace {
 
 
   // Accepts bearer tokens signed by the first two test keys, as during a key
-  // rotation.  Opens new sessions with a fixed ID, so their cookies are
-  // deterministic.
+  // rotation.  Opens new sessions with a fixed ID, and gives rotated ones
+  // numbered IDs, so their cookies are deterministic.
   class TestSessionManager : public HTTP::BearerSessionManager {
+    unsigned ids = 0;
+
   public:
     TestSessionManager() {readPublicKeys(fixtures + "/bearer/public.pem");}
 
     // From HTTP::SessionManager
+    std::string generateID(const SockAddr &addr) override {
+      return "rotated" + String(++ids);
+    }
+
     SmartPointer<HTTP::Session> openSession(const SockAddr &addr) override {
       SmartPointer<HTTP::Session> session = new HTTP::Session("newsid", addr);
       addSession(session);
       return session;
     }
   };
+
+
+  // An OAuth2 provider that is configured but never contacted
+  class TestProvider : public OAuth2::Provider {
+  public:
+    TestProvider() :
+      Provider("https://auth.example.com/auth", "https://auth.example.com/token",
+               "https://auth.example.com/profile", "email") {}
+
+    // From OAuth2::Provider
+    const char *getName() const override {return "test";}
+    JSON::ValuePtr processProfile(const JSON::ValuePtr &p) const override {
+      return p;
+    }
+  };
+
+
+  // Requests after the first: their path and headers.  See setup().
+  vector<pair<string, HTTP::Headers>> steps;
+
+  // Set by a scenario to print whether the log has this text
+  string logged;
+
+  // Set by a scenario: the session manager's login-reply-id
+  bool loginReplyID = false;
+
+
+  // A login's SQL result: the session's variables, then its groups
+  void pushLogin() {
+    Response resp;
+    resp.results = {
+      result({{"name", FakeDB::STRING}, {"value", FakeDB::STRING}},
+             {{Cell("user"), Cell("alice")}}),
+      result({{"group", FakeDB::STRING}}, {{Cell("user")}}),
+    };
+    FakeDB::push(resp);
+  }
+
+
+  void pushError(unsigned errnoVal, const string &error,
+                 const string &sqlstate) {
+    Response resp;
+    resp.errnoVal = errnoVal;
+    resp.error    = error;
+    resp.sqlstate = sqlstate;
+    FakeDB::push(resp);
+  }
 
 
   // Everything logged, to check that a raw token never is
@@ -202,6 +256,76 @@ namespace {
       resp.error    = "boom";
       resp.sqlstate = "45000";
       FakeDB::push(resp);
+
+    } else if (s == "ErrorDuplicate") {
+      // A server error, not raised with SIGNAL: the status, but not the
+      // text, which shows data and schema, reaches the client.  It is logged.
+      path   = "/err";
+      logged = "Duplicate entry 'bob' for key 'handle'";
+      pushError(ER_DUP_ENTRY, logged, "23000");
+
+    } else if (s == "ErrorInternal") {
+      path   = "/err";
+      logged = "Table 'app.users' doesn't exist";
+      pushError(ER_NO_SUCH_TABLE, logged, "42S02");
+
+    } else if (s == "ErrorAccess") {
+      path   = "/err";
+      logged = "Access denied for user 'app'@'localhost' to database 'x'";
+      pushError(ER_DBACCESS_DENIED_ERROR, logged, "42000");
+
+    } else if (s == "ErrorSignalNotFound") {
+      // SIGNAL SQLSTATE '02000': for the user, so its text is kept
+      path = "/err";
+      pushError(ER_SIGNAL_NOT_FOUND, "Project not found", "02000");
+
+    } else if (s == "ErrorSignalErrno") {
+      // SIGNAL SQLSTATE '45000' with its own MYSQL_ERRNO, which is no HTTP
+      // status cbang knows, so a 500, which never shows the text
+      path   = "/err";
+      logged = "Account is read-only";
+      pushError(403, logged, "45000");
+
+    } else if (s == "LoginRotate") {
+      // A session ID planted before the login is worthless after it: the
+      // login gives the session a new ID and cookie, and the login's SQL
+      // sees both IDs.  Then the old ID is not logged in and the new one is.
+      path = "/login/none";
+      hdrs.insert("Cookie", "sid=planted");
+      push(Response()); // AuthSession: unknown
+      pushLogin();
+      push(Response()); // AuthSession: unknown
+
+      HTTP::Headers old, rotated;
+      old.insert("Cookie", "sid=planted");
+      rotated.insert("Cookie", "sid=rotated1");
+      steps.push_back({"/whoami", old});
+      steps.push_back({"/whoami", rotated});
+
+    } else if (s == "LoginNoRotate") {
+      // With session-rotate-on-login off, as before
+      path = "/login/none";
+      hdrs.insert("Cookie", "sid=planted");
+      push(Response()); // AuthSession: unknown
+      pushLogin();
+
+      HTTP::Headers old;
+      old.insert("Cookie", "sid=planted");
+      steps.push_back({"/whoami", old});
+
+    } else if (s == "LoginStart") {
+      // Starting an OAuth2 login replies with the provider's URL only.  Its
+      // state is not the session ID.  See the authTests suite for more.
+      path = "/login/test";
+      hdrs.insert("Cookie", "sid=browser");
+      push(Response()); // AuthSession: unknown
+
+    } else if (s == "LoginStartReplyID") {
+      // With session-login-reply-id, the reply has the session ID, as before
+      path = "/login/test";
+      hdrs.insert("Cookie", "sid=browser");
+      push(Response()); // AuthSession: unknown
+      loginReplyID = true;
 
     } else if (s == "Blob") {
       method = "PUT";
@@ -502,7 +626,24 @@ namespace {
     headers.erase(remove(headers.begin(), headers.end(), '\r'), headers.end());
     cout << headers;
 
-    cout << req.getOutput();
+    string output = req.getOutput();
+
+    // A login's redirect has a random state: show what it is, not its value
+    size_t state = output.find("&state=");
+    if (state != string::npos) {
+      size_t end = output.find('"', state);
+      string value = output.substr(state + 7, end - state - 7);
+      output = output.substr(0, state + 7) + "STATE" + output.substr(end);
+      auto session = req.getSession();
+      string sid = session.isSet() ? session->getID() : "";
+      size_t dot = value.find('.');
+      cout << "State: " << value.length() << " chars, nonce "
+           << (dot == string::npos ? 0 : dot) << " chars, contains the "
+           << "session ID: " << (!sid.empty() &&
+                                 value.find(sid) != string::npos) << "\n";
+    }
+
+    cout << output;
   }
 }
 
@@ -558,8 +699,22 @@ int main(int argc, char *argv[]) {
 
     // The 'session' handler registers only with these three set
     api.setClient(new HTTP::Client(base));
-    api.setOAuth2Providers(new OAuth2::Providers);
-    api.setSessionManager(new TestSessionManager);
+    auto sessionMan = SmartPtr(new TestSessionManager);
+    sessionMan->addOptions(options);
+    sessionMan->setLoginReplyID(loginReplyID);
+    if (scenario == "LoginNoRotate")
+      options["session-rotate-on-login"].set(false);
+    api.setSessionManager(sessionMan);
+
+    // A configured OAuth2 provider
+    auto providers = SmartPtr(new OAuth2::Providers);
+    auto provider  = SmartPtr(new TestProvider);
+    provider->addOptions(options);
+    options["test-redirect-base"].set("https://app.example.com");
+    options["test-client-id"].set("client");
+    options["test-client-secret"].set("secret");
+    providers->add("test", provider);
+    api.setOAuth2Providers(providers);
 
     api.load(JSON::YAMLReader::parseFile(configPath));
 
@@ -574,6 +729,16 @@ int main(int argc, char *argv[]) {
       params.hdrs = new HTTP::Headers(hdrs);
       dispatch(api, base, params, body);
     }
+
+    for (auto &step: steps) {
+      cout << "\n";
+      params.uri  = URI(step.first);
+      params.hdrs = new HTTP::Headers(step.second);
+      dispatch(api, base, params, "");
+    }
+
+    if (!logged.empty())
+      cout << "\nLogged: " << (logs->log.find(logged) != string::npos);
 
     auto &queries = FakeDB::queries();
     auto &binds   = FakeDB::binds();

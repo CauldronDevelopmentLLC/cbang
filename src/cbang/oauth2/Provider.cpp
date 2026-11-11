@@ -42,6 +42,13 @@
 #include <cbang/http/Status.h>
 #include <cbang/http/Client.h>
 #include <cbang/http/Session.h>
+#include <cbang/net/Base64.h>
+#include <cbang/util/Random.h>
+#include <cbang/config.h>
+
+#ifdef HAVE_OPENSSL
+#include <cbang/openssl/Digest.h>
+#endif
 
 using namespace std;
 using namespace cb;
@@ -86,10 +93,10 @@ void Provider::verify(
   auto redirectURI = session.getString("redirect_uri", "");
 
   if (isForgery(uri, state)) {
+    // Never log the session ID
     LOG_DEBUG(3, "Failed anti-forgery check: uri code="
-              << (uri.has("code") ? uri.get("code") : "<null>") << " uri state="
-              << (uri.has("state") ? uri. get("state") : "<null>")
-              << " server state=" << state);
+              << (uri.has("code") ? "<set>" : "<null>") << " uri state="
+              << (uri.has("state") ? uri.get("state") : "<null>"));
 
     return done(0);
   }
@@ -161,7 +168,7 @@ URI Provider::getRedirectURL(const string &path, const string &state) const {
   uri.set("response_type", "code");
   uri.set("scope",         scope);
   uri.set("redirect_uri",  redirectBase + path);
-  uri.set("state",         state);
+  uri.set("state",         makeState(state));
 
   LOG_DEBUG(5, CBANG_FUNC << ": " << uri);
 
@@ -170,8 +177,53 @@ URI Provider::getRedirectURL(const string &path, const string &state) const {
 
 
 bool Provider::isForgery(const URI &uri, const string &state) const {
-  // Check that SID matches state (Confirm anti-forgery state token)
-  return !uri.has("code") || !uri.has("state") || uri.get("state") != state;
+  // Check that the state was made for this session (anti-forgery token)
+  return !uri.has("code") || !uri.has("state") ||
+    !checkState(uri.get("state"), state);
+}
+
+
+namespace {
+  const unsigned nonceBytes = 16; // 128 bits
+
+  string stateMAC(const string &key, const string &nonce) {
+#ifdef HAVE_OPENSSL
+    return URLBase64().encode(
+      Digest::signHMAC(key, "cbang-oauth2-state:" + nonce, "sha256"));
+#else
+    // Without OpenSSL there is no HMAC.  Never reached in practice, since
+    // OAuth2 providers need HTTPS.
+    THROW("OAuth2 login requires OpenSSL");
+#endif
+  }
+}
+
+
+string Provider::makeState(const string &key) const {
+  if (key.empty()) THROW("OAuth2 state key cannot be empty");
+  string nonce = URLBase64().encode(Random::instance().string(nonceBytes));
+  return nonce + "." + stateMAC(key, nonce);
+}
+
+
+bool Provider::checkState(const string &state, const string &key) const {
+  if (key.empty()) return false;
+
+  size_t dot = state.find('.');
+  if (dot == string::npos) return false;
+
+  string nonce = state.substr(0, dot);
+  string mac   = state.substr(dot + 1);
+  if (nonce.empty()) return false;
+
+  string expect = stateMAC(key, nonce);
+  if (mac.length() != expect.length()) return false;
+
+  // Constant time compare
+  unsigned char diff = 0;
+  for (size_t i = 0; i < mac.length(); i++) diff |= mac[i] ^ expect[i];
+
+  return !diff;
 }
 
 

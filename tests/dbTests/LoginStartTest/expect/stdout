@@ -1,0 +1,9 @@
+200
+Cache-Control: max-age=0
+X-Accel-Expires: 0
+Vary: *
+Content-Type: application/json
+State: 66 chars, nonce 22 chars, contains the session ID: 0
+{"redirect":"https://auth.example.com/auth?client_id=client&redirect_uri=https://app.example.com/login/test&response_type=code&scope=email&state=STATE"}
+SQL: CALL AuthSession(?)
+BIND[0]: 62726F77736572
