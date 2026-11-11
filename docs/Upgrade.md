@@ -57,9 +57,12 @@ The login's SQL and its callback see the new ID as `{session.id}` and the old
 one as `{session.previous_id}`.  The old ID is then removed from the session.
 
 Option `session-rotate-on-login` (and `SessionManager::setRotateOnLogin()`)
-is on by default.  Turning it off restores the old, unsafe behavior.
+is **off by default**, so existing clients that hold the session ID themselves
+keep working.  Turn it on once every client either uses the cookie or reads
+the new ID from the reply of the request that completes the login (for
+OAuth2, the callback `GET /login/<provider>?state=…`).  JmpSaaS turns it on.
 
-Action needed if a downstream:
+Action needed, when a downstream turns rotation on, if it:
 
 1. **Keeps data under the pre-login session ID** and uses it in the login SQL,
    e.g. a guest account found by `{session.id}`.  Use
@@ -100,10 +103,23 @@ Columns and cookie parsing that fit the old IDs fit the new ones.
 login without a `redirect`, and the login handler's who-am-I reply, sent the
 whole session, `id` included.
 
-**Now:** these replies leave out `id`.  The session ID is only in the cookie.
-To put it back, for clients that read it, set option `session-login-reply-id`
-(`SessionManager::setLoginReplyID(true)`).  This exposes the ID to scripts
-and, for the `{id, redirect}` reply, to anything that logs response bodies.
+**Now:** option `session-login-reply-id`
+(`SessionManager::setLoginReplyID()`) controls whether these replies include
+`id`.  It is **on by default**, as before, because clients in the field (e.g.
+web front ends on another site that send the ID in `Authorization`) need it.
+Turn it off when no client reads it: the ID is then only in the cookie, out of
+reach of scripts and of anything that logs response bodies.  JmpSaaS turns it
+off.
+
+#### Moving clients that hold the ID to the safe settings
+
+1. In the client, save `id` from the reply of every login request, including
+   the request that completes an OAuth2 login.  This is safe to ship first:
+   old servers already send the same `id` there.
+2. Make sure the server reads these options from its config, e.g. call
+   `SessionManager::addOptions(options)`.
+3. When the updated clients are out, set `session-rotate-on-login=true`.
+   Once no client reads `id`, set `session-login-reply-id=false`.
 
 No client on the maintainers' machines read `id`: not the JmpSaaS shell,
 CAMotics Online, or the tests.  The FAH clients were not checked.

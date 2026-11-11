@@ -187,8 +187,8 @@ namespace {
     check("same session under the new ID",
           sm.lookupSession(after).get() == session.get());
     check("session data kept", session->getUser() == "alice");
-    check("rotate-on-login on by default", sm.getRotateOnLogin());
-    check("login-reply-id off by default", !sm.getLoginReplyID());
+    check("rotate-on-login off by default", !sm.getRotateOnLogin());
+    check("login-reply-id on by default", sm.getLoginReplyID());
   }
 }
 

@@ -702,8 +702,7 @@ int main(int argc, char *argv[]) {
     auto sessionMan = SmartPtr(new TestSessionManager);
     sessionMan->addOptions(options);
     sessionMan->setLoginReplyID(loginReplyID);
-    if (scenario == "LoginNoRotate")
-      options["session-rotate-on-login"].set(false);
+    options["session-rotate-on-login"].set(scenario != "LoginNoRotate");
     api.setSessionManager(sessionMan);
 
     // A configured OAuth2 provider

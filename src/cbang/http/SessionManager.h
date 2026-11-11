@@ -60,8 +60,10 @@ namespace cb {
       bool cookieSecure          = true;
       std::string cookieSameSite = "None";
 
-      bool rotateOnLogin = true;  // See rotateSession()
-      bool loginReplyID  = false; // See API::Login
+      // Off and on by default, as before these options, so existing clients
+      // that hold the session ID themselves keep working.  See Upgrade.md.
+      bool rotateOnLogin = false; // See rotateSession()
+      bool loginReplyID  = true;  // See API::Login
 
     public:
       SessionManager() {}

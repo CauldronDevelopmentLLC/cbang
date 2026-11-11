@@ -60,11 +60,14 @@ void SessionManager::addOptions(Options &options) {
   options.addTarget("session-rotate-on-login", rotateOnLogin, "Give a "
                     "session a new ID when it logs in, so an ID known before "
                     "the login, e.g. one planted in the cookie, is worthless "
-                    "after it.");
+                    "after it.  Off by default, for clients that hold the "
+                    "ID themselves; turn it on when every client reads the "
+                    "new ID or uses the cookie.");
   options.addTarget("session-login-reply-id", loginReplyID, "Include the "
                     "session ID in the reply that starts an OAuth2 login, as "
                     "{id, redirect}.  Only for clients that send the ID "
-                    "themselves rather than use the cookie.");
+                    "themselves rather than use the cookie.  On by default, "
+                    "as before; turn it off when no client reads it.");
   options.popCategory();
 }
 
