@@ -134,6 +134,7 @@ char Reader::next() {
     case '\n': case '\r': case '\t': case ' ': get(); break;
 
     case '#':
+      if (strict) error("Comments not allowed in JSON");
       while (good() && stream.peek() != '\n') get();
       break;
 

@@ -1,1 +1,0 @@
-{"command": "%(suite-dir)s/JSON --strict", "checks": [["file", "stdout"], ["file", "return"]], "timeout": 10}
