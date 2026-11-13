@@ -58,6 +58,8 @@ namespace cb {
       typedef std::vector<SmartPointer<Nameserver>> servers_t;
       servers_t servers;
       uint64_t lastSystemNSInit = 0;
+      std::vector<SockAddr> systemNS;
+      std::vector<SockAddr> changedSystemNS;
 
       struct Entry {
         uint64_t expires  = 0;

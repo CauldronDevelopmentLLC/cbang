@@ -39,6 +39,8 @@
 #include <cbang/os/SystemInfo.h>
 #include <cbang/os/SystemUtilities.h>
 
+#include <algorithm>
+
 using namespace std;
 using namespace cb;
 using namespace cb::DNS;
@@ -72,6 +74,11 @@ void Base::initSystemNameservers() {
   if (lastSystemNSInit && Time::now() - lastSystemNSInit < 5) return;
   lastSystemNSInit = Time::now();
 
+  // Nameservers added by hand, with addNameserver() or CBANG_DNS, are all
+  // that is used; the system configuration is then left alone.
+  for (auto &server: servers)
+    if (!server->isSystem()) return;
+
 #ifdef DEBUG
   // Check for environment variable
   const char *s = SystemUtilities::getenv("CBANG_DNS");
@@ -84,17 +91,64 @@ void Base::initSystemNameservers() {
 
     for (auto &server: servers)
       addNameserver(server);
+
+    return;
   }
 #endif // DEBUG
 
-  // Add system nameservers
+  // Read the nameservers the system is using now.  The system usually gives
+  // no port and Nameserver then uses 53, so compare on the same terms.
+  vector<SockAddr> addrs;
+  SystemInfo::instance().getNameservers(addrs);
+  for (auto &addr: addrs)
+    if (!addr.getPort()) addr.setPort(53);
+  sort(addrs.begin(), addrs.end());
+  addrs.erase(unique(addrs.begin(), addrs.end()), addrs.end());
+
   if (servers.empty()) {
-    vector<SockAddr> addrs;
-    SystemInfo::instance().getNameservers(addrs);
     for (auto &addr: addrs)
-      if (!hasNameserver(addr))
-        TRY_CATCH_DEBUG(4, addNameserver(addr, true));
+      TRY_CATCH_DEBUG(4, addNameserver(addr, true));
+
+    systemNS = addrs;
+    changedSystemNS.clear();
+    return;
   }
+
+  // An empty list is ignored so a transient failure cannot remove working
+  // servers.  An unchanged list leaves the servers as they are, so servers
+  // dropped by pump() after too many failures are not added back.
+  if (addrs.empty() || addrs == systemNS) {
+    changedSystemNS.clear();
+    return;
+  }
+
+  // A changed list, e.g. after a VPN reconnect, is used only once two reads
+  // agree.  While the network is being reconfigured the system can report a
+  // partial list for a few seconds.
+  if (addrs != changedSystemNS) {
+    changedSystemNS = addrs;
+    return;
+  }
+
+  LOG_DEBUG(4, "System nameservers changed");
+
+  // Add the servers that are not in use.  This includes servers dropped by
+  // pump() after too many failures: those failures were on the old network.
+  for (auto &addr: addrs)
+    if (!hasNameserver(addr))
+      TRY_CATCH_DEBUG(4, addNameserver(addr, true));
+
+  // Drop system nameservers the system no longer reports
+  for (auto it = servers.begin(); it != servers.end();)
+    if ((*it)->isSystem() &&
+        !binary_search(addrs.begin(), addrs.end(), (*it)->getAddress())) {
+      LOG_DEBUG(4, "Removing nameserver " << (*it)->getAddress());
+      (*it)->stop();
+      it = servers.erase(it);
+    } else it++;
+
+  systemNS = addrs;
+  changedSystemNS.clear();
 }
 
 
@@ -220,6 +274,11 @@ Base::Entry &Base::lookup(const string &id) {
 
 
 void Base::pump() {
+  // Follow the system nameservers, at most once every five seconds.  Servers
+  // are added and removed here, and not from add(), because this runs from an
+  // event; no Nameserver is running on the stack when one is removed.
+  TRY_CATCH_ERROR(initSystemNameservers());
+
   // Drop failed Nameservers
   for (auto it = servers.begin(); it != servers.end();)
     if ((*it)->isSystem() && maxFailures < (*it)->getFailures()) {
