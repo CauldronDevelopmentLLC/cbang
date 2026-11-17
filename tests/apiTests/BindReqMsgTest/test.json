@@ -1,0 +1,3 @@
+{
+  "args": ["GET", "/bind/req-msg?x=1"]
+}
