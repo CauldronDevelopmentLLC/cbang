@@ -86,7 +86,8 @@ KeyPair CSR::getPublicKey() const {
 
 
 void CSR::addNameEntry(const string &name, const string &value) {
-  if (!X509_NAME_add_entry_by_txt(X509_REQ_get_subject_name(csr), name.c_str(),
+  if (!X509_NAME_add_entry_by_txt(const_cast<X509_NAME*>(X509_REQ_get_subject_name(csr)),
+                                  name.c_str(),
                                   MBSTRING_ASC, (uint8_t *)value.c_str(), -1,
                                   -1, 0))
     THROW("Failed to add CSR name entry '" << name << "'='" << value
@@ -95,11 +96,12 @@ void CSR::addNameEntry(const string &name, const string &value) {
 
 
 bool CSR::hasNameEntry(const string &name) const {
-  X509_NAME *subject = X509_REQ_get_subject_name(csr);
+  const X509_NAME *subject = X509_REQ_get_subject_name(csr);
+  if (!subject) return false;
 
-  for (int i = 0; i < X509_NAME_entry_count(subject); i++) {
-    X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
-    ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
+  for (int i = 0; i < X509_NAME_entry_count(const_cast<X509_NAME*>(subject)); i++) {
+    const X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
+    const ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
     int nid = OBJ_obj2nid(obj);
 
     if (OBJ_nid2sn(nid) == name) return true;
@@ -110,11 +112,12 @@ bool CSR::hasNameEntry(const string &name) const {
 
 
 string CSR::getNameEntry(const string &name) const {
-  X509_NAME *subject = X509_REQ_get_subject_name(csr);
+  const X509_NAME *subject = X509_REQ_get_subject_name(csr);
+  if (!subject) THROW("Failed to get CSR subject name");
 
-  for (int i = 0; i < X509_NAME_entry_count(subject); i++) {
-    X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
-    ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
+  for (int i = 0; i < X509_NAME_entry_count(const_cast<X509_NAME*>(subject)); i++) {
+    const X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
+    const ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
     int nid = OBJ_obj2nid(obj);
 
     if (OBJ_nid2sn(nid) == name)
