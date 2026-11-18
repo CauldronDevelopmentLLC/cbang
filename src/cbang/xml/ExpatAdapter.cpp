@@ -69,8 +69,13 @@ void ExpatAdapter::read(istream &stream) {
 
     if (!XML_ParseBuffer((XML_Parser)parser, count, count == 0) && !error) {
       XML_Error code = XML_GetErrorCode((XML_Parser)parser);
+#if XML_MAJOR_VERSION > 2 || (XML_MAJOR_VERSION == 2 && XML_MINOR_VERSION >= 6)
+      int line = XML_GetCurrentLineNumber64((XML_Parser)parser);
+      int column = XML_GetCurrentColumnNumber64((XML_Parser)parser);
+#else
       int line = XML_GetCurrentLineNumber((XML_Parser)parser);
       int column = XML_GetCurrentColumnNumber((XML_Parser)parser);
+#endif
 
       error = new Exception(string("Parse failed: ") + String(code) +
                             ": " + XML_ErrorString(code),
@@ -94,8 +99,13 @@ void ExpatAdapter::read(istream &stream) {
 void ExpatAdapter::setError(const Exception &e) {
   if (!error.isNull()) return;
 
+#if XML_MAJOR_VERSION > 2 || (XML_MAJOR_VERSION == 2 && XML_MINOR_VERSION >= 6)
+  int line = XML_GetCurrentLineNumber64((XML_Parser)parser);
+  int column = XML_GetCurrentColumnNumber64((XML_Parser)parser);
+#else
   int line = XML_GetCurrentLineNumber((XML_Parser)parser);
   int column = XML_GetCurrentColumnNumber((XML_Parser)parser);
+#endif
 
   error = new Exception(e.getMessage(),
                         FileLocation(getFilename(), line, column), e);
