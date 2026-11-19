@@ -40,6 +40,7 @@
 #include <cstdint>
 #include <set>
 #include <map>
+#include <vector>
 
 
 namespace cb {
@@ -64,9 +65,25 @@ namespace cb {
 
     virtual uint32_t getCPUCount() const = 0;
 
+    /// Logical CPUs the current process may run on.  On Linux this is the
+    /// calling thread's affinity mask.  Returns an empty set if CPU affinity
+    /// is not supported.
+    virtual std::set<unsigned> getAvailableCPUs() const {return {};}
+
+    /// Online logical CPUs grouped by performance level, fastest first.
+    /// Returns one level if all cores are the same or an empty vector if the
+    /// topology is unknown.
+    virtual std::vector<std::set<unsigned>>
+    getCPUPerformanceLevels() const {return {};}
+
+    /// Online logical CPUs grouped by physical core.  Returns an empty vector
+    /// if the topology is unknown.
+    virtual std::vector<std::set<unsigned>>
+    getCPUCoreThreads() const {return {};}
+
     /// Logical CPU indices of the fastest cores on hybrid CPUs.  Returns an
     /// empty set if all cores are the same or the topology is unknown.
-    virtual std::set<unsigned> getPerformanceCPUs() const {return {};}
+    std::set<unsigned> getPerformanceCPUs() const;
     virtual uint32_t getPerformanceCPUCount() const;
 
     virtual uint64_t getMemoryInfo(memory_info_t type) const = 0;
@@ -88,7 +105,7 @@ namespace cb {
     void add(Info &info);
 
   protected:
-    static std::set<unsigned>
-    selectFastestCPUs(const std::map<unsigned, double> &perf);
+    static std::vector<std::set<unsigned>>
+    clusterCPUs(const std::map<unsigned, double> &perf);
   };
 }
