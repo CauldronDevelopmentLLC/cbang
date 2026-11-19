@@ -139,12 +139,15 @@ void Certificate::setNotBefore(uint64_t x) {
 
 
 bool Certificate::isNotBeforeInFuture() const {
-  int ret = X509_cmp_current_time(X509_get0_notBefore(cert));
+  const ASN1_TIME *notBefore = X509_get0_notBefore(cert);
+  if (!notBefore)
+    THROW("Failed to get certificate's not before time");
 
-  if (!ret)
-    THROW("Failed to get certificate's not before: " << SSL::getErrorStr());
+  struct tm t;
+  if (!ASN1_TIME_to_tm(notBefore, &t))
+    THROW("Failed to convert certificate's not before time: " << SSL::getErrorStr());
 
-  return 0 < ret;
+  return (uint64_t)time(nullptr) < (uint64_t)Time(t);
 }
 
 
@@ -166,41 +169,44 @@ void Certificate::setNotAfter(uint64_t x) {
 
 
 bool Certificate::isNotAfterInPast() const {
-  int ret = X509_cmp_current_time(X509_get0_notAfter(cert));
+  const ASN1_TIME *notAfter = X509_get0_notAfter(cert);
+  if (!notAfter)
+    THROW("Failed to get certificate's not after time");
 
-  if (!ret)
-    THROW("Failed to get certificate's not after: " << SSL::getErrorStr());
+  struct tm t;
+  if (!ASN1_TIME_to_tm(notAfter, &t))
+    THROW("Failed to convert certificate's not after time: " << SSL::getErrorStr());
 
-  return ret < 0;
+  return (uint64_t)Time(t) < (uint64_t)time(nullptr);
 }
 
 
 bool Certificate::expiredIn(unsigned secs) const {
-  time_t t;
-  time(&t);
-  t += (time_t)secs;
+  const ASN1_TIME *notAfter = X509_get0_notAfter(cert);
+  if (!notAfter)
+    THROW("Failed to get certificate's not after time");
 
-  int ret = X509_cmp_time(X509_get0_notAfter(cert), &t);
+  struct tm t;
+  if (!ASN1_TIME_to_tm(notAfter, &t))
+    THROW("Failed to convert certificate's not after time: " << SSL::getErrorStr());
 
-  if (!ret)
-    THROW("Failed to get certificate's not after: " << SSL::getErrorStr());
-
-  return ret < 0;
+  uint64_t target = (uint64_t)time(nullptr) + secs;
+  return (uint64_t)Time(t) <= target;
 }
 
 
 void Certificate::setIssuer(const Certificate &issuer) {
-  X509_NAME *name = X509_get_subject_name(issuer.cert);
+  const X509_NAME *name = X509_get_subject_name(issuer.cert);
   if (!name) THROW("Failed to get issuer name: " << SSL::getErrorStr());
 
-  if (!X509_set_issuer_name(cert, name))
+  if (!X509_set_issuer_name(cert, const_cast<X509_NAME*>(name)))
     THROW("Failed to set issuer name: " << SSL::getErrorStr());
 }
 
 
 void Certificate::addNameEntry(const string &name, const string &value) {
-
-  if (!X509_NAME_add_entry_by_txt(X509_get_subject_name(cert), name.c_str(),
+  if (!X509_NAME_add_entry_by_txt(const_cast<X509_NAME*>(X509_get_subject_name(cert)),
+                                  name.c_str(),
                                   MBSTRING_ASC, (uint8_t *)value.c_str(), -1,
                                   -1, 0))
     THROW("Failed to add certificate name entry '" << name << "'='" << value
@@ -209,13 +215,13 @@ void Certificate::addNameEntry(const string &name, const string &value) {
 
 
 string Certificate::getNameEntry(const string &name) const {
-  X509_NAME *subject = X509_get_subject_name(cert);
+  const X509_NAME *subject = X509_get_subject_name(cert);
 
   if (!subject) THROW("Failed to get certificate subject name");
 
-  for (int i = 0; i < X509_NAME_entry_count(subject); i++) {
-    X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
-    ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
+  for (int i = 0; i < X509_NAME_entry_count(const_cast<X509_NAME*>(subject)); i++) {
+    const X509_NAME_ENTRY *entry = X509_NAME_get_entry(subject, i);
+    const ASN1_OBJECT *obj = X509_NAME_ENTRY_get_object(entry);
     int nid = OBJ_obj2nid(obj);
 
     if (OBJ_nid2sn(nid) == name)
@@ -232,14 +238,14 @@ bool Certificate::hasExtension(const string &name) const {
 
 
 string Certificate::getExtension(const string &name) const {
-  X509_EXTENSION *ext =
+  const X509_EXTENSION *ext =
     X509_get_ext(cert, X509_get_ext_by_NID(cert, SSL::findObject(name), -1));
   if (!ext) THROW("Extension '" << name << "' not in certificate");
 
   ostringstream stream;
   BOStream bio(stream);
 
-  if (!X509V3_EXT_print(bio.getBIO(), ext, 0, 0))
+  if (!X509V3_EXT_print(bio.getBIO(), const_cast<X509_EXTENSION*>(ext), 0, 0))
     ASN1_STRING_print(bio.getBIO(), X509_EXTENSION_get_data(ext));
 
   return stream.str();

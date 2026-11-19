@@ -87,7 +87,7 @@ int CRL::getVersion() const {
 
 
 void CRL::setIssuer(const Certificate &cert) {
-  X509_NAME *name = X509_get_subject_name(cert.getX509());
+  const X509_NAME *name = X509_get_subject_name(cert.getX509());
   if (!name) THROW("Failed to get issuer name: " << SSL::getErrorStr());
 
   if (!X509_CRL_set_issuer_name(crl, name))
@@ -131,7 +131,7 @@ bool CRL::hasExtension(const string &name) {
 
 
 string CRL::getExtension(const string &name) {
-  X509_EXTENSION *ext =
+  const X509_EXTENSION *ext =
     X509_CRL_get_ext(crl,
                      X509_CRL_get_ext_by_NID(crl, SSL::findObject(name), -1));
   if (!ext) THROW("Extension '" << name << "' not in CRL");
