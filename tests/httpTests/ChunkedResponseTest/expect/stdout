@@ -1,0 +1,5 @@
+server: GET /stream HTTP/1.1
+client: chunk "data: one\n\n"
+client: chunk "data: two\n\n"
+client: chunk "data: three\n\n"
+client: response HTTP_OK remaining=""

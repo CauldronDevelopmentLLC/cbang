@@ -118,7 +118,7 @@ def scenario_post_body():
 
 def scenario_chunked_delete():
   run(request('DELETE', '/x', b'5\r\nhello\r\n0\r\n\r\n',
-              ['Transfer-Encoding: chunked']))
+              ['Transfer-Encoding: chunked']) + request('GET', '/y'))
 
 
 # Both framings, or one the server can't decode, must be refused and the
@@ -132,6 +132,43 @@ def scenario_both_framings():
 def scenario_unknown_coding():
   run(request('POST', '/x', b'hello', ['Transfer-Encoding: gzip']) +
       request('GET', '/y'))
+
+
+# A chunked response is handed to the client a chunk at a time, as it arrives,
+# and then as a whole.
+def scenario_chunked_response():
+  import time
+
+  srv = socket.socket()
+  srv.bind(('127.0.0.1', 0))
+  srv.listen(1)
+  srv.settimeout(10)
+
+  proc = subprocess.Popen([httpEcho, 'client', str(srv.getsockname()[1])],
+                          stdout = subprocess.PIPE, text = True)
+
+  sock, _ = srv.accept()
+  sock.settimeout(10)
+  buf = b''
+  while b'\r\n\r\n' not in buf: buf += sock.recv(65536)
+  out('server: ' + buf.decode().split('\r\n')[0])
+
+  sock.sendall(b'HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n')
+  for data in (b'data: one\n\n', b'data: two\n\n', b'data: three\n\n'):
+    time.sleep(0.1)
+    sock.sendall(b'%x\r\n%s\r\n' % (len(data), data))
+  time.sleep(0.1)
+  sock.sendall(b'0\r\n\r\n')
+
+  try: stdout, _ = proc.communicate(timeout = 10)
+  except subprocess.TimeoutExpired:
+    proc.kill()
+    stdout, _ = proc.communicate()
+    out('client: did not exit')
+
+  out(stdout, end = '')
+  sock.close()
+  srv.close()
 
 
 if __name__ == '__main__':

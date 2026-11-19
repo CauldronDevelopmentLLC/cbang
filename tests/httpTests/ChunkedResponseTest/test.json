@@ -1,0 +1,6 @@
+{
+  "args": [
+    "chunked_response"
+  ],
+  "notes": "A chunked response is passed to onChunk as each chunk arrives."
+}

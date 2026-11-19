@@ -91,6 +91,7 @@ namespace cb {
       JSON::ValuePtr msg;
 
       std::function<void ()> completeCB;
+      std::function<void (Request &)> chunkCB;
 
     public:
       Request(const RequestParams &params);
@@ -227,6 +228,10 @@ namespace cb {
       void setOnComplete(std::function<void ()> cb) {this->completeCB = cb;}
       std::function<void ()> getOnComplete() {return completeCB;}
 
+      // Called after each chunk of a chunked body is added to the input
+      // buffer.  The callback may consume the buffer.
+      void setOnChunk(std::function<void (Request &)> cb) {chunkCB = cb;}
+
       SmartPointer<std::istream> getInputStream() const;
       SmartPointer<std::ostream>
       getOutputStream(Compression compression = COMPRESSION_NONE);
@@ -269,6 +274,7 @@ namespace cb {
       virtual void onResponse(Event::ConnectionError error);
       virtual void onRequest();
       virtual void onComplete() {if (completeCB) completeCB();}
+      virtual void onChunk() {if (chunkCB) chunkCB(*this);}
 
       // Used by Connection
       bool mustHaveBody() const;

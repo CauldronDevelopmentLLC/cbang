@@ -92,6 +92,7 @@ void Conn::readChunk(
     if (success && size <= input.getLength()) {
       input.remove(req->getInputBuffer(), size);
       input.drain(2); // Remove CRLF
+      TRY_CATCH_ERROR(req->onChunk());
       readChunks(req, cb); // Next chunk
 
     } else if (cb) cb(false);
@@ -108,6 +109,7 @@ void Conn::readChunkTrailer(
   auto readCB = [this, req, cb] (bool success) {
     // No header lines
     if (input.indexOf("\r\n") == 0) {
+      input.drain(2);
       if (cb) cb(true);
       return;
     }

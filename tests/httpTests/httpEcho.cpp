@@ -33,18 +33,22 @@
 // An HTTP echo server for httpTests.  httptest.py drives it with hand-built
 // requests.  Each request is answered with "<method> <path> body=<body>", so
 // a test sees exactly where the server thinks one request ends and the next
-// begins.  GET /quit exits.
+// begins.  GET /quit exits.  Client mode GETs /stream and logs each chunk of
+// the response as it arrives, draining it, then the response.
 //
 //   httpEcho <port>
+//   httpEcho client <port>
 
 #include <cbang/Catch.h>
 #include <cbang/Exception.h>
 #include <cbang/String.h>
 #include <cbang/event/Base.h>
+#include <cbang/http/Client.h>
 #include <cbang/http/Request.h>
 #include <cbang/http/RequestHandler.h>
 #include <cbang/http/Server.h>
 #include <cbang/log/Logger.h>
+#include <cbang/net/URI.h>
 
 #include <iostream>
 
@@ -52,11 +56,51 @@ using namespace std;
 using namespace cb;
 
 
+int client(uint16_t port) {
+  Event::Base base;
+  HTTP::Client client(base);
+  bool done = false;
+
+  auto pr = client.call(URI("http", "127.0.0.1", port, "/stream"),
+                        HTTP::Method::HTTP_GET,
+    [&] (HTTP::Request &req) {
+      cout << "client: response " << req.getResponseCode() << " remaining=\""
+           << String::escapeC(req.getInputBuffer().toString()) << '"' << endl;
+      done = true;
+      base.loopExit();
+    });
+
+  pr->getRequest()->setOnChunk([] (HTTP::Request &req) {
+    auto &buf = req.getInputBuffer();
+    cout << "client: chunk \"" << String::escapeC(buf.toString()) << '"'
+         << endl;
+    buf.clear();
+  });
+
+  pr->send();
+
+  auto guard = base.newEvent([&] () {base.loopExit();});
+  guard->add(30);
+
+  base.dispatch();
+
+  if (!done) {
+    cout << "client: timed out" << endl;
+    return 1;
+  }
+
+  return 0;
+}
+
+
 int main(int argc, char *argv[]) {
   try {
     Logger::instance().setScreenStream(cerr);
     Logger::instance().setVerbosity(0);
     Exception::printLocations = false;
+
+    if (argc == 3 && string(argv[1]) == "client")
+      return client(String::parseU16(argv[2]));
 
     if (argc != 2) {
       cerr << "Usage: " << argv[0] << " <port>" << endl;
