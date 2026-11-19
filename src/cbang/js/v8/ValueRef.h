@@ -37,13 +37,23 @@
 
 namespace cb {
   namespace gv8 {
+    // A Value which survives the HandleScope it was created in.  The base
+    // class' Local is cleared because it becomes invalid once that scope
+    // exits; getV8Value() returns a new Local, from the persistent handle, in
+    // the caller's current HandleScope.
     class ValueRef : public Value {
-      v8::Persistent<v8::Value> ref;
+      v8::Global<v8::Value> ref; // Reset on destruction
 
     public:
-      ValueRef(const Value &value = Value()) : Value(value) {
-        ref.Reset(v8::Isolate::GetCurrent(), value.getV8Value());
-      }
+      ValueRef(const Value &value = Value()) :
+        ref(getIso(), value.getV8Value()) {this->value.Clear();}
+
+      ValueRef(const ValueRef &) = delete;
+      ValueRef &operator=(const ValueRef &) = delete;
+
+      // From Value
+      v8::Local<v8::Value> getV8Value() const override
+      {return ref.Get(getIso());}
     };
   }
 }

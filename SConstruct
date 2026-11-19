@@ -31,7 +31,6 @@
 ################################################################################
 
 import os
-import platform
 
 
 # Version
@@ -44,8 +43,8 @@ env = Environment(ENV = os.environ,
                   TARGET_ARCH = os.environ.get('TARGET_ARCH', 'x86'))
 env.Tool('config', toolpath = ['.'])
 env.CBAddVariables(
-    BoolVariable('v8_compress_pointers', 'Enable pointer compression for libv8',
-                 platform.machine().endswith('64')),
+    BoolVariable('v8_compress_pointers', 'Enable pointer compression for libv8'
+                 ' (default: detect)', None),
     BoolVariable('staticlib', 'Build a static library', True),
     BoolVariable('sharedlib', 'Build a shared library', False),
     ('soname', 'Shared library soname', 'libcbang%s.so' % libversion),

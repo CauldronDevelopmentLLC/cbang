@@ -143,47 +143,47 @@ v8::Local<v8::Symbol> Value::createSymbol(const string &name) {
 
 
 string Value::toString() const {
-  if (value.IsEmpty() || isUndefined()) return "undefined";
+  if (getV8Value().IsEmpty() || isUndefined()) return "undefined";
   if (isFunction()) return SSTR("function " << getName() << "() {...}");
 
   // TODO this is not very efficient
-  v8::String::Utf8Value s(getIso(), value);
+  v8::String::Utf8Value s(getIso(), getV8Value());
   return *s ? string(*s, s.length()) : "(null)";
 }
 
 
 bool Value::has(uint32_t index) const {
-  return value->ToObject(getCtx()).ToLocalChecked()
+  return getV8Value()->ToObject(getCtx()).ToLocalChecked()
     ->Has(getCtx(), index).ToChecked();
 }
 
 
 bool Value::has(const string &key) const {
-  return value->ToObject(getCtx()).ToLocalChecked()
+  return getV8Value()->ToObject(getCtx()).ToLocalChecked()
     ->Has(getCtx(), createString(key)).ToChecked();
 }
 
 
 SmartPointer<js::Value> Value::get(int index) const {
-  return new Value(value->ToObject(getCtx()).ToLocalChecked()
+  return new Value(getV8Value()->ToObject(getCtx()).ToLocalChecked()
                    ->Get(getCtx(), index));
 }
 
 
 SmartPointer<js::Value> Value::get(const string &key) const {
-  return new Value(value->ToObject(getCtx()).ToLocalChecked()
+  return new Value(getV8Value()->ToObject(getCtx()).ToLocalChecked()
                    ->Get(getCtx(), createString(key)));
 }
 
 
 SmartPointer<js::Value> Value::getOwnPropertyNames() const {
-  return new Value(value->ToObject(getCtx()).ToLocalChecked()
+  return new Value(getV8Value()->ToObject(getCtx()).ToLocalChecked()
                    ->GetOwnPropertyNames(getCtx()));
 }
 
 
 void Value::set(int index, const js::Value &value) {
-  v8::Maybe<bool> ret = this->value->ToObject(getCtx()).ToLocalChecked()
+  v8::Maybe<bool> ret = getV8Value()->ToObject(getCtx()).ToLocalChecked()
     ->Set(getCtx(), index, Value(value).getV8Value());
   if (ret.IsNothing() || !ret.ToChecked())
     THROW("Set " << index << " failed");
@@ -191,7 +191,7 @@ void Value::set(int index, const js::Value &value) {
 
 
 void Value::set(const string &key, const js::Value &value) {
-  v8::Maybe<bool> ret = this->value->ToObject(getCtx()).ToLocalChecked()
+  v8::Maybe<bool> ret = getV8Value()->ToObject(getCtx()).ToLocalChecked()
     ->Set(getCtx(), createString(key), Value(value).getV8Value());
   if (ret.IsNothing() || !ret.ToChecked())
     THROW("Set " << key << " failed");
@@ -199,8 +199,8 @@ void Value::set(const string &key, const js::Value &value) {
 
 
 unsigned Value::length() const {
-  if (isString()) return v8::String::Cast(*value)->Length();
-  else if (isArray()) return v8::Array::Cast(*value)->Length();
+  if (isString()) return v8::String::Cast(*getV8Value())->Length();
+  else if (isArray()) return v8::Array::Cast(*getV8Value())->Length();
   else if (isObject()) return getOwnPropertyNames()->length();
   THROW("Value does not have length");
 }
@@ -215,7 +215,7 @@ Value Value::call(Value arg0, const vector<Value> &args) const {
   for (unsigned i = 0; i < args.size(); i++)
     argv[i] = args[i].getV8Value();
 
-  return v8::Handle<v8::Function>::Cast(value)->
+  return v8::Handle<v8::Function>::Cast(getV8Value())->
     Call(getCtx(), arg0.getV8Value()->ToObject(getCtx()).ToLocalChecked(),
          args.size(), argv.get()).ToLocalChecked();
 
@@ -235,20 +235,20 @@ Value::call(const vector<SmartPointer<js::Value> > &_args) const {
 
 string Value::getName() const {
   if (!isFunction()) THROW("Value is not a function");
-  return Value(v8::Handle<v8::Function>::Cast(value)->GetName()).
+  return Value(v8::Handle<v8::Function>::Cast(getV8Value())->GetName()).
     toString();
 }
 
 
 void Value::setName(const string &name) {
   if (!isFunction()) THROW("Value is not a function");
-  v8::Handle<v8::Function>::Cast(value)->SetName(createString(name));
+  v8::Handle<v8::Function>::Cast(getV8Value())->SetName(createString(name));
 }
 
 
 int Value::getScriptLineNumber() const {
   if (!isFunction()) THROW("Value is not a function");
-  return v8::Handle<v8::Function>::Cast(value)->GetScriptLineNumber();
+  return v8::Handle<v8::Function>::Cast(getV8Value())->GetScriptLineNumber();
 }
 
 

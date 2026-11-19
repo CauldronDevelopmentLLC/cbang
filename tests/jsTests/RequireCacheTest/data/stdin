@@ -1,0 +1,4 @@
+// Cached exports must stay bound to their own module after other modules load
+require('a');
+require('b');
+print(require('a').name, require('b').name, require('a').name, '\n');

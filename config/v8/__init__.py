@@ -34,6 +34,46 @@ from SCons.Script import *
 import platform
 
 
+v8_init_src = '''
+  %s
+  #include <v8.h>
+  #include <libplatform/libplatform.h>
+  #include <cstdio>
+  #include <cstdlib>
+  #include <csignal>
+
+  static void on_abort(int) {std::_Exit(1);}
+
+  int main() {
+    // Fail quietly on V8's mismatch abort
+  #ifdef _WIN32
+    freopen("NUL", "w", stderr);
+  #else
+    freopen("/dev/null", "w", stderr);
+  #endif
+    signal(SIGABRT, on_abort);
+
+    auto platform = v8::platform::NewDefaultPlatform();
+    v8::V8::InitializePlatform(platform.get());
+    return !v8::V8::Initialize();
+  }
+'''
+
+
+def check_compress_pointers(context):
+    # V8 aborts in Initialize() if the embedder's V8_COMPRESS_POINTERS does
+    # not match the library's build, so ask the library which one it accepts.
+    context.Message('Checking if libv8 uses pointer compression...')
+
+    if context.TryRun(v8_init_src % '#define V8_COMPRESS_POINTERS', '.cpp')[0]:
+        ret = True
+    elif context.TryRun(v8_init_src % '', '.cpp')[0]: ret = False
+    else: ret = platform.machine().endswith('64') # Cannot run, e.g. cross
+
+    context.Result(ret)
+    return ret
+
+
 def configure(conf):
     lib_suffix = ['/lib']
     if conf.env.get('debug', False): lib_suffix.append('/build/Release/lib')
@@ -61,7 +101,9 @@ def configure(conf):
                 conf.CBRequireLib('v8_base.x64')
             else: conf.CBRequireLib('v8_base.ia32')
 
-    if conf.env.get('v8_compress_pointers'):
+    compress = conf.env.get('v8_compress_pointers')
+    if compress is None: compress = conf.V8CompressPointers()
+    if compress:
         conf.env.CBConfigDef('V8_COMPRESS_POINTERS')
 
     conf.env.CBConfigDef('HAVE_V8')
@@ -69,6 +111,7 @@ def configure(conf):
 
 def generate(env):
     env.CBAddConfigTest('v8', configure)
+    env.CBAddTest('V8CompressPointers', check_compress_pointers)
 
 
 def exists():

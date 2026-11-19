@@ -42,6 +42,7 @@ for test in Glob('*Tests'):
         enabled = env.CBConfigEnabled('leveldb')
     elif name in ('dbTests', 'clickhouseTests'):
         enabled = env.CBConfigEnabled('mariadb') and env.CBConfigEnabled('leveldb')
+    elif name == 'jsTests': enabled = env.CBConfigEnabled('v8')
     else: enabled = True
 
     set_enabled(name, enabled)

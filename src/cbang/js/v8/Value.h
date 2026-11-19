@@ -74,55 +74,55 @@ namespace cb {
       // Undefined
       void assertDefined() const
       {if (isUndefined()) CBANG_THROW("Value is undefined");}
-      bool isUndefined() const override {return value->IsUndefined();}
+      bool isUndefined() const override {return getV8Value()->IsUndefined();}
 
       // Null
-      bool isNull() const override {return value->IsNull();}
+      bool isNull() const override {return getV8Value()->IsNull();}
       static Value createNull() {return v8::Null(getIso());}
 
       // Boolean
       void assertBoolean() const
       {if (!isBoolean()) CBANG_THROW("Value is not a boolean");}
-      bool isBoolean() const override {return value->IsBoolean();}
+      bool isBoolean() const override {return getV8Value()->IsBoolean();}
       bool toBoolean() const override {
         assertDefined();
 #if V8_MAJOR_VERSION < 7
-        return value->BooleanValue(getCtx()).FromJust();
+        return getV8Value()->BooleanValue(getCtx()).FromJust();
 #else
-        return value->BooleanValue(getIso());
+        return getV8Value()->BooleanValue(getIso());
 #endif
       }
 
       // Number
       void assertNumber() const
       {if (!isNumber()) CBANG_THROW("Value is not a number");}
-      bool isNumber() const override {return value->IsNumber();}
+      bool isNumber() const override {return getV8Value()->IsNumber();}
       double toNumber() const override {
         assertDefined();
-        return value->NumberValue(getCtx()).FromJust();
+        return getV8Value()->NumberValue(getCtx()).FromJust();
       }
 
       int toInteger() const override {
         assertDefined();
-        return value->IntegerValue(getCtx()).FromJust();
+        return getV8Value()->IntegerValue(getCtx()).FromJust();
       }
 
       // Int32
       void assertInt32() const
       {if (!isInt32()) CBANG_THROW("Value is not a int32");}
-      bool isInt32() const {return value->IsInt32();}
+      bool isInt32() const {return getV8Value()->IsInt32();}
       int32_t toInt32() const {
         assertDefined();
-        return value->Int32Value(getCtx()).FromJust();
+        return getV8Value()->Int32Value(getCtx()).FromJust();
       }
 
       // Uint32
       void assertUint32() const
       {if (!isUint32()) CBANG_THROW("Value is not a uint32");}
-      bool isUint32() const {return value->IsUint32();}
+      bool isUint32() const {return getV8Value()->IsUint32();}
       uint32_t toUint32() const {
         assertDefined();
-        return value->Uint32Value(getCtx()).FromJust();
+        return getV8Value()->Uint32Value(getCtx()).FromJust();
       }
 
       // String
@@ -131,18 +131,18 @@ namespace cb {
       static v8::Local<v8::Symbol> createSymbol(const std::string &name);
       void assertString() const
       {if (!isString()) CBANG_THROW("Value is not a string");}
-      bool isString() const override {return value->IsString();}
+      bool isString() const override {return getV8Value()->IsString();}
       std::string toString() const override;
 
       int utf8Length() const {
-        return v8::String::Cast(*value)->Utf8Length(getIso());
+        return v8::String::Cast(*getV8Value())->Utf8Length(getIso());
       }
 
       // Object
       static Value createObject() {return v8::Object::New(getIso());}
       void assertObject() const
       {if (!isObject()) CBANG_THROW("Value is not a object");}
-      bool isObject() const override {return value->IsObject();}
+      bool isObject() const override {return getV8Value()->IsObject();}
       bool has(uint32_t index) const;
       bool has(const std::string &key) const override;
 
@@ -158,11 +158,11 @@ namespace cb {
       {return v8::Array::New(getIso(), size);}
       void assertArray() const
       {if (!isArray()) CBANG_THROW("Value is not a array");}
-      bool isArray() const override {return value->IsArray();}
+      bool isArray() const override {return getV8Value()->IsArray();}
       unsigned length() const override;
 
       // Function
-      bool isFunction() const override {return value->IsFunction();}
+      bool isFunction() const override {return getV8Value()->IsFunction();}
       Value call(Value arg0, const std::vector<Value> &args) const;
       SmartPointer<js::Value>
       call(const std::vector<SmartPointer<js::Value> > &args) const override;
@@ -171,8 +171,9 @@ namespace cb {
       int getScriptLineNumber() const;
 
       // Accessors
-      const v8::Handle<v8::Value> &getV8Value() const {return value;}
-      v8::Handle<v8::Value> &getV8Value() {return value;}
+      // Always access the V8 value through this method.  Subclasses, such as
+      // ValueRef, may not keep a valid Local in ``value``.
+      virtual v8::Local<v8::Value> getV8Value() const {return value;}
 
       // Static
       static v8::Isolate *getIso() {return v8::Isolate::GetCurrent();}

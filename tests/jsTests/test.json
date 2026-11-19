@@ -1,0 +1,1 @@
+{"command": "%(suite-dir)s/js", "args": ["libs"]}
